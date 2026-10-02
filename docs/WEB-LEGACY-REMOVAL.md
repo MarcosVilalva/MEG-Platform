@@ -204,19 +204,38 @@ O PR #518 (`0cdc42d2`) incorporou duas regras aprovadas:
 A referência Android define o fluxo de escolha do lançamento, não o layout Web.
 
 
-## 13. Lançamentos Web Next e host transitório do editor
+## 13. Lançamentos Web Next
 
-A branch `feat/web-next-movements-command-center` inicia a substituição visual de Lançamentos sem duplicar regras financeiras:
-- `WebNextMovements.tsx` assume a leitura, filtros, KPIs, paginação e histórico visual da rota Web;
-- `movements-view-model.ts` é a fronteira de leitura entre o Web Next e o modelo financeiro existente;
-- a lista permanece cronológica, sem agrupamento por categoria, com forma de pagamento e situação visíveis;
-- a área principal não possui rolagem geral nem horizontal; somente a grade densa possui rolagem vertical personalizada;
-- Despesa, Receita e Transferência chamam o fluxo financeiro já existente;
-- `PhoenixMovementsV15.tsx` permanece montado somente com `editorOnly` para servir temporariamente o Novo/Editar, parcelamento, cartão, benefício, transferência, validações e gateways de escrita já testados.
+O PR #519, mesclado em `495a73e2`, substituiu a leitura visual de Lançamentos na Web:
+- `WebNextMovements.tsx` assume filtros, KPIs, paginação e histórico;
+- `movements-view-model.ts` é a fronteira de leitura para os contratos financeiros existentes;
+- a lista é cronológica, sem agrupamento por categoria, com forma de pagamento e situação visíveis;
+- a rota Web não possui rolagem geral nem horizontal; somente a grade densa possui rolagem vertical personalizada;
+- Despesa, Receita e Transferência continuam chamando os fluxos financeiros canônicos.
 
-Esse host NÃO é uma segunda tela oficial de Lançamentos. Ele é uma ponte funcional temporária e deverá desaparecer quando Novo/Editar lançamento for reconstruído em Web Next e validado.
+A tela antiga `PhoenixMovementsV15.tsx` continua necessária para consumidores nativos/legados enquanto o Android permanecer congelado e não deve ser alterada visualmente por causa da reconstrução Web.
 
-Até essa etapa:
-- não remover `phoenix-launch.css`, `phoenix-launch-dynamic.css`, `phoenix-launch-editor-polish.css` ou `phoenix-launch-write.css`;
-- não remover `PhoenixLaunchWriteControl` nem os gateways de escrita usados pelo editor;
-- `meg-web-movements-revolution.css` continua candidato a remoção somente após validação visual da nova rota e auditoria de consumidores.
+## 14. Novo / Editar lançamento Web Next
+
+A branch `feat/web-next-launch-editor` remove a ponte visual `editorOnly` da rota Web e introduz:
+- `WebNextLaunchEditor.tsx`, modal clean-room para Novo e Editar;
+- `WebNextLaunchWriteControl.tsx`, controlador visual Web Next sobre os gateways financeiros existentes;
+- `launch-editor.css`, camada visual própria, sem classes ou CSS Phoenix;
+- histórico de descrição reaproveitando contexto de conta/categoria/forma, sem copiar valor ou data;
+- À vista, Crédito, Crediário e Benefício na composição visual;
+- crédito com cartão, vencimento calculado e parcelamento de 1 a 48;
+- benefício com conta canônica e Verocard, inclusive crédito/recarga como Receita;
+- transferência com origem, destino, consulta de saldo disponível, saldo projetado e bloqueio por insuficiência;
+- edição e exclusão usando os mesmos writers protegidos do domínio;
+- confirmação de descarte, exclusão, baixa de pendente e possível duplicidade dentro da linguagem Web Next.
+
+A reconstrução NÃO cria API financeira paralela. Os arquivos com nome Phoenix abaixo continuam funcionais e permitidos porque são contratos/gateways, não interface visual:
+- `phoenix-write-gateway.ts`;
+- `phoenix-transfer-write-gateway.ts`;
+- `card-dates.ts`.
+
+Mesmo depois de Novo/Editar assumir a rota Web:
+- não remover `PhoenixMovementsV15.tsx` enquanto houver consumidor Android;
+- não remover `PhoenixLaunchWriteControl` ou CSS de lançamento enquanto o fluxo nativo depender deles;
+- `meg-web-movements-revolution.css` só poderá ser removido após validação visual do Lançamentos Web Next e busca completa de consumidores;
+- nenhuma alteração visual desta migração autoriza modificar o Android.
