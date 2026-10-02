@@ -90,6 +90,11 @@
   box-shadow:0 12px 28px color-mix(in srgb,var(--brand) 7%,transparent);
   transform:translateY(-1px);
 }
+.px-user-card.is-search-focused {
+  border-color:color-mix(in srgb,var(--brand) 64%,var(--line));
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 12%,transparent),0 16px 34px color-mix(in srgb,var(--brand) 10%,transparent);
+  transform:translateY(-2px);
+}
 .px-users-group.is-pending .px-user-card { border-color:color-mix(in srgb,var(--warn) 28%,var(--line)); }
 .px-user-card-head {
   min-width:0;

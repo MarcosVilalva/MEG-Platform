@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usersAdminClient, type AuthUser, type UserAccessAction, type UserRole } from '../../app/auth-client';
 import type { PhoenixReadModel } from '../contracts';
@@ -40,7 +40,7 @@ function accessError(error: unknown) {
   return 'Não foi possível concluir a alteração de acesso.';
 }
 
-export function PhoenixUsers({ data, onDataCommitted }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void }) {
+export function PhoenixUsers({ data, onDataCommitted, focusRequest }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void; focusRequest?: { token: number; userId: string } | null }) {
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('all');
   const [status, setStatus] = useState('all');
@@ -50,6 +50,8 @@ export function PhoenixUsers({ data, onDataCommitted }: { data: PhoenixReadModel
   const [rejectionNote, setRejectionNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [focusedUserId, setFocusedUserId] = useState<string | null>(null);
+  const focusRequestTokenRef = useRef(0);
 
   const source = data.workspaceUsers;
   const users = source.status === 'ready' ? source.users : [];
@@ -60,6 +62,27 @@ export function PhoenixUsers({ data, onDataCommitted }: { data: PhoenixReadModel
       && (role === 'all' || item.role === role)
       && (status === 'all' || item.status === status);
   }), [users, search, role, status]);
+
+  useEffect(() => {
+    if (!focusRequest || focusRequest.token === focusRequestTokenRef.current) return;
+    const target = users.find((item) => item.id === focusRequest.userId);
+    if (!target) return;
+    focusRequestTokenRef.current = focusRequest.token;
+    setSearch('');
+    setRole('all');
+    setStatus('all');
+    setFocusedUserId(target.id);
+    const scrollTimer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-user-id="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+    const clearTimer = window.setTimeout(() => {
+      setFocusedUserId((current) => current === target.id ? null : current);
+    }, 3600);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [focusRequest, users]);
 
   if (source.status === 'restricted') {
     return <section className="px-screen"><header className="px-screen-head"><div><span className="px-kicker">Usuários</span><h1>Pessoas, perfis e permissões</h1><p>Esta área é administrativa.</p></div></header><div className="px-card px-users-message"><strong>Acesso restrito</strong><p>Seu perfil atual é {roleLabel(data.user.role)}. A administração de usuários permanece protegida pela regra ADMIN do backend.</p></div></section>;
@@ -221,7 +244,7 @@ export function PhoenixUsers({ data, onDataCommitted }: { data: PhoenixReadModel
         {groups.map((group) => <section className={`px-users-group is-${group.id}`} key={group.id}>
           <header className="px-users-group-head"><div><span>{group.title}</span><small>{group.description}</small></div><strong>{group.users.length}</strong></header>
           <div className="px-users-grid">
-            {group.users.map((item) => <article className="px-user-card" key={item.id}>
+            {group.users.map((item) => <article data-user-id={item.id} className={`px-user-card ${focusedUserId === item.id ? 'is-search-focused' : ''}`} key={item.id}>
               <div className="px-user-card-head"><PhoenixProfileAvatar name={item.name} preference={readPhoenixAvatarPreference(item.id)} className="px-user-card-avatar" /><div><strong>{item.name}</strong><small>{item.email}</small></div><span className={`px-user-status ${item.status.toLowerCase()}`}>{statusLabel(item.status)}</span></div>
               <dl><div><dt>Perfil</dt><dd>{roleLabel(item.role)}</dd></div><div><dt>Telefone</dt><dd>{item.phone || 'Não informado'}</dd></div><div><dt>Cadastro</dt><dd>{item.createdAt ? shortDate.format(new Date(item.createdAt)) : 'Não informado'}</dd></div><div><dt>Último acesso</dt><dd>{item.lastLoginAt ? lastLogin.format(new Date(item.lastLoginAt)) : 'Sem acesso registrado'}</dd></div><div><dt>Conta</dt><dd>{item.isActive ? 'Habilitada' : 'Desabilitada'}</dd></div></dl>
               <div className="px-user-card-footer"><span>{item.id === data.user.id ? 'Sua própria conta pode ser revisada, mas bloqueios do administrador principal são protegidos pelo servidor.' : 'Alterações de acesso são auditadas no backend.'}</span><button type="button" onClick={() => openUser(item)}>{actionLabel(item)}</button></div>
