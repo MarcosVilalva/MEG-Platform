@@ -36,6 +36,7 @@ type PhoenixSettingsProps = {
   onToggleTheme: () => void;
   onDataCommitted: (snapshot: PhoenixReadModel) => void;
   onLogoutRequest?: () => void;
+  focusRequest?: { token: number; section: SettingsSection } | null;
 };
 
 type SettingsSection = 'profile' | 'home' | 'security' | 'notifications' | 'system';
@@ -110,14 +111,26 @@ function DashboardToggle({ checked, label, description, onChange }: { checked: b
   </button>;
 }
 
-export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, onLogoutRequest }: PhoenixSettingsProps) {
+export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, onLogoutRequest, focusRequest }: PhoenixSettingsProps) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const normalizationOk = Boolean(data.normalization.primary && data.normalization.reconciled);
   const repair = data.health.dataRepair;
   const healthNormalization = data.health.normalization;
   const fileRef = useRef<HTMLInputElement>(null);
   const backupFileRef = useRef<HTMLInputElement>(null);
+  const focusRequestTokenRef = useRef(0);
   const [section, setSection] = useState<SettingsSection>('profile');
+
+  useEffect(() => {
+    if (!focusRequest || focusRequest.token === focusRequestTokenRef.current) return;
+    focusRequestTokenRef.current = focusRequest.token;
+    setSection(focusRequest.section);
+    if (typeof window === 'undefined') return;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('.px-settings-workspace')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusRequest]);
   const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
   const [avatarError, setAvatarError] = useState('');
   const [profileEditing, setProfileEditing] = useState(false);
