@@ -121,7 +121,7 @@ Depois disso:
 
 ## 6. Próxima remoção planejada
 
-Primeiro alvo: **Home**.
+Primeiro alvo: **Home**. A competência mensal já possui substituta clean-room na branch `feat/web-next-home`, mas nada antigo será excluído antes da validação visual.
 
 Somente após a Home Web Next ser validada:
 - desviar rota Home para Web Next;
@@ -139,3 +139,16 @@ Somente após a Home Web Next ser validada:
 - não manter duas rotas oficiais para a mesma tela após validação;
 - não importar CSS de `apps/web/src/mobile` na nova árvore Web;
 - não reaproveitar componentes visuais antigos dentro de Web Next apenas para acelerar migração.
+
+## 8. Candidatos de remoção após validação da Home mensal
+
+Após validação explícita da Home Web Next e busca de consumidores:
+- `PhoenixHomeDashboard.tsx`;
+- `PhoenixHomePastMonth.tsx`;
+- `PhoenixHomeHorizon.tsx`;
+- CSS exclusivos dessas telas que ficarem sem consumidor;
+- contratos que exigirem textos/layouts aposentados.
+
+`PhoenixHomeAllTime.tsx` permanece enquanto os modos Intervalo/Tudo ainda dependerem dele.
+
+Nenhum item acima deve ser removido antes da validação do usuário.
