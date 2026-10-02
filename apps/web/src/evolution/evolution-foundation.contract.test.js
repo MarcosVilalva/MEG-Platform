@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 
 const paths=[
@@ -23,21 +24,24 @@ assert.doesNotMatch(html,/phoenix/i);
 
 const loading=fs.readFileSync(new URL('./screens/EvolutionLoading.tsx',import.meta.url),'utf8');
 assert.match(loading,/data-evolution-loading-fidelity="master-artwork"/);
-assert.match(loading,/loadingMasterArtwork/);
-for(let part=0;part<8;part++){
-  assert.match(loading,new RegExp("loading-master\\.part-"+part),'Artwork mestre incompleto: parte '+part);
-}
+assert.match(loading,/\.\/evolution\/artwork\/loading-master\.webp/);
 assert.match(loading,/role="progressbar"/);
 assert.match(loading,/aria-valuenow=\{normalized\}/);
 assert.match(loading,/Carregando seus dados/);
 assert.match(loading,/Organizando suas finanças/);
-assert.doesNotMatch(loading,/DonutIcon|ListIcon|TrendIcon|TargetIcon|evo-holo-frame|evo-card-donut|terrain-facet/,'Loading não pode voltar a redesenhar a prancha com componentes aproximados.');
-
-const artworkParts=Array.from({length:8},(_,part)=>
-  fs.readFileSync(new URL('./artwork/loading-master.part-'+part+'.ts',import.meta.url),'utf8')
+assert.doesNotMatch(
+  loading,
+  /DonutIcon|ListIcon|TrendIcon|TargetIcon|evo-holo-frame|evo-card-donut|terrain-facet/,
+  'Loading não pode voltar a redesenhar a prancha com componentes aproximados.'
 );
-assert.equal(artworkParts.length,8);
-assert.ok(artworkParts.every((part)=>part.startsWith("export default '")),'Artwork deve permanecer empacotado no Evolution.');
+
+const artwork=fs.readFileSync(new URL('../../public/evolution/artwork/loading-master.webp',import.meta.url));
+assert.ok(artwork.length > 50000,'Artwork mestre não pode ser substituído por placeholder.');
+assert.equal(
+  crypto.createHash('sha256').update(artwork).digest('hex'),
+  'a1f092a27506e96dd499d13e2a686bb34048bdf5b2ae7a4096e96f69096e4de3',
+  'Artwork mestre do Loading foi alterado sem nova validação visual.'
+);
 
 const app=fs.readFileSync(new URL('./app/EvolutionApp.tsx',import.meta.url),'utf8');
 assert.match(app,/92,100/,'Loading Evolution precisa concluir em 100%');

@@ -1,20 +1,11 @@
 import '../styles/loading.css';
-import part0 from '../artwork/loading-master.part-0';
-import part1 from '../artwork/loading-master.part-1';
-import part2 from '../artwork/loading-master.part-2';
-import part3 from '../artwork/loading-master.part-3';
-import part4 from '../artwork/loading-master.part-4';
-import part5 from '../artwork/loading-master.part-5';
-import part6 from '../artwork/loading-master.part-6';
-import part7 from '../artwork/loading-master.part-7';
 
 type EvolutionLoadingProps = {
   progress?: number;
   message?: string;
 };
 
-const loadingMasterArtwork='data:image/webp;base64,'+
-  part0+part1+part2+part3+part4+part5+part6+part7;
+const loadingMasterArtwork='./evolution/artwork/loading-master.webp';
 
 export function EvolutionLoading({
   progress=42,
