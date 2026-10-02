@@ -55,6 +55,7 @@ const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), '
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
+const usersCss = readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8');
 const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.meta.url), 'utf8');
 const notificationRecipients = readFileSync(new URL('./screens/PhoenixNotificationRecipients.tsx', import.meta.url), 'utf8');
 const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
@@ -521,6 +522,20 @@ assert.match(budgetsScreen, /data-budget-id=\{item\.id\}[\s\S]*is-search-focused
   'Card de orçamento pesquisado deve possuir âncora e destaque visual.');
 assert.match(megWebCss, /\.meg-web-budget-card\.is-search-focused/,
   'Web deve possuir destaque visual dedicado para o orçamento pesquisado.');
+assert.match(commandPalette, /route: 'users'[\s\S]*kind: 'Usuário'[\s\S]*targetId: item\.id/,
+  'Resultado de Usuários deve preservar o usuário exato localizado.');
+assert.match(phoenixApp, /route === 'users' && targetId[\s\S]*setSearchUserRequest[\s\S]*userId: targetId/,
+  'Shell Web deve encaminhar o usuário exato ao módulo administrativo.');
+assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchUserRequest\}/,
+  'Foco de Usuários vindo da busca deve permanecer exclusivo do Web.');
+assert.match(users, /focusRequest[\s\S]*setSearch\(''\)[\s\S]*setRole\('all'\)[\s\S]*setStatus\('all'\)[\s\S]*setFocusedUserId\(target\.id\)/,
+  'Usuários deve remover filtros visuais e revelar o card localizado sem abrir o gerenciamento.');
+assert.match(users, /data-user-id=\{item\.id\}[\s\S]*is-search-focused/,
+  'Usuário pesquisado deve possuir âncora e destaque visual.');
+assert.match(users, /CSS\.escape\(target\.id\)[\s\S]*scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/,
+  'Busca deve rolar suavemente até o usuário localizado.');
+assert.match(usersCss, /\.px-user-card\.is-search-focused/,
+  'Usuários deve possuir destaque visual dedicado para o resultado pesquisado.');
 assert.match(commandPalette, /Comparação de saldo e ajustes auditáveis/,
   'Busca global não pode continuar descrevendo Conciliação como contrato em auditoria.');
 assert.doesNotMatch(commandPalette, /Contrato ainda em auditoria/,
