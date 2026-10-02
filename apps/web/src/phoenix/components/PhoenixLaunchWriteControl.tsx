@@ -95,6 +95,7 @@ export function PhoenixLaunchWriteControl({
   onBusyChange,
   onAccepted,
   onCommitted,
+  surface = 'phoenix',
 }: {
   reviewed: boolean;
   missing: string[];
@@ -108,7 +109,19 @@ export function PhoenixLaunchWriteControl({
   onBusyChange?: (busy: boolean) => void;
   onAccepted?: () => void;
   onCommitted?: (snapshot: PhoenixReadModel, event?: FinancialEvent) => void;
+  surface?: 'phoenix' | 'web-next';
 }) {
+  const webNextSurface = surface === 'web-next';
+  const surfaceClass = {
+    primary: webNextSurface ? 'primary' : 'px-primary-action',
+    review: webNextSurface ? 'mnx-launch-review-action primary' : 'px-review-launch',
+    panel: webNextSurface ? 'mnx-launch-write-panel' : 'px-launch-write-panel',
+    status: webNextSurface ? 'mnx-launch-write-status' : 'px-launch-write-status',
+    duplicate: webNextSurface ? 'mnx-launch-write-duplicate' : 'px-launch-duplicate-confirm',
+    notice: webNextSurface ? 'mnx-launch-write-note' : 'px-notice ok',
+    confirm: webNextSurface ? 'primary' : 'px-confirm-launch',
+  };
+
   const [runtimeState, setRuntimeState] = useState<RuntimeState>('idle');
   const [runtimeMessage, setRuntimeMessage] = useState('');
   const [commitState, setCommitState] = useState<CommitState>('idle');
@@ -395,16 +408,16 @@ export function PhoenixLaunchWriteControl({
   }
 
   if (!reviewed) {
-    return <button className="px-primary-action px-review-launch" type="button" onClick={onReview}>
+    return <button className={`${surfaceClass.primary} ${surfaceClass.review}`} type="button" onClick={onReview}>
       Continuar
     </button>;
   }
 
   if (!eligibility.eligible) {
     const reason = eligibility.reasons[0] || 'PHOENIX_WRITE_NOT_ENABLED';
-    return <div className="px-launch-write-panel is-protected" role="status">
-      <div><strong>Revisão concluída.</strong><span>{phoenixWriteMessage(reason)}</span></div>
-      <button className="px-primary-action" type="button" disabled>Confirmação ainda protegida</button>
+    return <div className={`${surfaceClass.panel} is-protected`} role="status">
+      <div className={surfaceClass.status}><strong>Revisão concluída.</strong><span>{phoenixWriteMessage(reason)}</span></div>
+      <button className={surfaceClass.primary} type="button" disabled>Confirmação ainda protegida</button>
     </div>;
   }
 
@@ -412,21 +425,21 @@ export function PhoenixLaunchWriteControl({
   const confirmLabel = transferFlow ? 'Confirmar transferência' : benefitFlow ? 'Confirmar movimentação do benefício' : cardFlow ? 'Confirmar compra no cartão' : 'Confirmar lançamento';
   const savingLabel = transferFlow ? 'Confirmando transferência…' : benefitFlow ? 'Gravando Benefício Alimentação…' : cardFlow ? 'Gravando compra no cartão…' : 'Confirmando lançamento…';
 
-  return <div className={`px-launch-write-panel ${commitState === 'confirmed' ? 'is-confirmed' : commitState === 'error' ? 'is-error' : ''}`} aria-live="polite">
-    <div className="px-launch-write-status">
+  return <div className={`${surfaceClass.panel} ${commitState === 'confirmed' ? 'is-confirmed' : commitState === 'error' ? 'is-error' : ''}`} aria-live="polite">
+    <div className={surfaceClass.status}>
       <strong>{commitState === 'confirmed' ? confirmedTitle : 'Revisão concluída'}</strong>
       <span>{commitMessage || runtimeMessage || 'Aguardando verificação do ambiente.'}</span>
     </div>
 
-    {transferFlow && commitState !== 'confirmed' ? <div className="px-notice ok">A transferência é atômica entre origem e destino. Após o aceite do servidor, este formulário fecha e a releitura continua sem bloquear o uso do MEG.</div> : null}
+    {transferFlow && commitState !== 'confirmed' ? <div className={surfaceClass.notice}>A transferência é atômica entre origem e destino. Após o aceite do servidor, este formulário fecha e a releitura continua sem bloquear o uso do MEG.</div> : null}
 
-    {effectiveDuplicateMessage && commitState !== 'confirmed' ? <label className="px-launch-duplicate-confirm">
+    {effectiveDuplicateMessage && commitState !== 'confirmed' ? <label className={surfaceClass.duplicate}>
       <input type="checkbox" checked={duplicateAccepted} onChange={(event) => setDuplicateAccepted(event.target.checked)} />
       <span><strong>Confirmar possível duplicidade</strong><small>{effectiveDuplicateMessage}</small></span>
     </label> : null}
 
     <button
-      className="px-primary-action px-confirm-launch"
+      className={`${surfaceClass.primary} ${surfaceClass.confirm}`}
       type="button"
       disabled={runtimeState !== 'enabled' || commitState === 'saving' || commitState === 'confirmed' || Boolean(effectiveDuplicateMessage && !duplicateAccepted)}
       onClick={() => { void confirmLaunch(); }}
