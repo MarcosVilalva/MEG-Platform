@@ -58,6 +58,7 @@ const revolutionShellCss = readFileSync(new URL('./meg-web-shell-revolution.css'
 const homeRevolutionCss = readFileSync(new URL('./meg-web-home-revolution.css', import.meta.url), 'utf8');
 const movementsRevolutionCss = readFileSync(new URL('./meg-web-movements-revolution.css', import.meta.url), 'utf8');
 const cardsRevolutionCss = readFileSync(new URL('./meg-web-cards-revolution.css', import.meta.url), 'utf8');
+const payablesBenefitRevolutionCss = readFileSync(new URL('./meg-web-payables-benefit-revolution.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -856,6 +857,24 @@ assert.match(cardsRevolutionCss, /:not\(\.px-cards-native-v8\)/,
   'CSS Revolution de Cartões deve excluir explicitamente a experiência Android.');
 assert.doesNotMatch(cardsRevolutionCss, /meg-operational-mobile|android-cleanroom/,
   'Nova camada de Cartões não pode referenciar a camada Android.');
+assert.match(payablesScreen, /data-web-revolution=\{nativeOperational \? undefined : 'payables'\}/,
+  'Pendências Web deve expor o marcador Revolution sem atingir o runtime móvel.');
+assert.match(phoenixWebStyles, /meg-web-cards-revolution\.css'[\s\S]*meg-web-payables-benefit-revolution\.css'/,
+  'Pendências e Benefício Revolution devem ser carregados depois de Cartões.');
+assert.match(payablesBenefitRevolutionCss, /container-name:payables-revolution/,
+  'Pendências deve reagir à largura útil disponível depois da sidebar.');
+assert.match(payablesBenefitRevolutionCss, /\.px-pending-kpis[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/,
+  'Cockpit de Pendências deve manter quatro KPIs operacionais no desktop.');
+assert.match(payablesBenefitRevolutionCss, /\.px-pending-commandbar[\s\S]*grid-template-columns:minmax\(220px,1\.2fr\)/,
+  'Busca, prioridade, agrupamento e filtros devem compor uma barra responsiva única.');
+assert.match(payablesBenefitRevolutionCss, /\.px-pending-scroll-region[\s\S]*overflow:auto/,
+  'Lista de Pendências deve rolar internamente sem deslocar a página.');
+assert.match(payablesBenefitRevolutionCss, /\.px-pending-layout:has\(input\[type="checkbox"\]:checked\)[\s\S]*minmax\(290px,340px\)/,
+  'Resumo de baixa deve aparecer somente quando houver seleção.');
+assert.match(payablesBenefitRevolutionCss, /\.px-pending-confirm-modal[\s\S]*inline-size:min\(760px,calc\(100vw - 48px\)\)/,
+  'Confirmação financeira deve usar modal amplo e estável no Web.');
+assert.match(payablesBenefitRevolutionCss, /@container payables-revolution \(max-width:780px\)/,
+  'Pendências Revolution deve reorganizar conteúdo pelo espaço real do módulo.');
 assert.match(cardsGrid, /px-card-command-group/,
   'Tabela da central deve recuperar iconografia visual por grupo.');
 assert.match(cardIdentity, /assets\/cards\/latam-user-model-v61\.svg/,
@@ -1072,6 +1091,20 @@ assert.doesNotMatch(homeDashboard, /px-home-benefit-chart/,
   'Gráfico do benefício não deve voltar a ocupar espaço sem acrescentar leitura operacional.');
 assert.match(homeNowCss, /\.px-home-benefit-modal/,
   'Acompanhamento do benefício deve possuir modal dedicado.');
+assert.match(homeDashboard, /px-home-benefit-modal" data-web-revolution="benefit"/,
+  'Benefício da Home atual deve expor o marcador Revolution.');
+assert.match(homeAllTime, /data-web-revolution="benefit"/,
+  'Benefício do modo Tudo deve compartilhar a linguagem Revolution.');
+assert.match(payablesBenefitRevolutionCss, /\.px-home-benefit-summary[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,
+  'Benefício deve destacar saldo inicial, créditos, utilização e saldo final em quatro métricas.');
+assert.match(payablesBenefitRevolutionCss, /\.px-home-benefit-equation[\s\S]*overflow-x:auto/,
+  'Memória de cálculo do benefício deve permanecer legível em larguras menores.');
+assert.match(payablesBenefitRevolutionCss, /\.px-home-benefit-list[\s\S]*overflow:auto/,
+  'Movimentações do benefício devem possuir rolagem interna.');
+assert.match(payablesBenefitRevolutionCss, /:has\(>\[data-web-revolution="benefit"\]\)/,
+  'Backdrop Revolution do benefício deve depender do marcador Web aprovado.');
+assert.doesNotMatch(payablesBenefitRevolutionCss, /meg-operational-mobile|android-cleanroom/,
+  'Camada Revolution de Pendências e Benefício não pode tocar no Android.');
 assert.match(homeAllTime, /data-home-alltime-layout="mock-fidelity-v9"/,
   'Home Tudo deve usar o layout v9 reconstruído a partir do mock aprovado.');
 assert.match(homeAllTime, /px-alltime-overview-v8/,
