@@ -36,6 +36,7 @@ import { buildWebNextMovementsModel } from '../web-next/data/movements-view-mode
 import { WebNextPeriodPopover } from '../web-next/components/WebNextPeriodPopover';
 import { WebNextSearchDialog } from '../web-next/components/WebNextSearchDialog';
 import { WebNextStatus } from '../web-next/components/WebNextStatus';
+import { WebNextMovementEditor, type WebNextMovementEditRequest } from '../web-next/components/WebNextMovementEditor';
 import { buildWebNextSearchCatalog } from '../web-next/data/search-model';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
@@ -460,6 +461,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const [launchRequest, setLaunchRequest] = useState(0);
   const [launchPreset, setLaunchPreset] = useState<LaunchPreset>('expense');
   const [editEventRequest, setEditEventRequest] = useState('');
+  const [webNextEditRequest, setWebNextEditRequest] = useState<WebNextMovementEditRequest | null>(null);
   const [searchEventRequest, setSearchEventRequest] = useState<SearchEventRequest | null>(null);
   const [searchReceivableRequest, setSearchReceivableRequest] = useState<SearchReceivableRequest | null>(null);
   const [searchPayableRequest, setSearchPayableRequest] = useState<SearchPayableRequest | null>(null);
@@ -931,6 +933,8 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     if (periodMode !== 'month') resetSpecialPeriod();
     if (nativeOperational && view !== 'movements') navigationHistoryRef.current.push(view);
     setLaunchPreset(preset);
+    setEditEventRequest('');
+    setWebNextEditRequest(null);
     setView('movements');
     setMobileOpen(false);
     setSearchOpen(false);
@@ -943,7 +947,9 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     resetViewport();
     if (periodMode !== 'month') resetSpecialPeriod();
     if (nativeOperational && view !== 'movements') navigationHistoryRef.current.push(view);
+    setLaunchRequest(0);
     setEditEventRequest(eventId);
+    setWebNextEditRequest((current) => ({ token: (current?.token || 0) + 1, eventId }));
     setView('movements');
     setMobileOpen(false);
     setSearchOpen(false);
@@ -1479,18 +1485,15 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         />}
       </WebNextShell>
 
-      {viewData ? <Suspense fallback={null}><PhoenixMovementsV15
+      {viewData ? <WebNextMovementEditor
         data={viewData}
-        periodMode={periodMode}
-        periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(viewData.month)}
         launchRequest={launchRequest}
         launchPreset={launchPreset}
-        editEventRequest={editEventRequest}
-        onNavigateHome={() => navigate('home')}
-        onDataCommitted={commitSnapshot}
-        onOpenPeriod={openPeriodSelector}
-        editorOnly
-      /></Suspense> : null}
+        editRequest={webNextEditRequest}
+        onSnapshot={commitSnapshot}
+        onLaunchConsumed={() => setLaunchRequest(0)}
+        onEditConsumed={() => setWebNextEditRequest(null)}
+      /> : null}
 
       <WebNextPeriodPopover
         open={periodOpen}
