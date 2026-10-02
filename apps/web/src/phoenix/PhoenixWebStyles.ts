@@ -20,5 +20,7 @@ import './phoenix-launch-editor-polish.css';
 
 // Camada canônica Web: deve permanecer por último para não afetar o clean-room móvel.
 import './meg-web-2026.css';
+// Nova geometria oficial Web: precisa permanecer como a última camada.
+import './meg-web-shell-revolution.css';
 
 export {};
