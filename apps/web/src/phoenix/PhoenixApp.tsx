@@ -30,7 +30,9 @@ import {
 import { PhoenixBudgetsGrid } from './screens/PhoenixBudgetsGrid';
 import { WebNextShell } from '../web-next/app/WebNextShell';
 import { WebNextHome } from '../web-next/screens/WebNextHome';
+import { WebNextMovements } from '../web-next/screens/WebNextMovements';
 import { buildWebNextHomeModel } from '../web-next/data/home-view-model';
+import { buildWebNextMovementsModel } from '../web-next/data/movements-view-model';
 import { WebNextPeriodPopover } from '../web-next/components/WebNextPeriodPopover';
 import { WebNextSearchDialog } from '../web-next/components/WebNextSearchDialog';
 import { WebNextStatus } from '../web-next/components/WebNextStatus';
@@ -1377,15 +1379,18 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     </>;
   }
 
-  if (!nativeOperational && view === 'home' && periodMode === 'month') {
-    const homeModel = viewData
+  if (!nativeOperational && ((view === 'home' && periodMode === 'month') || view === 'movements')) {
+    const homeModel = view === 'home' && viewData
       ? buildWebNextHomeModel(viewData, { closingBalance: homePeriodContext?.closingBalance })
+      : null;
+    const movementsModel = view === 'movements' && viewData
+      ? buildWebNextMovementsModel(viewData, { periodMode, periodLabel: periodActiveLabel })
       : null;
     const webNextSearchCatalog = buildWebNextSearchCatalog(viewData, searchEvents || undefined);
 
     return <>
       <WebNextShell
-        route="home"
+        route={view === 'movements' ? 'movements' : 'home'}
         userName={data?.user.name || 'MEG'}
         brandSrc={phoenixBrandAsset('brand/meg-finance-system-mark.svg')}
         periodLabel={periodActiveLabel}
@@ -1403,12 +1408,40 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
           message={loadState.message}
           actionLabel="Tentar novamente"
           onAction={() => setRefreshKey((value) => value + 1)}
-        /> : homeModel ? <WebNextHome model={homeModel} onNavigate={navigate} /> : <WebNextStatus
-          kind="loading"
-          title="Carregando seus dados"
-          message="Organizando sua visão financeira no novo MEG Web."
-        />}
+        /> : view === 'home'
+          ? homeModel ? <WebNextHome model={homeModel} onNavigate={navigate} /> : <WebNextStatus
+              kind="loading"
+              title="Carregando seus dados"
+              message="Organizando sua visão financeira no novo MEG Web."
+            />
+          : movementsModel ? <WebNextMovements
+              model={movementsModel}
+              focusEventRequest={searchEventRequest}
+              onLaunch={requestLaunch}
+              onEditEvent={requestEditEvent}
+              onOpenPeriod={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}
+              onOpenHistory={() => navigate('history')}
+            /> : <WebNextStatus
+              kind="loading"
+              title="Carregando lançamentos"
+              message="Organizando os movimentos financeiros do período."
+            />}
       </WebNextShell>
+
+      {view === 'movements' && viewData ? <Suspense fallback={null}>
+        <PhoenixMovementsV15
+          data={viewData}
+          periodMode={periodMode}
+          periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(viewData.month)}
+          launchRequest={launchRequest}
+          launchPreset={launchPreset}
+          editEventRequest={editEventRequest}
+          onNavigateHistory={() => navigate('history')}
+          onDataCommitted={commitSnapshot}
+          onOpenPeriod={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}
+          editorOnly
+        />
+      </Suspense> : null}
 
       <WebNextPeriodPopover
         open={periodOpen}
@@ -1416,7 +1449,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         month={periodDraftMonth}
         start={periodStart}
         end={periodEnd}
-        currentLabel={nativeHomePeriodTitle}
+        currentLabel={view === 'home' ? nativeHomePeriodTitle : periodActiveLabel}
         loading={periodLoading}
         error={periodError}
         onModeChange={setPeriodDraftMode}
