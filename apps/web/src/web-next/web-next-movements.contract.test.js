@@ -47,15 +47,17 @@ assert.match(app, /WebNextMovements/);
 assert.match(app, /buildWebNextMovementsModel/);
 assert.match(app, /!nativeOperational && view === 'movements'/);
 assert.match(app, /route="movements"/);
-assert.match(app, /<PhoenixMovementsV15[\s\S]*editorOnly/,
-  'Novo\/Editar permanece temporariamente delegado ao editor financeiro canônico.');
+assert.match(app, /<WebNextMovementEditor[\s\S]*launchRequest=\{launchRequest\}[\s\S]*editRequest=\{webNextEditRequest\}/,
+  'Novo/Editar deve usar o editor clean-room Web Next.');
+assert.doesNotMatch(app, /<PhoenixMovementsV15[\s\S]{0,900}editorOnly/,
+  'A rota oficial de Lançamentos não deve mais montar o editor visual Phoenix.');
 assert.match(app, /type LaunchPreset = 'expense' \| 'income' \| 'benefit' \| 'transfer'/);
 
 assert.match(legacyEditor, /editorOnly\?: boolean/);
 assert.match(legacyEditor, /\{!editorOnly \? <>/);
 assert.match(legacyEditor, /launchPreset === 'transfer'/);
 assert.match(legacyEditor, /PhoenixLaunchWriteControl/,
-  'O host transitório deve preservar o gateway de escrita já validado.');
+  'O editor Phoenix permanece no repositório somente como legado até a validação e limpeza segura.');
 
 const combined = screen + model + css;
 assert.doesNotMatch(combined, /\bpx-|phoenix-v|fidelity-v|revolution/i,
