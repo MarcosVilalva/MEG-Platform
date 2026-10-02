@@ -723,7 +723,7 @@ const focusRequestTokenRef = useRef(0);
 
   const identity = resolvePhoenixCardIdentity(selected);
 
-  return <section className={`px-screen px-cards-premium px-cards-wow px-cards-approved ${nativeOperational ? 'px-cards-native-v8' : ''}`} data-cards-layout="fidelity-v6" data-native-operational={nativeOperational ? 'true' : undefined}>
+  return <section className={`px-screen px-cards-premium px-cards-wow px-cards-approved ${nativeOperational ? 'px-cards-native-v8' : ''}`} data-web-revolution={nativeOperational ? undefined : 'cards'} data-cards-layout="fidelity-v6" data-native-operational={nativeOperational ? 'true' : undefined}>
     <header className="px-cards-approved-head">
       <div className="px-cards-approved-heading">
         <span className="px-kicker">CARTÕES · VISÃO GERAL</span>
@@ -919,7 +919,7 @@ const focusRequestTokenRef = useRef(0);
             </>}
           </span>
         </span>
-        {nativeOperational ? <button className="px-cards-approved-open" type="button" onClick={() => openCardCommand(selected.id)}>Abrir central</button> : null}
+        <button className="px-cards-approved-open" type="button" onClick={() => openCardCommand(selected.id)}>{nativeOperational ? 'Abrir central' : 'Abrir central do cartão'}</button>
       </div>
       <div className="px-cards-approved-selected-metric">
         <i aria-hidden="true"><CardUiIcon name="available" /></i>
@@ -943,7 +943,7 @@ const focusRequestTokenRef = useRef(0);
     </>}
 
     {cardCommandOpen ? createPortal(<div className="px-card-command-backdrop px-card-command-approved-backdrop" role="presentation">
-      <section className="px-card-command-modal px-card-command-approved" role="dialog" aria-modal="true" aria-label={`Central do cartão ${selected.name}`}>
+      <section className="px-card-command-modal px-card-command-approved" data-web-revolution={nativeOperational ? undefined : 'card-command'} role="dialog" aria-modal="true" aria-label={`Central do cartão ${selected.name}`}>
         <header className="px-card-command-approved-head">
           <div>
             <span className="px-kicker">CENTRAL DO CARTÃO</span>
