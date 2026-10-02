@@ -185,6 +185,7 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
   const [tab, setTab] = useState<DecisionTab>('radar');
   const [allEvents, setAllEvents] = useState<FinancialEvent[] | null>(null);
   const [loadError, setLoadError] = useState('');
+  const [historyAttempt, setHistoryAttempt] = useState(0);
   const [scenarioKind, setScenarioKind] = useState<ScenarioKind>('expense');
   const [scenarioAmount, setScenarioAmount] = useState('');
   const [scenarioStart, setScenarioStart] = useState(startMonth);
@@ -192,15 +193,16 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
 
   useEffect(() => {
     let active = true;
+    setAllEvents(null);
     setLoadError('');
-    void loadPhoenixAllEvents()
+    void loadPhoenixAllEvents({ force: historyAttempt > 0 })
       .then((result) => { if (active) setAllEvents(result.items); })
       .catch((error: unknown) => {
         if (!active) return;
         setLoadError(error instanceof Error ? error.message : 'Não foi possível carregar o histórico completo.');
       });
     return () => { active = false; };
-  }, []);
+  }, [historyAttempt]);
 
   const events = allEvents || data.events.items;
   const radar = useMemo(() => buildRadar(data, events, today), [data, events, today]);
@@ -237,6 +239,31 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
       ? `O menor saldo projetado é ${money.format(radar.minimumBalance)} em ${fullMonthLabel(radar.minimumMonth)}. Revise primeiro os compromissos anteriores a esse período.`
       : `A menor margem projetada é ${money.format(radar.minimumBalance)} em ${fullMonthLabel(radar.minimumMonth)}. Use o simulador antes de assumir um novo compromisso.`;
 
+  if (!allEvents) {
+    return <section className="px-screen px-decision-center">
+      <header className="px-screen-head">
+        <div>
+          <span className="px-kicker">Decisões</span>
+          <h1>Planeje antes de lançar</h1>
+          <p>O radar só é liberado depois que o histórico financeiro completo for confirmado.</p>
+        </div>
+        <div className="px-screen-head-aside"><span className="px-total-pill">Histórico necessário</span></div>
+      </header>
+      <div className={`px-decision-note ${loadError ? 'is-warning' : ''}`}>
+        {loadError
+          ? <>
+              <strong>Não foi possível montar uma projeção segura</strong>
+              <span>O MEG não usa uma fotografia parcial para orientar uma decisão financeira. {loadError}</span>
+              <button type="button" onClick={() => setHistoryAttempt((current) => current + 1)}>Tentar novamente</button>
+            </>
+          : <>
+              <span className="px-decision-spinner" aria-hidden="true" />
+              <span>Carregando e conferindo o histórico completo antes de calcular o radar…</span>
+            </>}
+      </div>
+    </section>;
+  }
+
   return <section className="px-screen px-decision-center">
     <header className="px-screen-head">
       <div>
@@ -267,9 +294,6 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
       <button type="button" className={tab === 'simulator' ? 'active' : ''} onClick={() => setTab('simulator')}>Simulador preditivo</button>
       <button type="button" className={tab === 'assistant' ? 'active' : ''} onClick={() => setTab('assistant')}>Assistente de decisão</button>
     </nav>
-
-    {loadError ? <div className="px-decision-note is-warning"><strong>Leitura parcial</strong><span>O histórico completo não carregou; a tela está usando o período já disponível. {loadError}</span></div> : null}
-    {!allEvents && !loadError ? <div className="px-decision-note"><span className="px-decision-spinner" aria-hidden="true" /><span>Carregando o histórico somente para esta área de planejamento…</span></div> : null}
 
     {tab === 'radar' ? <>
       <section className="px-screen-kpis px-decision-kpis">

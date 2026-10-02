@@ -52,6 +52,7 @@ const webGridScreens = readFileSync(new URL('./screens/PhoenixWebGridScreens.tsx
 const catalogsGrid = readFileSync(new URL('./screens/PhoenixCatalogsGrid.tsx', import.meta.url), 'utf8');
 const reportsCenter = readFileSync(new URL('./screens/PhoenixReportsCenter.tsx', import.meta.url), 'utf8');
 const decisionCenter = readFileSync(new URL('./screens/PhoenixDecisionCenter.tsx', import.meta.url), 'utf8');
+const decisionCss = readFileSync(new URL('./phoenix-decision-center.css', import.meta.url), 'utf8');
 const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
@@ -557,6 +558,18 @@ assert.match(decisionCenter, /currentMonthRows\?\.balance \?\? radar\.currentBal
   'Assistente de decisão deve preservar saldo projetado igual a zero.');
 assert.doesNotMatch(decisionCenter, /currentMonthRows\?\.balance \|\| radar\.currentBalance/,
   'Saldo zero não pode ser tratado como valor ausente no assistente de decisão.');
+assert.match(decisionCenter, /loadPhoenixAllEvents\(\{ force: historyAttempt > 0 \}\)/,
+  'Decisões deve permitir nova tentativa forçada do histórico completo.');
+assert.match(decisionCenter, /if \(!allEvents\)[\s\S]*Não foi possível montar uma projeção segura/,
+  'Decisões não pode exibir projeções financeiras enquanto o histórico completo não estiver confirmado.');
+assert.match(decisionCenter, /O MEG não usa uma fotografia parcial para orientar uma decisão financeira/,
+  'Falha do histórico deve explicar por que o radar foi bloqueado.');
+assert.match(decisionCenter, /Tentar novamente/,
+  'Falha de histórico deve oferecer recarga explícita.');
+assert.doesNotMatch(decisionCenter, /Leitura parcial[\s\S]*tela está usando o período já disponível/,
+  'Decisões não pode voltar a tratar snapshot parcial como base aceitável de projeção.');
+assert.match(decisionCss, /\.px-decision-note button/,
+  'A ação de recarga segura deve seguir a camada visual de Decisões.');
 assert.doesNotMatch(commandPalette, /Contrato ainda em auditoria/,
   'Texto legado de Conciliação deve permanecer removido.');
 assert.match(commandPalette, /event\.target === event\.currentTarget/,
