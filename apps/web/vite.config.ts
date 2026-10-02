@@ -16,7 +16,8 @@ const webInputs = process.env.CAPACITOR_BUILD
   ? { main: path.resolve(__dirname, 'index.html') }
   : {
       main: path.resolve(__dirname, 'index.html'),
-      phoenix: path.resolve(__dirname, 'phoenix.html')
+      phoenix: path.resolve(__dirname, 'phoenix.html'),
+      evolution: path.resolve(__dirname, 'evolution.html')
     };
 
 export default defineConfig({
