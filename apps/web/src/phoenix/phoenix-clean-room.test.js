@@ -1375,8 +1375,10 @@ assert.match(previewMain, /authenticatedRequest\('\/auth\/me', \{ signal: AbortS
   'Validação de sessão deve ser limitada e não pode reutilizar uma leitura antiga presa em 22%.');
 assert.match(previewMain, /state !== 'checking'[\s\S]*18_000[\s\S]*setState\('prepare-error'\)/,
   'Bootstrap deve possuir watchdog visual para sair do estágio de 22% em falha transitória.');
-assert.match(previewMain, /loginWithServiceRetry[\s\S]*AbortSignal\.timeout\(12_000\)[\s\S]*waitForService\(900\)[\s\S]*AbortSignal\.timeout\(15_000\)/,
-  'Login deve ter timeout e uma única repetição controlada para acordar o serviço.');
+assert.match(previewMain, /loginWithServiceRetry[\s\S]*const deadline = AbortSignal\.timeout\(20_000\)[\s\S]*login\(email, password, \{ signal: deadline \}\)[\s\S]*waitForService\(700\)[\s\S]*return login\(email, password, \{ signal: deadline \}\)/,
+  'Login deve compartilhar um único prazo total entre tentativa inicial e repetição controlada.');
+assert.match(previewMain, /if \(deadline\.aborted \|\| !isTransientAuthError\(cause\)\) throw cause;[\s\S]*if \(deadline\.aborted\) throw cause;/,
+  'Autenticação não pode iniciar nova tentativa depois que o prazo total expirar.');
 assert.match(previewMain, /state === 'checking' \|\| state === 'authenticating' \|\| state === 'preparing'/,
   'Estados de autenticação e preparação devem renderizar somente o boot premium.');
 assert.match(previewAuthCss, /\.px-preview-auth:has\(\.px-preview-button-spinner\)::before,[\s\S]*display:none!important/,
