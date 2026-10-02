@@ -16,3 +16,16 @@ Estrutura inicial:
 - `screens/` — telas;
 - `styles/` — tokens e CSS único;
 - `data/` — adaptadores para contratos/gateways existentes.
+
+## Fundação já criada
+
+A fundação clean-room contém:
+- `app/WebNextShell.tsx`;
+- `components/WebNextSidebar.tsx`;
+- `components/WebNextTopbar.tsx`;
+- `components/WebNextIcon.tsx`;
+- `styles/tokens.css`;
+- `styles/shell.css`;
+- contrato automático `web-next-foundation.contract.test.js`.
+
+Ela ainda não assume rotas de produção. A primeira rota a migrar será a Home.
