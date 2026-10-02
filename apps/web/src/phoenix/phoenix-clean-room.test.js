@@ -56,6 +56,7 @@ const decisionCss = readFileSync(new URL('./phoenix-decision-center.css', import
 const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
 const revolutionShellCss = readFileSync(new URL('./meg-web-shell-revolution.css', import.meta.url), 'utf8');
 const homeRevolutionCss = readFileSync(new URL('./meg-web-home-revolution.css', import.meta.url), 'utf8');
+const movementsRevolutionCss = readFileSync(new URL('./meg-web-movements-revolution.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -988,6 +989,32 @@ assert.match(homeDashboard, /featuredCards = data\.cards\.filter/,
   'Home Revolution deve usar cartões reais e ativos do domínio.');
 assert.match(homeDashboard, /recentMovements = data\.events\.items/,
   'Home Revolution deve usar eventos financeiros reais nas movimentações recentes.');
+assert.match(movementScreen, /data-web-revolution="movements"/,
+  'Lançamentos Web deve expor o marcador oficial Revolution.');
+assert.match(movementScreen, /px-movement-revolution-actions[\s\S]*Nova despesa[\s\S]*Nova receita[\s\S]*Transferência/,
+  'Lançamentos Revolution deve oferecer ações rápidas de criação sem alterar as regras do formulário.');
+assert.match(movementScreen, /function openNewLaunch\(type: TxType\)[\s\S]*initialDraft\(\)[\s\S]*setLaunchOpen\(true\)/,
+  'Ações rápidas da Home de Lançamentos devem reutilizar o fluxo canônico do editor.');
+assert.match(movementScreen, /data-web-revolution="launch-editor"[\s\S]*data-launch-mode=\{editingEventId \? 'edit' : 'new'\}/,
+  'Novo e Editar devem compartilhar o mesmo editor Revolution com contexto explícito.');
+assert.match(phoenixWebStyles, /meg-web-home-revolution\.css'[\s\S]*meg-web-movements-revolution\.css'/,
+  'Lançamentos Revolution deve ser carregado depois da Home e da fundação global.');
+assert.match(movementsRevolutionCss, /container-name:movement-revolution/,
+  'Lançamentos deve responder à largura útil real depois da sidebar.');
+assert.match(movementsRevolutionCss, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+  'Resumo de Lançamentos deve usar três KPIs proporcionais no desktop.');
+assert.match(movementsRevolutionCss, /\.px-v15-launch-table[\s\S]*min-inline-size:1280px/,
+  'Tabela deve preservar legibilidade usando rolagem interna em larguras menores.');
+assert.match(movementsRevolutionCss, /\.px-launch-drawer\[data-web-revolution="launch-editor"\][\s\S]*position:fixed[\s\S]*inset:50% auto auto 50%[\s\S]*transform:translate\(-50%,-50%\)/,
+  'Novo/Editar deve usar modal central grande no Web.');
+assert.match(movementsRevolutionCss, /\.px-launch-form[\s\S]*overflow-y:auto/,
+  'Formulário do lançamento deve rolar internamente sem deslocar a tela.');
+assert.match(movementsRevolutionCss, /@container movement-revolution \(max-width:850px\)/,
+  'Lançamentos Revolution deve reorganizar conteúdo pelo espaço disponível, não por resolução fixa da tela.');
+assert.match(movementsRevolutionCss, /:not\(\[data-meg-fixed-screen="true"\]\)/,
+  'Camada Revolution de Lançamentos deve excluir explicitamente o runtime operacional móvel.');
+assert.doesNotMatch(movementsRevolutionCss, /meg-operational-mobile|android-cleanroom/,
+  'CSS Revolution de Lançamentos não pode tocar na camada Android.');
 assert.match(homeDashboard, /timeZone: 'America\/Sao_Paulo'/,
   'Atividade recente da Home deve respeitar o fuso operacional do MEG.');
 assert.match(homeRevolutionCss, /\.px-main\.px-main-home[\s\S]*grid-template-rows:var\(--meg-shell-topbar-height\) minmax\(0,1fr\)/,

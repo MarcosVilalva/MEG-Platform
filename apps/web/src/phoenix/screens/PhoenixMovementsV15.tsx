@@ -932,6 +932,19 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     setLaunchWriteBusy(false);
   }
 
+  function openNewLaunch(type: TxType) {
+    saveAcceptedRef.current = false;
+    resetLaunch();
+    setEditingEventId(null);
+    setEditingEventUpdatedAt(null);
+    setDetailEvent(null);
+    setDraft({ ...initialDraft(), type, situation: type === 'income' ? 'paid' : 'planned' });
+    setLaunchOpen(true);
+    setDirty(false);
+    setReviewed(false);
+    setEditMessage('');
+  }
+
   function openLaunch(event?: FinancialEvent) {
     saveAcceptedRef.current = false;
     if (event) {
@@ -1255,11 +1268,16 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={gridFilters[key]} options={options} sort={gridSort?.key === key ? gridSort.direction : null} onSort={(direction) => setGridSort({ key, direction })} onChange={(value) => updateGridFilter(key, value)} /></div>;
   }
 
-  return <section className="px-screen px-movements-v15" data-meg-fixed-screen={nativeOperational ? 'true' : undefined}>
+  return <section className="px-screen px-movements-v15" data-web-revolution="movements" data-meg-fixed-screen={nativeOperational ? 'true' : undefined}>
     <section className="px-movements-overview">
       <div className="px-movement-hero-row">
         <header className="px-screen-head">
           <div><span className="px-kicker">{nativeOperational ? 'CONTROLE FINANCEIRO' : 'Lançamentos'}</span><h1>{nativeOperational ? 'Lançamentos' : 'Controle financeiro'}</h1><p>{nativeOperational ? 'Controle seus eventos financeiros.' : 'Inclua e controle seus eventos financeiros.'}</p></div>
+          {!nativeOperational ? <div className="px-movement-revolution-actions" aria-label="Novo lançamento">
+            <button type="button" className="primary" onClick={() => openNewLaunch('expense')}><MovementIcon name="expense" size={15} /><span>Nova despesa</span></button>
+            <button type="button" onClick={() => openNewLaunch('income')}><MovementIcon name="income" size={15} /><span>Nova receita</span></button>
+            <button type="button" onClick={() => openNewLaunch('transfer')}><MovementIcon name="transfer" size={15} /><span>Transferência</span></button>
+          </div> : null}
         </header>
 
         <section className="px-screen-kpis" aria-label="Resumo do período">
@@ -1408,7 +1426,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
 
     {launchOpen ? <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />
-      <aside className="px-launch-drawer" data-phoenix-refresh-month={data.month} aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
+      <aside className="px-launch-drawer" data-web-revolution="launch-editor" data-launch-mode={editingEventId ? 'edit' : 'new'} data-phoenix-refresh-month={data.month} aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
         <div className="px-drawer-head"><div><span className="px-kicker">{editingEventId ? 'Editar evento' : 'Novo evento'}</span><h2>{editingEventId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button className="px-icon-btn" type="button" aria-label="Fechar lançamento" title="Fechar lançamento" onClick={requestCloseLaunch}>×</button></div>
         <div className="px-launch-form px-card">
           <div className="px-segment" aria-label="Tipo do lançamento">{(['expense','income','transfer'] as TxType[]).map((item) => <button key={item} type="button" className={draft.type === item ? 'active' : ''} onClick={() => changeLaunchType(item)}>{item === 'expense' ? 'Despesa' : item === 'income' ? 'Receita' : 'Transferência'}</button>)}</div>

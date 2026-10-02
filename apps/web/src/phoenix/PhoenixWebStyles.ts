@@ -24,5 +24,7 @@ import './meg-web-2026.css';
 import './meg-web-shell-revolution.css';
 // Home Revolution: composição visual exclusiva da Home sobre a fundação responsiva.
 import './meg-web-home-revolution.css';
+// Lançamentos Revolution: módulo e editor Web sobre a nova fundação.
+import './meg-web-movements-revolution.css';
 
 export {};
