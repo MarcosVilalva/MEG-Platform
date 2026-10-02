@@ -3,7 +3,7 @@ import type { SVGProps } from 'react';
 export type WebNextIconName =
   | 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs'
   | 'receivables' | 'cashflow' | 'analytics' | 'budgets' | 'reports' | 'settings'
-  | 'search' | 'bell' | 'menu' | 'logout' | 'calendar' | 'chevron';
+  | 'search' | 'bell' | 'menu' | 'logout' | 'calendar' | 'chevron' | 'plus' | 'food';
 
 export function WebNextIcon({ name, ...props }: SVGProps<SVGSVGElement> & { name: WebNextIconName }) {
   const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -24,5 +24,7 @@ export function WebNextIcon({ name, ...props }: SVGProps<SVGSVGElement> & { name
   if (name === 'menu') return <svg viewBox="0 0 24 24" {...props} {...common}><path d="M5 7h14M5 12h14M5 17h14"/></svg>;
   if (name === 'logout') return <svg viewBox="0 0 24 24" {...props} {...common}><path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/></svg>;
   if (name === 'calendar') return <svg viewBox="0 0 24 24" {...props} {...common}><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>;
+  if (name === 'plus') return <svg viewBox="0 0 24 24" {...props} {...common}><path d="M12 5v14M5 12h14"/></svg>;
+  if (name === 'food') return <svg viewBox="0 0 24 24" {...props} {...common}><path d="M6 3v7M9 3v7M6 7h3M7.5 10v11M15 3c2.5 2.4 2.5 6.1 0 8.5V21M15 3v8.5"/></svg>;
   return <svg viewBox="0 0 24 24" {...props} {...common}><path d="m9 5 7 7-7 7"/></svg>;
 }
