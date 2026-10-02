@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { WebNextRoute } from '../components/WebNextSidebar';
 import { WebNextIcon } from '../components/WebNextIcon';
 import type { WebNextHomeModel } from '../data/home-view-model';
@@ -7,7 +7,7 @@ import '../styles/home.css';
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function pct(value: number | null) {
-  if (value === null || !Number.isFinite(value)) return 'Sem comparação';
+  if (value === null || !Number.isFinite(value)) return 'Sem base comparativa';
   const sign = value > 0 ? '+' : '';
   return `${sign}${value.toFixed(0)}% vs. período anterior`;
 }
@@ -17,8 +17,8 @@ function shortDate(value: string) {
   return day && month ? `${day}/${month}` : value;
 }
 
-function chartPoints(values: number[], width = 560, height = 148) {
-  if (!values.length) return '';
+function chartCoordinates(values: number[], width = 560, height = 148) {
+  if (!values.length) return [] as Array<{x:number;y:number}>;
   const min = Math.min(0, ...values);
   const max = Math.max(1, ...values);
   const range = Math.max(1, max - min);
@@ -26,8 +26,8 @@ function chartPoints(values: number[], width = 560, height = 148) {
   return values.map((value, index) => {
     const x = values.length > 1 ? index * step : width / 2;
     const y = height - ((value - min) / range) * height;
-    return `${x.toFixed(1)},${Math.max(0, Math.min(height, y)).toFixed(1)}`;
-  }).join(' ');
+    return { x, y: Math.max(0, Math.min(height, y)) };
+  });
 }
 
 export function WebNextHome({
@@ -37,9 +37,14 @@ export function WebNextHome({
   model: WebNextHomeModel;
   onNavigate: (route: WebNextRoute) => void;
 }) {
+  const [activeTrendIndex,setActiveTrendIndex]=useState(()=>Math.max(0,model.trend.length-1));
   const maxBar = Math.max(1, ...model.trend.flatMap((item) => [Math.abs(item.income), Math.abs(item.expense)]));
-  const resultPoints = chartPoints(model.trend.map((item) => item.result));
+  const resultCoordinates = chartCoordinates(model.trend.map((item) => item.result));
+  const resultPoints = resultCoordinates.map((point)=>`${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
   const resultPositive = model.kpis.result.value >= 0;
+  const activeTrend = model.trend[Math.min(activeTrendIndex,Math.max(0,model.trend.length-1))] || null;
+  const activePoint = resultCoordinates[Math.min(activeTrendIndex,Math.max(0,resultCoordinates.length-1))] || null;
+  const activeTrendPosition = model.trend.length > 1 ? activeTrendIndex/(model.trend.length-1)*100 : 50;
 
   return <section className="mnx-home" data-web-next-screen="home" data-reference="web-board-1-approved" data-month={model.month}>
     <section className="mnx-home-kpis" aria-label="Resumo financeiro">
@@ -70,13 +75,13 @@ export function WebNextHome({
       <article className="mnx-panel mnx-balance-panel">
         <header><span>Saldo total</span><button type="button" aria-label="Abrir fluxo de caixa" onClick={() => onNavigate('cashflow')}><WebNextIcon name="chevron" /></button></header>
         <strong>{money.format(model.totalBalance)}</strong>
-        <small>em caixa monetário</small>
+        <small>Disponível em caixa monetário</small>
         <div className={resultPositive ? 'is-positive' : 'is-negative'}>{resultPositive ? '+' : ''}{money.format(model.kpis.result.value)} no mês</div>
         <footer><span>Benefício alimentação</span><b>{money.format(model.benefitBalance)}</b></footer>
       </article>
 
       <article className="mnx-panel mnx-assets-panel">
-        <header className="mnx-panel-heading"><div><span>Contas e cartões</span><h2>Visão rápida</h2></div><button type="button" onClick={() => onNavigate('cards')}>Ver todas as contas <WebNextIcon name="chevron" /></button></header>
+        <header className="mnx-panel-heading"><div><span>Contas e cartões</span><h2>Sua carteira financeira</h2></div><button type="button" onClick={() => onNavigate('cards')}>Ver todos <WebNextIcon name="chevron" /></button></header>
         <div className="mnx-assets-strip">
           {model.assets.map((asset) => <button
             type="button"
@@ -89,27 +94,58 @@ export function WebNextHome({
             <span className="mnx-asset-copy"><small>{asset.eyebrow}</small><strong>{asset.name}</strong><em>{asset.value !== undefined ? money.format(asset.value) : asset.meta}</em></span>
           </button>)}
           {model.hiddenAssetCount > 0 ? <button type="button" className="mnx-asset-card is-more" onClick={() => onNavigate('catalogs')}>
-            <strong>+{model.hiddenAssetCount}</strong><small>outras contas</small>
+            <strong>+{model.hiddenAssetCount}</strong><small>outros vínculos</small>
           </button> : null}
           {!model.assets.length && !model.hiddenAssetCount ? <div className="mnx-empty">Nenhuma conta ou cartão ativo.</div> : null}
         </div>
       </article>
 
       <article className="mnx-panel mnx-chart-panel">
-        <header className="mnx-panel-heading"><div><span>Evolução financeira</span><h2>Receitas, despesas e saldo</h2></div><button type="button" onClick={() => onNavigate('reports')}>Últimos 6 meses <WebNextIcon name="chevron" /></button></header>
+        <header className="mnx-panel-heading mnx-chart-heading">
+          <div><span>Evolução financeira</span><h2>Entenda o movimento do seu dinheiro</h2></div>
+          <button type="button" onClick={() => onNavigate('reports')}>Análise completa <WebNextIcon name="chevron" /></button>
+        </header>
+
+        {activeTrend ? <div className="mnx-chart-readout" aria-live="polite">
+          <span><small>Mês selecionado</small><strong>{activeTrend.label}</strong></span>
+          <span className="income"><small>Receitas</small><strong>{money.format(activeTrend.income)}</strong></span>
+          <span className="expense"><small>Despesas</small><strong>{money.format(activeTrend.expense)}</strong></span>
+          <span className={activeTrend.result >= 0 ? 'result positive' : 'result negative'}><small>Saldo</small><strong>{money.format(activeTrend.result)}</strong></span>
+          <em>Passe o mouse pelos meses</em>
+        </div> : null}
+
         <div className="mnx-chart-area">
           <div className="mnx-chart-bars">
-            {model.trend.map((item) => <div className="mnx-chart-month" key={item.month}>
+            {model.trend.map((item,index) => <button
+              type="button"
+              className={`mnx-chart-month ${index===activeTrendIndex?'is-active':''}`}
+              key={item.month}
+              aria-label={`${item.label}: receitas ${money.format(item.income)}, despesas ${money.format(item.expense)}, saldo ${money.format(item.result)}`}
+              onMouseEnter={()=>setActiveTrendIndex(index)}
+              onFocus={()=>setActiveTrendIndex(index)}
+              onClick={()=>setActiveTrendIndex(index)}
+            >
+              <span className="mnx-chart-value income">{money.format(item.income)}</span>
               <div className="mnx-chart-bar-pair">
-                <i className="income" style={{ height: `${Math.max(4, Math.abs(item.income) / maxBar * 100)}%` }} />
-                <i className="expense" style={{ height: `${Math.max(4, Math.abs(item.expense) / maxBar * 100)}%` }} />
+                <i className="income" style={{ height: `${Math.max(5, Math.abs(item.income) / maxBar * 100)}%` }} />
+                <i className="expense" style={{ height: `${Math.max(5, Math.abs(item.expense) / maxBar * 100)}%` }} />
               </div>
-              <span>{item.label}</span>
-            </div>)}
+              <span className="mnx-chart-month-label">{item.label}</span>
+            </button>)}
           </div>
-          {resultPoints ? <svg viewBox="0 0 560 160" preserveAspectRatio="none" role="img" aria-label="Linha de saldo mensal"><polyline points={resultPoints} /></svg> : null}
+          {resultPoints ? <svg viewBox="0 0 560 160" preserveAspectRatio="none" role="img" aria-label="Linha de saldo mensal">
+            <defs><linearGradient id="mnx-result-line" x1="0" x2="1"><stop offset="0" stopColor="#69f5e7"/><stop offset=".55" stopColor="#eafffc"/><stop offset="1" stopColor="#70b8ff"/></linearGradient></defs>
+            <polyline points={resultPoints} />
+            {resultCoordinates.map((point,index)=><circle key={index} className={index===activeTrendIndex?'is-active':''} cx={point.x} cy={point.y} r={index===activeTrendIndex?5.5:3.2}/>)}
+          </svg> : null}
+          {activeTrend && activePoint ? <div className="mnx-chart-tooltip" style={{ '--mnx-chart-x': `${activeTrendPosition}%` } as CSSProperties}>
+            <strong>{activeTrend.label}</strong>
+            <span><i className="income"/>Receitas <b>{money.format(activeTrend.income)}</b></span>
+            <span><i className="expense"/>Despesas <b>{money.format(activeTrend.expense)}</b></span>
+            <span><i className="result"/>Saldo <b>{money.format(activeTrend.result)}</b></span>
+          </div> : null}
         </div>
-        <footer className="mnx-chart-legend"><span className="income">Receitas</span><span className="expense">Despesas</span><span className="result">Saldo</span></footer>
+        <footer className="mnx-chart-legend"><span className="income">Receitas</span><span className="expense">Despesas</span><span className="result">Saldo do mês</span></footer>
       </article>
 
       <article className="mnx-panel mnx-list-panel mnx-recent-panel">
@@ -125,7 +161,7 @@ export function WebNextHome({
       </article>
 
       <article className="mnx-panel mnx-list-panel mnx-alerts-panel">
-        <header className="mnx-panel-heading"><div><span>Pendências e alertas</span><h2>O que pede atenção</h2></div>{model.pendingCount ? <b className="mnx-heading-badge">{model.pendingCount}</b> : null}<button type="button" onClick={() => onNavigate('payables')}>Ver todos <WebNextIcon name="chevron" /></button></header>
+        <header className="mnx-panel-heading"><div><span>Pendências e alertas</span><h2>O que pede sua atenção</h2></div>{model.pendingCount ? <b className="mnx-heading-badge">{model.pendingCount}</b> : null}<button type="button" onClick={() => onNavigate('payables')}>Ver todos <WebNextIcon name="chevron" /></button></header>
         <div className="mnx-home-list">
           {model.alerts.map((item) => <button type="button" key={item.id} onClick={() => onNavigate('payables')}>
             <span className={`is-${item.level}`}><WebNextIcon name={item.level === 'card' ? 'cards' : item.level === 'danger' ? 'bell' : 'calendar'} /></span>
