@@ -202,3 +202,16 @@ A branch `feat/web-next-home-launcher-carousel` incorpora duas regras aprovadas:
 - Home mantém `overflow:hidden`; rolagem é permitida apenas verticalmente dentro de listas densas, com scrollbar visual MEG.
 
 A referência Android define o fluxo de escolha do lançamento, não o layout Web.
+
+
+## 13. Lançamentos clean-room
+
+A branch `feat/web-next-movements-clean-room` inicia a substituição visual da rota de Lançamentos:
+- a leitura, KPIs, busca, filtros, grade, detalhes e responsividade passam para `WebNextMovements.tsx`;
+- a tela Web Next não importa CSS Phoenix;
+- a página permanece sem rolagem global em desktop; apenas a grade usa rolagem vertical interna com scrollbar MEG;
+- o Android continua usando `PhoenixMovementsV15` sem alteração de rota;
+- no Web desktop, `PhoenixMovementsV15` recebe `editorOnly` e permanece montado fora da árvore visual Web Next somente para preservar gravação, edição, cartão, parcelamento, benefício, recorrência e gateways já validados;
+- o visual antigo da grade não é renderizado no modo `editorOnly`.
+
+Esse host de escrita é transitório e pertence à linha **Novo / Editar lançamento** da matriz. Ele não autoriza remoção de `phoenix-launch.css`, `phoenix-launch-dynamic.css`, `phoenix-launch-editor-polish.css` ou gateways até o editor Web Next equivalente ser implementado, testado e validado.
