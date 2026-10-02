@@ -250,6 +250,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
           </form>
         )}
 
+        <div className="evo-login-mobile-visual" aria-hidden="true"/>
         <div className="evo-login-secure"><ShieldIcon/><span>Sessão protegida</span><i/>Conexão segura com o MEG</div>
       </section>
     </section>
