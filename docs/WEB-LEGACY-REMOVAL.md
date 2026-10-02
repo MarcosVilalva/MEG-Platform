@@ -163,3 +163,15 @@ Entretanto, os seguintes elementos Phoenix permanecem necessários para rotas ai
 - loading/empty states específicos de telas ainda Phoenix.
 
 Eles só podem ser removidos quando todos os consumidores tiverem equivalente Web Next validado.
+
+## 10. Home / Sidebar premium antes da validação
+
+A branch `feat/web-next-home-sidebar-v2` refina a Home e o shell clean-room sem criar nova camada paralela:
+- `WebNextHome.tsx` é atualizado no próprio arquivo oficial;
+- `WebNextSidebar.tsx` é atualizado no próprio arquivo oficial;
+- `home.css`, `shell.css` e `tokens.css` são substituídos, não empilhados;
+- gráfico passa a ter leitura por mês, valores e interação;
+- tipografia de Full HD é ampliada;
+- legado Phoenix continua intocado até aprovação explícita.
+
+A validação desta rodada ainda NÃO autoriza exclusão da Home Phoenix.
