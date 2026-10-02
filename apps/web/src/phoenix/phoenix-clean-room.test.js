@@ -580,6 +580,22 @@ assert.match(commandPalette, /aria-activedescendant[\s\S]*aria-selected/,
   'Busca global deve expor a seleção ativa para tecnologias assistivas.');
 assert.match(commandPalette, /↑↓ para selecionar/,
   'Ajuda visual deve refletir os atalhos de teclado realmente disponíveis.');
+for (const [title, section] of [
+  ['Meu perfil', 'profile'],
+  ['Aparência e Home', 'home'],
+  ['Segurança', 'security'],
+  ['Notificações', 'notifications'],
+  ['Sistema', 'system'],
+]) {
+  assert.match(commandPalette, new RegExp(`title: '${title}'.*targetSection: '${section}'`),
+    `Busca global deve indexar diretamente a seção ${title} de Configurações.`);
+}
+assert.match(phoenixApp, /route === 'settings'[\s\S]*setSearchSettingsRequest[\s\S]*section: targetSection/,
+  'Shell Web deve encaminhar a seção exata de Configurações.');
+assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchSettingsRequest\}/,
+  'Foco de Configurações vindo da busca deve permanecer exclusivo do Web.');
+assert.match(settings, /focusRequest[\s\S]*setSection\(focusRequest\.section\)[\s\S]*px-settings-workspace[\s\S]*scrollIntoView/,
+  'Configurações deve abrir e revelar a seção localizada sem executar ações administrativas.');
 
 assert.match(movementScreen, /Novo lançamento/);
 assert.match(movementScreen, /launchRequest/,
