@@ -152,3 +152,14 @@ Após validação explícita da Home Web Next e busca de consumidores:
 `PhoenixHomeAllTime.tsx` permanece enquanto os modos Intervalo/Tudo ainda dependerem dele.
 
 Nenhum item acima deve ser removido antes da validação do usuário.
+
+## 9. Busca e overlays durante a transição
+
+A Home mensal já não depende visualmente de `PhoenixCommandPalette` após o PR de UI transversal.
+
+Entretanto, os seguintes elementos Phoenix permanecem necessários para rotas ainda não migradas:
+- `PhoenixCommandPalette.tsx`;
+- overlays e confirmações Phoenix usados por Lançamentos, Pendentes, Cartões, Configurações e demais telas;
+- loading/empty states específicos de telas ainda Phoenix.
+
+Eles só podem ser removidos quando todos os consumidores tiverem equivalente Web Next validado.

@@ -1,6 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { WebNextSidebar, type WebNextRoute } from '../components/WebNextSidebar';
 import { WebNextTopbar } from '../components/WebNextTopbar';
+import { WebNextConfirm } from '../components/WebNextModal';
 import '../styles/tokens.css';
 import '../styles/shell.css';
 
@@ -30,6 +31,7 @@ export function WebNextShell({
   onLogout: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   return <div className={`meg-next-root ${collapsed ? 'is-sidebar-collapsed' : ''}`} data-web-next="shell" data-web-next-route={route}>
     <WebNextSidebar
@@ -39,7 +41,7 @@ export function WebNextShell({
       brandSrc={brandSrc}
       onNavigate={onNavigate}
       onCollapse={() => setCollapsed(true)}
-      onLogout={onLogout}
+      onLogout={() => setLogoutConfirmOpen(true)}
     />
     <main className="mnx-main">
       <WebNextTopbar
@@ -57,5 +59,15 @@ export function WebNextShell({
         {children}
       </div>
     </main>
+    <WebNextConfirm
+      open={logoutConfirmOpen}
+      title="Deseja sair do MEG?"
+      message="Sua sessão será encerrada neste navegador. Seus dados financeiros permanecem protegidos."
+      confirmLabel="Sim, sair"
+      cancelLabel="Continuar no MEG"
+      tone="danger"
+      onCancel={() => setLogoutConfirmOpen(false)}
+      onConfirm={() => { setLogoutConfirmOpen(false); onLogout(); }}
+    />
   </div>;
 }

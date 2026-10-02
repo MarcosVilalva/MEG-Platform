@@ -49,7 +49,8 @@ assert.match(app, /buildWebNextHomeModel/);
 assert.match(app, /WebNextPeriodPopover/);
 assert.match(app, /!nativeOperational && view === 'home' && periodMode === 'month'/);
 assert.match(app, /brandSrc=\{phoenixBrandAsset\('brand\/meg-finance-system-mark\.svg'\)\}/);
-assert.match(app, /searchOpen && viewData[\s\S]*PhoenixCommandPalette/);
+assert.match(app, /WebNextSearchDialog[\s\S]*results=\{webNextSearchCatalog\}/,
+  'Home Web Next deve usar a busca global clean-room.');
 
 const androidEntry = app.indexOf("if (nativeOperational && viewData");
 const webNextEntry = app.indexOf("if (!nativeOperational && view === 'home' && periodMode === 'month')");
