@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1175" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#00161b"/>
+      <stop offset=".4" stop-color="#07383c"/>
+      <stop offset=".72" stop-color="#042a30"/>
+      <stop offset="1" stop-color="#001318"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="44%" r="48%">
+      <stop offset="0" stop-color="#24ded0" stop-opacity=".18"/>
+      <stop offset=".46" stop-color="#08787d" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#001419" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fadeH" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="black" stop-opacity="0"/>
+      <stop offset=".075" stop-color="white"/>
+      <stop offset=".925" stop-color="white"/>
+      <stop offset="1" stop-color="black" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="centerFade"><rect width="1175" height="1175" fill="url(#fadeH)"/></mask>
+    <pattern id="grid" width="108" height="108" patternUnits="userSpaceOnUse">
+      <path d="M108 0H0V108" fill="none" stroke="#55d9d0" stroke-opacity=".022" stroke-width="1"/>
+    </pattern>
+    <filter id="soft"><feGaussianBlur stdDeviation="15"/></filter>
+  </defs>
+  <rect width="2560" height="1175" fill="url(#bg)"/>
+  <rect width="2560" height="1175" fill="url(#glow)"/>
+  <rect width="2560" height="1175" fill="url(#grid)"/>
+  <ellipse cx="770" cy="-220" rx="1320" ry="570" fill="none" stroke="#53eee0" stroke-opacity=".27" stroke-width="2"/>
+  <ellipse cx="1840" cy="1290" rx="1540" ry="500" fill="none" stroke="#43dcd4" stroke-opacity=".19" stroke-width="2"/>
+  <ellipse cx="1280" cy="1055" rx="850" ry="160" fill="#42e4d3" fill-opacity=".045" filter="url(#soft)"/>
+  <path d="M0 1008 145 932 270 966 390 885 500 930 615 866 692 906V1175H0Z" fill="#01171c" stroke="#38aaa7" stroke-opacity=".10"/>
+  <path d="M2560 1008 2415 932 2290 966 2170 885 2060 930 1945 866 1868 906V1175H2560Z" fill="#01171c" stroke="#38aaa7" stroke-opacity=".10"/>
+  <image href="loading-master.webp" x="692.5" y="0" width="1175" height="1175" mask="url(#centerFade)"/>
+</svg>
