@@ -1,28 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 166" role="img" aria-labelledby="title desc">
   <title id="title">MEG Finanças</title>
   <desc id="desc">Marca MEG Finanças com barras financeiras, seta ascendente e assinatura FINANÇAS</desc>
   <defs>
-    <linearGradient id="megArrow" x1="58" y1="65" x2="178" y2="8" gradientUnits="userSpaceOnUse">
+    <linearGradient id="megArrow" x1="58" y1="65" x2="190" y2="7" gradientUnits="userSpaceOnUse">
       <stop stop-color="#1EA6E8"/>
       <stop offset=".52" stop-color="#1ADBDD"/>
       <stop offset="1" stop-color="#45EFB0"/>
     </linearGradient>
-    <filter id="megGlow" x="-35%" y="-35%" width="170%" height="190%">
-      <feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#00161d" flood-opacity=".58"/>
-      <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#2debd4" flood-opacity=".18"/>
+    <linearGradient id="megWord" x1="26" y1="91" x2="215" y2="126" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset=".56" stop-color="#F8FFFF"/>
+      <stop offset="1" stop-color="#E8FFF9"/>
+    </linearGradient>
+    <filter id="megGlow" x="-40%" y="-40%" width="180%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3.1" flood-color="#00161d" flood-opacity=".62"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="3.2" flood-color="#2debd4" flood-opacity=".24"/>
     </filter>
   </defs>
   <g filter="url(#megGlow)">
-    <rect x="73" y="38" width="12" height="23" rx="2.5" fill="#249BD9"/>
-    <rect x="97" y="25" width="12" height="36" rx="2.5" fill="#14C7E4"/>
-    <rect x="121" y="9" width="12" height="52" rx="2.5" fill="#20D8C8"/>
-    <path d="M55 72c32-4 58-19 81-43l-10-8 45-12-12 43-11-9c-25 25-53 39-87 41z"
-      fill="url(#megArrow)" stroke="#C4FFF2" stroke-width="2.1" stroke-linejoin="round"/>
+    <rect x="82" y="39" width="13" height="24" rx="2.5" fill="#249BD9"/>
+    <rect x="108" y="25" width="13" height="38" rx="2.5" fill="#14C7E4"/>
+    <rect x="134" y="8" width="13" height="55" rx="2.5" fill="#20D8C8"/>
+    <path d="M58 75c35-4 63-21 87-46l-11-9 49-13-13 47-12-10c-27 27-57 42-95 44z"
+      fill="url(#megArrow)" stroke="#C4FFF2" stroke-width="2.2" stroke-linejoin="round"/>
 
-    <text x="39" y="120" fill="#FAFEFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="61" font-weight="900">M</text>
-    <text x="92" y="120" fill="#FAFEFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="61" font-weight="900">E</text>
-    <text x="139" y="120" fill="#FAFEFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="61" font-weight="900">G</text>
+    <text x="25" y="127" fill="url(#megWord)" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="64" font-weight="900">M</text>
+    <text x="101" y="127" fill="url(#megWord)" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="64" font-weight="900">E</text>
+    <text x="158" y="127" fill="url(#megWord)" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="64" font-weight="900">G</text>
 
-    <text x="61" y="150" fill="#45EEDB" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="850" letter-spacing="5.5">FINANÇAS</text>
+    <text x="67" y="158" fill="#45EEDB" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="850" letter-spacing="5.8">FINANÇAS</text>
   </g>
 </svg>
