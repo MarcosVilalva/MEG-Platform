@@ -81,14 +81,14 @@ A partir deste marco:
 
 ### Próximo ponto obrigatório de retomada
 
-**Iniciar a fundação do MEG Evolution Web com separação real de entrypoint/runtime, mantendo o Android atual intocado.**
+**Fundação do MEG Evolution iniciada em `feat/evolution-foundation`, com entrypoint independente `evolution.html`, raiz `apps/web/src/evolution/` e Loading clean-room. Android permanece intocado.**
 
-Ordem inicial:
-1. criar a raiz `apps/web/src/evolution/`;
-2. criar entrypoint Web Evolution separado do runtime Android;
-3. preservar o entrypoint Android atual;
-4. construir Loading → Login → Shell → Home pelas referências aprovadas;
-5. avançar uma tela por vez somente após validação explícita.
+Estado da fundação:
+1. raiz `apps/web/src/evolution/`: CRIADA;
+2. entrypoint `apps/web/evolution.html`: CRIADO e separado do Android;
+3. build Capacitor: permanece usando somente `index.html`, portanto não inclui o entrypoint Evolution;
+4. Loading Evolution: EM CONSTRUÇÃO / PRÓXIMO ITEM PARA VALIDAÇÃO VISUAL;
+5. após validação do Loading: construir Login → Shell → Home, uma tela por vez.
 
 ### Frase obrigatória para retomar após travamento
 
