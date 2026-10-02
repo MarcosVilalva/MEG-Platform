@@ -75,7 +75,10 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - Phoenix: legado temporário, preservado somente para manter o Android atual e dependências ainda não desacopladas;
 - implementações Web Next anteriores (#512–#522): histórico/protótipos úteis, mas **não são a fundação arquitetural final do Evolution**;
 - referências visuais aprovadas de 02/10/2026 permanecem o contrato visual;
-- próximo marco: criar a fundação `apps/web/src/evolution/` e separar o entrypoint Web do entrypoint Android sem alterar o app móvel.
+- fundação Evolution: mesclada na `main` pelo PR #524, commit `640cec2da12897c5515aa5dd6c540448f8d93154`;
+- entrypoint Evolution publicado em `apps/web/evolution.html`;
+- Loading Evolution publicado e aguardando validação visual;
+- próximo marco: validar Loading e, somente depois, construir o Login Evolution sem alterar o app móvel.
 
 **Não retomar Pendentes/baixa sobre a arquitetura Web Next anterior. Primeiro construir a fundação Evolution.**
 
