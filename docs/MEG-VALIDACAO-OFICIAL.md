@@ -147,3 +147,50 @@ Estado:
 - Android: congelado, sem alteração.
 
 **Não avançar para Login Evolution até a validação explícita do Loading publicado no PR #527.**
+
+
+## 6. Regra-mãe de fidelidade visual do Evolution
+
+Esta regra vale para **TODO o MEG Evolution Web**, não apenas para o Loading.
+
+As imagens/pranchas aprovadas são **contrato visual de implementação**, e não simples inspiração.
+
+Aplicação obrigatória:
+- Loading;
+- Login;
+- Shell e Sidebar;
+- Home;
+- Lançamentos;
+- Novo/Editar lançamento;
+- Pendentes e baixa;
+- Cartões, central e fatura;
+- Benefício;
+- Metas e planejamento;
+- Relatórios e fluxo de caixa;
+- Histórico;
+- Configurações e perfil;
+- buscas, filtros, modais, drawers, alertas, toasts, estados vazios e erros.
+
+Regras:
+1. Não reinterpretar livremente uma tela aprovada.
+2. Não reduzir uma composição visual complexa a cards genéricos só porque é mais simples de codificar.
+3. Quando a referência utilizar arte complexa, cenário, brilho, profundidade ou elementos gráficos difíceis de reproduzir fielmente com CSS puro, utilizar artwork/asset próprio do Evolution como base visual, mantendo dinâmicos apenas os elementos que precisarem ser funcionais.
+4. Elementos funcionais devem continuar reais: dados, filtros, botões, formulários, navegação, carrosséis, modais, gráficos, progresso e estados.
+5. Responsividade deve preservar composição, hierarquia e impacto visual, adaptando enquadramento sem deformar a arte.
+6. Não reutilizar visual Phoenix ou Web Next para acelerar entrega.
+7. Fidelidade visual tem prioridade sobre reaproveitamento de componentes antigos.
+8. Uma tela só pode ser marcada como VALIDADA após aprovação explícita do usuário comparando-a com a referência oficial.
+9. Se a implementação ficar apenas “parecida”, “inspirada” ou “na mesma paleta”, ela deve continuar como NÃO VALIDADA.
+
+**Resumo operacional:** o objetivo do Evolution é reproduzir o sistema aprovado, tela por tela, com fidelidade máxima e funcionalidade real.
+
+
+## 7. Cinco pranchas fixadas como contrato mestre
+
+As cinco imagens reafirmadas pelo usuário em 02/10/2026 estão fixadas como matriz visual canônica de **TODO o MEG Evolution**.
+
+O contrato detalhado está em `docs/EVOLUTION-VISUAL-CONTRACT.md` e deve ser lido obrigatoriamente em qualquer retomada.
+
+Regra para telas novas: **não criar uma nova identidade**. Toda variação futura deve ser derivada dessas cinco pranchas e parecer pertencer exatamente ao mesmo produto.
+
+Critério visual simples: ao colocar uma captura de qualquer nova tela ao lado das cinco pranchas, ela deve parecer parte do mesmo MEG sem precisar de explicação.
