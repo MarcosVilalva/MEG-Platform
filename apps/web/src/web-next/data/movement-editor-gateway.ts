@@ -31,9 +31,11 @@ import { cardDueDateForPurchase } from '../../phoenix/data/card-dates';
 
 export type WebNextEditorMode = 'expense' | 'income' | 'benefit' | 'transfer';
 export type WebNextEditorStatus = 'planned' | 'paid';
+export type WebNextBenefitType = 'expense' | 'income';
 
 export type WebNextEditorDraft = {
   mode: WebNextEditorMode;
+  benefitType: WebNextBenefitType;
   description: string;
   date: string;
   amount: number;
@@ -147,6 +149,7 @@ export function blankWebNextEditorDraft(mode: WebNextEditorMode, context: WebNex
   const benefit = mode === 'benefit';
   return {
     mode,
+    benefitType: 'expense',
     description: '',
     date: today(),
     amount: 0,
@@ -180,6 +183,7 @@ export function draftFromWebNextTarget(target: WebNextEditorTarget, context: Web
     : Math.abs(Number(event.signedAmount || event.amount || 0));
   return {
     mode,
+    benefitType: mode === 'benefit' && (event.type === 'income' || event.type === 'redemption') ? 'income' : 'expense',
     description: purchase?.description || event.description,
     date: (purchase?.purchaseDate || event.date).slice(0, 10),
     amount,
@@ -213,7 +217,7 @@ export function webNextEditorFlow(draft: WebNextEditorDraft, context: WebNextEdi
   const benefit = draft.mode === 'benefit';
   const credit = draft.mode === 'expense' && isCreditPayment(payment?.name, payment?.type);
   return {
-    type: draft.mode === 'transfer' ? 'transfer' : draft.mode === 'income' ? 'income' : 'expense',
+    type: draft.mode === 'transfer' ? 'transfer' : draft.mode === 'income' ? 'income' : draft.mode === 'benefit' ? draft.benefitType : 'expense',
     negative: draft.negative,
     benefit,
     credit,
@@ -233,7 +237,7 @@ export function validateWebNextEditorDraft(draft: WebNextEditorDraft, context: W
     if (draft.accountId && draft.accountId === draft.destinationAccountId) errors.push('Origem e destino devem ser diferentes.');
   } else {
     if (!flow.credit && !draft.accountId) errors.push('Selecione a conta.');
-    if (draft.mode === 'expense' || draft.mode === 'benefit') {
+    if (draft.mode === 'expense' || (draft.mode === 'benefit' && draft.benefitType === 'expense')) {
       if (!draft.categoryId) errors.push('Selecione a categoria.');
     }
     if (!draft.paymentMethodId) errors.push(draft.mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.');
@@ -247,7 +251,7 @@ export function validateWebNextEditorDraft(draft: WebNextEditorDraft, context: W
 }
 
 function simpleInput(draft: WebNextEditorDraft, context: WebNextEditorContext): PhoenixSimpleEventInput {
-  const mode = draft.mode === 'income' ? 'income' : 'expense';
+  const mode = draft.mode === 'income' ? 'income' : draft.mode === 'benefit' ? draft.benefitType : 'expense';
   const payment = selectedPayment(draft, context);
   const status: 'planned' | 'paid' = mode === 'income'
     ? 'paid'
