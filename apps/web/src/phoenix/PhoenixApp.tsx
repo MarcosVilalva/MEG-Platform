@@ -1392,6 +1392,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         pendingCount={pendingCount}
         onNavigate={navigate}
         onSearch={() => setSearchOpen(true)}
+        onLaunch={requestLaunch}
         onPeriod={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}
         onProfile={() => navigate('settings')}
         onLogout={requestLogout}

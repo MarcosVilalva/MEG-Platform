@@ -71,7 +71,8 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - Home Web Next: mesclada em `main` no commit `44731391fc3b06a1b32431caff72b307b7eca70e` (PR #514), em validação visual;
 - UI transversal Web Next: mesclada na `main` em `bc4c1466f0e14f772265292c32f9dcd8725d0edb` (PR #515);
 - Home + Sidebar premium: mesclada em `main` no commit `d961b35bf6ef801b16bc44bf11da62097852d4c8` (PR #516), reprovada visualmente pelo usuário por falta de impacto;
-- Home Command Center: branch `feat/web-next-home-command-center`, reconstrução conceitual em andamento;
+- Home Command Center: mesclada em `main` no commit `ab154c5d160e092ec11333d5f06ff3d2edeec93b` (PR #517), ainda aguardando validação visual;
+- Home launcher/carrossel: branch `feat/web-next-home-launcher-carousel`, implementando + Incluir com Despesa/Receita/Alimentação e carrossel sem scroll horizontal;
 - cliente visual em produção: **híbrido temporário** — Home mensal em Web Next; demais rotas ainda Phoenix;
 - situação do runtime atual: **transitória e controlada**.
 
@@ -82,7 +83,7 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 | Área | Referência | Estado clean-room | Legado removido |
 |---|---|---|---|
 | Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | MERGED CLEAN-ROOM · `61049d51` | N/A |
-| Home | Prancha 1 | COMMAND CENTER EM IMPLEMENTAÇÃO · nova hierarquia, liquidez, carteira e cockpit | NÃO — aguardando nova validação |
+| Home | Prancha 1 | COMMAND CENTER + LAUNCHER + CARROSSEL EM IMPLEMENTAÇÃO | NÃO — aguardando nova validação |
 | Lançamentos | Prancha 2 | NÃO INICIADA | NÃO |
 | Novo / Editar lançamento | Prancha 2 | NÃO INICIADA | NÃO |
 | Pendentes / baixa | Prancha 3 | NÃO INICIADA | NÃO |

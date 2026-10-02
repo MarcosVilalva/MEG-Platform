@@ -162,7 +162,6 @@ export function buildWebNextHomeModel(
 
   const cards = data.cards
     .filter((card) => card.isActive)
-    .slice(0, 2)
     .map((card) => ({
       id: `card-${card.id}`,
       kind: 'card' as const,
@@ -173,9 +172,9 @@ export function buildWebNextHomeModel(
       accent: card.color,
     }));
 
+  const monetaryAccountCount = data.accounts.filter((account) => account.isActive && !normalize(account.type).includes('benefit')).length;
   const visibleAssetCount = accounts.length + cards.length;
-  const allAssetCount = data.accounts.filter((account) => account.isActive && !normalize(account.type).includes('benefit')).length
-    + data.cards.filter((card) => card.isActive).length;
+  const allAssetCount = monetaryAccountCount + cards.length;
 
   const recent = data.events.items
     .filter((event) => eventIsActive(event.status) && !isBenefitEvent(event))

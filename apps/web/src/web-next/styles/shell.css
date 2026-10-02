@@ -832,3 +832,73 @@
     border-radius:16px;
   }
 }
+
+.mnx-add-button {
+  min-block-size:42px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 15px;
+  border:1px solid rgba(73,240,223,.42);
+  border-radius:12px;
+  background:
+    linear-gradient(145deg,rgba(73,240,223,.19),rgba(20,133,127,.20)),
+    rgba(5,48,51,.92);
+  color:#f4fffd;
+  font:inherit;
+  cursor:pointer;
+  box-shadow:
+    0 0 24px rgba(73,240,223,.12),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  transition:transform var(--mnx-fast),box-shadow var(--mnx-fast),background var(--mnx-fast);
+}
+
+.mnx-add-button:hover {
+  transform:translateY(-2px);
+  background:
+    linear-gradient(145deg,rgba(73,240,223,.27),rgba(20,133,127,.24)),
+    rgba(5,48,51,.94);
+  box-shadow:0 10px 26px rgba(0,0,0,.14),0 0 32px rgba(73,240,223,.18);
+}
+
+.mnx-add-button svg {
+  inline-size:19px;
+  block-size:19px;
+  filter:drop-shadow(0 0 5px rgba(73,240,223,.32));
+}
+
+.mnx-add-button strong {
+  font-size:10px;
+  letter-spacing:.01em;
+}
+
+@container mnx-main (max-width:1160px) {
+  .mnx-add-button {
+    inline-size:42px;
+    padding:0;
+    justify-content:center;
+  }
+
+  .mnx-add-button strong {
+    display:none;
+  }
+}
+
+.mnx-nav {
+  overflow-x:hidden;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(73,240,223,.42) transparent;
+}
+
+.mnx-nav::-webkit-scrollbar {
+  inline-size:5px;
+}
+
+.mnx-nav::-webkit-scrollbar-track {
+  background:transparent;
+}
+
+.mnx-nav::-webkit-scrollbar-thumb {
+  border-radius:999px;
+  background:rgba(73,240,223,.38);
+}

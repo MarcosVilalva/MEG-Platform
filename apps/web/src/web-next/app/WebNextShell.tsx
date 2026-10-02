@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { WebNextSidebar, type WebNextRoute } from '../components/WebNextSidebar';
 import { WebNextTopbar } from '../components/WebNextTopbar';
 import { WebNextConfirm } from '../components/WebNextModal';
+import { WebNextLaunchSelector, type WebNextLaunchPreset } from '../components/WebNextLaunchSelector';
 import '../styles/tokens.css';
 import '../styles/shell.css';
 
@@ -14,6 +15,7 @@ export function WebNextShell({
   children,
   onNavigate,
   onSearch,
+  onLaunch,
   onPeriod,
   onProfile,
   onLogout,
@@ -26,12 +28,14 @@ export function WebNextShell({
   children: ReactNode;
   onNavigate: (route: WebNextRoute) => void;
   onSearch: () => void;
+  onLaunch: (preset: WebNextLaunchPreset) => void;
   onPeriod: () => void;
   onProfile: () => void;
   onLogout: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [launchSelectorOpen, setLaunchSelectorOpen] = useState(false);
 
   return <div className={`meg-next-root ${collapsed ? 'is-sidebar-collapsed' : ''}`} data-web-next="shell" data-web-next-route={route}>
     <WebNextSidebar
@@ -51,6 +55,7 @@ export function WebNextShell({
         collapsed={collapsed}
         onToggleSidebar={() => setCollapsed((value) => !value)}
         onSearch={onSearch}
+        onAdd={() => setLaunchSelectorOpen(true)}
         onPeriod={onPeriod}
         onPayables={() => onNavigate('payables')}
         onProfile={onProfile}
@@ -59,6 +64,11 @@ export function WebNextShell({
         {children}
       </div>
     </main>
+    <WebNextLaunchSelector
+      open={launchSelectorOpen}
+      onClose={() => setLaunchSelectorOpen(false)}
+      onSelect={onLaunch}
+    />
     <WebNextConfirm
       open={logoutConfirmOpen}
       title="Deseja sair do MEG?"
