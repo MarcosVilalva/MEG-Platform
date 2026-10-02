@@ -204,19 +204,34 @@ O PR #518 (`0cdc42d2`) incorporou duas regras aprovadas:
 A referência Android define o fluxo de escolha do lançamento, não o layout Web.
 
 
-## 13. Lançamentos Web Next e host transitório do editor
+## 13. Lançamentos Web Next
 
-A branch `feat/web-next-movements-command-center` inicia a substituição visual de Lançamentos sem duplicar regras financeiras:
+O PR #519 (`495a73e2`) concluiu a substituição visual da listagem de Lançamentos sem duplicar regras financeiras:
 - `WebNextMovements.tsx` assume a leitura, filtros, KPIs, paginação e histórico visual da rota Web;
 - `movements-view-model.ts` é a fronteira de leitura entre o Web Next e o modelo financeiro existente;
 - a lista permanece cronológica, sem agrupamento por categoria, com forma de pagamento e situação visíveis;
 - a área principal não possui rolagem geral nem horizontal; somente a grade densa possui rolagem vertical personalizada;
 - Despesa, Receita e Transferência chamam o fluxo financeiro já existente;
-- `PhoenixMovementsV15.tsx` permanece montado somente com `editorOnly` para servir temporariamente o Novo/Editar, parcelamento, cartão, benefício, transferência, validações e gateways de escrita já testados.
+- no `main` do PR #519, `PhoenixMovementsV15.tsx` ainda servia temporariamente o Novo/Editar via `editorOnly`, preservando as regras já testadas.
 
-Esse host NÃO é uma segunda tela oficial de Lançamentos. Ele é uma ponte funcional temporária e deverá desaparecer quando Novo/Editar lançamento for reconstruído em Web Next e validado.
+A branch `feat/web-next-movement-editor` substitui esse último host visual na rota Web por `WebNextMovementEditor`, mantendo escrita, edição, cartão, benefício e transferência atrás da fronteira `web-next/data/movement-editor-gateway.ts`.
 
-Até essa etapa:
+Até a validação visual explícita do novo editor:
 - não remover `phoenix-launch.css`, `phoenix-launch-dynamic.css`, `phoenix-launch-editor-polish.css` ou `phoenix-launch-write.css`;
 - não remover `PhoenixLaunchWriteControl` nem os gateways de escrita usados pelo editor;
 - `meg-web-movements-revolution.css` continua candidato a remoção somente após validação visual da nova rota e auditoria de consumidores.
+
+
+## 14. Novo / Editar lançamento Web Next
+
+A etapa `feat/web-next-movement-editor` cria uma única implementação visual clean-room para Novo/Editar na Web:
+- modal central responsivo, fixo no viewport e com rolagem somente interna;
+- Despesa, Receita, Alimentação e Transferência no mesmo editor canônico;
+- Alimentação suporta gasto e crédito/recarga, com conta benefício e Verocard travados;
+- cartão mantém seleção, parcelamento de 1 a 48 e vencimento calculado pelo domínio existente;
+- possível duplicidade continua exigindo confirmação explícita;
+- edição/exclusão preserva auditoria e usa os gateways financeiros existentes;
+- nenhum CSS Phoenix é importado pelo novo componente;
+- o Android permanece congelado.
+
+O código visual antigo de lançamento ainda não deve ser excluído neste PR. Primeiro é necessário validar o editor novo no Web, auditar consumidores remanescentes e só então remover `editorOnly`, CSS exclusivos e testes aposentados em um ciclo de limpeza próprio.
