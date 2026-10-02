@@ -213,7 +213,7 @@ export function EvolutionHome(){
   });
   const donut='conic-gradient('+stops.join(',')+')';
   const userName=session?.user.name||'Matheus Silva';
-  const initials=userName.split(/\s+/).filter(Boolean).slice(0,2).map(v=>v[0]).join('').toUpperCase()||'M';
+  const initials=(userName.trim()[0]||'M').toUpperCase();
   const visibleCards=data.cards.slice(0,3);
 
   return <main className="evo-home" data-evolution-screen="home" data-evolution-home-fidelity="command-center-stage-1">
