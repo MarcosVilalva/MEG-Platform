@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import {
   buildPhoenixPdf,
@@ -159,6 +159,21 @@ export function PhoenixReportsCenter({ data }: { data: PhoenixReadModel }) {
   const [busy, setBusy] = useState<'xlsx' | 'pdf' | ''>('');
   const report = useMemo(() => buildReport(data, selected), [data, selected]);
   const current = cards.find((item) => item.id === selected) || cards[0];
+  const trend = data.analytics.monthlyTrend.slice(-12);
+  const trendMax = Math.max(1, ...trend.flatMap((item) => [Math.abs(item.income), Math.abs(item.expense)]));
+  const reportCategories = data.analytics.categories.filter((item) => Math.abs(item.amount) > 0.004).slice(0, 6);
+  const categoryTotal = reportCategories.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+  const donutPalette = ['#00e7d4', '#ff4f72', '#45a7ff', '#a36bff', '#ffad3d', '#5bd37d'];
+  let donutCursor = 0;
+  const donutStops = reportCategories.map((item, index) => {
+    const start = donutCursor;
+    const slice = categoryTotal > 0 ? Math.abs(item.amount) / categoryTotal * 100 : 0;
+    donutCursor += slice;
+    return `${donutPalette[index % donutPalette.length]} ${start.toFixed(2)}% ${donutCursor.toFixed(2)}%`;
+  });
+  const donutStyle = {
+    '--meg-report-donut': categoryTotal > 0 ? `conic-gradient(${donutStops.join(',')})` : 'conic-gradient(var(--line) 0 100%)',
+  } as CSSProperties;
 
   function exportReport(format: 'xlsx' | 'pdf') {
     if (busy || !report.rows.length) return;
@@ -189,6 +204,41 @@ export function PhoenixReportsCenter({ data }: { data: PhoenixReadModel }) {
       <div><span className="px-kicker">Relatórios e exportações</span><h1>Central de saída e análise</h1><p>Transforme os dados confirmados do MEG em relatórios de apoio, planilhas de trabalho e documentos para conferência. A exportação respeita o período financeiro carregado.</p></div>
       <div className="px-screen-head-aside"><span className="px-status reconciled">Período · {monthLabel(data.month)}</span></div>
     </header>
+
+    <section className="meg-board4-report-kpis" aria-label="Resumo financeiro do período">
+      <article className="income"><span>Receitas</span><strong>{money.format(Number(data.analytics.summary.income || 0))}</strong><small>Período carregado</small></article>
+      <article className="expense"><span>Despesas</span><strong>{money.format(Number(data.analytics.summary.expense || 0))}</strong><small>Período carregado</small></article>
+      <article className="balance"><span>Saldo do período</span><strong>{money.format(Number(data.analytics.summary.realizedResult || 0))}</strong><small>Resultado realizado</small></article>
+      <article className="variation"><span>Resultado projetado</span><strong>{money.format(Number(data.analytics.summary.projectedResult || 0))}</strong><small>Visão consolidada</small></article>
+    </section>
+
+    <section className="meg-board4-report-analytics">
+      <article className="px-card meg-board4-trend-card">
+        <header><div><span className="px-kicker">Receitas x despesas</span><h2>Evolução financeira</h2></div><small>{trend.length} competência(s)</small></header>
+        <div className="meg-board4-trend-bars">
+          {trend.map((item) => <div className="meg-board4-trend-month" key={item.month}>
+            <div className="meg-board4-bar-pair">
+              <i className="income" style={{ height: `${Math.max(4, Math.abs(item.income) / trendMax * 100)}%` }} />
+              <i className="expense" style={{ height: `${Math.max(4, Math.abs(item.expense) / trendMax * 100)}%` }} />
+            </div>
+            <span>{monthLabel(item.month).split(' ')[0].slice(0,3)}</span>
+          </div>)}
+          {!trend.length ? <p className="px-empty">Sem série histórica disponível.</p> : null}
+        </div>
+        <footer><span><i className="income" />Receitas</span><span><i className="expense" />Despesas</span></footer>
+      </article>
+
+      <article className="px-card meg-board4-distribution-card">
+        <header><div><span className="px-kicker">Distribuição de despesas</span><h2>Principais categorias</h2></div></header>
+        <div className="meg-board4-donut-row">
+          <div className="meg-board4-donut" style={donutStyle}><span><strong>{money.format(categoryTotal)}</strong><small>total</small></span></div>
+          <div className="meg-board4-donut-legend">
+            {reportCategories.map((item, index) => <div key={item.name}><i style={{ background: donutPalette[index % donutPalette.length] }} /><span>{item.name}</span><strong>{categoryTotal > 0 ? `${(Math.abs(item.amount) / categoryTotal * 100).toFixed(0)}%` : '0%'}</strong><em>{money.format(item.amount)}</em></div>)}
+            {!reportCategories.length ? <p className="px-empty">Sem categorias no período.</p> : null}
+          </div>
+        </div>
+      </article>
+    </section>
 
     <section className="meg-web-report-grid">
       {cards.map((item) => {
