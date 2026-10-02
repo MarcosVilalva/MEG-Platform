@@ -7,11 +7,13 @@ import {
   phoenixExportFilename,
   type PhoenixExportReport,
 } from '../table-export-core';
+import { megAlert } from '../meg-confirm';
 
 type ReportKind = 'executive' | 'movements' | 'payables' | 'receivables' | 'audit';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' });
+const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
 function monthLabel(value: string) {
   const [year, month] = value.split('-').map(Number);
@@ -21,8 +23,19 @@ function monthLabel(value: string) {
 }
 
 function brDate(value: string) {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? String(value).slice(0, 10) : date.format(parsed);
+  const raw = String(value ?? '').trim();
+  const isoDate = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/);
+  if (isoDate) return `${isoDate[3]}/${isoDate[2]}/${isoDate[1]}`;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? raw.slice(0, 10) : date.format(parsed);
+}
+
+function brDateTime(value: string) {
+  const raw = String(value ?? '').trim();
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? new Date(`${raw}T12:00:00-03:00`)
+    : new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? raw : dateTime.format(parsed);
 }
 
 function reportBase(data: PhoenixReadModel, title: string, headers: string[], rows: string[][]): PhoenixExportReport {
@@ -109,7 +122,7 @@ function buildReport(data: PhoenixReadModel, kind: ReportKind): PhoenixExportRep
 
   const headers = ['Data/hora', 'Usuário', 'Entidade', 'Ação', 'Identificador'];
   const rows = data.financialAudit.items.map((item) => [
-    brDate(item.at),
+    brDateTime(item.at),
     item.actor?.name || item.actor?.email || 'Sistema',
     item.entity,
     item.action,
@@ -152,11 +165,20 @@ export function PhoenixReportsCenter({ data }: { data: PhoenixReadModel }) {
     setBusy(format);
     try {
       const bytes = format === 'xlsx' ? buildPhoenixXlsx(report) : buildPhoenixPdf(report);
+      if (!bytes.byteLength) throw new Error('EXPORT_EMPTY');
       download(
         bytes,
         format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf',
         phoenixExportFilename(report, format),
       );
+    } catch {
+      void megAlert({
+        kicker: 'Exportação',
+        title: 'Não foi possível gerar o arquivo',
+        message: `O MEG não confirmou a geração do ${format === 'xlsx' ? 'Excel' : 'PDF'}. Nenhum arquivo incompleto foi baixado.`,
+        danger: true,
+        buttonLabel: 'Fechar',
+      });
     } finally {
       window.setTimeout(() => setBusy(''), 240);
     }
