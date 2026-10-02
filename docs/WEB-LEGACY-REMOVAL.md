@@ -193,7 +193,7 @@ O legado Phoenix permanece bloqueado para remoção até aprovação explícita 
 
 ## 12. Launcher Web e carrossel da Home
 
-A branch `feat/web-next-home-launcher-carousel` incorpora duas regras aprovadas:
+O PR #518 (`0cdc42d2`) incorporou duas regras aprovadas:
 - botão `+ Incluir` na topbar Web Next;
 - launcher inicial com `Despesa`, `Receita` e `Alimentação`, inspirado funcionalmente no Android;
 - cada opção usa os presets financeiros canônicos existentes: `expense`, `income`, `benefit`;
@@ -202,3 +202,21 @@ A branch `feat/web-next-home-launcher-carousel` incorpora duas regras aprovadas:
 - Home mantém `overflow:hidden`; rolagem é permitida apenas verticalmente dentro de listas densas, com scrollbar visual MEG.
 
 A referência Android define o fluxo de escolha do lançamento, não o layout Web.
+
+
+## 13. Lançamentos Web Next e host transitório do editor
+
+A branch `feat/web-next-movements-command-center` inicia a substituição visual de Lançamentos sem duplicar regras financeiras:
+- `WebNextMovements.tsx` assume a leitura, filtros, KPIs, paginação e histórico visual da rota Web;
+- `movements-view-model.ts` é a fronteira de leitura entre o Web Next e o modelo financeiro existente;
+- a lista permanece cronológica, sem agrupamento por categoria, com forma de pagamento e situação visíveis;
+- a área principal não possui rolagem geral nem horizontal; somente a grade densa possui rolagem vertical personalizada;
+- Despesa, Receita e Transferência chamam o fluxo financeiro já existente;
+- `PhoenixMovementsV15.tsx` permanece montado somente com `editorOnly` para servir temporariamente o Novo/Editar, parcelamento, cartão, benefício, transferência, validações e gateways de escrita já testados.
+
+Esse host NÃO é uma segunda tela oficial de Lançamentos. Ele é uma ponte funcional temporária e deverá desaparecer quando Novo/Editar lançamento for reconstruído em Web Next e validado.
+
+Até essa etapa:
+- não remover `phoenix-launch.css`, `phoenix-launch-dynamic.css`, `phoenix-launch-editor-polish.css` ou `phoenix-launch-write.css`;
+- não remover `PhoenixLaunchWriteControl` nem os gateways de escrita usados pelo editor;
+- `meg-web-movements-revolution.css` continua candidato a remoção somente após validação visual da nova rota e auditoria de consumidores.
