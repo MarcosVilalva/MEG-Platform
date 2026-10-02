@@ -1,0 +1,23 @@
+:root{
+  --evo-bg:#071321;
+  --evo-bg-deep:#07111f;
+  --evo-panel:#0a1728;
+  --evo-panel-2:#0d1d2d;
+  --evo-panel-3:#102938;
+  --evo-ink:#eef4f6;
+  --evo-muted:#a5b3bd;
+  --evo-line:#294052;
+  --evo-brand:#53cf8d;
+  --evo-brand-2:#71dda4;
+  --evo-cyan:#4bbac7;
+  --evo-danger:#e2636b;
+  --evo-warning:#e2b65d;
+  --evo-info:#93b9d8;
+  --evo-positive-bg:#10372f;
+  --evo-radius-sm:12px;
+  --evo-radius-md:18px;
+  --evo-radius-lg:28px;
+  --evo-shadow:0 30px 90px rgba(0,0,0,.34);
+  --evo-glow:0 0 42px rgba(83,207,141,.14);
+  color-scheme:dark;
+}
