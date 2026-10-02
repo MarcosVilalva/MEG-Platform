@@ -694,17 +694,19 @@ export function WebNextLaunchEditor({
           {draft.type !== 'transfer' ? <section className="mnx-editor-section">
             <div className="mnx-editor-section-title"><span>02</span><div><strong>Forma do movimento</strong><small>Conta, pagamento e classificação.</small></div></div>
 
-            {draft.type === 'expense' || benefit ? <div className="mnx-editor-payment-modes" role="group" aria-label="Tipo de pagamento">
+            {draft.type !== 'transfer' ? <div className="mnx-editor-payment-modes" role="group" aria-label={draft.type === 'income' ? 'Tipo de recebimento' : 'Tipo de pagamento'}>
               {([
-                ['cash','À vista','Pix, débito, boleto ou dinheiro'],
-                ['credit','Crédito','Cartão e parcelamento 1–48x'],
-                ['crediario','Crediário','Parcelamento fora do cartão'],
-                ['benefit','Benefício','Verocard Alimentação'],
+                ['cash',draft.type === 'income' ? 'Recebimento' : 'À vista',draft.type === 'income' ? 'Pix, transferência ou crédito em conta' : 'Pix, débito, boleto ou dinheiro'],
+                ...(draft.type === 'expense' ? [
+                  ['credit','Crédito','Cartão e parcelamento 1–48x'],
+                  ['crediario','Crediário','Parcelamento fora do cartão'],
+                ] : []),
+                ['benefit','Benefício',draft.type === 'income' ? 'Crédito / recarga do Verocard' : 'Verocard Alimentação'],
               ] as Array<[PaymentMode,string,string]>).map(([mode,label,detail])=><button
                 key={mode}
                 type="button"
                 className={paymentMode === mode ? 'is-active' : ''}
-                disabled={Boolean(editingId && (editingCardMeta || editingBenefit) && paymentMode !== mode)}
+                disabled={Boolean(editingId && paymentMode !== mode)}
                 onClick={()=>selectPaymentMode(mode)}
               ><strong>{label}</strong><small>{detail}</small></button>)}
             </div> : null}
