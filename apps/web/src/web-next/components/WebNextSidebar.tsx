@@ -31,6 +31,7 @@ export function WebNextSidebar({
   pendingCount,
   brandSrc,
   onNavigate,
+  onCollapse,
   onLogout,
 }: {
   route: WebNextRoute;
@@ -38,6 +39,7 @@ export function WebNextSidebar({
   pendingCount: number;
   brandSrc?: string;
   onNavigate: (route: WebNextRoute) => void;
+  onCollapse: () => void;
   onLogout: () => void;
 }) {
   return <aside className="mnx-sidebar" aria-label="Menu principal">
@@ -64,7 +66,7 @@ export function WebNextSidebar({
     </nav>
 
     <footer className="mnx-side-footer">
-      <button className="mnx-collapse-hint" type="button" aria-hidden="true" tabIndex={-1}><span>«</span><strong>Recolher menu</strong></button>
+      {!collapsed ? <button className="mnx-collapse-hint" type="button" onClick={onCollapse}><span>«</span><strong>Recolher menu</strong></button> : null}
       <div className="mnx-environment"><i /><span><strong>Ambiente financeiro</strong><small>Sincronização protegida</small></span></div>
       <button className="mnx-logout" type="button" onClick={onLogout}><WebNextIcon name="logout" aria-hidden="true" /><span>Sair</span></button>
     </footer>
