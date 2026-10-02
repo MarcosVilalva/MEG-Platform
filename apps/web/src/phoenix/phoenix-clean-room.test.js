@@ -62,6 +62,7 @@ const payablesBenefitRevolutionCss = readFileSync(new URL('./meg-web-payables-be
 const reportsRevolutionCss = readFileSync(new URL('./meg-web-reports-revolution.css', import.meta.url), 'utf8');
 const cashflowRevolutionCss = readFileSync(new URL('./meg-web-cashflow-revolution.css', import.meta.url), 'utf8');
 const board4ReportsCashflowCss = readFileSync(new URL('./meg-web-board4-reports-cashflow.css', import.meta.url), 'utf8');
+const board4PlanningGoalsCss = readFileSync(new URL('./meg-web-board4-planning-goals.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -1747,6 +1748,20 @@ assert.match(board4ReportsCashflowCss, /meg-board4-cashflow-kpis[\s\S]*repeat\(3
   'Fluxo de Caixa aprovado deve destacar Entradas, Saídas e Saldo projetado.');
 assert.doesNotMatch(board4ReportsCashflowCss, /meg-operational-mobile|android-cleanroom|meg-cleanroom-mobile/,
   'Fidelidade da prancha Web 4 não pode tocar no Android.');
+
+
+assert.match(budgetsScreen, /meg-board4-planning-panels[\s\S]*Utilização por grupo/,
+  'Planejamento deve seguir a prancha Web 4 com leitura visual por grupo.');
+assert.match(budgetsScreen, /meg-board4-goals-overview[\s\S]*Progresso do período/,
+  'Metas devem compartilhar a mesma tela operacional sem duplicar o domínio de orçamentos.');
+assert.match(budgetsScreen, /planningNote[\s\S]*margem disponível/,
+  'Resumo de planejamento deve ser derivado dos dados reais do período.');
+assert.match(board4PlanningGoalsCss, /container-name:planning-board4/,
+  'Planejamento e Metas devem responder ao espaço útil do módulo.');
+assert.match(board4PlanningGoalsCss, /meg-board4-goal-ring[\s\S]*conic-gradient/,
+  'Metas aprovadas devem possuir leitura circular de progresso.');
+assert.doesNotMatch(board4PlanningGoalsCss, /meg-operational-mobile|android-cleanroom|meg-cleanroom-mobile/,
+  'Camada Web de Planejamento e Metas não pode tocar no Android.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
