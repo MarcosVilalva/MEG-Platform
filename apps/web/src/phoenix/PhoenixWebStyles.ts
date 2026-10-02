@@ -26,5 +26,7 @@ import './meg-web-shell-revolution.css';
 import './meg-web-home-revolution.css';
 // Lançamentos Revolution: módulo e editor Web sobre a nova fundação.
 import './meg-web-movements-revolution.css';
+// Cartões Revolution: grid, resumo e central responsiva exclusivos do Web.
+import './meg-web-cards-revolution.css';
 
 export {};
