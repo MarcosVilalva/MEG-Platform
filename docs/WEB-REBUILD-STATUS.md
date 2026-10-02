@@ -67,7 +67,8 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 Última base conhecida antes da fundação clean-room:
 - branch oficial: `main`;
 - governança clean-room consolidada em `main`: `8a1ad79b427c356bd0478060dd464515e5ce5a88` (PR #512);
-- fundação Web Next: em implementação na branch `feat/web-next-foundation`;
+- fundação Web Next: mesclada em `main` no commit `61049d51dc0cc17e710366073a36802eb8e3de64`;
+- Home Web Next: branch `feat/web-next-home`, ainda não validada pelo usuário;
 - cliente visual em produção: Phoenix + camadas MEG Web Revolution/Fidelity;
 - Web Next ainda NÃO está roteado em produção;
 - situação do runtime atual: **transitória**.
@@ -78,8 +79,8 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 
 | Área | Referência | Estado clean-room | Legado removido |
 |---|---|---|---|
-| Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | CONSTRUÍDA CLEAN-ROOM, AGUARDANDO MERGE/ROTEAMENTO | N/A |
-| Home | Prancha 1 | PRÓXIMA | NÃO |
+| Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | MERGED CLEAN-ROOM · `61049d51` | N/A |
+| Home | Prancha 1 | EM IMPLEMENTAÇÃO CLEAN-ROOM · competência mensal pronta para validação após merge | NÃO — aguardando validação |
 | Lançamentos | Prancha 2 | NÃO INICIADA | NÃO |
 | Novo / Editar lançamento | Prancha 2 | NÃO INICIADA | NÃO |
 | Pendentes / baixa | Prancha 3 | NÃO INICIADA | NÃO |

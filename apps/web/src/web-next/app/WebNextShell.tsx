@@ -7,6 +7,7 @@ import '../styles/shell.css';
 export function WebNextShell({
   route,
   userName,
+  brandSrc,
   periodLabel,
   pendingCount = 0,
   children,
@@ -18,6 +19,7 @@ export function WebNextShell({
 }: {
   route: WebNextRoute;
   userName: string;
+  brandSrc?: string;
   periodLabel: string;
   pendingCount?: number;
   children: ReactNode;
@@ -34,8 +36,9 @@ export function WebNextShell({
       route={route}
       collapsed={collapsed}
       pendingCount={pendingCount}
+      brandSrc={brandSrc}
       onNavigate={onNavigate}
-      onSearch={onSearch}
+      onCollapse={() => setCollapsed(true)}
       onLogout={onLogout}
     />
     <main className="mnx-main">

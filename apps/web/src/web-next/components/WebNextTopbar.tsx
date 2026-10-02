@@ -33,13 +33,13 @@ export function WebNextTopbar({
     </div>
 
     <div className="mnx-topbar-actions">
-      <button className="mnx-icon-button" type="button" aria-label="Buscar" onClick={onSearch}><WebNextIcon name="search" aria-hidden="true" /></button>
+      <button className="mnx-period" type="button" onClick={onPeriod}><WebNextIcon name="calendar" aria-hidden="true" /><strong>{periodLabel}</strong><WebNextIcon name="chevron" aria-hidden="true" /></button>
+      <button className="mnx-top-search" type="button" aria-label="Buscar no MEG" onClick={onSearch}><WebNextIcon name="search" aria-hidden="true" /><span>Buscar no MEG...</span><kbd>Ctrl K</kbd></button>
       <button className="mnx-icon-button mnx-alert-button" type="button" aria-label="Pendências" onClick={onPayables}>
         <WebNextIcon name="bell" aria-hidden="true" />
         {pendingCount > 0 ? <b>{pendingCount > 99 ? '99+' : pendingCount}</b> : null}
       </button>
-      <button className="mnx-period" type="button" onClick={onPeriod}><WebNextIcon name="calendar" aria-hidden="true" /><strong>{periodLabel}</strong><WebNextIcon name="chevron" aria-hidden="true" /></button>
-      <button className="mnx-profile" type="button" onClick={onProfile}><span>{initial}</span><strong>{firstName}</strong></button>
+      <button className="mnx-profile" type="button" onClick={onProfile}><span>{initial}</span><strong>{firstName}</strong><WebNextIcon name="chevron" aria-hidden="true" /></button>
     </div>
   </header>;
 }
