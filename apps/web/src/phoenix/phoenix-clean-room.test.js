@@ -57,6 +57,7 @@ const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), '
 const revolutionShellCss = readFileSync(new URL('./meg-web-shell-revolution.css', import.meta.url), 'utf8');
 const homeRevolutionCss = readFileSync(new URL('./meg-web-home-revolution.css', import.meta.url), 'utf8');
 const movementsRevolutionCss = readFileSync(new URL('./meg-web-movements-revolution.css', import.meta.url), 'utf8');
+const cardsRevolutionCss = readFileSync(new URL('./meg-web-cards-revolution.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -831,6 +832,30 @@ assert.match(cardsGrid, /function CardUiIcon/,
   'Cartões V6 deve usar iconografia vetorial consistente em vez de glifos soltos.');
 assert.match(cardsGrid, /px-cards-approved-progress-row/,
   'Percentual de uso deve estar em uma linha estrutural própria e nunca quebrar verticalmente.');
+assert.match(cardsGrid, /data-web-revolution=\{nativeOperational \? undefined : 'cards'\}/,
+  'Cartões Web deve expor o marcador oficial Revolution sem atingir o runtime móvel.');
+assert.match(cardsGrid, /Abrir central do cartão/,
+  'Cartões Revolution deve oferecer acesso explícito à central no Web, sem depender só do duplo clique.');
+assert.match(cardsGrid, /data-web-revolution=\{nativeOperational \? undefined : 'card-command'\}/,
+  'Central do cartão deve expor marcador Revolution exclusivo do Web.');
+assert.match(phoenixWebStyles, /meg-web-movements-revolution\.css'[\s\S]*meg-web-cards-revolution\.css'/,
+  'Cartões Revolution deve ser carregado depois de Lançamentos e da fundação global.');
+assert.match(cardsRevolutionCss, /container-name:cards-revolution/,
+  'Cartões deve reagir à largura útil disponível depois da sidebar.');
+assert.match(cardsRevolutionCss, /\.px-cards-approved-grid[\s\S]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+  'Desktop largo deve apresentar três cartões proporcionais quando houver espaço.');
+assert.match(cardsRevolutionCss, /\.px-cards-approved-art[\s\S]*aspect-ratio:1\.586\/1/,
+  'Arte dos cartões deve manter proporção real de cartão sem deformação.');
+assert.match(cardsRevolutionCss, /\.px-cards-approved-selected[\s\S]*repeat\(4,minmax\(145px,\.75fr\)\)/,
+  'Resumo selecionado deve distribuir os KPIs sem quebrar a largura do módulo.');
+assert.match(cardsRevolutionCss, /\.px-card-command-approved\[data-web-revolution="card-command"\][\s\S]*inline-size:min\(1180px,calc\(100vw - 56px\)\)[\s\S]*overflow:hidden/,
+  'Central Revolution deve usar modal amplo e estável no viewport.');
+assert.match(cardsRevolutionCss, /@container cards-revolution \(max-width:820px\)/,
+  'Cartões deve reorganizar grid e central pelo espaço real do módulo.');
+assert.match(cardsRevolutionCss, /:not\(\.px-cards-native-v8\)/,
+  'CSS Revolution de Cartões deve excluir explicitamente a experiência Android.');
+assert.doesNotMatch(cardsRevolutionCss, /meg-operational-mobile|android-cleanroom/,
+  'Nova camada de Cartões não pode referenciar a camada Android.');
 assert.match(cardsGrid, /px-card-command-group/,
   'Tabela da central deve recuperar iconografia visual por grupo.');
 assert.match(cardIdentity, /assets\/cards\/latam-user-model-v61\.svg/,
