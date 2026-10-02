@@ -90,7 +90,9 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - fundação Evolution: mesclada na `main` pelo PR #524, commit `640cec2da12897c5515aa5dd6c540448f8d93154`;
 - entrypoint Evolution publicado em `apps/web/evolution.html`;
 - Loading Evolution: composição minimalista reprovada; reconstrução cinematográfica mesclada no PR #527 / `17176eea`; CI/smoke/deploy verdes; aguardando validação visual;
-- próximo marco: validar Loading e, somente depois, construir o Login Evolution sem alterar o app móvel.
+- pré-validação visual automática/manual: operacionalizada no PR #529 / `fb76537a`; screenshots reais passam a ser inspecionados antes de comunicar prontidão;
+- Loading atual: REPROVADO NA PRÉ-VALIDAÇÃO INTERNA após captura 1254×1254; continuar correção sem chamar o usuário para nova checagem;
+- próximo marco: atingir pré-validação interna do Loading e, somente depois, solicitar aprovação final do usuário; então construir Login Evolution.
 
 **Não retomar Pendentes/baixa sobre a arquitetura Web Next anterior. Primeiro construir a fundação Evolution.**
 
