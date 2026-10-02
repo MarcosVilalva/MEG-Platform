@@ -224,6 +224,10 @@ assert.match(history, /Integridade confirmada pelo backend/,
 assert.match(history, /Histórico legado/,
   'Histórico anterior à auditoria normalizada deve permanecer preservado');
 assert.match(history, /Exportar filtrado/);
+assert.match(history, /const dateTime = new Intl\.DateTimeFormat\('pt-BR',[\s\S]*timeZone: 'America\/Sao_Paulo'/,
+  'Histórico deve exibir data e hora no mesmo fuso usado pelos filtros de dia.');
+assert.match(history, /function localDay[\s\S]*timeZone: 'America\/Sao_Paulo'/,
+  'Filtro Hoje e timestamps do Histórico devem compartilhar o fuso operacional.');
 assert.match(users, /Administração habilitada/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(users, /Remover usuário/,
