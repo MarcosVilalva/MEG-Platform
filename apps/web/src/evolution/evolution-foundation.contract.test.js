@@ -27,12 +27,16 @@ assert.match(html,/\/src\/evolution\/main\.tsx/);
 assert.doesNotMatch(html,/phoenix/i);
 
 const loading=fs.readFileSync(new URL('./screens/EvolutionLoading.tsx',import.meta.url),'utf8');
-assert.match(loading,/data-evolution-loading-fidelity="master-artwork-fullscreen"/);
+assert.match(loading,/data-evolution-loading-fidelity="master-artwork-fluid-viewport"/);
 assert.match(loading,/\.\/evolution\/artwork\/loading-master\.webp/);
+assert.match(loading,/evo-loading-atmosphere/);
+assert.match(loading,/evo-loading-terrain-left/);
+assert.match(loading,/evo-loading-terrain-right/);
 assert.match(loading,/role="progressbar"/);
 assert.match(loading,/aria-valuenow=\{normalized\}/);
 assert.match(loading,/Carregando seus dados/);
 assert.match(loading,/Organizando suas finanças/);
+assert.doesNotMatch(loading,/loading-master-wide|loading-master-ultrawide|loading-master-tall/,'Loading deve depender apenas do artwork mestre aprovado.');
 
 const artwork=fs.readFileSync(new URL('../../public/evolution/artwork/loading-master.webp',import.meta.url));
 assert.ok(artwork.length > 50000,'Artwork mestre não pode ser substituído por placeholder.');
@@ -57,12 +61,13 @@ assert.match(loginScreen,/Entrar no MEG/);
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
 
 const loadingCss=fs.readFileSync(new URL('./styles/loading.css',import.meta.url),'utf8');
-assert.match(loadingCss,/\.evo-loading-artboard\{[\s\S]*width:100vw;[\s\S]*height:100dvh;/,'Loading deve ocupar todo o viewport.');
-assert.match(loadingCss,/filter:blur\(13px\) brightness\(\.68\)/,'Extensão visual deve preencher a tela sem criar um quadrado destacado.');
+assert.match(loadingCss,/width:100vw;/,'Loading deve ocupar toda a largura do viewport.');
+assert.match(loadingCss,/height:100dvh;/,'Loading deve ocupar toda a altura do viewport.');
+assert.match(loadingCss,/left:calc\(50vw - 25\.55dvh\)/,'Barra landscape deve acompanhar a arte central.');
+assert.match(loadingCss,/top:calc\(50dvh \+ 19\.08vw\)/,'Barra portrait deve acompanhar a arte central.');
 assert.match(loadingCss,/mask-image:linear-gradient/,'Artwork central deve se fundir ao cenário estendido.');
-assert.doesNotMatch(loadingCss,/box-shadow:0 0 90px/,'Loading não pode parecer um artboard quadrado sobre o fundo.');
-assert.match(loadingCss,/left:24\.45%/);
-assert.match(loadingCss,/top:69\.08%/);
+assert.match(loadingCss,/evo-loading-terrain-left/,'Cenário wide deve prolongar o relevo lateral.');
+assert.doesNotMatch(loadingCss,/filter:blur\(13px\)/,'Loading fullscreen não pode usar cópia borrada do artwork.');
 
 const systemEntry=fs.readFileSync(new URL('./screens/EvolutionSystemEntry.tsx',import.meta.url),'utf8');
 assert.match(systemEntry,/LOGIN <b>→<\/b> LOADING <b>→<\/b> SISTEMA/);
@@ -73,4 +78,4 @@ for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']
   assert.ok(tokens.toLowerCase().includes(color),'paleta oficial ausente');
 }
 
-console.log('MEG Evolution auth -> loading -> system contract OK');
+console.log('MEG Evolution login -> loading fluid viewport -> system contract OK');
