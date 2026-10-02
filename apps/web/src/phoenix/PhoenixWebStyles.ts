@@ -36,5 +36,7 @@ import './meg-web-reports-revolution.css';
 import './meg-web-cashflow-revolution.css';
 // Prancha 4 Web aprovada: fidelidade visual de Relatórios e Fluxo de Caixa.
 import './meg-web-board4-reports-cashflow.css';
+// Prancha 4 Web aprovada: Planejamento e Metas sobre o núcleo real de orçamentos.
+import './meg-web-board4-planning-goals.css';
 
 export {};
