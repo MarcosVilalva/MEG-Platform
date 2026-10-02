@@ -234,3 +234,18 @@ A branch `feat/web-next-launch-editor-clean-room` substitui a superfície visual
 - Android continua usando a superfície Phoenix existente e não muda nesta etapa.
 
 Esta etapa NÃO autoriza remoção imediata dos gateways nem do editor Phoenix. Após CI, publicação e validação visual, deve-se auditar consumidores e então extrair/remover a apresentação antiga que ficar órfã.
+
+
+## 15. Login / autenticação Web Next
+
+A branch `feat/web-next-auth-validated` migra somente a apresentação Web da autenticação:
+- `WebNextAuth.tsx` e `auth.css` formam a superfície oficial Web;
+- login, sessão, cadastro e recuperação continuam usando `auth-client` e o controlador de `preview-main.tsx`;
+- o runtime Android continua usando a superfície Phoenix atual e não recebe alteração visual nesta etapa;
+- a Web não exibe mais “Phoenix V15” nem “Ambiente de validação” no login;
+- a apresentação Phoenix de autenticação só poderá ser removida quando o Login Web Next for validado e a superfície Android deixar de depender dela ou for separada explicitamente.
+
+Até a validação visual:
+- não remover `preview-auth-flow.css`;
+- não remover o markup Phoenix de autenticação usado pelo Android;
+- não alterar biometria, sessão, `auth-client`, cadastro ou recuperação de senha por motivo visual.
