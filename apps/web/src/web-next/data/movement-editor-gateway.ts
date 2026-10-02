@@ -187,7 +187,7 @@ export function draftFromWebNextTarget(target: WebNextEditorTarget, context: Web
     description: purchase?.description || event.description,
     date: (purchase?.purchaseDate || event.date).slice(0, 10),
     amount,
-    negative: !purchase && Number(event.signedAmount || 0) < 0 && mode === 'income',
+    negative: !purchase && !benefit && Number(event.amount || 0) < 0,
     status: mode === 'income' || benefit
       ? 'paid'
       : event.status === 'paid' || event.status === 'confirmed' || event.status === 'reconciled'
