@@ -7,7 +7,7 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
-type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets';
+type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets' | 'reports';
 type AgendaDisplayGroup = {
   key: string;
   dueDate: string;
