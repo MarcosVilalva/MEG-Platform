@@ -62,6 +62,10 @@ assert.match(loadingCss,/\.evo-loading-artboard\{[\s\S]*width:100vw;[\s\S]*heigh
 assert.match(loadingCss,/filter:blur\(13px\) brightness\(\.68\)/,'Extensão visual deve preencher a tela sem criar um quadrado destacado.');
 assert.match(loadingCss,/mask-image:linear-gradient/,'Artwork central deve se fundir ao cenário estendido.');
 
+const loginCss=fs.readFileSync(new URL('./styles/login.css',import.meta.url),'utf8');
+assert.match(loginCss,/input:-webkit-autofill/,'Login deve neutralizar o fundo automático do navegador nos campos preenchidos.');
+assert.match(loginCss,/background-clip:text/,'Autofill não deve pintar um bloco atrás do texto.');
+
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
 assert.match(home,/data-evolution-home-fidelity="command-center-stage-1"/);
 assert.match(home,/Seu dinheiro,/);
@@ -75,6 +79,9 @@ assert.match(home,/Resumo do mês/);
 assert.match(home,/financeClient\.getSummary/,'Home deve usar dados financeiros reais quando autenticada.');
 assert.match(home,/cardsClient\.list/,'Home deve usar cartões reais quando autenticada.');
 assert.match(home,/payablesClient\.list/,'Home deve usar vencimentos reais quando autenticada.');
+assert.doesNotMatch(home,/Plano Premium|Upgrade agora/,'Home não deve exibir oferta Premium nesta fase.');
+assert.match(home,/carouselCards/,'Carrossel deve manter janela cíclica de cartões.');
+assert.match(home,/normalizedCardIndex/,'Carrossel deve normalizar o índice ativo.');
 
 const homeCss=fs.readFileSync(new URL('./styles/home.css',import.meta.url),'utf8');
 assert.match(homeCss,/grid-template-columns:214px minmax\(0,1fr\)/,'Desktop deve preservar sidebar integrada.');

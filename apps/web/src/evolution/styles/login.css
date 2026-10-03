@@ -311,6 +311,18 @@
   font-size:14px;
 }
 .evo-login-field input::placeholder{color:#617d80}
+
+.evo-login-field input:-webkit-autofill,
+.evo-login-field input:-webkit-autofill:hover,
+.evo-login-field input:-webkit-autofill:focus,
+.evo-login-field input:autofill{
+  -webkit-text-fill-color:#e9f5f5;
+  caret-color:#e9f5f5;
+  -webkit-background-clip:text;
+  background-clip:text;
+  box-shadow:0 0 0 1000px transparent inset;
+  transition:background-color 9999s ease-out 0s;
+}
 .evo-login-eye{
   display:grid;place-items:center;
   width:31px;height:31px;
