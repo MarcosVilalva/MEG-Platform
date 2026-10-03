@@ -105,6 +105,11 @@ assert.doesNotMatch(home,/metricSparks/,'Sparklines decorativas fixas não devem
 assert.match(home,/trendMonthLabel/,'Rótulos do fluxo devem interpretar competências ISO corretamente.');
 assert.match(home,/\.\/brand\/meg-loading-lockup\.svg/,'Home e Login devem compartilhar a mesma marca canônica.');
 
+const transfer=fs.readFileSync(new URL('./screens/EvolutionTransferModal.tsx',import.meta.url),'utf8');
+assert.match(transfer,/financeClient\.createTransfer/,'Transferência deve usar a API financeira real.');
+assert.match(transfer,/financeClient\.getMonetaryBalance/,'Transferência deve validar saldo de origem.');
+assert.match(transfer,/Saldo insuficiente/,'Transferência deve bloquear insuficiência de saldo.');
+
 const payables=fs.readFileSync(new URL('./screens/EvolutionPayables.tsx',import.meta.url),'utf8');
 assert.match(payables,/data-evolution-screen="payables"/);
 assert.match(payables,/financeClient\.getMonetaryBalance/,'Baixa deve validar saldo monetário na data selecionada.');
@@ -132,7 +137,8 @@ const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import
 assert.match(launch,/Novo Lançamento/);
 assert.match(launch,/À Vista/);
 assert.match(launch,/Crédito/);
-assert.doesNotMatch(launch,/Crediário|paymentMode==='installment'/,'Crediário está aposentado para novos lançamentos Web.');
+assert.match(launch,/Crediário/,'Crediário deve existir no Novo Lançamento conforme a referência aprovada.');
+assert.match(launch,/payablesClient\.create/,'Crediário deve criar obrigações reais em Pendentes.');
 assert.match(launch,/Benefício/);
 assert.match(launch,/financeClient\.createEvent/,'Lançamento comum deve usar API financeira real.');
 assert.match(launch,/cardsClient\.createPurchase/,'Compra no crédito deve usar API real de cartões.');
@@ -149,7 +155,8 @@ assert.match(launch,/accountClassificationOf/,'Classificação deve filtrar cont
 assert.match(launch,/evo-launch-summary-detailed/,'Novo Lançamento deve manter resumo detalhado antes de salvar.');
 assert.match(launch,/evo-launch-category-shortcuts/,'Novo Lançamento deve oferecer atalhos visuais de categoria.');
 assert.match(launch,/LaunchStep='choose'\|'form'\|'success'/,'Novo Lançamento deve seguir seleção do tipo, formulário e confirmação como no app.');
-assert.match(launch,/Escolha o tipo de lançamento/,'Abertura deve começar pela escolha Despesa, Receita ou Alimentação.');
+assert.match(launch,/Escolha o tipo de lançamento/,'Abertura deve começar pela escolha do tipo.');
+assert.match(launch,/Transferência/,'Abertura deve oferecer Transferência.');
 assert.match(launch,/Campos automáticos/,'Benefício deve manter conta, forma e situação automáticas.');
 assert.match(launch,/Visualizar parcelas/,'Crédito deve preservar prévia de parcelas.');
 assert.doesNotMatch(launch,/<select className="evo-launch-more"/,'Categorias não podem voltar ao seletor nativo do navegador.');
@@ -185,7 +192,8 @@ assert.match(launchCss,/\.evo-launch-backdrop/);
 assert.match(launchCss,/backdrop-filter:blur/);
 assert.match(launchCss,/\.evo-home-add/);
 assert.match(launchCss,/\.evo-picker-grid/,'Picker visual deve usar grid próprio no Web.');
-assert.match(launchCss,/\.evo-launch-choice-cards/,'Seleção do tipo deve usar os três cartões funcionais do app.');
+assert.match(launchCss,/\.evo-launch-choice-cards/,'Seleção do tipo deve usar cartões funcionais próprios.');
+assert.match(launchCss,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,'Modalidades de pagamento devem exibir as quatro opções aprovadas em desktop.');
 assert.match(launchCss,/grid-template-columns:minmax\(0,1\.15fr\) minmax\(330px,\.85fr\)/,'Web deve ampliar o formulário em duas áreas funcionais, sem esticar a folha mobile.');
 assert.match(launchCss,/\.evo-launch-history/,'Autocomplete visual deve ter superfície própria.');
 
