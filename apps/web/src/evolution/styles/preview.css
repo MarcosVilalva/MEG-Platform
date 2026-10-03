@@ -203,3 +203,42 @@
 
 .evo-preview-table.compact .row{grid-template-columns:36px minmax(0,1fr) 120px 18px}
 .evo-preview-table .row.simple>span:first-child{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;color:#8ba9aa;background:rgba(98,188,182,.07)}
+
+
+/* Preview QA 01 — Home deve preservar a ordem mental do App sem comprimir o fluxo. */
+.evo-preview-home-grid{
+  height:auto;
+  align-content:start;
+  grid-template-rows:126px 132px 154px;
+}
+.evo-preview-flow{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+}
+.evo-preview-flow .evo-preview-metric{
+  min-height:0;
+  padding:10px;
+  gap:7px;
+}
+.evo-preview-flow .evo-preview-metric>span{
+  width:30px;
+  height:30px;
+  flex-basis:30px;
+}
+.evo-preview-flow .evo-preview-metric strong{
+  font-size:13px;
+}
+.evo-preview-benefit{
+  height:154px;
+  align-self:start;
+}
+.evo-preview-quick{
+  height:154px;
+  align-self:start;
+}
+.evo-preview-quick>div{
+  grid-template-columns:repeat(4,1fr);
+}
+.evo-preview-quick button{
+  min-height:70px;
+}
