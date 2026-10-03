@@ -268,7 +268,7 @@ export function EvolutionHome(){
           {card:data.cards[(normalizedCardIndex+1)%cardCount],sourceIndex:(normalizedCardIndex+1)%cardCount,position:'right' as const}
         ];
 
-  return <main className="evo-home" data-evolution-screen={activeView} data-evolution-home-fidelity="command-center-stage-1">
+  return <main className="evo-home" data-evolution-screen={activeView} data-evolution-home-fidelity="product-v2">
     <div className="evo-home-atmosphere" aria-hidden="true"><i/><i/><i/></div>
 
     <aside className="evo-home-sidebar">
@@ -291,7 +291,7 @@ export function EvolutionHome(){
     <section className={'evo-home-workspace view-'+activeView+(session&&!hasLoadedReal?' initial-sync':'')}>
       {session&&!hasLoadedReal&&<div className="evo-home-initial-sync" role="status"><span><Icon name="wallet"/></span><strong>Carregando seus dados reais</strong><small>Preparando saldos, cartões, pendências e histórico sem exibir valores de demonstração.</small></div>}
       <header className="evo-home-topbar">
-        <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar movimentações, metas, relatórios..."/><kbd>⌘ K</kbd></label>
+        <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar no MEG..."/><kbd>⌘ K</kbd></label>
         <button className="evo-home-add" type="button" onClick={()=>setLaunchOpen(true)}><Icon name="plus"/><span>Incluir</span></button>
         <div className="evo-home-top-actions">
           <div className="evo-home-period">
@@ -317,15 +317,9 @@ export function EvolutionHome(){
       <section className="evo-home-hero">
         <div className="evo-home-canonical-scene" aria-hidden="true"><img src="./evolution/artwork/home-hero-reference.webp" alt=""/></div>
         <div className="evo-home-hero-copy">
-          <h1>Seu dinheiro,<br/><em>mais inteligente.</em></h1>
-          <p>Mais controle, mais clareza e melhores decisões para o seu amanhã.</p>
-        </div>
-        <div className="evo-home-mountain" aria-hidden="true"><i/><i/><i/></div>
-        <div className="evo-home-hero-cards" aria-hidden="true">
-          <span>PLANEJAR<br/>CONQUISTAR<br/>EVOLUIR</span>
-          <span className="main">◈</span>
-          <span>LIBERDADE<br/>COMEÇA COM<br/>ESCOLHAS<br/>INTELIGENTES</span>
-          <span>DISCIPLINA<br/>HOJE<br/>LIBERDADE<br/>SEMPRE</span>
+          <span className="evo-home-hero-eyebrow">PAINEL FINANCEIRO</span>
+          <h1>Visão financeira</h1>
+          <p>Saldo, compromissos, cartões e metas organizados para <strong>{monthLabel(month)}</strong>.</p>
         </div>
       </section>
 
