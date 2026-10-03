@@ -59,10 +59,13 @@ assert.doesNotMatch(app,/EvolutionSystemEntry/,'Porta técnica temporária deve 
 assert.match(app,/screen==='login'\|\|screen==='loading'\|\|screen==='system'/,'QA precisa permitir acesso direto às três fases.');
 
 const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.meta.url),'utf8');
-assert.match(loginScreen,/data-evolution-login-fidelity="stage-1"/);
+assert.match(loginScreen,/data-evolution-login-fidelity="product-v2"/);
 assert.match(loginScreen,/Bem-vindo de volta/);
 assert.match(loginScreen,/Entrar no MEG/);
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
+assert.match(loginScreen,/\.\/brand\/meg-loading-lockup\.svg/,'Login deve usar a marca canônica do MEG.');
+assert.doesNotMatch(loginScreen,/evolution\/brand\/meg-mark\.svg/,'A versão interpretada da marca não pode voltar ao Login.');
+assert.match(home,/\.\/brand\/meg-loading-lockup\.svg/,'Home e Login devem compartilhar a mesma marca canônica.');
 
 const loadingCss=fs.readFileSync(new URL('./styles/loading.css',import.meta.url),'utf8');
 assert.match(loadingCss,/\.evo-loading-artboard\{[\s\S]*width:100vw;[\s\S]*height:100dvh;/,'Loading deve ocupar todo o viewport.');
