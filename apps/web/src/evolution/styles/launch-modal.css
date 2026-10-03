@@ -5,14 +5,14 @@
   display:grid;
   place-items:center;
   padding:18px;
-  background:rgba(0,8,15,.63);
-  -webkit-backdrop-filter:blur(5px) saturate(.88);
-  backdrop-filter:blur(5px) saturate(.88);
+  background:rgba(0,8,15,.54);
+  -webkit-backdrop-filter:blur(2px) saturate(.92);
+  backdrop-filter:blur(2px) saturate(.92);
 }
 .evo-launch-modal{
   position:relative;
   width:min(650px,calc(100vw - 30px));
-  max-height:calc(100dvh - 34px);
+  max-height:min(748px,calc(100dvh - 42px));
   overflow:hidden;
   display:grid;
   grid-template-rows:auto auto minmax(0,1fr) auto;
@@ -53,16 +53,16 @@
   position:relative;
   z-index:1;
   display:grid;
-  grid-template-columns:58px minmax(0,1fr) 38px;
+  grid-template-columns:52px minmax(0,1fr) 38px;
   gap:14px;
   align-items:center;
-  padding:23px 28px 15px;
+  padding:18px 28px 12px;
 }
 .evo-launch-title-icon{
   display:grid;
   place-items:center;
-  width:58px;
-  height:58px;
+  width:52px;
+  height:52px;
   border:1px solid rgba(66,255,235,.9);
   border-radius:12px;
   color:#25f4df;
@@ -87,10 +87,10 @@
 .evo-launch-type{
   position:relative;
   z-index:1;
-  margin:0 28px 16px;
+  margin:0 28px 12px;
   display:grid;
   grid-template-columns:1fr 1fr;
-  min-height:52px;
+  min-height:48px;
   overflow:hidden;
   border:1px solid rgba(55,206,198,.40);
   border-radius:11px;
@@ -130,7 +130,7 @@
   min-height:0;
   overflow-y:auto;
   overscroll-behavior:contain;
-  padding:0 28px 8px;
+  padding:0 28px 6px;
   scrollbar-width:thin;
   scrollbar-color:rgba(49,230,213,.48) transparent;
 }
@@ -192,10 +192,10 @@
 .evo-launch-money:focus-within{border-color:rgba(58,239,219,.78);box-shadow:0 0 0 3px rgba(39,226,207,.07)}
 .evo-launch-money b{padding-left:13px;color:#b9d1d4;font-size:15px}
 .evo-launch-money input{height:40px;border:0;background:transparent;box-shadow:none!important}
-.evo-launch-grid{display:grid;gap:16px;margin-top:15px}
+.evo-launch-grid{display:grid;gap:16px;margin-top:11px}
 .evo-launch-grid.two{grid-template-columns:1fr 1fr}
 .evo-launch-grid.credit-grid{grid-template-columns:minmax(0,1.5fr) minmax(150px,.5fr)}
-.evo-launch-section{margin-top:16px}
+.evo-launch-section{margin-top:12px}
 .evo-launch-section-title{margin-bottom:8px}
 .evo-launch-categories{
   display:grid;
@@ -204,7 +204,7 @@
 }
 .evo-launch-categories button{
   min-width:0;
-  min-height:49px;
+  min-height:44px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -244,7 +244,7 @@
 }
 .evo-launch-payment-modes button,
 .evo-launch-status button{
-  min-height:38px;
+  min-height:34px;
   border:1px solid rgba(62,184,184,.30);
   border-radius:9px;
   color:#a9c2c4;
@@ -273,7 +273,7 @@
 }
 .evo-launch-stepper button{height:100%;border:0;color:#34e5d2;background:rgba(17,88,91,.22);font-size:22px}
 .evo-launch-stepper strong{text-align:center;font-size:14px}
-.evo-launch-status{margin-top:15px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.evo-launch-status{margin-top:11px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .evo-launch-status>span{font-size:12px;font-weight:800}
 .evo-launch-status>div{display:grid;grid-template-columns:90px 90px;gap:7px}
 .evo-launch-status button.active.planned{color:#fff5dc;border-color:#e2b65d;background:rgba(155,106,34,.42)}
@@ -294,12 +294,12 @@
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:12px;
-  padding:14px 28px 18px;
+  padding:11px 28px 14px;
   border-top:1px solid rgba(63,194,190,.12);
   background:linear-gradient(180deg,rgba(2,25,35,.35),rgba(2,23,33,.94));
 }
 .evo-launch-actions button{
-  min-height:49px;
+  min-height:44px;
   display:flex;
   align-items:center;
   justify-content:center;
