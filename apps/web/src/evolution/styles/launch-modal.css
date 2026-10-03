@@ -1431,3 +1431,69 @@
 .evo-launch-summary-detailed>.evo-launch-summary-rows>div{
   width:100%;
 }
+
+
+/* ==========================================================================
+   NOVO LANÇAMENTO OFICIAL — regras consolidadas 03/10/2026
+   Quatro modalidades: à vista, crédito, crediário e benefício.
+   ========================================================================== */
+.evo-launch-choice-cards button.transfer{border-color:rgba(63,142,241,.34)}
+.evo-launch-choice-cards button.transfer>i{
+  color:#6a9eff;
+  background:rgba(45,86,174,.16);
+  box-shadow:inset 0 0 20px rgba(64,110,218,.06)
+}
+.evo-launch-control-v1 .evo-launch-payment-modes{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.evo-launch-control-v1 .evo-launch-payment-modes button{
+  min-width:0;
+  padding:7px 6px;
+}
+.evo-launch-control-v1 .evo-launch-payment-modes button span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.evo-launch-control-v1 .evo-launch-payment-modes button.benefit,
+.evo-launch-control-v1 .evo-launch-payment-modes button.active.benefit{
+  color:#3d3000;
+  border-color:#f2d360;
+  background:linear-gradient(135deg,#d2b340,#f2d76c);
+}
+.evo-launch-crediario-stack{
+  border-color:rgba(204,159,53,.28)!important;
+  background:
+    radial-gradient(circle at 94% 0%,rgba(233,190,73,.08),transparent 30%),
+    linear-gradient(155deg,rgba(54,47,20,.42),rgba(3,29,39,.88))!important;
+}
+.evo-launch-crediario-card{
+  min-height:78px;
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  border:1px solid rgba(224,184,70,.24);
+  border-radius:11px;
+  background:rgba(85,66,17,.18);
+}
+.evo-launch-crediario-card>span{
+  width:44px;height:44px;
+  display:grid;place-items:center;
+  border-radius:10px;
+  color:#eecb55;
+  background:rgba(153,117,23,.20);
+  box-shadow:0 8px 18px rgba(0,0,0,.18);
+}
+.evo-launch-crediario-card strong,
+.evo-launch-crediario-card small{display:block}
+.evo-launch-crediario-card strong{font-size:11px}
+.evo-launch-crediario-card small{margin-top:3px;color:#b7aa7d;font-size:8px;line-height:1.35}
+@media(max-width:1180px){
+  .evo-launch-control-v1 .evo-launch-payment-modes{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .evo-launch-control-v1 .evo-launch-payment-modes{grid-template-columns:1fr 1fr}
+}
