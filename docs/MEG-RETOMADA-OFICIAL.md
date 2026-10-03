@@ -134,6 +134,18 @@ Ela trouxe:
 
 Este marco técnico **não significou validação visual final da Home**. O usuário registrou que houve melhora, mas que ainda falta muito e pediu mudança de condução do projeto.
 
+
+## Regra permanente de documentação e prévias
+
+A partir de 03/10/2026:
+
+- Toda mudança relevante de direção, referência visual, regra de produto ou ponto validado deve ser registrada neste arquivo ou em documento oficial relacionado antes de encerrar a etapa.
+- O projeto mantém `docs/MEG-WEB-PREVIEWS.md` como inventário oficial das telas Web.
+- A galeria de prévias deve existir no próprio Evolution por `evolution.html?screen=preview&preview=<tela>`.
+- O Visual Preflight deve gerar screenshots das prévias principais em cada PR visual.
+- Se o chat travar, a retomada deve consultar primeiro este arquivo, a galeria de prévias, a `main` atual e os últimos artifacts do preflight.
+- Não depender de uma decisão existir apenas no chat.
+
 ## Regra de retomada
 
 Quando o usuário escrever **“Retomar MEG — memória oficial — último ponto validado”**, conferir este arquivo, a `main` atual e o último CI/preflight antes de continuar. Não assumir que uma tentativa posterior foi validada só porque existe no código.
