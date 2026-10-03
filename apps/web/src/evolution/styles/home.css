@@ -65,6 +65,7 @@
 .evo-home-brand img{width:132px;max-height:106px;object-fit:contain;filter:drop-shadow(0 0 18px rgba(51,229,211,.19))}
 .evo-home-sidebar nav{
   display:flex;
+  flex:1;
   flex-direction:column;
   gap:4px;
   min-height:0;
@@ -94,26 +95,6 @@
   box-shadow:inset 0 0 20px rgba(41,232,215,.12),0 0 18px rgba(38,225,209,.16);
 }
 .evo-home-sidebar nav button.active svg{color:#54f6e2;filter:drop-shadow(0 0 6px rgba(54,246,226,.55))}
-.evo-home-premium{
-  margin-top:auto;
-  padding:13px 12px 11px;
-  border:1px solid rgba(64,235,217,.37);
-  border-radius:13px;
-  text-align:center;
-  background:radial-gradient(circle at 50% 5%,rgba(67,231,205,.20),transparent 50%),rgba(7,49,56,.72);
-  box-shadow:inset 0 1px rgba(255,255,255,.04),0 0 22px rgba(33,220,201,.08);
-}
-.evo-home-crown{display:block;color:#57f1dc;font-size:27px;line-height:1;filter:drop-shadow(0 0 9px rgba(64,232,212,.52))}
-.evo-home-premium>strong{display:block;margin-top:7px;color:#43f1df;font-size:15px}
-.evo-home-premium p{margin:7px 0 11px;color:#bed0d2;font-size:11px;line-height:1.35}
-.evo-home-premium button{
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  width:100%;min-height:37px;border:0;border-radius:9px;
-  color:#002c2c;background:linear-gradient(90deg,#42e7d6,#45f0e1);
-  font-size:11px;font-weight:900;
-  box-shadow:0 0 20px rgba(61,237,218,.25)
-}
-.evo-home-premium button svg{width:14px;height:14px}
 
 .evo-home-workspace{
   min-width:0;
@@ -420,7 +401,6 @@
   .evo-home-sidebar{padding-left:7px;padding-right:7px}
   .evo-home-brand{height:91px}.evo-home-brand img{width:68px}
   .evo-home-sidebar nav button{justify-content:center;padding:0}.evo-home-sidebar nav button span{display:none}
-  .evo-home-premium{padding:10px 5px}.evo-home-premium p,.evo-home-premium>strong,.evo-home-premium button{display:none}
   .evo-home-workspace{grid-template-rows:45px 145px 106px minmax(250px,1.2fr) minmax(175px,.8fr);gap:7px}
   .evo-home-hero h1{font-size:39px}.evo-home-hero-cards span{width:101px}.evo-home-kpi>strong{font-size:20px}
   .evo-home-middle{grid-template-columns:minmax(0,1.1fr) minmax(380px,.9fr)}
@@ -492,19 +472,6 @@
     box-shadow:
       inset 0 0 30px rgba(55,250,228,.22),
       0 0 28px rgba(43,239,219,.34);
-  }
-  .evo-home-premium{
-    min-height:clamp(166px,23.4vh,220px);
-    margin-bottom:clamp(0px,3.4vh,32px);
-    padding:18px 12px 14px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    border-color:rgba(69,252,229,.62);
-    background:
-      radial-gradient(circle at 50% 0%,rgba(76,255,231,.27),transparent 46%),
-      linear-gradient(180deg,rgba(5,62,67,.91),rgba(4,38,47,.88));
-    box-shadow:inset 0 0 34px rgba(42,240,218,.08),0 0 30px rgba(37,232,211,.15);
   }
 
   .evo-home-workspace{
