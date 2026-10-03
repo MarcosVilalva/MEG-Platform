@@ -1418,3 +1418,16 @@
   .evo-launch-quick-categories>header{margin-bottom:7px}
   .evo-launch-step-form .evo-launch-actions button{min-height:45px}
 }
+
+
+/* CONTROL 3D v1.1 — o resumo detalhado não pode herdar o grid do resumo compacto legado. */
+.evo-launch-summary-detailed>.evo-launch-summary-rows{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:0;
+  align-items:stretch;
+  border-top:1px solid rgba(74,173,175,.12);
+}
+.evo-launch-summary-detailed>.evo-launch-summary-rows>div{
+  width:100%;
+}
