@@ -130,11 +130,11 @@ assert.match(launch,/Visualizar parcelas/,'Crédito deve preservar prévia de pa
 assert.doesNotMatch(launch,/<select className="evo-launch-more"/,'Categorias não podem voltar ao seletor nativo do navegador.');
 assert.doesNotMatch(launch,/MegMobile|phoenix-/i,'Evolution Launch não pode reutilizar visual Mobile/Phoenix.');
 
-const launchCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.url),'utf8');
-assert.match(launchCss,/MEG CONTROL 3D v1/,'Novo Lançamento deve preservar a camada visual 3D aprovada.');
-assert.match(launchCss,/clamp\(/,'Novo Lançamento deve dimensionar tipografia e controles de forma responsiva.');
-assert.match(launchCss,/grid-template-columns:minmax\(0,1\.48fr\) minmax\(360px,\.86fr\)/,'Desktop largo deve usar composição espacial própria.');
-assert.match(launchCss,/@media\(max-width:920px\)/,'Novo Lançamento deve recompor colunas automaticamente em viewports menores.');
+const launchControlCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.url),'utf8');
+assert.match(launchControlCss,/MEG CONTROL 3D v1/,'Novo Lançamento deve preservar a camada visual 3D aprovada.');
+assert.match(launchControlCss,/clamp\(/,'Novo Lançamento deve dimensionar tipografia e controles de forma responsiva.');
+assert.match(launchControlCss,/grid-template-columns:minmax\(0,1\.48fr\) minmax\(360px,\.86fr\)/,'Desktop largo deve usar composição espacial própria.');
+assert.match(launchControlCss,/@media\(max-width:920px\)/,'Novo Lançamento deve recompor colunas automaticamente em viewports menores.');
 
 const movements=fs.readFileSync(new URL('./screens/EvolutionMovements.tsx',import.meta.url),'utf8');
 assert.match(movements,/data-evolution-screen="movements"/);
