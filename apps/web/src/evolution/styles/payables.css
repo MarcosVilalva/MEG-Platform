@@ -1,0 +1,243 @@
+.evo-payables{
+  min-height:0;
+  height:100%;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:106px minmax(0,1fr);
+  gap:12px;
+  padding:12px 18px 14px;
+  color:#edf8f7;
+}
+.evo-payables button,.evo-payables input,.evo-payables select{font:inherit}
+.evo-payables-hero{
+  min-height:0;
+  display:grid;
+  grid-template-columns:72px minmax(250px,1fr) auto minmax(220px,.48fr);
+  gap:14px;
+  align-items:center;
+  padding:14px 18px;
+  border:1px solid rgba(48,224,210,.42);
+  border-radius:14px;
+  background:
+    radial-gradient(circle at 80% 0%,rgba(32,227,210,.10),transparent 28%),
+    url('./evolution/artwork/home-hero-scene.svg') right center/44% auto no-repeat,
+    linear-gradient(155deg,rgba(3,47,56,.94),rgba(2,24,33,.97));
+}
+.evo-payables-hero>.hero-icon{
+  width:64px;height:64px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,95,109,.55);
+  border-radius:15px;
+  color:#ff6975;
+  background:rgba(155,44,57,.24);
+  box-shadow:0 0 22px rgba(255,85,100,.10),inset 0 0 16px rgba(255,95,109,.05);
+}
+.evo-payables-hero h1{margin:0;font-size:clamp(26px,2vw,36px);letter-spacing:-.04em}
+.evo-payables-hero p{margin:5px 0 0;color:#d4dfdf;font-size:clamp(11px,.78vw,14px)}
+.evo-payables-hero nav{display:flex;gap:7px}
+.evo-payables-hero nav button{
+  min-height:46px;
+  min-width:116px;
+  padding:0 14px;
+  border:1px solid rgba(54,188,184,.25);
+  border-radius:11px;
+  color:#e7f0ef;
+  background:rgba(3,31,39,.76);
+  font-size:clamp(9px,.65vw,11px);
+  font-weight:750;
+}
+.evo-payables-hero nav button b{
+  display:inline-grid;place-items:center;
+  min-width:30px;height:30px;
+  margin-left:8px;
+  border-radius:999px;
+  background:rgba(95,149,151,.25);
+}
+.evo-payables-hero nav button.active{
+  border-color:#43ead7;
+  background:linear-gradient(90deg,rgba(10,141,136,.72),rgba(7,91,96,.78));
+  box-shadow:0 0 22px rgba(43,232,214,.17);
+}
+.evo-payables-search{
+  height:46px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0 12px;
+  border:1px solid rgba(57,203,197,.26);
+  border-radius:11px;
+  background:rgba(2,27,36,.76);
+}
+.evo-payables-search svg{color:#5ccfc5}
+.evo-payables-search input{min-width:0;flex:1;border:0;outline:0;color:#eaf5f4;background:transparent;font-size:11px}
+.evo-payables-search input::placeholder{color:#6e8b8e}
+
+.evo-payables-layout{
+  min-height:0;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(320px,.31fr);
+  gap:12px;
+}
+.evo-payables-list-panel,
+.evo-payables-selection,
+.evo-payables-overview{
+  min-height:0;
+  border:1px solid rgba(47,213,202,.33);
+  border-radius:14px;
+  background:linear-gradient(155deg,rgba(3,42,50,.92),rgba(2,24,32,.96));
+}
+.evo-payables-list-panel{display:grid;grid-template-rows:54px minmax(0,1fr);overflow:hidden}
+.evo-payables-list-panel>header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:8px 12px;
+  border-bottom:1px solid rgba(60,167,168,.13);
+}
+.evo-payables-list-panel>header label{display:flex;align-items:center;gap:9px;color:#d8e5e5;font-size:10px}
+.evo-payables-list-panel>header label input{position:absolute;opacity:0}
+.evo-payables-list-panel>header label>span{
+  width:18px;height:18px;border:1px solid rgba(105,187,185,.40);border-radius:5px;background:#06212a
+}
+.evo-payables-list-panel>header label input:checked+span{background:#41dfcf;box-shadow:inset 0 0 0 4px #06212a}
+.evo-payables-list-panel>header>div{display:flex;gap:8px}
+.evo-payables-list-panel>header button{
+  min-height:36px;padding:0 12px;border:1px solid rgba(56,183,180,.22);border-radius:9px;color:#d1dede;background:#052630;font-size:9px
+}
+.evo-payables-groups{min-height:0;overflow:auto;padding:8px;scrollbar-width:thin;scrollbar-color:rgba(51,220,208,.28) transparent}
+.evo-payables-groups::-webkit-scrollbar{width:5px}.evo-payables-groups::-webkit-scrollbar-thumb{border-radius:99px;background:rgba(51,220,208,.28)}
+.evo-payables-group{
+  overflow:hidden;
+  margin-bottom:8px;
+  border:1px solid rgba(65,170,171,.18);
+  border-radius:11px;
+  background:rgba(3,34,42,.64);
+}
+.evo-payables-group>header{
+  min-height:43px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:0 14px;
+  color:#e7f1f0;
+  background:linear-gradient(90deg,rgba(48,82,88,.65),rgba(28,67,74,.50));
+}
+.evo-payables-group.overdue>header{background:linear-gradient(90deg,rgba(95,55,60,.58),rgba(45,55,62,.54))}
+.evo-payables-group.due>header{background:linear-gradient(90deg,rgba(94,76,35,.54),rgba(41,57,61,.52))}
+.evo-payables-group>header>div{display:flex;align-items:center;gap:8px}
+.evo-payables-group.overdue>header svg{color:#ff6570}.evo-payables-group.due>header svg{color:#f5c349}.evo-payables-group.paid>header svg{color:#49e2b1}
+.evo-payables-group>header strong{font-size:13px}.evo-payables-group>header span{color:#b8c9ca;font-size:10px}.evo-payables-group>header>b{font-size:14px}
+.evo-payables-group article{
+  min-height:54px;
+  display:grid;
+  grid-template-columns:32px 40px minmax(180px,1.35fr) minmax(100px,.72fr) minmax(150px,.88fr) 100px 24px;
+  gap:10px;
+  align-items:center;
+  padding:5px 9px;
+  border-top:1px solid rgba(59,147,151,.12);
+}
+.evo-payables-group article.selected{background:rgba(16,130,126,.12)}
+.evo-payables-group article>.select,.evo-payables-group article>.more{border:0;background:transparent;color:#47dbcc}
+.evo-payables-group article>.select>span{
+  width:20px;height:20px;display:grid;place-items:center;border:1px solid rgba(112,190,187,.38);border-radius:5px;background:#05242c;color:#05242c
+}
+.evo-payables-group article>.select>span.checked{color:#052a2a;border-color:#4ee8d8;background:#43dfcf}
+.item-icon{
+  width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(83,197,193,.22);border-radius:9px;color:#5be1d1;background:rgba(25,122,120,.17)
+}
+.item-icon.blue{color:#70a5ff;background:rgba(43,86,167,.22)}.item-icon.amber{color:#f1be42;background:rgba(150,112,25,.22)}
+.item-icon.violet,.item-icon.purple{color:#b992ff;background:rgba(102,64,173,.22)}.item-icon.gray{color:#d5e2e3;background:rgba(90,118,126,.20)}
+.evo-payables-group .description strong,.evo-payables-group .description small{display:block}
+.evo-payables-group .description strong{font-size:11px}.evo-payables-group .description small{margin-top:3px;color:#9cb1b3;font-size:8px}
+.evo-payables-group .category{
+  justify-self:start;
+  max-width:100%;
+  padding:5px 12px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border-radius:999px;
+  color:#e9f1f1;background:rgba(58,119,135,.34);font-size:8px;font-style:normal
+}
+.evo-payables-group .category.blue{background:rgba(37,112,162,.42)}.evo-payables-group .category.amber{background:rgba(138,102,23,.45)}
+.evo-payables-group .category.violet,.evo-payables-group .category.purple{background:rgba(107,59,159,.46)}.evo-payables-group .category.gray{background:rgba(75,107,114,.44)}
+.evo-payables-group .due{display:grid;grid-template-columns:26px minmax(0,1fr);gap:6px;align-items:center}
+.evo-payables-group .due>svg{width:24px;height:24px;padding:4px;border:1px solid rgba(108,177,179,.24);border-radius:7px;color:#cadada}
+.evo-payables-group .due strong,.evo-payables-group .due small{display:block}
+.evo-payables-group .due strong{font-size:9px}.evo-payables-group .due small{margin-top:2px;color:#9eb2b4;font-size:8px}
+.evo-payables-group .due.late strong,.evo-payables-group .due.late small,.evo-payables-group .due.late svg{color:#ff6975}
+.evo-payables-group .due.soon strong,.evo-payables-group .due.soon small,.evo-payables-group .due.soon svg{color:#f4c04a}
+.evo-payables-group .amount{font-size:11px;text-align:right}.evo-payables-group .more{font-size:23px}
+.evo-payables-empty{padding:40px;text-align:center;color:#789698;font-size:11px}
+
+.evo-payables-side{min-height:0;display:grid;grid-template-rows:minmax(0,1.6fr) minmax(160px,.75fr);gap:12px}
+.evo-payables-selection,.evo-payables-overview{padding:14px}
+.evo-payables-selection{display:flex;min-height:0;flex-direction:column}
+.evo-payables-selection>header,.evo-payables-overview>header{display:flex;align-items:center;gap:9px;padding-bottom:11px;border-bottom:1px solid rgba(61,167,168,.14)}
+.evo-payables-selection>header svg,.evo-payables-overview>header svg{color:#3ee4d1}
+.evo-payables-selection h2,.evo-payables-overview h2{margin:0;font-size:14px}
+.evo-payables-selection>p{margin:11px 0;color:#d8e5e4;font-size:10px}.evo-payables-selection>small{color:#89a6a8;font-size:9px}
+.evo-payables-selection>strong{margin-top:3px;color:#49ead5;font-size:clamp(27px,2.1vw,38px);letter-spacing:-.04em}
+.selected-list{min-height:74px;max-height:130px;overflow:auto;margin-top:8px;padding-top:5px;border-top:1px solid rgba(60,159,163,.13)}
+.selected-list>div{min-height:32px;display:grid;grid-template-columns:minmax(0,1fr) 76px 22px;gap:7px;align-items:center}
+.selected-list>div>span{min-width:0;display:flex;align-items:center;gap:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px}.selected-list>div>b{font-size:8.5px;text-align:right}.selected-list>div>button{border:0;color:#ff6570;background:transparent}
+.selected-list>em{display:block;padding:18px 0;color:#6d8b8e;font-size:9px;font-style:normal;text-align:center}
+.evo-payables-selection .pay{
+  min-height:50px;
+  display:grid;grid-template-columns:26px minmax(0,1fr) 20px;gap:8px;align-items:center;
+  margin-top:10px;padding:0 13px;border:1px solid #5df3e1;border-radius:11px;color:#032421;background:linear-gradient(90deg,#3ee1d0,#63efdc);font-size:12px;font-weight:900
+}
+.evo-payables-selection .pay:disabled{opacity:.4}.evo-payables-selection .pay>b{font-size:24px}
+.payment-source{display:grid;grid-template-columns:1fr;gap:5px;margin-top:10px}
+.payment-source>span{color:#8da8aa;font-size:8px}
+.payment-source select{height:33px;border:1px solid rgba(64,178,177,.25);border-radius:8px;color:#e6f0ef;background:#052630;padding:0 8px;font-size:8.5px}
+.evo-payables-overview>div{min-height:34px;display:grid;grid-template-columns:minmax(0,1fr) 42px 92px;gap:7px;align-items:center;border-bottom:1px solid rgba(61,149,154,.10);font-size:8.5px}
+.evo-payables-overview>div:last-child{border-bottom:0}.evo-payables-overview>div>b{text-align:center}.evo-payables-overview>div>strong{text-align:right}
+.evo-payables-overview>div.red:before,.evo-payables-overview>div.amber:before,.evo-payables-overview>div.blue:before{content:"";width:8px;height:8px;border-radius:50%;margin-right:5px;display:inline-block}
+.evo-payables-overview>div.red:before{background:#ff6571}.evo-payables-overview>div.amber:before{background:#f4bd45}.evo-payables-overview>div.blue:before{background:#5ea7db}
+
+.evo-settlement-backdrop{
+  position:fixed;inset:0;z-index:180;display:grid;place-items:center;padding:18px;background:rgba(0,8,13,.74);backdrop-filter:blur(8px)
+}
+.evo-settlement-modal{
+  width:min(760px,calc(100vw - 32px));max-height:min(820px,calc(100dvh - 30px));overflow:hidden;
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto auto auto;
+  border:1px solid #36e8d5;border-radius:18px;color:#eef8f7;
+  background:radial-gradient(circle at 90% 0%,rgba(30,224,207,.10),transparent 28%),linear-gradient(155deg,#04323b,#021923 72%);
+  box-shadow:0 40px 110px rgba(0,0,0,.62),0 0 38px rgba(39,229,211,.14)
+}
+.evo-settlement-modal>header{min-height:92px;display:grid;grid-template-columns:64px minmax(0,1fr) 40px;gap:14px;align-items:center;padding:16px 22px;border-bottom:1px solid rgba(60,181,180,.14);background:url('./evolution/artwork/home-hero-scene.svg') right center/55% auto no-repeat}
+.evo-settlement-modal>header>span{width:58px;height:58px;display:grid;place-items:center;border:1px solid #42e7d4;border-radius:13px;color:#46ead7;background:rgba(11,111,110,.30)}
+.evo-settlement-modal h2{margin:0;font-size:24px}.evo-settlement-modal>header p{margin:5px 0 0;color:#a8babc;font-size:11px}.evo-settlement-modal>header button{width:38px;height:38px;border:0;color:#52e2d2;background:transparent}
+.evo-settlement-items{margin:14px 20px 0;border:1px solid rgba(61,190,187,.26);border-radius:12px;overflow:hidden;background:rgba(3,35,43,.72)}
+.evo-settlement-items .headline{min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(62,166,169,.14)}
+.evo-settlement-items .headline>strong{font-size:13px}.evo-settlement-items .headline>span{text-align:right}.evo-settlement-items .headline small{display:block;color:#a3b5b7;font-size:8px}.evo-settlement-items .headline b{display:block;margin-top:2px;color:#43e5d0;font-size:23px}
+.evo-settlement-items .items{max-height:250px;overflow:auto;padding:0 14px}
+.evo-settlement-items article{min-height:64px;display:grid;grid-template-columns:42px minmax(0,1fr) 120px 90px;gap:10px;align-items:center;border-top:1px solid rgba(65,153,157,.10)}
+.evo-settlement-items article:first-child{border-top:0}.evo-settlement-items article>div strong,.evo-settlement-items article>div small,.evo-settlement-items article>span small,.evo-settlement-items article>span b{display:block}
+.evo-settlement-items article>div strong{font-size:10px}.evo-settlement-items article>div small,.evo-settlement-items article>span small{margin-top:3px;color:#8ea6a9;font-size:8px}.evo-settlement-items article>span b,.evo-settlement-items article>strong{font-size:10px;text-align:right}
+.evo-settlement-controls{display:grid;grid-template-columns:minmax(190px,1fr) minmax(190px,1fr) minmax(250px,1.05fr);gap:10px;padding:14px 20px 8px}
+.evo-settlement-controls label>span{display:block;margin-bottom:6px;color:#c7d5d5;font-size:9px}
+.evo-settlement-controls label>div,.evo-settlement-controls label>select{height:48px;width:100%;border:1px solid rgba(58,202,196,.40);border-radius:10px;color:#eef8f7;background:#052630}
+.evo-settlement-controls label>div{display:flex;align-items:center;gap:8px;padding:0 11px}.evo-settlement-controls input{min-width:0;flex:1;border:0;outline:0;color:#eef8f7;background:transparent;font:inherit;font-size:10px;color-scheme:dark}.evo-settlement-controls select{padding:0 10px;font-size:9px}
+.evo-settlement-controls .balance{min-height:70px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:center;padding:9px 11px;border:1px solid rgba(55,220,208,.48);border-radius:11px;background:rgba(7,67,70,.42)}
+.evo-settlement-controls .balance>span{width:44px;height:44px;display:grid;place-items:center;border-radius:10px;color:#45e4d2;background:rgba(25,156,149,.20)}
+.evo-settlement-controls .balance small,.evo-settlement-controls .balance strong,.evo-settlement-controls .balance p{display:block}.evo-settlement-controls .balance small{color:#9eb2b4;font-size:8px}.evo-settlement-controls .balance strong{margin-top:2px;color:#47ebd5;font-size:18px}.evo-settlement-controls .balance p{margin:3px 0 0;color:#9db1b3;font-size:8px}
+.evo-settlement-controls .balance.insufficient{border-color:rgba(255,91,106,.55);background:rgba(106,35,47,.30)}.evo-settlement-controls .balance.insufficient strong{color:#ff6c77}
+.evo-settlement-message{margin:0 20px 7px;padding:8px 10px;border:1px solid rgba(255,171,79,.25);border-radius:8px;color:#f1cf9b;background:rgba(102,70,28,.24);font-size:9px}
+.evo-settlement-modal>footer{display:grid;grid-template-columns:1fr 1.1fr;gap:10px;padding:9px 20px 18px}
+.evo-settlement-modal>footer button{min-height:50px;border-radius:11px;font-size:11px;font-weight:850}.evo-settlement-modal>footer .cancel{border:1px solid rgba(71,194,190,.42);color:#eef6f6;background:#052630}.evo-settlement-modal>footer .confirm{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #58f0df;color:#032321;background:linear-gradient(90deg,#3edfd0,#62eddb)}.evo-settlement-modal>footer .confirm:disabled{opacity:.42}
+.evo-settlement-source{display:block;padding:0 20px 12px;color:#68888a;font-size:8px;text-align:center}
+
+@media(max-width:1320px){
+  .evo-payables{padding:9px 12px 10px}
+  .evo-payables-hero{grid-template-columns:58px minmax(210px,1fr) auto;grid-template-rows:1fr auto}
+  .evo-payables-hero>.hero-icon{width:54px;height:54px}
+  .evo-payables-search{grid-column:2/4}
+  .evo-payables-layout{grid-template-columns:minmax(0,1fr) 300px}
+  .evo-payables-group article{grid-template-columns:30px 36px minmax(150px,1.25fr) 94px minmax(125px,.8fr) 88px 20px}
+}
+@media(max-width:980px){
+  .evo-payables{height:auto;overflow:visible;grid-template-rows:auto auto}
+  .evo-payables-layout{grid-template-columns:1fr;overflow:visible}
+  .evo-payables-side{grid-template-columns:1fr 1fr;grid-template-rows:auto}
+  .evo-payables-list-panel{min-height:560px}
+}
