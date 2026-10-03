@@ -77,9 +77,9 @@ assert.match(loginCss,/background-clip:text/,'Autofill não deve pintar um bloco
 assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!important\}/,'Linhas decorativas do Login não podem cruzar o conteúdo.');
 
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
-assert.match(home,/data-evolution-home-fidelity="command-center-stage-1"/);
-assert.match(home,/Seu dinheiro,/);
-assert.match(home,/mais inteligente\./);
+assert.match(home,/data-evolution-home-fidelity="product-v2"/);
+assert.match(home,/Visão financeira/);
+assert.match(home,/PAINEL FINANCEIRO/);
 assert.match(home,/Fluxo de caixa/);
 assert.match(home,/Meus cartões/);
 assert.match(home,/Metas em andamento/);
@@ -152,6 +152,7 @@ assert.match(homeCss,/overflow:hidden/,'Home não deve depender de scroll geral.
 assert.match(homeCss,/evo-home-scroll/,'Listas densas devem usar scroll interno.');
 assert.match(homeCss,/@media\(max-width:900px\)/,'Home precisa recompor a experiência em viewport estreito.');
 assert.match(homeCss,/PASS 15 \/ DIMENSIONAMENTO REAL/,'Home deve ter regra explícita para dimensionamento do viewport desktop real.');
+assert.match(homeCss,/PASS 16 \/ OFFICIAL NORTH/,'Home deve preservar o passe visual oficial orientado a produto.');
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){

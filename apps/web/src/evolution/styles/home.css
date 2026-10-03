@@ -2090,3 +2090,395 @@
   .evo-home-scroll article small,
   .evo-home-due-list article small{font-size:8px!important}
 }
+
+
+/* PASS 16 / OFFICIAL NORTH — produto financeiro, não painel cenográfico */
+.evo-home{
+  background:#06171b;
+}
+.evo-home-atmosphere{display:none}
+.evo-home-sidebar{
+  background:linear-gradient(180deg,#071b20 0%,#06161a 100%);
+  border:1px solid rgba(119,203,198,.12);
+  box-shadow:none;
+}
+.evo-home-brand{
+  min-height:132px;
+  border-bottom:1px solid rgba(120,191,188,.08);
+}
+.evo-home-brand img{
+  width:138px;
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,.26));
+}
+.evo-home-sidebar nav{
+  gap:4px;
+  padding:12px 10px 14px;
+}
+.evo-home-sidebar nav button{
+  min-height:44px;
+  border:1px solid transparent;
+  border-radius:10px;
+  color:#b4c7c8;
+  background:transparent;
+  font-size:13px;
+  font-weight:680;
+  box-shadow:none;
+}
+.evo-home-sidebar nav button svg{
+  color:#86a3a5;
+}
+.evo-home-sidebar nav button:hover{
+  color:#e4f1f0;
+  background:rgba(255,255,255,.025);
+}
+.evo-home-sidebar nav button.active{
+  color:#f2fbfa;
+  border-color:rgba(77,217,205,.18);
+  background:rgba(58,185,176,.11);
+  box-shadow:none;
+}
+.evo-home-sidebar nav button.active svg{color:#51d6c9}
+
+.evo-home-workspace{
+  background:
+    radial-gradient(circle at 72% 5%,rgba(38,141,141,.055),transparent 28%),
+    linear-gradient(180deg,#07191d 0%,#061519 100%);
+}
+.evo-home-topbar{
+  min-height:58px;
+  padding:10px 14px 8px;
+  border-bottom:1px solid rgba(125,196,192,.07);
+  background:rgba(6,21,25,.88);
+  box-shadow:none;
+  backdrop-filter:blur(12px);
+}
+.evo-home-search{
+  height:42px;
+  border:1px solid rgba(128,188,186,.13);
+  border-radius:10px;
+  background:#091f23;
+  box-shadow:none;
+}
+.evo-home-search:focus-within{
+  border-color:rgba(78,211,199,.36);
+  box-shadow:0 0 0 3px rgba(78,211,199,.05);
+}
+.evo-home-search input{
+  color:#dce9e8;
+  font-size:12px;
+}
+.evo-home-search input::placeholder{color:#617d7f}
+.evo-home-search kbd{
+  border:1px solid rgba(126,186,184,.12);
+  background:#0b2529;
+  color:#668587;
+}
+.evo-home-add{
+  height:42px;
+  min-width:118px;
+  border-radius:10px;
+  border:1px solid rgba(81,218,205,.34);
+  background:#123c3d;
+  box-shadow:none;
+  font-size:12px;
+}
+.evo-home-add:hover{
+  background:#174a49;
+  box-shadow:none;
+}
+.evo-home-top-actions>button,
+.evo-home-month{
+  border-color:rgba(126,185,183,.13);
+  background:#091f23;
+  box-shadow:none;
+}
+.evo-home-user strong{font-size:12px}
+
+.evo-home-hero{
+  position:relative;
+  min-height:112px;
+  height:112px;
+  margin:8px 14px 10px;
+  border:1px solid rgba(116,186,183,.10);
+  border-radius:16px;
+  background:linear-gradient(90deg,#0a2327 0%,#0a2529 48%,#0b292d 100%);
+  box-shadow:none;
+  overflow:hidden;
+}
+.evo-home-canonical-scene{
+  inset:0 0 0 auto;
+  width:56%;
+  opacity:.44;
+  mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.55) 22%,#000 60%);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.55) 22%,#000 60%);
+}
+.evo-home-canonical-scene::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,#0a2327 0%,rgba(10,35,39,.72) 24%,rgba(10,35,39,.18) 100%);
+}
+.evo-home-hero-copy{
+  position:relative;
+  z-index:2;
+  width:54%;
+  padding:20px 26px;
+}
+.evo-home-hero-eyebrow{
+  display:block;
+  margin-bottom:7px;
+  color:#5fcfc5;
+  font-size:9px;
+  font-weight:820;
+  letter-spacing:.17em;
+}
+.evo-home-hero-copy h1{
+  margin:0;
+  color:#f4f9f8;
+  font-size:31px;
+  line-height:1.05;
+  letter-spacing:-.035em;
+  font-weight:800;
+}
+.evo-home-hero-copy h1 em{
+  color:inherit;
+  font-style:normal;
+}
+.evo-home-hero-copy p{
+  margin:8px 0 0;
+  max-width:560px;
+  color:#91a9aa;
+  font-size:11px;
+  line-height:1.5;
+}
+.evo-home-hero-copy p strong{
+  color:#cfe4e2;
+  font-weight:720;
+}
+.evo-home-mountain,
+.evo-home-hero-cards{display:none!important}
+
+.evo-home-kpis{
+  gap:8px;
+  padding:0 14px 8px;
+}
+.evo-home-kpi{
+  min-height:94px;
+  padding:13px 14px;
+  border:1px solid rgba(120,184,182,.11);
+  border-radius:13px;
+  background:#0a2428;
+  box-shadow:none;
+}
+.evo-home-kpi::before,
+.evo-home-kpi::after{opacity:.18}
+.evo-home-kpi-top{
+  color:#8ea8aa;
+  font-size:10px;
+}
+.evo-home-kpi-icon{
+  width:27px;
+  height:27px;
+  border-radius:8px;
+  background:rgba(73,207,196,.07);
+  box-shadow:none;
+}
+.evo-home-kpi>strong{
+  margin-top:10px;
+  color:#f3f8f7;
+  font-size:23px;
+  letter-spacing:-.025em;
+}
+.evo-home-kpi-detail{
+  margin-top:6px;
+  color:#739294;
+  font-size:9px;
+}
+.evo-home-kpi-spark{
+  right:10px;
+  bottom:9px;
+  opacity:.45;
+}
+.evo-home-goal-line{margin-top:11px}
+
+.evo-home-middle,
+.evo-home-bottom{
+  gap:8px;
+  padding-left:14px;
+  padding-right:14px;
+}
+.evo-home-panel{
+  border:1px solid rgba(119,184,181,.11);
+  border-radius:13px;
+  background:#0a2327;
+  box-shadow:none;
+}
+.evo-home-panel>header{
+  min-height:42px;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(118,181,179,.08);
+}
+.evo-home-panel>header h2{
+  color:#e9f2f1;
+  font-size:13px;
+  font-weight:760;
+}
+.evo-home-panel>header h2 svg{color:#58cfc4}
+.evo-home-panel>header p{
+  margin-top:2px;
+  color:#668486;
+  font-size:8px;
+}
+.evo-home-panel>header button{
+  border-color:rgba(121,184,181,.12);
+  background:#0b292d;
+  color:#8da9aa;
+  box-shadow:none;
+  font-size:9px;
+}
+.evo-home-panel>header button:hover{
+  color:#d4e7e5;
+  background:#0e3034;
+}
+
+.evo-home-cashflow{
+  background:#0a2327;
+}
+.evo-home-chart-grid{
+  color:#658083;
+}
+.evo-home-bars .income{
+  background:linear-gradient(180deg,#50d2c5,#2aaea6);
+  box-shadow:none;
+}
+.evo-home-bars .expense{
+  background:linear-gradient(180deg,#8ba6b7,#708b9b);
+  box-shadow:none;
+}
+.evo-home-line polyline{
+  stroke:#b9dfda;
+  filter:none;
+}
+.evo-home-line circle{
+  fill:#d7ece9;
+  stroke:#0a2327;
+}
+.evo-home-chart-summary>div{
+  border:1px solid rgba(120,184,182,.10);
+  background:#0b292d;
+  box-shadow:none;
+}
+.evo-home-chart-summary em{color:#55cdbf}
+
+.evo-home-card-stage{
+  background:linear-gradient(180deg,#0a2529,#091f23);
+}
+.evo-credit-card{
+  box-shadow:0 14px 28px rgba(0,0,0,.24);
+}
+.evo-home-card-nav{
+  border-color:rgba(100,205,196,.18);
+  background:#0d3134;
+  box-shadow:none;
+}
+.evo-home-dots button{opacity:.28}
+.evo-home-dots button.active{opacity:1}
+
+.evo-home-goals>div{
+  border-top:1px solid rgba(120,184,182,.07);
+}
+.evo-home-goals .goal-icon{
+  background:rgba(73,205,194,.07);
+  box-shadow:none;
+}
+
+.evo-home-list-row{
+  border-bottom:1px solid rgba(120,184,182,.065);
+}
+.evo-home-list-row:hover{
+  background:rgba(255,255,255,.018);
+}
+.evo-home-list-icon{
+  box-shadow:none;
+}
+.evo-home-scroll{
+  scrollbar-color:rgba(90,177,171,.20) transparent;
+}
+
+.evo-home-donut{
+  filter:none;
+}
+.evo-home-category-list>div{
+  border-bottom-color:rgba(120,184,182,.06);
+}
+
+@media(max-width:1240px){
+  .evo-home-hero{height:104px;min-height:104px}
+  .evo-home-hero-copy{padding:17px 22px}
+  .evo-home-hero-copy h1{font-size:27px}
+  .evo-home-kpi>strong{font-size:20px}
+}
+
+@media(max-height:790px) and (min-width:901px){
+  .evo-home-topbar{min-height:52px;padding-top:7px;padding-bottom:6px}
+  .evo-home-hero{
+    height:96px;
+    min-height:96px;
+    margin-top:6px;
+    margin-bottom:7px;
+  }
+  .evo-home-hero-copy{padding:14px 22px}
+  .evo-home-hero-eyebrow{margin-bottom:4px}
+  .evo-home-hero-copy h1{font-size:25px}
+  .evo-home-hero-copy p{margin-top:5px}
+  .evo-home-kpi{
+    min-height:82px;
+    padding:10px 12px;
+  }
+  .evo-home-kpi>strong{
+    margin-top:7px;
+    font-size:19px;
+  }
+  .evo-home-kpi-detail{margin-top:4px}
+}
+
+
+/* PASS 16B / HERO RESPONSIVE LAYERING
+   A arte é camada visual em qualquer altura; nunca pode participar do fluxo e expulsar o texto. */
+.evo-home-canonical-scene{
+  display:block;
+  position:absolute!important;
+  z-index:1!important;
+  top:0!important;
+  right:0!important;
+  bottom:0!important;
+  left:auto!important;
+  height:100%!important;
+  overflow:hidden;
+  pointer-events:none;
+}
+.evo-home-canonical-scene img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:right center;
+}
+.evo-home-hero-copy{
+  position:relative!important;
+  z-index:3!important;
+}
+@media(min-width:1280px) and (max-height:790px){
+  .evo-home-canonical-scene{
+    width:64%!important;
+    height:100%!important;
+    top:0!important;
+  }
+  .evo-home-hero-copy{
+    top:0!important;
+    left:0!important;
+    width:54%!important;
+    max-width:54%!important;
+    padding:14px 22px!important;
+  }
+}
