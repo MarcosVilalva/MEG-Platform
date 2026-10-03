@@ -630,3 +630,226 @@
   .evo-login-card-head h2{font-size:24px}
   .evo-login-account-type{grid-template-columns:1fr}
 }
+
+
+/* ==========================================================================
+   MEG EVOLUTION — LOGIN OFICIAL 03/10/2026
+   Referência: tela aprovada pelo usuário. Mantém registro/recuperação funcionais.
+   ========================================================================== */
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"]{
+  padding:clamp(26px,3.2vw,62px);
+  background:#031216;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"]::after{
+  background:
+    radial-gradient(circle at 76% 24%,rgba(18,198,187,.08),transparent 26%),
+    linear-gradient(90deg,rgba(1,10,13,.06),rgba(1,10,13,.20) 48%,rgba(1,10,13,.34));
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-bg img{
+  opacity:.48;
+  filter:saturate(1.08) contrast(1.05) brightness(.72);
+  transform:scale(1.02);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-bg::after{
+  background:
+    linear-gradient(90deg,rgba(1,11,14,.30) 0%,rgba(1,11,14,.34) 42%,rgba(1,11,14,.55) 66%,rgba(1,11,14,.70) 100%),
+    linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.22));
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-shell{
+  width:min(1720px,100%);
+  height:min(940px,calc(100dvh - clamp(44px,6vw,90px)));
+  grid-template-columns:minmax(0,1.12fr) minmax(560px,.88fr);
+  gap:clamp(58px,6vw,116px);
+  align-items:center;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story{
+  max-width:850px;
+  padding:16px 0 12px;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-brand{
+  width:clamp(190px,12vw,245px);
+  margin-bottom:clamp(24px,3vh,38px);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-kicker{
+  margin-bottom:clamp(14px,2vh,22px);
+  color:#4ff2e2;
+  font-size:clamp(12px,.9vw,16px);
+  letter-spacing:.28em;
+  font-weight:900;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story h1{
+  max-width:820px;
+  font-size:clamp(52px,4.7vw,82px);
+  line-height:.98;
+  letter-spacing:-.05em;
+  font-weight:900;
+  text-shadow:0 8px 30px rgba(0,0,0,.28);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story h1 strong{
+  color:#42e9dc;
+  text-shadow:0 0 26px rgba(41,232,218,.18);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story>p{
+  max-width:760px;
+  margin-top:24px;
+  color:#d0dcdd;
+  font-size:clamp(16px,1.2vw,22px);
+  line-height:1.55;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-proof{
+  max-width:800px;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
+  margin-top:clamp(30px,4vh,48px);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-proof>span{
+  min-height:112px;
+  grid-template-columns:50px minmax(0,1fr);
+  grid-template-rows:auto auto;
+  column-gap:12px;
+  padding:17px 18px;
+  border-color:rgba(60,239,223,.42);
+  border-radius:13px;
+  background:linear-gradient(145deg,rgba(7,54,59,.80),rgba(4,28,36,.86));
+  box-shadow:0 16px 34px rgba(0,0,0,.16),inset 0 1px rgba(255,255,255,.04);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-proof i{
+  grid-row:1/3;
+  width:48px;height:48px;
+  border-radius:12px;
+  color:#45ead8;
+  border-color:rgba(62,235,218,.28);
+  background:rgba(20,151,145,.18);
+  box-shadow:0 0 22px rgba(49,224,209,.10);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-proof b{
+  align-self:end;
+  font-size:clamp(12px,.9vw,16px);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-proof small{
+  margin-top:4px;
+  color:#bfd0d1;
+  font-size:clamp(10px,.72vw,13px);
+  line-height:1.3;
+}
+
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-card{
+  max-width:650px;
+  padding:clamp(34px,3vw,54px);
+  border-color:rgba(66,246,225,.82);
+  border-radius:30px;
+  background:
+    radial-gradient(circle at 88% 3%,rgba(27,231,213,.14),transparent 30%),
+    linear-gradient(155deg,rgba(4,52,59,.96),rgba(2,23,32,.985));
+  box-shadow:
+    0 42px 110px rgba(0,0,0,.52),
+    0 0 46px rgba(38,232,213,.10),
+    inset 0 1px rgba(255,255,255,.06);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-card-head{
+  grid-template-columns:66px minmax(0,1fr);
+  gap:22px;
+  margin-bottom:34px;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-lock{
+  width:66px;height:66px;
+  border-radius:16px;
+  border-color:rgba(54,237,219,.52);
+  color:#4ef1df;
+  background:rgba(18,133,129,.22);
+  box-shadow:0 0 24px rgba(48,230,212,.11),inset 0 0 18px rgba(48,230,212,.06);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-lock svg{width:28px;height:28px}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-card-head>div:last-child>span{
+  margin-top:2px;
+  color:#4ef2df;
+  font-size:clamp(11px,.75vw,14px);
+  letter-spacing:.28em;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-card-head h2{
+  margin-top:10px;
+  font-size:clamp(35px,2.6vw,50px);
+  line-height:1.02;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-card-head p{
+  margin-top:11px;
+  color:#adbec0;
+  font-size:clamp(14px,1vw,18px);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-field{
+  margin-bottom:19px;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-field>span{
+  margin-bottom:9px;
+  color:#edf4f4;
+  font-size:clamp(13px,.92vw,17px);
+  font-weight:750;
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-field>div{
+  height:clamp(58px,6vh,72px);
+  border-color:rgba(71,213,204,.62);
+  border-radius:14px;
+  background:rgba(2,28,38,.82);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-field input{
+  font-size:clamp(14px,1vw,18px);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-options{
+  margin-top:2px;
+  margin-bottom:24px;
+  font-size:clamp(12px,.86vw,15px);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-primary{
+  height:clamp(58px,6vh,72px);
+  border-radius:14px;
+  font-size:clamp(15px,1.05vw,19px);
+  background:linear-gradient(90deg,#1eddd2,#68efc7);
+  box-shadow:0 14px 34px rgba(36,222,205,.18);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-switch{
+  margin-top:24px;
+  padding-top:21px;
+  border-top:1px solid rgba(108,196,191,.18);
+  font-size:clamp(12px,.85vw,15px);
+}
+.evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-secure{
+  margin-top:27px;
+  padding-top:0;
+  border-top:0;
+  font-size:clamp(10px,.7vw,13px);
+}
+@media(max-width:1180px){
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-shell{
+    grid-template-columns:minmax(0,1fr) minmax(430px,.9fr);
+    gap:38px;
+  }
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story h1{font-size:50px}
+}
+@media(max-width:900px){
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"]{
+    overflow:auto;
+    height:auto;
+    min-height:100dvh;
+    padding:18px;
+  }
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-shell{
+    height:auto;
+    min-height:calc(100dvh - 36px);
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story{
+    text-align:center;
+  }
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story h1{
+    font-size:clamp(31px,8vw,48px);
+  }
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-story>p,
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-proof{display:none}
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-brand{margin-inline:auto}
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-kicker{justify-content:center}
+  .evo-login[data-evolution-login-fidelity="approved-2026-10-03"] .evo-login-card{
+    justify-self:center;
+    width:min(650px,100%);
+  }
+}
