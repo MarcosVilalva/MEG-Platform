@@ -2,12 +2,13 @@ import {useEffect,useMemo,useState} from 'react';
 import {EvolutionLoading} from '../screens/EvolutionLoading';
 import {EvolutionLogin} from '../screens/EvolutionLogin';
 import {EvolutionHome} from '../screens/EvolutionHome';
+import {EvolutionPreview} from '../screens/EvolutionPreview';
 
-type EvolutionPhase='login'|'loading'|'system';
+type EvolutionPhase='login'|'loading'|'system'|'preview';
 
 function requestedScreen():EvolutionPhase|null{
   const screen=new URLSearchParams(window.location.search).get('screen');
-  return screen==='login'||screen==='loading'||screen==='system'?screen:null;
+  return screen==='login'||screen==='loading'||screen==='system'||screen==='preview'?screen:null;
 }
 
 export function EvolutionApp(){
@@ -42,6 +43,7 @@ export function EvolutionApp(){
 
   if(phase==='loading')return <EvolutionLoading progress={progress}/>;
   if(phase==='system')return <EvolutionHome/>;
+  if(phase==='preview')return <EvolutionPreview/>;
 
   return <EvolutionLogin onAuthenticated={()=>{
     setProgress(18);
