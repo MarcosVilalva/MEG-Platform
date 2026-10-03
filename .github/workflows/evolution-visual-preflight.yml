@@ -161,6 +161,12 @@ jobs:
               "artifacts/evolution-preview-${preview}-1672x941.png"
           done
 
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1648,744" \
+            --wait-for-timeout="1200" \
+            "http://127.0.0.1:4173/evolution.html?screen=preview&preview=home" \
+            "artifacts/evolution-preview-home-compact-1648x744.png"
+
       - name: Record capture metadata
         run: |
           cat > artifacts/visual-preflight.txt <<EOF
@@ -178,6 +184,7 @@ jobs:
           launch_categories=1672x941
           movements_desktop=1672x941
           preview_home=1672x941
+          preview_home_compact=1648x744
           preview_movements=1672x941
           preview_launch=1672x941
           preview_payables=1672x941

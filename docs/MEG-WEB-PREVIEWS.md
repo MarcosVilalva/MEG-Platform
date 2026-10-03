@@ -1,5 +1,13 @@
 # MEG Web — Galeria Oficial de Prévias
 
+## Correção de fidelidade — 03/10/2026
+
+A galeria criada inicialmente em 03/10/2026 **não deve ser tratada como referência visual final**. Ela reproduziu a estrutura do App, mas simplificou demais arte, cores, profundidade, acabamento e proporções.
+
+Nova regra: a Home do App passa a ser a **prancha-mãe visual**. Antes de propagar para as demais telas, a Home Web deve copiar os tokens reais, gradientes, bordas, sombras, raios, tipografia, iconografia e densidade do App. O desktop só pode melhorar encaixe, proximidade, largura útil e distribuição espacial.
+
+Enquanto a Home-mãe não estiver validada pelo usuário, as demais prévias permanecem apenas como inventário estrutural, não como direção visual aprovada.
+
 ## Regra permanente
 
 A partir de 03/10/2026, toda evolução relevante do MEG Web deve deixar rastros persistentes no repositório.

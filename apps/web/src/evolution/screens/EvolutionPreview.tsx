@@ -31,24 +31,28 @@ const nav:Array<[PreviewKey,IconName,string]>= [
 ];
 
 function Shell({screen,children,title,subtitle}:{screen:PreviewKey;children:React.ReactNode;title:string;subtitle:string}){
-  return <main className="evo-preview" data-evolution-screen="preview" data-evolution-preview={screen}>
+  return <main className="evo-preview evo-preview-app-faithful" data-evolution-screen="preview" data-evolution-preview={screen}>
     <aside className="evo-preview-sidebar">
-      <button className="evo-preview-brand" type="button" aria-label="MEG Finanças">
-        <img src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
-      </button>
       <nav>
-        {nav.map(([key,icon,label])=><button key={key} className={screen===key?'active':''} type="button" onClick={()=>openPreview(key)}><Icon name={icon}/><span>{label}</span></button>)}
+        {nav.map(([key,icon,label])=><button key={key} className={(screen===key?'active ':'')+(key==='launch'?'evo-preview-nav-new':'')} type="button" onClick={()=>openPreview(key)}><span className="evo-preview-nav-icon"><Icon name={icon}/></span><small>{label}</small></button>)}
       </nav>
       <div className="evo-preview-side-bottom">
-        <button type="button" className={screen==='menu'?'active':''} onClick={()=>openPreview('menu')}><Icon name="menu"/><span>Menu</span></button>
+        <button type="button" className={screen==='menu'?'active':''} onClick={()=>openPreview('menu')}><span className="evo-preview-nav-icon"><Icon name="menu"/></span><small>Menu</small></button>
       </div>
     </aside>
 
     <section className="evo-preview-workspace">
       <header className="evo-preview-topbar">
-        <div className="evo-preview-pagecopy"><span>MEG WEB</span><strong>{title}</strong><small>{subtitle}</small></div>
-        <button className="evo-preview-period" type="button" onClick={()=>openPreview('period')}><Icon name="calendar"/><span><b>Out/2026</b><small>Mês atual</small></span><Icon name="chevron-down"/></button>
-        <button className="evo-preview-user" type="button"><span>M</span><b>Marcos</b></button>
+        <button className="evo-preview-brand" type="button" aria-label="MEG Finanças">
+          <img src="./brand/meg-finance-system-mark-transparent.svg" alt="MEG"/>
+        </button>
+        <button className="evo-preview-period" type="button" onClick={()=>openPreview('period')}>
+          <span className="evo-preview-period-icon"><Icon name="calendar"/></span>
+          <span><b>Out/2026</b><small>Mês atual</small></span>
+          <Icon name="chevron-down"/>
+        </button>
+        <div className="evo-preview-pagecopy"><strong>{title}</strong><small>{subtitle}</small></div>
+        <button className="evo-preview-user" type="button"><span>M</span><b>MARCOS</b></button>
       </header>
       <div className="evo-preview-canvas">{children}</div>
     </section>
@@ -60,32 +64,49 @@ function Metric({icon,label,value,tone='default',note}:{icon:IconName;label:stri
 }
 
 function Home(){
-  return <Shell screen="home" title="Situação atual" subtitle="Acompanhe seu caixa e compromissos.">
-    <section className="evo-preview-home-grid">
-      <article className="evo-preview-balance">
-        <span><Icon name="wallet" size={30}/></span>
-        <div><small>Saldo disponível</small><strong>{money(8420.34)}</strong><p>Considerando apenas lançamentos realizados.</p></div>
-      </article>
-      <section className="evo-preview-flow">
-        <Metric icon="banknote" label="Entradas no mês" value={money(12540)} tone="income"/>
-        <Metric icon="receipt" label="Saídas no mês" value={money(8790)} tone="expense"/>
-        <Metric icon="trend" label="Resultado do mês" value={money(3750)} tone="result"/>
+  return <Shell screen="home" title="Início" subtitle="Visão atual do seu MEG">
+    <section className="evo-app-home">
+      <header className="evo-app-home-title">
+        <div><span>Situação atual</span><h1>Outubro 2026</h1><p>Acompanhe seu caixa e compromissos.</p></div>
+        <i><Icon name="trend" size={28}/></i>
+      </header>
+
+      <section className="evo-app-home-top">
+        <article className="evo-app-balance">
+          <span><Icon name="wallet" size={30}/></span>
+          <div><small>Saldo disponível</small><strong>{money(8420.34)}</strong><p>Considerando apenas os lançamentos realizados.</p></div>
+        </article>
+
+        <section className="evo-app-flow">
+          <article><span><Icon name="banknote"/></span><div><small>Entradas no mês</small><strong>{money(12540)}</strong></div></article>
+          <article className="expense"><span><Icon name="receipt"/></span><div><small>Saídas no mês</small><strong>{money(8790)}</strong></div></article>
+          <article><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{money(3750)}</strong></div></article>
+        </section>
       </section>
-      <section className="evo-preview-summary">
-        <Metric icon="receipt" label="Contas a pagar" value="6" note={money(568)} tone="danger"/>
-        <Metric icon="card" label="Faturas de cartões" value="3" note={money(2864.42)} tone="blue"/>
-        <Metric icon="list" label="Outras pendências" value="12" note={money(941.80)} tone="amber"/>
-        <Metric icon="check-line" label="Contas pagas" value="28" note={money(6285.33)} tone="green"/>
+
+      <section className="evo-app-summary">
+        <article className="red"><span><Icon name="receipt"/></span><small>Contas a pagar</small><b>6</b><em>{money(568)}</em></article>
+        <article className="blue"><span><Icon name="card"/></span><small>Faturas de cartões</small><b>3</b><em>{money(2864.42)}</em></article>
+        <article className="amber"><span><Icon name="list"/></span><small>Outras pendências</small><b>12</b><em>{money(941.80)}</em></article>
+        <article className="green"><span><Icon name="check-line"/></span><small>Contas pagas</small><b>28</b><em>{money(6285.33)}</em></article>
       </section>
-      <button className="evo-preview-benefit" type="button" onClick={()=>openPreview('benefit')}><span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money(1436.52)}</strong></div><Icon name="chevron-right"/></button>
-      <section className="evo-preview-quick">
-        <header><div><span><Icon name="bolt"/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div></header>
-        <div>
-          <button><Icon name="card"/><span>Cartões</span></button>
-          <button><Icon name="receipt"/><span>Pagar conta</span></button>
-          <button><Icon name="chart"/><span>Fluxo de caixa</span></button>
-          <button><Icon name="trend"/><span>Ver relatórios</span></button>
-        </div>
+
+      <section className="evo-app-home-bottom">
+        <button className="evo-app-benefit" type="button" onClick={()=>openPreview('benefit')}>
+          <span><Icon name="food" size={25}/></span>
+          <div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money(1436.52)}</strong></div>
+          <b><Icon name="chevron-right"/></b>
+        </button>
+
+        <section className="evo-app-quick">
+          <header><div><span><Icon name="bolt"/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button>Ver todas <Icon name="chevron-right"/></button></header>
+          <div>
+            <button onClick={()=>openPreview('cards')}><span><Icon name="card"/></span><small>Cartões</small></button>
+            <button onClick={()=>openPreview('payables')}><span><Icon name="receipt"/></span><small>Pagar conta</small></button>
+            <button onClick={()=>openPreview('cashflow')}><span><Icon name="chart"/></span><small>Fluxo de caixa</small></button>
+            <button onClick={()=>openPreview('analytics')}><span><Icon name="trend"/></span><small>Ver relatórios</small></button>
+          </div>
+        </section>
       </section>
     </section>
   </Shell>;

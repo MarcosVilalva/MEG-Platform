@@ -242,3 +242,534 @@
 .evo-preview-quick button{
   min-height:70px;
 }
+
+
+/* ==========================================================================
+   APP FIDELITY MASTER — 03/10/2026
+   Fonte: apps/web/src/mobile/meg-mobile-final.css
+   Regra: copiar arte/tokens/acabamento do App; adaptar somente distribuição.
+   ========================================================================== */
+.evo-preview-app-faithful{
+  --meg2-bg:#002e2f;
+  --meg2-deep:#001f22;
+  --meg2-panel:rgba(4,66,66,.78);
+  --meg2-line:rgba(37,221,213,.24);
+  --meg2-line-strong:rgba(37,221,213,.5);
+  --meg2-cyan:#20e7e0;
+  --meg2-text:#f5fbfb;
+  --meg2-muted:#a8c7c7;
+  --meg2-red:#ff6278;
+  --meg2-green:#48f2c6;
+  --meg2-yellow:#ffd752;
+  --meg2-blue:#53bcff;
+  grid-template-columns:88px minmax(0,1fr);
+  gap:8px;
+  padding:8px;
+  color:var(--meg2-text);
+  background:
+    radial-gradient(circle at 12% -10%,rgba(27,215,205,.20),transparent 34%),
+    radial-gradient(circle at 92% 5%,rgba(0,147,156,.20),transparent 27%),
+    linear-gradient(180deg,#003d3d 0%,var(--meg2-bg) 42%,var(--meg2-deep) 100%);
+}
+.evo-preview-app-faithful .evo-preview-sidebar{
+  border:1px solid rgba(104,255,245,.07);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(0,54,55,.94),rgba(0,35,38,.99));
+  box-shadow:0 0 36px rgba(0,0,0,.16);
+}
+.evo-preview-app-faithful .evo-preview-sidebar nav{
+  display:grid;
+  gap:4px;
+  padding:8px 6px;
+}
+.evo-preview-app-faithful .evo-preview-sidebar nav button,
+.evo-preview-app-faithful .evo-preview-side-bottom button{
+  position:relative;
+  height:64px;
+  min-height:64px;
+  display:grid;
+  grid-template-rows:36px 12px;
+  justify-items:center;
+  align-content:center;
+  gap:2px;
+  padding:0 3px;
+  border:1px solid transparent;
+  border-radius:14px;
+  color:#d4e3e3;
+  background:transparent;
+}
+.evo-preview-app-faithful .evo-preview-sidebar nav button.active,
+.evo-preview-app-faithful .evo-preview-side-bottom button.active{
+  color:var(--meg2-cyan);
+  border-color:rgba(32,231,224,.27);
+  background:rgba(8,133,132,.18);
+}
+.evo-preview-app-faithful .evo-preview-nav-icon{
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  color:inherit;
+}
+.evo-preview-app-faithful .evo-preview-nav-icon svg{width:22px;height:22px}
+.evo-preview-app-faithful .evo-preview-sidebar small{
+  max-width:72px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font-size:7.5px;
+  line-height:1;
+  font-weight:650;
+}
+.evo-preview-app-faithful .evo-preview-nav-new .evo-preview-nav-icon{
+  width:48px;
+  height:48px;
+  margin-top:-8px;
+  border:1px solid var(--meg2-cyan);
+  border-radius:50%;
+  color:var(--meg2-cyan);
+  background:
+    radial-gradient(circle at 35% 28%,rgba(36,229,218,.20),transparent 38%),
+    linear-gradient(180deg,rgba(4,105,105,.99),rgba(2,63,67,.99));
+  box-shadow:0 0 0 4px rgba(0,57,59,.96),0 0 18px rgba(23,225,215,.18),inset 0 0 14px rgba(44,234,222,.06);
+}
+.evo-preview-app-faithful .evo-preview-nav-new .evo-preview-nav-icon svg{width:27px;height:27px}
+.evo-preview-app-faithful .evo-preview-side-bottom{
+  margin-top:auto;
+  padding:6px;
+  border-top:1px solid rgba(61,220,212,.17);
+  background:rgba(0,38,41,.55);
+}
+
+.evo-preview-app-faithful .evo-preview-workspace{
+  grid-template-rows:64px minmax(0,1fr);
+  border:1px solid rgba(104,255,245,.07);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(0,54,55,.94),rgba(0,35,38,.99));
+  box-shadow:0 0 50px rgba(0,0,0,.18);
+}
+.evo-preview-app-faithful .evo-preview-topbar{
+  display:grid;
+  grid-template-columns:48px 215px minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  min-height:64px;
+  padding:7px 10px;
+  border-bottom:1px solid rgba(78,221,214,.17);
+  background:linear-gradient(180deg,rgba(0,57,58,.99),rgba(0,47,49,.95));
+}
+.evo-preview-app-faithful .evo-preview-brand{
+  width:48px;
+  height:48px;
+  padding:0;
+  overflow:hidden;
+  border:1px solid var(--meg2-line-strong);
+  border-radius:12px;
+  background:linear-gradient(145deg,rgba(8,111,111,.82),rgba(0,50,53,.92));
+  box-shadow:inset 0 0 18px rgba(25,232,223,.08),0 5px 18px rgba(0,0,0,.15);
+}
+.evo-preview-app-faithful .evo-preview-brand img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+}
+.evo-preview-app-faithful .evo-preview-period{
+  width:100%;
+  height:48px;
+  min-height:48px;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) 16px;
+  gap:7px;
+  align-items:center;
+  padding:5px 8px;
+  border:1px solid var(--meg2-line);
+  border-radius:12px;
+  color:var(--meg2-text);
+  background:linear-gradient(180deg,rgba(4,72,72,.80),rgba(1,50,52,.90));
+}
+.evo-preview-app-faithful .evo-preview-period-icon{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(30,224,215,.18);
+  border-radius:9px;
+  color:var(--meg2-cyan);
+  background:rgba(16,159,155,.17);
+}
+.evo-preview-app-faithful .evo-preview-period-icon svg{width:19px;height:19px}
+.evo-preview-app-faithful .evo-preview-period>span:nth-child(2){display:grid;gap:1px;text-align:left}
+.evo-preview-app-faithful .evo-preview-period b{font-size:14px;line-height:1.05}
+.evo-preview-app-faithful .evo-preview-period small{color:var(--meg2-muted);font-size:8px}
+.evo-preview-app-faithful .evo-preview-period>svg{width:15px;color:var(--meg2-cyan)}
+.evo-preview-app-faithful .evo-preview-pagecopy{
+  min-width:0;
+  display:flex;
+  align-items:baseline;
+  gap:9px;
+  padding-left:4px;
+}
+.evo-preview-app-faithful .evo-preview-pagecopy strong{
+  color:var(--meg2-text);
+  font-size:13px;
+  letter-spacing:0;
+}
+.evo-preview-app-faithful .evo-preview-pagecopy small{
+  color:var(--meg2-muted);
+  font-size:9px;
+}
+.evo-preview-app-faithful .evo-preview-user{
+  height:46px;
+  display:flex;
+  gap:7px;
+  align-items:center;
+  padding:0 4px;
+  border:0;
+  color:var(--meg2-text);
+  background:transparent;
+}
+.evo-preview-app-faithful .evo-preview-user span{
+  width:39px;
+  height:39px;
+  display:grid;
+  place-items:center;
+  border:2px solid rgba(255,255,255,.90);
+  border-radius:50%;
+  color:#073d3d;
+  background:#d7e8e8;
+  box-shadow:0 0 0 2px rgba(23,224,213,.18);
+  font-size:13px;
+  font-weight:900;
+}
+.evo-preview-app-faithful .evo-preview-user b{font-size:11px;letter-spacing:.02em}
+.evo-preview-app-faithful .evo-preview-canvas{
+  min-height:0;
+  padding:10px 12px 12px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 6% -15%,rgba(27,215,205,.09),transparent 30%),
+    linear-gradient(180deg,rgba(0,54,55,.18),rgba(0,35,38,.05));
+}
+
+/* HOME: o App é a arte; desktop apenas redistribui. */
+.evo-app-home{
+  height:auto;
+  max-width:1380px;
+  margin:0 auto;
+  display:grid;
+  grid-template-rows:72px 118px 126px 154px;
+  align-content:start;
+  gap:7px;
+}
+.evo-app-home-title{
+  position:relative;
+  min-height:72px;
+  padding:2px 64px 8px 4px;
+  display:flex;
+  align-items:center;
+}
+.evo-app-home-title>div>span{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+}
+.evo-app-home-title h1{
+  margin:1px 0;
+  color:var(--meg2-text);
+  font-size:38px;
+  line-height:.98;
+  letter-spacing:-.045em;
+  font-weight:820;
+}
+.evo-app-home-title p{
+  margin:0;
+  color:#d0e2e2;
+  font-size:11px;
+}
+.evo-app-home-title>i{
+  position:absolute;
+  right:4px;
+  top:6px;
+  width:50px;
+  height:50px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--meg2-line);
+  border-radius:11px;
+  color:var(--meg2-cyan);
+  background:linear-gradient(180deg,rgba(3,75,76,.80),rgba(2,53,55,.90));
+  font-style:normal;
+}
+.evo-app-home-top{
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(360px,.88fr) minmax(0,1.42fr);
+  gap:7px;
+}
+.evo-app-balance,
+.evo-app-flow article,
+.evo-app-summary article,
+.evo-app-benefit,
+.evo-app-quick{
+  border:1px solid var(--meg2-line);
+  background:linear-gradient(145deg,rgba(5,74,74,.84),rgba(2,49,52,.94));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.015),0 8px 20px rgba(0,0,0,.08);
+}
+.evo-app-balance{
+  min-width:0;
+  height:118px;
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr);
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  border-radius:15px;
+}
+.evo-app-balance>span,
+.evo-app-flow article>span,
+.evo-app-summary article>span,
+.evo-app-benefit>span,
+.evo-app-quick header>div>span,
+.evo-app-quick>div button>span{
+  border:1px solid rgba(65,232,221,.18);
+  background:
+    radial-gradient(circle at 30% 24%,rgba(79,244,233,.10),transparent 42%),
+    linear-gradient(145deg,rgba(7,101,102,.34),rgba(3,59,62,.62));
+  box-shadow:inset 0 0 13px rgba(45,231,219,.04);
+}
+.evo-app-balance>span{
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  border-radius:13px;
+  color:var(--meg2-cyan);
+}
+.evo-app-balance div{min-width:0;display:grid}
+.evo-app-balance small{font-size:12px;font-weight:800}
+.evo-app-balance strong{
+  margin-top:1px;
+  color:var(--meg2-cyan);
+  font-size:34px;
+  line-height:1.05;
+  letter-spacing:-.045em;
+  white-space:nowrap;
+}
+.evo-app-balance p{margin:3px 0 0;color:var(--meg2-muted);font-size:9px}
+.evo-app-flow{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+}
+.evo-app-flow article{
+  min-width:0;
+  height:118px;
+  display:grid;
+  grid-template-columns:47px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  padding:10px;
+  border-radius:13px;
+}
+.evo-app-flow article>span{
+  width:45px;
+  height:45px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  color:var(--meg2-cyan);
+}
+.evo-app-flow article.expense>span{
+  color:var(--meg2-red);
+  border-color:rgba(255,104,125,.20);
+  background:linear-gradient(145deg,rgba(116,45,56,.40),rgba(70,34,40,.48));
+}
+.evo-app-flow small{color:#e8f3f3;font-size:9px}
+.evo-app-flow strong{
+  display:block;
+  margin-top:3px;
+  color:var(--meg2-cyan);
+  font-size:18px;
+  line-height:1;
+  letter-spacing:-.025em;
+  white-space:nowrap;
+}
+.evo-app-flow article.expense strong{color:var(--meg2-red)}
+.evo-app-summary{
+  min-width:0;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.evo-app-summary article{
+  min-width:0;
+  height:126px;
+  display:grid;
+  grid-template-columns:46px minmax(0,1fr) auto;
+  grid-template-rows:auto auto;
+  gap:2px 9px;
+  align-content:center;
+  align-items:center;
+  padding:11px 13px;
+  border-radius:13px;
+  text-align:left;
+}
+.evo-app-summary article>span{
+  grid-row:1/3;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  color:var(--meg2-cyan);
+}
+.evo-app-summary article.red>span{
+  color:var(--meg2-red);
+  border-color:rgba(255,104,125,.20);
+  background:linear-gradient(145deg,rgba(116,45,56,.40),rgba(70,34,40,.48));
+}
+.evo-app-summary article.blue>span{
+  color:var(--meg2-blue);
+  border-color:rgba(78,176,255,.22);
+  background:linear-gradient(145deg,rgba(30,93,145,.42),rgba(22,61,91,.50));
+}
+.evo-app-summary article.amber>span{
+  color:var(--meg2-yellow);
+  border-color:rgba(245,207,73,.22);
+  background:linear-gradient(145deg,rgba(114,96,35,.42),rgba(69,59,29,.50));
+}
+.evo-app-summary article.green>span{
+  color:var(--meg2-green);
+  border-color:rgba(79,234,177,.22);
+  background:linear-gradient(145deg,rgba(24,105,79,.42),rgba(18,66,54,.52));
+}
+.evo-app-summary small{
+  min-width:0;
+  color:var(--meg2-text);
+  font-size:9px;
+  line-height:1.15;
+  font-weight:650;
+}
+.evo-app-summary b{
+  justify-self:end;
+  color:var(--meg2-text);
+  font-size:22px;
+  line-height:1;
+}
+.evo-app-summary em{
+  grid-column:2/4;
+  color:var(--meg2-cyan);
+  font-size:10px;
+  font-style:normal;
+  font-weight:800;
+}
+.evo-app-summary article.red em{color:var(--meg2-red)}
+.evo-app-summary article.amber em{color:var(--meg2-yellow)}
+.evo-app-summary article.green em{color:var(--meg2-green)}
+.evo-app-home-bottom{
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(360px,.86fr) minmax(0,1.44fr);
+  gap:7px;
+}
+.evo-app-benefit{
+  width:100%;
+  min-width:0;
+  height:154px;
+  min-height:154px;
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr) 26px;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-radius:14px;
+  text-align:left;
+  color:var(--meg2-text);
+}
+.evo-app-benefit>span{
+  width:56px;
+  height:56px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  color:var(--meg2-cyan);
+}
+.evo-app-benefit>div{display:grid}
+.evo-app-benefit small{font-size:11px;font-weight:800}
+.evo-app-benefit em{color:var(--meg2-muted);font-size:9px;font-style:normal}
+.evo-app-benefit strong{margin-top:4px;color:var(--meg2-cyan);font-size:26px;line-height:1}
+.evo-app-benefit>b{color:var(--meg2-cyan)}
+.evo-app-quick{
+  min-width:0;
+  height:154px;
+  min-height:154px;
+  padding:10px;
+  border-radius:14px;
+}
+.evo-app-quick header{
+  min-height:36px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:8px;
+}
+.evo-app-quick header>div{display:flex;align-items:center;gap:7px}
+.evo-app-quick header>div>span{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  color:var(--meg2-cyan);
+}
+.evo-app-quick header p{margin:0;display:grid}
+.evo-app-quick header b{font-size:10px}
+.evo-app-quick header small{color:var(--meg2-muted);font-size:8px}
+.evo-app-quick header button{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  border:0;
+  color:var(--meg2-cyan);
+  background:transparent;
+  font-size:9px;
+  font-weight:800;
+}
+.evo-app-quick header button svg{width:13px;height:13px}
+.evo-app-quick>div{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+}
+.evo-app-quick>div button{
+  min-width:0;
+  min-height:86px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:5px;
+  border:1px solid var(--meg2-line);
+  border-radius:11px;
+  color:var(--meg2-text);
+  background:rgba(0,46,48,.45);
+}
+.evo-app-quick>div button>span{
+  width:39px;
+  height:35px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  color:var(--meg2-cyan);
+}
+.evo-app-quick>div button small{font-size:8px}
+@media(max-width:1320px){
+  .evo-preview-app-faithful{grid-template-columns:80px minmax(0,1fr)}
+  .evo-preview-app-faithful .evo-preview-topbar{grid-template-columns:48px 200px minmax(0,1fr) auto}
+  .evo-app-home-top{grid-template-columns:340px minmax(0,1fr)}
+  .evo-app-home-bottom{grid-template-columns:340px minmax(0,1fr)}
+  .evo-app-balance strong{font-size:30px}
+  .evo-app-flow strong{font-size:16px}
+}

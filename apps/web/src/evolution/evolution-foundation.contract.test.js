@@ -172,4 +172,11 @@ for(const key of ['home','movements','launch','payables','settlement','cards','c
 }
 assert.doesNotMatch(preview,/from\s+['"][^'"]*\/mobile\//i,'Galeria Web não pode importar componentes visuais Mobile.');
 const previewCss=fs.readFileSync(new URL('./styles/preview.css',import.meta.url),'utf8');
-assert.match(previewCss,/grid-template-columns:206px minmax\(0,1fr\)/,'Prévia desktop deve usar expansão espacial do App.');
+assert.match(preview,/meg-finance-system-mark-transparent\.svg/,'Prévia do sistema deve usar a mesma arte de marca do App.');
+assert.match(preview,/evo-app-home/,'Home da galeria deve usar a prancha-mãe fiel ao App.');
+assert.match(previewCss,/APP FIDELITY MASTER/,'Galeria deve declarar explicitamente a camada de fidelidade ao App.');
+assert.match(previewCss,/grid-template-columns:88px minmax\(0,1fr\)/,'Navegação desktop deve evoluir o Dock do App sem criar sidebar genérica.');
+for(const token of ['#002e2f','#001f22','#20e7e0','#f5fbfb','#a8c7c7','#ff6278','#48f2c6','#ffd752','#53bcff']){
+  assert.ok(previewCss.toLowerCase().includes(token),'Token visual real do App ausente na prancha-mãe: '+token);
+}
+assert.match(previewCss,/linear-gradient\(145deg,rgba\(5,74,74,\.84\),rgba\(2,49,52,\.94\)\)/,'Cards da Home-mãe devem preservar o acabamento real do App.');
