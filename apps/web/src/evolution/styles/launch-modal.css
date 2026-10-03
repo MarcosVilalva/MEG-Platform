@@ -817,3 +817,604 @@
   .evo-picker-grid{grid-template-columns:1fr}
   .evo-picker-grid>button{grid-template-columns:36px minmax(0,1fr) auto 20px}
 }
+
+
+/* ==========================================================================
+   MEG CONTROL 3D v1 — Novo Lançamento Web
+   Referência aprovada em 03/10/2026.
+   Responsividade automática: clamp + minmax + auto-fit + recomposição por viewport.
+   ========================================================================== */
+.evo-launch-modal.evo-launch-step-form{
+  width:min(1380px,calc(100vw - clamp(18px,3vw,52px)));
+  max-height:min(920px,calc(100dvh - 24px));
+  min-height:min(720px,calc(100dvh - 24px));
+  grid-template-rows:auto minmax(0,1fr) auto;
+  container-type:inline-size;
+  border-color:rgba(54,247,226,.92);
+  border-radius:clamp(20px,1.6vw,28px);
+  background:
+    radial-gradient(circle at 77% -8%,rgba(21,231,213,.17),transparent 31%),
+    radial-gradient(circle at 4% 108%,rgba(39,111,179,.18),transparent 31%),
+    linear-gradient(145deg,rgba(4,49,59,.997),rgba(1,21,31,.999) 72%);
+  box-shadow:
+    0 42px 120px rgba(0,0,0,.72),
+    0 0 58px rgba(29,236,216,.20),
+    inset 0 1px rgba(219,255,251,.12);
+  perspective:1200px;
+}
+.evo-launch-modal.evo-launch-step-form:after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:
+    radial-gradient(ellipse at 78% 8%,rgba(36,246,225,.08),transparent 22%),
+    linear-gradient(115deg,transparent 0 57%,rgba(45,232,217,.035) 58%,transparent 59%),
+    linear-gradient(25deg,transparent 0 73%,rgba(58,158,216,.035) 74%,transparent 75%);
+}
+.evo-launch-step-form .evo-launch-head{
+  min-height:clamp(82px,8.8vh,100px);
+  grid-template-columns:clamp(48px,4vw,62px) minmax(0,1fr) clamp(40px,3.5vw,52px);
+  gap:clamp(12px,1.2vw,18px);
+  padding:clamp(14px,1.4vw,22px) clamp(18px,1.7vw,28px);
+  background:
+    radial-gradient(circle at 82% 20%,rgba(45,232,215,.08),transparent 34%),
+    linear-gradient(180deg,rgba(7,65,72,.40),rgba(3,34,44,.14));
+}
+.evo-launch-step-form .evo-launch-back,
+.evo-launch-step-form .evo-launch-title-icon{
+  width:clamp(48px,4vw,58px);
+  height:clamp(48px,4vw,58px);
+  border-radius:clamp(13px,1vw,17px);
+  transform:translateZ(18px);
+  box-shadow:
+    0 12px 26px rgba(0,0,0,.28),
+    0 0 22px rgba(44,233,216,.18),
+    inset 0 1px rgba(255,255,255,.10);
+}
+.evo-launch-step-form .evo-launch-head h2{
+  font-size:clamp(28px,2.2vw,38px);
+  line-height:.98;
+  letter-spacing:-.045em;
+}
+.evo-launch-step-form .evo-launch-badge{
+  min-height:30px;
+  padding:0 12px;
+  font-size:clamp(9px,.72vw,11px);
+}
+.evo-launch-step-form .evo-launch-close{
+  width:clamp(40px,3.4vw,50px);
+  height:clamp(40px,3.4vw,50px);
+  border-radius:13px;
+}
+
+.evo-launch-control-v1{
+  grid-template-columns:minmax(0,1.48fr) minmax(360px,.86fr);
+  gap:clamp(12px,1vw,18px);
+  padding:clamp(12px,1.05vw,18px) clamp(14px,1.4vw,22px) 10px;
+}
+.evo-launch-control-v1 .evo-launch-form-primary,
+.evo-launch-control-v1 .evo-launch-form-side{
+  position:relative;
+  z-index:1;
+  padding-right:5px;
+}
+.evo-launch-control-v1 .evo-launch-form-primary{
+  display:flex;
+  flex-direction:column;
+  gap:clamp(10px,1vh,14px);
+}
+.evo-launch-control-v1 .evo-launch-form-side{
+  gap:clamp(9px,.9vh,13px);
+}
+.evo-launch-control-v1 .evo-launch-field+.evo-picker-field,
+.evo-launch-control-v1 .evo-picker-field+.evo-launch-data-grid,
+.evo-launch-control-v1 .evo-launch-data-grid+.evo-launch-field{margin-top:0}
+.evo-launch-control-v1 .evo-launch-field{
+  gap:clamp(7px,.65vh,10px);
+}
+.evo-launch-control-v1 .evo-launch-field>span,
+.evo-launch-taxonomy-block>span,
+.evo-launch-side-label{
+  font-size:clamp(10px,.78vw,13px);
+  letter-spacing:.005em;
+}
+.evo-launch-control-v1 .evo-launch-field>span svg,
+.evo-launch-taxonomy-block>span svg{
+  filter:drop-shadow(0 0 8px currentColor);
+}
+.evo-launch-control-v1 .evo-launch-field input,
+.evo-launch-control-v1 .evo-launch-field textarea{
+  border-radius:12px;
+  font-size:clamp(12px,.88vw,15px);
+  background:
+    linear-gradient(180deg,rgba(4,47,57,.86),rgba(2,31,41,.90));
+}
+.evo-launch-control-v1 .evo-launch-field input{
+  height:clamp(48px,5vh,56px);
+  padding-inline:clamp(12px,1vw,16px);
+}
+.evo-launch-control-v1 .evo-launch-field textarea{
+  min-height:clamp(92px,11vh,126px);
+  padding:13px 14px;
+}
+.evo-launch-control-v1 .evo-launch-money{
+  height:clamp(48px,5vh,56px);
+  border-radius:12px;
+}
+.evo-launch-control-v1 .evo-launch-money input{height:100%}
+.evo-launch-control-v1 .evo-launch-money b{
+  font-size:clamp(13px,.95vw,16px);
+}
+.evo-launch-control-v1 .evo-launch-data-grid{
+  grid-template-columns:minmax(210px,1fr) minmax(180px,.72fr);
+  gap:clamp(10px,1vw,15px);
+  margin-top:0;
+}
+
+.evo-launch-control-v1 .evo-picker-field{
+  min-height:clamp(62px,6.4vh,72px);
+  padding:10px 12px;
+  border-radius:12px;
+  background:
+    linear-gradient(145deg,rgba(5,61,67,.88),rgba(2,34,43,.92));
+  box-shadow:
+    0 9px 20px rgba(0,0,0,.12),
+    inset 0 1px rgba(255,255,255,.025);
+}
+.evo-launch-control-v1 .evo-picker-field>span{
+  font-size:clamp(9px,.68vw,11px);
+}
+.evo-launch-control-v1 .evo-picker-field>strong{
+  font-size:clamp(11px,.82vw,14px);
+}
+.evo-launch-control-v1 .evo-picker-field>small{
+  font-size:clamp(8px,.62vw,10px);
+}
+.evo-launch-control-v1 .evo-picker-field-icon{
+  width:36px;height:36px;
+  box-shadow:0 8px 18px rgba(0,0,0,.22),inset 0 0 16px rgba(55,239,221,.05);
+}
+
+.evo-launch-category-zone{
+  display:grid;
+  gap:8px;
+}
+.evo-launch-category-shortcuts{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:7px;
+}
+.evo-launch-category-shortcuts button{
+  min-width:0;
+  min-height:54px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  padding:8px 10px;
+  border:1px solid rgba(75,185,185,.24);
+  border-radius:12px;
+  color:#cfe1e1;
+  background:
+    linear-gradient(145deg,rgba(6,62,67,.72),rgba(2,37,46,.78));
+  box-shadow:0 8px 16px rgba(0,0,0,.12),inset 0 1px rgba(255,255,255,.025);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.evo-launch-category-shortcuts button:hover{
+  transform:translateY(-2px);
+  border-color:rgba(55,235,218,.52);
+  box-shadow:0 12px 24px rgba(0,0,0,.20),0 0 18px rgba(45,224,209,.08);
+}
+.evo-launch-category-shortcuts button.active{
+  color:#062a2a;
+  border-color:#50f5e1;
+  background:linear-gradient(135deg,#43dccd,#69f0df);
+  box-shadow:0 10px 24px rgba(33,229,208,.18);
+}
+.evo-launch-category-shortcuts button>span{
+  width:32px;height:32px;
+  display:grid;place-items:center;
+  flex:0 0 32px;
+  border-radius:9px;
+  color:#54e2d2;
+  background:rgba(37,177,168,.12);
+  box-shadow:inset 0 0 12px rgba(72,235,219,.06);
+}
+.evo-launch-category-shortcuts button.active>span{color:#063c3a;background:rgba(255,255,255,.16)}
+.evo-launch-category-shortcuts button.yellow:not(.active)>span{color:#f4d34e;background:rgba(187,148,34,.15)}
+.evo-launch-category-shortcuts button.violet:not(.active)>span{color:#a78cff;background:rgba(112,82,191,.15)}
+.evo-launch-category-shortcuts button.red:not(.active)>span{color:#ff7180;background:rgba(205,61,77,.13)}
+.evo-launch-category-shortcuts small{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:clamp(9px,.7vw,11px);
+  font-weight:800;
+}
+
+.evo-launch-account-taxonomy{
+  position:relative;
+  display:grid;
+  gap:10px;
+  padding:clamp(12px,1vw,16px);
+  border:1px solid rgba(65,198,192,.25);
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 0% 0%,rgba(45,235,218,.08),transparent 30%),
+    linear-gradient(145deg,rgba(5,56,63,.82),rgba(2,31,41,.88));
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.15),
+    inset 0 1px rgba(255,255,255,.03);
+  transform-style:preserve-3d;
+}
+.evo-launch-account-taxonomy:before{
+  content:"";
+  position:absolute;
+  inset:8px;
+  pointer-events:none;
+  border-radius:12px;
+  border:1px solid rgba(85,237,222,.035);
+}
+.evo-launch-account-taxonomy>header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.evo-launch-account-taxonomy>header>div{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.evo-launch-account-taxonomy>header>div>span,
+.evo-launch-payment-panel>header>span,
+.evo-launch-quick-categories>header>span{
+  width:36px;height:36px;
+  display:grid;place-items:center;
+  border:1px solid rgba(57,232,214,.20);
+  border-radius:10px;
+  color:#45e3d1;
+  background:linear-gradient(145deg,rgba(12,111,108,.28),rgba(4,61,66,.42));
+  box-shadow:0 9px 18px rgba(0,0,0,.18),0 0 16px rgba(49,225,210,.07);
+}
+.evo-launch-account-taxonomy>header strong{
+  font-size:clamp(11px,.82vw,14px);
+}
+.evo-launch-account-taxonomy>header small{
+  color:#809ea1;
+  font-size:clamp(8px,.6vw,10px);
+  text-align:right;
+}
+.evo-launch-taxonomy-block{
+  display:grid;
+  gap:6px;
+}
+.evo-launch-taxonomy-block>span{
+  color:#cfe0e1;
+  font-weight:850;
+}
+.evo-launch-taxonomy-options{
+  display:grid;
+  gap:7px;
+}
+.evo-launch-taxonomy-options.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.evo-launch-taxonomy-options.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.evo-launch-taxonomy-options button{
+  min-width:0;
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  padding:8px 9px;
+  border:1px solid rgba(72,184,184,.25);
+  border-radius:11px;
+  color:#b7cecf;
+  background:
+    linear-gradient(145deg,rgba(5,51,59,.80),rgba(3,31,40,.86));
+  box-shadow:0 8px 18px rgba(0,0,0,.12);
+}
+.evo-launch-taxonomy-options button:hover:not(:disabled){
+  border-color:rgba(63,224,211,.48);
+  transform:translateY(-1px);
+}
+.evo-launch-taxonomy-options button.active{
+  color:#062b2b;
+  border-color:#58f2df;
+  background:linear-gradient(135deg,#44dbcd,#68f0de);
+  box-shadow:0 9px 22px rgba(36,229,209,.17);
+}
+.evo-launch-taxonomy-options button.active.benefit{
+  color:#372b02;
+  border-color:#f4d65c;
+  background:linear-gradient(135deg,#d6b93f,#f3dc73);
+  box-shadow:0 9px 22px rgba(229,194,65,.14);
+}
+.evo-launch-taxonomy-options button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+.evo-launch-taxonomy-options b{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:clamp(9px,.7vw,12px);
+}
+.evo-launch-account-credit-note{
+  min-height:48px;
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  gap:9px;
+  align-items:center;
+  padding:9px 11px;
+  border:1px solid rgba(112,90,225,.25);
+  border-radius:11px;
+  color:#bcb7e8;
+  background:linear-gradient(145deg,rgba(53,42,102,.34),rgba(22,31,58,.48));
+  font-size:clamp(8px,.62vw,10px);
+  line-height:1.4;
+}
+.evo-launch-account-credit-note svg{
+  color:#aa8fff;
+  filter:drop-shadow(0 0 9px rgba(170,143,255,.35));
+}
+
+.evo-launch-payment-panel{
+  padding:12px;
+}
+.evo-launch-payment-panel>header,
+.evo-launch-quick-categories>header,
+.evo-launch-summary-detailed>header{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:10px;
+}
+.evo-launch-payment-panel>header strong,
+.evo-launch-quick-categories>header strong,
+.evo-launch-summary-detailed>header strong{
+  display:block;
+  font-size:clamp(11px,.82vw,14px);
+}
+.evo-launch-payment-panel>header small,
+.evo-launch-quick-categories>header small,
+.evo-launch-summary-detailed>header small{
+  display:block;
+  margin-top:2px;
+  color:#78979b;
+  font-size:clamp(8px,.61vw,10px);
+}
+.evo-launch-control-v1 .evo-launch-payment-modes button,
+.evo-launch-control-v1 .evo-launch-status button{
+  min-height:clamp(44px,4.7vh,52px);
+  border-radius:11px;
+  font-size:clamp(10px,.72vw,12px);
+}
+.evo-launch-control-v1 .evo-launch-side-section,
+.evo-launch-control-v1 .evo-launch-auto-card,
+.evo-launch-control-v1 .evo-launch-credit-stack,
+.evo-launch-control-v1 .evo-launch-cash-stack,
+.evo-launch-control-v1 .evo-launch-live-summary,
+.evo-launch-quick-categories{
+  border-radius:15px;
+  background:
+    radial-gradient(circle at 92% 0%,rgba(48,220,207,.055),transparent 28%),
+    linear-gradient(155deg,rgba(5,52,60,.80),rgba(2,29,39,.90));
+  box-shadow:
+    0 13px 28px rgba(0,0,0,.16),
+    inset 0 1px rgba(255,255,255,.03);
+}
+.evo-launch-control-v1 .evo-launch-credit-stack,
+.evo-launch-control-v1 .evo-launch-cash-stack{padding:12px}
+.evo-launch-control-v1 .evo-launch-card-context{
+  grid-template-columns:minmax(110px,145px) minmax(0,1fr);
+  min-height:90px;
+  border-radius:12px;
+}
+.evo-launch-control-v1 .evo-launch-card-context img{
+  width:100%;
+  height:78px;
+  transform:perspective(500px) rotateY(-7deg) rotateX(2deg);
+  box-shadow:0 15px 28px rgba(0,0,0,.34),0 0 18px rgba(77,222,213,.06);
+}
+.evo-launch-control-v1 .evo-launch-stepper{
+  height:48px;
+  border-radius:11px;
+}
+.evo-launch-control-v1 .evo-launch-stepper strong{font-size:16px}
+
+.evo-launch-summary-detailed{
+  padding:13px;
+}
+.evo-launch-summary-detailed>header .icon{
+  width:42px;height:42px;
+  border-radius:11px;
+  box-shadow:0 10px 20px rgba(0,0,0,.18);
+}
+.evo-launch-summary-detailed .evo-launch-summary-amount{
+  display:block;
+  margin:6px 0 11px;
+  color:#ff6f7c;
+  font-size:clamp(27px,2.35vw,40px);
+  line-height:1;
+  letter-spacing:-.045em;
+  text-shadow:0 0 18px rgba(255,91,109,.12);
+}
+.evo-launch-summary-detailed .evo-launch-summary-rows{
+  display:grid;
+  border-top:1px solid rgba(74,173,175,.12);
+}
+.evo-launch-summary-detailed .evo-launch-summary-rows>div{
+  min-height:39px;
+  display:grid;
+  grid-template-columns:minmax(128px,.8fr) minmax(0,1.2fr);
+  gap:8px;
+  align-items:center;
+  border-bottom:1px solid rgba(69,155,159,.10);
+}
+.evo-launch-summary-detailed .evo-launch-summary-rows>div:last-child{border-bottom:0}
+.evo-launch-summary-detailed .evo-launch-summary-rows span{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:#829fa3;
+  font-size:clamp(8px,.62vw,10px);
+}
+.evo-launch-summary-detailed .evo-launch-summary-rows span svg{
+  color:#4ddfd0;
+  filter:drop-shadow(0 0 7px rgba(77,223,208,.20));
+}
+.evo-launch-summary-detailed .evo-launch-summary-rows strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:#e5efef;
+  font-size:clamp(8.5px,.66vw,11px);
+  text-align:right;
+}
+
+.evo-launch-quick-categories{
+  padding:12px;
+}
+.evo-launch-quick-categories>div{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(92px,1fr));
+  gap:6px;
+}
+.evo-launch-quick-categories>div button{
+  min-width:0;
+  min-height:43px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:7px 8px;
+  border:1px solid rgba(72,184,184,.23);
+  border-radius:10px;
+  color:#b9cecf;
+  background:rgba(3,37,46,.72);
+}
+.evo-launch-quick-categories>div button svg{color:#4fdcca}
+.evo-launch-quick-categories>div button.yellow svg{color:#efcb54}
+.evo-launch-quick-categories>div button.violet svg{color:#a88cff}
+.evo-launch-quick-categories>div button.red svg{color:#ff7180}
+.evo-launch-quick-categories>div button.active{
+  color:#062d2b;
+  border-color:#58f2df;
+  background:linear-gradient(135deg,#43dccd,#65eddc);
+}
+.evo-launch-quick-categories>div button.active svg{color:#062d2b}
+.evo-launch-quick-categories>div button span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:clamp(8px,.62vw,10px);
+  font-weight:800;
+}
+
+.evo-launch-step-form .evo-launch-actions{
+  grid-template-columns:minmax(210px,.85fr) minmax(320px,1.45fr);
+  gap:12px;
+  padding:10px clamp(14px,1.4vw,22px) 14px;
+  background:linear-gradient(180deg,rgba(2,25,35,.15),rgba(1,18,28,.98));
+}
+.evo-launch-step-form .evo-launch-actions button{
+  min-height:clamp(48px,5.2vh,58px);
+  border-radius:12px;
+  font-size:clamp(11px,.8vw,14px);
+}
+.evo-launch-step-form .evo-launch-actions .save{
+  background:linear-gradient(90deg,#35dcca,#62f0df 58%,#6ff5da);
+  box-shadow:0 0 28px rgba(47,235,215,.24),inset 0 1px rgba(255,255,255,.25);
+}
+
+@media(max-width:1180px){
+  .evo-launch-modal.evo-launch-step-form{
+    width:min(1040px,calc(100vw - 20px));
+  }
+  .evo-launch-control-v1{
+    grid-template-columns:minmax(0,1.24fr) minmax(330px,.76fr);
+  }
+  .evo-launch-category-shortcuts{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .evo-launch-taxonomy-options.three{grid-template-columns:1fr 1fr}
+  .evo-launch-taxonomy-options.three button:last-child{grid-column:1/-1}
+}
+@media(max-width:920px){
+  .evo-launch-backdrop{padding:6px}
+  .evo-launch-modal.evo-launch-step-form{
+    width:100%;
+    max-height:98dvh;
+    min-height:0;
+    border-radius:18px;
+  }
+  .evo-launch-control-v1{
+    display:block;
+    overflow:auto;
+    padding:12px;
+  }
+  .evo-launch-control-v1 .evo-launch-form-primary,
+  .evo-launch-control-v1 .evo-launch-form-side{
+    overflow:visible;
+    padding-right:0;
+  }
+  .evo-launch-control-v1 .evo-launch-form-side{margin-top:12px}
+  .evo-launch-category-shortcuts{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .evo-launch-taxonomy-options.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .evo-launch-data-grid{grid-template-columns:1fr 1fr!important}
+  .evo-launch-step-form .evo-launch-actions{
+    grid-template-columns:1fr 1.25fr;
+    position:sticky;
+    bottom:0;
+  }
+}
+@media(max-width:620px){
+  .evo-launch-step-form .evo-launch-head{
+    min-height:72px;
+    grid-template-columns:42px minmax(0,1fr) 38px;
+    padding:10px 11px;
+  }
+  .evo-launch-step-form .evo-launch-head h2{font-size:24px}
+  .evo-launch-step-form .evo-launch-back{width:40px;height:40px}
+  .evo-launch-category-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .evo-launch-taxonomy-options.three,
+  .evo-launch-taxonomy-options.two{grid-template-columns:1fr}
+  .evo-launch-taxonomy-options.three button:last-child{grid-column:auto}
+  .evo-launch-data-grid{grid-template-columns:1fr!important}
+  .evo-launch-step-form .evo-launch-actions{grid-template-columns:1fr}
+  .evo-launch-summary-detailed .evo-launch-summary-rows>div{grid-template-columns:1fr;gap:2px;padding:6px 0}
+  .evo-launch-summary-detailed .evo-launch-summary-rows strong{text-align:left;padding-left:25px}
+}
+@media(max-height:780px) and (min-width:921px){
+  .evo-launch-modal.evo-launch-step-form{
+    min-height:0;
+    max-height:calc(100dvh - 12px);
+  }
+  .evo-launch-step-form .evo-launch-head{
+    min-height:70px;
+    padding-top:10px;
+    padding-bottom:9px;
+  }
+  .evo-launch-step-form .evo-launch-head h2{font-size:28px}
+  .evo-launch-control-v1{
+    padding-top:9px;
+    padding-bottom:7px;
+    gap:10px;
+  }
+  .evo-launch-control-v1 .evo-launch-form-primary{gap:8px}
+  .evo-launch-control-v1 .evo-launch-field input{height:45px}
+  .evo-launch-control-v1 .evo-picker-field{min-height:56px}
+  .evo-launch-account-taxonomy{gap:7px;padding:9px}
+  .evo-launch-taxonomy-options button{min-height:39px}
+  .evo-launch-category-shortcuts button{min-height:46px}
+  .evo-launch-control-v1 .evo-launch-field textarea{min-height:74px}
+  .evo-launch-summary-detailed .evo-launch-summary-rows>div{min-height:32px}
+  .evo-launch-quick-categories{padding:9px}
+  .evo-launch-quick-categories>header{margin-bottom:7px}
+  .evo-launch-step-form .evo-launch-actions button{min-height:45px}
+}
