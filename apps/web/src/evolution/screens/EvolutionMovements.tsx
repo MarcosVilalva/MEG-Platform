@@ -8,6 +8,7 @@ type Props={
   month:string;
   qaMode?:boolean;
   onCreate:()=>void;
+  refreshToken?:number;
 };
 
 const money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
@@ -69,20 +70,20 @@ const qaMethods:PaymentMethod[]=[
   {id:'qa-verocard',name:'Verocard',type:'benefit',isActive:true}
 ];
 const qaEvents:FinancialEvent[]=[
-  {id:'e1',description:'SUPERMERCADO',type:'expense',status:'paid',date:'2026-10-02',competence:'2026-10',amount:286.42,signedAmount:-286.42,accountId:'qa-main',categoryId:'qa-food',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[0],paymentMethod:qaMethods[0]},
-  {id:'e2',description:'SALÁRIO',type:'income',status:'paid',date:'2026-10-01',competence:'2026-10',amount:7250,signedAmount:7250,accountId:'qa-main',categoryId:'qa-income',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[3],paymentMethod:qaMethods[0]},
-  {id:'e3',description:'LATAM PASS 1/6',type:'expense',status:'planned',date:'2026-10-10',competence:'2026-10',amount:418.9,signedAmount:-418.9,categoryId:'qa-transport',category:qaCategories[2],paymentMethodId:'qa-card',paymentMethod:qaMethods[1]},
-  {id:'e4',description:'VEROCARD ALIMENTAÇÃO',type:'expense',status:'paid',date:'2026-10-02',competence:'2026-10',amount:92.8,signedAmount:-92.8,accountId:'qa-benefit',categoryId:'qa-food',paymentMethodId:'qa-verocard',account:qaAccounts[1],category:qaCategories[0],paymentMethod:qaMethods[2]},
-  {id:'e5',description:'CONDOMÍNIO',type:'expense',status:'planned',date:'2026-10-08',competence:'2026-10',amount:540,signedAmount:-540,accountId:'qa-main',categoryId:'qa-home',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[1],paymentMethod:qaMethods[0]},
-  {id:'e6',description:'REEMBOLSO',type:'income',status:'paid',date:'2026-09-30',competence:'2026-10',amount:184.5,signedAmount:184.5,accountId:'qa-main',categoryId:'qa-income',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[3],paymentMethod:qaMethods[0]}
+  {id:'e1',description:'SUPERMERCADO',type:'expense',status:'paid',date:'2025-05-02',competence:'2025-05',amount:286.42,signedAmount:-286.42,accountId:'qa-main',categoryId:'qa-food',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[0],paymentMethod:qaMethods[0]},
+  {id:'e2',description:'SALÁRIO',type:'income',status:'paid',date:'2025-05-01',competence:'2025-05',amount:7250,signedAmount:7250,accountId:'qa-main',categoryId:'qa-income',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[3],paymentMethod:qaMethods[0]},
+  {id:'e3',description:'LATAM PASS 1/6',type:'expense',status:'planned',date:'2025-05-10',competence:'2025-05',amount:418.9,signedAmount:-418.9,categoryId:'qa-transport',category:qaCategories[2],paymentMethodId:'qa-card',paymentMethod:qaMethods[1]},
+  {id:'e4',description:'VEROCARD ALIMENTAÇÃO',type:'expense',status:'paid',date:'2025-05-02',competence:'2025-05',amount:92.8,signedAmount:-92.8,accountId:'qa-benefit',categoryId:'qa-food',paymentMethodId:'qa-verocard',account:qaAccounts[1],category:qaCategories[0],paymentMethod:qaMethods[2]},
+  {id:'e5',description:'CONDOMÍNIO',type:'expense',status:'planned',date:'2025-05-08',competence:'2025-05',amount:540,signedAmount:-540,accountId:'qa-main',categoryId:'qa-home',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[1],paymentMethod:qaMethods[0]},
+  {id:'e6',description:'REEMBOLSO',type:'income',status:'paid',date:'2025-04-30',competence:'2025-05',amount:184.5,signedAmount:184.5,accountId:'qa-main',categoryId:'qa-income',paymentMethodId:'qa-pix',account:qaAccounts[0],category:qaCategories[3],paymentMethod:qaMethods[0]}
 ];
 const qaSummary:FinanceSummary={
-  month:'2026-10',availableBalance:11614.59,income:7434.5,expense:1338.12,projectedResult:6096.38,
+  month:'2025-05',availableBalance:11614.59,income:7434.5,expense:1338.12,projectedResult:6096.38,
   realizedIncome:7434.5,realizedExpense:379.22,realizedResult:7055.28,eventCount:6,pendingCount:2,pendingAmount:958.9,
   nextDue:null,topCategories:[]
 };
 
-export function EvolutionMovements({month,qaMode=false,onCreate}:Props){
+export function EvolutionMovements({month,qaMode=false,onCreate,refreshToken=0}:Props){
   const [events,setEvents]=useState<FinancialEvent[]>(qaMode?qaEvents:[]);
   const [summary,setSummary]=useState<FinanceSummary>(qaSummary);
   const [accounts,setAccounts]=useState<Account[]>(qaMode?qaAccounts:[]);
@@ -116,7 +117,7 @@ export function EvolutionMovements({month,qaMode=false,onCreate}:Props){
       setMethods(nextMethods.filter(item=>item.isActive));
     }).finally(()=>{if(active)setBusy(false)});
     return()=>{active=false};
-  },[month,qaMode]);
+  },[month,qaMode,refreshToken]);
 
   const normalized=normalize(query.trim());
   const rows=useMemo(()=>events
