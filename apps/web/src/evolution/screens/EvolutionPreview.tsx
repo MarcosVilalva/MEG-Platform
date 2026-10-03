@@ -11,6 +11,12 @@ function requestedPreview():PreviewKey{
   const value=new URLSearchParams(window.location.search).get('preview') as PreviewKey|null;
   return value&&previewKeys.includes(value)?value:'home';
 }
+function openPreview(preview:PreviewKey){
+  const url=new URL(window.location.href);
+  url.searchParams.set('screen','preview');
+  url.searchParams.set('preview',preview);
+  window.location.href=url.toString();
+}
 
 const nav:Array<[PreviewKey,IconName,string]>= [
   ['home','home','Início'],
@@ -31,17 +37,17 @@ function Shell({screen,children,title,subtitle}:{screen:PreviewKey;children:Reac
         <img src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
       </button>
       <nav>
-        {nav.map(([key,icon,label])=><button key={key} className={screen===key?'active':''} type="button"><Icon name={icon}/><span>{label}</span></button>)}
+        {nav.map(([key,icon,label])=><button key={key} className={screen===key?'active':''} type="button" onClick={()=>openPreview(key)}><Icon name={icon}/><span>{label}</span></button>)}
       </nav>
       <div className="evo-preview-side-bottom">
-        <button type="button" className={screen==='menu'?'active':''}><Icon name="menu"/><span>Menu</span></button>
+        <button type="button" className={screen==='menu'?'active':''} onClick={()=>openPreview('menu')}><Icon name="menu"/><span>Menu</span></button>
       </div>
     </aside>
 
     <section className="evo-preview-workspace">
       <header className="evo-preview-topbar">
         <div className="evo-preview-pagecopy"><span>MEG WEB</span><strong>{title}</strong><small>{subtitle}</small></div>
-        <button className="evo-preview-period" type="button"><Icon name="calendar"/><span><b>Out/2026</b><small>Mês atual</small></span><Icon name="chevron-down"/></button>
+        <button className="evo-preview-period" type="button" onClick={()=>openPreview('period')}><Icon name="calendar"/><span><b>Out/2026</b><small>Mês atual</small></span><Icon name="chevron-down"/></button>
         <button className="evo-preview-user" type="button"><span>M</span><b>Marcos</b></button>
       </header>
       <div className="evo-preview-canvas">{children}</div>
@@ -71,7 +77,7 @@ function Home(){
         <Metric icon="list" label="Outras pendências" value="12" note={money(941.80)} tone="amber"/>
         <Metric icon="check-line" label="Contas pagas" value="28" note={money(6285.33)} tone="green"/>
       </section>
-      <button className="evo-preview-benefit" type="button"><span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money(1436.52)}</strong></div><Icon name="chevron-right"/></button>
+      <button className="evo-preview-benefit" type="button" onClick={()=>openPreview('benefit')}><span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money(1436.52)}</strong></div><Icon name="chevron-right"/></button>
       <section className="evo-preview-quick">
         <header><div><span><Icon name="bolt"/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div></header>
         <div>
@@ -166,7 +172,7 @@ function Payables(){
           {payableRows.map((r,i)=><button key={i} className="evo-preview-payable-row"><span className="check"></span><span className="icon"><Icon name={i===0?'bolt':i===1?'wifi':i===2?'heart-pulse':i===3?'house':'car'}/></span><span><b>{r[1]}</b><small>{r[2]} · {r[4]}</small></span><strong>{money(Number(r[3]))}</strong><Icon name="chevron-right"/></button>)}
         </article>
         <aside className="evo-preview-selection">
-          <span><Icon name="wallet"/></span><small>Selecionados</small><strong>2 contas</strong><b>{money(309.32)}</b><p>Saldo disponível: {money(8420.34)}</p><button className="evo-preview-primary wide">Pagar selecionados</button>
+          <span><Icon name="wallet"/></span><small>Selecionados</small><strong>2 contas</strong><b>{money(309.32)}</b><p>Saldo disponível: {money(8420.34)}</p><button className="evo-preview-primary wide" onClick={()=>openPreview('settlement')}>Pagar selecionados</button>
         </aside>
       </div>
     </section>
@@ -202,7 +208,7 @@ function Cards(){
         <div className="evo-preview-dots"><i className="active"/><i/><i/></div>
       </article>
       <article className="evo-preview-card-snapshot">
-        <header><div><b>LATAM Pass</b><small>Fatura 10/2026</small></div><button>Abrir central <Icon name="chevron-right"/></button></header>
+        <header><div><b>LATAM Pass</b><small>Fatura 10/2026</small></div><button onClick={()=>openPreview('card-center')}>Abrir central <Icon name="chevron-right"/></button></header>
         <div className="evo-preview-card-metrics"><Metric icon="wallet" label="Limite total" value={money(12000)}/><Metric icon="trend" label="Disponível" value={money(7335.58)} tone="income"/><Metric icon="receipt" label="Fatura atual" value={money(4664.42)} tone="expense"/><Metric icon="calendar" label="Vencimento" value="12/10"/></div>
         <div className="evo-preview-usage"><span><i style={{width:'39%'}}/></span><small>39% utilizado · melhor dia para compra: 05</small></div>
       </article>
