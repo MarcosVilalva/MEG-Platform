@@ -294,7 +294,12 @@ export function EvolutionHome(){
           {card:data.cards[(normalizedCardIndex+1)%cardCount],sourceIndex:(normalizedCardIndex+1)%cardCount,position:'right' as const}
         ];
 
-  return <main className="evo-home" data-evolution-screen={activeView} data-evolution-home-fidelity="product-v2">
+  const flowDays=(data.cashflow.length?data.cashflow:fixture.cashflow).slice(-31);
+  const flowMax=Math.max(1,...flowDays.flatMap(item=>[Math.abs(item.income),Math.abs(item.expense)]));
+  const resultValue=Number(data.summary.realizedResult||data.summary.projectedResult||0);
+  const balanceDelta=data.incomeDelta-data.expenseDelta;
+
+  return <main className="evo-home" data-evolution-screen={activeView} data-evolution-home-fidelity="approved-2026-10-03">
     <div className="evo-home-atmosphere" aria-hidden="true"><i/><i/><i/></div>
 
     <aside className="evo-home-sidebar">
@@ -339,89 +344,104 @@ export function EvolutionHome(){
 
       {activeView==='movements'
         ?<EvolutionMovements month={month} qaMode={qaMode} onCreate={()=>setLaunchOpen(true)} refreshToken={refreshToken}/>
-        :<>
-      <section className="evo-home-hero">
-        <div className="evo-home-canonical-scene" aria-hidden="true"><img src="./evolution/artwork/home-hero-reference.webp" alt=""/></div>
-        <div className="evo-home-hero-copy">
-          <span className="evo-home-hero-eyebrow">PAINEL FINANCEIRO</span>
-          <h1>Visão financeira</h1>
-          <p>Saldo, compromissos, cartões e metas organizados para <strong>{monthLabel(month)}</strong>.</p>
-        </div>
-      </section>
+        :<section className="evo-home-dashboard" data-meg-no-page-scroll="true">
+          <section className="evo-home-dashboard-top">
+            <article className="evo-home-balance-hero">
+              <img src="./evolution/artwork/home-hero-reference.webp" alt="" aria-hidden="true"/>
+              <div className="evo-home-balance-copy">
+                <span className="evo-home-feature-icon"><Icon name="wallet"/></span>
+                <div>
+                  <small>Saldo disponível</small>
+                  <strong>{money.format(data.summary.availableBalance)}</strong>
+                  <p className={balanceDelta>=0?'positive':'negative'}>{balanceDelta>=0?'↗':'↘'} {Math.abs(balanceDelta).toFixed(1).replace('.',',')}% <em>em relação ao mês anterior</em></p>
+                </div>
+              </div>
+              <div className="evo-home-balance-badge"><i/>{money.format(data.summary.availableBalance)}</div>
+            </article>
 
-      <section className={'evo-home-kpis '+(busy?'loading':'')}>
-        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail={data.summary.projectedResult>=0?'Caixa positivo':'Caixa projetado negativo'} detailNote="no período selecionado" series={trend.map(item=>item.result)} accessory/>
-        <MiniMetric icon="income" label="Receitas" value={money.format(data.summary.income)} tone="green" detail={Math.abs(data.incomeDelta).toFixed(1).replace('.',',')+'%'} series={trend.map(item=>item.income)}/>
-        <MiniMetric icon="expense" label="Despesas" value={money.format(data.summary.expense)} tone="red" detail={Math.abs(data.expenseDelta).toFixed(1).replace('.',',')+'%'} series={trend.map(item=>item.expense)}/>
-        <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="Saldo separado do caixa"/>
-        <article className="evo-home-kpi evo-tone-cyan evo-home-goal-kpi"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="target"/></span><span>Metas</span></div><strong>3 de 5</strong><div className="evo-home-goal-line"><i style={{width:'60%'}}/><span>60%</span></div></article>
-        <article className="evo-home-kpi evo-tone-warning"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="alert"/></span><span>Pendências</span></div><strong>{data.summary.pendingCount} {data.summary.pendingCount===1?'conta':'contas'}</strong><div className="evo-home-kpi-detail"><span>{money.format(data.summary.pendingAmount)}</span><Icon name="arrow"/></div></article>
-      </section>
+            <article className="evo-home-flow-panel">
+              <header>
+                <div><span className="evo-home-feature-icon"><Icon name="chart"/></span><h2>Fluxo do mês</h2></div>
+                <button type="button" onClick={()=>setMonthOpen(true)}>{monthLabel(month)} <b>⌄</b></button>
+              </header>
+              <section className="evo-home-flow-metrics">
+                <div className="income"><Icon name="income"/><span><small>Entradas</small><strong>{money.format(data.summary.realizedIncome||data.summary.income)}</strong></span></div>
+                <div className="expense"><Icon name="expense"/><span><small>Saídas</small><strong>{money.format(data.summary.realizedExpense||data.summary.expense)}</strong></span></div>
+                <div className={resultValue>=0?'result positive':'result negative'}><b>=</b><span><small>Resultado</small><strong>{money.format(resultValue)}</strong></span></div>
+              </section>
+              <div className="evo-home-flow-chart" aria-label="Fluxo diário">
+                <div className="zero-line"/>
+                {flowDays.map((item,index)=>{
+                  const day=String(Number(item.date.slice(-2))).padStart(2,'0');
+                  const showLabel=index===0||index===flowDays.length-1||Number(day)%5===0;
+                  return <span className="evo-home-flow-day" key={item.date}>
+                    <i className="income" style={{height:(Math.abs(item.income)/flowMax*46)+'%'}}/>
+                    <i className="expense" style={{height:(Math.abs(item.expense)/flowMax*46)+'%'}}/>
+                    {showLabel&&<small>{day}</small>}
+                  </span>;
+                })}
+              </div>
+            </article>
+          </section>
 
-      <section className="evo-home-middle">
-        <article className="evo-home-panel evo-home-cashflow">
-          <header><div><h2><Icon name="chart"/>Fluxo de caixa</h2><p>Receitas e despesas dos últimos 6 meses</p></div><button type="button">Últimos 6 meses <b>⌄</b></button></header>
-          <div className="evo-home-chart">
-            <div className="evo-home-chart-grid"><span>12.000</span><span>9.000</span><span>6.000</span><span>3.000</span><span>0</span></div>
-            <div className="evo-home-bars">
-              {trend.map((item)=><div className="evo-home-bar-month" key={item.month}>
-                <div className="evo-home-bar-pair"><i className="income" style={{height:(item.income/max*100)+'%'}}/><i className="expense" style={{height:(item.expense/max*100)+'%'}}/></div>
-                <span>{trendMonthLabel(item.month)}</span>
-              </div>)}
-              <svg className="evo-home-line" viewBox="0 0 100 64" preserveAspectRatio="none"><polyline points={linePoints}/>{pointList.map((point,i)=><circle key={i} cx={point.x} cy={point.y} r="1.25"/>)}</svg>
-            </div>
-            <aside className="evo-home-chart-summary"><div><span>{monthLabel(month)}</span><b><i className="income"/>{money.format(data.summary.income)}</b><b><i className="expense"/>{money.format(data.summary.expense)}</b></div><div><span>Saldo do período</span><strong>{money.format(data.summary.projectedResult)}</strong><em>↑ 22,8%</em></div></aside>
-          </div>
-          <footer><span><i className="income"/>Receitas</span><span><i className="expense"/>Despesas</span><span><i className="result"/>Saldo</span></footer>
-        </article>
+          <section className="evo-home-summary-cards">
+            <button className="red" type="button"><span><Icon name="report"/></span><div><small>Contas a pagar</small><strong>{money.format(data.payableOpenAmount)}</strong><em>{data.payableOpenCount} {data.payableOpenCount===1?'conta em aberto':'contas em aberto'}</em></div><b>›</b></button>
+            <button className="blue" type="button"><span><Icon name="card"/></span><div><small>Faturas de cartões</small><strong>{money.format(data.cardStatementAmount)}</strong><em>{data.cardStatementCount} {data.cardStatementCount===1?'fatura em aberto':'faturas em aberto'}</em></div><b>›</b></button>
+            <button className="amber" type="button"><span><Icon name="clock"/></span><div><small>Outras pendências</small><strong>{money.format(data.summary.pendingAmount)}</strong><em>{data.summary.pendingCount} itens pendentes</em></div><b>›</b></button>
+            <button className="green" type="button"><span><Icon name="check"/></span><div><small>Contas pagas</small><strong>{money.format(data.paidAmount||data.summary.realizedExpense)}</strong><em>{data.paidCount} contas este mês</em></div><b>›</b></button>
+          </section>
 
-        <div className="evo-home-right-stack">
-          <article className="evo-home-panel evo-home-cards">
-            <header><h2><Icon name="card"/>Meus cartões</h2><button type="button">Ver todos <Icon name="arrow"/></button></header>
-            <div className="evo-home-card-stage">
-              <button className="evo-home-card-nav prev" type="button" onClick={()=>setCardIndex(v=>(v-1+data.cards.length)%data.cards.length)}>‹</button>
-              {carouselCards.map(({card,sourceIndex,position})=>{
-                const visual=sourceIndex%3===0?'primary':sourceIndex%3===1?'meg':'travel';
-                return <div key={card.id} className={'evo-credit-card has-real-art visual-'+visual+' '+position}>
-                  <img className="evo-card-art" src={cardArtwork(card,sourceIndex)} alt="" aria-hidden="true"/>
-                  <span className="evo-card-art-shade" aria-hidden="true"/>
-                  <span className="evo-card-live-number">•••• &nbsp; {card.lastFour}</span>
-                  <span className="evo-card-live-name">{card.name}</span>
-                </div>;
-              })}
-              <button className="evo-home-card-nav next" type="button" onClick={()=>setCardIndex(v=>(v+1)%data.cards.length)}>›</button>
-            </div>
-            <div className="evo-home-dots">{data.cards.map((card,index)=><button key={card.id} type="button" className={index===normalizedCardIndex?'active':''} onClick={()=>setCardIndex(index)}/>)}</div>
-          </article>
-          <article className="evo-home-panel evo-home-goals">
-            <header><h2><Icon name="target"/>Metas em andamento</h2><button type="button">Ver todas <Icon name="arrow"/></button></header>
-            <div><span className="goal-icon"><Icon name="house"/></span><section><b>Comprar meu apartamento</b><small>R$ 120.000,00</small><i><em style={{width:'68%'}}/></i></section><strong>68%</strong></div>
-            <div><span className="goal-icon"><Icon name="plane"/></span><section><b>Viagem Europa 2026</b><small>R$ 25.000,00</small><i><em style={{width:'40%'}}/></i></section><strong>40%</strong></div>
-          </article>
-        </div>
-      </section>
+          <section className="evo-home-feature-row">
+            <article className="evo-home-benefit-banner">
+              <div className="evo-home-benefit-copy"><span className="evo-home-feature-icon"><Icon name="gift"/></span><div><h2>Benefícios Verocard</h2><p>Mais economia no seu dia a dia.</p></div></div>
+              <div className="evo-home-benefit-partners">
+                <span><Icon name="cart"/><small>Supermercados<b>Até 15% OFF</b></small></span>
+                <span><Icon name="car"/><small>Postos de gasolina<b>Até 12% OFF</b></small></span>
+                <span><Icon name="restaurant"/><small>Restaurantes<b>Até 20% OFF</b></small></span>
+                <span><Icon name="report"/><small>Farmácias<b>Até 18% OFF</b></small></span>
+              </div>
+              <img src="./assets/cards/verocard-alimentacao-v659.svg" alt="Verocard Alimentação"/>
+            </article>
 
-      <section className="evo-home-bottom">
-        <article className="evo-home-panel evo-home-list">
-          <header><h2><Icon name="swap"/>Últimas movimentações</h2><button type="button">Ver todas <Icon name="arrow"/></button></header>
-          <div className="evo-home-scroll">
-            {data.events.map(event=><div className="evo-home-list-row" key={event.id}><EventIcon event={event}/><section><b>{event.description}</b><small>{event.category}</small></section><time>{compactDate.format(new Date(event.date))}</time><strong className={event.amount>=0?'positive':'negative'}>{signed(event.amount)}</strong></div>)}
-          </div>
-        </article>
-        <article className="evo-home-panel evo-home-list evo-home-due">
-          <header><h2><Icon name="calendar"/>Próximos vencimentos</h2><button type="button">Ver todas <Icon name="arrow"/></button></header>
-          <div className="evo-home-scroll">
-            {data.due.map(item=><div className="evo-home-list-row" key={item.id}><span className="evo-home-list-icon warning"><Icon name={(item.kind as IconName)||'clock'}/></span><section><b>{item.description}</b><small>Vencimento programado</small></section><time>{compactDate.format(new Date(item.date+'T12:00:00'))}</time><strong className="negative">{money.format(item.amount)}</strong></div>)}
-          </div>
-        </article>
-        <article className="evo-home-panel evo-home-month-summary">
-          <header><h2><Icon name="target"/>Resumo do mês</h2><button type="button">Ver relatório <Icon name="arrow"/></button></header>
-          <div className="evo-home-donut-wrap"><div className="evo-home-donut" style={{background:donut}}><span><b>{money.format(data.summary.expense)}</b><small>Despesas</small></span></div>
-            <div className="evo-home-category-list">{categories.slice(0,7).map((item,index)=><div key={item.name}><i style={{background:palette[index%palette.length]}}/><span>{item.name}</span><em>{(Math.abs(item.amount)/categoryTotal*100).toFixed(0)}%</em><b>{money.format(item.amount)}</b></div>)}</div>
-          </div>
-        </article>
-      </section>
-      </>}
+            <article className="evo-home-quick-actions">
+              <header><div><span className="evo-home-feature-icon"><Icon name="alert"/></span><h2>Ações rápidas</h2></div><button type="button">Ver todas⌄</button></header>
+              <div>
+                <button type="button" onClick={()=>setLaunchOpen(true)}><span><Icon name="plus"/></span><b>Novo lançamento</b><small>Receita, despesa ou benefício</small></button>
+                <button type="button"><span><Icon name="swap"/></span><b>Transferência</b><small>Entre contas e cartões</small></button>
+                <button type="button"><span><Icon name="report"/></span><b>Relatórios</b><small>Veja seus resultados</small></button>
+                <button type="button"><span><Icon name="settings"/></span><b>Configurar metas</b><small>Organize seus objetivos</small></button>
+              </div>
+            </article>
+          </section>
+
+          <section className="evo-home-dashboard-bottom">
+            <article className="evo-home-data-panel">
+              <header><div><Icon name="swap"/><h2>Últimas movimentações</h2></div><button type="button" onClick={()=>setActiveView('movements')}>Ver todas⌄</button></header>
+              <div className="evo-home-mini-table" data-meg-scroll-region="true">
+                <div className="head"><span>Data</span><span>Descrição</span><span>Categoria</span><span>Valor</span></div>
+                {data.events.slice(0,6).map(event=><button type="button" key={event.id} className="row" onClick={()=>setActiveView('movements')}>
+                  <time>{new Intl.DateTimeFormat('pt-BR').format(new Date(event.date.length===10?event.date+'T12:00:00':event.date))}</time>
+                  <span className="desc"><EventIcon event={event}/><b>{event.description}</b></span>
+                  <em>{event.category}</em>
+                  <strong className={event.amount>=0?'positive':'negative'}>{signed(event.amount)}</strong>
+                </button>)}
+              </div>
+            </article>
+
+            <article className="evo-home-data-panel evo-home-upcoming">
+              <header><div><Icon name="calendar"/><h2>Próximos vencimentos</h2></div><button type="button">Ver todas⌄</button></header>
+              <div className="evo-home-mini-table" data-meg-scroll-region="true">
+                <div className="head"><span>Vencimento</span><span>Descrição</span><span>Status</span><span>Valor</span></div>
+                {data.due.slice(0,6).map(item=><div className="row" key={item.id}>
+                  <time>{new Intl.DateTimeFormat('pt-BR').format(new Date(item.date+'T12:00:00'))}</time>
+                  <span className="desc"><span className="evo-home-list-icon warning"><Icon name={(item.kind as IconName)||'clock'}/></span><b>{item.description}</b></span>
+                  <em className="due">Pendente</em>
+                  <strong>{money.format(item.amount)}</strong>
+                </div>)}
+              </div>
+            </article>
+          </section>
+        </section>}
     </section>
     {launchOpen&&<EvolutionLaunchModal
       month={month}
