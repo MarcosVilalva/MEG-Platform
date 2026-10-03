@@ -8,6 +8,8 @@ import '../styles/launch-modal.css';
 type LaunchMode='expense'|'income'|'benefit';
 type PaymentMode='cash'|'credit';
 type LaunchStep='choose'|'form'|'success';
+type AccountClassification='general'|'investment'|'benefit';
+type AccountKind='monetary'|'benefit';
 
 type Props={
   month:string;
@@ -24,6 +26,11 @@ const isCreditText=(value:unknown)=>/credit|credito|cartao/.test(normalize(value
 const isCrediarioText=(value:unknown)=>/crediario|carne|parcelado loja/.test(normalize(value));
 const isPixText=(value:unknown)=>/(^|\s)pix($|\s)/.test(normalize(value));
 const isMainMonetary=(account:Account)=>!isBenefitText(account.name+' '+account.type+' '+(account.institution||''))&&/conta monetaria principal|conta principal/.test(normalize(account.name));
+const isInvestmentAccount=(account:Account)=>/invest|investment|aplic|cdb|poupanc|corretora|broker/.test(normalize(account.name+' '+account.type+' '+(account.institution||'')));
+const accountClassificationOf=(account:Account):AccountClassification=>isBenefitText(account.name+' '+account.type+' '+(account.institution||''))?'benefit':isInvestmentAccount(account)?'investment':'general';
+const accountKindOf=(account:Account):AccountKind=>isBenefitText(account.name+' '+account.type+' '+(account.institution||''))?'benefit':'monetary';
+const accountClassificationLabel=(value:AccountClassification)=>value==='general'?'Contas gerais':value==='investment'?'Investimentos':'Benefício';
+const accountKindLabel=(value:AccountKind)=>value==='monetary'?'Conta monetária':'Conta benefício';
 const operationId=()=>globalThis.crypto?.randomUUID?.()||('evo-'+Date.now()+'-'+Math.random().toString(16).slice(2));
 
 function parseAmount(value:string){
@@ -109,6 +116,7 @@ function formatMonth(month:string){return /^\d{4}-\d{2}$/.test(month)?month.spli
 const qaAccounts:Account[]=[
   {id:'qa-main',name:'Conta Monetária Principal',type:'monetary',institution:'MEG',openingBalance:0,isActive:true},
   {id:'qa-bb',name:'Banco do Brasil',type:'monetary',institution:'Banco do Brasil',openingBalance:0,isActive:true},
+  {id:'qa-invest',name:'Conta de Investimentos',type:'investment',institution:'MEG Invest',openingBalance:0,isActive:true},
   {id:'qa-benefit',name:'Conta Benefício (Verocard)',type:'benefit',institution:'Verocard',openingBalance:0,isActive:true}
 ];
 const qaCategories:Category[]=[
@@ -146,6 +154,8 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
   const [step,setStep]=useState<LaunchStep>(forced?'form':'choose');
   const [mode,setMode]=useState<LaunchMode>(initialMode);
   const [paymentMode,setPaymentMode]=useState<PaymentMode>('cash');
+  const [accountClassification,setAccountClassification]=useState<AccountClassification>(initialMode==='benefit'?'benefit':'general');
+  const [accountKind,setAccountKind]=useState<AccountKind>(initialMode==='benefit'?'benefit':'monetary');
   const [description,setDescription]=useState('');
   const [amount,setAmount]=useState('');
   const [date,setDate]=useState(today());
@@ -192,8 +202,12 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
   const selectedCard=cards.find(item=>item.id===cardId);
   const incomeBenefit=mode==='income'&&Boolean(selectedAccount&&isBenefitText(selectedAccount.name+' '+selectedAccount.type+' '+(selectedAccount.institution||'')));
 
-  const regularAccounts=accounts.filter(item=>item.isActive&&!isBenefitText(item.name+' '+item.type+' '+(item.institution||'')));
-  const visibleAccounts=mode==='benefit'?(benefitAccount?[benefitAccount]:[]):mode==='expense'?regularAccounts:accounts.filter(item=>item.isActive);
+  const visibleAccounts=accounts.filter(account=>{
+    if(!account.isActive)return false;
+    if(mode==='benefit')return accountClassificationOf(account)==='benefit';
+    return accountClassificationOf(account)===accountClassification&&accountKindOf(account)===accountKind;
+  });
+  const accountControlsLocked=mode==='benefit'||(mode==='expense'&&paymentMode==='credit')||(mode==='expense'&&status==='planned');
   const visibleMethods=methods.filter(method=>{
     const source=method.name+' '+(method.type||'');
     if(mode==='benefit')return isBenefitText(source);
@@ -206,14 +220,71 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
     const tone=icon==='food'||icon==='cart'||icon==='sandwich'||icon==='cup-soda'?'yellow':icon==='house'||icon==='car'||icon==='fuel'?'violet':icon==='heart-pulse'?'red':mode==='income'?'green':'cyan';
     return {id:category.id,label:category.name,subtitle:category.group||undefined,icon,tone};
   });
-  const accountOptions:EvolutionPickerOption[]=visibleAccounts.map(account=>({id:account.id,label:account.name,subtitle:account.institution||account.type,icon:isBenefitText(account.name+' '+account.type)?'food':'landmark',tone:isBenefitText(account.name+' '+account.type)?'yellow':'cyan'}));
+  const accountOptions:EvolutionPickerOption[]=visibleAccounts.map(account=>{
+    const classification=accountClassificationOf(account);
+    return {
+      id:account.id,
+      label:account.name,
+      subtitle:[account.institution,accountClassificationLabel(classification)].filter(Boolean).join(' · '),
+      icon:classification==='benefit'?'gift':classification==='investment'?'trend':'landmark',
+      tone:classification==='benefit'?'yellow':classification==='investment'?'violet':'cyan'
+    };
+  });
   const methodOptions:EvolutionPickerOption[]=visibleMethods.map(method=>({id:method.id,label:method.name,subtitle:method.type||undefined,icon:paymentIcon(method),tone:isBenefitText(method.name+' '+(method.type||''))?'yellow':paymentIcon(method)==='banknote'?'green':paymentIcon(method)==='card'?'violet':'cyan'}));
   const cardOptions:EvolutionPickerOption[]=cards.filter(card=>card.isActive!==false).map(card=>({id:card.id,label:card.name,subtitle:card.lastFour?'Final '+card.lastFour:'Cartão de crédito',imageSrc:cardArtwork(card.name)||undefined,tone:'violet'}));
+
+  const selectedMethod=methods.find(item=>item.id===paymentMethodId);
+  const selectedAccountClassification=selectedAccount?accountClassificationOf(selectedAccount):accountClassification;
+  const selectedAccountKind=selectedAccount?accountKindOf(selectedAccount):accountKind;
+  const categoryShortcuts=categoryOptions.slice(0,6);
+
+  function selectAccountClassification(next:AccountClassification){
+    if(accountControlsLocked)return;
+    setAccountClassification(next);
+    if(next==='benefit'){
+      setAccountKind('benefit');
+      setAccountId(benefitAccount?.id||'');
+      if(mode==='expense'){
+        setMode('benefit');
+        setPaymentMode('cash');
+        setPaymentMethodId(verocard?.id||'');
+        setStatus('paid');
+      }else if(mode==='income'){
+        setPaymentMethodId(verocard?.id||'');
+      }
+      return;
+    }
+    setAccountKind('monetary');
+    setAccountId(next==='general'&&mainAccount?mainAccount.id:'');
+    if(mode==='income'&&pixMethod?.id)setPaymentMethodId(pixMethod.id);
+  }
+
+  function selectAccountKind(next:AccountKind){
+    if(accountControlsLocked)return;
+    setAccountKind(next);
+    if(next==='benefit'){
+      setAccountClassification('benefit');
+      setAccountId(benefitAccount?.id||'');
+      if(mode==='expense'){
+        setMode('benefit');
+        setPaymentMethodId(verocard?.id||'');
+        setStatus('paid');
+      }else if(mode==='income'){
+        setPaymentMethodId(verocard?.id||'');
+      }
+    }else{
+      if(accountClassification==='benefit')setAccountClassification('general');
+      setAccountId(mainAccount?.id||'');
+      if(mode==='income'&&pixMethod?.id)setPaymentMethodId(pixMethod.id);
+    }
+  }
 
   useEffect(()=>{
     if(step!=='form')return;
     if(mode==='benefit'){
       setPaymentMode('cash');
+      setAccountClassification('benefit');
+      setAccountKind('benefit');
       setAccountId(benefitAccount?.id||'');
       setPaymentMethodId(verocard?.id||'');
       setStatus('paid');
@@ -224,8 +295,15 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
       setPaymentMode('cash');
       setStatus('paid');
       setCardId('');
-      if(!accountId&&mainAccount)setAccountId(mainAccount.id);
-      if(!paymentMethodId&&pixMethod)setPaymentMethodId(pixMethod.id);
+      if(accountClassification==='benefit'){
+        setAccountKind('benefit');
+        if(!accountId&&benefitAccount)setAccountId(benefitAccount.id);
+        if(!paymentMethodId&&verocard)setPaymentMethodId(verocard.id);
+      }else{
+        setAccountKind('monetary');
+        if(!accountId&&accountClassification==='general'&&mainAccount)setAccountId(mainAccount.id);
+        if(!paymentMethodId&&pixMethod)setPaymentMethodId(pixMethod.id);
+      }
       return;
     }
     if(paymentMode==='credit'){
@@ -234,10 +312,16 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
       setPaymentMethodId('');
     }else{
       setCardId('');
-      if(!accountId&&mainAccount)setAccountId(mainAccount.id);
+      if(!accountId&&accountClassification==='general'&&mainAccount)setAccountId(mainAccount.id);
       if(!paymentMethodId&&pixMethod)setPaymentMethodId(pixMethod.id);
     }
-  },[step,mode,paymentMode,benefitAccount?.id,verocard?.id,mainAccount?.id,pixMethod?.id]);
+  },[step,mode,paymentMode,accountClassification,benefitAccount?.id,verocard?.id,mainAccount?.id,pixMethod?.id]);
+
+  useEffect(()=>{
+    if(step!=='form'||accountControlsLocked)return;
+    if(accountId&&!visibleAccounts.some(account=>account.id===accountId))setAccountId('');
+    if(!accountId&&accountClassification==='general'&&accountKind==='monetary'&&mainAccount&&visibleAccounts.some(account=>account.id===mainAccount.id))setAccountId(mainAccount.id);
+  },[step,accountControlsLocked,accountClassification,accountKind,accountId,visibleAccounts.map(account=>account.id).join('|'),mainAccount?.id]);
 
   useEffect(()=>{
     if(mode!=='income')return;
@@ -304,6 +388,8 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
     setHistoryOpen(false);
     setInstallments(1);
     setPaymentMode('cash');
+    setAccountClassification(next==='benefit'?'benefit':'general');
+    setAccountKind(next==='benefit'?'benefit':'monetary');
     if(next==='benefit'){
       setAccountId(benefitAccount?.id||'');
       setPaymentMethodId(verocard?.id||'');
@@ -394,6 +480,12 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
   const badgeIcon:EvolutionFinancialIconName=mode==='expense'?'wallet':mode==='income'?'up':'food';
   const selectedCategoryIcon=selectedCategory?resolveEvolutionFinancialIcon({type:mode==='income'?'income':'expense',signedAmount:mode==='income'?1:-1,categoryName:selectedCategory.name,categoryGroup:selectedCategory.group}):'receipt';
 
+  const summaryClassification=accountControlsLocked&&mode==='expense'&&paymentMode==='credit'?'Cartão de crédito':accountClassificationLabel(selectedAccountClassification);
+  const summaryAccountKind=accountControlsLocked&&mode==='expense'&&paymentMode==='credit'?'Origem no cartão':accountKindLabel(selectedAccountKind);
+  const summaryAccount=mode==='expense'&&paymentMode==='credit'?(selectedCard?.name||'Selecione o cartão'):(selectedAccount?.name||(status==='planned'?'Definida na baixa':'Selecione a conta'));
+  const summaryPayment=mode==='benefit'?(verocard?.name||'VEROCARD'):mode==='expense'&&paymentMode==='credit'?'Cartão de crédito':(selectedMethod?.name||'Selecione a forma');
+  const summaryStatus=mode==='expense'&&paymentMode==='credit'?'Na fatura':status==='planned'?'Pendente':'Pago';
+
   return <div className="evo-launch-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}>
     <section className={'evo-launch-modal evo-launch-step-'+step} role="dialog" aria-modal="true" aria-labelledby="evo-launch-title">
       <header className="evo-launch-head app-pattern">
@@ -412,44 +504,75 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
       </main>}
 
       {step==='form'&&<>
-        <main className="evo-launch-form-layout">
+        <main className="evo-launch-form-layout evo-launch-control-v1">
           <section className="evo-launch-form-primary">
             <label className="evo-launch-field wide evo-launch-description">
-              <span><EvolutionFinancialIcon name="search" size={18}/>Descrição</span>
-              <input value={description} onFocus={()=>mode!=='benefit'&&setHistoryOpen(true)} onChange={event=>{setDescription(event.target.value.toLocaleUpperCase('pt-BR'));if(mode!=='benefit')setHistoryOpen(true)}} onKeyDown={event=>{if(event.key==='Escape')setHistoryOpen(false)}} placeholder="Digite para pesquisar no seu histórico" autoComplete="off" aria-autocomplete="list" aria-expanded={historyOpen}/>
+              <span><EvolutionFinancialIcon name="note" size={20}/>Descrição *</span>
+              <input value={description} onFocus={()=>mode!=='benefit'&&setHistoryOpen(true)} onChange={event=>{setDescription(event.target.value.toLocaleUpperCase('pt-BR'));if(mode!=='benefit')setHistoryOpen(true)}} onKeyDown={event=>{if(event.key==='Escape')setHistoryOpen(false)}} placeholder="Digite a descrição do lançamento" autoComplete="off" aria-autocomplete="list" aria-expanded={historyOpen}/>
               {historyOpen&&mode!=='benefit'&&description.trim().length>=2&&<div className="evo-launch-history" role="listbox">
-                <header><EvolutionFinancialIcon name="repeat" size={15}/><span>Histórico parecido</span>{historyLoading&&<i/>}</header>
+                <header><EvolutionFinancialIcon name="repeat" size={16}/><span>Histórico parecido</span>{historyLoading&&<i/>}</header>
                 {historySuggestions.map(item=><button type="button" role="option" key={item.id} onMouseDown={event=>event.preventDefault()} onClick={()=>applyHistorySuggestion(item)}>
-                  <i><EvolutionFinancialIcon name={resolveEvolutionFinancialIcon({type:item.type,signedAmount:Number(item.signedAmount||item.amount),categoryName:item.category?.name,categoryGroup:item.category?.group,description:item.description,paymentName:item.paymentMethod?.name})} size={18}/></i>
+                  <i><EvolutionFinancialIcon name={resolveEvolutionFinancialIcon({type:item.type,signedAmount:Number(item.signedAmount||item.amount),categoryName:item.category?.name,categoryGroup:item.category?.group,description:item.description,paymentName:item.paymentMethod?.name})} size={19}/></i>
                   <span><strong>{item.description.replace(/\s+\d+\/\d+\s*$/,'')}</strong><small>{[item.category?.name||item.sourceDetails?.group,item.paymentMethod?.name||item.sourceDetails?.paymentMethod,item.account?.name].filter(Boolean).join(' · ')}</small></span>
                 </button>)}
                 {!historyLoading&&!historySuggestions.length&&<div className="empty">Nenhum lançamento semelhante encontrado.</div>}
               </div>}
             </label>
 
-            <EvolutionPicker label={mode==='income'?'Classificação da receita (opcional)':'Categoria *'} value={categoryId} options={categoryOptions} placeholder="Selecione uma categoria" openByDefault={params.get('picker')==='category'} onChange={setCategoryId}/>
+            <section className="evo-launch-category-zone">
+              <EvolutionPicker label={mode==='income'?'Classificação da receita (opcional)':'Categoria *'} value={categoryId} options={categoryOptions} placeholder="Selecione uma categoria" openByDefault={params.get('picker')==='category'} onChange={setCategoryId}/>
+              {!!categoryShortcuts.length&&<div className="evo-launch-category-shortcuts" aria-label="Categorias mais usadas">
+                {categoryShortcuts.map(option=><button type="button" key={option.id} className={(option.id===categoryId?'active ':'')+(option.tone||'cyan')} onClick={()=>setCategoryId(option.id)}>
+                  <span>{option.icon&&<EvolutionFinancialIcon name={option.icon} size={20}/>}</span><small>{option.label}</small>
+                </button>)}
+              </div>}
+            </section>
+
+            <section className={'evo-launch-account-taxonomy'+(accountControlsLocked?' locked':'')}>
+              <header><div><span><EvolutionFinancialIcon name="landmark" size={21}/></span><strong>Conta do lançamento</strong></div>{accountControlsLocked&&<small>{mode==='expense'&&paymentMode==='credit'?'No crédito, o cartão é a origem financeira.':status==='planned'?'Definida quando o pendente for baixado.':'Definida automaticamente.'}</small>}</header>
+              <div className="evo-launch-taxonomy-block">
+                <span>Classificação da conta *</span>
+                <div className="evo-launch-taxonomy-options three">
+                  <button type="button" disabled={accountControlsLocked} className={accountClassification==='general'?'active':''} onClick={()=>selectAccountClassification('general')}><EvolutionFinancialIcon name="landmark" size={19}/><b>Contas gerais</b></button>
+                  <button type="button" disabled={accountControlsLocked} className={accountClassification==='investment'?'active':''} onClick={()=>selectAccountClassification('investment')}><EvolutionFinancialIcon name="trend" size={19}/><b>Investimentos</b></button>
+                  <button type="button" disabled={accountControlsLocked} className={accountClassification==='benefit'?'active benefit':''} onClick={()=>selectAccountClassification('benefit')}><EvolutionFinancialIcon name="gift" size={19}/><b>Benefício</b></button>
+                </div>
+              </div>
+              <div className="evo-launch-taxonomy-block">
+                <span>Tipo de conta *</span>
+                <div className="evo-launch-taxonomy-options two">
+                  <button type="button" disabled={accountControlsLocked} className={accountKind==='monetary'?'active':''} onClick={()=>selectAccountKind('monetary')}><EvolutionFinancialIcon name="wallet" size={19}/><b>Conta monetária</b></button>
+                  <button type="button" disabled={accountControlsLocked} className={accountKind==='benefit'?'active benefit':''} onClick={()=>selectAccountKind('benefit')}><EvolutionFinancialIcon name="gift" size={19}/><b>Conta benefício</b></button>
+                </div>
+              </div>
+              {mode==='expense'&&paymentMode==='credit'
+                ?<div className="evo-launch-account-credit-note"><EvolutionFinancialIcon name="card" size={19}/><span>Compra no crédito: a conta monetária não é debitada agora. O lançamento nasce na fatura do cartão selecionado.</span></div>
+                :<EvolutionPicker label={mode==='income'?'Conta de recebimento *':'Conta *'} value={accountId} options={accountOptions} disabled={mode==='expense'&&status==='planned'} lockedText="Definida na baixa" placeholder={accountOptions.length?'Selecione a conta':'Nenhuma conta nesta classificação'} onChange={setAccountId}/>}
+            </section>
 
             <div className="evo-launch-data-grid">
-              <label className="evo-launch-field"><span><EvolutionFinancialIcon name="calendar" size={18}/>{mode==='income'?'Data do recebimento':paymentMode==='credit'?'Data da compra':status==='planned'?'Vencimento':'Data do lançamento'}</span><input type="date" value={date} onChange={event=>setDate(event.target.value)}/></label>
-              <label className="evo-launch-field"><span><EvolutionFinancialIcon name="banknote" size={18}/>Valor</span><div className="evo-launch-money"><b>R$</b><input inputMode="numeric" value={amount} onChange={event=>setAmount(formatCurrencyInput(event.target.value))} placeholder="0,00"/></div></label>
+              <label className="evo-launch-field"><span><EvolutionFinancialIcon name="calendar" size={20}/>{mode==='income'?'Data do recebimento':paymentMode==='credit'?'Data da compra':status==='planned'?'Vencimento':'Data do lançamento'} *</span><input type="date" value={date} onChange={event=>setDate(event.target.value)}/></label>
+              <label className="evo-launch-field"><span><EvolutionFinancialIcon name="banknote" size={20}/>Valor *</span><div className="evo-launch-money"><b>R$</b><input inputMode="numeric" value={amount} onChange={event=>setAmount(formatCurrencyInput(event.target.value))} placeholder="0,00"/></div></label>
             </div>
 
-            <label className="evo-launch-field wide evo-launch-notes"><span><EvolutionFinancialIcon name="note" size={18}/>Observações <small>(opcional)</small></span><textarea rows={3} maxLength={300} value={notes} onChange={event=>setNotes(event.target.value.toLocaleUpperCase('pt-BR'))} placeholder="Informações adicionais do lançamento"/><small className="evo-launch-counter">{notes.length}/300</small></label>
+            <label className="evo-launch-field wide evo-launch-notes"><span><EvolutionFinancialIcon name="note" size={20}/>Observações <small>(opcional)</small></span><textarea rows={3} maxLength={300} value={notes} onChange={event=>setNotes(event.target.value.toLocaleUpperCase('pt-BR'))} placeholder="Informações adicionais do lançamento"/><small className="evo-launch-counter">{notes.length}/300</small></label>
           </section>
 
           <aside className="evo-launch-form-side">
-            {mode==='expense'&&<section className="evo-launch-side-section">
+            {mode==='expense'&&<section className="evo-launch-side-section evo-launch-payment-panel">
+              <header><span><EvolutionFinancialIcon name="card" size={20}/></span><div><strong>Forma do lançamento</strong><small>Escolha como a despesa será registrada.</small></div></header>
               <span className="evo-launch-side-label">Modalidade de pagamento</span>
               <div className="evo-launch-payment-modes app-pattern">
-                <button type="button" className={paymentMode==='cash'?'active':''} onClick={()=>setPaymentMode('cash')}><EvolutionFinancialIcon name="banknote" size={18}/><span>À Vista</span></button>
-                <button type="button" className={paymentMode==='credit'?'active':''} onClick={()=>setPaymentMode('credit')}><EvolutionFinancialIcon name="card" size={18}/><span>Crédito</span></button>
+                <button type="button" className={paymentMode==='cash'?'active':''} onClick={()=>setPaymentMode('cash')}><EvolutionFinancialIcon name="banknote" size={19}/><span>À Vista</span></button>
+                <button type="button" className={paymentMode==='credit'?'active':''} onClick={()=>setPaymentMode('credit')}><EvolutionFinancialIcon name="card" size={19}/><span>Crédito</span></button>
               </div>
             </section>}
 
             {mode==='benefit'?<section className="evo-launch-auto-card">
-              <header><span><EvolutionFinancialIcon name="food" size={21}/></span><div><strong>Campos automáticos</strong><small>Alimentação / Verocard</small></div></header>
-              <p>Conta, forma de pagamento e situação são definidos automaticamente, como no aplicativo.</p>
+              <header><span><EvolutionFinancialIcon name="gift" size={22}/></span><div><strong>Campos automáticos</strong><small>Alimentação / Verocard</small></div></header>
+              <p>Conta, forma de pagamento e situação são definidos automaticamente para manter a mesma regra do aplicativo.</p>
               <dl>
+                <div><dt>Classificação</dt><dd>Benefício</dd></div>
                 <div><dt>Conta</dt><dd>{benefitAccount?.name||'Conta Benefício (Verocard)'}</dd></div>
                 <div><dt>Forma</dt><dd>{verocard?.name||'VEROCARD'}</dd></div>
                 <div><dt>Situação</dt><dd className="paid">Pago</dd></div>
@@ -461,33 +584,46 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
                 <div><small>Fatura / Competência</small><strong>{cardSchedule[0]?formatMonth(cardSchedule[0].statementMonth):'Selecione a data'}</strong><span>{cardSchedule[0]?'Vence '+formatIso(cardSchedule[0].due):'Regra calculada pelo cartão'}</span></div>
               </div>}
               <section className="evo-launch-installments">
-                <span className="evo-launch-side-label">Número de parcelas</span>
-                <div className="evo-launch-stepper"><button type="button" onClick={()=>setInstallments(value=>Math.max(1,value-1))}>−</button><strong>{installments}</strong><button type="button" onClick={()=>setInstallments(value=>Math.min(48,value+1))}>+</button></div>
-                {installments===1?<div className="evo-launch-single-due"><span>Vencimento</span><strong>{cardSchedule[0]?formatIso(cardSchedule[0].due):'Selecione cartão e data'}</strong></div>:<button type="button" className="evo-launch-preview-trigger" disabled={!installmentPreview.length} onClick={()=>setPreviewOpen(true)}><span>Visualizar parcelas</span><small>{installmentPreview.length?installmentPreview.length+' parcelas calculadas':'Informe o valor para calcular'}</small></button>}
+                <span className="evo-launch-side-label">Parcelamento</span>
+                <div className="evo-launch-stepper"><button type="button" aria-label="Diminuir parcelas" onClick={()=>setInstallments(value=>Math.max(1,value-1))}>−</button><strong>{installments}</strong><button type="button" aria-label="Aumentar parcelas" onClick={()=>setInstallments(value=>Math.min(48,value+1))}>+</button></div>
+                {installments===1?<div className="evo-launch-single-due"><span>Primeiro vencimento</span><strong>{cardSchedule[0]?formatIso(cardSchedule[0].due):'Selecione cartão e data'}</strong></div>:<button type="button" className="evo-launch-preview-trigger" disabled={!installmentPreview.length} onClick={()=>setPreviewOpen(true)}><span>Visualizar parcelas</span><small>{installmentPreview.length?installmentPreview.length+' parcelas calculadas':'Informe o valor para calcular'}</small></button>}
               </section>
             </section>:<section className="evo-launch-cash-stack">
-              <EvolutionPicker label={mode==='income'?'Conta de recebimento *':'Conta *'} value={accountId} options={accountOptions} disabled={mode==='expense'&&status==='planned'} lockedText="Definida na baixa" onChange={setAccountId}/>
               <EvolutionPicker label={mode==='income'?'Forma de recebimento *':'Forma de pagamento *'} value={paymentMethodId} options={methodOptions} disabled={mode==='expense'&&status==='planned'} lockedText="Definida na baixa" onChange={setPaymentMethodId}/>
             </section>}
 
             {mode==='expense'&&paymentMode==='cash'&&<section className="evo-launch-side-section">
               <span className="evo-launch-side-label">Situação</span>
-              <div className="evo-launch-status app-pattern"><button type="button" className={status==='paid'?'active paid':''} onClick={()=>setStatus('paid')}>Pago</button><button type="button" className={status==='planned'?'active planned':''} onClick={()=>{setStatus('planned');setAccountId('');setPaymentMethodId('')}}>Pendente</button></div>
-              {status==='planned'&&<div className="evo-launch-pending-note"><EvolutionFinancialIcon name="wallet" size={17}/><span>Será incluído em Pendentes. Conta e forma de pagamento serão definidas na baixa.</span></div>}
+              <div className="evo-launch-status app-pattern"><button type="button" className={status==='paid'?'active paid':''} onClick={()=>setStatus('paid')}><EvolutionFinancialIcon name="check-line" size={18}/>Pago</button><button type="button" className={status==='planned'?'active planned':''} onClick={()=>{setStatus('planned');setAccountId('');setPaymentMethodId('')}}><EvolutionFinancialIcon name="clock" size={18}/>Pendente</button></div>
+              {status==='planned'&&<div className="evo-launch-pending-note"><EvolutionFinancialIcon name="wallet" size={18}/><span>Será incluído em Pendentes. Conta e forma de pagamento serão definidas na baixa.</span></div>}
             </section>}
 
-            <section className="evo-launch-live-summary">
-              <div><span className={'icon '+mode}><EvolutionFinancialIcon name={mode==='expense'?'wallet':mode==='income'?'up':'food'} size={20}/></span><span><small>{badgeLabel}</small><strong>{description||'Novo lançamento'}</strong></span></div>
-              <b>{parseAmount(amount)?money.format(parseAmount(amount)):'R$ 0,00'}</b>
-              <small>{[selectedCategory?.name,mode==='expense'&&paymentMode==='credit'?selectedCard?.name:mode==='benefit'?'VEROCARD':visibleMethods.find(item=>item.id===paymentMethodId)?.name].filter(Boolean).join(' · ')||'Preencha os campos para revisar'}</small>
+            <section className="evo-launch-live-summary evo-launch-summary-detailed">
+              <header><span className={'icon '+mode}><EvolutionFinancialIcon name={mode==='expense'?'receipt':mode==='income'?'up':'gift'} size={22}/></span><div><strong>Resumo do lançamento</strong><small>Confira os detalhes antes de salvar.</small></div></header>
+              <b className="evo-launch-summary-amount">{parseAmount(amount)?money.format(parseAmount(amount)):'R$ 0,00'}</b>
+              <div className="evo-launch-summary-rows">
+                <div><span><EvolutionFinancialIcon name={selectedCategoryIcon} size={18}/>Categoria</span><strong>{selectedCategory?.name||'Não selecionada'}</strong></div>
+                <div><span><EvolutionFinancialIcon name="landmark" size={18}/>Classificação</span><strong>{summaryClassification}</strong></div>
+                <div><span><EvolutionFinancialIcon name={selectedAccountKind==='benefit'?'gift':'wallet'} size={18}/>Tipo de conta</span><strong>{summaryAccountKind}</strong></div>
+                <div><span><EvolutionFinancialIcon name={mode==='expense'&&paymentMode==='credit'?'card':selectedAccountClassification==='investment'?'trend':selectedAccountClassification==='benefit'?'gift':'landmark'} size={18}/>Origem</span><strong>{summaryAccount}</strong></div>
+                <div><span><EvolutionFinancialIcon name={paymentMode==='credit'?'card':selectedMethod?paymentIcon(selectedMethod):'wallet'} size={18}/>Forma</span><strong>{summaryPayment}</strong></div>
+                <div><span><EvolutionFinancialIcon name="calendar" size={18}/>Data</span><strong>{formatIso(date)}</strong></div>
+                <div><span><EvolutionFinancialIcon name={summaryStatus==='Pago'?'check-line':'clock'} size={18}/>Status</span><strong>{summaryStatus}</strong></div>
+                {mode==='expense'&&paymentMode==='credit'&&<div><span><EvolutionFinancialIcon name="list" size={18}/>Parcelamento</span><strong>{installments}x{parseAmount(amount)>0?' de '+money.format(parseAmount(amount)/Math.max(1,installments)):''}</strong></div>}
+              </div>
             </section>
+
+            {!!categoryShortcuts.length&&<section className="evo-launch-quick-categories">
+              <header><span><EvolutionFinancialIcon name="bolt" size={20}/></span><div><strong>Categorias mais usadas</strong><small>Preencha a categoria com um clique.</small></div></header>
+              <div>{categoryShortcuts.slice(0,5).map(option=><button type="button" key={option.id} className={(option.id===categoryId?'active ':'')+(option.tone||'cyan')} onClick={()=>setCategoryId(option.id)}>{option.icon&&<EvolutionFinancialIcon name={option.icon} size={19}/>}<span>{option.label}</span></button>)}</div>
+            </section>}
           </aside>
         </main>
 
         {message&&<div className="evo-launch-message" role="status">{message}</div>}
         <footer className="evo-launch-actions">
-          <button type="button" className="cancel" onClick={()=>setStep('choose')}><EvolutionFinancialIcon name="chevron-left" size={18}/>Voltar</button>
-          <button type="button" className="save" disabled={busy} onClick={()=>void save()}><EvolutionFinancialIcon name="check-line" size={19}/>{busy?'Salvando…':'Salvar lançamento'}</button>
+          <button type="button" className="cancel" onClick={()=>setStep('choose')}><EvolutionFinancialIcon name="chevron-left" size={20}/>Voltar</button>
+          <button type="button" className="save" disabled={busy} onClick={()=>void save()}><EvolutionFinancialIcon name="check-line" size={21}/>{busy?'Salvando…':'Salvar lançamento'}</button>
         </footer>
       </>}
 

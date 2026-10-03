@@ -147,6 +147,23 @@ Regra atualizada:
 - não criar outra estética para “parecer desktop”;
 - não propagar a nova estética para todas as telas antes de validar a Home-mãe.
 
+## Novo Lançamento Web — referência aprovada para implementação
+
+Em 03/10/2026, o usuário aprovou como direção do Novo Lançamento a composição visual com maior profundidade 3D, ícones SVG, tipografia maior e dimensionamento automático para Web.
+
+Regras obrigatórias desta implementação:
+- usar `EvolutionFinancialIcon`/SVG sempre que houver equivalente;
+- manter Categoria com picker visual e atalhos das categorias mais usadas;
+- exibir **Classificação da conta**: Contas gerais / Investimentos / Benefício;
+- exibir **Tipo de conta**: Conta monetária / Conta benefício;
+- a classificação/tipo devem filtrar contas reais, nunca ser decoração sem efeito;
+- preservar regras reais de pagamento, crédito, parcelamento, benefício, status e autocomplete;
+- Crediário continua aposentado para novos lançamentos até nova validação explícita;
+- aumentar tipografia e controles com `clamp()` e grids responsivos;
+- modal deve dimensionar automaticamente com largura/altura do viewport e recompor colunas em telas menores;
+- aparência 3D deve vir de profundidade, gradientes, sombras, camadas e ícones, sem sacrificar legibilidade;
+- validar no Visual Preflight em desktop alto e desktop compacto antes do merge.
+
 ## Regra permanente de documentação e prévias
 
 A partir de 03/10/2026:

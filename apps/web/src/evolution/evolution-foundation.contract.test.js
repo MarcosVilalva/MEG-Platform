@@ -115,12 +115,26 @@ assert.match(launch,/Math\.min\(48/,'Crédito continua aceitando parcelamento at
 assert.match(launch,/financeClient\.listEvents\(1,12,description\.trim\(\)\)/,'Descrição deve consultar histórico real para autocomplete.');
 assert.match(launch,/uniqueCategories/,'Categorias legadas duplicadas devem ser deduplicadas na apresentação.');
 assert.match(launch,/EvolutionPicker/,'Categorias, contas e formas devem usar picker visual próprio.');
+assert.match(launch,/Classificação da conta/,'Novo Lançamento Web deve exibir classificação real de conta.');
+assert.match(launch,/Contas gerais/,'Classificação deve incluir contas gerais.');
+assert.match(launch,/Investimentos/,'Classificação deve incluir investimentos.');
+assert.match(launch,/Conta monetária/,'Tipo de conta deve incluir conta monetária.');
+assert.match(launch,/Conta benefício/,'Tipo de conta deve incluir conta benefício.');
+assert.match(launch,/accountClassificationOf/,'Classificação deve filtrar contas reais, não ser apenas decoração.');
+assert.match(launch,/evo-launch-summary-detailed/,'Novo Lançamento deve manter resumo detalhado antes de salvar.');
+assert.match(launch,/evo-launch-category-shortcuts/,'Novo Lançamento deve oferecer atalhos visuais de categoria.');
 assert.match(launch,/LaunchStep='choose'\|'form'\|'success'/,'Novo Lançamento deve seguir seleção do tipo, formulário e confirmação como no app.');
 assert.match(launch,/Escolha o tipo de lançamento/,'Abertura deve começar pela escolha Despesa, Receita ou Alimentação.');
 assert.match(launch,/Campos automáticos/,'Benefício deve manter conta, forma e situação automáticas.');
 assert.match(launch,/Visualizar parcelas/,'Crédito deve preservar prévia de parcelas.');
 assert.doesNotMatch(launch,/<select className="evo-launch-more"/,'Categorias não podem voltar ao seletor nativo do navegador.');
 assert.doesNotMatch(launch,/MegMobile|phoenix-/i,'Evolution Launch não pode reutilizar visual Mobile/Phoenix.');
+
+const launchControlCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.url),'utf8');
+assert.match(launchControlCss,/MEG CONTROL 3D v1/,'Novo Lançamento deve preservar a camada visual 3D aprovada.');
+assert.match(launchControlCss,/clamp\(/,'Novo Lançamento deve dimensionar tipografia e controles de forma responsiva.');
+assert.match(launchControlCss,/grid-template-columns:minmax\(0,1\.48fr\) minmax\(360px,\.86fr\)/,'Desktop largo deve usar composição espacial própria.');
+assert.match(launchControlCss,/@media\(max-width:920px\)/,'Novo Lançamento deve recompor colunas automaticamente em viewports menores.');
 
 const movements=fs.readFileSync(new URL('./screens/EvolutionMovements.tsx',import.meta.url),'utf8');
 assert.match(movements,/data-evolution-screen="movements"/);
