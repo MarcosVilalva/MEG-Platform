@@ -2,7 +2,7 @@ export type EvolutionFinancialIconName=
   'home'|'plus'|'wallet'|'calendar'|'trend'|'up'|'down'|'receipt'|'check'|'food'|'bolt'|'search'|'sliders'|'list'|'menu'|
   'chart'|'cart'|'car'|'wifi'|'phone'|'card'|'banknote'|'house'|'fuel'|'droplet'|'heart-pulse'|'graduation-cap'|'ticket'|
   'shopping-bag'|'repeat'|'landmark'|'cup-soda'|'sandwich'|'gamepad'|'sparkles'|'appliance'|'arrows-right-left'|'x'|
-  'chevron-left'|'chevron-right'|'chevron-down'|'check-line'|'note';
+  'chevron-left'|'chevron-right'|'chevron-down'|'check-line'|'note'|'target'|'settings'|'bell'|'gift'|'alert'|'eye'|'plane'|'clock'|'music';
 
 type Props={name:EvolutionFinancialIconName;size?:number;strokeWidth?:number;className?:string};
 
@@ -51,6 +51,15 @@ export function EvolutionFinancialIcon({name,size=22,strokeWidth=1.9,className}:
   if(name==='chevron-down')return <svg {...base}><path d="m6 9 6 6 6-6"/></svg>;
   if(name==='check-line')return <svg {...base}><path d="m5 12 4 4L19 6"/></svg>;
   if(name==='note')return <svg {...base}><path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>;
+  if(name==='target')return <svg {...base}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/><path d="m15 9 6-6M17 3h4v4"/></svg>;
+  if(name==='settings')return <svg {...base}><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.2.36.52.7 1 .96.33.18.72.28 1.1.29H21v4h-.09c-.38 0-.77.1-1.1.29-.4.23-.72.57-1 .96Z"/></svg>;
+  if(name==='bell')return <svg {...base}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>;
+  if(name==='gift')return <svg {...base}><path d="M4 10h16v10H4zM2 7h20v4H2zM12 7v13"/><path d="M12 7c-3 0-5-1.2-5-3 0-1.3 1-2 2.3-2C11 2 12 7 12 7ZM12 7s1-5 2.7-5C16 2 17 2.7 17 4c0 1.8-2 3-5 3Z"/></svg>;
+  if(name==='alert')return <svg {...base}><path d="M12 3 2.5 20h19Z"/><path d="M12 9v5M12 17h.01"/></svg>;
+  if(name==='eye')return <svg {...base}><path d="M2.5 12s3.7-6 9.5-6 9.5 6 9.5 6-3.7 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3"/></svg>;
+  if(name==='plane')return <svg {...base}><path d="m3 11 18-8-7 18-2-7-6-3Z"/></svg>;
+  if(name==='clock')return <svg {...base}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
+  if(name==='music')return <svg {...base}><path d="M9 18V5l10-2v13M9 18a3 3 0 1 1-3-3M19 16a3 3 0 1 1-3-3"/></svg>;
   return <svg {...base}><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>;
 }
 
