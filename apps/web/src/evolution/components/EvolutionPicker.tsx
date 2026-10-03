@@ -35,8 +35,9 @@ export function EvolutionPicker({
   const close=()=>{setOpen(false);setQuery('')};
 
   return <>
-    <button type="button" className={'evo-picker-field '+(disabled?'locked':'')} disabled={disabled} onClick={()=>!disabled&&setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>
+    <button type="button" className={'evo-picker-field '+(disabled?'locked':'')+(selected?' has-value':'')} disabled={disabled} onClick={()=>!disabled&&setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>
       <span>{label}</span>
+      {selected?.imageSrc?<b className="evo-picker-field-image"><img src={selected.imageSrc} alt="" draggable={false}/></b>:selected?.icon?<b className={'evo-picker-field-icon '+(selected.tone||'cyan')}><EvolutionFinancialIcon name={selected.icon} size={18}/></b>:null}
       <strong>{disabled&&lockedText?lockedText:selected?.label||placeholder}</strong>
       {selected?.subtitle&&!disabled&&<small>{selected.subtitle}</small>}
       <i><EvolutionFinancialIcon name="chevron-down" size={16}/></i>
