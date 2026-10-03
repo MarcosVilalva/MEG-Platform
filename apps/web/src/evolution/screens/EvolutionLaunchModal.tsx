@@ -569,7 +569,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
             </section>}
 
             {mode==='benefit'?<section className="evo-launch-auto-card">
-              <header><span><EvolutionFinancialIcon name="gift" size={22}/></span><div><strong>Benefício automático</strong><small>Alimentação / Verocard</small></div></header>
+              <header><span><EvolutionFinancialIcon name="gift" size={22}/></span><div><strong>Campos automáticos</strong><small>Alimentação / Verocard</small></div></header>
               <p>Conta, forma de pagamento e situação são definidos automaticamente para manter a mesma regra do aplicativo.</p>
               <dl>
                 <div><dt>Classificação</dt><dd>Benefício</dd></div>
