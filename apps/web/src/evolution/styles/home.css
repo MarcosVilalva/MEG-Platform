@@ -1255,7 +1255,6 @@
     transform:translateX(2%);
     filter:drop-shadow(0 0 11px rgba(56,242,225,.22));
   }
-  .evo-credit-card.visual-meg>*{position:relative;z-index:4}
   .evo-credit-card.visual-travel:before{
     opacity:.38;
     background:
