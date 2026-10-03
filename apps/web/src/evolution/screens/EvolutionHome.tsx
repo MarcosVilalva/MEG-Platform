@@ -253,6 +253,7 @@ export function EvolutionHome(){
     </aside>
 
     <section className="evo-home-workspace">
+      <div className="evo-home-canonical-scene" aria-hidden="true"><img src="./evolution/artwork/home-hero-reference.webp" alt=""/></div>
       <header className="evo-home-topbar">
         <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar movimentações, metas, relatórios..."/><kbd>⌘ K</kbd></label>
         <div className="evo-home-top-actions">
