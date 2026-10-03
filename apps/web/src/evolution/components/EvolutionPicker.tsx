@@ -12,7 +12,7 @@ export type EvolutionPickerOption={
 };
 
 export function EvolutionPicker({
-  label,value,placeholder='Selecione',options,disabled=false,lockedText,searchable=true,onChange
+  label,value,placeholder='Selecione',options,disabled=false,lockedText,searchable=true,openByDefault=false,onChange
 }:{
   label:string;
   value:string;
@@ -21,9 +21,10 @@ export function EvolutionPicker({
   disabled?:boolean;
   lockedText?:string;
   searchable?:boolean;
+  openByDefault?:boolean;
   onChange:(value:string)=>void;
 }){
-  const [open,setOpen]=useState(false);
+  const [open,setOpen]=useState(openByDefault);
   const [query,setQuery]=useState('');
   const selected=options.find(item=>item.id===value);
   const filtered=useMemo(()=>{
