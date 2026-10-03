@@ -1117,3 +1117,76 @@
     height:7px;
   }
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 11 / PROPORTION + READABILITY === */
+.evo-credit-card .evo-card-contactless{
+  width:18px;
+  height:22px;
+  font-size:0;
+  letter-spacing:0;
+  border-right:2px solid rgba(220,255,251,.94);
+  border-radius:50%;
+  transform:none;
+}
+.evo-credit-card .evo-card-contactless:before,
+.evo-credit-card .evo-card-contactless:after{
+  content:"";
+  position:absolute;
+  top:3px;
+  right:3px;
+  width:11px;
+  height:16px;
+  border-right:2px solid rgba(220,255,251,.84);
+  border-radius:50%;
+}
+.evo-credit-card .evo-card-contactless:after{
+  top:6px;
+  right:6px;
+  width:5px;
+  height:10px;
+  border-right-color:rgba(220,255,251,.72);
+}
+
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-brand img{
+    width:190px;
+    max-height:132px;
+  }
+
+  .evo-home-kpis{
+    grid-template-columns:1.32fr .88fr .88fr .88fr .80fr .80fr;
+  }
+  .evo-home-kpis article:first-child .evo-home-kpi-detail{font-size:10px}
+
+  .evo-credit-card.visual-meg strong:before{
+    content:"";
+    display:inline-block;
+    width:23px;
+    height:20px;
+    margin-right:8px;
+    vertical-align:-2px;
+    background:
+      linear-gradient(to top,rgba(60,245,226,.95) 0 100%) left bottom/5px 9px no-repeat,
+      linear-gradient(to top,rgba(60,245,226,.95) 0 100%) center bottom/5px 14px no-repeat,
+      linear-gradient(to top,rgba(60,245,226,.95) 0 100%) right bottom/5px 20px no-repeat;
+    filter:drop-shadow(0 0 6px rgba(60,245,226,.38));
+  }
+  .evo-credit-card.visual-meg strong{
+    display:flex;
+    align-items:flex-end;
+    top:30px;
+  }
+
+  .evo-home-list-row section b{font-size:11px}
+  .evo-home-list-row section small{font-size:9px}
+  .evo-home-list-row time{font-size:8.5px}
+  .evo-home-list-row>strong{font-size:10.8px}
+  .evo-home-category-list>div{
+    min-height:19px;
+    font-size:8.8px;
+  }
+  .evo-home-category-list b{font-size:8.8px}
+  .evo-home-donut b{font-size:13.5px}
+  .evo-home-donut small{font-size:9px}
+}
