@@ -135,6 +135,18 @@ Ela trouxe:
 Este marco técnico **não significou validação visual final da Home**. O usuário registrou que houve melhora, mas que ainda falta muito e pediu mudança de condução do projeto.
 
 
+## Correção visual oficial — Home Web fiel ao App
+
+Em 03/10/2026, o usuário rejeitou a primeira galeria genérica por não preservar a arte real do App.
+
+Regra atualizada:
+- a Home do App é a prancha-mãe visual;
+- copiar os tokens reais do App, inclusive `#002e2f`, `#001f22`, `#20e7e0`, bordas, gradientes, sombras e raios definidos em `apps/web/src/mobile/meg-mobile-final.css`;
+- usar a arte de marca do App, `/brand/meg-finance-system-mark-transparent.svg`, nas prévias que representam o sistema;
+- desktop pode apenas redistribuir os mesmos blocos para ficar mais próximo, ajustado e produtivo;
+- não criar outra estética para “parecer desktop”;
+- não propagar a nova estética para todas as telas antes de validar a Home-mãe.
+
 ## Regra permanente de documentação e prévias
 
 A partir de 03/10/2026:
