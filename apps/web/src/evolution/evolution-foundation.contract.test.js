@@ -99,7 +99,7 @@ assert.match(home,/trendMonthLabel/,'Rótulos do fluxo devem interpretar compet�
 
 const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
 assert.match(launch,/Novo Lançamento/);
-assert.match(launch,/À vista/);
+assert.match(launch,/À Vista/);
 assert.match(launch,/Crédito/);
 assert.doesNotMatch(launch,/Crediário|paymentMode==='installment'/,'Crediário está aposentado para novos lançamentos Web.');
 assert.match(launch,/Benefício/);
