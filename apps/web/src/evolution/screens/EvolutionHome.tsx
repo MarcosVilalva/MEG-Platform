@@ -9,6 +9,7 @@ import {EvolutionMovements} from './EvolutionMovements';
 import {EvolutionPayables} from './EvolutionPayables';
 import {EvolutionCards} from './EvolutionCards';
 import {EvolutionBenefits} from './EvolutionBenefits';
+import {EvolutionTransferModal} from './EvolutionTransferModal';
 import '../styles/home.css';
 
 type IconName='home'|'overview'|'swap'|'card'|'target'|'report'|'layers'|'chart'|'diamond'|'settings'|'search'|'calendar'|'bell'|'wallet'|'income'|'expense'|'gift'|'alert'|'arrow'|'eye'|'cart'|'salary'|'music'|'restaurant'|'wifi'|'car'|'house'|'plane'|'clock'|'plus'|'check';
@@ -256,7 +257,11 @@ export function EvolutionHome(){
   const [refreshToken,setRefreshToken]=useState(0);
   const [launchOpen,setLaunchOpen]=useState(()=>new URLSearchParams(window.location.search).get('modal')==='launch');
   const [monthOpen,setMonthOpen]=useState(false);
-  const [activeView,setActiveView]=useState<EvolutionView>(()=>new URLSearchParams(window.location.search).get('view')==='movements'?'movements':'home');
+  const [transferOpen,setTransferOpen]=useState(()=>new URLSearchParams(window.location.search).get('modal')==='transfer');
+  const [activeView,setActiveView]=useState<EvolutionView>(()=>{
+    const value=new URLSearchParams(window.location.search).get('view');
+    return value==='movements'||value==='payables'||value==='cards'||value==='benefits'?value:'home';
+  });
 
   useEffect(()=>{
     if(!session){setData(fixture);setBusy(false);setHasLoadedReal(true);return;}
@@ -419,7 +424,7 @@ export function EvolutionHome(){
               <header><div><span className="evo-home-feature-icon"><Icon name="alert"/></span><h2>Ações rápidas</h2></div><button type="button">Ver todas⌄</button></header>
               <div>
                 <button type="button" onClick={()=>setLaunchOpen(true)}><span><Icon name="plus"/></span><b>Novo lançamento</b><small>Receita, despesa ou benefício</small></button>
-                <button type="button"><span><Icon name="swap"/></span><b>Transferência</b><small>Entre contas e cartões</small></button>
+                <button type="button" onClick={()=>setTransferOpen(true)}><span><Icon name="swap"/></span><b>Transferência</b><small>Entre contas e investimentos</small></button>
                 <button type="button"><span><Icon name="report"/></span><b>Relatórios</b><small>Veja seus resultados</small></button>
                 <button type="button"><span><Icon name="settings"/></span><b>Configurar metas</b><small>Organize seus objetivos</small></button>
               </div>
@@ -458,8 +463,14 @@ export function EvolutionHome(){
     {launchOpen&&<EvolutionLaunchModal
       month={month}
       qaMode={qaMode}
+      onTransfer={()=>{setLaunchOpen(false);setTransferOpen(true)}}
       onClose={()=>setLaunchOpen(false)}
       onSaved={()=>{setLaunchOpen(false);setRefreshToken(value=>value+1)}}
+    />}
+    {transferOpen&&<EvolutionTransferModal
+      qaMode={qaMode}
+      onClose={()=>setTransferOpen(false)}
+      onSaved={()=>{setTransferOpen(false);setRefreshToken(value=>value+1)}}
     />}
   </main>;
 }
