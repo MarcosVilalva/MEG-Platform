@@ -260,7 +260,12 @@ export function EvolutionHome(){
 
   const trend=data.trend.length?data.trend:fixture.trend;
   const max=Math.max(1,...trend.flatMap(x=>[x.income,x.expense]));
-  const pointList=plotPoints(trend.map(item=>Number(item.result||0)),100,64,8,9);
+  const pointList=trend.map((item,index)=>{
+    const result=Number(item.result||0);
+    const x=8+(index*(84/Math.max(1,trend.length-1)));
+    const y=Math.max(8,Math.min(61,58-(result/max)*40));
+    return {x,y};
+  });
   const linePoints=pointList.map(point=>point.x.toFixed(2)+','+point.y.toFixed(2)).join(' ');
 
   const categories=data.categories.length?data.categories:fixture.categories;
