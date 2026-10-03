@@ -182,7 +182,7 @@ export function EvolutionMovements({month,qaMode=false,onCreate,refreshToken=0}:
         <header><Icon name="filter"/><div><strong>Filtros</strong><small>{filtersActive?'Refinando a lista':'Todos os lançamentos'}</small></div></header>
         <label><span><Icon name="tag"/>Categoria</span><select value={categoryId} onChange={event=>setCategoryId(event.target.value)}><option value="">Todas</option>{categories.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         <label><span><Icon name="wallet"/>Conta</span><select value={accountId} onChange={event=>setAccountId(event.target.value)}><option value="">Todas</option>{accounts.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <label><span><Icon name="card"/>Forma</span><select value={paymentMethodId} onChange={event=>setPaymentMethodId(event.target.value)}><option value="">Todas</option>{methods.filter(item=>!/crediario|crediário/i.test(item.name)).map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label><span><Icon name="card"/>Forma</span><select value={paymentMethodId} onChange={event=>setPaymentMethodId(event.target.value)}><option value="">Todas</option>{methods.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         <button type="button" className="clear" disabled={!filtersActive} onClick={()=>{setQuery('');setKind('all');setCategoryId('');setAccountId('');setPaymentMethodId('')}}>Limpar filtros</button>
       </aside>
 
