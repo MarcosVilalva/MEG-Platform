@@ -588,7 +588,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
                 <button type="button" className={paymentMode==='cash'?'active':''} onClick={()=>setPaymentMode('cash')}><EvolutionFinancialIcon name="banknote" size={19}/><span>À Vista</span></button>
                 <button type="button" className={paymentMode==='credit'?'active':''} onClick={()=>setPaymentMode('credit')}><EvolutionFinancialIcon name="card" size={19}/><span>Crédito</span></button>
                 <button type="button" className={paymentMode==='crediario'?'active':''} onClick={()=>setPaymentMode('crediario')}><EvolutionFinancialIcon name="shopping-bag" size={19}/><span>Crediário</span></button>
-                <button type="button" className={mode==='benefit'?'active benefit':''} onClick={()=>chooseMode('benefit')}><EvolutionFinancialIcon name="gift" size={19}/><span>Benefício</span></button>
+                <button type="button" className="benefit" onClick={()=>chooseMode('benefit')}><EvolutionFinancialIcon name="gift" size={19}/><span>Benefício</span></button>
               </div>
             </section>}
 
