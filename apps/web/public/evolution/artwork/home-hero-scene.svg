@@ -51,6 +51,10 @@
     fill="none" stroke="#e4fffc" stroke-width=".65" opacity=".17"/>
   <path d="M15 198 C103 184 166 190 240 180 C312 169 387 184 457 172 C539 158 605 177 684 166 C756 156 837 163 918 145"
     fill="none" stroke="#2cf5df" stroke-width="1.2" opacity=".22" filter="url(#glow)"/>
+  <path d="M0 205 L58 171 L104 187 L150 151 L195 181 L242 142 L289 177 L339 130 L389 174 L441 137 L490 178 L546 130 L603 173 L657 141 L713 180 L765 137 L821 171 L876 143 L920 166 L920 210 L0 210 Z"
+    fill="#010c14" opacity=".74" stroke="#18a9a3" stroke-width=".8" stroke-opacity=".34"/>
+  <path d="M58 171 L104 187 M150 151 L195 181 M242 142 L289 177 M339 130 L389 174 M441 137 L490 178 M546 130 L603 173 M657 141 L713 180 M765 137 L821 171 M876 143 L920 166"
+    fill="none" stroke="#7efff0" stroke-width=".7" opacity=".16"/>
 </g>
 
 <g transform="translate(735 62)" filter="url(#glow)">
