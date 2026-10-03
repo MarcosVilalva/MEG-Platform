@@ -15,7 +15,7 @@ Referência vigente: os 16 originais em [design/2026-10-03](design/2026-10-03/).
 | payables | Pendentes agrupados por data, seleção, totais |
 | settlement | Confirmação, data e saldo insuficiente |
 | cards | Carrossel cíclico, fatura canônica, compras |
-| card-center | Central funcional compartilhada com cartões |
+| card-center | Central com limites, identidade e próxima fatura |
 | card-payment | Pagamento protegido de fatura |
 | benefit | Saldo próprio e histórico de benefício |
 | benefit-recharge | Crédito exclusivo em benefício |
@@ -39,4 +39,4 @@ O workflow `MEG Evolution Visual Preflight` executa o smoke e publica screenshot
 
 ## Pendências visuais explícitas
 
-Build e CI não equivalem à aprovação visual do usuário. A Home usa arte SVG geométrica, diferente da textura aprovada; a central compartilha o layout funcional dos cartões. Conferir proporções e acabamento lado a lado com os originais antes de declarar fidelidade integral. Loading e Android permanecem preservados.
+Build e CI não equivalem à aprovação visual do usuário. A Home usa arte SVG geométrica, diferente da textura aprovada; o acabamento ainda requer comparação com os originais. Conferir proporções e acabamento lado a lado com os originais antes de declarar fidelidade integral. Loading e Android permanecem preservados.
