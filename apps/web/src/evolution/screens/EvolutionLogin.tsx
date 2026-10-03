@@ -33,6 +33,9 @@ function ShieldIcon(){
 function ArrowIcon(){
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg>;
 }
+function CheckIcon(){
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg>;
+}
 
 function readRememberedEmail(){
   try{return localStorage.getItem(REMEMBER_EMAIL_KEY)||'';}catch{return '';}
@@ -131,14 +134,14 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
         :'Recupere seu acesso.';
 
   const subtitle=authenticatedName
-    ?'Sua autenticação foi validada. O próximo passo do Evolution será o painel principal.'
+    ?'Sua autenticação foi validada. Preparando sua visão financeira.'
     :mode==='login'
-      ?'Entre na sua conta para acessar o MEG.'
+      ?'Entre na sua conta para continuar.'
       :mode==='register'
-        ?'Comece em um espaço existente ou crie o seu próprio MEG.'
+        ?'Entre em um espaço existente ou crie o seu MEG.'
         :'Informe seu e-mail para receber uma senha temporária.';
 
-  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="stage-1">
+  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="product-v2">
     <div className="evo-login-bg" aria-hidden="true">
       <img src="./evolution/artwork/loading-master.webp" alt=""/>
     </div>
@@ -147,16 +150,19 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
 
     <section className="evo-login-shell">
       <div className="evo-login-story">
-        <img className="evo-login-brand" src="./evolution/brand/meg-mark.svg" alt="MEG Finanças"/>
-        <div className="evo-login-kicker"><span/>MEG EVOLUTION</div>
-        <h1>Sua vida financeira,<br/><strong>com clareza para decidir.</strong></h1>
-        <p>Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde está indo.</p>
-        <div className="evo-login-signals" aria-label="Pilares do MEG">
-          <span><i>01</i>Saldo real</span>
-          <span><i>02</i>Projeções</span>
-          <span><i>03</i>Controle</span>
+        <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
+        <div className="evo-login-kicker"><span/>CONTROLE FINANCEIRO PESSOAL</div>
+        <h1>Clareza para cuidar<br/>do seu <strong>dinheiro.</strong></h1>
+        <p>Saldo, compromissos, cartões e projeções reunidos em uma experiência única, direta e segura.</p>
+
+        <div className="evo-login-proof" aria-label="Recursos do MEG">
+          <span><i><CheckIcon/></i><b>Saldo e compromissos</b><small>Visão real do que está disponível e do que vem pela frente.</small></span>
+          <span><i><CheckIcon/></i><b>Cartões e benefícios</b><small>Faturas, limites e saldos organizados no mesmo lugar.</small></span>
+          <span><i><CheckIcon/></i><b>Planejamento</b><small>Histórico e projeções para decidir com contexto.</small></span>
         </div>
-        <div className="evo-login-storyline" aria-hidden="true"><i/><i/><i/><i/><i/></div>
+
+        <div className="evo-login-signals" aria-hidden="true"/>
+        <div className="evo-login-storyline" aria-hidden="true"/>
       </div>
 
       <section className={`evo-login-card evo-login-card-${mode}`}>
@@ -164,7 +170,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
         <div className="evo-login-card-head">
           <div className="evo-login-lock"><ShieldIcon/></div>
           <div>
-            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO SEGURO':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
+            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO AO MEG':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
@@ -174,7 +180,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
           <div className="evo-login-confirmed">
             <div className="evo-login-confirmed-ring"><ShieldIcon/></div>
             <strong>Acesso confirmado</strong>
-            <p>Autenticação concluída. A estrutura principal do Evolution entra na próxima etapa.</p>
+            <p>Autenticação concluída. O MEG está preparando seus dados.</p>
             <button type="button" className="evo-login-secondary" onClick={()=>{setAuthenticatedName('');setPassword('');setNotice(null);}}>
               Voltar ao login
             </button>
