@@ -2,7 +2,7 @@ export type EvolutionFinancialIconName=
   'home'|'plus'|'wallet'|'calendar'|'trend'|'up'|'down'|'receipt'|'check'|'food'|'bolt'|'search'|'sliders'|'list'|'menu'|
   'chart'|'cart'|'car'|'wifi'|'phone'|'card'|'banknote'|'house'|'fuel'|'droplet'|'heart-pulse'|'graduation-cap'|'ticket'|
   'shopping-bag'|'repeat'|'landmark'|'cup-soda'|'sandwich'|'gamepad'|'sparkles'|'appliance'|'arrows-right-left'|'x'|
-  'chevron-left'|'chevron-right'|'chevron-down'|'check-line'|'note'|'target'|'settings'|'bell'|'gift'|'alert'|'eye'|'plane'|'clock'|'music';
+  'chevron-left'|'chevron-right'|'chevron-down'|'check-line'|'note'|'target'|'settings'|'bell'|'gift'|'alert'|'eye'|'plane'|'clock'|'music'|'trash'|'tag';
 
 type Props={name:EvolutionFinancialIconName;size?:number;strokeWidth?:number;className?:string};
 
@@ -60,6 +60,8 @@ export function EvolutionFinancialIcon({name,size=22,strokeWidth=1.9,className}:
   if(name==='plane')return <svg {...base}><path d="m3 11 18-8-7 18-2-7-6-3Z"/></svg>;
   if(name==='clock')return <svg {...base}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
   if(name==='music')return <svg {...base}><path d="M9 18V5l10-2v13M9 18a3 3 0 1 1-3-3M19 16a3 3 0 1 1-3-3"/></svg>;
+  if(name==='trash')return <svg {...base}><path d="M4 7h16"/><path d="m9 7 1-3h4l1 3"/><path d="M7 7l1 14h8l1-14"/><path d="M10 11v6M14 11v6"/></svg>;
+  if(name==='tag')return <svg {...base}><path d="M3 12V5h7l11 11-5 5Z"/><path d="M7.5 8.5h.01"/></svg>;
   return <svg {...base}><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>;
 }
 
