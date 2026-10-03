@@ -172,10 +172,11 @@ const metricSparks:Record<MetricSpark,string>={
   benefit:'M2 28 C13 27 20 23 30 24 C41 25 48 17 58 18 C69 20 76 12 86 13 C97 14 105 8 118 5'
 };
 
-function MiniMetric({icon,label,value,tone='cyan',detail,detailNote,spark}:{icon:IconName;label:string;value:string;tone?:'cyan'|'red'|'green'|'warning';detail?:string;detailNote?:string;spark?:MetricSpark}){
+function MiniMetric({icon,label,value,tone='cyan',detail,detailNote,spark,accessory=false}:{icon:IconName;label:string;value:string;tone?:'cyan'|'red'|'green'|'warning';detail?:string;detailNote?:string;spark?:MetricSpark;accessory?:boolean}){
   const path=spark?metricSparks[spark]:null;
-  return <article className={'evo-home-kpi evo-tone-'+tone+(path?' evo-has-spark':'')}>
-    <div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name={icon}/></span><span>{label}</span></div>
+  return <article className={'evo-home-kpi evo-tone-'+tone+(path?' evo-has-spark':'')+(accessory?' evo-has-accessory':'')}>
+    <div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name={icon}/></span><span>{label}</span>{accessory&&<Icon name="eye" className="evo-home-kpi-eye"/>}</div>
+    {accessory&&<span className="evo-home-kpi-accessory" aria-hidden="true"><Icon name="wallet"/></span>}
     <strong>{value}</strong>
     <div className="evo-home-kpi-detail"><i/><span>{detail||'Atualizado agora'}</span>{detailNote&&<small>{detailNote}</small>}</div>
     {path&&<svg className="evo-home-kpi-spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true">
@@ -214,7 +215,13 @@ export function EvolutionHome(){
     const y=56-(Math.max(0,item.result)/resultMax)*34;
     return {x,y};
   });
-  const linePoints=pointList.map(p=>p.x+','+p.y).join(' ');
+  const linePath=pointList.length
+    ?pointList.slice(1).reduce((d,p,index)=>{
+      const prev=pointList[index];
+      const midX=(prev.x+p.x)/2;
+      return d+` C ${midX.toFixed(2)} ${prev.y.toFixed(2)}, ${midX.toFixed(2)} ${p.y.toFixed(2)}, ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+    },`M ${pointList[0].x.toFixed(2)} ${pointList[0].y.toFixed(2)}`)
+    :'';
 
   const categories=data.categories.length?data.categories:fixture.categories;
   const categoryTotal=Math.max(1,categories.reduce((sum,item)=>sum+Math.abs(item.amount),0));
@@ -270,7 +277,7 @@ export function EvolutionHome(){
       </section>
 
       <section className={'evo-home-kpis '+(busy?'loading':'')}>
-        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail="12,5%" detailNote="em relação ao mês anterior" spark="balance"/>
+        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail="12,5%" detailNote="em relação ao mês anterior" spark="balance" accessory/>
         <MiniMetric icon="income" label="Receitas" value={money.format(data.summary.income)} tone="green" detail={Math.abs(data.incomeDelta).toFixed(1).replace('.',',')+'%'} spark="income"/>
         <MiniMetric icon="expense" label="Despesas" value={money.format(data.summary.expense)} tone="red" detail={Math.abs(data.expenseDelta).toFixed(1).replace('.',',')+'%'} spark="expense"/>
         <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="15,0%" spark="benefit"/>
@@ -288,7 +295,7 @@ export function EvolutionHome(){
                 <div className="evo-home-bar-pair"><i className="income" style={{height:(item.income/max*100)+'%'}}/><i className="expense" style={{height:(item.expense/max*100)+'%'}}/></div>
                 <span>{item.month.slice(0,3)}</span>
               </div>)}
-              <svg className="evo-home-line" viewBox="0 0 100 64" preserveAspectRatio="none"><polyline points={linePoints}/>{pointList.map((point,i)=><circle key={i} cx={point.x} cy={point.y} r="1.3"/>)}</svg>
+              <svg className="evo-home-line" viewBox="0 0 100 64" preserveAspectRatio="none"><path d={linePath}/>{pointList.map((point,i)=><circle key={i} cx={point.x} cy={point.y} r="1.3"/>)}</svg>
             </div>
             <aside className="evo-home-chart-summary"><div><span>{monthLabel(month)}</span><b><i className="income"/>{money.format(data.summary.income)}</b><b><i className="expense"/>{money.format(data.summary.expense)}</b></div><div><span>Saldo do período</span><strong>{money.format(data.summary.projectedResult)}</strong><em>↑ 22,8%</em></div></aside>
           </div>
