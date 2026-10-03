@@ -750,7 +750,7 @@
   .evo-home-hero{
     background:
       linear-gradient(90deg,#03131c 0%,rgba(3,19,28,.99) 25%,rgba(3,19,28,.72) 34%,rgba(3,19,28,.14) 45%,rgba(3,19,28,0) 52%),
-      url('/evolution/artwork/home-hero-canonical.jpg') right center / auto 112% no-repeat,
+      url('/evolution/artwork/home-hero-scene.svg') right center / auto 112% no-repeat,
       #03131c;
   }
   .evo-home-hero:before{
@@ -780,7 +780,7 @@
     right:0;
     z-index:2;
     opacity:1;
-    background:url('/evolution/artwork/home-hero-canonical.jpg') right center / auto 100% no-repeat;
+    background:url('/evolution/artwork/home-hero-scene.svg') right center / auto 112% no-repeat;
     filter:brightness(1.05) saturate(1.06) contrast(1.03) drop-shadow(0 0 18px rgba(39,231,215,.14));
     -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.28) 3%,rgba(0,0,0,.86) 10%,#000 18%,#000 100%);
     mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.28) 3%,rgba(0,0,0,.86) 10%,#000 18%,#000 100%);
@@ -855,7 +855,7 @@
     width:74%;
     height:236px;
     pointer-events:none;
-    background:url('/evolution/artwork/home-hero-canonical.jpg') right top / 100% 100% no-repeat;
+    background:url('/evolution/artwork/home-hero-scene.svg') right top / 100% 100% no-repeat;
     filter:brightness(1.04) saturate(1.06) contrast(1.03) drop-shadow(0 0 18px rgba(39,231,215,.12));
     -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.34) 5%,rgba(0,0,0,.90) 13%,#000 22%,#000 100%);
     mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.34) 5%,rgba(0,0,0,.90) 13%,#000 22%,#000 100%);
