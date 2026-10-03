@@ -161,6 +161,9 @@ Se isso não acontecer, a tela está visualmente incorreta.
 
 ## 5. Arquitetura de implementação
 
+- O Android atual é referência funcional de leitura, não referência de layout desktop. O mapeamento oficial está em `EVOLUTION-MOBILE-FUNCTIONAL-INHERITANCE.md`.
+- A regra de produto é: **Mobile mais funcional e direto; Web mais completo, amplo e analítico**.
+- O Web herda regras, fluxos, estados e contratos validados no Mobile, mas recompõe a experiência para desktop em vez de esticar telas móveis.
 - Evolution não importa visual Phoenix.
 - Evolution não importa visual Web Next anterior.
 - Dados, APIs, autenticação e regras de negócio permanecem reais.
