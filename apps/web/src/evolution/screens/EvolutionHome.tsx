@@ -253,7 +253,6 @@ export function EvolutionHome(){
     </aside>
 
     <section className="evo-home-workspace">
-      <div className="evo-home-canonical-scene" aria-hidden="true"><img src="./evolution/artwork/home-hero-reference.webp" alt=""/></div>
       <header className="evo-home-topbar">
         <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar movimentações, metas, relatórios..."/><kbd>⌘ K</kbd></label>
         <div className="evo-home-top-actions">
@@ -264,6 +263,7 @@ export function EvolutionHome(){
       </header>
 
       <section className="evo-home-hero">
+        <div className="evo-home-canonical-scene" aria-hidden="true"><img src="./evolution/artwork/home-hero-reference.webp" alt=""/></div>
         <div className="evo-home-hero-copy">
           <h1>Seu dinheiro,<br/><em>mais inteligente.</em></h1>
           <p>Mais controle, mais clareza e melhores decisões para o seu amanhã.</p>
