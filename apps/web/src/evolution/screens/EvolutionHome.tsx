@@ -164,11 +164,24 @@ const nav:Array<[IconName,string]>= [
   ['report','Relatórios'],['layers','Planejamento'],['chart','Investimentos'],['diamond','Benefícios'],['settings','Configurações']
 ];
 
-function MiniMetric({icon,label,value,tone='cyan',detail}:{icon:IconName;label:string;value:string;tone?:'cyan'|'red'|'green'|'warning';detail?:string}){
-  return <article className={'evo-home-kpi evo-tone-'+tone}>
+type MetricSpark='balance'|'income'|'expense'|'benefit';
+const metricSparks:Record<MetricSpark,string>={
+  balance:'M2 27 C14 25 21 20 32 21 C43 22 48 28 59 22 C70 16 76 17 85 12 C96 6 106 13 118 4',
+  income:'M2 29 C13 27 22 25 31 20 C42 14 49 19 58 16 C70 12 78 15 88 9 C99 4 108 8 118 3',
+  expense:'M2 22 C13 18 21 21 31 24 C43 28 51 22 61 19 C72 15 81 17 91 12 C103 7 110 11 118 8',
+  benefit:'M2 28 C13 27 20 23 30 24 C41 25 48 17 58 18 C69 20 76 12 86 13 C97 14 105 8 118 5'
+};
+
+function MiniMetric({icon,label,value,tone='cyan',detail,detailNote,spark}:{icon:IconName;label:string;value:string;tone?:'cyan'|'red'|'green'|'warning';detail?:string;detailNote?:string;spark?:MetricSpark}){
+  const path=spark?metricSparks[spark]:null;
+  return <article className={'evo-home-kpi evo-tone-'+tone+(path?' evo-has-spark':'')}>
     <div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name={icon}/></span><span>{label}</span></div>
     <strong>{value}</strong>
-    <div className="evo-home-kpi-detail"><i/><span>{detail||'Atualizado agora'}</span></div>
+    <div className="evo-home-kpi-detail"><i/><span>{detail||'Atualizado agora'}</span>{detailNote&&<small>{detailNote}</small>}</div>
+    {path&&<svg className="evo-home-kpi-spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true">
+      <path className="glow" d={path}/>
+      <path d={path}/>
+    </svg>}
   </article>;
 }
 
@@ -257,10 +270,10 @@ export function EvolutionHome(){
       </section>
 
       <section className={'evo-home-kpis '+(busy?'loading':'')}>
-        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail="↑ 12,5%  em relação ao mês anterior"/>
-        <MiniMetric icon="income" label="Receitas" value={money.format(data.summary.income)} tone="green" detail={'↑ '+Math.abs(data.incomeDelta).toFixed(1).replace('.',',')+'%'}/>
-        <MiniMetric icon="expense" label="Despesas" value={money.format(data.summary.expense)} tone="red" detail={'↑ '+Math.abs(data.expenseDelta).toFixed(1).replace('.',',')+'%'}/>
-        <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="↑ 15,0%"/>
+        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail="12,5%" detailNote="em relação ao mês anterior" spark="balance"/>
+        <MiniMetric icon="income" label="Receitas" value={money.format(data.summary.income)} tone="green" detail={Math.abs(data.incomeDelta).toFixed(1).replace('.',',')+'%'} spark="income"/>
+        <MiniMetric icon="expense" label="Despesas" value={money.format(data.summary.expense)} tone="red" detail={Math.abs(data.expenseDelta).toFixed(1).replace('.',',')+'%'} spark="expense"/>
+        <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="15,0%" spark="benefit"/>
         <article className="evo-home-kpi evo-tone-cyan evo-home-goal-kpi"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="target"/></span><span>Metas</span></div><strong>3 de 5</strong><div className="evo-home-goal-line"><i style={{width:'60%'}}/><span>60%</span></div></article>
         <article className="evo-home-kpi evo-tone-warning"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="alert"/></span><span>Pendências</span></div><strong>{data.summary.pendingCount} {data.summary.pendingCount===1?'conta':'contas'}</strong><div className="evo-home-kpi-detail"><span>{money.format(data.summary.pendingAmount)}</span><Icon name="arrow"/></div></article>
       </section>
