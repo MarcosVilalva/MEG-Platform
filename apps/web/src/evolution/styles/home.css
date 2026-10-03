@@ -1308,3 +1308,84 @@
     opacity:.58;
   }
 }
+
+
+/* === EVOLUTION HOME — HYBRID CARD ART / APPROVED ASSETS === */
+.evo-credit-card.has-real-art{
+  padding:0;
+  background:#071421;
+}
+.evo-credit-card.has-real-art:before,
+.evo-credit-card.has-real-art:after{
+  display:none!important;
+}
+.evo-card-art{
+  position:absolute;
+  z-index:1;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:inherit;
+}
+.evo-card-art-shade{
+  position:absolute;
+  z-index:2;
+  inset:0;
+  border-radius:inherit;
+  background:
+    linear-gradient(180deg,rgba(0,10,18,.02),rgba(0,10,18,.06) 60%,rgba(0,10,18,.28)),
+    linear-gradient(90deg,rgba(0,15,23,.12),transparent 38%);
+}
+.evo-card-live-name,
+.evo-card-live-number{
+  position:absolute;
+  z-index:4;
+  left:15px;
+  color:#f4ffff;
+  font-style:normal;
+  text-shadow:0 2px 8px rgba(0,0,0,.82);
+  pointer-events:none;
+}
+.evo-card-live-name{
+  top:13px;
+  max-width:72%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:9px;
+  font-weight:720;
+  opacity:.92;
+}
+.evo-card-live-number{
+  bottom:13px;
+  font-size:9.5px;
+  font-weight:720;
+  letter-spacing:.11em;
+}
+.evo-credit-card.has-real-art.active{
+  border-color:rgba(92,255,239,.94);
+  box-shadow:
+    0 22px 42px rgba(0,0,0,.50),
+    0 0 38px rgba(42,238,217,.27),
+    inset 0 0 0 1px rgba(185,255,248,.08);
+}
+@media(min-width:1421px) and (min-height:791px){
+  .evo-credit-card.has-real-art{
+    width:238px;
+    min-width:238px;
+    max-width:238px;
+    height:128px;
+  }
+  .evo-credit-card.has-real-art.active{
+    transform:translateX(0) scale(1.11);
+  }
+  .evo-credit-card.has-real-art.left{
+    transform:translateX(-72%) scale(.91) rotateY(8deg);
+    opacity:.84;
+  }
+  .evo-credit-card.has-real-art.right{
+    transform:translateX(72%) scale(.91) rotateY(-8deg);
+    opacity:.82;
+  }
+}

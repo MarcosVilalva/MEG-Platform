@@ -191,6 +191,19 @@ function EventIcon({event}:{event:HomeEvent}){
   return <span className={'evo-home-list-icon '+(event.type==='income'?'positive':'negative')}><Icon name={key}/></span>;
 }
 
+function cardArtwork(card:HomeCard,index:number){
+  const key=(card.name+' '+card.brand).toLowerCase();
+  if(key.includes('latam')) return './assets/cards/approved-v6/latam.webp';
+  if(key.includes('mercado')) return './assets/cards/approved-v6/mercado.webp';
+  if(key.includes('riachuelo')) return './assets/cards/approved-v6/riachuelo.webp';
+  if(key.includes('azul')) return './assets/cards/approved-v6/azul.webp';
+  return [
+    './assets/cards/approved-v6/azul.webp',
+    './assets/cards/approved-v6/latam.webp',
+    './assets/cards/approved-v6/mercado.webp'
+  ][index%3];
+}
+
 export function EvolutionHome(){
   const session=useMemo(readSession,[]);
   const qaMode=!session;
@@ -310,15 +323,11 @@ export function EvolutionHome(){
               <button className="evo-home-card-nav prev" type="button" onClick={()=>setCardIndex(v=>(v-1+data.cards.length)%data.cards.length)}>‹</button>
               {visibleCards.map((card,index)=>{
                 const visual=index===0?'primary':index===1?'meg':'travel';
-                return <div key={card.id} className={'evo-credit-card visual-'+visual+' '+(index===cardIndex?'active':index<cardIndex?'left':'right')}>
-                  <span className="evo-card-chip" aria-hidden="true"/>
-                  <span className="evo-card-contactless" aria-hidden="true">)))</span>
-                  {visual==='travel'&&<span className="evo-card-plane" aria-hidden="true"><Icon name="plane"/></span>}
-                  <small>{visual==='meg'?'':card.name}</small>
-                  <strong>{visual==='meg'?'MEG':visual==='travel'?'Viagem':card.brand}</strong>
-                  <span className="evo-card-number">•••• &nbsp; {card.lastFour}</span>
-                  <em>{money.format(card.statement)}</em>
-                  {visual==='meg'&&<span className="evo-card-master" aria-hidden="true"><i/><i/></span>}
+                return <div key={card.id} className={'evo-credit-card has-real-art visual-'+visual+' '+(index===cardIndex?'active':index<cardIndex?'left':'right')}>
+                  <img className="evo-card-art" src={cardArtwork(card,index)} alt="" aria-hidden="true"/>
+                  <span className="evo-card-art-shade" aria-hidden="true"/>
+                  <span className="evo-card-live-number">•••• &nbsp; {card.lastFour}</span>
+                  <span className="evo-card-live-name">{card.name}</span>
                 </div>;
               })}
               <button className="evo-home-card-nav next" type="button" onClick={()=>setCardIndex(v=>(v+1)%data.cards.length)}>›</button>
