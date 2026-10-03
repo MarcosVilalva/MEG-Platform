@@ -899,7 +899,7 @@
   }
   .evo-home-hero{
     background:
-      linear-gradient(90deg,#03131c 0%,rgba(3,19,28,.99) 26%,rgba(3,19,28,.88) 36%,rgba(3,19,28,.48) 48%,rgba(3,19,28,.12) 60%,rgba(3,19,28,0) 72%);
+      linear-gradient(90deg,#03131c 0%,rgba(3,19,28,.99) 23%,rgba(3,19,28,.88) 30%,rgba(3,19,28,.54) 37%,rgba(3,19,28,.20) 43%,rgba(3,19,28,.04) 47%,rgba(3,19,28,0) 51%);
   }
   .evo-home-hero:before{display:none}
 }
