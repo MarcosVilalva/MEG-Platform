@@ -4,6 +4,7 @@ import {financeClient, type FinanceSummary, type FinancialAnalytics, type Financ
 import {cardsClient, type CreditCard} from '../../app/cards-client';
 import {payablesClient, type Payable} from '../../app/payables-client';
 import {EvolutionLaunchModal} from './EvolutionLaunchModal';
+import {EvolutionMovements} from './EvolutionMovements';
 import '../styles/home.css';
 
 type IconName='home'|'overview'|'swap'|'card'|'target'|'report'|'layers'|'chart'|'diamond'|'settings'|'search'|'calendar'|'bell'|'wallet'|'income'|'expense'|'gift'|'alert'|'arrow'|'eye'|'cart'|'salary'|'music'|'restaurant'|'wifi'|'car'|'house'|'plane'|'clock'|'plus';
@@ -160,6 +161,8 @@ async function loadReal(month:string):Promise<HomeData>{
   };
 }
 
+type EvolutionView='home'|'movements';
+
 const nav:Array<[IconName,string]>= [
   ['home','Início'],['overview','Visão Geral'],['swap','Movimentações'],['card','Cartões'],['target','Metas'],
   ['report','Relatórios'],['layers','Planejamento'],['chart','Investimentos'],['diamond','Benefícios'],['settings','Configurações']
@@ -214,6 +217,7 @@ export function EvolutionHome(){
   const [cardIndex,setCardIndex]=useState(0);
   const [refreshToken,setRefreshToken]=useState(0);
   const [launchOpen,setLaunchOpen]=useState(()=>new URLSearchParams(window.location.search).get('modal')==='launch');
+  const [activeView,setActiveView]=useState<EvolutionView>(()=>new URLSearchParams(window.location.search).get('view')==='movements'?'movements':'home');
 
   useEffect(()=>{
     if(!session){setData(fixture);setBusy(false);return;}
@@ -265,17 +269,27 @@ export function EvolutionHome(){
           {card:data.cards[(normalizedCardIndex+1)%cardCount],sourceIndex:(normalizedCardIndex+1)%cardCount,position:'right' as const}
         ];
 
-  return <main className="evo-home" data-evolution-screen="home" data-evolution-home-fidelity="command-center-stage-1">
+  return <main className="evo-home" data-evolution-screen={activeView} data-evolution-home-fidelity="command-center-stage-1">
     <div className="evo-home-atmosphere" aria-hidden="true"><i/><i/><i/></div>
 
     <aside className="evo-home-sidebar">
       <div className="evo-home-brand"><img src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/></div>
       <nav aria-label="Navegação principal">
-        {nav.map(([icon,label],index)=><button key={label} className={index===0?'active':''} type="button"><Icon name={icon}/><span>{label}</span></button>)}
+        {nav.map(([icon,label])=>{
+          const target:EvolutionView|null=label==='Início'?'home':label==='Movimentações'?'movements':null;
+          return <button
+            key={label}
+            className={target===activeView?'active':''}
+            type="button"
+            aria-disabled={!target}
+            title={target?undefined:'Módulo em migração para o Evolution'}
+            onClick={()=>{if(target)setActiveView(target)}}
+          ><Icon name={icon}/><span>{label}</span></button>;
+        })}
       </nav>
     </aside>
 
-    <section className="evo-home-workspace">
+    <section className={'evo-home-workspace view-'+activeView}>
       <header className="evo-home-topbar">
         <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar movimentações, metas, relatórios..."/><kbd>⌘ K</kbd></label>
         <button className="evo-home-add" type="button" onClick={()=>setLaunchOpen(true)}><Icon name="plus"/><span>Incluir</span></button>
@@ -286,6 +300,9 @@ export function EvolutionHome(){
         </div>
       </header>
 
+      {activeView==='movements'
+        ?<EvolutionMovements month={month} qaMode={qaMode} onCreate={()=>setLaunchOpen(true)} refreshToken={refreshToken}/>
+        :<>
       <section className="evo-home-hero">
         <div className="evo-home-canonical-scene" aria-hidden="true"><img src="./evolution/artwork/home-hero-reference.webp" alt=""/></div>
         <div className="evo-home-hero-copy">
@@ -373,6 +390,7 @@ export function EvolutionHome(){
           </div>
         </article>
       </section>
+      </>}
     </section>
     {launchOpen&&<EvolutionLaunchModal
       month={month}
