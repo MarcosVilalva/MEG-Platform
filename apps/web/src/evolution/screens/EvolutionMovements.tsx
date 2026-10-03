@@ -157,7 +157,7 @@ export function EvolutionMovements({month,qaMode=false,onCreate,refreshToken=0}:
       <div>
         <small>CONTROLE FINANCEIRO</small>
         <h1>Lançamentos</h1>
-        <p>Mesma lógica funcional do Mobile, com mais contexto e controle na tela grande.</p>
+        <p>Acompanhe receitas, despesas, benefício, contas e formas de pagamento em uma visão completa.</p>
       </div>
       <button className="evo-movements-create" type="button" onClick={onCreate}><Icon name="plus"/><span>Novo lançamento</span></button>
     </header>
