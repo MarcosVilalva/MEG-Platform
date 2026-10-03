@@ -153,6 +153,14 @@ jobs:
             "http://127.0.0.1:4173/evolution.html?screen=system&view=movements" \
             "artifacts/evolution-movements-1672x941.png"
 
+          for preview in home movements launch payables settlement cards card-center benefit cashflow analytics history settings period menu; do
+            npx --yes playwright@1.55.0 screenshot \
+              --viewport-size="1672,941" \
+              --wait-for-timeout="1200" \
+              "http://127.0.0.1:4173/evolution.html?screen=preview&preview=${preview}" \
+              "artifacts/evolution-preview-${preview}-1672x941.png"
+          done
+
       - name: Record capture metadata
         run: |
           cat > artifacts/visual-preflight.txt <<EOF
@@ -169,6 +177,20 @@ jobs:
           launch_expense=1672x941
           launch_categories=1672x941
           movements_desktop=1672x941
+          preview_home=1672x941
+          preview_movements=1672x941
+          preview_launch=1672x941
+          preview_payables=1672x941
+          preview_settlement=1672x941
+          preview_cards=1672x941
+          preview_card_center=1672x941
+          preview_benefit=1672x941
+          preview_cashflow=1672x941
+          preview_analytics=1672x941
+          preview_history=1672x941
+          preview_settings=1672x941
+          preview_period=1672x941
+          preview_menu=1672x941
           commit=${GITHUB_SHA}
           rule=CI verde nao equivale a validacao visual. Todas as capturas devem ser comparadas com a referencia aprovada antes de declarar pronto.
           EOF
