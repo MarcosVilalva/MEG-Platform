@@ -210,7 +210,7 @@ export function EvolutionHome(){
   const [month,setMonth]=useState(qaMode?'2025-05':isoMonth());
   const [data,setData]=useState<HomeData>(fixture);
   const [busy,setBusy]=useState(Boolean(session));
-  const [cardIndex,setCardIndex]=useState(1);
+  const [cardIndex,setCardIndex]=useState(0);
 
   useEffect(()=>{
     if(!session){setData(fixture);setBusy(false);return;}
@@ -247,7 +247,20 @@ export function EvolutionHome(){
   const donut='conic-gradient('+stops.join(',')+')';
   const userName=session?.user.name||'Matheus Silva';
   const initials=(userName.trim()[0]||'M').toUpperCase();
-  const visibleCards=data.cards.slice(0,3);
+  const cardCount=data.cards.length;
+  const normalizedCardIndex=cardCount?((cardIndex%cardCount)+cardCount)%cardCount:0;
+  const carouselCards=cardCount<=1
+    ?data.cards.map((card,sourceIndex)=>({card,sourceIndex,position:'active' as const}))
+    :cardCount===2
+      ?[
+          {card:data.cards[(normalizedCardIndex-1+cardCount)%cardCount],sourceIndex:(normalizedCardIndex-1+cardCount)%cardCount,position:'left' as const},
+          {card:data.cards[normalizedCardIndex],sourceIndex:normalizedCardIndex,position:'active' as const}
+        ]
+      :[
+          {card:data.cards[(normalizedCardIndex-1+cardCount)%cardCount],sourceIndex:(normalizedCardIndex-1+cardCount)%cardCount,position:'left' as const},
+          {card:data.cards[normalizedCardIndex],sourceIndex:normalizedCardIndex,position:'active' as const},
+          {card:data.cards[(normalizedCardIndex+1)%cardCount],sourceIndex:(normalizedCardIndex+1)%cardCount,position:'right' as const}
+        ];
 
   return <main className="evo-home" data-evolution-screen="home" data-evolution-home-fidelity="command-center-stage-1">
     <div className="evo-home-atmosphere" aria-hidden="true"><i/><i/><i/></div>
@@ -257,12 +270,6 @@ export function EvolutionHome(){
       <nav aria-label="Navegação principal">
         {nav.map(([icon,label],index)=><button key={label} className={index===0?'active':''} type="button"><Icon name={icon}/><span>{label}</span></button>)}
       </nav>
-      <section className="evo-home-premium">
-        <span className="evo-home-crown">♛</span>
-        <strong>Plano Premium</strong>
-        <p>Mais recursos para sua evolução financeira.</p>
-        <button type="button">Upgrade agora <Icon name="arrow"/></button>
-      </section>
     </aside>
 
     <section className="evo-home-workspace">
@@ -321,10 +328,10 @@ export function EvolutionHome(){
             <header><h2><Icon name="card"/>Meus cartões</h2><button type="button">Ver todos <Icon name="arrow"/></button></header>
             <div className="evo-home-card-stage">
               <button className="evo-home-card-nav prev" type="button" onClick={()=>setCardIndex(v=>(v-1+data.cards.length)%data.cards.length)}>‹</button>
-              {visibleCards.map((card,index)=>{
-                const visual=index===0?'primary':index===1?'meg':'travel';
-                return <div key={card.id} className={'evo-credit-card has-real-art visual-'+visual+' '+(index===cardIndex?'active':index<cardIndex?'left':'right')}>
-                  <img className="evo-card-art" src={cardArtwork(card,index)} alt="" aria-hidden="true"/>
+              {carouselCards.map(({card,sourceIndex,position})=>{
+                const visual=sourceIndex%3===0?'primary':sourceIndex%3===1?'meg':'travel';
+                return <div key={card.id} className={'evo-credit-card has-real-art visual-'+visual+' '+position}>
+                  <img className="evo-card-art" src={cardArtwork(card,sourceIndex)} alt="" aria-hidden="true"/>
                   <span className="evo-card-art-shade" aria-hidden="true"/>
                   <span className="evo-card-live-number">•••• &nbsp; {card.lastFour}</span>
                   <span className="evo-card-live-name">{card.name}</span>
@@ -332,7 +339,7 @@ export function EvolutionHome(){
               })}
               <button className="evo-home-card-nav next" type="button" onClick={()=>setCardIndex(v=>(v+1)%data.cards.length)}>›</button>
             </div>
-            <div className="evo-home-dots">{visibleCards.map((card,index)=><button key={card.id} type="button" className={index===cardIndex?'active':''} onClick={()=>setCardIndex(index)}/>)}</div>
+            <div className="evo-home-dots">{data.cards.map((card,index)=><button key={card.id} type="button" className={index===normalizedCardIndex?'active':''} onClick={()=>setCardIndex(index)}/>)}</div>
           </article>
           <article className="evo-home-panel evo-home-goals">
             <header><h2><Icon name="target"/>Metas em andamento</h2><button type="button">Ver todas <Icon name="arrow"/></button></header>
