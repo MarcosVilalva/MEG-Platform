@@ -451,27 +451,33 @@
   }
   .evo-home-brand{height:140px;margin:-3px 1px 10px}
   .evo-home-brand img{
-    width:154px;
-    max-height:122px;
-    filter:drop-shadow(0 0 22px rgba(57,245,225,.30));
+    width:172px;
+    max-height:128px;
+    filter:drop-shadow(0 0 25px rgba(57,245,225,.36));
   }
   .evo-home-sidebar nav{gap:3px}
   .evo-home-sidebar nav button{min-height:42px;font-size:14px;font-weight:720}
   .evo-home-sidebar nav button.active{
-    border-color:rgba(57,255,231,.92);
+    border-color:rgba(76,255,236,.98);
     background:
-      radial-gradient(circle at 18% 50%,rgba(45,246,222,.22),transparent 38%),
-      linear-gradient(90deg,rgba(20,205,190,.40),rgba(7,65,72,.30));
+      radial-gradient(circle at 18% 50%,rgba(54,255,232,.30),transparent 40%),
+      linear-gradient(90deg,rgba(21,221,202,.48),rgba(7,70,77,.34));
     box-shadow:
-      inset 0 0 24px rgba(49,241,221,.16),
-      0 0 22px rgba(41,237,217,.25);
+      inset 0 0 30px rgba(55,250,228,.22),
+      0 0 28px rgba(43,239,219,.34);
   }
   .evo-home-premium{
-    border-color:rgba(59,246,224,.52);
+    min-height:clamp(166px,23.4vh,220px);
+    margin-bottom:clamp(0px,3.4vh,32px);
+    padding:18px 12px 14px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    border-color:rgba(69,252,229,.62);
     background:
-      radial-gradient(circle at 50% 0%,rgba(70,255,226,.22),transparent 44%),
-      linear-gradient(180deg,rgba(5,57,62,.87),rgba(4,38,47,.84));
-    box-shadow:inset 0 0 30px rgba(39,234,213,.06),0 0 26px rgba(35,226,207,.11);
+      radial-gradient(circle at 50% 0%,rgba(76,255,231,.27),transparent 46%),
+      linear-gradient(180deg,rgba(5,62,67,.91),rgba(4,38,47,.88));
+    box-shadow:inset 0 0 34px rgba(42,240,218,.08),0 0 30px rgba(37,232,211,.15);
   }
 
   .evo-home-workspace{
