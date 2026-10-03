@@ -34,12 +34,12 @@
 ## Lançamentos e parcelamentos
 
 - A descrição sugere valores já utilizados no histórico, removendo o sufixo de parcela para sugerir o nome-base da compra.
-- Para novos lançamentos de despesa nas modalidades `CREDITO` ou `CREDIÁRIO`, o usuário informa o valor total e a quantidade de parcelas. O sistema divide em centavos sem perder diferença de arredondamento e gera os meses subsequentes.
+- Para novos lançamentos de despesa no **Web Evolution**, o parcelamento novo ocorre pela modalidade `CREDITO`: o usuário informa o valor total e a quantidade de parcelas, e o sistema preserva a divisão em centavos sem perder diferença de arredondamento. `CREDIÁRIO` está aposentado para novos lançamentos Web; registros históricos permanecem legíveis e preservados. O Android congelado não é alterado nesta fase.
 - A data informada é o vencimento da primeira parcela. Vencimentos que caiam no sábado ou domingo passam para a segunda-feira seguinte; em meses mais curtos, o dia é limitado ao último dia do mês antes desse ajuste.
 - Cada descrição gerada recebe o sufixo `n/total`, por exemplo `VIDEO GAME 1/12` até `VIDEO GAME 12/12`, e as parcelas nascem como `PENDENTE`.
 - A edição de um lançamento parcelado altera apenas a parcela selecionada; não recria nem sobrescreve as demais.
 - Os cadastros iniciais de grupos, formas de pagamento e modalidades reproduzem a base histórica e podem receber novos itens pela aba Cadastros.
-- Modalidade, forma de pagamento, classificação da despesa e grupo são campos de seleção fechada alimentados pela aba Cadastros. A modalidade filtra as formas de pagamento compatíveis; selecionar uma forma mantém sua modalidade cadastrada. Novos valores só entram pelo módulo Cadastros.
+- Modalidade, forma de pagamento, classificação da despesa e grupo são campos de seleção fechada alimentados pela aba Cadastros. A modalidade filtra as formas de pagamento compatíveis; selecionar uma forma mantém sua modalidade cadastrada. Novos valores só entram pelo módulo Cadastros. No Web Evolution, `CREDIÁRIO` não deve ser oferecido para novos lançamentos, mesmo que exista no catálogo legado.
 
 ## Planejamento e saúde financeira
 

@@ -9,18 +9,21 @@ const paths=[
   './screens/EvolutionLogin.tsx',
   './screens/EvolutionHome.tsx',
   './screens/EvolutionLaunchModal.tsx',
+  './screens/EvolutionMovements.tsx',
   './styles/global.css',
   './styles/tokens.css',
   './styles/loading.css',
   './styles/login.css',
   './styles/home.css',
-  './styles/launch-modal.css'
+  './styles/launch-modal.css',
+  './styles/movements.css'
 ];
 
 for(const filePath of paths){
   const content=fs.readFileSync(new URL(filePath,import.meta.url),'utf8');
   assert.doesNotMatch(content,/\.\.\/phoenix|\/phoenix\/|PhoenixApp|phoenix-/i,'Evolution não pode depender do visual Phoenix');
   assert.doesNotMatch(content,/web-next/i,'Evolution não pode depender do Web Next anterior');
+  assert.doesNotMatch(content,/from\s+['\"][^'\"]*\/mobile\//i,'Evolution não pode importar componentes visuais Mobile.');
 }
 
 const html=fs.readFileSync(new URL('../../evolution.html',import.meta.url),'utf8');
@@ -91,11 +94,29 @@ const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import
 assert.match(launch,/Novo Lançamento/);
 assert.match(launch,/À vista/);
 assert.match(launch,/Crédito/);
-assert.match(launch,/Crediário/);
+assert.doesNotMatch(launch,/Crediário|paymentMode==='installment'/,'Crediário está aposentado para novos lançamentos Web.');
 assert.match(launch,/Benefício/);
 assert.match(launch,/financeClient\.createEvent/,'Lançamento comum deve usar API financeira real.');
 assert.match(launch,/cardsClient\.createPurchase/,'Compra no crédito deve usar API real de cartões.');
+assert.match(launch,/Math\.min\(48/,'Crédito continua aceitando parcelamento até 48 vezes.');
 assert.doesNotMatch(launch,/MegMobile|phoenix-/i,'Evolution Launch não pode reutilizar visual Mobile/Phoenix.');
+
+const movements=fs.readFileSync(new URL('./screens/EvolutionMovements.tsx',import.meta.url),'utf8');
+assert.match(movements,/data-evolution-screen="movements"/);
+assert.match(movements,/financeClient\.listEventsForMonth/,'Lançamentos deve usar eventos reais do período.');
+assert.match(movements,/financeClient\.listAccounts/);
+assert.match(movements,/financeClient\.listCategories/);
+assert.match(movements,/financeClient\.listPaymentMethods/);
+assert.match(movements,/Receitas/);
+assert.match(movements,/Despesas/);
+assert.match(movements,/Benefício/);
+assert.match(movements,/Buscar por descrição, categoria, conta ou forma de pagamento/);
+assert.match(movements,/evo-movement-table/,'Desktop deve aproveitar tabela ampla em vez de esticar a lista mobile.');
+assert.doesNotMatch(movements,/MegMobile|meg-mobile-/,'Lançamentos Evolution não pode reutilizar visual Mobile.');
+
+const movementsCss=fs.readFileSync(new URL('./styles/movements.css',import.meta.url),'utf8');
+assert.match(movementsCss,/grid-template-columns:202px minmax\(0,1fr\)/,'Desktop deve manter filtros e tabela lado a lado.');
+assert.match(movementsCss,/\.evo-movement-scroll/,'Lista densa deve rolar internamente.');
 
 const launchCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.url),'utf8');
 assert.match(launchCss,/\.evo-launch-backdrop/);
