@@ -2441,3 +2441,44 @@
   }
   .evo-home-kpi-detail{margin-top:4px}
 }
+
+
+/* PASS 16B / HERO RESPONSIVE LAYERING
+   A arte é camada visual em qualquer altura; nunca pode participar do fluxo e expulsar o texto. */
+.evo-home-canonical-scene{
+  display:block;
+  position:absolute!important;
+  z-index:1!important;
+  top:0!important;
+  right:0!important;
+  bottom:0!important;
+  left:auto!important;
+  height:100%!important;
+  overflow:hidden;
+  pointer-events:none;
+}
+.evo-home-canonical-scene img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:right center;
+}
+.evo-home-hero-copy{
+  position:relative!important;
+  z-index:3!important;
+}
+@media(min-width:1280px) and (max-height:790px){
+  .evo-home-canonical-scene{
+    width:64%!important;
+    height:100%!important;
+    top:0!important;
+  }
+  .evo-home-hero-copy{
+    top:0!important;
+    left:0!important;
+    width:54%!important;
+    max-width:54%!important;
+    padding:14px 22px!important;
+  }
+}
