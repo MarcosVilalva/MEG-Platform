@@ -4,7 +4,7 @@ import {cardsClient,type CreditCard} from '../../app/cards-client';
 import '../styles/launch-modal.css';
 
 type LaunchMode='expense'|'income';
-type PaymentMode='cash'|'credit'|'installment'|'benefit';
+type PaymentMode='cash'|'credit'|'benefit';
 
 type Props={
   month:string;
@@ -77,7 +77,6 @@ const qaMethods:PaymentMethod[]=[
   {id:'qa-debit',name:'Cartão de Débito',type:'debit',isActive:true},
   {id:'qa-boleto',name:'Boleto',type:'cash',isActive:true},
   {id:'qa-credit',name:'Cartão de Crédito',type:'credit',isActive:true},
-  {id:'qa-installment',name:'Crediário',type:'installment',isActive:true},
   {id:'qa-verocard',name:'Verocard',type:'benefit',isActive:true}
 ];
 const qaCards:CreditCard[]=[
@@ -138,7 +137,6 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
     const text=item.name+' '+(item.type||'');
     if(mode==='income') return incomeBenefit?isBenefit(text):!isCredit(text)&&!isInstallment(text)&&!isBenefit(text);
     if(paymentMode==='benefit') return isBenefit(text);
-    if(paymentMode==='installment') return isInstallment(text);
     if(paymentMode==='cash') return !isCredit(text)&&!isInstallment(text)&&!isBenefit(text);
     return false;
   });
@@ -284,7 +282,6 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
           <div className="evo-launch-payment-modes">
             <button type="button" className={paymentMode==='cash'?'active':''} onClick={()=>setPaymentMode('cash')}>À vista</button>
             <button type="button" className={paymentMode==='credit'?'active':''} onClick={()=>setPaymentMode('credit')}>Crédito</button>
-            <button type="button" className={paymentMode==='installment'?'active':''} onClick={()=>setPaymentMode('installment')}>Crediário</button>
             <button type="button" className={paymentMode==='benefit'?'active benefit':''} onClick={()=>setPaymentMode('benefit')}>Benefício</button>
           </div>
         </section>}
