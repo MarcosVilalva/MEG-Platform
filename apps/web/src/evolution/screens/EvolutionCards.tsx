@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {cardsClient,type CreditCard,type CardPurchase,type CanonicalCardStatementLine} from '../../app/cards-client';
 import {financeClient,type Account,type PaymentMethod} from '../../app/finance-client';
 import {EvolutionFinancialIcon,type EvolutionFinancialIconName} from '../components/EvolutionFinancialIcon';
@@ -15,6 +15,7 @@ const isBenefit=(value:unknown)=>/benef|verocard|aliment/.test(normalize(value))
 const isMonetary=(account:Account)=>account.isActive&&!isBenefit(account.name+' '+account.type+' '+(account.institution||''));
 const isSettlementMethod=(method:PaymentMethod)=>method.isActive&&!isBenefit(method.name+' '+(method.type||''));
 const amount=(value:unknown)=>Number(value||0);
+const fmtDate=(iso:string)=>dateFmt.format(new Date(String(iso).slice(0,10)+'T12:00:00'));
 
 function artwork(card:CreditCard,index=0){
   const key=normalize(card.name+' '+(card.issuer||'')+' '+(card.brand||''));
@@ -146,7 +147,7 @@ export function EvolutionCards({month,qaMode=false,refreshToken=0,onChanged}:Pro
     finally{setPaying(false)}
   }
 
-  if(!selected&&!busy)return <section className="evo-cards empty"><p>Nenhum cartão ativo encontrado.</p></section>;
+  if(!selected)return <section className="evo-cards empty"><p>{busy?'Carregando cartões…':'Nenhum cartão ativo encontrado.'}</p></section>;
 
   if(view==='center'&&selected)return <section className="evo-card-center" data-evolution-screen="card-center">
     <header className="evo-card-center-hero">
@@ -176,7 +177,7 @@ export function EvolutionCards({month,qaMode=false,refreshToken=0,onChanged}:Pro
       </section>
       <aside className="evo-card-center-side">
         <section className="next-invoice"><header><EvolutionFinancialIcon name="calendar" size={22}/><h3>Próxima fatura</h3><button>Ver fatura›</button></header><div className="due"><span><small>Vencimento</small><strong>{fmtDate(dueDate(selected,month))}</strong><em>Aberta</em></span><b>{money.format(invoice)}</b></div><button className="pay" type="button" disabled={invoice<=0} onClick={()=>setPayOpen(true)}><EvolutionFinancialIcon name="card" size={19}/>Pagar fatura</button><div className="usage"><strong>{money.format(invoice)}</strong><small>de {money.format(used)} utilizados</small><i><em style={{width:usedPct+'%'}}/></i><b>{usedPct}%</b></div></section>
-        <section className="open-installments"><header><EvolutionFinancialIcon name="layers" size={22}/><h3>Parcelas em aberto</h3><button>Ver todas›</button></header>{selected.purchases.filter(p=>p.installments>1).slice(0,5).map(p=><div key={p.id}><EvolutionFinancialIcon name={iconFor(p.description)} size={18}/><span><b>{p.description}</b><small>{p.installments} parcelas</small></span><strong>{money.format(amount(p.totalAmount)/Math.max(1,p.installments))}</strong></div>)}</section>
+        <section className="open-installments"><header><EvolutionFinancialIcon name="list" size={22}/><h3>Parcelas em aberto</h3><button>Ver todas›</button></header>{selected.purchases.filter(p=>p.installments>1).slice(0,5).map(p=><div key={p.id}><EvolutionFinancialIcon name={iconFor(p.description)} size={18}/><span><b>{p.description}</b><small>{p.installments} parcelas</small></span><strong>{money.format(amount(p.totalAmount)/Math.max(1,p.installments))}</strong></div>)}</section>
         <section className="card-alerts"><header><EvolutionFinancialIcon name="bell" size={22}/><h3>Alertas do cartão</h3></header><div><EvolutionFinancialIcon name="alert" size={20}/><span><b>Fatura próxima do vencimento</b><small>Vence em {fmtDate(dueDate(selected,month))}</small></span></div><div><EvolutionFinancialIcon name="chart" size={20}/><span><b>Utilização do limite</b><small>Você já utilizou {usedPct}% do seu limite.</small></span></div></section>
       </aside>
     </div>
@@ -198,7 +199,7 @@ export function EvolutionCards({month,qaMode=false,refreshToken=0,onChanged}:Pro
         {missing>0&&<div className="warning">Saldo insuficiente. Faltam {money.format(missing)} para pagar a fatura.</div>}
         {balance.status==='error'&&<div className="warning">Não foi possível validar o saldo da conta. O pagamento foi bloqueado.</div>}
         {message&&<div className="warning">{message}</div>}
-        <section className="pay-insights"><div><EvolutionFinancialIcon name="calendar" size={24}/><span><small>Melhor dia de compra</small><strong>Dia {bestDay(selected)}</strong><p>Com base no fechamento do cartão.</p></span></div><div><EvolutionFinancialIcon name="layers" size={24}/><span><small>Parcelas em aberto</small><strong>{selected.purchases.filter(p=>p.installments>1).length} parcelas</strong><p>Total parcelado em acompanhamento.</p></span></div></section>
+        <section className="pay-insights"><div><EvolutionFinancialIcon name="calendar" size={24}/><span><small>Melhor dia de compra</small><strong>Dia {bestDay(selected)}</strong><p>Com base no fechamento do cartão.</p></span></div><div><EvolutionFinancialIcon name="list" size={24}/><span><small>Parcelas em aberto</small><strong>{selected.purchases.filter(p=>p.installments>1).length} parcelas</strong><p>Total parcelado em acompanhamento.</p></span></div></section>
         <footer><button className="cancel" onClick={()=>!paying&&setPayOpen(false)}>Cancelar</button><button className="confirm" disabled={paying||invoice<=0||balance.status!=='ready'||missing>0||!accountId} onClick={()=>void payInvoice()}><EvolutionFinancialIcon name="check-line" size={21}/>{paying?'Processando…':'Pagar fatura'}</button></footer>
         <small>{selectedAccount?.name||'Selecione a conta'}</small>
       </section>
@@ -208,7 +209,7 @@ export function EvolutionCards({month,qaMode=false,refreshToken=0,onChanged}:Pro
   return <section className="evo-cards" data-evolution-screen="cards">
     <header className="evo-cards-hero">
       <div><h1>Meus <strong>cartões</strong></h1><p>Mais controle, mais benefícios, mais para você.</p><section><span><EvolutionFinancialIcon name="calendar" size={20}/><b>Acompanhe</b><small>seus gastos e faturas</small></span><span><EvolutionFinancialIcon name="card" size={20}/><b>Gerencie limites</b><small>e melhores datas</small></span><span><EvolutionFinancialIcon name="gift" size={20}/><b>Aproveite</b><small>benefícios exclusivos</small></span><span><EvolutionFinancialIcon name="check" size={20}/><b>Compare</b><small>para decidir melhor</small></span></section></div>
-      <div className="fan">{cards.slice(0,4).map((card,index)=><img key={card.id} src={artwork(card,index)} alt="" style={{'--i':index} as React.CSSProperties}/>)}</div>
+      <div className="fan">{cards.slice(0,4).map((card,index)=><img key={card.id} src={artwork(card,index)} alt="" style={{'--i':index} as CSSProperties}/>)}</div>
     </header>
 
     <section className="evo-card-strip">
@@ -234,7 +235,7 @@ export function EvolutionCards({month,qaMode=false,refreshToken=0,onChanged}:Pro
       </article>
       <aside className="evo-cards-side">
         <section className="next-invoice"><header><EvolutionFinancialIcon name="receipt" size={20}/><h3>Próxima fatura</h3><button onClick={()=>setView('center')}>Ver fatura⌄</button></header><div><span><small>Vencimento</small><strong>{fmtDate(dueDate(selected,month))}</strong><em>Aberta</em></span><b>{money.format(invoice)}</b></div><button className="pay" type="button" onClick={()=>setPayOpen(true)} disabled={invoice<=0}><EvolutionFinancialIcon name="card" size={18}/>Pagar fatura</button><article><strong>{money.format(invoice)}</strong><small>de {money.format(used)} utilizados</small><i><em style={{width:usedPct+'%'}}/></i><b>{usedPct}%</b></article></section>
-        <section className="installments"><header><EvolutionFinancialIcon name="layers" size={20}/><h3>Parcelas em aberto</h3><button>Ver todas⌄</button></header>{selected.purchases.filter(p=>p.installments>1).slice(0,4).map(p=><div key={p.id}><EvolutionFinancialIcon name={iconFor(p.description)} size={18}/><span><b>{p.description}</b><small>{p.installments} parcelas</small></span><strong>{money.format(amount(p.totalAmount)/Math.max(1,p.installments))}</strong></div>)}</section>
+        <section className="installments"><header><EvolutionFinancialIcon name="list" size={20}/><h3>Parcelas em aberto</h3><button>Ver todas⌄</button></header>{selected.purchases.filter(p=>p.installments>1).slice(0,4).map(p=><div key={p.id}><EvolutionFinancialIcon name={iconFor(p.description)} size={18}/><span><b>{p.description}</b><small>{p.installments} parcelas</small></span><strong>{money.format(amount(p.totalAmount)/Math.max(1,p.installments))}</strong></div>)}</section>
       </aside>
     </section>
     {payOpen&&renderPayModal()}
