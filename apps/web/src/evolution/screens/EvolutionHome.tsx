@@ -8,13 +8,13 @@ import {EvolutionFinancialIcon,type EvolutionFinancialIconName} from '../compone
 import {EvolutionMovements} from './EvolutionMovements';
 import '../styles/home.css';
 
-type IconName='home'|'overview'|'swap'|'card'|'target'|'report'|'layers'|'chart'|'diamond'|'settings'|'search'|'calendar'|'bell'|'wallet'|'income'|'expense'|'gift'|'alert'|'arrow'|'eye'|'cart'|'salary'|'music'|'restaurant'|'wifi'|'car'|'house'|'plane'|'clock'|'plus';
+type IconName='home'|'overview'|'swap'|'card'|'target'|'report'|'layers'|'chart'|'diamond'|'settings'|'search'|'calendar'|'bell'|'wallet'|'income'|'expense'|'gift'|'alert'|'arrow'|'eye'|'cart'|'salary'|'music'|'restaurant'|'wifi'|'car'|'house'|'plane'|'clock'|'plus'|'check';
 
 function Icon({name,className=''}:{name:IconName;className?:string}){
   const map:Record<IconName,EvolutionFinancialIconName>={
     home:'home',overview:'chart',swap:'arrows-right-left',card:'card',target:'target',report:'receipt',layers:'list',chart:'chart',diamond:'sparkles',settings:'settings',
     search:'search',calendar:'calendar',bell:'bell',wallet:'wallet',income:'up',expense:'down',gift:'gift',alert:'alert',arrow:'chevron-right',eye:'eye',
-    cart:'cart',salary:'banknote',music:'music',restaurant:'food',wifi:'wifi',car:'car',house:'house',plane:'plane',clock:'clock',plus:'plus'
+    cart:'cart',salary:'banknote',music:'music',restaurant:'food',wifi:'wifi',car:'car',house:'house',plane:'plane',clock:'clock',plus:'plus',check:'check-line'
   };
   return <EvolutionFinancialIcon name={map[name]} className={className}/>;
 }
