@@ -332,7 +332,7 @@
 .evo-home-bar-pair i.expense{background:linear-gradient(180deg,#6d91ad,#435e72)}
 .evo-home-bar-month>span{align-self:center;color:#8da8ae;font-size:9px;text-align:center}
 .evo-home svg.evo-home-line{position:absolute;z-index:4;inset:7px 4px 19px 4px;width:calc(100% - 8px);height:calc(100% - 26px);overflow:visible;pointer-events:none}
-.evo-home svg.evo-home-line polyline{fill:none;stroke:#c8fff8;stroke-width:1.8;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 6px rgba(130,255,244,.72))}
+.evo-home svg.evo-home-line polyline,.evo-home svg.evo-home-line path{fill:none;stroke:#c8fff8;stroke-width:1.8;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 6px rgba(130,255,244,.72))}
 .evo-home svg.evo-home-line circle{fill:#f5fffd;stroke:#38ead9;stroke-width:.75;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 4px rgba(75,240,224,.9))}
 .evo-home-chart-summary{display:grid;grid-template-rows:1fr 1fr;gap:8px;padding:3px 0 1px}
 .evo-home-chart-summary>div{display:flex;flex-direction:column;justify-content:center;padding:8px 11px;border:1px solid rgba(65,191,187,.17);border-radius:8px;background:rgba(6,53,62,.58)}
@@ -1189,4 +1189,53 @@
   .evo-home-category-list b{font-size:8.8px}
   .evo-home-donut b{font-size:13.5px}
   .evo-home-donut small{font-size:9px}
+}
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 12 / PANEL DETAILS === */
+.evo-home-kpi-eye{
+  margin-left:2px;
+  width:19px!important;
+  height:19px!important;
+  color:#d9e8eb;
+  opacity:.96;
+}
+.evo-home-kpi-accessory{
+  position:absolute;
+  z-index:4;
+  right:12px;
+  top:10px;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border:1px solid rgba(66,240,219,.38);
+  border-radius:9px;
+  color:#38e6d4;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(65,242,220,.18),transparent 58%),
+    rgba(7,70,75,.72);
+  box-shadow:
+    inset 0 0 18px rgba(54,232,214,.08),
+    0 0 18px rgba(45,232,213,.08);
+}
+.evo-home-kpi-accessory svg{width:22px;height:22px}
+
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-kpis article:first-child{
+    padding-right:58px;
+  }
+  .evo-home-kpis article:first-child>strong{
+    font-size:29px;
+  }
+  .evo-home-kpi-eye{
+    width:20px!important;
+    height:20px!important;
+  }
+  .evo-home-chart-grid{font-size:10.5px}
+  .evo-home-bar-month>span{font-size:10.5px}
+  .evo-home-chart-summary span{font-size:11.2px}
+  .evo-home-chart-summary b{font-size:14.2px}
+  .evo-home-chart-summary strong{font-size:20.5px}
+  .evo-home-cashflow>footer{font-size:10.5px}
 }
