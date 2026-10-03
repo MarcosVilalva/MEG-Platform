@@ -38,6 +38,22 @@ const isCredit=(value:string)=>/credit|credito|cartao/.test(normalize(value));
 const isInstallment=(value:string)=>/crediario|carne|parcel/.test(normalize(value));
 const operationId=()=>globalThis.crypto?.randomUUID?.()||('evo-'+Date.now()+'-'+Math.random().toString(16).slice(2));
 
+function CategoryIcon({name}:{name:string}){
+  const key=normalize(name);
+  const paths=key.includes('aliment')||key.includes('mercad')
+    ?['M6 3v7','M3 3v4a3 3 0 0 0 6 0V3','M6 10v11','M16 3v18','M16 3c4 2 4 8 0 10']
+    :key.includes('transp')||key.includes('auto')||key.includes('carro')
+      ?['M5 17h14l-1.5-6h-11z','M7 11l2-4h6l2 4','M7 17v2','M17 17v2']
+      :key.includes('morad')||key.includes('casa')
+        ?['M3 11.5 12 4l9 7.5','M5.5 10.5V20h13v-9.5']
+        :key.includes('saud')
+          ?['M12 20s-8-4.8-8-11a4 4 0 0 1 7-2.6L12 7.8l1-1.4A4 4 0 0 1 20 9c0 6.2-8 11-8 11z']
+          :key.includes('lazer')||key.includes('jogo')
+            ?['M7 9h10l3 8-3 2-3-3h-4l-3 3-3-2z','M8 12v4','M6 14h4','M15 13h.01','M17 15h.01']
+            :['M3 12V5h7l11 11-5 5z','M7.5 8.5h.01'];
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{paths.map((d,index)=><path key={index} d={d}/>)}</svg>;
+}
+
 function parseAmount(value:string){
   const normalized=value.trim().replace(/\s/g,'').replace(/R\$/gi,'').replace(/\./g,'').replace(',','.');
   const result=Number(normalized);
@@ -258,7 +274,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
         <section className="evo-launch-section">
           <div className="evo-launch-section-title"><LaunchIcon name="tag"/><span>Categoria</span></div>
           <div className="evo-launch-categories">
-            {categoryChips.map((category,index)=><button key={category.id} type="button" className={category.id===categoryId?'active':''} onClick={()=>setCategoryId(category.id)}><i>{['🍴','🚗','⌂','◈','♥'][index]||'•'}</i><span>{category.name}</span></button>)}
+            {categoryChips.map(category=><button key={category.id} type="button" className={category.id===categoryId?'active':''} onClick={()=>setCategoryId(category.id)}><i><CategoryIcon name={category.name}/></i><span>{category.name}</span></button>)}
           </div>
           {activeCategories.length>5&&<select className="evo-launch-more" value={categoryId} onChange={event=>setCategoryId(event.target.value)}><option value="">Mais categorias…</option>{activeCategories.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select>}
         </section>
