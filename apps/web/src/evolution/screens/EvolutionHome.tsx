@@ -4,45 +4,19 @@ import {financeClient, type FinanceSummary, type FinancialAnalytics, type Financ
 import {cardsClient, type CreditCard} from '../../app/cards-client';
 import {payablesClient, type Payable} from '../../app/payables-client';
 import {EvolutionLaunchModal} from './EvolutionLaunchModal';
+import {EvolutionFinancialIcon,type EvolutionFinancialIconName} from '../components/EvolutionFinancialIcon';
 import {EvolutionMovements} from './EvolutionMovements';
 import '../styles/home.css';
 
 type IconName='home'|'overview'|'swap'|'card'|'target'|'report'|'layers'|'chart'|'diamond'|'settings'|'search'|'calendar'|'bell'|'wallet'|'income'|'expense'|'gift'|'alert'|'arrow'|'eye'|'cart'|'salary'|'music'|'restaurant'|'wifi'|'car'|'house'|'plane'|'clock'|'plus';
 
 function Icon({name,className=''}:{name:IconName;className?:string}){
-  const paths:Record<IconName,string[]>={
-    home:['M3 11.5 12 4l9 7.5','M5.5 10.5V20h13v-9.5','M9.5 20v-6h5v6'],
-    overview:['M4 20V10','M10 20V4','M16 20v-7','M22 20H2'],
-    swap:['M4 8h14','m15 5 4 3-4 3','M20 16H6','m9-5-4-3 4-3'],
-    card:['M3 7h18v12H3z','M3 11h18','M7 16h4'],
-    target:['M12 22a10 10 0 1 0-10-10','M12 18a6 6 0 1 0-6-6','M12 14a2 2 0 1 0-2-2','m13 3-6 6','m19 3 2 2-4 1-2-2 1-4 2 2 1-4z'],
-    report:['M5 3h10l4 4v14H5z','M15 3v5h5','M8 13h8','M8 17h6'],
-    layers:['m12 3 9 5-9 5-9-5z','m3 12 9 5 9-5','m3 4 9 5 9-5'],
-    chart:['M4 20V9','M9 20V4','M14 20v-8','M19 20V6'],
-    diamond:['m12 3 8 6-8 12L4 9z','M4 9h16','m8-6-3 6 3 12 3-12z'],
-    settings:['M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z','M4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4M7.7 16.3l-1.4 1.4'],
-    search:['M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4z','m16 16 5 5'],
-    calendar:['M5 4h14v16H5z','M8 2v4','M16 2v4','M5 9h14'],
-    bell:['M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9','M10 21h4'],
-    wallet:['M4 7h16v12H4z','M4 7 7 4h11v3','M15 12h5v4h-5z'],
-    income:['M5 19 19 5','M11 5h8v8'],
-    expense:['M5 5 19 19','M13 19h6v-6'],
-    gift:['M4 10h16v10H4z','M2 7h20v4H2z','M12 7v13','M12 7c-3 0-5-1.2-5-3 0-1.3 1-2 2.3-2C11 2 12 7 12 7z','M12 7s1-5 2.7-5C16 2 17 2.7 17 4c0 1.8-2 3-5 3z'],
-    alert:['M12 3 2.5 20h19z','M12 9v5','M12 17h.01'],
-    arrow:['M5 12h14','m15 8 4 4-4 4'],
-    eye:['M2.5 12s3.7-6 9.5-6 9.5 6 9.5 6-3.7 6-9.5 6-9.5-6-9.5-6z','M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
-    cart:['M3 5h2l2 10h10l3-7H6','M9 20h.01','M17 20h.01'],
-    salary:['M4 7h16v10H4z','M8 12h8','M12 9v6'],
-    music:['M9 18V5l10-2v13','M9 18a3 3 0 1 1-3-3','M19 16a3 3 0 1 1-3-3'],
-    restaurant:['M6 3v7','M3 3v4a3 3 0 0 0 6 0V3','M6 10v11','M16 3v18','M16 3c4 2 4 8 0 10'],
-    wifi:['M3 9c5-4 13-4 18 0','M6 13c3.4-2.8 8.6-2.8 12 0','M9.5 17c1.5-1.2 3.5-1.2 5 0','M12 20h.01'],
-    car:['M5 17h14l-1.5-6h-11z','M7 11l2-4h6l2 4','M7 17v2','M17 17v2'],
-    house:['M3 11.5 12 4l9 7.5','M5.5 10.5V20h13v-9.5'],
-    plane:['m3 11 18-8-7 18-2-7-6-3z'],
-    clock:['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z','M12 6v6l4 2'],
-    plus:['M12 5v14','M5 12h14']
+  const map:Record<IconName,EvolutionFinancialIconName>={
+    home:'home',overview:'chart',swap:'arrows-right-left',card:'card',target:'target',report:'receipt',layers:'list',chart:'chart',diamond:'sparkles',settings:'settings',
+    search:'search',calendar:'calendar',bell:'bell',wallet:'wallet',income:'up',expense:'down',gift:'gift',alert:'alert',arrow:'chevron-right',eye:'eye',
+    cart:'cart',salary:'banknote',music:'music',restaurant:'food',wifi:'wifi',car:'car',house:'house',plane:'plane',clock:'clock',plus:'plus'
   };
-  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true">{paths[name].map((d,i)=><path key={i} d={d}/>)}</svg>;
+  return <EvolutionFinancialIcon name={map[name]} className={className}/>;
 }
 
 const money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
