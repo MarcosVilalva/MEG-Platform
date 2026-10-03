@@ -3230,3 +3230,24 @@
   .evo-home-benefit-banner{display:grid}
   .evo-home-benefit-partners{display:none}
 }
+
+.evo-home[data-evolution-home-fidelity="approved-2026-10-03"] .evo-home-side-new{
+  position:relative;z-index:3;
+  min-height:52px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin:12px 7px 4px;
+  border:1px solid #42ead8;
+  border-radius:14px;
+  color:#effffd;
+  background:linear-gradient(90deg,rgba(12,136,132,.72),rgba(5,80,87,.82));
+  box-shadow:0 0 24px rgba(46,231,213,.18);
+  font-size:clamp(12px,.86vw,15px);
+  font-weight:850;
+}
+.evo-home[data-evolution-home-fidelity="approved-2026-10-03"] .evo-home-side-new svg{
+  width:27px;height:27px;padding:5px;border-radius:50%;color:#06302e;background:#59ead8
+}
+@media(max-width:1180px){
+  .evo-home[data-evolution-home-fidelity="approved-2026-10-03"] .evo-home-side-new{width:56px;min-width:56px;margin-inline:auto;padding:0}
+  .evo-home[data-evolution-home-fidelity="approved-2026-10-03"] .evo-home-side-new span{display:none}
+}
