@@ -97,48 +97,52 @@ type HomeData={
 
 const fixture:HomeData={
   summary:{
-    month:'2025-05',availableBalance:11614.59,income:7245,expense:4320.41,projectedResult:2924.59,
-    realizedIncome:7245,realizedExpense:4320.41,realizedResult:2924.59,eventCount:56,pendingCount:2,pendingAmount:410.50,
-    nextDue:{id:'due-1',description:'Fatura do cartão •••• 4021',date:'2025-05-10',amount:320.45,type:'expense'},
-    topCategories:[{name:'Moradia',amount:1382.53},{name:'Alimentação',amount:777.67},{name:'Transporte',amount:518.45}]
+    month:'2026-10',availableBalance:3049.15,income:9205.70,expense:6887.71,projectedResult:2317.99,
+    realizedIncome:9205.70,realizedExpense:6887.71,realizedResult:2317.99,eventCount:22,pendingCount:5,pendingAmount:532.18,
+    nextDue:{id:'due-1',description:'Fatura Nubank',date:'2026-10-03',amount:532.18,type:'expense'},
+    topCategories:[{name:'Alimentação',amount:1928.30},{name:'Casa',amount:1238.64},{name:'Transporte',amount:963.40}]
   },
-  benefit:892,
+  benefit:1436.52,
   trend:[
-    {month:'Jan',income:6800,expense:4100,result:2700},{month:'Fev',income:7450,expense:4600,result:2850},
-    {month:'Mar',income:6900,expense:3900,result:3000},{month:'Abr',income:8500,expense:4550,result:3950},
-    {month:'Mai',income:7245,expense:4320.41,result:2924.59},{month:'Jun',income:8050,expense:4700,result:3350}
+    {month:'Mai',income:7600,expense:6500,result:1100},{month:'Jun',income:8300,expense:6900,result:1400},
+    {month:'Jul',income:7850,expense:6600,result:1250},{month:'Ago',income:9100,expense:7000,result:2100},
+    {month:'Set',income:8700,expense:7200,result:1500},{month:'Out',income:9205.70,expense:6887.71,result:2317.99}
   ],
   cards:[
-    {id:'c1',name:'LATAM Pass',lastFour:'5934',brand:'MASTERCARD',statement:320.45,available:5200},
-    {id:'c2',name:'Mercado Pago',lastFour:'4021',brand:'VISA',statement:1260.80,available:7400},
-    {id:'c3',name:'Riachuelo',lastFour:'8827',brand:'MASTERCARD',statement:615.20,available:3380},
-    {id:'c4',name:'Azul Itaú',lastFour:'7146',brand:'VISA',statement:418.90,available:4581.10}
+    {id:'c1',name:'MEG Visa Infinite',lastFour:'1234',brand:'VISA',statement:2317.99,available:13000},
+    {id:'c2',name:'Nubank',lastFour:'5678',brand:'MASTERCARD',statement:532.18,available:7200},
+    {id:'c3',name:'C6 Bank',lastFour:'9012',brand:'MASTERCARD',statement:423.50,available:6100},
+    {id:'c4',name:'American Express',lastFour:'3456',brand:'AMEX',statement:312.45,available:10400}
   ],
   events:[
-    {id:'e1',description:'Supermercado Extra',category:'Alimentação',date:'2025-05-20T14:32:00',amount:-156.90,type:'expense'},
-    {id:'e2',description:'Salário',category:'Receita',date:'2025-05-19T09:15:00',amount:4250,type:'income'},
-    {id:'e3',description:'Spotify Premium',category:'Assinatura',date:'2025-05-03',amount:-27.90,type:'expense'},
-    {id:'e4',description:'Transferência recebida',category:'Transferência',date:'2025-05-02',amount:320,type:'income'},
-    {id:'e5',description:'Restaurante Soho',category:'Alimentação',date:'2025-05-01',amount:-182.40,type:'expense'}
+    {id:'e1',description:'Salário',category:'Receita',date:'2026-10-01T09:15:00',amount:4850,type:'income'},
+    {id:'e2',description:'Supermercado Extra',category:'Alimentação',date:'2026-10-01T14:32:00',amount:-342.50,type:'expense'},
+    {id:'e3',description:'Netflix',category:'Entretenimento',date:'2026-09-30',amount:-55.90,type:'expense'},
+    {id:'e4',description:'Posto Ipiranga',category:'Transporte',date:'2026-09-30',amount:-180,type:'expense'},
+    {id:'e5',description:'Transferência Nubank',category:'Transferência',date:'2026-09-29',amount:-500,type:'expense'}
   ],
   due:[
-    {id:'d1',description:'Fatura do cartão •••• 4021',date:'2025-05-10',amount:320.45,kind:'card'},
-    {id:'d2',description:'Condomínio',date:'2025-05-12',amount:410.50,kind:'house'},
-    {id:'d3',description:'Internet Vivo',date:'2025-05-15',amount:99.90,kind:'wifi'},
-    {id:'d4',description:'Energia Elétrica',date:'2025-05-17',amount:218.45,kind:'alert'},
-    {id:'d5',description:'Seguro Auto',date:'2025-05-20',amount:189.90,kind:'car'}
+    {id:'d1',description:'Fatura Nubank',date:'2026-10-03',amount:532.18,kind:'card'},
+    {id:'d2',description:'Internet Vivo',date:'2026-10-05',amount:129.90,kind:'wifi'},
+    {id:'d3',description:'Energia Elétrica',date:'2026-10-08',amount:214.85,kind:'alert'},
+    {id:'d4',description:'Academia Smart Fit',date:'2026-10-10',amount:99.90,kind:'clock'},
+    {id:'d5',description:'Seguro Auto',date:'2026-10-12',amount:189.00,kind:'car'}
   ],
-  categories:[{name:'Moradia',amount:1382.53},{name:'Alimentação',amount:777.67},{name:'Transporte',amount:518.45},{name:'Lazer',amount:475.24},{name:'Assinaturas',amount:345.60},{name:'Saúde',amount:302.18},{name:'Outros',amount:518.74}],
-  incomeDelta:8.2,expenseDelta:2.4,
+  categories:[
+    {name:'Alimentação',amount:1928.30},{name:'Casa',amount:1238.64},{name:'Transporte',amount:963.40},
+    {name:'Compras',amount:825.20},{name:'Saúde',amount:620.15},{name:'Outros',amount:1312.02}
+  ],
+  incomeDelta:12.4,expenseDelta:0,
   cashflow:[
-    {date:'2025-05-01',income:2400,expense:0,net:2400},{date:'2025-05-03',income:0,expense:490,net:-490},
-    {date:'2025-05-06',income:1200,expense:350,net:850},{date:'2025-05-09',income:0,expense:610,net:-610},
-    {date:'2025-05-12',income:1850,expense:0,net:1850},{date:'2025-05-15',income:900,expense:540,net:360},
-    {date:'2025-05-18',income:0,expense:760,net:-760},{date:'2025-05-21',income:1350,expense:180,net:1170},
-    {date:'2025-05-24',income:0,expense:320,net:-320},{date:'2025-05-27',income:1545,expense:620,net:925},
-    {date:'2025-05-30',income:0,expense:450,net:-450}
+    {date:'2026-10-01',income:900,expense:0,net:900},{date:'2026-10-02',income:1300,expense:300,net:1000},
+    {date:'2026-10-03',income:0,expense:540,net:-540},{date:'2026-10-05',income:1100,expense:160,net:940},
+    {date:'2026-10-07',income:0,expense:450,net:-450},{date:'2026-10-10',income:700,expense:260,net:440},
+    {date:'2026-10-12',income:850,expense:0,net:850},{date:'2026-10-15',income:1245,expense:832,net:413},
+    {date:'2026-10-18',income:0,expense:520,net:-520},{date:'2026-10-21',income:900,expense:250,net:650},
+    {date:'2026-10-25',income:0,expense:610,net:-610},{date:'2026-10-27',income:1150,expense:0,net:1150},
+    {date:'2026-10-30',income:500,expense:420,net:80}
   ],
-  payableOpenAmount:945.30,payableOpenCount:6,cardStatementAmount:2615.35,cardStatementCount:4,paidAmount:4320.41,paidCount:28
+  payableOpenAmount:1245.80,payableOpenCount:3,cardStatementAmount:864.32,cardStatementCount:2,paidAmount:4792.66,paidCount:12
 };
 
 function mapEvent(event:FinancialEvent):HomeEvent{
@@ -249,7 +253,7 @@ function cardArtwork(card:HomeCard,index:number){
 export function EvolutionHome(){
   const session=useMemo(readSession,[]);
   const qaMode=!session;
-  const [month,setMonth]=useState(qaMode?'2025-05':isoMonth());
+  const [month,setMonth]=useState(qaMode?'2026-10':isoMonth());
   const [data,setData]=useState<HomeData>(fixture);
   const [busy,setBusy]=useState(Boolean(session));
   const [hasLoadedReal,setHasLoadedReal]=useState(!session);
@@ -290,8 +294,8 @@ export function EvolutionHome(){
     return palette[index%palette.length]+' '+start.toFixed(1)+'% '+acc.toFixed(1)+'%';
   });
   const donut='conic-gradient('+stops.join(',')+')';
-  const userName=session?.user.name||'Matheus Silva';
-  const initials=(userName.trim()[0]||'M').toUpperCase();
+  const userName=session?.user.name||'Marcos de Andrade Vilalva';
+  const initials=qaMode?'MV':(userName.trim().split(/\s+/).map(part=>part[0]).slice(0,2).join('').toUpperCase()||'M');
   const cardCount=data.cards.length;
   const normalizedCardIndex=cardCount?((cardIndex%cardCount)+cardCount)%cardCount:0;
   const carouselCards=cardCount<=1
