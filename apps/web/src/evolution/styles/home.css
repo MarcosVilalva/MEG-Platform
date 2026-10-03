@@ -903,3 +903,217 @@
   }
   .evo-home-hero:before{display:none}
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 10 / BRAND + CARD CAROUSEL === */
+.evo-credit-card .evo-card-chip,
+.evo-credit-card .evo-card-contactless,
+.evo-credit-card .evo-card-plane,
+.evo-credit-card .evo-card-master{
+  position:absolute;
+  z-index:4;
+}
+.evo-credit-card .evo-card-chip{
+  left:15px;
+  top:16px;
+  width:22px;
+  height:15px;
+  border-radius:3px;
+  border:1px solid rgba(222,244,250,.38);
+  background:
+    linear-gradient(90deg,transparent 30%,rgba(230,248,252,.35) 31% 36%,transparent 37% 62%,rgba(230,248,252,.28) 63% 68%,transparent 69%),
+    linear-gradient(180deg,rgba(183,205,222,.92),rgba(91,119,147,.92));
+  box-shadow:inset 0 0 0 1px rgba(9,28,46,.30);
+}
+.evo-credit-card .evo-card-contactless{
+  top:13px;
+  right:15px;
+  color:#d9ffff;
+  font-size:12px;
+  line-height:1;
+  letter-spacing:-4px;
+  transform:rotate(-10deg);
+  text-shadow:0 0 8px rgba(105,255,239,.58);
+}
+.evo-credit-card .evo-card-plane{
+  left:15px;
+  top:15px;
+  color:#f2fbff;
+}
+.evo-credit-card .evo-card-plane svg{width:22px;height:22px}
+.evo-credit-card .evo-card-master{
+  right:14px;
+  bottom:13px;
+  width:44px;
+  height:24px;
+}
+.evo-credit-card .evo-card-master i{
+  position:absolute;
+  top:2px;
+  width:23px;
+  height:23px;
+  border-radius:50%;
+}
+.evo-credit-card .evo-card-master i:first-child{left:0;background:#ff4354}
+.evo-credit-card .evo-card-master i:last-child{right:0;background:#ffb332;mix-blend-mode:screen}
+.evo-credit-card.visual-primary .evo-card-contactless,
+.evo-credit-card.visual-primary .evo-card-plane,
+.evo-credit-card.visual-primary .evo-card-master,
+.evo-credit-card.visual-travel .evo-card-chip,
+.evo-credit-card.visual-travel .evo-card-contactless,
+.evo-credit-card.visual-travel .evo-card-master,
+.evo-credit-card.visual-meg .evo-card-chip,
+.evo-credit-card.visual-meg .evo-card-plane{display:none}
+
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-brand img{
+    width:150px;
+    max-height:125px;
+    object-fit:contain;
+    filter:drop-shadow(0 0 19px rgba(52,238,220,.28));
+  }
+  .evo-home-sidebar nav button{
+    min-height:46px;
+    font-size:15px;
+    font-weight:690;
+  }
+  .evo-home-sidebar nav button svg{width:23px;height:23px}
+
+  .evo-home-card-stage{
+    height:calc(100% - 57px);
+    min-height:128px;
+  }
+  .evo-credit-card{
+    width:232px;
+    min-width:232px;
+    max-width:232px;
+    height:124px;
+    padding:0;
+    border-radius:9px;
+    overflow:hidden;
+  }
+  .evo-credit-card:before{
+    inset:-36% -20%;
+    opacity:.72;
+  }
+  .evo-credit-card small,
+  .evo-credit-card strong,
+  .evo-credit-card .evo-card-number{
+    position:absolute;
+    z-index:4;
+    margin:0;
+  }
+  .evo-credit-card small{
+    left:15px;
+    top:17px;
+    color:#a9c2ce;
+    font-size:9px;
+    line-height:1;
+  }
+  .evo-credit-card strong{
+    left:15px;
+    top:37px;
+    color:#efffff;
+    font-size:19px;
+    line-height:1;
+    letter-spacing:.04em;
+    text-shadow:0 0 12px rgba(83,244,228,.20);
+  }
+  .evo-credit-card .evo-card-number{
+    left:15px;
+    bottom:14px;
+    color:#dce8ed;
+    font-size:10px;
+    letter-spacing:.12em;
+  }
+  .evo-credit-card em{display:none}
+
+  .evo-credit-card.visual-primary{
+    background:
+      radial-gradient(circle at 84% 78%,rgba(29,67,188,.34),transparent 24%),
+      linear-gradient(142deg,#102a58 0%,#0a2146 44%,#071726 100%);
+    border-color:rgba(87,141,205,.48);
+  }
+  .evo-credit-card.visual-primary strong{display:none}
+  .evo-credit-card.visual-primary small{
+    top:43px;
+    color:#c1d4dc;
+    font-size:10px;
+  }
+  .evo-credit-card.visual-primary .evo-card-number{bottom:17px}
+  .evo-credit-card.visual-primary:after{
+    content:"";
+    position:absolute;
+    right:20px;
+    bottom:18px;
+    width:34px;
+    height:21px;
+    background:
+      radial-gradient(circle at 35% 50%,#1438a7 0 39%,transparent 41%),
+      radial-gradient(circle at 67% 50%,#062c75 0 39%,transparent 41%);
+    opacity:.95;
+  }
+
+  .evo-credit-card.visual-meg{
+    background:
+      radial-gradient(circle at 78% 16%,rgba(108,255,245,.20),transparent 29%),
+      linear-gradient(127deg,transparent 0 27%,rgba(101,255,242,.20) 28% 31%,transparent 32% 40%,rgba(58,221,214,.14) 41% 45%,transparent 46%),
+      linear-gradient(135deg,#063a4c 0%,#078b91 48%,#143d60 100%);
+    border-color:rgba(101,255,239,.90);
+    box-shadow:
+      0 20px 38px rgba(0,0,0,.46),
+      0 0 34px rgba(42,238,217,.27),
+      inset 0 0 26px rgba(76,247,229,.09);
+  }
+  .evo-credit-card.visual-meg strong{
+    top:39px;
+    font-size:22px;
+    font-weight:900;
+  }
+  .evo-credit-card.visual-meg .evo-card-number{bottom:16px}
+
+  .evo-credit-card.visual-travel{
+    background:
+      linear-gradient(118deg,transparent 0 59%,rgba(118,163,192,.10) 60% 62%,transparent 63%),
+      linear-gradient(140deg,#173044 0%,#10283a 47%,#0a1d2d 100%);
+    border-color:rgba(126,175,205,.47);
+  }
+  .evo-credit-card.visual-travel small{
+    left:16px;
+    top:45px;
+    color:#c9d9e1;
+    font-size:10px;
+  }
+  .evo-credit-card.visual-travel strong{display:none}
+  .evo-credit-card.visual-travel .evo-card-number{bottom:16px}
+
+  .evo-credit-card.active{
+    z-index:4;
+    transform:translateX(0) scale(1.10);
+  }
+  .evo-credit-card.left{
+    z-index:2;
+    transform:translateX(-71%) scale(.91) rotateY(8deg);
+    opacity:.87;
+  }
+  .evo-credit-card.right{
+    z-index:2;
+    transform:translateX(71%) scale(.91) rotateY(-8deg);
+    opacity:.85;
+  }
+  .evo-home-card-nav{
+    width:39px;
+    height:39px;
+    border-color:rgba(73,249,230,.68);
+    background:rgba(5,42,53,.92);
+    box-shadow:0 0 18px rgba(38,230,211,.16);
+  }
+  .evo-home-dots{
+    height:14px;
+    gap:8px;
+  }
+  .evo-home-dots button{
+    width:7px;
+    height:7px;
+  }
+}
