@@ -132,6 +132,12 @@ jobs:
           npx --yes playwright@1.55.0 screenshot \
             --viewport-size="1672,941" \
             --wait-for-timeout="1800" \
+            "http://127.0.0.1:4173/evolution.html?screen=system&modal=launch&picker=category" \
+            "artifacts/evolution-launch-categories-1672x941.png"
+
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1672,941" \
+            --wait-for-timeout="1800" \
             "http://127.0.0.1:4173/evolution.html?screen=system&view=movements" \
             "artifacts/evolution-movements-1672x941.png"
 
@@ -147,6 +153,7 @@ jobs:
           loading_vertical=430x932
           home_command_center=1672x941
           launch_modal=1672x941
+          launch_categories=1672x941
           movements_desktop=1672x941
           commit=${GITHUB_SHA}
           rule=CI verde nao equivale a validacao visual. Todas as capturas devem ser comparadas com a referencia aprovada antes de declarar pronto.

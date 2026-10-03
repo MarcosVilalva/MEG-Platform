@@ -61,6 +61,36 @@ const shiftMonth=(month:string,offset:number)=>{
   const date=new Date(year,value-1+offset,2);
   return date.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'}).slice(0,7);
 };
+const shortMonthFormatter=new Intl.DateTimeFormat('pt-BR',{month:'short'});
+const trendMonthLabel=(value:string)=>{
+  const match=value.match(/^(\d{4})-(\d{2})/);
+  if(match){
+    const label=shortMonthFormatter.format(new Date(Number(match[1]),Number(match[2])-1,2));
+    return label.replace('.','').slice(0,3);
+  }
+  return value.replace('.','').slice(0,3);
+};
+const normalizedKey=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleLowerCase('pt-BR');
+const aggregateCategories=(rows:HomeCategory[])=>{
+  const merged=new Map<string,HomeCategory>();
+  for(const row of rows){
+    const key=normalizedKey(row.name||'Sem categoria')||'sem categoria';
+    const current=merged.get(key);
+    if(current) current.amount+=Number(row.amount||0);
+    else merged.set(key,{name:row.name||'Sem categoria',amount:Number(row.amount||0)});
+  }
+  return [...merged.values()].sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+};
+const plotPoints=(values:number[],width:number,height:number,padX=4,padY=4)=>{
+  if(values.length<2)return [] as Array<{x:number;y:number}>;
+  const min=Math.min(...values);
+  const max=Math.max(...values);
+  const spread=Math.max(1,max-min);
+  return values.map((value,index)=>({
+    x:padX+(index*(width-padX*2)/Math.max(1,values.length-1)),
+    y:height-padY-((value-min)/spread)*(height-padY*2)
+  }));
+};
 
 type Trend={month:string;income:number;expense:number;result:number};
 type HomeCard={id:string;name:string;lastFour:string;brand:string;statement:number;available:number};
@@ -161,7 +191,7 @@ async function loadReal(month:string):Promise<HomeData>{
     cards:cards.length?cards:fixture.cards,
     events:events.length?events:fixture.events,
     due:due.length?due:fixture.due,
-    categories:analytics?.categories?.length?analytics.categories.slice(0,7):summary.topCategories.length?summary.topCategories:fixture.categories,
+    categories:aggregateCategories(analytics?.categories?.length?analytics.categories:summary.topCategories.length?summary.topCategories:fixture.categories).slice(0,7),
     incomeDelta:analytics?.delta?.income??fixture.incomeDelta,
     expenseDelta:analytics?.delta?.expense??fixture.expenseDelta
   };
@@ -174,24 +204,17 @@ const nav:Array<[IconName,string]>= [
   ['report','Relatórios'],['layers','Planejamento'],['chart','Investimentos'],['diamond','Benefícios'],['settings','Configurações']
 ];
 
-type MetricSpark='balance'|'income'|'expense'|'benefit';
-const metricSparks:Record<MetricSpark,string>={
-  balance:'M2 27 C14 25 21 20 32 21 C43 22 48 28 59 22 C70 16 76 17 85 12 C96 6 106 13 118 4',
-  income:'M2 29 C13 27 22 25 31 20 C42 14 49 19 58 16 C70 12 78 15 88 9 C99 4 108 8 118 3',
-  expense:'M2 22 C13 18 21 21 31 24 C43 28 51 22 61 19 C72 15 81 17 91 12 C103 7 110 11 118 8',
-  benefit:'M2 28 C13 27 20 23 30 24 C41 25 48 17 58 18 C69 20 76 12 86 13 C97 14 105 8 118 5'
-};
-
-function MiniMetric({icon,label,value,tone='cyan',detail,detailNote,spark,accessory=false}:{icon:IconName;label:string;value:string;tone?:'cyan'|'red'|'green'|'warning';detail?:string;detailNote?:string;spark?:MetricSpark;accessory?:boolean}){
-  const path=spark?metricSparks[spark]:null;
-  return <article className={'evo-home-kpi evo-tone-'+tone+(path?' evo-has-spark':'')+(accessory?' evo-has-accessory':'')}>
+function MiniMetric({icon,label,value,tone='cyan',detail,detailNote,series,accessory=false}:{icon:IconName;label:string;value:string;tone?:'cyan'|'red'|'green'|'warning';detail?:string;detailNote?:string;series?:number[];accessory?:boolean}){
+  const points=plotPoints((series||[]).map(Number),120,34,3,5);
+  const pointString=points.map(point=>point.x.toFixed(1)+','+point.y.toFixed(1)).join(' ');
+  return <article className={'evo-home-kpi evo-tone-'+tone+(points.length?' evo-has-spark':'')+(accessory?' evo-has-accessory':'')}>
     <div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name={icon}/></span><span>{label}</span>{accessory&&<Icon name="eye" className="evo-home-kpi-eye"/>}</div>
     {accessory&&<span className="evo-home-kpi-accessory" aria-hidden="true"><Icon name="wallet"/></span>}
     <strong>{value}</strong>
     <div className="evo-home-kpi-detail"><i/><span>{detail||'Atualizado agora'}</span>{detailNote&&<small>{detailNote}</small>}</div>
-    {path&&<svg className="evo-home-kpi-spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true">
-      <path className="glow" d={path}/>
-      <path d={path}/>
+    {points.length>1&&<svg className="evo-home-kpi-spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true">
+      <polyline className="glow" points={pointString}/>
+      <polyline points={pointString}/>
     </svg>}
   </article>;
 }
@@ -220,6 +243,7 @@ export function EvolutionHome(){
   const [month,setMonth]=useState(qaMode?'2025-05':isoMonth());
   const [data,setData]=useState<HomeData>(fixture);
   const [busy,setBusy]=useState(Boolean(session));
+  const [hasLoadedReal,setHasLoadedReal]=useState(!session);
   const [cardIndex,setCardIndex]=useState(0);
   const [refreshToken,setRefreshToken]=useState(0);
   const [launchOpen,setLaunchOpen]=useState(()=>new URLSearchParams(window.location.search).get('modal')==='launch');
@@ -227,28 +251,22 @@ export function EvolutionHome(){
   const [activeView,setActiveView]=useState<EvolutionView>(()=>new URLSearchParams(window.location.search).get('view')==='movements'?'movements':'home');
 
   useEffect(()=>{
-    if(!session){setData(fixture);setBusy(false);return;}
+    if(!session){setData(fixture);setBusy(false);setHasLoadedReal(true);return;}
     let active=true;
     setBusy(true);
-    void loadReal(month).then(value=>{if(active)setData(value)}).finally(()=>{if(active)setBusy(false)});
+    void loadReal(month).then(value=>{if(active){setData(value);setHasLoadedReal(true)}}).finally(()=>{if(active)setBusy(false)});
     return()=>{active=false};
   },[month,session,refreshToken]);
 
   const trend=data.trend.length?data.trend:fixture.trend;
   const max=Math.max(1,...trend.flatMap(x=>[x.income,x.expense]));
-  const resultMax=Math.max(1,...trend.map(v=>Math.abs(v.result)));
   const pointList=trend.map((item,index)=>{
+    const result=Number(item.result||0);
     const x=8+(index*(84/Math.max(1,trend.length-1)));
-    const y=56-(Math.max(0,item.result)/resultMax)*34;
+    const y=Math.max(8,Math.min(61,58-(result/max)*40));
     return {x,y};
   });
-  const linePath=pointList.length
-    ?pointList.slice(1).reduce((d,p,index)=>{
-      const prev=pointList[index];
-      const midX=(prev.x+p.x)/2;
-      return d+` C ${midX.toFixed(2)} ${prev.y.toFixed(2)}, ${midX.toFixed(2)} ${p.y.toFixed(2)}, ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
-    },`M ${pointList[0].x.toFixed(2)} ${pointList[0].y.toFixed(2)}`)
-    :'';
+  const linePoints=pointList.map(point=>point.x.toFixed(2)+','+point.y.toFixed(2)).join(' ');
 
   const categories=data.categories.length?data.categories:fixture.categories;
   const categoryTotal=Math.max(1,categories.reduce((sum,item)=>sum+Math.abs(item.amount),0));
@@ -296,7 +314,8 @@ export function EvolutionHome(){
       </nav>
     </aside>
 
-    <section className={'evo-home-workspace view-'+activeView}>
+    <section className={'evo-home-workspace view-'+activeView+(session&&!hasLoadedReal?' initial-sync':'')}>
+      {session&&!hasLoadedReal&&<div className="evo-home-initial-sync" role="status"><span><Icon name="wallet"/></span><strong>Carregando seus dados reais</strong><small>Preparando saldos, cartões, pendências e histórico sem exibir valores de demonstração.</small></div>}
       <header className="evo-home-topbar">
         <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar movimentações, metas, relatórios..."/><kbd>⌘ K</kbd></label>
         <button className="evo-home-add" type="button" onClick={()=>setLaunchOpen(true)}><Icon name="plus"/><span>Incluir</span></button>
@@ -337,10 +356,10 @@ export function EvolutionHome(){
       </section>
 
       <section className={'evo-home-kpis '+(busy?'loading':'')}>
-        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail="12,5%" detailNote="em relação ao mês anterior" spark="balance" accessory/>
-        <MiniMetric icon="income" label="Receitas" value={money.format(data.summary.income)} tone="green" detail={Math.abs(data.incomeDelta).toFixed(1).replace('.',',')+'%'} spark="income"/>
-        <MiniMetric icon="expense" label="Despesas" value={money.format(data.summary.expense)} tone="red" detail={Math.abs(data.expenseDelta).toFixed(1).replace('.',',')+'%'} spark="expense"/>
-        <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="15,0%" spark="benefit"/>
+        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail={data.summary.projectedResult>=0?'Caixa positivo':'Caixa projetado negativo'} detailNote="no período selecionado" series={trend.map(item=>item.result)} accessory/>
+        <MiniMetric icon="income" label="Receitas" value={money.format(data.summary.income)} tone="green" detail={Math.abs(data.incomeDelta).toFixed(1).replace('.',',')+'%'} series={trend.map(item=>item.income)}/>
+        <MiniMetric icon="expense" label="Despesas" value={money.format(data.summary.expense)} tone="red" detail={Math.abs(data.expenseDelta).toFixed(1).replace('.',',')+'%'} series={trend.map(item=>item.expense)}/>
+        <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="Saldo separado do caixa"/>
         <article className="evo-home-kpi evo-tone-cyan evo-home-goal-kpi"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="target"/></span><span>Metas</span></div><strong>3 de 5</strong><div className="evo-home-goal-line"><i style={{width:'60%'}}/><span>60%</span></div></article>
         <article className="evo-home-kpi evo-tone-warning"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="alert"/></span><span>Pendências</span></div><strong>{data.summary.pendingCount} {data.summary.pendingCount===1?'conta':'contas'}</strong><div className="evo-home-kpi-detail"><span>{money.format(data.summary.pendingAmount)}</span><Icon name="arrow"/></div></article>
       </section>
@@ -353,9 +372,9 @@ export function EvolutionHome(){
             <div className="evo-home-bars">
               {trend.map((item)=><div className="evo-home-bar-month" key={item.month}>
                 <div className="evo-home-bar-pair"><i className="income" style={{height:(item.income/max*100)+'%'}}/><i className="expense" style={{height:(item.expense/max*100)+'%'}}/></div>
-                <span>{item.month.slice(0,3)}</span>
+                <span>{trendMonthLabel(item.month)}</span>
               </div>)}
-              <svg className="evo-home-line" viewBox="0 0 100 64" preserveAspectRatio="none"><path d={linePath}/>{pointList.map((point,i)=><circle key={i} cx={point.x} cy={point.y} r="1.3"/>)}</svg>
+              <svg className="evo-home-line" viewBox="0 0 100 64" preserveAspectRatio="none"><polyline points={linePoints}/>{pointList.map((point,i)=><circle key={i} cx={point.x} cy={point.y} r="1.25"/>)}</svg>
             </div>
             <aside className="evo-home-chart-summary"><div><span>{monthLabel(month)}</span><b><i className="income"/>{money.format(data.summary.income)}</b><b><i className="expense"/>{money.format(data.summary.expense)}</b></div><div><span>Saldo do período</span><strong>{money.format(data.summary.projectedResult)}</strong><em>↑ 22,8%</em></div></aside>
           </div>
