@@ -1,7 +1,7 @@
 # MEG EVOLUTION — STATUS OFICIAL DA RECONSTRUÇÃO
 
 > Este arquivo é a fonte de verdade para qualquer continuação da reconstrução Web.
-> Antes de alterar a interface Web, leia `MEG-VALIDACAO-OFICIAL.md`, `EVOLUTION-VISUAL-CONTRACT.md`, `EVOLUTION-VISUAL-QA.md`, este documento e `WEB-LEGACY-REMOVAL.md`.
+> Antes de alterar a interface Web, leia `MEG-VALIDACAO-OFICIAL.md`, `EVOLUTION-VISUAL-CONTRACT.md`, `EVOLUTION-VISUAL-QA.md`, `EVOLUTION-MOBILE-FUNCTIONAL-INHERITANCE.md`, este documento e `WEB-LEGACY-REMOVAL.md`.
 
 ## 1. Decisão arquitetural
 
@@ -41,7 +41,7 @@ Regra de prioridade:
 3. contratos de domínio;
 4. código visual antigo somente enquanto uma tela ainda não foi migrada.
 
-As pranchas Android NÃO são referência de layout do Web.
+As pranchas Android NÃO são referência de layout do Web. O **Android em funcionamento é referência de fluxo e comportamento**: regras e funções validadas devem ser herdadas pelo Evolution, enquanto o desktop amplia contexto, densidade útil e capacidade analítica.
 
 ## 3. Referência principal de desktop
 
@@ -61,12 +61,14 @@ A aplicação continua responsiva. O alvo Full HD é referência de composição
 4. Após validação e publicação verde, o legado substituído por aquela tela deve ser removido no mesmo ciclo.
 5. Não manter componentes antigos comentados, escondidos com `display:none`, ou duplicados como backup.
 6. Não criar novas versões nomeadas `v12`, `v13`, `v15`, `final2`, `wow`, `old`, `legacy` ou equivalentes na árvore Web Next.
-7. Android fica congelado durante a reconstrução Web.
+7. Android fica congelado durante a reconstrução Web e deve ser tratado como fonte funcional somente leitura.
 8. Código visual Web Next não pode depender diretamente de CSS Phoenix antigo.
 9. Regras de negócio não podem ser reimplementadas dentro de componentes visuais.
-10. CI verde não equivale a validação visual. A aprovação da tela é explícita.
-11. Git é o backup. Código morto não permanece no runtime por medo de perda.
-12. Toda remoção deve ocorrer após busca de consumidores e CI completo.
+10. O Web deve herdar a lógica validada do Mobile e melhorar a experiência para tela grande; não copiar layout móvel esticado.
+11. `CREDIÁRIO` não é oferecido para novos lançamentos no Web Evolution; histórico legado permanece preservado.
+12. CI verde não equivale a validação visual. A aprovação da tela é explícita.
+13. Git é o backup. Código morto não permanece no runtime por medo de perda.
+14. Toda remoção deve ocorrer após busca de consumidores e CI completo.
 
 ## 5. Processo obrigatório por tela
 
