@@ -838,3 +838,35 @@
   }
   .evo-home-category-list b{font-size:8.5px}
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 8 / SCENE BEHIND TOPBAR === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-workspace{
+    position:relative;
+    isolation:isolate;
+  }
+  .evo-home-workspace:before{
+    content:"";
+    position:absolute;
+    z-index:0;
+    top:0;
+    right:0;
+    width:74%;
+    height:236px;
+    pointer-events:none;
+    background:url('/evolution/artwork/home-hero-canonical.jpg') right top / 100% 100% no-repeat;
+    filter:brightness(1.04) saturate(1.06) contrast(1.03) drop-shadow(0 0 18px rgba(39,231,215,.12));
+    -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.34) 5%,rgba(0,0,0,.90) 13%,#000 22%,#000 100%);
+    mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.34) 5%,rgba(0,0,0,.90) 13%,#000 22%,#000 100%);
+  }
+  .evo-home-workspace>*{
+    position:relative;
+    z-index:1;
+  }
+  .evo-home-hero{
+    background:
+      linear-gradient(90deg,#03131c 0%,rgba(3,19,28,.99) 26%,rgba(3,19,28,.88) 36%,rgba(3,19,28,.48) 48%,rgba(3,19,28,.12) 60%,rgba(3,19,28,0) 72%);
+  }
+  .evo-home-hero:before{display:none}
+}
