@@ -70,6 +70,7 @@ assert.match(loadingCss,/mask-image:linear-gradient/,'Artwork central deve se fu
 const loginCss=fs.readFileSync(new URL('./styles/login.css',import.meta.url),'utf8');
 assert.match(loginCss,/input:-webkit-autofill/,'Login deve neutralizar o fundo automático do navegador nos campos preenchidos.');
 assert.match(loginCss,/background-clip:text/,'Autofill não deve pintar um bloco atrás do texto.');
+assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!important\}/,'Linhas decorativas do Login não podem cruzar o conteúdo.');
 
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
 assert.match(home,/data-evolution-home-fidelity="command-center-stage-1"/);
@@ -89,6 +90,10 @@ assert.match(home,/evo-home-add/,'Home deve exibir a ação Incluir.');
 assert.doesNotMatch(home,/Plano Premium|Upgrade agora/,'Home não deve exibir oferta Premium nesta fase.');
 assert.match(home,/carouselCards/,'Carrossel deve manter janela cíclica de cartões.');
 assert.match(home,/normalizedCardIndex/,'Carrossel deve normalizar o índice ativo.');
+assert.match(home,/hasLoadedReal/,'Home autenticada não deve expor fixture enquanto os dados reais carregam.');
+assert.match(home,/plotPoints/,'Gráficos devem derivar geometria dos dados reais.');
+assert.doesNotMatch(home,/metricSparks/,'Sparklines decorativas fixas não devem substituir dados reais.');
+assert.match(home,/trendMonthLabel/,'Rótulos do fluxo devem interpretar competências ISO corretamente.');
 
 const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
 assert.match(launch,/Novo Lançamento/);
@@ -99,6 +104,10 @@ assert.match(launch,/Benefício/);
 assert.match(launch,/financeClient\.createEvent/,'Lançamento comum deve usar API financeira real.');
 assert.match(launch,/cardsClient\.createPurchase/,'Compra no crédito deve usar API real de cartões.');
 assert.match(launch,/Math\.min\(48/,'Crédito continua aceitando parcelamento até 48 vezes.');
+assert.match(launch,/financeClient\.listEvents\(1,12,term\)/,'Descrição deve consultar histórico real para autocomplete.');
+assert.match(launch,/uniqueCategories/,'Categorias legadas duplicadas devem ser deduplicadas na apresentação.');
+assert.match(launch,/evo-launch-category-picker/,'Categorias adicionais devem abrir picker visual próprio.');
+assert.doesNotMatch(launch,/<select className="evo-launch-more"/,'Categorias não podem voltar ao seletor nativo do navegador.');
 assert.doesNotMatch(launch,/MegMobile|phoenix-/i,'Evolution Launch não pode reutilizar visual Mobile/Phoenix.');
 
 const movements=fs.readFileSync(new URL('./screens/EvolutionMovements.tsx',import.meta.url),'utf8');
@@ -122,6 +131,8 @@ const launchCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.
 assert.match(launchCss,/\.evo-launch-backdrop/);
 assert.match(launchCss,/backdrop-filter:blur/);
 assert.match(launchCss,/\.evo-home-add/);
+assert.match(launchCss,/\.evo-launch-category-grid/,'Picker visual de categorias deve usar grid próprio.');
+assert.match(launchCss,/\.evo-launch-history/,'Autocomplete visual deve ter superfície própria.');
 
 const homeCss=fs.readFileSync(new URL('./styles/home.css',import.meta.url),'utf8');
 assert.match(homeCss,/grid-template-columns:214px minmax\(0,1fr\)/,'Desktop deve preservar sidebar integrada.');
