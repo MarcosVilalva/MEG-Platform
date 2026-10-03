@@ -1701,3 +1701,35 @@
 @media(max-width:900px){
   .evo-home-period-popover{position:fixed;top:66px;right:10px;left:10px;width:auto}
 }
+
+
+/* === EVOLUTION HOME — PASS 13B / GEOMETRY + SIDEBAR DEPTH === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-sidebar{position:relative}
+  .evo-home-sidebar:after{
+    content:"";
+    position:absolute;
+    z-index:0;
+    left:0;
+    right:0;
+    bottom:0;
+    height:245px;
+    pointer-events:none;
+    opacity:.22;
+    background:
+      radial-gradient(ellipse at 32% 100%,rgba(52,239,221,.28),transparent 50%),
+      url('/evolution/artwork/home-hero-scene.svg') 66% bottom / auto 190px no-repeat;
+    filter:saturate(.95) brightness(.78);
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.22) 20%,#000 55%,#000 100%);
+    mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.22) 20%,#000 55%,#000 100%);
+  }
+  .evo-home-sidebar>*{position:relative;z-index:1}
+
+  .evo-home-middle{
+    grid-template-columns:minmax(0,1.075fr) minmax(492px,.925fr);
+  }
+  .evo-home-cards>header,
+  .evo-home-goals>header{
+    padding-left:18px;
+  }
+}
