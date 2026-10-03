@@ -108,6 +108,11 @@ const qaCategories:Category[]=[
   {id:'qa-home',name:'Moradia',group:'Moradia',type:'expense',isActive:true},
   {id:'qa-leisure',name:'Lazer',group:'Lazer',type:'expense',isActive:true},
   {id:'qa-health',name:'Saúde',group:'Saúde',type:'expense',isActive:true},
+  {id:'qa-communication',name:'Comunicação',group:'Comunicação',type:'expense',isActive:true},
+  {id:'qa-fastfood',name:'Fast Food',group:'Alimentação',type:'expense',isActive:true},
+  {id:'qa-course',name:'Cursos',group:'Educação',type:'expense',isActive:true},
+  {id:'qa-gifts',name:'Presentes',group:'Pessoal',type:'expense',isActive:true},
+  {id:'qa-electronics',name:'Eletrônicos / Utilidades',group:'Utilidades',type:'expense',isActive:true},
   {id:'qa-income',name:'Receitas',group:'Receitas',type:'income',isActive:true}
 ];
 const qaMethods:PaymentMethod[]=[
@@ -142,7 +147,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
   const [cards,setCards]=useState<CreditCard[]>(qaMode?qaCards:[]);
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
-  const [categoryOpen,setCategoryOpen]=useState(false);
+  const [categoryOpen,setCategoryOpen]=useState(()=>new URLSearchParams(window.location.search).get('picker')==='category');
   const [categoryQuery,setCategoryQuery]=useState('');
   const [historyOpen,setHistoryOpen]=useState(false);
   const [historyLoading,setHistoryLoading]=useState(false);
