@@ -5,6 +5,7 @@ on:
     paths:
       - 'apps/web/evolution.html'
       - 'apps/web/src/evolution/**'
+      - 'scripts/evolution-system-smoke.mjs'
       - 'apps/web/public/evolution/**'
       - 'docs/EVOLUTION-VISUAL-CONTRACT.md'
       - 'docs/EVOLUTION-VISUAL-QA.md'
@@ -62,7 +63,12 @@ jobs:
         run: npm run build:web
 
       - name: Install Chromium for visual capture
-        run: npx --yes playwright@1.55.0 install --with-deps chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify layouts and protected financial flows with mock API
+        run: node scripts/evolution-system-smoke.mjs
 
       - name: Start static preview
         run: |
@@ -159,7 +165,7 @@ jobs:
             "http://127.0.0.1:4173/evolution.html?screen=system&view=movements" \
             "artifacts/evolution-movements-1672x941.png"
 
-          for preview in home movements launch payables settlement cards card-center benefit cashflow analytics history settings period menu; do
+          for preview in home movements launch payables settlement cards card-center benefit cashflow analytics history settings period menu transfer card-payment edit-launch benefit-recharge; do
             npx --yes playwright@1.55.0 screenshot \
               --viewport-size="1672,941" \
               --wait-for-timeout="1200" \

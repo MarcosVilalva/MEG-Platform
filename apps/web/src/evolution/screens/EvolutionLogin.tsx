@@ -152,8 +152,8 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
       <div className="evo-login-story">
         <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
         <div className="evo-login-kicker"><span/>CONTROLE FINANCEIRO PESSOAL</div>
-        <h1>Clareza para cuidar<br/>do seu <strong>dinheiro.</strong></h1>
-        <p>Saldo, compromissos, cartões e projeções reunidos em uma experiência única, direta e segura.</p>
+        <h1>Sua vida financeira,<br/><strong>com clareza para<br/>decidir.</strong></h1>
+        <p>Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde vai.</p>
 
         <div className="evo-login-proof" aria-label="Recursos do MEG">
           <span><i><CheckIcon/></i><b>Saldo e compromissos</b><small>Visão real do que está disponível e do que vem pela frente.</small></span>

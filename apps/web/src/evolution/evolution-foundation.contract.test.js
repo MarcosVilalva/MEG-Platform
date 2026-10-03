@@ -20,7 +20,13 @@ const paths=[
   './styles/home.css',
   './styles/launch-modal.css',
   './styles/movements.css',
-  './styles/preview.css'
+  './styles/preview.css',
+  './screens/EvolutionSystem.tsx',
+  './screens/EvolutionActionDialog.tsx',
+  './screens/EvolutionPurchaseDialog.tsx',
+  './app/system-domain.ts',
+  './components/SystemUI.tsx',
+  './styles/system.css'
 ];
 
 for(const filePath of paths){
@@ -80,28 +86,26 @@ assert.match(loginCss,/background-clip:text/,'Autofill não deve pintar um bloco
 assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!important\}/,'Linhas decorativas do Login não podem cruzar o conteúdo.');
 
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
-assert.match(home,/data-evolution-home-fidelity="product-v2"/);
-assert.match(home,/Visão financeira/);
-assert.match(home,/PAINEL FINANCEIRO/);
-assert.match(home,/Fluxo de caixa/);
-assert.match(home,/Meus cartões/);
-assert.match(home,/Metas em andamento/);
-assert.match(home,/Últimas movimentações/);
-assert.match(home,/Próximos vencimentos/);
-assert.match(home,/Resumo do mês/);
-assert.match(home,/financeClient\.getSummary/,'Home deve usar dados financeiros reais quando autenticada.');
-assert.match(home,/cardsClient\.list/,'Home deve usar cartões reais quando autenticada.');
-assert.match(home,/payablesClient\.list/,'Home deve usar vencimentos reais quando autenticada.');
-assert.match(home,/EvolutionLaunchModal/,'Home deve integrar o modal Evolution de lançamento.');
-assert.match(home,/evo-home-add/,'Home deve exibir a ação Incluir.');
-assert.doesNotMatch(home,/Plano Premium|Upgrade agora/,'Home não deve exibir oferta Premium nesta fase.');
-assert.match(home,/carouselCards/,'Carrossel deve manter janela cíclica de cartões.');
-assert.match(home,/normalizedCardIndex/,'Carrossel deve normalizar o índice ativo.');
-assert.match(home,/hasLoadedReal/,'Home autenticada não deve expor fixture enquanto os dados reais carregam.');
-assert.match(home,/plotPoints/,'Gráficos devem derivar geometria dos dados reais.');
-assert.doesNotMatch(home,/metricSparks/,'Sparklines decorativas fixas não devem substituir dados reais.');
-assert.match(home,/trendMonthLabel/,'Rótulos do fluxo devem interpretar competências ISO corretamente.');
-assert.match(home,/\.\/brand\/meg-loading-lockup\.svg/,'Home e Login devem compartilhar a mesma marca canônica.');
+assert.match(home,/EvolutionSystem/,'Home deve abrir o sistema funcional do conjunto de referências.');
+const system=fs.readFileSync(new URL('./screens/EvolutionSystem.tsx',import.meta.url),'utf8');
+for(const name of ['Lançamentos','Contas a pagar','Meus cartões','Benefícios','Relatórios'])assert.ok(system.includes(name),'Módulo obrigatório ausente: '+name);
+assert.doesNotMatch(system,/Plano Premium|Upgrade agora/);
+assert.match(system,/loadSystem/,'Produto autenticado deve carregar dados reais.');
+assert.match(system,/operações financeiras desativadas/,'Prévia deve se identificar e bloquear gravações.');
+assert.match(system,/EvolutionActionDialog/);
+assert.match(system,/EvolutionPurchaseDialog/);
+assert.match(system,/meg-loading-lockup\.svg/,'Marca canônica deve ser compartilhada.');
+const domain=fs.readFileSync(new URL('./app/system-domain.ts',import.meta.url),'utf8');
+assert.match(domain,/settlementSources/,'Faturas devem resolver vínculos reais de origem.');
+assert.match(domain,/financeClient\.getSummary/);
+assert.match(domain,/cardsClient\.list/);
+assert.match(domain,/payablesClient\.list/);
+assert.doesNotMatch(domain,/status==='fulfilled'.*fixture/,'Falhas reais não podem retornar dados ilustrativos.');
+const actions=fs.readFileSync(new URL('./screens/EvolutionActionDialog.tsx',import.meta.url),'utf8');
+assert.match(actions,/pending\/batch\/settle/,'Seleção deve usar a baixa atômica do servidor.');
+assert.match(actions,/getMonetaryBalance/,'Saldo deve considerar a data escolhida.');
+assert.match(actions,/benefit-events/,'Recarga deve preservar o fluxo de benefício.');
+assert.match(actions,/idFor/,'Repetir a mesma tentativa deve preservar operationId.');
 
 const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
 assert.match(launch,/Novo Lançamento/);
@@ -162,14 +166,12 @@ assert.match(launchCss,/\.evo-launch-choice-cards/,'Seleção do tipo deve usar 
 assert.match(launchCss,/grid-template-columns:minmax\(0,1\.15fr\) minmax\(330px,\.85fr\)/,'Web deve ampliar o formulário em duas áreas funcionais, sem esticar a folha mobile.');
 assert.match(launchCss,/\.evo-launch-history/,'Autocomplete visual deve ter superfície própria.');
 
-const homeCss=fs.readFileSync(new URL('./styles/home.css',import.meta.url),'utf8');
-assert.match(homeCss,/grid-template-columns:214px minmax\(0,1fr\)/,'Desktop deve preservar sidebar integrada.');
-assert.match(homeCss,/height:100dvh/,'Home deve ocupar o viewport.');
-assert.match(homeCss,/overflow:hidden/,'Home não deve depender de scroll geral.');
-assert.match(homeCss,/evo-home-scroll/,'Listas densas devem usar scroll interno.');
-assert.match(homeCss,/@media\(max-width:900px\)/,'Home precisa recompor a experiência em viewport estreito.');
-assert.match(homeCss,/PASS 15 \/ DIMENSIONAMENTO REAL/,'Home deve ter regra explícita para dimensionamento do viewport desktop real.');
-assert.match(homeCss,/PASS 16 \/ OFFICIAL NORTH/,'Home deve preservar o passe visual oficial orientado a produto.');
+const homeCss=fs.readFileSync(new URL('./styles/system.css',import.meta.url),'utf8');
+assert.match(homeCss,/height:100dvh/);
+assert.match(homeCss,/overflow:hidden/);
+assert.match(homeCss,/meg-scroll/);
+assert.match(homeCss,/@media\(max-width:720px\)/);
+assert.match(homeCss,/clamp\(/);
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){
@@ -185,12 +187,4 @@ for(const key of ['home','movements','launch','payables','settlement','cards','c
   assert.ok(preview.includes("'"+key+"'"),'Prévia obrigatória ausente: '+key);
 }
 assert.doesNotMatch(preview,/from\s+['"][^'"]*\/mobile\//i,'Galeria Web não pode importar componentes visuais Mobile.');
-const previewCss=fs.readFileSync(new URL('./styles/preview.css',import.meta.url),'utf8');
-assert.match(preview,/meg-finance-system-mark-transparent\.svg/,'Prévia do sistema deve usar a mesma arte de marca do App.');
-assert.match(preview,/evo-app-home/,'Home da galeria deve usar a prancha-mãe fiel ao App.');
-assert.match(previewCss,/APP FIDELITY MASTER/,'Galeria deve declarar explicitamente a camada de fidelidade ao App.');
-assert.match(previewCss,/grid-template-columns:88px minmax\(0,1fr\)/,'Navegação desktop deve evoluir o Dock do App sem criar sidebar genérica.');
-for(const token of ['#002e2f','#001f22','#20e7e0','#f5fbfb','#a8c7c7','#ff6278','#48f2c6','#ffd752','#53bcff']){
-  assert.ok(previewCss.toLowerCase().includes(token),'Token visual real do App ausente na prancha-mãe: '+token);
-}
-assert.match(previewCss,/linear-gradient\(145deg,rgba\(5,74,74,\.84\),rgba\(2,49,52,\.94\)\)/,'Cards da Home-mãe devem preservar o acabamento real do App.');
+assert.match(preview,/EvolutionSystem/,'Galeria deve usar os componentes funcionais atuais em modo consulta.');

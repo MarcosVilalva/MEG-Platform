@@ -234,7 +234,7 @@ export const financeClient = {
   getBenefitSummary: (month: string) =>
     authorizedRequest<BenefitSummary>(`/finance/benefit-summary?month=${encodeURIComponent(month)}`),
   getMonetaryBalance: (accountId: string, date: string) =>
-    authorizedRequest<MonetaryAccountBalance>(`/finance/monetary-balance?accountId=${encodeURIComponent(accountId)}&date=${encodeURIComponent(date)}`),
+    authorizedRequest<MonetaryAccountBalance>(`/finance/monetary-balance?accountId=${encodeURIComponent(accountId)}&date=${encodeURIComponent(date)}`, { cache: 'no-store' }),
   listEventsForMonth: (month: string) =>
     authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   getSyncStatus: () =>
