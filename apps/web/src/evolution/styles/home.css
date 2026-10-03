@@ -1807,3 +1807,286 @@
   text-transform:capitalize;
   font-weight:700;
 }
+
+
+/* === EVOLUTION HOME — PASS 15 / DIMENSIONAMENTO REAL ===
+   O dashboard não pode caber à força. Cada bloco recebe área útil mínima e tipografia legível. */
+.evo-home svg{
+  fill:none;
+  stroke:currentColor;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.evo-home-sidebar nav button svg{
+  width:21px!important;
+  height:21px!important;
+  flex:0 0 21px;
+  stroke-width:1.9;
+}
+.evo-home-kpi-icon{
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  display:grid;
+  place-items:center;
+}
+.evo-home-kpi-icon svg{width:20px!important;height:20px!important;stroke-width:1.9}
+.evo-home-panel h2 svg{width:20px!important;height:20px!important;stroke-width:1.9}
+.evo-home-list-icon{
+  width:29px!important;
+  height:29px!important;
+  flex:0 0 29px;
+  display:grid!important;
+  place-items:center!important;
+}
+.evo-home-list-icon svg{width:17px!important;height:17px!important;stroke-width:1.9}
+
+@media(min-width:1280px){
+  .evo-home-search{height:44px}
+  .evo-home-month,.evo-home-bell,.evo-home-user{height:44px}
+  .evo-home-user>span{width:33px;height:33px}
+  .evo-home-hero h1{font-weight:850}
+  .evo-home-kpi-top{font-size:11.5px;line-height:1.2}
+  .evo-home-kpi>strong{font-size:23px;line-height:1.06;letter-spacing:-.03em}
+  .evo-home-kpi-detail{font-size:9.5px}
+  .evo-home-panel h2{font-size:15px;line-height:1.15}
+  .evo-home-panel header p{font-size:9px;line-height:1.3}
+  .evo-home-chart-grid{font-size:9px}
+  .evo-home-bar-month>span{font-size:9px}
+  .evo-home-chart-summary span{font-size:9px}
+  .evo-home-chart-summary b{font-size:11.5px}
+  .evo-home-chart-summary strong{font-size:17px}
+  .evo-home-cashflow>footer{font-size:9px}
+  .evo-home-scroll article{min-height:31px}
+  .evo-home-scroll article strong{font-size:9.5px}
+  .evo-home-scroll article small{font-size:8px}
+  .evo-home-scroll article b{font-size:9.5px}
+  .evo-home-due-list article{min-height:31px}
+  .evo-home-due-list article strong{font-size:9.5px}
+  .evo-home-due-list article small{font-size:8px}
+}
+
+@media(min-width:1280px) and (max-height:790px){
+  .evo-home{
+    grid-template-columns:218px minmax(0,1fr)!important;
+    gap:9px!important;
+    padding:8px 9px 9px 8px!important;
+  }
+  .evo-home-sidebar{
+    padding:11px 9px 10px!important;
+  }
+  .evo-home-brand{
+    height:108px!important;
+    margin:-3px 1px 7px!important;
+  }
+  .evo-home-brand img{
+    width:154px!important;
+    max-height:104px!important;
+  }
+  .evo-home-sidebar nav{gap:2px!important}
+  .evo-home-sidebar nav button{
+    min-height:39px!important;
+    padding:0 12px!important;
+    justify-content:flex-start!important;
+    font-size:12px!important;
+    gap:11px!important;
+  }
+  .evo-home-sidebar nav button span{display:inline!important}
+
+  .evo-home-workspace{
+    grid-template-rows:44px 132px 103px minmax(242px,1fr) 158px!important;
+    gap:7px!important;
+  }
+  .evo-home-topbar{gap:10px!important}
+  .evo-home-search{
+    width:min(45vw,610px)!important;
+    height:44px!important;
+  }
+  .evo-home-add{width:44px!important;min-width:44px!important;height:44px!important}
+  .evo-home-month,.evo-home-bell,.evo-home-user{height:44px!important}
+
+  .evo-home-hero{
+    min-height:132px!important;
+  }
+  .evo-home-hero-copy{
+    top:11px!important;
+    left:23px!important;
+  }
+  .evo-home-hero h1{
+    font-size:45px!important;
+    line-height:.92!important;
+  }
+  .evo-home-hero-copy p{
+    margin-top:6px!important;
+    font-size:12px!important;
+  }
+  .evo-home-canonical-scene{
+    height:145px!important;
+    top:-5px!important;
+    width:min(720px,61%)!important;
+  }
+
+  .evo-home-kpis{
+    gap:7px!important;
+    grid-template-columns:1.28fr .90fr .90fr .90fr .82fr .82fr!important;
+  }
+  .evo-home-kpi{
+    padding:9px 11px 8px!important;
+    border-radius:10px!important;
+  }
+  .evo-home-kpi-top{font-size:10.5px!important;gap:7px!important}
+  .evo-home-kpi-icon{width:31px!important;height:31px!important;flex-basis:31px!important}
+  .evo-home-kpi-icon svg{width:18px!important;height:18px!important}
+  .evo-home-kpi>strong{margin-top:6px!important;font-size:22px!important}
+  .evo-home-kpi-detail{margin-top:5px!important;font-size:8.5px!important}
+  .evo-home-kpi-spark{height:31px!important;bottom:7px!important}
+
+  .evo-home-middle{
+    grid-template-columns:minmax(0,1.06fr) minmax(480px,.94fr)!important;
+    gap:7px!important;
+  }
+  .evo-home-panel>header{
+    height:42px!important;
+    padding:6px 10px 3px 12px!important;
+  }
+  .evo-home-panel h2{font-size:14.5px!important}
+  .evo-home-panel h2 svg{width:19px!important;height:19px!important}
+  .evo-home-panel header p{font-size:8.5px!important}
+  .evo-home-chart{
+    grid-template-columns:39px minmax(0,1fr) 148px!important;
+    gap:7px!important;
+    padding:0 8px 0 7px!important;
+  }
+  .evo-home-chart-grid{font-size:8.5px!important}
+  .evo-home-bar-pair i{min-width:13px!important;max-width:22px!important}
+  .evo-home-chart-summary>div{padding:7px 9px!important}
+  .evo-home-chart-summary strong{font-size:16px!important}
+  .evo-home-right-stack{
+    grid-template-rows:minmax(156px,1.34fr) minmax(78px,.66fr)!important;
+    gap:7px!important;
+  }
+  .evo-home-card-stage{
+    min-height:105px!important;
+    height:calc(100% - 47px)!important;
+  }
+  .evo-credit-card.has-real-art{
+    width:210px!important;
+    min-width:210px!important;
+    max-width:210px!important;
+    height:112px!important;
+  }
+  .evo-credit-card.has-real-art.left{transform:translateX(-64%) scale(.91) rotateY(6deg)!important}
+  .evo-credit-card.has-real-art.right{transform:translateX(64%) scale(.91) rotateY(-6deg)!important}
+  .evo-home-goals>div:not(header){
+    min-height:34px!important;
+    padding:4px 10px!important;
+    grid-template-columns:32px minmax(0,1fr) 40px!important;
+  }
+  .goal-icon{width:30px!important;height:30px!important}
+  .evo-home-goals section b{font-size:9.5px!important}
+  .evo-home-goals section small{font-size:8px!important}
+  .evo-home-goals>div>strong{font-size:13px!important}
+
+  .evo-home-bottom{
+    grid-template-columns:1.08fr 1.02fr .90fr!important;
+    gap:7px!important;
+  }
+  .evo-home-bottom .evo-home-panel>header{height:39px!important}
+  .evo-home-scroll{padding-bottom:4px!important}
+  .evo-home-scroll article,
+  .evo-home-due-list article{
+    min-height:29px!important;
+    padding-top:3px!important;
+    padding-bottom:3px!important;
+  }
+  .evo-home-month-summary{padding-bottom:4px!important}
+  .evo-home-donut{width:92px!important;height:92px!important}
+  .evo-home-donut:after{inset:20px!important}
+}
+
+@media(min-width:1181px) and (max-width:1420px){
+  .evo-home{
+    grid-template-columns:202px minmax(0,1fr)!important;
+    padding:8px!important;
+    gap:8px!important;
+  }
+  .evo-home-sidebar{padding-left:9px!important;padding-right:9px!important}
+  .evo-home-brand{height:106px!important}
+  .evo-home-brand img{width:148px!important}
+  .evo-home-sidebar nav button{
+    min-height:39px!important;
+    justify-content:flex-start!important;
+    padding:0 10px!important;
+    gap:10px!important;
+    font-size:11.5px!important;
+  }
+  .evo-home-sidebar nav button span{display:inline!important}
+  .evo-home-middle{grid-template-columns:minmax(0,1.04fr) minmax(410px,.96fr)!important}
+}
+
+@media(max-width:1180px) and (min-width:901px){
+  .evo-home{grid-template-columns:78px minmax(0,1fr)!important}
+  .evo-home-sidebar nav button span{display:none!important}
+  .evo-home-sidebar nav button{justify-content:center!important;padding:0!important}
+}
+
+
+/* === EVOLUTION HOME — PASS 15B / COMPACT DESKTOP CLEANUP === */
+@media(min-width:1280px) and (max-height:790px){
+  .evo-home-topbar{
+    min-width:0;
+  }
+  .evo-home-search{
+    flex:1 1 auto!important;
+    width:auto!important;
+    min-width:260px!important;
+    max-width:none!important;
+  }
+  .evo-home-add{
+    flex:0 0 44px!important;
+    width:44px!important;
+    min-width:44px!important;
+    padding:0!important;
+  }
+  .evo-home-add span{display:none!important}
+  .evo-home-top-actions{flex:0 0 auto!important}
+
+  .evo-home-hero-copy{
+    z-index:6!important;
+    width:470px!important;
+    max-width:43%!important;
+  }
+  .evo-home-hero h1{
+    font-size:40px!important;
+    line-height:.93!important;
+  }
+  .evo-home-hero-copy p{
+    max-width:420px!important;
+    font-size:10.5px!important;
+    line-height:1.35!important;
+  }
+  .evo-home-canonical-scene{
+    left:auto!important;
+    right:0!important;
+    width:64%!important;
+    height:136px!important;
+    opacity:.96!important;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0%,transparent 14%,rgba(0,0,0,.24) 28%,#000 44%,#000 100%)!important;
+    mask-image:linear-gradient(90deg,transparent 0%,transparent 14%,rgba(0,0,0,.24) 28%,#000 44%,#000 100%)!important;
+  }
+  .evo-home-mountain,
+  .evo-home-hero-cards{display:none!important}
+
+  .evo-home-bottom{
+    grid-template-columns:1fr 1fr!important;
+  }
+  .evo-home-month-summary{display:none!important}
+  .evo-home-scroll article,
+  .evo-home-due-list article{
+    min-height:31px!important;
+  }
+  .evo-home-scroll article strong,
+  .evo-home-due-list article strong{font-size:9.5px!important}
+  .evo-home-scroll article small,
+  .evo-home-due-list article small{font-size:8px!important}
+}

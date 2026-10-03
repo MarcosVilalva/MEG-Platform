@@ -10,6 +10,8 @@ const paths=[
   './screens/EvolutionHome.tsx',
   './screens/EvolutionLaunchModal.tsx',
   './screens/EvolutionMovements.tsx',
+  './components/EvolutionFinancialIcon.tsx',
+  './components/EvolutionPicker.tsx',
   './styles/global.css',
   './styles/tokens.css',
   './styles/loading.css',
@@ -97,16 +99,20 @@ assert.match(home,/trendMonthLabel/,'Rótulos do fluxo devem interpretar compet�
 
 const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
 assert.match(launch,/Novo Lançamento/);
-assert.match(launch,/À vista/);
+assert.match(launch,/À Vista/);
 assert.match(launch,/Crédito/);
 assert.doesNotMatch(launch,/Crediário|paymentMode==='installment'/,'Crediário está aposentado para novos lançamentos Web.');
 assert.match(launch,/Benefício/);
 assert.match(launch,/financeClient\.createEvent/,'Lançamento comum deve usar API financeira real.');
 assert.match(launch,/cardsClient\.createPurchase/,'Compra no crédito deve usar API real de cartões.');
 assert.match(launch,/Math\.min\(48/,'Crédito continua aceitando parcelamento até 48 vezes.');
-assert.match(launch,/financeClient\.listEvents\(1,12,term\)/,'Descrição deve consultar histórico real para autocomplete.');
+assert.match(launch,/financeClient\.listEvents\(1,12,description\.trim\(\)\)/,'Descrição deve consultar histórico real para autocomplete.');
 assert.match(launch,/uniqueCategories/,'Categorias legadas duplicadas devem ser deduplicadas na apresentação.');
-assert.match(launch,/evo-launch-category-picker/,'Categorias adicionais devem abrir picker visual próprio.');
+assert.match(launch,/EvolutionPicker/,'Categorias, contas e formas devem usar picker visual próprio.');
+assert.match(launch,/LaunchStep='choose'\|'form'\|'success'/,'Novo Lançamento deve seguir seleção do tipo, formulário e confirmação como no app.');
+assert.match(launch,/Escolha o tipo de lançamento/,'Abertura deve começar pela escolha Despesa, Receita ou Alimentação.');
+assert.match(launch,/Campos automáticos/,'Benefício deve manter conta, forma e situação automáticas.');
+assert.match(launch,/Visualizar parcelas/,'Crédito deve preservar prévia de parcelas.');
 assert.doesNotMatch(launch,/<select className="evo-launch-more"/,'Categorias não podem voltar ao seletor nativo do navegador.');
 assert.doesNotMatch(launch,/MegMobile|phoenix-/i,'Evolution Launch não pode reutilizar visual Mobile/Phoenix.');
 
@@ -131,7 +137,9 @@ const launchCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.
 assert.match(launchCss,/\.evo-launch-backdrop/);
 assert.match(launchCss,/backdrop-filter:blur/);
 assert.match(launchCss,/\.evo-home-add/);
-assert.match(launchCss,/\.evo-launch-category-grid/,'Picker visual de categorias deve usar grid próprio.');
+assert.match(launchCss,/\.evo-picker-grid/,'Picker visual deve usar grid próprio no Web.');
+assert.match(launchCss,/\.evo-launch-choice-cards/,'Seleção do tipo deve usar os três cartões funcionais do app.');
+assert.match(launchCss,/grid-template-columns:minmax\(0,1\.15fr\) minmax\(330px,\.85fr\)/,'Web deve ampliar o formulário em duas áreas funcionais, sem esticar a folha mobile.');
 assert.match(launchCss,/\.evo-launch-history/,'Autocomplete visual deve ter superfície própria.');
 
 const homeCss=fs.readFileSync(new URL('./styles/home.css',import.meta.url),'utf8');
@@ -140,6 +148,7 @@ assert.match(homeCss,/height:100dvh/,'Home deve ocupar o viewport.');
 assert.match(homeCss,/overflow:hidden/,'Home não deve depender de scroll geral.');
 assert.match(homeCss,/evo-home-scroll/,'Listas densas devem usar scroll interno.');
 assert.match(homeCss,/@media\(max-width:900px\)/,'Home precisa recompor a experiência em viewport estreito.');
+assert.match(homeCss,/PASS 15 \/ DIMENSIONAMENTO REAL/,'Home deve ter regra explícita para dimensionamento do viewport desktop real.');
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){
