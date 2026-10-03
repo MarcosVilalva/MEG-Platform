@@ -21,6 +21,15 @@
   <path d="M120 -8 C207 32 302 -6 418 28" fill="none" stroke="#031e2e" stroke-width="19" opacity=".28"/>
   <path d="M120 6 C214 -42 295 18 416 -26" fill="none" stroke="#60fff0" stroke-width="2" opacity=".18"/>
 </g>
+<g clip-path="url(#planetClip)" opacity=".46">
+  <path d="M252 4 C320 22 405 16 510 -2" fill="none" stroke="#b9fff8" stroke-width="1.2" opacity=".45"/>
+  <path d="M245 20 C332 42 419 36 532 11" fill="none" stroke="#84fff2" stroke-width="1.1" opacity=".38"/>
+  <path d="M246 38 C330 60 421 52 538 27" fill="none" stroke="#6ef4e7" stroke-width="1.1" opacity=".34"/>
+  <path d="M250 57 C342 79 430 68 534 46" fill="none" stroke="#33b9bc" stroke-width="6" opacity=".17"/>
+  <path d="M252 76 C338 94 424 88 521 69" fill="none" stroke="#9ffff6" stroke-width="1" opacity=".25"/>
+  <path d="M265 -14 C303 3 330 10 361 5 C388 0 411 -11 439 -18" fill="none" stroke="#d4fffb" stroke-width="2.1" opacity=".24"/>
+</g>
+<ellipse cx="370" cy="-3" rx="116" ry="42" fill="#d7fffb" opacity=".055" filter="url(#soft)"/>
 <path transform="translate(130 20)" d="M110 4 C220 12 335 20 440 4" fill="none" stroke="#47f5e1" stroke-width="1.5" opacity=".55" filter="url(#glow)"/>
 <path d="M515 2 C640 22 786 20 905 2" fill="none" stroke="#44e9d6" stroke-width="1.2" opacity=".28"/>
 
@@ -36,6 +45,12 @@
   <path d="M476 152 L520 48 L575 124 Z" fill="#5ef4e3" opacity=".19"/>
   <path d="M590 157 L632 82 L686 145 Z" fill="#34d8cd" opacity=".16"/>
   <path d="M703 158 L742 66 L800 128 Z" fill="#61f4e4" opacity=".17"/>
+  <path d="M8 191 L43 151 L62 166 L83 143 L98 160 L124 104 L149 147 L168 131 L191 151 L220 80 L244 137 L266 119 L289 142 L321 63 L342 126 L362 111 L387 138 L420 70 L445 136 L468 119 L491 145 L520 53 L547 130 L575 108 L602 142 L632 87 L659 150 L686 129 L713 154 L742 72 L770 136 L800 116 L828 149 L862 94 L891 143 L920 126"
+    fill="none" stroke="#9dfff4" stroke-width=".8" opacity=".28"/>
+  <path d="M34 184 L88 132 M113 158 L151 117 M185 154 L236 105 M271 151 L307 103 M340 149 L389 108 M440 150 L501 91 M542 151 L591 112 M641 156 L694 119 M747 151 L789 111 M824 154 L878 117"
+    fill="none" stroke="#e4fffc" stroke-width=".65" opacity=".17"/>
+  <path d="M15 198 C103 184 166 190 240 180 C312 169 387 184 457 172 C539 158 605 177 684 166 C756 156 837 163 918 145"
+    fill="none" stroke="#2cf5df" stroke-width="1.2" opacity=".22" filter="url(#glow)"/>
 </g>
 
 <g transform="translate(735 42)" filter="url(#glow)">
@@ -54,7 +69,9 @@
 </g>
 
 <g transform="translate(400 28) scale(.90) rotate(4 92 69)">
-  <rect x="0" y="0" width="184" height="138" rx="9" fill="url(#glassMain)" stroke="#58f4e3" stroke-opacity=".65"/>
+  <rect x="0" y="0" width="184" height="138" rx="9" fill="url(#glassMain)" stroke="#58f4e3" stroke-opacity=".82"/>
+  <path d="M6 111 C48 78 73 99 108 63 C132 40 149 42 178 15" fill="none" stroke="#7effef" stroke-width="1.2" opacity=".24"/>
+  <path d="M10 128 C54 94 81 111 119 77 C143 55 157 51 178 35" fill="none" stroke="#26d8cf" stroke-width="4.5" opacity=".13"/>
   <rect x="0" y="0" width="184" height="138" rx="9" fill="none" stroke="#b3fff8" stroke-opacity=".12" stroke-width="5"/>
   <path d="M18 21 L72 2 L98 32 L141 13 L168 52 L151 106 L103 130 L65 101 L26 117 L4 77 Z" fill="#4de5df" opacity=".13"/>
   <g transform="translate(54 43)" opacity=".92">
