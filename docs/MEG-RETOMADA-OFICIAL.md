@@ -48,15 +48,18 @@ O `manifest.json` registra nome original e SHA-256 de cada PNG. As imagens são 
 
 ### Estado real desta retomada — implementação de 03/10/2026
 
+**Ponto técnico validado:** [PR #566](https://github.com/MarcosVilalva/MEG-Platform/pull/566), integrada à `main` em `0309e5e12b87d96499ca0bcd645cd22034356785`. A revisão de código `a2d81ca6d80c53e0d9774e166c216f22d56b0513` passou pela CI e pelo [Visual Preflight](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/37158778646). Artifact `evolution-visual-preflight` contém capturas e `smoke-results.json`; o script no Git permite reproduzir após a expiração do artifact. Nenhuma operação financeira real foi executada em QA.
+
+
 - As 16 referências originais permanecem preservadas. A implementação funcional foi criada no Evolution, substituindo a Home antiga e a galeria estática por componentes do produto.
 - Login real e Loading preservado; Home, Lançamentos, Pendentes, Cartões, Benefício, relatórios, fluxo de caixa e modais usam APIs existentes. Configurações mostra os cadastros reais para consulta.
 - Pagamento em lote expande a fatura canônica, evita duplicidade de eventos e valida saldo na data escolhida. Recarga usa endpoint exclusivo de benefício. Transferência e lançamentos preservam operationId nos retries. Edição mantém proteção de versão e de origem do cartão.
 - QA sem sessão é identificada como ilustrativa e bloqueia gravações. Falha de API autenticada mostra erro e tentativa novamente, sem trocar por dados fictícios.
 - Build Web e contratos Evolution passaram localmente. Smoke Playwright verificou 8 módulos em 3 viewports (24 layouts), filtros, insuficiência de saldo, data/baixa atômica, recarga/histórico e retry idempotente, com API simulada e nenhuma alteração em dados reais.
-- `scripts/evolution-system-smoke.mjs` reproduz a verificação; o workflow Visual Preflight publica as capturas e resultados como artifact. Todos os grupos da suíte passaram localmente após gerar Prisma e executar os testes TypeScript com `node --import tsx`, contornando a limitação de IPC do CLI tsx. CI deve ser conferida na revisão publicada.
+- `scripts/evolution-system-smoke.mjs` reproduz a verificação; o workflow Visual Preflight publica as capturas e resultados como artifact. Todos os grupos da suíte passaram localmente após gerar Prisma e executar os testes TypeScript com `node --import tsx`, contornando a limitação de IPC do CLI tsx. CI e preflight da revisão integrada passaram; a publicação deve ser conferida nas Actions da `main`.
 - **Validação visual final ainda pendente:** a composição foi conferida em capturas, mas o acabamento não é pixel a pixel. A arte da Home é SVG geométrico e difere da textura da referência. A central do cartão tem resumo próprio, limites e próxima fatura; a edição tem resumo lateral. Não declarar aprovação visual do usuário.
 - Rota do novo sistema: `evolution.html`; Login: `evolution.html?screen=login`. O portal legado em `index.html` permanece separado. Android/Mobile não foi alterado.
-- Próxima retomada: verificar revisão da PR, checks e publicação; consultar artifacts e PNGs lado a lado; finalizar diferenças visuais acima. Não solicitar reenvio das referências já salvas.
+- Próxima retomada: partir da PR #566 integrada, verificar checks e publicação da `main`; consultar artifacts e PNGs lado a lado; finalizar diferenças visuais acima. Não solicitar reenvio das referências já salvas.
 
 ## Checkpoint oficial — 03/10/2026
 
