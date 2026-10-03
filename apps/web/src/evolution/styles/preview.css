@@ -455,11 +455,12 @@
 
 /* HOME: o App é a arte; desktop apenas redistribui. */
 .evo-app-home{
-  height:100%;
-  max-width:1450px;
+  height:auto;
+  max-width:1380px;
   margin:0 auto;
   display:grid;
-  grid-template-rows:72px 118px 126px minmax(150px,1fr);
+  grid-template-rows:72px 118px 126px 154px;
+  align-content:start;
   gap:7px;
 }
 .evo-app-home-title{
@@ -676,7 +677,8 @@
 .evo-app-benefit{
   width:100%;
   min-width:0;
-  min-height:150px;
+  height:154px;
+  min-height:154px;
   display:grid;
   grid-template-columns:58px minmax(0,1fr) 26px;
   align-items:center;
@@ -701,7 +703,8 @@
 .evo-app-benefit>b{color:var(--meg2-cyan)}
 .evo-app-quick{
   min-width:0;
-  min-height:150px;
+  height:154px;
+  min-height:154px;
   padding:10px;
   border-radius:14px;
 }
