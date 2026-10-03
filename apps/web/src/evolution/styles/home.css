@@ -1239,3 +1239,30 @@
   .evo-home-chart-summary strong{font-size:20.5px}
   .evo-home-cashflow>footer{font-size:10.5px}
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 13 / DEPTH FINALPASS === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-credit-card.visual-meg:after{
+    content:"";
+    position:absolute;
+    z-index:2;
+    inset:-22% -14%;
+    pointer-events:none;
+    background:
+      linear-gradient(132deg,transparent 0 38%,rgba(113,255,244,.10) 39% 41%,transparent 42% 47%,rgba(57,234,225,.34) 48% 49%,rgba(168,255,250,.14) 50% 51%,transparent 52% 61%,rgba(54,204,230,.16) 62% 64%,transparent 65%),
+      linear-gradient(128deg,transparent 0 54%,rgba(37,222,212,.13) 55% 57%,transparent 58%);
+    transform:translateX(2%);
+    filter:drop-shadow(0 0 11px rgba(56,242,225,.22));
+  }
+  .evo-credit-card.visual-meg>*{position:relative;z-index:4}
+  .evo-credit-card.visual-travel:before{
+    opacity:.38;
+    background:
+      linear-gradient(126deg,transparent 0 56%,rgba(154,207,231,.14) 57% 58%,transparent 59%),
+      linear-gradient(142deg,transparent 0 69%,rgba(102,155,185,.12) 70% 72%,transparent 73%);
+  }
+  .evo-home-panel{
+    backdrop-filter:blur(2px);
+  }
+}
