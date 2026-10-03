@@ -1,5 +1,10 @@
 # MEG Web — Galeria Oficial de Prévias
 
+## Referência visual vigente
+
+O conjunto aprovado de 16 PNGs está em [design/2026-10-03](design/2026-10-03/). Ver o checkpoint prioritário em [MEG-RETOMADA-OFICIAL.md](MEG-RETOMADA-OFICIAL.md). As prévias genéricas abaixo são inventário histórico, não substituem estas imagens. A aprovação das referências foi confirmada por Marcos; a implementação integral ainda exige comparação e validação.
+
+
 ## Correção de fidelidade — 03/10/2026
 
 A galeria criada inicialmente em 03/10/2026 **não deve ser tratada como referência visual final**. Ela reproduziu a estrutura do App, mas simplificou demais arte, cores, profundidade, acabamento e proporções.

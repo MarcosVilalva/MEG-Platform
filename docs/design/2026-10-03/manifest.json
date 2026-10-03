@@ -1,0 +1,98 @@
+[
+  {
+    "screen": "home",
+    "file": "home.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 16_54_43-1.png",
+    "sha256": "07159d3ea1531238e94394d42a369a1c9c7418160f2198f9962f9be0b3ddc273"
+  },
+  {
+    "screen": "login",
+    "file": "login.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 16_54_45-2.png",
+    "sha256": "4e900f1ee8692fce8b1aca6ceaeea347f389c7113e53c292179f4580f52ebb8a"
+  },
+  {
+    "screen": "loading",
+    "file": "loading.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 16_54_47-3.png",
+    "sha256": "972b756afc9a2e9f9dc816fe6f7b2afc8a7a7309e47b4a3825543df36187a67a"
+  },
+  {
+    "screen": "movements",
+    "file": "movements.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 16_54_48-4.png",
+    "sha256": "7ca1e8cfcf40033b0814a86165a55d7c10aa349975e2b82d32803fd7a17c069b"
+  },
+  {
+    "screen": "payables",
+    "file": "payables.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 16_54_50-5.png",
+    "sha256": "1e588d801ef89835fbcdc19f6b602e8102f8ffae093e3b70ce6e259a974851d6"
+  },
+  {
+    "screen": "cards",
+    "file": "cards.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 16_54_52-6.png",
+    "sha256": "7aad558dce2ba9a89e5001435abbb2c717174362919c964dc7c3bd54d2ae4997"
+  },
+  {
+    "screen": "settlement",
+    "file": "settlement.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 16_54_58-10.png",
+    "sha256": "01c28c3565ca19d1b714dc476ff0820009778ced13603c32d7b4555853ccca86"
+  },
+  {
+    "screen": "benefit",
+    "file": "benefit.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_30_41-1.png",
+    "sha256": "1de46ccc01904e88d92e2ecba8a77d11090c4c5ddd68860d6ba18a520b9029ea"
+  },
+  {
+    "screen": "card-center",
+    "file": "card-center.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_30_48-4.png",
+    "sha256": "432d02700193bbe3b18fed9ba82ccecb740d35295e74b735c7c6d66f4c1f2109"
+  },
+  {
+    "screen": "period",
+    "file": "period.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_30_57-5.png",
+    "sha256": "7986b1e2a0b6799cc5932f61b000d36ba51901a4aa12056cbc11b2a48af7a5b9"
+  },
+  {
+    "screen": "transfer",
+    "file": "transfer.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_30_59-6.png",
+    "sha256": "badf141da269917d95d8c7853fa216747b00aba4e2f8b1b024cec765afdcdd81"
+  },
+  {
+    "screen": "card-payment",
+    "file": "card-payment.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_31_01-7.png",
+    "sha256": "cf3f7849f30f27bbc9e2b0099132c28a370afebdd5428b93ae866c0f1aca9a15"
+  },
+  {
+    "screen": "edit-launch",
+    "file": "edit-launch.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_31_03-8.png",
+    "sha256": "f3edb89202ca7ab8231b4bc4ca522a48326798cf84cb2716cd2b9afc944292d9"
+  },
+  {
+    "screen": "benefit-recharge",
+    "file": "benefit-recharge.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_31_05-9.png",
+    "sha256": "5868915eceab7606d4463a25f5c6d1abf112536af61837acec0ac7448581db42"
+  },
+  {
+    "screen": "launch-choice",
+    "file": "launch-choice.png",
+    "original": "Imagem do ChatGPT 3 de out. de 2026, 17_31_26.png",
+    "sha256": "437f2427563de9591b5ccf8a1504bb5c711c4fb45ab1aebc7cb3cfdd8eaf74e1"
+  },
+  {
+    "screen": "launch",
+    "file": "launch.png",
+    "original": "Novo lançamento financeiro neon.png",
+    "sha256": "1621b452501bf61594dca38e0c69d1ac649f314a74344743d640e5a2eefcde76"
+  }
+]

@@ -2,6 +2,58 @@
 
 > Palavra de retomada: **Retomar MEG — memória oficial — último ponto validado.**
 
+## Correção oficial de retomada — conjunto aprovado de 16 imagens
+
+Em 03/10/2026, Marcos reenviou e confirmou: **“esse é o nosso novo sistema”**. O conjunto de 16 imagens em `docs/design/2026-10-03/` é a referência visual integral do novo MEG Web e deve ser implementado com todas as regras financeiras já consolidadas.
+
+Este checkpoint tem precedência sobre orientações visuais anteriores conflitantes, inclusive a restrição de tratar as demais telas somente como inventário até validar a antiga Home-mãe. O App permanece como contrato de negócio; as imagens aprovadas definem a composição visual Web. Não substituir a prancha aprovada por outro dashboard ou por uma interpretação simplificada do App.
+
+### Arquivos de referência preservados no Git
+
+| Tela/fluxo | Imagem original preservada |
+| --- | --- |
+| home | [Referência](design/2026-10-03/home.png) |
+| login | [Referência](design/2026-10-03/login.png) |
+| loading | [Referência](design/2026-10-03/loading.png) |
+| movements | [Referência](design/2026-10-03/movements.png) |
+| payables | [Referência](design/2026-10-03/payables.png) |
+| cards | [Referência](design/2026-10-03/cards.png) |
+| settlement | [Referência](design/2026-10-03/settlement.png) |
+| benefit | [Referência](design/2026-10-03/benefit.png) |
+| card-center | [Referência](design/2026-10-03/card-center.png) |
+| period | [Referência](design/2026-10-03/period.png) |
+| transfer | [Referência](design/2026-10-03/transfer.png) |
+| card-payment | [Referência](design/2026-10-03/card-payment.png) |
+| edit-launch | [Referência](design/2026-10-03/edit-launch.png) |
+| benefit-recharge | [Referência](design/2026-10-03/benefit-recharge.png) |
+| launch-choice | [Referência](design/2026-10-03/launch-choice.png) |
+| launch | [Referência](design/2026-10-03/launch.png) |
+
+O `manifest.json` registra nome original e SHA-256 de cada PNG. As imagens são referências, não telas funcionais nem prova de implementação. Valores, nomes e cartões de exemplo não devem substituir os dados reais do usuário.
+
+### Regras que continuam obrigatórias
+
+- Fidelidade às referências: estrutura, proporções, paleta escura, neon elegante, profundidade 3D, SVGs lineares e tipografia legível com dimensionamento responsivo automático.
+- Login → Loading → Home; Loading aprovado preservado e Android/Mobile intocado nesta etapa.
+- Telas fixas sem rolagem geral; somente regiões de dados e conteúdo extenso de modais podem rolar, com scrollbar personalizada. Cabeçalhos e ações permanecem acessíveis.
+- Lançamentos sem agrupamento por categoria, com tipo, forma de pagamento, filtro de data funcional e retorno à Home com saldos atualizados após salvar.
+- Novo/Editar: Despesa/Receita/Alimentação, autocomplete do histórico real, categoria visual, classificação Contas gerais/Investimentos/Benefício e tipo Conta monetária/Conta benefício, ambos filtrando contas reais.
+- À vista (Pix/boleto/débito), cartão de crédito com cartão e parcelas conforme regras consolidadas, benefício com conta vinculada travada. Crediário permanece aposentado para novos lançamentos até nova validação explícita.
+- Pendentes: filtros Todas/A pagar/Pagas/Vencidas, busca, agrupamento por data, somas corretas, seleção e status-pill.
+- Baixa: confirmação, escolha da data, seleção em lote e bloqueio quando faltar saldo monetário, indicando exatamente quanto falta; Cancelar sem fundo branco.
+- Cartões: carrossel cíclico/infinito, cartão ativo central, imagens reais, central do cartão e fatura. Verocard/benefício tem saldo e histórico próprios, com crédito/recarga inserível.
+- Transferências, pagamento de fatura, edição e recarga preservam validações, persistência, sincronização e regras existentes. Nenhuma operação financeira pode ser simulada como se estivesse salva.
+- Não exibir Plano Premium. Ícones de compras com benefício em amarelo e receitas com símbolo de dinheiro; categorias com ícones próprios.
+- Revisar screenshots lado a lado com a referência em desktop alto e compacto antes de declarar pronto; build/CI/preflight verdes não equivalem a aprovação visual do usuário.
+
+### Estado real desta retomada
+
+- Base técnica localizada: `3ce762a2ccba7404e627b233bbcd1d5ae5ef7191` (Novo Lançamento).
+- O conjunto visual aprovado foi recuperado e preservado integralmente no repositório nesta retomada.
+- A existência da galeria ou destes PNGs **não significa** que as 16 telas já foram implementadas. O código da base ainda contém navegação para módulos em migração e Home de composição anterior.
+- Implementação integral e validação visual das 16 referências continuam pendentes. Ordem: Login, Loading preservado, Home, Lançamentos, Pendentes, Cartões, Benefício e os modais/fluxos do conjunto.
+- Próxima retomada deve ler este bloco primeiro, consultar os PNGs originais, comparar o código e os artifacts do preflight e continuar a implementação. Não exigir novo reenvio destas referências.
+
 ## Checkpoint oficial — 03/10/2026
 
 Este arquivo é a fonte persistente de retomada do projeto MEG Finanças Web quando um chat for interrompido, travar ou precisar ser reiniciado.
