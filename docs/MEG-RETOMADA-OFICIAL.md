@@ -29,71 +29,98 @@ Regras permanentes:
 4. O asset canônico do repositório nesta etapa é `/brand/meg-loading-lockup.svg`, por estar alinhado à marca validada do Loading.
 5. Se for disponibilizado futuramente o arquivo vetorial original da marca, ele substitui este asset sem redesenho manual.
 
-## Novo norte oficial do MEG Web
+## Novo norte oficial do MEG Web — EVOLUÇÃO DIRETA DO APP
 
-A condução deixa de ser “reconstrução aproximada” e passa a ser **produto real orientado por referência**.
+A diretriz anterior de criar um Web com linguagem própria de dashboard foi substituída em 03/10/2026.
 
-### 1. Referência travada
+**Regra principal:** o MEG Web deve ser a evolução direta do aplicativo MEG já validado. O App é a fonte visual, estrutural e funcional de verdade.
 
-Antes de implementar:
-- identificar a referência oficial;
-- distinguir o que deve ser preservado, adaptado ao desktop ou descartado;
-- impedir elementos antigos de contaminarem a nova interface.
+Não criar outro produto, outro dashboard, outra identidade ou outra hierarquia de informação.
 
-### 2. Linguagem de produto
+### Fonte de verdade
 
-A Web deve se inspirar em padrões consolidados de produtos financeiros e SaaS modernos, sem copiar identidade de terceiros:
-- hierarquia clara;
-- grid consistente;
-- tipografia legível;
-- densidade controlada;
-- menos efeitos gratuitos;
-- profundidade visual discreta;
-- superfícies funcionais;
-- ações principais óbvias;
-- estados, alertas, modais e filtros consistentes.
+Antes de alterar uma tela Web, consultar os componentes reais em `apps/web/src/mobile/`, principalmente:
 
-### 3. Menos “mockup”, mais sistema
+- `MegMobileFinal.tsx`
+- `MegMobileLaunchSheet.tsx`
+- `MegMobileCardCenter.tsx`
+- `MegMobileCoreScreens.tsx`
+- `MegMobileBenefitModal.tsx`
+- `MegMobilePicker.tsx`
+- os respectivos arquivos `meg-mobile-*.css`
 
-Evitar:
-- brilho excessivo sem função;
-- grandes áreas decorativas que roubem espaço de conteúdo;
-- cards apenas cenográficos;
-- fontes pequenas;
-- excesso de informação simultânea;
-- componentes que pareçam montados isoladamente.
+O Android/Mobile continua **intocado**. Ele serve como referência e contrato do produto.
 
-Priorizar:
-- leitura imediata;
-- números importantes em primeiro plano;
-- organização espacial;
-- informação real;
-- interação previsível;
-- acabamento visual uniforme.
+### O que “evolução para desktop” significa
 
-### 4. Validação antes de apresentar ao usuário
+Preservar:
+- identidade MEG;
+- mesma paleta e linguagem visual;
+- mesma iconografia;
+- mesmas nomenclaturas;
+- mesma ordem mental das informações;
+- mesmas regras financeiras;
+- mesmos estados, cores semânticas e interações;
+- mesmos fluxos de Lançamentos, Pendentes, Cartões e Benefício.
 
-Nenhuma entrega deve ser chamada de pronta apenas porque compilou.
+Adaptar apenas o necessário para aproveitar uma tela maior:
+- distribuir blocos lado a lado quando houver espaço;
+- ampliar áreas de leitura;
+- transformar o Dock do app em navegação desktop equivalente, mantendo os mesmos destinos e ordem principal;
+- manter cabeçalho com marca, período e usuário como no App;
+- preservar carrosséis, seletores e modais reconhecíveis como os do App;
+- usar responsividade para recompor o mesmo produto, nunca para inventar outro.
 
-Antes de solicitar validação do usuário:
-- CI verde;
-- preflight visual verde;
-- comparação das capturas;
-- logo correta;
-- proporção correta;
-- responsividade conferida;
-- nenhuma referência visual antiga reaparecendo;
-- Android não alterado.
+### Home Web deve nascer da Home real do App
 
-### 5. Ordem atual de reconstrução
+A Home atual do App é a referência. Sua estrutura principal é:
 
-1. **Branding canônico** em toda a Web.
-2. **Login** como produto premium real, sem excesso de cenografia.
-3. **Home**: rever hierarquia, proporções, densidade, cards, gráficos e cabeçalho.
-4. **Novo Lançamento**: preservar fluxo funcional do app, elevar a linguagem visual Web.
-5. **Pendentes / Baixa / Confirmações / Alertas**.
-6. **Cartões / Benefícios / demais módulos**.
-7. Validação cruzada em viewports desktop reais.
+1. Header: marca MEG + período + usuário.
+2. Título contextual: Situação atual / período.
+3. Saldo disponível.
+4. Fluxo: Entradas, Saídas e Resultado.
+5. Resumo: Contas a pagar, Faturas de cartões, Outras pendências e Contas pagas.
+6. Benefício Alimentação.
+7. Ações rápidas: Cartões, Pagar conta, Fluxo de caixa e Ver relatórios.
+8. Navegação principal equivalente ao Dock: Início, Lançamentos, Novo, Pendentes e Menu.
+
+No Web, esta estrutura pode ser reorganizada espacialmente em colunas e grids, mas não substituída por hero publicitário, KPIs inventados, gráficos que não existem na Home do App ou outra hierarquia.
+
+### Cartões
+
+Preservar o conceito real do App:
+- carrossel infinito;
+- cartão ativo central;
+- cartões/imagens reais;
+- central do cartão;
+- métricas da fatura;
+- lançamentos da fatura;
+- Benefício integrado como cartão quando aplicável.
+
+### Lançamentos
+
+O fluxo Web deve ser uma expansão espacial do `MegMobileLaunchSheet`, não uma reinvenção:
+- Despesa / Receita / Alimentação;
+- mesmos campos e regras;
+- mesmos estados;
+- mesmos seletores visuais;
+- autocomplete;
+- crédito/parcelas;
+- benefício travado conforme regra;
+- confirmação e sucesso reconhecíveis como o App.
+
+### Regra de validação
+
+Antes de apresentar qualquer tela Web:
+1. comparar lado a lado com o App real;
+2. confirmar que um usuário do App reconheceria imediatamente o Web como o mesmo MEG;
+3. verificar que a diferença é apenas ganho de espaço, legibilidade e produtividade;
+4. conferir responsividade;
+5. rodar CI e Visual Preflight;
+6. não chamar de pronto se houver divergência visual estrutural.
+
+A marca oficial validada pelo usuário continua obrigatória e não pode ser substituída por interpretações alternativas.
+
 
 ## Último marco técnico anterior a este norte
 
