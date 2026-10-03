@@ -86,7 +86,7 @@ function EditEventModal({event,accounts,categories,methods,month,onClose,onSaved
     const purchase=card?.purchases.find(item=>item.id===purchaseId);
     await cardsClient.updatePurchase(purchaseId,{cardId,categoryId:categoryId||undefined,description:description.trim().toLocaleUpperCase('pt-BR'),totalAmount:numeric,purchaseDate:date,installments:purchase?.installments||1,operationId:operationId()});
    }else{
-    await financeClient.updateEvent(event.id,{description:description.trim().toLocaleUpperCase('pt-BR'),date,amount:numeric,type:event.type==='income'?'income':'expense',status,categoryId:categoryId||undefined,accountId:accountId||undefined,paymentMethodId:methodId||undefined,notes:notes.trim().toLocaleUpperCase('pt-BR')||null});
+    await financeClient.updateEvent(event.id,{description:description.trim().toLocaleUpperCase('pt-BR'),date,amount:numeric,type:event.type==='income'?'income':'expense',status,categoryId:categoryId||undefined,accountId:accountId||undefined,paymentMethodId:methodId||undefined,notes:notes.trim().toLocaleUpperCase('pt-BR')||undefined});
    }
    onSaved();
   }catch(error){setMessage(error instanceof Error?error.message:'Não foi possível salvar as alterações.')}
