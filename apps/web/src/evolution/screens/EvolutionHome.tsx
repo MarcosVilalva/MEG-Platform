@@ -3,6 +3,7 @@ import {readSession} from '../../app/auth-client';
 import {financeClient, type FinanceSummary, type FinancialAnalytics, type FinancialEvent} from '../../app/finance-client';
 import {cardsClient, type CreditCard} from '../../app/cards-client';
 import {payablesClient, type Payable} from '../../app/payables-client';
+import {EvolutionLaunchModal} from './EvolutionLaunchModal';
 import '../styles/home.css';
 
 type IconName='home'|'overview'|'swap'|'card'|'target'|'report'|'layers'|'chart'|'diamond'|'settings'|'search'|'calendar'|'bell'|'wallet'|'income'|'expense'|'gift'|'alert'|'arrow'|'eye'|'cart'|'salary'|'music'|'restaurant'|'wifi'|'car'|'house'|'plane'|'clock'|'plus';
@@ -211,6 +212,8 @@ export function EvolutionHome(){
   const [data,setData]=useState<HomeData>(fixture);
   const [busy,setBusy]=useState(Boolean(session));
   const [cardIndex,setCardIndex]=useState(0);
+  const [refreshToken,setRefreshToken]=useState(0);
+  const [launchOpen,setLaunchOpen]=useState(()=>new URLSearchParams(window.location.search).get('modal')==='launch');
 
   useEffect(()=>{
     if(!session){setData(fixture);setBusy(false);return;}
@@ -218,7 +221,7 @@ export function EvolutionHome(){
     setBusy(true);
     void loadReal(month).then(value=>{if(active)setData(value)}).finally(()=>{if(active)setBusy(false)});
     return()=>{active=false};
-  },[month,session]);
+  },[month,session,refreshToken]);
 
   const trend=data.trend.length?data.trend:fixture.trend;
   const max=Math.max(1,...trend.flatMap(x=>[x.income,x.expense]));
@@ -275,6 +278,7 @@ export function EvolutionHome(){
     <section className="evo-home-workspace">
       <header className="evo-home-topbar">
         <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar movimentações, metas, relatórios..."/><kbd>⌘ K</kbd></label>
+        <button className="evo-home-add" type="button" onClick={()=>setLaunchOpen(true)}><Icon name="plus"/><span>Incluir</span></button>
         <div className="evo-home-top-actions">
           <button className="evo-home-month" type="button" onClick={()=>setMonth(month)}><Icon name="calendar"/><span>{monthLabel(month)}</span><b>⌄</b></button>
           <button className="evo-home-bell" type="button" aria-label="Notificações"><Icon name="bell"/><i/></button>
@@ -370,5 +374,11 @@ export function EvolutionHome(){
         </article>
       </section>
     </section>
+    {launchOpen&&<EvolutionLaunchModal
+      month={month}
+      qaMode={qaMode}
+      onClose={()=>setLaunchOpen(false)}
+      onSaved={()=>{setLaunchOpen(false);setRefreshToken(value=>value+1)}}
+    />}
   </main>;
 }

@@ -8,11 +8,13 @@ const paths=[
   './screens/EvolutionLoading.tsx',
   './screens/EvolutionLogin.tsx',
   './screens/EvolutionHome.tsx',
+  './screens/EvolutionLaunchModal.tsx',
   './styles/global.css',
   './styles/tokens.css',
   './styles/loading.css',
   './styles/login.css',
-  './styles/home.css'
+  './styles/home.css',
+  './styles/launch-modal.css'
 ];
 
 for(const filePath of paths){
@@ -79,9 +81,26 @@ assert.match(home,/Resumo do mês/);
 assert.match(home,/financeClient\.getSummary/,'Home deve usar dados financeiros reais quando autenticada.');
 assert.match(home,/cardsClient\.list/,'Home deve usar cartões reais quando autenticada.');
 assert.match(home,/payablesClient\.list/,'Home deve usar vencimentos reais quando autenticada.');
+assert.match(home,/EvolutionLaunchModal/,'Home deve integrar o modal Evolution de lançamento.');
+assert.match(home,/evo-home-add/,'Home deve exibir a ação Incluir.');
 assert.doesNotMatch(home,/Plano Premium|Upgrade agora/,'Home não deve exibir oferta Premium nesta fase.');
 assert.match(home,/carouselCards/,'Carrossel deve manter janela cíclica de cartões.');
 assert.match(home,/normalizedCardIndex/,'Carrossel deve normalizar o índice ativo.');
+
+const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
+assert.match(launch,/Novo Lançamento/);
+assert.match(launch,/À vista/);
+assert.match(launch,/Crédito/);
+assert.match(launch,/Crediário/);
+assert.match(launch,/Benefício/);
+assert.match(launch,/financeClient\.createEvent/,'Lançamento comum deve usar API financeira real.');
+assert.match(launch,/cardsClient\.createPurchase/,'Compra no crédito deve usar API real de cartões.');
+assert.doesNotMatch(launch,/MegMobile|phoenix-/i,'Evolution Launch não pode reutilizar visual Mobile/Phoenix.');
+
+const launchCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.url),'utf8');
+assert.match(launchCss,/\.evo-launch-backdrop/);
+assert.match(launchCss,/backdrop-filter:blur/);
+assert.match(launchCss,/\.evo-home-add/);
 
 const homeCss=fs.readFileSync(new URL('./styles/home.css',import.meta.url),'utf8');
 assert.match(homeCss,/grid-template-columns:214px minmax\(0,1fr\)/,'Desktop deve preservar sidebar integrada.');
