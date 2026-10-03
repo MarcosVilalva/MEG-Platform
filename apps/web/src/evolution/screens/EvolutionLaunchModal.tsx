@@ -427,7 +427,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
               </div>}
             </label>
 
-            <EvolutionPicker label={mode==='income'?'Classificação da receita (opcional)':'Categoria *'} value={categoryId} options={categoryOptions} placeholder="Selecione uma categoria" onChange={setCategoryId}/>
+            <EvolutionPicker label={mode==='income'?'Classificação da receita (opcional)':'Categoria *'} value={categoryId} options={categoryOptions} placeholder="Selecione uma categoria" openByDefault={params.get('picker')==='category'} onChange={setCategoryId}/>
 
             <div className="evo-launch-data-grid">
               <label className="evo-launch-field"><span><EvolutionFinancialIcon name="calendar" size={18}/>{mode==='income'?'Data do recebimento':paymentMode==='credit'?'Data da compra':status==='planned'?'Vencimento':'Data do lançamento'}</span><input type="date" value={date} onChange={event=>setDate(event.target.value)}/></label>
