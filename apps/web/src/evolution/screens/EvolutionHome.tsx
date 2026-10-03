@@ -56,6 +56,11 @@ const monthLabel=(month:string)=>{
   const label=monthFormatter.format(new Date(parts[0],parts[1]-1,2));
   return label.charAt(0).toUpperCase()+label.slice(1);
 };
+const shiftMonth=(month:string,offset:number)=>{
+  const [year,value]=month.split('-').map(Number);
+  const date=new Date(year,value-1+offset,2);
+  return date.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'}).slice(0,7);
+};
 
 type Trend={month:string;income:number;expense:number;result:number};
 type HomeCard={id:string;name:string;lastFour:string;brand:string;statement:number;available:number};
@@ -88,9 +93,10 @@ const fixture:HomeData={
     {month:'Mai',income:7245,expense:4320.41,result:2924.59},{month:'Jun',income:8050,expense:4700,result:3350}
   ],
   cards:[
-    {id:'c1',name:'Conta Principal',lastFour:'5934',brand:'MEG',statement:320.45,available:5200},
-    {id:'c2',name:'MEG Platinum',lastFour:'4021',brand:'MASTERCARD',statement:1260.80,available:7400},
-    {id:'c3',name:'Viagem',lastFour:'8827',brand:'VISA',statement:615.20,available:3380}
+    {id:'c1',name:'LATAM Pass',lastFour:'5934',brand:'MASTERCARD',statement:320.45,available:5200},
+    {id:'c2',name:'Mercado Pago',lastFour:'4021',brand:'VISA',statement:1260.80,available:7400},
+    {id:'c3',name:'Riachuelo',lastFour:'8827',brand:'MASTERCARD',statement:615.20,available:3380},
+    {id:'c4',name:'Azul Itaú',lastFour:'7146',brand:'VISA',statement:418.90,available:4581.10}
   ],
   events:[
     {id:'e1',description:'Supermercado Extra',category:'Alimentação',date:'2025-05-20T14:32:00',amount:-156.90,type:'expense'},
@@ -197,14 +203,14 @@ function EventIcon({event}:{event:HomeEvent}){
 
 function cardArtwork(card:HomeCard,index:number){
   const key=(card.name+' '+card.brand).toLowerCase();
-  if(key.includes('latam')) return './assets/cards/approved-v6/latam.webp';
-  if(key.includes('mercado')) return './assets/cards/approved-v6/mercado.webp';
-  if(key.includes('riachuelo')) return './assets/cards/approved-v6/riachuelo.webp';
-  if(key.includes('azul')) return './assets/cards/approved-v6/azul.webp';
+  if(key.includes('latam')) return './assets/cards/latam-user-model-v61.svg';
+  if(key.includes('mercado')) return './assets/cards/mercado-pago-visa-v662.svg';
+  if(key.includes('riachuelo')) return './assets/cards/riachuelo-mastercard-visual.svg';
+  if(key.includes('azul')) return './assets/cards/azul-itau-platinum-v659.svg';
   return [
-    './assets/cards/approved-v6/azul.webp',
-    './assets/cards/approved-v6/latam.webp',
-    './assets/cards/approved-v6/mercado.webp'
+    './assets/cards/azul-itau-platinum-v659.svg',
+    './assets/cards/mercado-pago-visa-v662.svg',
+    './assets/cards/riachuelo-mastercard-visual.svg'
   ][index%3];
 }
 
@@ -217,6 +223,7 @@ export function EvolutionHome(){
   const [cardIndex,setCardIndex]=useState(0);
   const [refreshToken,setRefreshToken]=useState(0);
   const [launchOpen,setLaunchOpen]=useState(()=>new URLSearchParams(window.location.search).get('modal')==='launch');
+  const [monthOpen,setMonthOpen]=useState(false);
   const [activeView,setActiveView]=useState<EvolutionView>(()=>new URLSearchParams(window.location.search).get('view')==='movements'?'movements':'home');
 
   useEffect(()=>{
@@ -294,7 +301,18 @@ export function EvolutionHome(){
         <label className="evo-home-search"><Icon name="search"/><input placeholder="Buscar movimentações, metas, relatórios..."/><kbd>⌘ K</kbd></label>
         <button className="evo-home-add" type="button" onClick={()=>setLaunchOpen(true)}><Icon name="plus"/><span>Incluir</span></button>
         <div className="evo-home-top-actions">
-          <button className="evo-home-month" type="button" onClick={()=>setMonth(month)}><Icon name="calendar"/><span>{monthLabel(month)}</span><b>⌄</b></button>
+          <div className="evo-home-period">
+            <button className={'evo-home-month '+(monthOpen?'open':'')} type="button" onClick={()=>setMonthOpen(value=>!value)}><Icon name="calendar"/><span>{monthLabel(month)}</span><b>⌄</b></button>
+            {monthOpen&&<section className="evo-home-period-popover" role="dialog" aria-label="Selecionar período">
+              <header><span>Período da Home</span><small>{month===isoMonth()?'Mês atual':month<isoMonth()?'Período anterior':'Período futuro'}</small></header>
+              <div className="evo-home-period-shortcuts">
+                <button type="button" onClick={()=>setMonth(shiftMonth(month,-1))}>‹ <span>Anterior</span></button>
+                <button type="button" className={month===isoMonth()?'active':''} onClick={()=>setMonth(isoMonth())}><span>Mês atual</span></button>
+                <button type="button" onClick={()=>setMonth(shiftMonth(month,1))}><span>Próximo</span> ›</button>
+              </div>
+              <label><span>Escolher competência</span><input type="month" value={month} onChange={event=>{setMonth(event.target.value||month);setMonthOpen(false)}}/></label>
+            </section>}
+          </div>
           <button className="evo-home-bell" type="button" aria-label="Notificações"><Icon name="bell"/><i/></button>
           <button className="evo-home-user" type="button"><span>{initials}</span><strong>{userName}</strong><b>⌄</b></button>
         </div>
