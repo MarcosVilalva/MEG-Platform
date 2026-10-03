@@ -46,13 +46,17 @@ O `manifest.json` registra nome original e SHA-256 de cada PNG. As imagens são 
 - Não exibir Plano Premium. Ícones de compras com benefício em amarelo e receitas com símbolo de dinheiro; categorias com ícones próprios.
 - Revisar screenshots lado a lado com a referência em desktop alto e compacto antes de declarar pronto; build/CI/preflight verdes não equivalem a aprovação visual do usuário.
 
-### Estado real desta retomada
+### Estado real desta retomada — implementação de 03/10/2026
 
-- Base técnica localizada: `3ce762a2ccba7404e627b233bbcd1d5ae5ef7191` (Novo Lançamento).
-- O conjunto visual aprovado foi recuperado e preservado integralmente no repositório nesta retomada.
-- A existência da galeria ou destes PNGs **não significa** que as 16 telas já foram implementadas. O código da base ainda contém navegação para módulos em migração e Home de composição anterior.
-- Implementação integral e validação visual das 16 referências continuam pendentes. Ordem: Login, Loading preservado, Home, Lançamentos, Pendentes, Cartões, Benefício e os modais/fluxos do conjunto.
-- Próxima retomada deve ler este bloco primeiro, consultar os PNGs originais, comparar o código e os artifacts do preflight e continuar a implementação. Não exigir novo reenvio destas referências.
+- As 16 referências originais permanecem preservadas. A implementação funcional foi criada no Evolution, substituindo a Home antiga e a galeria estática por componentes do produto.
+- Login real e Loading preservado; Home, Lançamentos, Pendentes, Cartões, Benefício, relatórios, fluxo de caixa e modais usam APIs existentes. Configurações mostra os cadastros reais para consulta.
+- Pagamento em lote expande a fatura canônica, evita duplicidade de eventos e valida saldo na data escolhida. Recarga usa endpoint exclusivo de benefício. Transferência e lançamentos preservam operationId nos retries. Edição mantém proteção de versão e de origem do cartão.
+- QA sem sessão é identificada como ilustrativa e bloqueia gravações. Falha de API autenticada mostra erro e tentativa novamente, sem trocar por dados fictícios.
+- Build Web e contratos Evolution passaram localmente. Smoke Playwright verificou 8 módulos em 3 viewports (24 layouts), filtros, insuficiência de saldo, data/baixa atômica, recarga/histórico e retry idempotente, com API simulada e nenhuma alteração em dados reais.
+- `scripts/evolution-system-smoke.mjs` reproduz a verificação; o workflow Visual Preflight publica as capturas e resultados como artifact. A suíte npm local encontrou limitação de IPC do tsx no ambiente; CI deve ser conferida na revisão publicada.
+- **Validação visual final ainda pendente:** a composição foi conferida em capturas, mas o acabamento não é pixel a pixel. A arte da Home é SVG geométrico e difere da textura da referência. A central do cartão compartilha a composição funcional de cartões. Não declarar aprovação visual do usuário.
+- Rota do novo sistema: `evolution.html`; Login: `evolution.html?screen=login`. O portal legado em `index.html` permanece separado. Android/Mobile não foi alterado.
+- Próxima retomada: verificar revisão da PR, checks e publicação; consultar artifacts e PNGs lado a lado; finalizar diferenças visuais acima. Não solicitar reenvio das referências já salvas.
 
 ## Checkpoint oficial — 03/10/2026
 
