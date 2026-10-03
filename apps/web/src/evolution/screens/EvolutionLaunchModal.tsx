@@ -636,7 +636,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
 
         {message&&<div className="evo-launch-message" role="status">{message}</div>}
         <footer className="evo-launch-actions">
-          <button type="button" className="cancel" onClick={()=>setStep('choose')}><EvolutionFinancialIcon name="chevron-left" size={20}/>Voltar</button>
+          <button type="button" className="cancel" disabled={busy} onClick={()=>setStep('choose')}><EvolutionFinancialIcon name="chevron-left" size={20}/>Voltar</button>
           <button type="button" className="save" disabled={busy||qaMode} onClick={()=>void save()}><EvolutionFinancialIcon name="check-line" size={21}/>{busy?'Salvando…':'Salvar lançamento'}</button>
         </footer>
       </>}

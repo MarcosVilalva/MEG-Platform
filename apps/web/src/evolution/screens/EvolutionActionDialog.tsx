@@ -4,7 +4,7 @@ import {financeClient,type FinancialEvent} from '../../app/finance-client';
 import {cardsClient,type CreditCard} from '../../app/cards-client';
 import {Button,Modal,EventsTable} from '../components/SystemUI';
 import {EvolutionFinancialIcon as Icon} from '../components/EvolutionFinancialIcon';
-import {amountInput,amountValue,cents,datePt,errorMessage,isBenefit,isBenefitAccount,isMonetary,isSettlementMethod,money,operationId,posted,settlementSources,sum,today,type PendingItem,type SystemData} from '../app/system-domain';
+import {amountInput,amountValue,cents,datePt,errorMessage,isBenefit,isBenefitAccount,isMonetary,isSettlementMethod,money,operationId,posted,settlementSources,signed,sum,today,type PendingItem,type SystemData} from '../app/system-domain';
 
 export type ActionKind='settlement'|'card-payment'|'transfer'|'benefit-recharge'|'edit-launch'|'benefit-evolution';
 export function EvolutionActionDialog({kind,data,items=[],card,event,qaMode,onClose,onSaved}:{kind:ActionKind;data:SystemData;items?:PendingItem[];card?:CreditCard;event?:FinancialEvent;qaMode:boolean;onClose:()=>void;onSaved:()=>void}){
@@ -40,7 +40,7 @@ export function EvolutionActionDialog({kind,data,items=[],card,event,qaMode,onCl
         }else{
           // A baixa de um pendente nunca é uma simples alteração de status.
           if(!posted(event.status)&&posted(status))throw Error('Use Pagar selecionados em Pendentes para baixar com validação de saldo.');
-          const changes={description:description.trim(),amount:event.type==='expense'?-amount:amount,date,categoryId:categoryId||null,...(cardOrigin?{}:{accountId:status==='planned'?null:accountId||null,paymentMethodId:status==='planned'?null:methodId||null}),notes,status:status as 'paid'|'planned'|'reconciled'};
+          const changes={description:description.trim(),amount:event.type==='expense'?(signed(event)>0?amount:-amount):amount,date,categoryId:categoryId||null,...(cardOrigin?{}:{accountId:status==='planned'?null:accountId||null,paymentMethodId:status==='planned'?null:methodId||null}),notes,status:status as 'paid'|'planned'|'reconciled'};
           const payload={ids:[event.id],changes,expectedUpdatedAtById:event.updatedAt?{[event.id]:event.updatedAt}:undefined};await financeClient.bulkUpdateEvents({...payload,operationId:idFor(payload)});
         }
       }
@@ -60,7 +60,7 @@ export function EvolutionActionDialog({kind,data,items=[],card,event,qaMode,onCl
           {!payment&&<label>Valor (R$)<input required inputMode="numeric" value={value} onChange={e=>setValue(amountInput(e.target.value))}/></label>}
           <label>{payment?'Data da baixa':transfer?'Data da transferência':'Data'}<input required type="date" max={needsBalance?today():undefined} value={date} onChange={e=>setDate(e.target.value)}/></label>
           {cardOrigin?<label className="span-two">Cartão de origem<input readOnly value={cardOrigin.name+' · Na fatura'}/></label>:kind==='benefit-recharge'||(event&&isBenefit(event))?<label className="span-two">Conta benefício<input value={benefitAccount?.name||'Conta de benefício indisponível'} readOnly/></label>:<label>{transfer?'Conta de origem':'Conta monetária'}<select required value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">Selecione</option>{monetary.map(a=><option value={a.id} key={a.id}>{a.name}</option>)}</select></label>}
-          {transfer&&<label>Conta de destino<select required value={destinationId} onChange={e=>setDestinationId(e.target.value)}><option value="">Selecione</option>{data.accounts.filter(a=>a.id!==accountId&&!isBenefitAccount(a)).map(a=><option value={a.id} key={a.id}>{a.name}</option>)}</select></label>}
+          {transfer&&<label>Conta de destino<select required value={destinationId} onChange={e=>setDestinationId(e.target.value)}><option value="">Selecione</option>{monetary.filter(a=>a.id!==accountId).map(a=><option value={a.id} key={a.id}>{a.name}</option>)}</select></label>}
           {payment&&<label>Forma de pagamento<select required value={methodId} onChange={e=>setMethodId(e.target.value)}><option value="">Selecione</option>{methods.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
           {kind==='edit-launch'&&event&&<><label>Categoria<select value={categoryId} onChange={e=>setCategoryId(e.target.value)}><option value="">Sem categoria</option>{data.categories.filter(c=>!c.type||c.type===event.type).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>{!isBenefit(event)&&!cardOrigin&&<><label>Forma<select required={posted(status)} value={methodId} onChange={e=>setMethodId(e.target.value)}><option value="">Na baixa</option>{data.methods.filter(m=>m.type!=='BENEFIT').map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Status<select value={status} onChange={e=>setStatus(e.target.value)}>{posted(event.status)?<><option value="paid">Pago</option><option value="reconciled">Conciliado</option></>:<option value="planned">Pendente — baixar em Pendentes</option>}</select></label></>}</>}
           {!payment&&<label className="span-two">Observações<textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2}/></label>}
