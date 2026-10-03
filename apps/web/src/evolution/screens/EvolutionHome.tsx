@@ -164,7 +164,7 @@ async function loadReal(month:string):Promise<HomeData>{
 type EvolutionView='home'|'movements';
 
 const nav:Array<[IconName,string]>= [
-  ['home','Início'],['overview','Visão Geral'],['swap','Movimentações'],['card','Cartões'],['target','Metas'],
+  ['home','Início'],['overview','Visão Geral'],['swap','Lançamentos'],['card','Cartões'],['target','Metas'],
   ['report','Relatórios'],['layers','Planejamento'],['chart','Investimentos'],['diamond','Benefícios'],['settings','Configurações']
 ];
 
@@ -276,7 +276,7 @@ export function EvolutionHome(){
       <div className="evo-home-brand"><img src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/></div>
       <nav aria-label="Navegação principal">
         {nav.map(([icon,label])=>{
-          const target:EvolutionView|null=label==='Início'?'home':label==='Movimentações'?'movements':null;
+          const target:EvolutionView|null=label==='Início'?'home':label==='Lançamentos'?'movements':null;
           return <button
             key={label}
             className={target===activeView?'active':''}
