@@ -10,6 +10,7 @@ const paths=[
   './screens/EvolutionHome.tsx',
   './screens/EvolutionLaunchModal.tsx',
   './screens/EvolutionMovements.tsx',
+  './screens/EvolutionPreview.tsx',
   './components/EvolutionFinancialIcon.tsx',
   './components/EvolutionPicker.tsx',
   './styles/global.css',
@@ -18,7 +19,8 @@ const paths=[
   './styles/login.css',
   './styles/home.css',
   './styles/launch-modal.css',
-  './styles/movements.css'
+  './styles/movements.css',
+  './styles/preview.css'
 ];
 
 for(const filePath of paths){
@@ -56,7 +58,8 @@ assert.match(app,/setPhase\('loading'\)/,'Autenticação deve levar ao Loading.'
 assert.match(app,/setPhase\('system'\)/,'Loading deve levar ao sistema.');
 assert.match(app,/phase==='system'\)return <EvolutionHome\/>/,'Sistema deve abrir a Home Evolution.');
 assert.doesNotMatch(app,/EvolutionSystemEntry/,'Porta técnica temporária deve sair do fluxo.');
-assert.match(app,/screen==='login'\|\|screen==='loading'\|\|screen==='system'/,'QA precisa permitir acesso direto às três fases.');
+assert.match(app,/screen==='login'\|\|screen==='loading'\|\|screen==='system'\|\|screen==='preview'/,'QA precisa permitir acesso direto às fases e à galeria de prévias.');
+assert.match(app,/phase==='preview'\)return <EvolutionPreview\/>/,'Galeria de prévias deve ter rota isolada do sistema real.');
 
 const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.meta.url),'utf8');
 assert.match(loginScreen,/data-evolution-login-fidelity="product-v2"/);
@@ -160,3 +163,13 @@ for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']
 }
 
 console.log('MEG Evolution auth -> loading -> Home Command Center contract OK');
+
+
+const preview=fs.readFileSync(new URL('./screens/EvolutionPreview.tsx',import.meta.url),'utf8');
+assert.match(preview,/data-evolution-screen="preview"/);
+for(const key of ['home','movements','launch','payables','settlement','cards','card-center','benefit','cashflow','analytics','history','settings','period','menu']){
+  assert.ok(preview.includes("'"+key+"'"),'Prévia obrigatória ausente: '+key);
+}
+assert.doesNotMatch(preview,/from\s+['"][^'"]*\/mobile\//i,'Galeria Web não pode importar componentes visuais Mobile.');
+const previewCss=fs.readFileSync(new URL('./styles/preview.css',import.meta.url),'utf8');
+assert.match(previewCss,/grid-template-columns:206px minmax\(0,1fr\)/,'Prévia desktop deve usar expansão espacial do App.');
