@@ -5,6 +5,7 @@ import {
   register,
   type AuthSession,
 } from '../../app/auth-client';
+import {EvolutionFinancialIcon} from '../components/EvolutionFinancialIcon';
 import '../styles/login.css';
 
 type AuthMode='login'|'register'|'forgot';
@@ -141,7 +142,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
         ?'Entre em um espaço existente ou crie o seu MEG.'
         :'Informe seu e-mail para receber uma senha temporária.';
 
-  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="product-v2">
+  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="approved-2026-10-03">
     <div className="evo-login-bg" aria-hidden="true">
       <img src="./evolution/artwork/loading-master.webp" alt=""/>
     </div>
@@ -151,14 +152,14 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
     <section className="evo-login-shell">
       <div className="evo-login-story">
         <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
-        <div className="evo-login-kicker"><span/>CONTROLE FINANCEIRO PESSOAL</div>
-        <h1>Clareza para cuidar<br/>do seu <strong>dinheiro.</strong></h1>
-        <p>Saldo, compromissos, cartões e projeções reunidos em uma experiência única, direta e segura.</p>
+        <div className="evo-login-kicker">MEG EVOLUTION</div>
+        <h1>Sua vida financeira,<br/><strong>com clareza para<br/>decidir.</strong></h1>
+        <p>Saldo, compromissos e projeções em uma visão única<br/>para você saber onde está e para onde está indo.</p>
 
         <div className="evo-login-proof" aria-label="Recursos do MEG">
-          <span><i><CheckIcon/></i><b>Saldo e compromissos</b><small>Visão real do que está disponível e do que vem pela frente.</small></span>
-          <span><i><CheckIcon/></i><b>Cartões e benefícios</b><small>Faturas, limites e saldos organizados no mesmo lugar.</small></span>
-          <span><i><CheckIcon/></i><b>Planejamento</b><small>Histórico e projeções para decidir com contexto.</small></span>
+          <span><i><EvolutionFinancialIcon name="chart" size={25}/></i><b>Saldo real</b><small>Visão completa e atualizada</small></span>
+          <span><i><EvolutionFinancialIcon name="target" size={25}/></i><b>Projetos</b><small>Mais controle para seus planos</small></span>
+          <span><i><EvolutionFinancialIcon name="sliders" size={25}/></i><b>Controle</b><small>Decisões melhores todos os dias</small></span>
         </div>
 
         <div className="evo-login-signals" aria-hidden="true"/>
@@ -170,7 +171,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
         <div className="evo-login-card-head">
           <div className="evo-login-lock"><ShieldIcon/></div>
           <div>
-            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO AO MEG':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
+            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO SEGURO':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
