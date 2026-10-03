@@ -124,6 +124,12 @@ jobs:
             "artifacts/evolution-home-1672x941.png"
 
           npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1648,744" \
+            --wait-for-timeout="1800" \
+            "http://127.0.0.1:4173/evolution.html?screen=system" \
+            "artifacts/evolution-home-compact-1648x744.png"
+
+          npx --yes playwright@1.55.0 screenshot \
             --viewport-size="1672,941" \
             --wait-for-timeout="1800" \
             "http://127.0.0.1:4173/evolution.html?screen=system&modal=launch" \
@@ -158,6 +164,7 @@ jobs:
           loading_wide=1364x626
           loading_vertical=430x932
           home_command_center=1672x941
+          home_compact_desktop=1648x744
           launch_choose=1672x941
           launch_expense=1672x941
           launch_categories=1672x941
