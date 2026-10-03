@@ -62,7 +62,7 @@ assert.match(app,/screen==='login'\|\|screen==='loading'\|\|screen==='system'\|\
 assert.match(app,/phase==='preview'\)return <EvolutionPreview\/>/,'Galeria de prévias deve ter rota isolada do sistema real.');
 
 const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.meta.url),'utf8');
-assert.match(loginScreen,/data-evolution-login-fidelity="product-v2"/);
+assert.match(loginScreen,/data-evolution-login-fidelity="approved-2026-10-03"/);
 assert.match(loginScreen,/Bem-vindo de volta/);
 assert.match(loginScreen,/Entrar no MEG/);
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
@@ -80,28 +80,53 @@ assert.match(loginCss,/background-clip:text/,'Autofill não deve pintar um bloco
 assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!important\}/,'Linhas decorativas do Login não podem cruzar o conteúdo.');
 
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
-assert.match(home,/data-evolution-home-fidelity="product-v2"/);
-assert.match(home,/Visão financeira/);
-assert.match(home,/PAINEL FINANCEIRO/);
-assert.match(home,/Fluxo de caixa/);
-assert.match(home,/Meus cartões/);
-assert.match(home,/Metas em andamento/);
+assert.match(home,/data-evolution-home-fidelity="approved-2026-10-03"/);
+assert.match(home,/Saldo disponível/);
+assert.match(home,/Fluxo do mês/);
+assert.match(home,/Contas a pagar/);
+assert.match(home,/Faturas de cartões/);
+assert.match(home,/Benefícios Verocard/);
+assert.match(home,/Ações rápidas/);
 assert.match(home,/Últimas movimentações/);
 assert.match(home,/Próximos vencimentos/);
-assert.match(home,/Resumo do mês/);
 assert.match(home,/financeClient\.getSummary/,'Home deve usar dados financeiros reais quando autenticada.');
 assert.match(home,/cardsClient\.list/,'Home deve usar cartões reais quando autenticada.');
+assert.match(home,/financeClient\.getCashflow/,'Home deve usar fluxo diário real quando autenticada.');
 assert.match(home,/payablesClient\.list/,'Home deve usar vencimentos reais quando autenticada.');
 assert.match(home,/EvolutionLaunchModal/,'Home deve integrar o modal Evolution de lançamento.');
 assert.match(home,/evo-home-add/,'Home deve exibir a ação Incluir.');
 assert.doesNotMatch(home,/Plano Premium|Upgrade agora/,'Home não deve exibir oferta Premium nesta fase.');
-assert.match(home,/carouselCards/,'Carrossel deve manter janela cíclica de cartões.');
-assert.match(home,/normalizedCardIndex/,'Carrossel deve normalizar o índice ativo.');
+assert.match(home,/EvolutionCards/,'Home deve integrar o módulo real de Cartões.');
+assert.match(home,/EvolutionPayables/,'Home deve integrar o módulo real de Pendentes.');
+assert.match(home,/EvolutionBenefits/,'Home deve integrar o módulo real de Benefícios.');
 assert.match(home,/hasLoadedReal/,'Home autenticada não deve expor fixture enquanto os dados reais carregam.');
 assert.match(home,/plotPoints/,'Gráficos devem derivar geometria dos dados reais.');
 assert.doesNotMatch(home,/metricSparks/,'Sparklines decorativas fixas não devem substituir dados reais.');
 assert.match(home,/trendMonthLabel/,'Rótulos do fluxo devem interpretar competências ISO corretamente.');
 assert.match(home,/\.\/brand\/meg-loading-lockup\.svg/,'Home e Login devem compartilhar a mesma marca canônica.');
+
+const payables=fs.readFileSync(new URL('./screens/EvolutionPayables.tsx',import.meta.url),'utf8');
+assert.match(payables,/data-evolution-screen="payables"/);
+assert.match(payables,/financeClient\.getMonetaryBalance/,'Baixa deve validar saldo monetário na data selecionada.');
+assert.match(payables,/payablesClient\.pay/,'Pendentes oficiais devem usar a API real de baixa.');
+assert.match(payables,/financeClient\.settleEvent/,'Pendentes originados de evento devem usar settlement real.');
+assert.match(payables,/cardsClient\.payStatement/,'Faturas selecionadas em Pendentes devem usar pagamento real de fatura.');
+assert.match(payables,/Saldo insuficiente|Faltam/,'Baixa deve bloquear e informar insuficiência de saldo.');
+
+const cardsScreen=fs.readFileSync(new URL('./screens/EvolutionCards.tsx',import.meta.url),'utf8');
+assert.match(cardsScreen,/data-evolution-screen="cards"/);
+assert.match(cardsScreen,/data-evolution-screen="card-center"/);
+assert.match(cardsScreen,/cardsClient\.payStatement/,'Pagamento de fatura deve usar API real.');
+assert.match(cardsScreen,/financeClient\.getMonetaryBalance/,'Pagamento de fatura deve validar saldo monetário.');
+assert.match(cardsScreen,/Pagar fatura/);
+assert.match(cardsScreen,/Central do/);
+
+const benefitsScreen=fs.readFileSync(new URL('./screens/EvolutionBenefits.tsx',import.meta.url),'utf8');
+assert.match(benefitsScreen,/data-evolution-screen="benefits"/);
+assert.match(benefitsScreen,/financeClient\.getBenefitSummary/,'Benefícios deve usar saldo real.');
+assert.match(benefitsScreen,/financeClient\.createEvent/,'Recarga deve ser persistida como evento para aparecer no histórico.');
+assert.match(benefitsScreen,/Registrar recarga/);
+assert.match(benefitsScreen,/RECARGA VEROCARD/);
 
 const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
 assert.match(launch,/Novo Lançamento/);
@@ -145,13 +170,15 @@ assert.match(movements,/financeClient\.listPaymentMethods/);
 assert.match(movements,/Receitas/);
 assert.match(movements,/Despesas/);
 assert.match(movements,/Benefício/);
-assert.match(movements,/Buscar por descrição, categoria, conta ou forma de pagamento/);
-assert.match(movements,/evo-movement-table/,'Desktop deve aproveitar tabela ampla em vez de esticar a lista mobile.');
+assert.match(movements,/Buscar lançamentos/);
+assert.match(movements,/evo-movement-table-approved/,'Desktop deve aproveitar tabela ampla conforme a referência aprovada.');
+assert.match(movements,/Editar lançamento/,'Lançamentos deve integrar edição real.');
+assert.match(movements,/cardsClient\.updatePurchase/,'Edição de compra no cartão deve preservar o domínio de cartões.');
 assert.doesNotMatch(movements,/MegMobile|meg-mobile-/,'Lançamentos Evolution não pode reutilizar visual Mobile.');
 
 const movementsCss=fs.readFileSync(new URL('./styles/movements.css',import.meta.url),'utf8');
-assert.match(movementsCss,/grid-template-columns:202px minmax\(0,1fr\)/,'Desktop deve manter filtros e tabela lado a lado.');
-assert.match(movementsCss,/\.evo-movement-scroll/,'Lista densa deve rolar internamente.');
+assert.match(movementsCss,/evo-movement-layout-approved/,'Desktop deve manter tabela e detalhe lado a lado.');
+assert.match(movementsCss,/evo-movement-table-approved \.rows/,'Lista densa deve rolar internamente.');
 
 const launchCss=fs.readFileSync(new URL('./styles/launch-modal.css',import.meta.url),'utf8');
 assert.match(launchCss,/\.evo-launch-backdrop/);
