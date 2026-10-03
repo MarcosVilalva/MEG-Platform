@@ -8,6 +8,8 @@ import '../styles/launch-modal.css';
 type LaunchMode='expense'|'income'|'benefit';
 type PaymentMode='cash'|'credit';
 type LaunchStep='choose'|'form'|'success';
+type AccountClassification='general'|'investment'|'benefit';
+type AccountKind='monetary'|'benefit';
 
 type Props={
   month:string;
@@ -24,6 +26,11 @@ const isCreditText=(value:unknown)=>/credit|credito|cartao/.test(normalize(value
 const isCrediarioText=(value:unknown)=>/crediario|carne|parcelado loja/.test(normalize(value));
 const isPixText=(value:unknown)=>/(^|\s)pix($|\s)/.test(normalize(value));
 const isMainMonetary=(account:Account)=>!isBenefitText(account.name+' '+account.type+' '+(account.institution||''))&&/conta monetaria principal|conta principal/.test(normalize(account.name));
+const isInvestmentAccount=(account:Account)=>/invest|investment|aplic|cdb|poupanc|corretora|broker/.test(normalize(account.name+' '+account.type+' '+(account.institution||'')));
+const accountClassificationOf=(account:Account):AccountClassification=>isBenefitText(account.name+' '+account.type+' '+(account.institution||''))?'benefit':isInvestmentAccount(account)?'investment':'general';
+const accountKindOf=(account:Account):AccountKind=>isBenefitText(account.name+' '+account.type+' '+(account.institution||''))?'benefit':'monetary';
+const accountClassificationLabel=(value:AccountClassification)=>value==='general'?'Contas gerais':value==='investment'?'Investimentos':'Benefício';
+const accountKindLabel=(value:AccountKind)=>value==='monetary'?'Conta monetária':'Conta benefício';
 const operationId=()=>globalThis.crypto?.randomUUID?.()||('evo-'+Date.now()+'-'+Math.random().toString(16).slice(2));
 
 function parseAmount(value:string){
@@ -109,6 +116,7 @@ function formatMonth(month:string){return /^\d{4}-\d{2}$/.test(month)?month.spli
 const qaAccounts:Account[]=[
   {id:'qa-main',name:'Conta Monetária Principal',type:'monetary',institution:'MEG',openingBalance:0,isActive:true},
   {id:'qa-bb',name:'Banco do Brasil',type:'monetary',institution:'Banco do Brasil',openingBalance:0,isActive:true},
+  {id:'qa-invest',name:'Conta de Investimentos',type:'investment',institution:'MEG Invest',openingBalance:0,isActive:true},
   {id:'qa-benefit',name:'Conta Benefício (Verocard)',type:'benefit',institution:'Verocard',openingBalance:0,isActive:true}
 ];
 const qaCategories:Category[]=[
@@ -146,6 +154,8 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
   const [step,setStep]=useState<LaunchStep>(forced?'form':'choose');
   const [mode,setMode]=useState<LaunchMode>(initialMode);
   const [paymentMode,setPaymentMode]=useState<PaymentMode>('cash');
+  const [accountClassification,setAccountClassification]=useState<AccountClassification>(initialMode==='benefit'?'benefit':'general');
+  const [accountKind,setAccountKind]=useState<AccountKind>(initialMode==='benefit'?'benefit':'monetary');
   const [description,setDescription]=useState('');
   const [amount,setAmount]=useState('');
   const [date,setDate]=useState(today());
@@ -192,8 +202,12 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
   const selectedCard=cards.find(item=>item.id===cardId);
   const incomeBenefit=mode==='income'&&Boolean(selectedAccount&&isBenefitText(selectedAccount.name+' '+selectedAccount.type+' '+(selectedAccount.institution||'')));
 
-  const regularAccounts=accounts.filter(item=>item.isActive&&!isBenefitText(item.name+' '+item.type+' '+(item.institution||'')));
-  const visibleAccounts=mode==='benefit'?(benefitAccount?[benefitAccount]:[]):mode==='expense'?regularAccounts:accounts.filter(item=>item.isActive);
+  const visibleAccounts=accounts.filter(account=>{
+    if(!account.isActive)return false;
+    if(mode==='benefit')return accountClassificationOf(account)==='benefit';
+    return accountClassificationOf(account)===accountClassification&&accountKindOf(account)===accountKind;
+  });
+  const accountControlsLocked=mode==='benefit'||(mode==='expense'&&paymentMode==='credit')||(mode==='expense'&&status==='planned');
   const visibleMethods=methods.filter(method=>{
     const source=method.name+' '+(method.type||'');
     if(mode==='benefit')return isBenefitText(source);
@@ -206,14 +220,71 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
     const tone=icon==='food'||icon==='cart'||icon==='sandwich'||icon==='cup-soda'?'yellow':icon==='house'||icon==='car'||icon==='fuel'?'violet':icon==='heart-pulse'?'red':mode==='income'?'green':'cyan';
     return {id:category.id,label:category.name,subtitle:category.group||undefined,icon,tone};
   });
-  const accountOptions:EvolutionPickerOption[]=visibleAccounts.map(account=>({id:account.id,label:account.name,subtitle:account.institution||account.type,icon:isBenefitText(account.name+' '+account.type)?'food':'landmark',tone:isBenefitText(account.name+' '+account.type)?'yellow':'cyan'}));
+  const accountOptions:EvolutionPickerOption[]=visibleAccounts.map(account=>{
+    const classification=accountClassificationOf(account);
+    return {
+      id:account.id,
+      label:account.name,
+      subtitle:[account.institution,accountClassificationLabel(classification)].filter(Boolean).join(' · '),
+      icon:classification==='benefit'?'gift':classification==='investment'?'trend':'landmark',
+      tone:classification==='benefit'?'yellow':classification==='investment'?'violet':'cyan'
+    };
+  });
   const methodOptions:EvolutionPickerOption[]=visibleMethods.map(method=>({id:method.id,label:method.name,subtitle:method.type||undefined,icon:paymentIcon(method),tone:isBenefitText(method.name+' '+(method.type||''))?'yellow':paymentIcon(method)==='banknote'?'green':paymentIcon(method)==='card'?'violet':'cyan'}));
   const cardOptions:EvolutionPickerOption[]=cards.filter(card=>card.isActive!==false).map(card=>({id:card.id,label:card.name,subtitle:card.lastFour?'Final '+card.lastFour:'Cartão de crédito',imageSrc:cardArtwork(card.name)||undefined,tone:'violet'}));
+
+  const selectedMethod=methods.find(item=>item.id===paymentMethodId);
+  const selectedAccountClassification=selectedAccount?accountClassificationOf(selectedAccount):accountClassification;
+  const selectedAccountKind=selectedAccount?accountKindOf(selectedAccount):accountKind;
+  const categoryShortcuts=categoryOptions.slice(0,6);
+
+  function selectAccountClassification(next:AccountClassification){
+    if(accountControlsLocked)return;
+    setAccountClassification(next);
+    if(next==='benefit'){
+      setAccountKind('benefit');
+      setAccountId(benefitAccount?.id||'');
+      if(mode==='expense'){
+        setMode('benefit');
+        setPaymentMode('cash');
+        setPaymentMethodId(verocard?.id||'');
+        setStatus('paid');
+      }else if(mode==='income'){
+        setPaymentMethodId(verocard?.id||'');
+      }
+      return;
+    }
+    setAccountKind('monetary');
+    setAccountId(next==='general'&&mainAccount?mainAccount.id:'');
+    if(mode==='income'&&pixMethod?.id)setPaymentMethodId(pixMethod.id);
+  }
+
+  function selectAccountKind(next:AccountKind){
+    if(accountControlsLocked)return;
+    setAccountKind(next);
+    if(next==='benefit'){
+      setAccountClassification('benefit');
+      setAccountId(benefitAccount?.id||'');
+      if(mode==='expense'){
+        setMode('benefit');
+        setPaymentMethodId(verocard?.id||'');
+        setStatus('paid');
+      }else if(mode==='income'){
+        setPaymentMethodId(verocard?.id||'');
+      }
+    }else{
+      if(accountClassification==='benefit')setAccountClassification('general');
+      setAccountId(mainAccount?.id||'');
+      if(mode==='income'&&pixMethod?.id)setPaymentMethodId(pixMethod.id);
+    }
+  }
 
   useEffect(()=>{
     if(step!=='form')return;
     if(mode==='benefit'){
       setPaymentMode('cash');
+      setAccountClassification('benefit');
+      setAccountKind('benefit');
       setAccountId(benefitAccount?.id||'');
       setPaymentMethodId(verocard?.id||'');
       setStatus('paid');
@@ -224,8 +295,15 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
       setPaymentMode('cash');
       setStatus('paid');
       setCardId('');
-      if(!accountId&&mainAccount)setAccountId(mainAccount.id);
-      if(!paymentMethodId&&pixMethod)setPaymentMethodId(pixMethod.id);
+      if(accountClassification==='benefit'){
+        setAccountKind('benefit');
+        if(!accountId&&benefitAccount)setAccountId(benefitAccount.id);
+        if(!paymentMethodId&&verocard)setPaymentMethodId(verocard.id);
+      }else{
+        setAccountKind('monetary');
+        if(!accountId&&accountClassification==='general'&&mainAccount)setAccountId(mainAccount.id);
+        if(!paymentMethodId&&pixMethod)setPaymentMethodId(pixMethod.id);
+      }
       return;
     }
     if(paymentMode==='credit'){
@@ -237,7 +315,13 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
       if(!accountId&&mainAccount)setAccountId(mainAccount.id);
       if(!paymentMethodId&&pixMethod)setPaymentMethodId(pixMethod.id);
     }
-  },[step,mode,paymentMode,benefitAccount?.id,verocard?.id,mainAccount?.id,pixMethod?.id]);
+  },[step,mode,paymentMode,accountClassification,benefitAccount?.id,verocard?.id,mainAccount?.id,pixMethod?.id]);
+
+  useEffect(()=>{
+    if(step!=='form'||accountControlsLocked)return;
+    if(accountId&&!visibleAccounts.some(account=>account.id===accountId))setAccountId('');
+    if(!accountId&&accountClassification==='general'&&accountKind==='monetary'&&mainAccount&&visibleAccounts.some(account=>account.id===mainAccount.id))setAccountId(mainAccount.id);
+  },[step,accountControlsLocked,accountClassification,accountKind,accountId,visibleAccounts.map(account=>account.id).join('|'),mainAccount?.id]);
 
   useEffect(()=>{
     if(mode!=='income')return;
@@ -304,6 +388,8 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
     setHistoryOpen(false);
     setInstallments(1);
     setPaymentMode('cash');
+    setAccountClassification(next==='benefit'?'benefit':'general');
+    setAccountKind(next==='benefit'?'benefit':'monetary');
     if(next==='benefit'){
       setAccountId(benefitAccount?.id||'');
       setPaymentMethodId(verocard?.id||'');
@@ -393,6 +479,12 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved}:Props)
   const badgeLabel=mode==='expense'?'Despesa':mode==='income'?'Receita':'Alimentação';
   const badgeIcon:EvolutionFinancialIconName=mode==='expense'?'wallet':mode==='income'?'up':'food';
   const selectedCategoryIcon=selectedCategory?resolveEvolutionFinancialIcon({type:mode==='income'?'income':'expense',signedAmount:mode==='income'?1:-1,categoryName:selectedCategory.name,categoryGroup:selectedCategory.group}):'receipt';
+
+  const summaryClassification=accountControlsLocked&&mode==='expense'&&paymentMode==='credit'?'Cartão de crédito':accountClassificationLabel(selectedAccountClassification);
+  const summaryAccountKind=accountControlsLocked&&mode==='expense'&&paymentMode==='credit'?'Origem no cartão':accountKindLabel(selectedAccountKind);
+  const summaryAccount=mode==='expense'&&paymentMode==='credit'?(selectedCard?.name||'Selecione o cartão'):(selectedAccount?.name||(status==='planned'?'Definida na baixa':'Selecione a conta'));
+  const summaryPayment=mode==='benefit'?(verocard?.name||'VEROCARD'):mode==='expense'&&paymentMode==='credit'?'Cartão de crédito':(selectedMethod?.name||'Selecione a forma');
+  const summaryStatus=mode==='expense'&&paymentMode==='credit'?'Na fatura':status==='planned'?'Pendente':'Pago';
 
   return <div className="evo-launch-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}>
     <section className={'evo-launch-modal evo-launch-step-'+step} role="dialog" aria-modal="true" aria-labelledby="evo-launch-title">
