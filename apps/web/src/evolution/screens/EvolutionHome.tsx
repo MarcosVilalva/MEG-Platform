@@ -71,6 +71,7 @@ type HomeCard={id:string;name:string;lastFour:string;brand:string;statement:numb
 type HomeEvent={id:string;description:string;category:string;date:string;amount:number;type:'income'|'expense'};
 type HomeDue={id:string;description:string;date:string;amount:number;kind:string};
 type HomeCategory={name:string;amount:number};
+type HomeCashDay={date:string;income:number;expense:number;net:number};
 type HomeData={
   summary:FinanceSummary;
   benefit:number;
@@ -81,6 +82,13 @@ type HomeData={
   categories:HomeCategory[];
   incomeDelta:number;
   expenseDelta:number;
+  cashflow:HomeCashDay[];
+  payableOpenAmount:number;
+  payableOpenCount:number;
+  cardStatementAmount:number;
+  cardStatementCount:number;
+  paidAmount:number;
+  paidCount:number;
 };
 
 const fixture:HomeData={
@@ -117,7 +125,16 @@ const fixture:HomeData={
     {id:'d5',description:'Seguro Auto',date:'2025-05-20',amount:189.90,kind:'car'}
   ],
   categories:[{name:'Moradia',amount:1382.53},{name:'Alimentação',amount:777.67},{name:'Transporte',amount:518.45},{name:'Lazer',amount:475.24},{name:'Assinaturas',amount:345.60},{name:'Saúde',amount:302.18},{name:'Outros',amount:518.74}],
-  incomeDelta:8.2,expenseDelta:2.4
+  incomeDelta:8.2,expenseDelta:2.4,
+  cashflow:[
+    {date:'2025-05-01',income:2400,expense:0,net:2400},{date:'2025-05-03',income:0,expense:490,net:-490},
+    {date:'2025-05-06',income:1200,expense:350,net:850},{date:'2025-05-09',income:0,expense:610,net:-610},
+    {date:'2025-05-12',income:1850,expense:0,net:1850},{date:'2025-05-15',income:900,expense:540,net:360},
+    {date:'2025-05-18',income:0,expense:760,net:-760},{date:'2025-05-21',income:1350,expense:180,net:1170},
+    {date:'2025-05-24',income:0,expense:320,net:-320},{date:'2025-05-27',income:1545,expense:620,net:925},
+    {date:'2025-05-30',income:0,expense:450,net:-450}
+  ],
+  payableOpenAmount:945.30,payableOpenCount:6,cardStatementAmount:2615.35,cardStatementCount:4,paidAmount:4320.41,paidCount:28
 };
 
 function mapEvent(event:FinancialEvent):HomeEvent{
@@ -145,7 +162,8 @@ async function loadReal(month:string):Promise<HomeData>{
     financeClient.getBenefitSummary(month),
     financeClient.listEventsForMonth(month),
     cardsClient.list(month),
-    payablesClient.list(month)
+    payablesClient.list(month),
+    financeClient.getCashflow(month)
   ]);
   const summary=results[0].status==='fulfilled'?results[0].value as FinanceSummary:fixture.summary;
   const analytics=results[1].status==='fulfilled'?results[1].value as FinancialAnalytics:undefined;
@@ -153,6 +171,7 @@ async function loadReal(month:string):Promise<HomeData>{
   const cardItems=results[4].status==='fulfilled'?results[4].value:undefined;
   const payableItems=results[5].status==='fulfilled'?results[5].value:undefined;
   const benefit=results[2].status==='fulfilled'?results[2].value.balance:fixture.benefit;
+  const cashflow=results[6].status==='fulfilled'?results[6].value.days:fixture.cashflow;
   const events=eventsPage?.items.slice(0,8).map(mapEvent)||fixture.events;
   const cards=cardItems?.slice(0,5).map(mapCard)||fixture.cards;
   const due=payableItems
@@ -167,7 +186,14 @@ async function loadReal(month:string):Promise<HomeData>{
     due:due.length?due:fixture.due,
     categories:aggregateCategories(analytics?.categories?.length?analytics.categories:summary.topCategories.length?summary.topCategories:fixture.categories).slice(0,7),
     incomeDelta:analytics?.delta?.income??fixture.incomeDelta,
-    expenseDelta:analytics?.delta?.expense??fixture.expenseDelta
+    expenseDelta:analytics?.delta?.expense??fixture.expenseDelta,
+    cashflow:cashflow.length?cashflow.map(item=>({date:item.date,income:Number(item.income||0),expense:Number(item.expense||0),net:Number(item.net||0)})):fixture.cashflow,
+    payableOpenAmount:payableItems?payableItems.filter(item=>n(item.openAmount)>0).reduce((sum,item)=>sum+n(item.openAmount),0):fixture.payableOpenAmount,
+    payableOpenCount:payableItems?payableItems.filter(item=>n(item.openAmount)>0).length:fixture.payableOpenCount,
+    cardStatementAmount:cardItems?cardItems.reduce((sum,item)=>sum+n(item.payableStatementAmount??item.statementAmount),0):fixture.cardStatementAmount,
+    cardStatementCount:cardItems?cardItems.filter(item=>n(item.payableStatementAmount??item.statementAmount)>0).length:fixture.cardStatementCount,
+    paidAmount:payableItems?payableItems.filter(item=>n(item.openAmount)<=0).reduce((sum,item)=>sum+n(item.totalAmount),0):fixture.paidAmount,
+    paidCount:payableItems?payableItems.filter(item=>n(item.openAmount)<=0).length:fixture.paidCount
   };
 }
 
