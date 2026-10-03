@@ -233,7 +233,7 @@ export function EvolutionHome(){
     <div className="evo-home-atmosphere" aria-hidden="true"><i/><i/><i/></div>
 
     <aside className="evo-home-sidebar">
-      <div className="evo-home-brand"><img src="./evolution/brand/meg-mark.svg" alt="MEG Finanças"/></div>
+      <div className="evo-home-brand"><img src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/></div>
       <nav aria-label="Navegação principal">
         {nav.map(([icon,label],index)=><button key={label} className={index===0?'active':''} type="button"><Icon name={icon}/><span>{label}</span></button>)}
       </nav>
@@ -300,9 +300,19 @@ export function EvolutionHome(){
             <header><h2><Icon name="card"/>Meus cartões</h2><button type="button">Ver todos <Icon name="arrow"/></button></header>
             <div className="evo-home-card-stage">
               <button className="evo-home-card-nav prev" type="button" onClick={()=>setCardIndex(v=>(v-1+data.cards.length)%data.cards.length)}>‹</button>
-              {visibleCards.map((card,index)=><div key={card.id} className={'evo-credit-card '+(index===cardIndex?'active':index<cardIndex?'left':'right')}>
-                <small>{card.name}</small><strong>{card.name.toUpperCase().includes('MEG')?'MEG':card.brand}</strong><span>•••• &nbsp; {card.lastFour}</span><em>{money.format(card.statement)}</em>
-              </div>)}
+              {visibleCards.map((card,index)=>{
+                const visual=index===0?'primary':index===1?'meg':'travel';
+                return <div key={card.id} className={'evo-credit-card visual-'+visual+' '+(index===cardIndex?'active':index<cardIndex?'left':'right')}>
+                  <span className="evo-card-chip" aria-hidden="true"/>
+                  <span className="evo-card-contactless" aria-hidden="true">)))</span>
+                  {visual==='travel'&&<span className="evo-card-plane" aria-hidden="true"><Icon name="plane"/></span>}
+                  <small>{visual==='meg'?'':card.name}</small>
+                  <strong>{visual==='meg'?'MEG':visual==='travel'?'Viagem':card.brand}</strong>
+                  <span className="evo-card-number">•••• &nbsp; {card.lastFour}</span>
+                  <em>{money.format(card.statement)}</em>
+                  {visual==='meg'&&<span className="evo-card-master" aria-hidden="true"><i/><i/></span>}
+                </div>;
+              })}
               <button className="evo-home-card-nav next" type="button" onClick={()=>setCardIndex(v=>(v+1)%data.cards.length)}>›</button>
             </div>
             <div className="evo-home-dots">{visibleCards.map((card,index)=><button key={card.id} type="button" className={index===cardIndex?'active':''} onClick={()=>setCardIndex(index)}/>)}</div>
