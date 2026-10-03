@@ -6,6 +6,9 @@ import {payablesClient, type Payable} from '../../app/payables-client';
 import {EvolutionLaunchModal} from './EvolutionLaunchModal';
 import {EvolutionFinancialIcon,type EvolutionFinancialIconName} from '../components/EvolutionFinancialIcon';
 import {EvolutionMovements} from './EvolutionMovements';
+import {EvolutionPayables} from './EvolutionPayables';
+import {EvolutionCards} from './EvolutionCards';
+import {EvolutionBenefits} from './EvolutionBenefits';
 import '../styles/home.css';
 
 type IconName='home'|'overview'|'swap'|'card'|'target'|'report'|'layers'|'chart'|'diamond'|'settings'|'search'|'calendar'|'bell'|'wallet'|'income'|'expense'|'gift'|'alert'|'arrow'|'eye'|'cart'|'salary'|'music'|'restaurant'|'wifi'|'car'|'house'|'plane'|'clock'|'plus'|'check';
@@ -197,11 +200,16 @@ async function loadReal(month:string):Promise<HomeData>{
   };
 }
 
-type EvolutionView='home'|'movements';
+type EvolutionView='home'|'movements'|'cards'|'payables'|'benefits';
 
-const nav:Array<[IconName,string]>= [
-  ['home','Início'],['overview','Visão Geral'],['swap','Lançamentos'],['card','Cartões'],['target','Metas'],
-  ['report','Relatórios'],['layers','Planejamento'],['chart','Investimentos'],['diamond','Benefícios'],['settings','Configurações']
+const nav:Array<[IconName,string,EvolutionView|null]>= [
+  ['home','Início','home'],
+  ['swap','Lançamentos','movements'],
+  ['card','Cartões','cards'],
+  ['clock','Pendentes','payables'],
+  ['gift','Benefícios','benefits'],
+  ['report','Relatórios',null],
+  ['settings','Configurações',null]
 ];
 
 function MiniMetric({icon,label,value,tone='cyan',detail,detailNote,series,accessory=false}:{icon:IconName;label:string;value:string;tone?:'cyan'|'red'|'green'|'warning';detail?:string;detailNote?:string;series?:number[];accessory?:boolean}){
@@ -305,18 +313,16 @@ export function EvolutionHome(){
     <aside className="evo-home-sidebar">
       <div className="evo-home-brand"><img src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/></div>
       <nav aria-label="Navegação principal">
-        {nav.map(([icon,label])=>{
-          const target:EvolutionView|null=label==='Início'?'home':label==='Lançamentos'?'movements':null;
-          return <button
-            key={label}
-            className={target===activeView?'active':''}
-            type="button"
-            aria-disabled={!target}
-            title={target?undefined:'Módulo em migração para o Evolution'}
-            onClick={()=>{if(target)setActiveView(target)}}
-          ><Icon name={icon}/><span>{label}</span></button>;
-        })}
+        {nav.map(([icon,label,target])=><button
+          key={label}
+          className={target===activeView?'active':''}
+          type="button"
+          aria-disabled={!target}
+          title={target?undefined:'Módulo em reconstrução'}
+          onClick={()=>{if(target)setActiveView(target)}}
+        ><Icon name={icon}/><span>{label}</span></button>)}
       </nav>
+      <button className="evo-home-side-new" type="button" onClick={()=>setLaunchOpen(true)}><Icon name="plus"/><span>Novo</span></button>
     </aside>
 
     <section className={'evo-home-workspace view-'+activeView+(session&&!hasLoadedReal?' initial-sync':'')}>
@@ -344,7 +350,13 @@ export function EvolutionHome(){
 
       {activeView==='movements'
         ?<EvolutionMovements month={month} qaMode={qaMode} onCreate={()=>setLaunchOpen(true)} refreshToken={refreshToken}/>
-        :<section className="evo-home-dashboard" data-meg-no-page-scroll="true">
+        :activeView==='payables'
+          ?<EvolutionPayables month={month} qaMode={qaMode} refreshToken={refreshToken} onChanged={()=>setRefreshToken(value=>value+1)}/>
+          :activeView==='cards'
+            ?<EvolutionCards month={month} qaMode={qaMode} refreshToken={refreshToken} onChanged={()=>setRefreshToken(value=>value+1)}/>
+            :activeView==='benefits'
+              ?<EvolutionBenefits month={month} qaMode={qaMode} refreshToken={refreshToken} onChanged={()=>setRefreshToken(value=>value+1)}/>
+              :<section className="evo-home-dashboard" data-meg-no-page-scroll="true">
           <section className="evo-home-dashboard-top">
             <article className="evo-home-balance-hero">
               <img src="./evolution/artwork/home-hero-reference.webp" alt="" aria-hidden="true"/>
@@ -385,10 +397,10 @@ export function EvolutionHome(){
           </section>
 
           <section className="evo-home-summary-cards">
-            <button className="red" type="button"><span><Icon name="report"/></span><div><small>Contas a pagar</small><strong>{money.format(data.payableOpenAmount)}</strong><em>{data.payableOpenCount} {data.payableOpenCount===1?'conta em aberto':'contas em aberto'}</em></div><b>›</b></button>
-            <button className="blue" type="button"><span><Icon name="card"/></span><div><small>Faturas de cartões</small><strong>{money.format(data.cardStatementAmount)}</strong><em>{data.cardStatementCount} {data.cardStatementCount===1?'fatura em aberto':'faturas em aberto'}</em></div><b>›</b></button>
-            <button className="amber" type="button"><span><Icon name="clock"/></span><div><small>Outras pendências</small><strong>{money.format(data.summary.pendingAmount)}</strong><em>{data.summary.pendingCount} itens pendentes</em></div><b>›</b></button>
-            <button className="green" type="button"><span><Icon name="check"/></span><div><small>Contas pagas</small><strong>{money.format(data.paidAmount||data.summary.realizedExpense)}</strong><em>{data.paidCount} contas este mês</em></div><b>›</b></button>
+            <button className="red" type="button" onClick={()=>setActiveView('payables')}><span><Icon name="report"/></span><div><small>Contas a pagar</small><strong>{money.format(data.payableOpenAmount)}</strong><em>{data.payableOpenCount} {data.payableOpenCount===1?'conta em aberto':'contas em aberto'}</em></div><b>›</b></button>
+            <button className="blue" type="button" onClick={()=>setActiveView('cards')}><span><Icon name="card"/></span><div><small>Faturas de cartões</small><strong>{money.format(data.cardStatementAmount)}</strong><em>{data.cardStatementCount} {data.cardStatementCount===1?'fatura em aberto':'faturas em aberto'}</em></div><b>›</b></button>
+            <button className="amber" type="button" onClick={()=>setActiveView('payables')}><span><Icon name="clock"/></span><div><small>Outras pendências</small><strong>{money.format(data.summary.pendingAmount)}</strong><em>{data.summary.pendingCount} itens pendentes</em></div><b>›</b></button>
+            <button className="green" type="button" onClick={()=>setActiveView('payables')}><span><Icon name="check"/></span><div><small>Contas pagas</small><strong>{money.format(data.paidAmount||data.summary.realizedExpense)}</strong><em>{data.paidCount} contas este mês</em></div><b>›</b></button>
           </section>
 
           <section className="evo-home-feature-row">
