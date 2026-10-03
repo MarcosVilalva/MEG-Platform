@@ -358,3 +358,267 @@
   .evo-launch-payment-modes{grid-template-columns:repeat(2,1fr)}
   .evo-launch-actions{padding:12px 17px 15px}
 }
+
+
+/* === EVOLUTION LAUNCH — WEB SOPHISTICATION PASS / 03-10-2026 === */
+.evo-launch-categories{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.evo-launch-categories button{
+  min-height:52px;
+  justify-content:flex-start;
+  padding:0 10px;
+  gap:9px;
+  text-align:left;
+}
+.evo-launch-categories button i{
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  border-radius:9px;
+}
+.evo-launch-categories button i svg{
+  width:19px;
+  height:19px;
+  stroke-width:1.85;
+}
+.evo-launch-categories button span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.evo-launch-category-more{
+  width:100%;
+  min-height:38px;
+  margin-top:8px;
+  padding:0 11px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border:1px solid rgba(70,194,190,.32);
+  border-radius:9px;
+  color:#a9c3c6;
+  background:rgba(3,35,45,.74);
+  font-size:10px;
+  font-weight:800;
+}
+.evo-launch-category-more>span{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.evo-launch-category-more svg{width:17px;height:17px;color:#47dccc}
+.evo-launch-category-more b{
+  min-width:28px;
+  padding:4px 6px;
+  border-radius:99px;
+  color:#70e8d8;
+  background:rgba(39,201,190,.10);
+  font-size:8px;
+  text-align:center;
+}
+.evo-launch-category-more.active{
+  border-color:rgba(65,239,220,.72);
+  color:#eafffb;
+  box-shadow:0 0 18px rgba(43,230,212,.10);
+}
+
+.evo-launch-category-picker{
+  margin-top:8px;
+  padding:10px;
+  border:1px solid rgba(62,214,205,.36);
+  border-radius:11px;
+  background:
+    radial-gradient(circle at 80% 0%,rgba(41,220,205,.08),transparent 35%),
+    rgba(2,29,39,.92);
+  box-shadow:inset 0 1px rgba(255,255,255,.025);
+}
+.evo-launch-category-picker>label{
+  height:38px;
+  display:grid;
+  grid-template-columns:20px minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+  padding:0 10px;
+  border:1px solid rgba(73,187,186,.28);
+  border-radius:8px;
+  background:rgba(3,37,47,.82);
+}
+.evo-launch-category-picker>label svg{width:17px;height:17px;color:#73aaa9}
+.evo-launch-category-picker>label input{
+  width:100%;
+  border:0;
+  outline:0;
+  color:#e7f2f2;
+  background:transparent;
+  font:inherit;
+  font-size:10px;
+}
+.evo-launch-category-picker>label input::placeholder{color:#6f8d91}
+.evo-launch-category-grid{
+  max-height:210px;
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  overflow:auto;
+  padding-right:3px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(49,230,213,.40) transparent;
+}
+.evo-launch-category-grid::-webkit-scrollbar{width:4px}
+.evo-launch-category-grid::-webkit-scrollbar-thumb{border-radius:99px;background:linear-gradient(#2ce8d3,#167f7b)}
+.evo-launch-category-grid button{
+  min-width:0;
+  min-height:52px;
+  display:grid;
+  grid-template-columns:32px minmax(0,1fr);
+  gap:9px;
+  align-items:center;
+  padding:7px 9px;
+  border:1px solid rgba(70,174,177,.22);
+  border-radius:9px;
+  color:#c0d2d4;
+  background:rgba(4,38,48,.70);
+  text-align:left;
+}
+.evo-launch-category-grid button>i{
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border-radius:9px;
+  color:#58ddcd;
+  background:rgba(45,199,188,.09);
+  font-style:normal;
+}
+.evo-launch-category-grid button>i svg{width:20px;height:20px;stroke-width:1.8}
+.evo-launch-category-grid button>span{min-width:0}
+.evo-launch-category-grid button strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+.evo-launch-category-grid button small{
+  display:block;
+  margin-top:2px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#718f94;
+  font-size:8px;
+}
+.evo-launch-category-grid button.active{
+  border-color:#43edd8;
+  color:#effffb;
+  background:linear-gradient(145deg,rgba(16,128,123,.48),rgba(4,67,72,.70));
+  box-shadow:inset 0 0 18px rgba(46,243,220,.10),0 0 14px rgba(39,232,212,.13);
+}
+
+.evo-launch-history{
+  margin-top:1px;
+  overflow:hidden;
+  border:1px solid rgba(62,201,197,.34);
+  border-radius:10px;
+  background:
+    radial-gradient(circle at 82% 0%,rgba(45,215,202,.07),transparent 38%),
+    rgba(2,29,39,.94);
+  box-shadow:0 13px 28px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.025);
+}
+.evo-launch-history>header{
+  min-height:31px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 10px;
+  border-bottom:1px solid rgba(65,177,176,.10);
+  color:#7da7aa;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.evo-launch-history>header svg{width:14px;height:14px;color:#49d8c9}
+.evo-launch-history>header i{
+  margin-left:auto;
+  width:11px;height:11px;
+  border:2px solid rgba(84,230,215,.22);
+  border-top-color:#4ae5d2;
+  border-radius:50%;
+  animation:evo-launch-spin .8s linear infinite;
+}
+@keyframes evo-launch-spin{to{transform:rotate(360deg)}}
+.evo-launch-history>button{
+  width:100%;
+  min-height:45px;
+  display:grid;
+  grid-template-columns:29px minmax(0,1fr);
+  gap:9px;
+  align-items:center;
+  padding:6px 10px;
+  border:0;
+  border-bottom:1px solid rgba(67,160,161,.07);
+  color:#d9e8e9;
+  background:transparent;
+  text-align:left;
+}
+.evo-launch-history>button:hover{background:rgba(35,154,147,.08)}
+.evo-launch-history>button>i{
+  display:grid;
+  place-items:center;
+  width:29px;height:29px;
+  border-radius:8px;
+  color:#4edbca;
+  background:rgba(35,182,171,.09);
+  font-style:normal;
+}
+.evo-launch-history>button>i svg{width:17px;height:17px}
+.evo-launch-history>button strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:9.5px;
+}
+.evo-launch-history>button small{
+  display:block;
+  margin-top:2px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#78979b;
+  font-size:8px;
+}
+.evo-launch-history .empty{padding:11px;color:#789397;font-size:9px}
+
+.evo-launch-payment-modes button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.evo-launch-payment-modes button svg{
+  width:17px;
+  height:17px;
+  stroke-width:1.85;
+}
+.evo-launch-payment-modes button.active svg{color:currentColor}
+
+.evo-launch-field>span svg,
+.evo-launch-section-title svg,
+.evo-launch-type button svg,
+.evo-launch-actions button svg,
+.evo-launch-close svg{
+  transform:translateZ(0);
+  vector-effect:non-scaling-stroke;
+}
+
+@media(max-width:720px){
+  .evo-launch-categories{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .evo-launch-category-grid{grid-template-columns:1fr}
+}
