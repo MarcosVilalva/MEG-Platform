@@ -3,7 +3,7 @@ import {logout,readSession} from '../../app/auth-client';
 import {financeClient,type FinancialEvent} from '../../app/finance-client';
 import type {CardPurchase,CreditCard} from '../../app/cards-client';
 import {EvolutionFinancialIcon as Icon,type EvolutionFinancialIconName as IconName} from '../components/EvolutionFinancialIcon';
-import {Button,CashChart,EventsTable,Metric,Modal,Panel} from '../components/SystemUI';
+import {Button,CashChart,CategorySummary,EventsTable,Metric,Modal,Panel} from '../components/SystemUI';
 import {EvolutionLaunchModal} from './EvolutionLaunchModal';
 import {EvolutionPurchaseDialog} from './EvolutionPurchaseDialog';
 import {EvolutionActionDialog,type ActionKind} from './EvolutionActionDialog';
