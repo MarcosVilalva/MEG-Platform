@@ -24,9 +24,11 @@ const paths=[
   './screens/EvolutionSystem.tsx',
   './screens/EvolutionActionDialog.tsx',
   './screens/EvolutionPurchaseDialog.tsx',
+  './screens/EvolutionParityPanels.tsx',
   './app/system-domain.ts',
   './components/SystemUI.tsx',
-  './styles/system.css'
+  './styles/system.css',
+  './styles/evolution-parity.css'
 ];
 
 for(const filePath of paths){
@@ -188,3 +190,28 @@ for(const key of ['home','movements','launch','payables','settlement','cards','c
 }
 assert.doesNotMatch(preview,/from\s+['"][^'"]*\/mobile\//i,'Galeria Web não pode importar componentes visuais Mobile.');
 assert.match(preview,/EvolutionSystem/,'Galeria deve usar os componentes funcionais atuais em modo consulta.');
+
+
+const parity=fs.readFileSync(new URL('./screens/EvolutionParityPanels.tsx',import.meta.url),'utf8');
+const parityCss=fs.readFileSync(new URL('./styles/evolution-parity.css',import.meta.url),'utf8');
+assert.match(system,/PeriodMode/,'Evolution deve preservar o seletor de período completo do App.');
+assert.match(system,/applyRangePeriod[\s\S]*applyAllPeriod/,'Evolution deve suportar Intervalo e Tudo além do mês.');
+assert.match(system,/EvolutionHistory/,'Histórico de auditoria do App deve existir no Evolution.');
+assert.match(system,/EvolutionCardCenter/,'Central completa do cartão deve existir no layout validado.');
+assert.match(system,/EvolutionSettings/,'Configurações operacionais do App devem existir no Evolution.');
+assert.match(system,/EvolutionBenefitLedger/,'Benefício deve preservar filtros próprios de entradas e saídas.');
+assert.match(parity,/CardTab='summary'\|'current'\|'upcoming'\|'installments'\|'history'/,'Central do cartão deve preservar Resumo, Atual, Próximas, Parcelas e Histórico.');
+assert.match(parity,/exportExcel[\s\S]*exportPdf/,'Central do cartão Web deve preservar exportações Excel e PDF.');
+assert.match(parity,/deactivatePaymentMethod[\s\S]*updatePaymentMethod/,'Configurações Web devem ativar e desativar formas de pagamento reais.');
+assert.match(parity,/cardsClient\.deactivate[\s\S]*cardsClient\.reactivate/,'Configurações Web devem ativar e desativar cartões reais.');
+assert.match(parity,/notifications\/test-channels/,'Diagnóstico de canais do App deve estar disponível na Web.');
+assert.match(parity,/profileAvatars[\s\S]*patchCloudStateProperties/,'Avatar deve permanecer sincronizado pela nuvem sem importar visual Phoenix.');
+assert.match(parity,/Biometria Android preservada/,'Paridade deve declarar honestamente o limite nativo de biometria.');
+assert.match(parity,/Atualização OTA do APK/,'Paridade deve manter OTA como capacidade nativa, sem simulação Web.');
+assert.match(domain,/loadAllEvents[\s\S]*financeClient\.listEvents/,'Período Tudo deve carregar o histórico financeiro completo.');
+assert.match(domain,/financeClient\.listAudit/,'Domínio Evolution deve carregar auditoria para Histórico.');
+assert.match(domain,/cardsClient\.listManagement/,'Domínio Evolution deve carregar cartões inativos para gerenciamento.');
+assert.match(parityCss,/evo-card-center-legacy-hide/,'Central nova deve substituir a tabela simplificada quando estiver aberta.');
+assert.doesNotMatch(parity,/from\s+['"][^'"]*\/mobile\//i,'Paridade funcional não pode copiar o visual Mobile.');
+assert.doesNotMatch(parity,/\.\.\/phoenix|\/phoenix\//i,'Paridade funcional deve continuar clean-room.');
+console.log('MEG Evolution Android functional parity contract OK');

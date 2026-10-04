@@ -238,3 +238,42 @@ A partir de 03/10/2026:
 
 Quando o usuário escrever **“Retomar MEG — memória oficial — último ponto validado”**, conferir este arquivo, a `main` atual e o último CI/preflight antes de continuar. Não assumir que uma tentativa posterior foi validada só porque existe no código.
 
+
+---
+
+## CHECKPOINT OFICIAL — PARIDADE FUNCIONAL ANDROID → EVOLUTION WEB (03/10/2026)
+
+Decisão consolidada:
+- o **App Android é o contrato funcional**;
+- o conjunto aprovado de **16 referências Evolution é o contrato visual**;
+- a Web Evolution deve receber toda funcionalidade portável do App sem importar/reutilizar componentes visuais Mobile/Phoenix;
+- `/android` e `apps/web/src/mobile` permanecem preservados.
+
+Implementado no PR **#567**:
+- filtro de período completo: **Mês / Intervalo / Tudo**;
+- visão consolidada para intervalo e histórico completo;
+- **Histórico real de auditoria**;
+- Central do Cartão com **Resumo / Atual / Próximas / Parcelas / Histórico**;
+- exportação **Excel e PDF** da central do cartão;
+- Benefício/Verocard com filtros **Todas / Entradas / Saídas**;
+- Fluxo de Caixa com visões **Resumo / Entradas / Saídas**;
+- Relatórios com **Visão geral / Categorias / Comparar**;
+- Configurações operacionais com avatar compartilhado em nuvem, preferências da Home, ativação/desativação de formas de pagamento e cartões, diagnóstico/teste de canais e status de sincronização;
+- navegação dedicada para Histórico e Fluxo de Caixa;
+- contratos automatizados que impedem regressão dessas funções.
+
+Limites nativos preservados, sem simulação falsa na Web:
+- biometria do aparelho;
+- atualização OTA do APK;
+- notificações locais Android.
+Essas três capacidades continuam pertencendo ao aplicativo nativo.
+
+Validação técnica antes do merge:
+- **MEG Platform CI: verde**;
+- **MEG Evolution Visual Preflight: verde**;
+- build Web aprovado;
+- fluxos protegidos com API simulada aprovados;
+- conjunto visual do Evolution capturado com sucesso.
+
+Regra de continuidade:
+> Ao retomar o MEG, considerar este checkpoint como base funcional mínima. Não remover recursos trazidos do App para simplificar a Web e não reintroduzir visual Mobile/Phoenix no Evolution.
