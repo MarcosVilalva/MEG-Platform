@@ -40,7 +40,7 @@ export function EvolutionCardCenterTable({
       <label className="meg-card-search"><Icon name="search"/><input placeholder="Buscar descrição, categoria ou fatura" value={query} onChange={event=>setQuery(event.target.value)}/></label>
       <div className="meg-card-export-actions">
         <button type="button" onClick={()=>exportCardRowsCsv(`fatura-${slug}.csv`,rows)}><Icon name="list" size={16}/>CSV</button>
-        <button type="button" onClick={()=>printCardRows(`Fatura - ${card.name}`,rows)}><Icon name="file" size={16}/>PDF / imprimir</button>
+        <button type="button" onClick={()=>printCardRows(`Fatura - ${card.name}`,rows)}><Icon name="receipt" size={16}/>PDF / imprimir</button>
       </div>
     </div>
     <div className="meg-card-center-context">
