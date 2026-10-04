@@ -6,21 +6,10 @@ import {EvolutionFinancialIcon as Icon} from '../components/EvolutionFinancialIc
 import {Button,Panel} from '../components/SystemUI';
 import type {SystemData} from '../app/system-domain';
 import {evolutionAvatarImage,evolutionAvatarPresets,imageToEvolutionAvatar,readEvolutionAvatar,saveEvolutionAvatar,type EvolutionAvatarPreference} from '../app/profile-avatar';
+import {applyEvolutionDashboardPrefs,evolutionDashboardDefaults,readEvolutionDashboardPrefs,type EvolutionDashboardPrefs} from '../app/dashboard-preferences';
 
 type Section='profile'|'home'|'catalogs'|'security'|'notifications'|'system';
-type DashboardPrefs={balance:boolean;projection:boolean;summary:boolean;benefit:boolean;history:boolean;agenda:boolean};
-const PREF_KEY='meg.dashboard.preferences';
-const defaults:DashboardPrefs={balance:true,projection:true,summary:true,benefit:true,history:true,agenda:true};
 
-function readPrefs():DashboardPrefs{
-  try{return{...defaults,...JSON.parse(localStorage.getItem(PREF_KEY)||'{}')}}catch{return defaults}
-}
-function applyPrefs(value:DashboardPrefs){
-  try{localStorage.setItem(PREF_KEY,JSON.stringify(value))}catch{}
-  Object.entries(value).forEach(([key,enabled])=>{
-    document.documentElement.setAttribute('data-meg-dashboard-'+key.replace(/[A-Z]/g,l=>'-'+l.toLowerCase()),enabled?'on':'off');
-  });
-}
 function Toggle({checked,label,description,onChange}:{checked:boolean;label:string;description:string;onChange:()=>void}){
   return <button type="button" className={'meg-evo-toggle '+(checked?'on':'')} aria-pressed={checked} onClick={onChange}><span><strong>{label}</strong><small>{description}</small></span><i><b/></i></button>;
 }
@@ -35,7 +24,7 @@ export function EvolutionSettings({
   data:SystemData;userName:string;userEmail:string;userId:string;qaMode:boolean;onRefresh:()=>void;onLogout:()=>void;
 }){
   const [section,setSection]=useState<Section>('profile');
-  const [prefs,setPrefs]=useState<DashboardPrefs>(readPrefs);
+  const [prefs,setPrefs]=useState<EvolutionDashboardPrefs>(readEvolutionDashboardPrefs);
   const [avatar,setAvatar]=useState<EvolutionAvatarPreference>(()=>readEvolutionAvatar(userId));
   const [avatarMessage,setAvatarMessage]=useState('');
   const [catalogBusy,setCatalogBusy]=useState('');
@@ -49,7 +38,7 @@ export function EvolutionSettings({
 
   useEffect(()=>setMethods(data.methods),[data.methods]);
   useEffect(()=>setCards(data.cards),[data.cards]);
-  useEffect(()=>applyPrefs(prefs),[prefs]);
+  useEffect(()=>applyEvolutionDashboardPrefs(prefs),[prefs]);
   useEffect(()=>{
     if(section!=='notifications'||qaMode)return;
     let active=true;
@@ -126,7 +115,7 @@ export function EvolutionSettings({
           <Toggle checked={prefs.benefit} label="Benefício Alimentação" description="Saldo Verocard separado do caixa." onChange={()=>setPrefs(p=>({...p,benefit:!p.benefit}))}/>
           <Toggle checked={prefs.history} label="Histórico recente" description="Últimas movimentações." onChange={()=>setPrefs(p=>({...p,history:!p.history}))}/>
           <Toggle checked={prefs.agenda} label="Agenda financeira" description="Vencimentos e compromissos." onChange={()=>setPrefs(p=>({...p,agenda:!p.agenda}))}/>
-        </div><Button onClick={()=>setPrefs(defaults)}>Restaurar padrão</Button></Panel>}
+        </div><Button onClick={()=>setPrefs(evolutionDashboardDefaults)}>Restaurar padrão</Button></Panel>}
         {section==='catalogs'&&<>
           <Panel title="Formas de pagamento" icon="wallet"><div className="meg-evo-manage-list">{methods.map(method=><button type="button" disabled={Boolean(catalogBusy)||qaMode} key={method.id} onClick={()=>void toggleMethod(method.id)}><span><strong>{method.name}</strong><small>{method.type||'Forma de pagamento'}</small></span><i className={method.isActive?'on':''}><b/></i></button>)}</div></Panel>
           <Panel title="Cartões disponíveis" icon="card"><div className="meg-evo-manage-list">{cards.map(card=><button type="button" disabled={Boolean(catalogBusy)||qaMode} key={card.id} onClick={()=>void toggleCard(card.id)}><span><strong>{card.name}</strong><small>{card.lastFour?`Final ${card.lastFour}`:'Cartão cadastrado'} · {card.isActive?'Ativo':'Inativo'}</small></span><i className={card.isActive?'on':''}><b/></i></button>)}</div>{catalogMessage&&<p className="meg-evo-message">{catalogMessage}</p>}</Panel>
