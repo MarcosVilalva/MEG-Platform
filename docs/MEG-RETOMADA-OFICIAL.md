@@ -244,6 +244,9 @@ Quando o usuário escrever **“Retomar MEG — memória oficial — último pon
 ## CHECKPOINT OFICIAL — PARIDADE FUNCIONAL ANDROID → EVOLUTION WEB (03/10/2026)
 
 Decisão consolidada:
+- **REGRA ABSOLUTA: não modificar o Android durante qualquer trabalho do Evolution Web**;
+- `/android/**` e `apps/web/src/mobile/**` são referências somente leitura;
+- consultar/copiar conceitos, regras e comportamentos é permitido; alterar os arquivos Android/Mobile não é permitido;
 - o **App Android é o contrato funcional**;
 - o conjunto aprovado de **16 referências Evolution é o contrato visual**;
 - a Web Evolution deve receber toda funcionalidade portável do App sem importar/reutilizar componentes visuais Mobile/Phoenix;
