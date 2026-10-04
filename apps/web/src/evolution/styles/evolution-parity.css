@@ -248,3 +248,48 @@ html[data-meg-evolution-home-agenda="off"] .meg-home-grid>.meg-home-due{display:
   .evo-period-month-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .cards-final .meg-cards-lower{max-height:none}
 }
+
+
+/* Approved header order and final reports composition. */
+.meg-period-entry{flex-shrink:0}
+.meg-period-entry>.meg-control{min-height:42px;padding-inline:14px}
+.meg-topbar .meg-global-search{margin-left:auto;width:min(39%,625px)}
+.meg-topbar .meg-top-actions{flex-shrink:0}
+
+.evo-reports-final{height:100%;min-height:0}
+.evo-report-tabs{display:flex;justify-content:center;gap:7px;flex-shrink:0}
+.evo-report-tabs button{min-width:118px;height:35px;padding:0 15px;border:1px solid #0d5d63;border-radius:9px;background:#00252b;color:#bcd7d4;font:700 11px inherit}
+.evo-report-tabs button.active{background:linear-gradient(180deg,#18b5a6,#08736f);border-color:#36f4df;color:#fff;box-shadow:0 0 15px #21ead12e}
+.evo-report-main{flex:1;min-height:0;padding:12px 16px}
+.evo-report-main>header{margin-bottom:7px}
+.evo-report-bars{flex:1;min-height:250px;display:flex;align-items:stretch;gap:18px;padding:15px 30px 4px;border-top:1px solid #0a4c52;background:linear-gradient(180deg,#0030361c,transparent)}
+.evo-report-bars>span{flex:1;display:grid;grid-template-rows:minmax(0,1fr) 28px;gap:7px;min-width:0;text-align:center}
+.evo-report-bars>span>b{height:100%;display:flex;align-items:flex-end;justify-content:center;gap:8px;border-bottom:1px solid #14555b;position:relative}
+.evo-report-bars i{display:block;width:min(24%,32px);min-width:10px;min-height:4px;border-radius:5px 5px 2px 2px;box-shadow:0 0 12px #0004}
+.evo-report-bars .expense{background:linear-gradient(180deg,#ff6a80,#a52d45)}
+.evo-report-bars .income{background:linear-gradient(180deg,#42f2b5,#0a9978)}
+.evo-report-bars .result{background:linear-gradient(180deg,#42c9ff,#1373b6)}
+.evo-report-bars .result.negative{background:linear-gradient(180deg,#ffb34d,#a95b18)}
+.evo-report-bars small{font-size:9px;color:#82a6a3;white-space:nowrap}
+.evo-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex-shrink:0}
+.evo-report-summary>.meg-metric{min-height:82px}
+.evo-report-categories{display:grid;place-items:center;min-height:280px}
+.evo-report-categories .meg-donut{width:180px;height:180px}
+
+@media(max-width:1050px){
+  .meg-topbar .meg-global-search{width:auto;flex:1}
+  .evo-report-tabs{justify-content:flex-start;overflow:auto}
+  .evo-report-tabs button{min-width:105px}
+}
+@media(max-width:720px){
+  .meg-period-entry>.meg-control{min-height:34px;padding:5px 7px;font-size:9px!important}
+  .meg-period-entry>.meg-control svg{width:14px}
+  .meg-topbar .meg-global-search{margin-left:0}
+  .evo-report-tabs{gap:4px}
+  .evo-report-tabs button{min-width:auto;padding:0 9px;height:31px;font-size:9px}
+  .evo-report-main{padding:8px}
+  .evo-report-bars{min-width:620px;min-height:220px;padding:12px 15px 4px;gap:10px}
+  .evo-report-main{overflow:auto}
+  .evo-report-summary{grid-template-columns:1fr;gap:6px}
+  .evo-report-summary>.meg-metric{min-height:52px}
+}
