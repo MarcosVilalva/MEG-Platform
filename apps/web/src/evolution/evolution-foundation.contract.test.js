@@ -233,3 +233,9 @@ assert.match(system,/A pagar[\s\S]*Pagas[\s\S]*Sistema/,'Modal de notificações
 assert.match(system,/evo-period-month-grid/,'Seletor de período deve usar grade mensal visual.');
 assert.match(finalFidelityCss,/evo-notification-list/);
 assert.match(finalFidelityCss,/evo-period-month-grid/);
+
+assert.match(system,/meg-period-entry[\s\S]*meg-global-search[\s\S]*meg-top-actions/,'Cabeçalho final deve manter período à esquerda, busca ao centro e ações à direita.');
+assert.match(parity,/Despesas[\s\S]*Receitas[\s\S]*Fluxo de caixa[\s\S]*Categorias/,'Relatórios devem preservar as quatro visões da referência final.');
+assert.match(parity,/evo-report-bars/,'Relatórios finais devem priorizar comparação gráfica em barras.');
+assert.match(finalFidelityCss,/evo-report-tabs/);
+assert.match(finalFidelityCss,/evo-report-summary/);
