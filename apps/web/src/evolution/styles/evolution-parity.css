@@ -42,3 +42,145 @@ html[data-meg-evolution-home-agenda="off"] .meg-home-grid>.meg-home-due{display:
 .evo-period-range label{display:grid;gap:7px;color:#8eaaa7;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
 .evo-period-range input{height:44px;border:1px solid rgba(65,222,209,.16);border-radius:13px;background:rgba(0,27,31,.72);color:#eafffc;padding:0 12px;font:700 13px inherit;color-scheme:dark}
 @media(max-width:620px){.evo-period-range{grid-template-columns:1fr}}
+
+
+/* Final fidelity pass: approved 16-screen composition, without touching Android/Mobile. */
+.meg-home-grid.meg-home-final{
+  display:grid;
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(112px,.9fr) minmax(84px,.68fr) minmax(190px,1.55fr);
+  gap:12px;
+}
+.meg-home-status{display:grid;grid-template-columns:1.36fr repeat(3,minmax(0,1fr));gap:12px;min-height:0}
+.meg-home-status>.meg-metric{min-height:0;padding:14px 16px}
+.meg-home-status>.meg-metric .meg-icon{width:42px;height:42px}
+.meg-home-status>.meg-metric strong{font-size:clamp(18px,1.55vw,28px)}
+.meg-home-balance-card{position:relative;overflow:hidden;display:flex;align-items:center;text-align:left;padding:16px 18px;isolation:isolate;background:linear-gradient(145deg,#00343a,#001e24)}
+.meg-home-balance-card>span{z-index:2;display:grid;gap:6px;min-width:0}
+.meg-home-balance-card small{font-size:.82em;color:#d8eeee;font-weight:800}
+.meg-home-balance-card strong{font-size:clamp(22px,2vw,34px);letter-spacing:-.035em}
+.meg-home-balance-card em{display:flex;align-items:center;gap:6px;font-style:normal;color:#30f3d6;font-size:.78em;font-weight:800}
+.meg-home-balance-card em svg{width:16px}
+.meg-home-balance-card .meg-balance-art{position:absolute;right:-5%;left:auto;top:0;width:48%;height:100%;opacity:.92;z-index:-1}
+.meg-home-final .meg-home-metrics{grid-column:auto;min-height:0;gap:12px}
+.meg-home-final .meg-home-metrics>.meg-metric{min-height:0;padding:12px 15px}
+.meg-home-bottom{display:grid;grid-template-columns:1.35fr .72fr .92fr;gap:12px;min-height:0}
+.meg-home-cards,.meg-home-benefit-card,.meg-home-bottom .meg-quick-panel{min-height:0;overflow:hidden}
+.meg-home-cards{padding:11px 14px}
+.meg-home-cards>header{margin-bottom:4px}
+.meg-home-card-carousel{height:100%;min-height:0;display:flex;align-items:center;justify-content:center;gap:7px;perspective:900px}
+.meg-home-card-carousel>button:not(.meg-card-art){width:28px;height:28px;flex:0 0 28px;border-radius:50%;display:grid;place-items:center;background:#00383b;border:1px solid #138d83;color:#38f3d5}
+.meg-home-card-carousel .meg-card-art{width:min(31%,176px);transform:scale(.86);opacity:.7}
+.meg-home-card-carousel .meg-card-art.active{transform:scale(1);opacity:1}
+.meg-home-card-carousel .meg-card-identity{font-size:.55em;bottom:13%}
+.meg-home-benefit-card>button{height:100%;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 46%;align-items:center}
+.meg-home-benefit-card>button>span{display:grid;gap:4px;align-content:center}
+.meg-home-benefit-card small{color:#d5eded;font-size:.82em;font-weight:800}
+.meg-home-benefit-card strong{font-size:clamp(20px,1.6vw,28px)}
+.meg-home-benefit-card em{font-style:normal;color:#37ead7;font-size:.8em}
+.meg-home-benefit-card img{width:100%;max-width:none;max-height:126px}
+.meg-home-bottom .meg-quick-panel{padding:10px}
+.meg-home-bottom .meg-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
+.meg-home-bottom .meg-quick-actions>button{display:flex;align-items:center;gap:9px;padding:9px;grid-template-columns:none;grid-template-rows:none}
+.meg-home-bottom .meg-quick-actions .meg-icon{width:34px;height:34px;grid-row:auto}
+.meg-home-bottom .meg-quick-actions b{font-size:.76em}
+
+.movements-final .meg-page-head{min-height:62px}
+.meg-excel-panel{flex:1;min-height:0;display:flex;flex-direction:column;padding:10px 12px}
+.meg-excel-panel>header{margin-bottom:7px}
+.meg-grid-type-tabs{display:flex;gap:7px;align-items:center;margin-bottom:8px}
+.meg-grid-type-tabs button{height:32px;padding:0 14px;border:1px solid #0e5b62;border-radius:9px;background:#00252b;color:#c8dedd;font-size:.8em}
+.meg-grid-type-tabs button.active{background:linear-gradient(180deg,#0d8e83,#075a5d);border-color:#2cf3dd;color:#efffff;box-shadow:0 0 12px #1de8d52f}
+.meg-excel-table{table-layout:fixed}
+.meg-excel-table th:nth-child(1){width:188px}
+.meg-excel-table th:nth-child(2){width:auto}
+.meg-excel-table th:nth-child(3){width:160px}
+.meg-excel-table th:nth-child(4){width:185px}
+.meg-excel-table th:nth-child(5){width:150px}
+.meg-excel-table th:nth-child(6){width:120px}
+.meg-excel-table th:nth-child(7){width:135px}
+.meg-excel-table th:nth-child(8){width:46px}
+.meg-filter-row th{top:38px;padding:5px 4px;background:#012f34;border-bottom:1px solid #0c6869}
+.meg-filter-row input,.meg-filter-row select{width:100%;height:30px;min-width:0;border:1px solid #0b5b60;border-radius:7px;background:#001f26;color:#dff8f6;padding:4px 7px;font:600 10px inherit;outline:none}
+.meg-filter-row label{display:flex;align-items:center;gap:5px;padding:0 7px;border:1px solid #0b5b60;border-radius:7px;background:#001f26;color:#26dfca}
+.meg-filter-row label input{border:0;padding-left:2px;background:transparent}
+.meg-date-filter{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.meg-clear-grid-filters{width:100%;height:30px;border:1px solid #0f6e70;border-radius:7px;background:#07373c;color:#8edbd5;font-size:9px;white-space:nowrap}
+.meg-excel-table tbody tr:nth-child(even) td{background:#01252a66}
+.meg-excel-table tbody tr:hover td{background:#0b5e5942}
+
+.payables-final .meg-page-head{min-height:62px}
+.meg-payables-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+.meg-pending-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.meg-inline-search{display:flex;align-items:center;gap:7px;height:34px;min-width:200px;flex:1;max-width:340px;border:1px solid #0c5e63;border-radius:9px;padding:0 10px;background:#001f26;color:#2be8d3}
+.meg-inline-search input{width:100%;background:transparent;border:0;outline:0;color:#e8fffd}
+.meg-selection-total{margin-left:auto;color:#83aaa7;font-size:.78em;font-weight:800;white-space:nowrap}
+.payables-final .meg-pending-list{flex:1;min-height:0}
+.payables-final .meg-pending-list>section>header{top:0}
+.payables-final .meg-pending-row{min-height:52px}
+
+.cards-final .meg-page-head{min-height:54px}
+.meg-cards-showcase{flex:0 0 220px;min-height:0;padding:10px 14px}
+.meg-cards-showcase .meg-card-carousel{min-height:155px;height:100%;gap:18px}
+.meg-cards-showcase .meg-card-art{width:clamp(200px,18vw,275px)}
+.meg-cards-lower{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.58fr);gap:14px}
+.meg-current-invoice,.meg-future-invoices{min-height:0}
+.meg-current-invoice{justify-content:flex-start}
+.meg-invoice-main{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:4px 3px 14px}
+.meg-invoice-main>div{display:grid;gap:5px}
+.meg-invoice-main small{color:#93afac}
+.meg-invoice-main strong{font-size:clamp(27px,2.5vw,42px);color:#ff697b;letter-spacing:-.035em}
+.meg-invoice-main span{color:#d4e9e7;font-size:.88em}
+.meg-current-invoice progress{width:100%;height:10px;appearance:none}
+.meg-current-invoice progress::-webkit-progress-bar{background:#113d42;border-radius:20px}
+.meg-current-invoice progress::-webkit-progress-value{background:linear-gradient(90deg,#10c9bb,#3bffe3);border-radius:20px}
+.meg-current-invoice progress::-moz-progress-bar{background:linear-gradient(90deg,#10c9bb,#3bffe3);border-radius:20px}
+.meg-current-invoice>small{margin-top:8px;color:#83aaa7}
+.meg-future-invoices{overflow:auto}
+.meg-future-invoices .meg-control{margin-top:auto}
+
+@media(max-width:1400px),(max-height:820px){
+  .meg-home-grid.meg-home-final{grid-template-rows:minmax(96px,.78fr) minmax(72px,.58fr) minmax(160px,1.4fr);gap:9px}
+  .meg-home-status,.meg-home-final .meg-home-metrics,.meg-home-bottom{gap:9px}
+  .meg-home-status>.meg-metric,.meg-home-balance-card{padding:10px 12px}
+  .meg-home-card-carousel .meg-card-art{width:min(30%,145px)}
+  .meg-home-benefit-card img{max-height:96px}
+  .meg-cards-showcase{flex-basis:180px}
+  .meg-cards-showcase .meg-card-carousel{min-height:125px}
+  .meg-cards-showcase .meg-card-art{width:clamp(175px,16vw,230px)}
+}
+@media(max-width:1050px){
+  .meg-home-status{grid-template-columns:1.25fr repeat(3,minmax(0,1fr))}
+  .meg-home-bottom{grid-template-columns:1.2fr .8fr}
+  .meg-home-bottom .meg-quick-panel{grid-column:1/-1}
+  .meg-home-grid.meg-home-final{grid-template-rows:100px 78px minmax(220px,1fr)}
+  .meg-home-bottom .meg-quick-actions{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr}
+  .meg-cards-lower{grid-template-columns:1fr 230px}
+  .meg-excel-table{min-width:1050px}
+}
+@media(max-width:720px){
+  .meg-home-grid.meg-home-final{display:flex;flex-direction:column;overflow:auto;padding-right:2px}
+  .meg-home-status{grid-template-columns:1fr 1fr;flex:0 0 auto}
+  .meg-home-balance-card{grid-column:1/-1;min-height:94px}
+  .meg-home-final .meg-home-metrics{grid-template-columns:1fr 1fr;flex:0 0 auto}
+  .meg-home-bottom{display:flex;flex-direction:column;flex:0 0 auto}
+  .meg-home-cards{min-height:150px}
+  .meg-home-card-carousel .meg-card-art:not(.active){display:none}
+  .meg-home-card-carousel .meg-card-art{width:min(62%,220px)}
+  .meg-home-benefit-card{min-height:110px}
+  .meg-home-bottom .meg-quick-panel{min-height:110px}
+  .meg-home-bottom .meg-quick-actions{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+  .movements-final .meg-page-head,.payables-final .meg-page-head{min-height:45px}
+  .meg-excel-panel{padding:7px}
+  .meg-grid-type-tabs{overflow:auto;flex-wrap:nowrap}
+  .meg-excel-table{min-width:980px}
+  .meg-filter-row th{top:34px}
+  .meg-pending-toolbar{align-items:stretch}
+  .meg-inline-search{order:2;flex-basis:100%;max-width:none}
+  .meg-selection-total{order:3;margin-left:0;width:100%}
+  .meg-cards-showcase{flex-basis:150px}
+  .meg-cards-showcase .meg-card-carousel .meg-card-art:not(.active){display:none}
+  .meg-cards-showcase .meg-card-art{width:min(64%,230px)}
+  .meg-cards-lower{display:flex;flex-direction:column}
+  .meg-future-invoices{display:none}
+}
