@@ -1,4 +1,4 @@
-import {financeClient,type Account,type FinancialEvent,type FinanceSummary,type FinancialAnalytics,type BenefitSummary,type FinancialCashflow,type Category,type PaymentMethod} from '../../app/finance-client';
+import {financeClient,type Account,type FinancialEvent,type FinancialEventPage,type FinancialAuditPage,type FinanceSummary,type FinancialAnalytics,type BenefitSummary,type FinancialCashflow,type Category,type PaymentMethod} from '../../app/finance-client';
 import {cardsClient,type CreditCard} from '../../app/cards-client';
 import {payablesClient,type Payable} from '../../app/payables-client';
 
@@ -19,12 +19,12 @@ export const amountInput=(s:string)=>new Intl.NumberFormat('pt-BR',{minimumFract
 export const amountValue=(s:string)=>Number(s.replace(/\./g,'').replace(',','.'));
 export const operationId=()=>crypto.randomUUID();
 export function errorMessage(e:unknown){const x=e as {message?:string;missing?:number;details?:{missing?:number}};const missing=x.missing??x.details?.missing;if(/INSUFFICIENT/.test(x.message||''))return 'Saldo insuficiente.'+(missing!==undefined?' Faltam '+money(missing)+'.':' Escolha uma conta com saldo suficiente.');if(x.message==='POSSIBLE_DUPLICATE')return 'Possível duplicidade. Confira o histórico antes de tentar novamente.';if(x.message==='FINANCIAL_EVENT_STALE_VERSION')return 'Este lançamento mudou. Atualize os dados antes de editar.';return x.message||'Não foi possível concluir. Seus dados não foram confirmados.';}
-export type SystemData={summary:FinanceSummary;analytics:FinancialAnalytics;benefit:BenefitSummary;cashflow:FinancialCashflow;events:FinancialEvent[];accounts:Account[];categories:Category[];methods:PaymentMethod[];cards:CreditCard[];payables:Payable[]};
+export type SystemData={summary:FinanceSummary;analytics:FinancialAnalytics;benefit:BenefitSummary;cashflow:FinancialCashflow;events:FinancialEvent[];accounts:Account[];categories:Category[];methods:PaymentMethod[];allMethods:PaymentMethod[];cards:CreditCard[];managedCards:CreditCard[];payables:Payable[];audit:FinancialAuditPage};
 export async function loadSystem(month:string):Promise<SystemData>{
-  const [summary,analytics,benefit,cashflow,events,accounts,categories,methods,cards,payables]=await Promise.all([
-    financeClient.getSummary(month),financeClient.getAnalytics(month),financeClient.getBenefitSummary(month),financeClient.getCashflow(month),financeClient.listEventsForMonth(month),financeClient.listAccounts(),financeClient.listCategories(),financeClient.listPaymentMethods(),cardsClient.list(month),payablesClient.list(month)
+  const [summary,analytics,benefit,cashflow,events,accounts,categories,methods,cards,managedCards,payables,audit]=await Promise.all([
+    financeClient.getSummary(month),financeClient.getAnalytics(month),financeClient.getBenefitSummary(month),financeClient.getCashflow(month),financeClient.listEventsForMonth(month),financeClient.listAccounts(),financeClient.listCategories(),financeClient.listPaymentMethods(),cardsClient.list(month),cardsClient.listManagement(month),payablesClient.list(month),financeClient.listAudit(1,250)
   ]);
-  return {summary,analytics,benefit,cashflow,events:events.items.filter(e=>e.status!=='archived'),accounts:accounts.filter(x=>x.isActive),categories:categories.filter(x=>x.isActive),methods:methods.filter(x=>x.isActive),cards:cards.filter(x=>x.isActive),payables:payables.filter(x=>x.status!=='cancelled')};
+  return {summary,analytics,benefit,cashflow,events:events.items.filter(e=>e.status!=='archived'),accounts:accounts.filter(x=>x.isActive),categories:categories.filter(x=>x.isActive),methods:methods.filter(x=>x.isActive),allMethods:methods,cards:cards.filter(x=>x.isActive!==false),managedCards,payables:payables.filter(x=>x.status!=='cancelled'),audit};
 }
 export type PendingItem={key:string;source:'event'|'payable'|'card';sourceId:string;statementMonth?:string;date:string;description:string;category:string;amount:number;paid:boolean;benefit:boolean};
 export function pendingItems(data:SystemData,month:string):PendingItem[]{
@@ -45,7 +45,8 @@ export function demoData(month:string):SystemData{
   const cards:CreditCard[]=['LATAM Pass','Mercado Pago','Riachuelo'].map((name,i)=>({id:'demo-card-'+i,name,lastFour:['5934','4021','8827'][i],brand:i===1?'Visa':'Mastercard',isActive:true,creditLimit:10000,usedLimit:3200,availableLimit:6800,statementAmount:[864.32,532.18,418.9][i],closingDay:2,dueDay:10+i,purchases:[]}));
   const summary:FinanceSummary={month,availableBalance:3049.15,income:9205.7,expense:6887.71,projectedResult:2317.99,realizedIncome:9205.7,realizedExpense:6887.71,realizedResult:2317.99,eventCount:events.length,pendingCount:4,pendingAmount:1245.8,topCategories:categories.slice(1,6).map((c,i)=>({name:c.name,amount:900-i*120}))};
   const analytics:FinancialAnalytics={month,summary,previous:{month,income:0,expense:0,result:0},delta:{income:12.4,expense:0,result:12.4},dailyAverageExpense:222,concentrationTop3:60,categories:summary.topCategories,monthlyTrend:[{month,income:summary.income,expense:summary.expense,result:summary.realizedResult}],paymentMethods:[{name:'Pix',amount:2200},{name:'Boleto',amount:1100}]};
-  return {accounts,categories,methods,events,cards,payables:[],summary,analytics,benefit:{month,balance:1436.52,credits:2440,used:1003.48},cashflow:{month,openingBalance:731.16,projectedClosing:3049.15,realizedClosing:3049.15,totalIncome:9205.7,totalExpense:6887.71,days:Array.from({length:31},(_,i)=>({date:month+'-'+String(i+1).padStart(2,'0'),income:i%3===0?450+i*23:60,expense:100+i*7,net:0,projectedBalance:731+i*73,realizedBalance:731+i*73,eventCount:1}))}};
+  const audit:FinancialAuditPage={items:events.slice(0,8).map((event,index)=>({id:'demo-audit-'+index,at:event.date+'T12:00:00.000Z',actor:{id:'demo-user',name:'Usuário MEG',email:'preview@meg.local'},entity:'FinancialEvent',entityId:event.id,action:index%3===0?'FINANCIAL_EVENT_CREATED':index%3===1?'FINANCIAL_EVENT_UPDATED':'FINANCIAL_EVENT_SETTLED',schemaVersion:1,before:null,after:{description:event.description},context:{}})),total:Math.min(8,events.length),page:1,pageSize:250};
+  return {accounts,categories,methods,allMethods:methods,events,cards,managedCards:cards,payables:[],audit,summary,analytics,benefit:{month,balance:1436.52,credits:2440,used:1003.48},cashflow:{month,openingBalance:731.16,projectedClosing:3049.15,realizedClosing:3049.15,totalIncome:9205.7,totalExpense:6887.71,days:Array.from({length:31},(_,i)=>({date:month+'-'+String(i+1).padStart(2,'0'),income:i%3===0?450+i*23:60,expense:100+i*7,net:0,projectedBalance:731+i*73,realizedBalance:731+i*73,eventCount:1}))}};
 }
 
 /** Expande a fatura canônica em fontes reais; estornos reduzem o lote. */
@@ -65,4 +66,54 @@ export function settlementSources(items:PendingItem[],data:SystemData){
   if(new Set(keys).size!==keys.length)throw Error('A seleção contém a mesma obrigação mais de uma vez.');
   if(!sources.length||sources.length>100)throw Error('Selecione entre 1 e 100 obrigações por pagamento.');
   return sources;
+}
+
+
+export type PeriodMode='month'|'range'|'all';
+
+export function monthsBetween(start:string,end:string){
+  const result:string[]=[];
+  let cursor=start.slice(0,7),finish=end.slice(0,7);
+  for(let guard=0;guard<36&&cursor<=finish;guard+=1){
+    result.push(cursor);
+    const [year,month]=cursor.split('-').map(Number);
+    cursor=new Date(Date.UTC(year,month,1)).toISOString().slice(0,7);
+  }
+  return result;
+}
+
+export async function loadAllEvents(pageSize=250):Promise<FinancialEventPage>{
+  const unique=new Map<string,FinancialEvent>();
+  let page=1,total=Infinity;
+  while(unique.size<total&&page<=200){
+    const result=await financeClient.listEvents(page,pageSize,'');
+    total=Number(result.total||0);
+    for(const event of result.items||[]) if(event.status!=='archived')unique.set(event.id,event);
+    if(!result.items?.length||result.items.length<pageSize)break;
+    page+=1;
+  }
+  const items=[...unique.values()].sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.id.localeCompare(a.id));
+  return {items,total:items.length,page:1,pageSize:items.length};
+}
+
+export function isMonetaryEvent(event:FinancialEvent){
+  return !isBenefit(event)&&event.type!=='transfer';
+}
+
+export function canonicalCurrentBalance(data:SystemData){
+  return Number(data.summary.availableBalance||0)+Number(data.summary.realizedResult||0);
+}
+
+export function realizedPeriodBounds(currentRealBalance:number,events:FinancialEvent[],startDate:string,endDate:string){
+  const todayDate=today(),realizedEnd=endDate<todayDate?endDate:todayDate;
+  const realized=events.filter(event=>isMonetaryEvent(event)&&posted(event.status));
+  if(startDate>todayDate)return {openingBalance:currentRealBalance,closingBalance:currentRealBalance};
+  const afterPeriod=realized.filter(event=>{const date=String(event.date).slice(0,10);return date>realizedEnd&&date<=todayDate}).reduce((total,event)=>total+signed(event),0);
+  const closingBalance=currentRealBalance-afterPeriod;
+  const delta=realized.filter(event=>{const date=String(event.date).slice(0,10);return date>=startDate&&date<=realizedEnd}).reduce((total,event)=>total+signed(event),0);
+  return {openingBalance:closingBalance-delta,closingBalance};
+}
+
+export function eventsInRange(events:FinancialEvent[],startDate:string,endDate:string){
+  return events.filter(event=>{const date=String(event.date).slice(0,10);return date>=startDate&&date<=endDate});
 }
