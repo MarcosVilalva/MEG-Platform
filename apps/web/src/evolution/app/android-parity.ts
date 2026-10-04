@@ -20,7 +20,6 @@ export function evolutionCardRows(card:CreditCard):EvolutionCardRow[]{
   return (card.purchases||[]).flatMap(purchase=>(purchase.entries||[]).map(entry=>({
     id:entry.id,
     purchaseId:purchase.id,
-    eventId:entry.eventId,
     description:purchase.description,
     purchaseDate:purchase.purchaseDate,
     statementMonth:entry.statementMonth,
