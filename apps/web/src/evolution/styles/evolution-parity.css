@@ -189,3 +189,62 @@ html[data-meg-evolution-home-agenda="off"] .meg-home-grid>.meg-home-due{display:
 .meg-quick-transfer{display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #0b6869;border-radius:8px;background:#002b31;color:#bff6f0;font-size:10px}
 .meg-quick-transfer small{color:#6f9f9b;font-size:8px}
 @media(max-width:720px){.meg-quick-transfer small{display:none}.meg-quick-transfer{padding:4px 6px;font-size:8px}}
+
+
+/* Final modal fidelity and narrow-layout repair. */
+.evo-period-dialog .meg-dialog-body{gap:14px}
+.evo-period-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.evo-period-tabs button{height:36px;border:1px solid #0d6066;border-radius:9px;background:#00262d;color:#bed8d6;font:700 11px inherit}
+.evo-period-tabs button.active{background:linear-gradient(180deg,#16a99b,#08726e);border-color:#36f5df;color:#efffff;box-shadow:inset 0 0 14px #62ffea25,0 0 14px #0de8d027}
+.evo-period-month-selector{display:grid;gap:12px}
+.evo-period-year{display:grid;grid-template-columns:38px 1fr 38px;align-items:center;gap:8px;border:1px solid #0b5d61;border-radius:10px;padding:5px;background:#001f25}
+.evo-period-year strong{text-align:center;font-size:15px}
+.evo-period-year button{height:32px;border:0;background:#073e43;border-radius:8px;color:#4bf0dd;display:grid;place-items:center}
+.evo-period-month-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.evo-period-month-grid button{height:38px;border:1px solid #0c565c;border-radius:8px;background:#00242a;color:#c1d9d7;font:700 11px inherit}
+.evo-period-month-grid button.active{background:linear-gradient(180deg,#23e8d2,#0a9f96);border-color:#75ffed;color:#002b2b;box-shadow:0 0 14px #21ead438}
+.evo-period-current{justify-self:center;border:0;background:transparent;color:#39ddca;font:700 10px inherit;padding:3px 8px}
+.evo-period-all{min-height:108px;justify-content:center}
+
+.evo-notification-dialog{min-height:310px;max-height:520px}
+.evo-notification-tabs{display:flex;gap:7px;flex-wrap:wrap}
+.evo-notification-tabs button{height:34px;padding:0 13px;border:1px solid #0d5b61;border-radius:9px;background:#00252c;color:#bbd5d3;font:700 10px inherit}
+.evo-notification-tabs button span{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;margin-left:5px;border-radius:10px;background:#0a4449;color:#8be8dd}
+.evo-notification-tabs button.active{background:linear-gradient(180deg,#13a397,#086966);border-color:#30eed9;color:#fff}
+.evo-notification-list{display:grid;gap:0;min-height:190px;max-height:310px;border:1px solid #0b555a;border-radius:10px;background:#001f24}
+.evo-notification-list article{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #0c474c}
+.evo-notification-list article:last-child{border-bottom:0}
+.evo-notification-list .meg-icon{width:32px;height:32px;border-radius:9px}
+.evo-notification-list article>span{display:grid;gap:3px;min-width:0}
+.evo-notification-list strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evo-notification-list small{font-size:9px;color:#769b98}
+.evo-notification-list em{font-style:normal;color:#aac7c4;font-size:10px;font-weight:800;white-space:nowrap}
+.evo-notification-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.evo-notification-summary span{display:grid;gap:4px;padding:9px 11px;border:1px solid #0b555a;border-radius:9px;background:#00262b}
+.evo-notification-summary small{color:#789c99;font-size:9px}
+.evo-notification-summary strong{color:#36ead4;font-size:14px}
+
+.cards-final{height:auto;max-height:100%;align-content:start}
+.cards-final .meg-cards-lower{flex:none;min-height:235px;max-height:285px}
+.cards-final .meg-current-invoice,.cards-final .meg-future-invoices{min-height:235px}
+
+@media(max-width:720px){
+  .meg-home-status>.meg-metric strong{font-size:14px;white-space:nowrap}
+  .meg-home-status>.meg-metric:nth-child(4){grid-column:1/-1}
+  .meg-home-status>.meg-metric:nth-child(4)>span{display:flex;align-items:center;gap:10px}
+  .meg-home-status>.meg-metric:nth-child(4)>span small{margin-right:auto}
+  .meg-excel-table{min-width:1050px}
+  .meg-excel-table th:nth-child(1){width:150px}
+  .meg-excel-table th:nth-child(3){width:125px}
+  .meg-excel-table th:nth-child(4){width:150px}
+  .meg-excel-table th:nth-child(5){width:120px}
+  .meg-excel-table th:nth-child(6){width:100px}
+  .meg-excel-table th:nth-child(7){width:120px}
+  .meg-excel-table th:nth-child(8){width:42px}
+  .evo-notification-dialog{min-height:0}
+  .evo-notification-tabs{flex-wrap:nowrap;overflow:auto}
+  .evo-notification-list article{grid-template-columns:32px minmax(0,1fr)}
+  .evo-notification-list article>em{grid-column:2}
+  .evo-period-month-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cards-final .meg-cards-lower{max-height:none}
+}
