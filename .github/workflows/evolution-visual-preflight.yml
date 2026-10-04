@@ -50,6 +50,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Protect Android and Mobile reference
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+          CHANGED="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- android apps/web/src/mobile)"
+          if [ -n "$CHANGED" ]; then
+            echo "::error::Evolution Web não pode modificar /android ou apps/web/src/mobile."
+            echo "$CHANGED"
+            exit 1
+          fi
+          echo "Android/Mobile preservado: nenhuma alteração detectada."
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

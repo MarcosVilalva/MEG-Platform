@@ -2,7 +2,9 @@
 
 Antes de alterar o MEG Web ou responder a “Retomar MEG — memória oficial — último ponto validado”, ler `docs/MEG-RETOMADA-OFICIAL.md`, começando pelo checkpoint prioritário de 16 imagens aprovadas.
 
-Referência visual obrigatória: `docs/design/2026-10-03/manifest.json` e os 16 PNGs originais ao lado. O conjunto define o novo sistema confirmado por Marcos. As regras financeiras existentes do App continuam obrigatórias; Android/Mobile permanece intocado nesta fase.
+Referência visual obrigatória: `docs/design/2026-10-03/manifest.json` e os 16 PNGs originais ao lado. O conjunto define o novo sistema confirmado por Marcos. As regras financeiras existentes do App continuam obrigatórias.
+
+**REGRA ABSOLUTA PARA O TRABALHO EVOLUTION WEB:** `/android/**` e `apps/web/src/mobile/**` são somente leitura. Podem ser consultados como referência funcional/visual, mas não podem ser editados, renomeados, removidos, reformatados, ter versões alteradas, receber assets, builds, configuração, OTA ou qualquer outra modificação como parte da reconstrução Web. Qualquer mudança no Android exige uma solicitação explícita e separada do usuário.
 
 Não assumir que uma imagem de referência, uma prévia estática ou um build verde é implementação funcional ou validação visual final. Verificar main, código, screenshots, testes e estágio real de cada módulo.
 
