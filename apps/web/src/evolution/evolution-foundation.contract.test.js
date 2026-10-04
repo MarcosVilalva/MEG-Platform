@@ -90,7 +90,7 @@ assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
 assert.match(home,/EvolutionSystem/,'Home deve abrir o sistema funcional do conjunto de referências.');
 const system=fs.readFileSync(new URL('./screens/EvolutionSystem.tsx',import.meta.url),'utf8');
-for(const name of ['Lançamentos','Contas a pagar','Meus cartões','Benefícios','Relatórios'])assert.ok(system.includes(name),'Módulo obrigatório ausente: '+name);
+for(const name of ['Lançamentos','Contas a pagar','Cartões de crédito','Benefícios','Relatórios'])assert.ok(system.includes(name),'Módulo obrigatório ausente: '+name);
 assert.doesNotMatch(system,/Plano Premium|Upgrade agora/);
 assert.match(system,/loadSystem/,'Produto autenticado deve carregar dados reais.');
 assert.match(system,/operações financeiras desativadas/,'Prévia deve se identificar e bloquear gravações.');
@@ -215,3 +215,15 @@ assert.match(parityCss,/evo-card-center-legacy-hide/,'Central nova deve substitu
 assert.doesNotMatch(parity,/from\s+['"][^'"]*\/mobile\//i,'Paridade funcional não pode copiar o visual Mobile.');
 assert.doesNotMatch(parity,/\.\.\/phoenix|\/phoenix\//i,'Paridade funcional deve continuar clean-room.');
 console.log('MEG Evolution Android functional parity contract OK');
+
+
+const finalFidelityCss=fs.readFileSync(new URL('./styles/evolution-parity.css',import.meta.url),'utf8');
+assert.match(system,/MovementGrid/,'Lançamentos finais devem usar grid próprio com filtros por coluna.');
+assert.match(system,/Filtrar categoria[\s\S]*Filtrar conta[\s\S]*Filtrar forma de pagamento[\s\S]*Filtrar status/,'Filtros do grid devem permanecer dentro da tabela, no padrão Excel.');
+assert.match(system,/meg-home-status[\s\S]*meg-home-metrics[\s\S]*meg-home-bottom/,'Home final deve preservar as três faixas do layout aprovado.');
+assert.match(system,/Cartões[\s\S]*Benefício Alimentação[\s\S]*Ações rápidas/,'Faixa inferior da Home deve preservar Cartões, Benefício e Ações rápidas.');
+assert.match(system,/meg-pending-toolbar/,'Pendentes deve manter filtros e seleção no próprio grid.');
+assert.match(system,/meg-cards-showcase[\s\S]*Fatura atual[\s\S]*Próximas faturas/,'Cartões deve preservar carrossel, fatura atual e futuras.');
+assert.match(finalFidelityCss,/meg-home-grid\.meg-home-final/);
+assert.match(finalFidelityCss,/meg-filter-row/);
+assert.match(finalFidelityCss,/meg-cards-lower/);
