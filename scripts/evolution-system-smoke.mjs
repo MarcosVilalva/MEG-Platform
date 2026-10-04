@@ -57,7 +57,7 @@ try{
   }
   for(const viewport of [{width:1672,height:941},{width:430,height:932}]){
     await page.setViewportSize(viewport);
-    for(const preview of ['settlement','card-center','period','transfer','card-payment','edit-launch','benefit-recharge','launch']){
+    for(const preview of ['settlement','card-center','period','notifications','transfer','card-payment','edit-launch','benefit-recharge','launch']){
       await page.goto(base+'/evolution.html?screen=preview&preview='+preview);await page.locator('.meg-page-content').waitFor();await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(300);await page.screenshot({path:path.join(artifacts,'preview-'+preview+'-'+viewport.width+'.png')});
     }
     for(const screen of ['login','loading']){
