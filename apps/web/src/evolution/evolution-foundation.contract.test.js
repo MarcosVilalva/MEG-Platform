@@ -227,3 +227,9 @@ assert.match(system,/meg-cards-showcase[\s\S]*Fatura atual[\s\S]*Próximas fatur
 assert.match(finalFidelityCss,/meg-home-grid\.meg-home-final/);
 assert.match(finalFidelityCss,/meg-filter-row/);
 assert.match(finalFidelityCss,/meg-cards-lower/);
+
+assert.match(system,/NotificationsDialog/,'Notificações finais devem ter superfície própria, não apenas resumo numérico.');
+assert.match(system,/A pagar[\s\S]*Pagas[\s\S]*Sistema/,'Modal de notificações deve preservar os filtros aprovados.');
+assert.match(system,/evo-period-month-grid/,'Seletor de período deve usar grade mensal visual.');
+assert.match(finalFidelityCss,/evo-notification-list/);
+assert.match(finalFidelityCss,/evo-period-month-grid/);
