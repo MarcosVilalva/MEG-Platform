@@ -37,3 +37,48 @@
 .meg-card-center-context small{color:var(--meg-muted,#a5b3bd);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
 .meg-card-center-context strong{font-size:15px}
 @media(max-width:1200px){.meg-card-center-toolbar{grid-template-columns:1fr}.meg-card-export-actions{justify-content:flex-start}.meg-card-center-context{grid-template-columns:1fr 1fr 1fr}}
+
+
+/* Configurações Evolution: herança funcional do Android, composição desktop clean-room. */
+.meg-evo-settings{display:grid;gap:18px;min-height:0}
+.meg-evo-settings-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:18px;min-height:0}
+.meg-evo-settings-nav{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid rgba(75,186,199,.2);border-radius:20px;background:linear-gradient(160deg,rgba(10,29,45,.94),rgba(6,20,32,.9));box-shadow:0 22px 50px rgba(0,0,0,.22)}
+.meg-evo-settings-nav button{border:1px solid transparent;background:transparent;color:var(--meg-muted,#a5b3bd);text-align:left;padding:13px 14px;border-radius:12px;font-weight:750;cursor:pointer}
+.meg-evo-settings-nav button:hover,.meg-evo-settings-nav button.active{color:var(--meg-text,#eef4f6);border-color:rgba(83,207,141,.32);background:linear-gradient(100deg,rgba(83,207,141,.13),rgba(75,186,199,.07));box-shadow:inset 3px 0 0 rgba(113,221,164,.8)}
+.meg-evo-settings-workspace{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-height:0}
+.meg-evo-settings-workspace>.meg-panel:only-child{grid-column:1/-1}
+.meg-evo-profile{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px}
+.meg-evo-profile>span:nth-child(2){display:grid;gap:4px}.meg-evo-profile strong{font-size:18px}.meg-evo-profile small{color:var(--meg-muted,#a5b3bd)}
+.meg-evo-avatar{width:64px;height:64px;display:grid;place-items:center;border-radius:18px;overflow:hidden;border:1px solid rgba(113,221,164,.38);background:radial-gradient(circle at 30% 20%,rgba(113,221,164,.25),rgba(10,29,45,.95));font-size:22px;font-weight:850}
+.meg-evo-avatar img{width:100%;height:100%;object-fit:cover}
+.meg-evo-avatar-grid{display:grid;grid-template-columns:repeat(6,minmax(68px,1fr));gap:9px;max-height:330px;overflow:auto;padding-right:5px}
+.meg-evo-avatar-grid button{display:grid;justify-items:center;gap:6px;border:1px solid rgba(75,186,199,.16);background:rgba(7,24,36,.7);color:var(--meg-muted,#a5b3bd);border-radius:13px;padding:8px;cursor:pointer}
+.meg-evo-avatar-grid button.selected{border-color:rgba(113,221,164,.7);box-shadow:0 0 18px rgba(83,207,141,.13);color:var(--meg-text,#eef4f6)}
+.meg-evo-avatar-grid .meg-evo-avatar{width:46px;height:46px;border-radius:13px}
+.meg-evo-avatar-grid small{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.meg-evo-inline-actions{display:flex;gap:8px;margin-top:12px}
+.meg-evo-toggle-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.meg-evo-toggle{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;text-align:left;border:1px solid rgba(75,186,199,.18);background:rgba(8,28,42,.72);color:var(--meg-text,#eef4f6);padding:13px;border-radius:14px;cursor:pointer}
+.meg-evo-toggle span{display:grid;gap:3px}.meg-evo-toggle small{color:var(--meg-muted,#a5b3bd)}
+.meg-evo-toggle>i,.meg-evo-manage-list button>i{width:42px;height:23px;padding:3px;border-radius:999px;background:#1b3340;display:flex;align-items:center;transition:.2s}
+.meg-evo-toggle>i b,.meg-evo-manage-list button>i b{width:17px;height:17px;border-radius:50%;background:#8698a2;transition:.2s}
+.meg-evo-toggle.on>i,.meg-evo-manage-list button>i.on{background:rgba(83,207,141,.28)}
+.meg-evo-toggle.on>i b,.meg-evo-manage-list button>i.on b{transform:translateX(19px);background:#71dda4;box-shadow:0 0 12px rgba(113,221,164,.5)}
+.meg-evo-manage-list{display:grid;gap:8px;max-height:390px;overflow:auto}
+.meg-evo-manage-list button{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;text-align:left;border:1px solid rgba(75,186,199,.16);background:rgba(7,24,36,.68);color:var(--meg-text,#eef4f6);padding:11px 12px;border-radius:12px;cursor:pointer}
+.meg-evo-manage-list button span{display:grid;gap:3px}.meg-evo-manage-list button small{color:var(--meg-muted,#a5b3bd)}
+.meg-evo-manage-list button:disabled{opacity:.6;cursor:not-allowed}
+.meg-evo-status-list{display:grid;gap:10px;margin:10px 0 14px}
+.meg-evo-status-list>span{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:13px;border:1px solid rgba(75,186,199,.15);background:rgba(7,24,36,.6)}
+.meg-evo-status-list div{display:grid;gap:2px}.meg-evo-status-list small{color:var(--meg-muted,#a5b3bd)}.meg-evo-status-list>b{font-size:11px;color:#71dda4}
+.meg-evo-status-json{max-height:280px;overflow:auto;padding:12px;border-radius:12px;background:#06111c;border:1px solid rgba(75,186,199,.18);color:#b8cad3;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap}
+.meg-evo-message{color:#71dda4;font-weight:700;margin:10px 0 0}
+
+/* Preferências herdadas do Android agora controlam a Home Evolution. */
+html[data-meg-dashboard-balance="off"] .meg-home-grid>.meg-balance-hero{display:none}
+html[data-meg-dashboard-projection="off"] .meg-home-grid>.meg-home-flow{display:none}
+html[data-meg-dashboard-summary="off"] .meg-home-grid>.meg-home-metrics{display:none}
+html[data-meg-dashboard-benefit="off"] .meg-home-grid>.meg-benefit-banner{display:none}
+html[data-meg-dashboard-history="off"] .meg-home-grid>.meg-home-recent{display:none}
+html[data-meg-dashboard-agenda="off"] .meg-home-grid>.meg-home-due{display:none}
+@media(max-width:1180px){.meg-evo-settings-layout{grid-template-columns:1fr}.meg-evo-settings-nav{flex-direction:row;overflow-x:auto}.meg-evo-settings-workspace{grid-template-columns:1fr}.meg-evo-avatar-grid{grid-template-columns:repeat(4,minmax(68px,1fr))}}
