@@ -82,3 +82,14 @@ html[data-meg-dashboard-benefit="off"] .meg-home-grid>.meg-benefit-banner{displa
 html[data-meg-dashboard-history="off"] .meg-home-grid>.meg-home-recent{display:none}
 html[data-meg-dashboard-agenda="off"] .meg-home-grid>.meg-home-due{display:none}
 @media(max-width:1180px){.meg-evo-settings-layout{grid-template-columns:1fr}.meg-evo-settings-nav{flex-direction:row;overflow-x:auto}.meg-evo-settings-workspace{grid-template-columns:1fr}.meg-evo-avatar-grid{grid-template-columns:repeat(4,minmax(68px,1fr))}}
+
+
+/* Histórico amplo herdado do Android, recomposto para desktop. */
+.meg-history-view{min-height:0}
+.meg-history-toolbar{display:grid;grid-template-columns:minmax(280px,1fr) repeat(3,minmax(145px,auto));gap:10px;align-items:center;margin-bottom:12px}
+.meg-history-toolbar select{height:42px;border:1px solid rgba(75,186,199,.24);border-radius:12px;background:#081b2a;color:var(--meg-text,#eef4f6);padding:0 34px 0 12px}
+.meg-history-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(75,186,199,.14)}
+.meg-history-pagination>div{display:flex;gap:8px}
+.meg-error-inline{padding:10px 12px;border:1px solid rgba(226,99,107,.35);border-radius:12px;background:rgba(226,99,107,.08);color:#f1a3aa;margin-bottom:10px}
+.meg-fetching.inline{min-height:180px}
+@media(max-width:1250px){.meg-history-toolbar{grid-template-columns:1fr 1fr}.meg-history-toolbar .meg-card-search{grid-column:1/-1}}
