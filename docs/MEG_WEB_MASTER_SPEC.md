@@ -752,7 +752,7 @@ Build verde não equivale a produto validado.
 - Android e `apps/web/src/mobile`: permanecem protegidos e não foram alterados pelo fechamento da PR #570.
 - O deploy da API no Render continua protegido por filtro de caminhos: alterações exclusivamente Web não devem reiniciar a API.
 - Login, Loading, Home, Novo Lançamento, Lançamentos, Pendentes/Baixa, Cartões, Benefício, Fluxo de Caixa, Histórico, Relatórios/Financial Copilot e Configurações Mestre compõem agora a baseline oficial do MEG Web.
-- MEG Smart Grid, filtros por coluna, proteção contra duplicidade, idempotência nos fluxos críticos, validação de saldo, comprovante de baixa e responsividade crítica fazem parte da baseline e não podem regredir silenciosamente.
+- MEG Smart Grid, filtros por coluna, proteção contra duplicidade, idempotência nos fluxos críticos, validação de saldo, comprovante de baixa e responsividade crítica fazem parte da baseline e não podem regredir silenciosamente.\n- Revisão visual pós-hardening: KPIs de contagem em Histórico, Relatórios e visão consolidada devem usar número inteiro, nunca formatação monetária.
 - Arte customizada persistente de cartão continua dependente de estratégia apropriada de storage/backend; não simular persistência de imagem grande em estado local.
 - A partir deste checkpoint, qualquer evolução deve sair de `main`, em branch própria, com CI e validação pertinente antes do merge.
 
