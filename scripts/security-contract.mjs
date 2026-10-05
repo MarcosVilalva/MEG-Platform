@@ -38,10 +38,15 @@ requireTokens('apps/api/src/security.ts', [
   "externalRateLimiters",
 ]);
 
-requireTokens('apps/api/src/modules/notifications/routes.ts', [
+const notificationRoutes = requireTokens('apps/api/src/modules/notifications/routes.ts', [
   "externalRateLimiters.automation",
   "externalRateLimiters.voice",
+  "alexaSecretsMatch(providedCron, config.notificationCronSecret)",
 ]);
+
+if (/===\s*config\.notificationCronSecret/.test(notificationRoutes)) {
+  fail('Segredo de cron não pode usar comparação direta; use timing-safe comparison.');
+}
 
 requireTokens('apps/api/src/modules/notifications/advisor-routes.ts', [
   "externalRateLimiters.advisor",
