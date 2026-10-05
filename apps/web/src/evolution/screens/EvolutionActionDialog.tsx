@@ -7,9 +7,10 @@ import {EvolutionFinancialIcon as Icon} from '../components/EvolutionFinancialIc
 import {amountInput,amountValue,cents,datePt,errorMessage,isBenefit,isBenefitAccount,isMonetary,isSettlementMethod,money,operationId,posted,settlementSources,signed,sum,today,type PendingItem,type SystemData} from '../app/system-domain';
 
 export type ActionKind='settlement'|'card-payment'|'transfer'|'benefit-recharge'|'edit-launch'|'benefit-evolution';
+type SettlementReceipt={title:string;amount:number;paidAt:string;account:string;paymentMethod:string;balanceBefore:number;balanceAfter:number;count:number;idempotentReplay?:boolean};
 export function EvolutionActionDialog({kind,data,items=[],card,event,qaMode,onClose,onSaved}:{kind:ActionKind;data:SystemData;items?:PendingItem[];card?:CreditCard;event?:FinancialEvent;qaMode:boolean;onClose:()=>void;onSaved:()=>void}){
   const monetary=data.accounts.filter(isMonetary),benefitAccount=data.accounts.find(isBenefitAccount),benefitMethod=data.methods.find(x=>x.name.toUpperCase()==='VEROCARD'),methods=data.methods.filter(isSettlementMethod);
-  const [accountId,setAccountId]=useState(event?.accountId||monetary[0]?.id||''),[destinationId,setDestinationId]=useState(monetary[1]?.id||''),[methodId,setMethodId]=useState(event?.paymentMethodId||methods[0]?.id||''),[date,setDate]=useState(event?.date.slice(0,10)||today()),[description,setDescription]=useState(event?.description||(kind==='benefit-recharge'?'RECARGA VEROCARD':'')),[value,setValue]=useState(event?amountInput(String(cents(event.amount))):''),[categoryId,setCategoryId]=useState(event?.categoryId||''),[status,setStatus]=useState<string>(event?.status||'paid'),[notes,setNotes]=useState(event?.notes||''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[balance,setBalance]=useState<number|null>(null),[balanceError,setBalanceError]=useState(''),[deleting,setDeleting]=useState(false);
+  const [accountId,setAccountId]=useState(event?.accountId||monetary[0]?.id||''),[destinationId,setDestinationId]=useState(monetary[1]?.id||''),[methodId,setMethodId]=useState(event?.paymentMethodId||methods[0]?.id||''),[date,setDate]=useState(event?.date.slice(0,10)||today()),[description,setDescription]=useState(event?.description||(kind==='benefit-recharge'?'RECARGA VEROCARD':'')),[value,setValue]=useState(event?amountInput(String(cents(event.amount))):''),[categoryId,setCategoryId]=useState(event?.categoryId||''),[status,setStatus]=useState<string>(event?.status||'paid'),[notes,setNotes]=useState(event?.notes||''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[balance,setBalance]=useState<number|null>(null),[balanceError,setBalanceError]=useState(''),[deleting,setDeleting]=useState(false),[receipt,setReceipt]=useState<SettlementReceipt|null>(null);
   const request=useRef<{payload:string;id:string}|null>(null),submitting=useRef(false);
   const cardOrigin=event?data.cards.find(c=>c.statement?.lines.some(l=>l.eventId===event.id)):undefined;
   const payment=kind==='settlement'||kind==='card-payment',transfer=kind==='transfer';
@@ -24,8 +25,10 @@ export function EvolutionActionDialog({kind,data,items=[],card,event,qaMode,onCl
     try{
       if(kind==='settlement'){
         const payload={items:settlementSources(items,data),paidAt:date,accountId,paymentMethodId:methodId};
-        await authenticatedRequest('/finance/pending/batch/settle',{method:'POST',body:JSON.stringify({...payload,operationId:idFor(payload)})});
-      }else if(kind==='card-payment'&&card){const payload={accountId,paymentMethodId:methodId,paidAt:date};await cardsClient.payStatement(card.id,data.summary.month,{...payload,operationId:idFor(payload)});
+        const result=await authenticatedRequest<{total:number;paidAt:string;account:{name:string};paymentMethod:{name:string};accountBalanceBefore:number;accountBalanceAfter:number;count:number;idempotentReplay?:boolean}>('/finance/pending/batch/settle',{method:'POST',body:JSON.stringify({...payload,operationId:idFor(payload)})});
+        setReceipt({title:'Baixa confirmada',amount:Number(result.total),paidAt:result.paidAt,account:result.account.name,paymentMethod:result.paymentMethod.name,balanceBefore:Number(result.accountBalanceBefore),balanceAfter:Number(result.accountBalanceAfter),count:Number(result.count||items.length),idempotentReplay:result.idempotentReplay});
+        return;
+      }else if(kind==='card-payment'&&card){const payload={accountId,paymentMethodId:methodId,paidAt:date};const result=await cardsClient.payStatement(card.id,data.summary.month,{...payload,operationId:idFor(payload)});setReceipt({title:'Fatura paga',amount:Number(result.amount||amount),paidAt:date,account:data.accounts.find(a=>a.id===accountId)?.name||'Conta monetária',paymentMethod:data.methods.find(m=>m.id===methodId)?.name||'Forma selecionada',balanceBefore:Number(balance||0),balanceAfter:Math.round((Number(balance||0)-Number(result.amount||amount))*100)/100,count:1,idempotentReplay:result.idempotentReplay});return;
       }else if(kind==='transfer'){const payload={sourceAccountId:accountId,destinationAccountId:destinationId,amount,date,description:description.trim()||'TRANSFERÊNCIA ENTRE CONTAS',notes:notes||undefined};await financeClient.createTransfer({...payload,operationId:idFor(payload)});
       }else if(kind==='benefit-recharge'){
         if(!benefitAccount||!benefitMethod)throw Error('Cadastre a conta Benefício e a forma VEROCARD para registrar a recarga.');
@@ -50,6 +53,27 @@ export function EvolutionActionDialog({kind,data,items=[],card,event,qaMode,onCl
   async function archive(){if(!event||qaMode||submitting.current)return;submitting.current=true;setBusy(true);setError('');try{const payload={ids:[event.id],expectedUpdatedAtById:event.updatedAt?{[event.id]:event.updatedAt}:undefined};await financeClient.bulkArchiveEvents({...payload,operationId:idFor(payload)});onSaved()}catch(e){setError(errorMessage(e))}finally{submitting.current=false;setBusy(false)}}
   const titles:Record<ActionKind,string>={'settlement':'Confirmar pagamento','card-payment':'Pagar fatura','transfer':'Nova transferência','benefit-recharge':'Registrar recarga','edit-launch':'Editar lançamento','benefit-evolution':'Evolução do benefício'};
   const evolution=data.events.filter(isBenefit).filter(e=>posted(e.status));
+  if(receipt)return <Modal title={receipt.title} icon="check-line" onClose={onSaved}>
+    <section className="meg-dialog-body evo-settlement-success">
+      <div className="evo-settlement-success-mark"><Icon name="check-line" size={35}/></div>
+      <small>OPERAÇÃO FINANCEIRA CONFIRMADA</small>
+      <h3>{receipt.title}</h3>
+      <strong className="evo-settlement-success-total">{money(receipt.amount)}</strong>
+      <div className="evo-settlement-success-facts">
+        <span><small>Data</small><b>{datePt(receipt.paidAt)}</b></span>
+        <span><small>Conta</small><b>{receipt.account}</b></span>
+        <span><small>Pagamento</small><b>{receipt.paymentMethod}</b></span>
+        <span><small>Itens</small><b>{receipt.count}</b></span>
+      </div>
+      <div className="evo-settlement-balance-impact">
+        <span><small>Saldo antes</small><strong>{money(receipt.balanceBefore)}</strong></span>
+        <Icon name="chevron-right" size={20}/>
+        <span><small>Saldo após</small><strong>{money(receipt.balanceAfter)}</strong></span>
+      </div>
+      {receipt.idempotentReplay&&<p className="meg-info">A mesma operação já havia sido confirmada. Nenhum débito foi duplicado.</p>}
+    </section>
+    <footer><Button primary icon="check-line" onClick={onSaved}>Concluir</Button></footer>
+  </Modal>;
   return <Modal title={titles[kind]} icon={transfer?'arrows-right-left':kind==='benefit-recharge'?'gift':payment?'wallet':'note'} onClose={onClose} busy={busy} wide={transfer||kind==='edit-launch'||kind==='benefit-evolution'}>
     {kind==='benefit-evolution'?<><section className="meg-dialog-body"><div className="meg-result-card"><small>Saldo Verocard</small><strong>{money(data.benefit.balance)}</strong><span>Créditos {money(data.benefit.credits)} · Consumo {money(data.benefit.used)}</span></div><EventsTable events={evolution} compact/></section><footer><Button onClick={onClose}>Fechar</Button></footer></>:<form onSubmit={e=>{e.preventDefault();void save()}}>
       <fieldset disabled={busy} className="meg-dialog-body">
