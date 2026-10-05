@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `314376594b33bfe0205728fd307509a23d082e55`
+- `main` de partida do bloco atual: `033f254255481fcc25ea495a79e275d866f02905`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,23 +72,24 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Lançamentos — revisão estrutural e anti-regressão — branch `feat/evolution-movements-structure` em validação.**
+**Pendentes — revisão estrutural e anti-regressão — branch `feat/evolution-payables-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594, com CI e Visual Preflight verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595, com CI e Visual Preflight verdes.
 
-Objetivos imediatos de Lançamentos:
+Objetivos imediatos de Pendentes:
 
-- preservar o Smart Grid como estrutura oficial da tela;
-- garantir filtros por coluna em Data, Descrição, Categoria, Conta, Forma, Status e Valor;
-- manter dados reais, edição por linha e proteção do valor financeiro;
-- impedir retorno do agrupamento por categoria;
-- manter rolagem dentro da grade em resoluções reduzidas;
-- preservar a recomposição móvel dos filtros;
+- preservar a tela como fluxo de execução e baixa, não como grade analítica pesada;
+- manter filtros Todas/A pagar/Pagas/Vencidas e busca;
+- preservar agrupamento por data com total por grupo;
+- manter seleção múltipla e soma dos selecionados;
+- impedir nova seleção de itens já pagos;
+- preservar status operacionais e pagamento em lote;
+- manter rolagem interna e recomposição em 430 px;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Lançamentos: **Pendentes**, seguindo então a ordem fixa acima.
+Após Pendentes: **Cartões**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
