@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `c6447ae567d1b7fa77ae676c62845c475fe9e445`
+- `main` de partida do bloco atual: `831f158d72cf1e8dc249d422ef6e15b5e90c8810`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,23 +72,26 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Fluxo de Caixa — revisão estrutural e anti-regressão — branch `feat/evolution-cashflow-structure` em validação.**
+**Relatórios — revisão estrutural e anti-regressão — branch `feat/evolution-reports-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596. Cartões consolidado pela PR #597. Benefícios consolidado pela PR #598, com CI e Visual Preflight verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596. Cartões consolidado pela PR #597. Benefícios consolidado pela PR #598. Fluxo de Caixa consolidado pela PR #599, com CI e Visual Preflight verdes.
 
-Objetivos imediatos de Fluxo de Caixa:
+Objetivos imediatos de Relatórios:
 
-- preservar abas Resumo/Entradas/Saídas sobre os dados reais do período;
-- manter entradas, saídas, resultado e fechamento realizado ligados ao domínio financeiro;
-- preservar evolução diária com escala derivada dos valores reais;
-- manter saldo realizado e projetado por dia;
-- preservar saldo inicial e fechamento projetado da posição do período;
-- manter tabela em rolagem interna e recomposição responsiva em 430 px;
+- preservar análise baseada apenas em movimentos realizados, sem transferências e benefício;
+- manter abas Despesas/Receitas/Fluxo de caixa/Categorias;
+- preservar dimensões Categoria/Conta/Forma/Status/Tipo/Competência;
+- manter métricas Valor total/Quantidade/Média e busca por grupo;
+- preservar exportação Excel do recorte corrente;
+- manter KPIs com contagens em formato inteiro;
+- preservar tabela dinâmica e gráfico por dimensão;
+- manter o Financial Copilot estritamente analítico, sem executar movimentações;
+- preservar recomposição responsiva em 430 px;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Fluxo de Caixa: **Relatórios**, seguindo então a ordem fixa acima.
+Após Relatórios: **Histórico**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
