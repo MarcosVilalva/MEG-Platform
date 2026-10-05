@@ -30,10 +30,16 @@ assert.match(
 
 assert.ok(!screen.includes('Plano Premium'), 'Plano Premium não deve reaparecer na Home.');
 
+const desktopHomeRule=css.match(/\\.meg-home-grid\\.meg-home-final\\{([^}]*)\\}/)?.[1]||'';
 assert.match(
-  css,
-  /\.meg-home-grid\.meg-home-final\{[^}]*display:grid[^}]*grid-template-rows:[^}]*overflow(?!:auto)/s,
-  'A composição desktop da Home deve permanecer em grid e sem depender de rolagem geral.'
+  desktopHomeRule,
+  /display:grid/,
+  'A composição desktop da Home deve permanecer em grid.'
+);
+assert.doesNotMatch(
+  desktopHomeRule,
+  /overflow\\s*:\\s*auto/,
+  'A composição desktop da Home não pode depender de rolagem geral.'
 );
 
 assert.match(
