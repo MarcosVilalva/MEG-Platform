@@ -78,6 +78,7 @@ const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.
 assert.match(loginScreen,/data-evolution-login-fidelity="product-v2"/);
 assert.match(loginScreen,/Bem-vindo de volta/);
 assert.match(loginScreen,/Entrar no MEG/);
+assert.match(loginScreen,/com clareza para <br\/>decidir\./,'Slogan mobile deve preservar espaço quando o último <br> é ocultado.');
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
 assert.match(loginScreen,/\.\/brand\/meg-loading-lockup\.svg/,'Login deve usar a marca canônica do MEG.');
 assert.doesNotMatch(loginScreen,/evolution\/brand\/meg-mark\.svg/,'A versão interpretada da marca não pode voltar ao Login.');
