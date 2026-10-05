@@ -72,7 +72,7 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Loading — revisão estrutural e anti-regressão.**
+**Loading — revisão estrutural e anti-regressão — PR #592 em validação.**
 
 Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591, com CI e Visual Preflight verdes.
 
