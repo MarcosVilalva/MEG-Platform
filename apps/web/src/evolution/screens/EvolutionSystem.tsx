@@ -60,7 +60,7 @@ export function EvolutionSystem({previewKey}:{previewKey?:string}={}){
           <section className="meg-home-hero-v2">
             <button className="meg-home-balance-card meg-panel meg-home-balance-hero-v2" onClick={()=>setHideBalance(x=>!x)} aria-label={hideBalance?'Mostrar saldo':'Ocultar saldo'}>
               <div className="meg-home-balance-copy-v2">
-                <small>Saldo disponível</small>
+                <h2>Saldo disponível</h2>
                 <strong>{hideBalance?'R$ •••••':money(data.summary.availableBalance)}</strong>
                 <em className={data.summary.realizedResult>=0?'positive':'negative'}><Icon name="trend" size={17}/>{data.summary.realizedResult>=0?'+ ':''}{money(data.summary.realizedResult)} realizado no mês</em>
               </div>
