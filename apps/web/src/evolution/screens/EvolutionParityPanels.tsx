@@ -260,7 +260,7 @@ async function saveAvatarCloud(userId:string,value:AvatarPreference){localStorag
 export function EvolutionSettings({data,session,onChanged}:{data:SystemData;session:AuthSession|null;onChanged:()=>void}){
   type Tab='profile'|'home'|'catalogs'|'security'|'notifications'|'system';
   type Catalog='categories'|'accounts'|'methods'|'cards';
-  const [tab,setTab]=useState<Tab>('profile'),[catalog,setCatalog]=useState<Catalog>('categories'),[prefs,setPrefs]=useState(readEvolutionHomePrefs);
+  const [tab,setTab]=useState<Tab>(()=>{const value=new URLSearchParams(location.search).get('settingsTab') as Tab;return ['profile','home','catalogs','security','notifications','system'].includes(value)?value:'profile'}),[catalog,setCatalog]=useState<Catalog>(()=>{const value=new URLSearchParams(location.search).get('catalog') as Catalog;return ['categories','accounts','methods','cards'].includes(value)?value:'categories'}),[prefs,setPrefs]=useState(readEvolutionHomePrefs);
   const [methods,setMethods]=useState<PaymentMethod[]>(data.allMethods),[cards,setCards]=useState<CreditCard[]>(data.managedCards),[categories,setCategories]=useState<Category[]>(data.categories),[accounts,setAccounts]=useState<Account[]>(data.accounts);
   const [busy,setBusy]=useState(''),[message,setMessage]=useState(''),[notifications,setNotifications]=useState<Record<string,unknown>|null>(null),[avatar,setAvatar]=useState<AvatarPreference>(()=>readAvatar(session?.user.id||'preview')),[syncStatus,setSyncStatus]=useState<{token:string;changedAt:string|null;mutationType:string|null}|null>(null);
   const [editor,setEditor]=useState<{kind:Catalog;id?:string}|null>(null);
