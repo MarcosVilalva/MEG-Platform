@@ -13,10 +13,10 @@ type Notice={kind:'error'|'success'|'info';text:string}|null;
 const REMEMBER_EMAIL_KEY='meg.evolution.remembered-email';
 
 function MailIcon(){
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h17v11h-17z"/><path d="m4.5 7.5 7.5 6 7.5-6"/></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>;
 }
 function LockIcon(){
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>;
 }
 function UserIcon(){
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>;
@@ -27,11 +27,20 @@ function PhoneIcon(){
 function EyeIcon({closed=false}:{closed?:boolean}){
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.5 5.5-9.5 5.5S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/>{closed&&<path d="m4 4 16 16"/>}</svg>;
 }
-function ShieldIcon(){
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 19 6v5.1c0 4.4-2.8 8.3-7 10.1-4.2-1.8-7-5.7-7-10.1V6z"/><path d="m9 12 2 2 4-4"/></svg>;
+function ShieldLockIcon(){
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 19 5.8v5.1c0 4.5-2.8 8.3-7 10.3-4.2-2-7-5.8-7-10.3V5.8z"/><rect x="9" y="10.8" width="6" height="5.3" rx="1.25"/><path d="M10.4 10.8V9.4a1.6 1.6 0 0 1 3.2 0v1.4M12 13v1.1"/></svg>;
 }
 function ArrowIcon(){
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg>;
+}
+function BarsIcon(){
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11M10 19V7M15 19V4M20 19V9"/></svg>;
+}
+function TargetIcon(){
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m14.7 9.3 5.4-5.4M16.2 3.9h3.9v3.9"/></svg>;
+}
+function SlidersIcon(){
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h7M15 6h5M4 12h3M11 12h9M4 18h9M17 18h3"/><circle cx="13" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="18" r="2"/></svg>;
 }
 function CheckIcon(){
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg>;
@@ -136,41 +145,42 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
   const subtitle=authenticatedName
     ?'Sua autenticação foi validada. Preparando sua visão financeira.'
     :mode==='login'
-      ?'Entre na sua conta para continuar.'
+      ?'Entre na sua conta para acessar o MEG.'
       :mode==='register'
         ?'Entre em um espaço existente ou crie o seu MEG.'
         :'Informe seu e-mail para receber uma senha temporária.';
 
-  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="product-v2" data-evolution-login-structure="fixed-card-v1">
-    <div className="evo-login-bg" aria-hidden="true">
-      <img src="./evolution/artwork/loading-master.webp" alt=""/>
-    </div>
-    <div className="evo-login-orbit evo-login-orbit-a" aria-hidden="true"/>
-    <div className="evo-login-orbit evo-login-orbit-b" aria-hidden="true"/>
+  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="approved-reference-v1" data-evolution-login-structure="faithful-login-v2">
+    <div className="evo-login-overlay" aria-hidden="true"/>
 
     <section className="evo-login-shell">
-      <div className="evo-login-story">
+      <section className="evo-login-story" aria-label="MEG Finanças">
         <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
-        <div className="evo-login-kicker"><span/>CONTROLE FINANCEIRO PESSOAL</div>
+        <div className="evo-login-kicker">MEG EVOLUTION</div>
         <h1>Sua vida financeira,<br/><strong>com clareza para<br/>decidir.</strong></h1>
-        <p>Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde vai.</p>
+        <p>Saldo, compromissos e projeções em uma visão única<br className="evo-login-copy-break"/> para você saber onde está e para onde está indo.</p>
 
         <div className="evo-login-proof" aria-label="Recursos do MEG">
-          <span><i><CheckIcon/></i><b>Saldo e compromissos</b><small>Visão real do que está disponível e do que vem pela frente.</small></span>
-          <span><i><CheckIcon/></i><b>Cartões e benefícios</b><small>Faturas, limites e saldos organizados no mesmo lugar.</small></span>
-          <span><i><CheckIcon/></i><b>Planejamento</b><small>Histórico e projeções para decidir com contexto.</small></span>
+          <article>
+            <i><BarsIcon/></i>
+            <span><b>Saldo real</b><small>Visão completa<br/>e atualizada</small></span>
+          </article>
+          <article>
+            <i><TargetIcon/></i>
+            <span><b>Projetos</b><small>Mais controle<br/>para seus planos</small></span>
+          </article>
+          <article>
+            <i><SlidersIcon/></i>
+            <span><b>Controle</b><small>Decisões melhores<br/>todos os dias</small></span>
+          </article>
         </div>
-
-        <div className="evo-login-signals" aria-hidden="true"/>
-        <div className="evo-login-storyline" aria-hidden="true"/>
-      </div>
+      </section>
 
       <section className={`evo-login-card evo-login-card-${mode}`}>
-        <div className="evo-login-card-glow" aria-hidden="true"/>
         <div className="evo-login-card-head">
-          <div className="evo-login-security-mark"><ShieldIcon/></div>
-          <div>
-            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO AO MEG':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
+          <div className="evo-login-security-mark"><ShieldLockIcon/></div>
+          <div className="evo-login-card-title">
+            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO SEGURO':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
@@ -178,7 +188,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
 
         {authenticatedName ? (
           <div className="evo-login-confirmed">
-            <div className="evo-login-confirmed-ring"><ShieldIcon/></div>
+            <div className="evo-login-confirmed-ring"><ShieldLockIcon/></div>
             <strong>Acesso confirmado</strong>
             <p>Autenticação concluída. O MEG está preparando seus dados.</p>
             <button type="button" className="evo-login-secondary" onClick={()=>{setAuthenticatedName('');setPassword('');setNotice(null);}}>
@@ -201,14 +211,14 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
 
               <label className="evo-login-field">
                 <span>E-mail</span>
-                <div><MailIcon/><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seuemail@exemplo.com" required/></div>
+                <div><MailIcon/><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" required/></div>
               </label>
 
               {mode!=='forgot'&&<label className="evo-login-field">
                 <span>Senha</span>
                 <div>
                   <LockIcon/>
-                  <input type={showPassword?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha" required/>
+                  <input type={showPassword?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required/>
                   <button type="button" className="evo-login-eye" onClick={()=>setShowPassword(value=>!value)} aria-label={showPassword?'Ocultar senha':'Mostrar senha'}><EyeIcon closed={showPassword}/></button>
                 </div>
               </label>}
@@ -236,7 +246,11 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
               </>}
 
               {mode==='login'&&<div className="evo-login-options">
-                <label><input type="checkbox" checked={rememberEmail} onChange={e=>setRememberEmail(e.target.checked)}/><span/>Lembrar meu e-mail</label>
+                <label>
+                  <input type="checkbox" checked={rememberEmail} onChange={e=>setRememberEmail(e.target.checked)}/>
+                  <span className="evo-login-checkbox">{rememberEmail&&<CheckIcon/>}</span>
+                  Lembrar meu e-mail
+                </label>
                 <button type="button" onClick={()=>switchMode('forgot')}>Esqueci minha senha</button>
               </div>}
 
@@ -245,18 +259,18 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
 
             <button className="evo-login-primary" type="submit" disabled={busy}>
               <span>{busy?'Processando...':mode==='login'?'Entrar no MEG':mode==='register'?'Continuar':'Enviar recuperação'}</span>
-              {!busy&&<ArrowIcon/>}
+              {!busy&&<i className="evo-login-primary-arrow"><ArrowIcon/></i>}
               {busy&&<i className="evo-login-spinner" aria-hidden="true"/>}
             </button>
 
             <div className="evo-login-switch">
-              {mode==='login'&&<>Ainda não tem acesso? <button type="button" onClick={()=>switchMode('register')}>Criar conta</button></>}
-              {mode!=='login'&&<>Já possui acesso? <button type="button" onClick={()=>switchMode('login')}>Voltar ao login</button></>}
+              {mode==='login'&&<><i/><span>Ainda não tem acesso? <button type="button" onClick={()=>switchMode('register')}>Criar conta</button></span><i/></>}
+              {mode!=='login'&&<><i/><span>Já possui acesso? <button type="button" onClick={()=>switchMode('login')}>Voltar ao login</button></span><i/></>}
             </div>
           </form>
         )}
 
-        <div className="evo-login-secure"><ShieldIcon/><span>Sessão protegida</span><i/>Conexão segura com o MEG</div>
+        <div className="evo-login-secure"><ShieldLockIcon/><span>Sessão protegida</span><i/>Conexão segura com o MEG</div>
       </section>
     </section>
   </main>;
