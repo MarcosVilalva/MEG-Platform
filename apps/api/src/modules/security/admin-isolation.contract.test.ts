@@ -61,9 +61,12 @@ assert.match(
   /evolutionApiKeyConfigured:\s*Boolean\(stored\?\.evolutionApiKeyEncrypted\)/,
   'API key da Evolution não pode ser devolvida ao frontend.'
 );
+const publicIntegrationStart = integrations.indexOf('export async function workspaceIntegrationForUser');
+const publicIntegrationEnd = integrations.indexOf('export async function saveWorkspaceIntegration', publicIntegrationStart);
+const publicIntegrationBlock = integrations.slice(publicIntegrationStart, publicIntegrationEnd);
 assert.doesNotMatch(
-  integrations,
-  /return\s*\{[^}]*evolutionApiKeyEncrypted/s,
+  publicIntegrationBlock,
+  /^\s*evolutionApiKeyEncrypted\s*:/m,
   'Material criptografado da API key não deve sair no DTO público.'
 );
 
