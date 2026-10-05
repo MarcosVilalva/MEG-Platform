@@ -1,9 +1,9 @@
 # MEG Web — Memória Oficial e Especificação Mestre
 
 **Status:** FONTE OFICIAL DO PROJETO  
-**Versão:** 2026-10-04 / Expert Baseline + Five-Lens Method  
+**Versão:** 2026-10-05 / Production Checkpoint + /FULL  
 **Repositório:** MarcosVilalva/MEG-Platform  
-**Referência visual corrente:** PR #570 `feat/evolution-final-fidelity`  
+**Referência visual corrente:** `main` no commit de produção `2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86` (merge da PR #570)  
 **Regra de proteção:** Android e `apps/web/src/mobile` são referência funcional e permanecem somente leitura durante a evolução Web.
 
 ---
@@ -739,43 +739,40 @@ Build verde não equivale a produto validado.
 
 ---
 
-# 20. Estado atual — checkpoint 2026-10-05
+# 20. Estado atual — checkpoint de produção 2026-10-05
 
-- PR #570: consolidação visual/funcional final em validação.
-- Android e `apps/web/src/mobile`: protegidos por preflight e somente leitura.
-- Login: estabilizado e responsivo.
-- Loading: preservado como referência visual forte.
-- Home: recomposta, dados reais, sem Plano Premium, carrossel cíclico, benefício e ações rápidas.
-- Novo Lançamento: superfície única, responsiva, fluxo Despesa/Receita/Alimentação/Transferência, categorias visuais, classificação de conta, parcelamento, autocomplete e proteção contra duplicidade.
-- Lançamentos: MEG Smart Grid implementado com filtros por coluna, ordenação, dados reais e adaptação mobile.
-- Pendentes/Baixa: seleção em lote, data da baixa, conta, forma, proteção de saldo e comprovante.
-- Cartões: carrossel, Central de Fatura, filtros Smart Grid, pagamento e cadastro/edição/ativação via Configurações.
-- Benefício: saldo, recarga, consumo e histórico preservados.
-- Fluxo de caixa: série real e visão diária.
-- Histórico: linguagem humana + Smart Grid.
-- Relatórios: reconstruídos como análise dinâmica com dimensões, métricas, tabela dinâmica, gráfico reativo e Financial Copilot baseado no recorte real.
-- Configurações: transformadas em Centro de Comando Mestre, com Perfil, Home, Cadastros, Segurança, Avisos e Sistema.
-- Cadastros Web reais: categorias, contas, formas de pagamento e cartões possuem inclusão/edição/ativação-desativação pelas APIs reais disponíveis.
-- Responsividade: gate visual ampliado para 1366×768 e 430×932 em Home, Lançamentos, Relatórios e Configurações, além de 1024×768 e 768×1024 na Home.
-- QA: CI e Evolution Visual Preflight passam no checkpoint anterior; o head final deve repetir os dois gates antes do merge.
-- Arte customizada persistente de cartão continua condicionada a uma estratégia de storage/backend adequada; não armazenar imagens grandes silenciosamente no app-state apenas para simular suporte.
+- PR #570: **mesclada em `main`** em 2026-10-05.
+- Commit de produção: `2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86`.
+- Head final da PR: `07fba6a547c976bf7872e541d958274911840aaf`.
+- Gates pré-merge no head final: **MEG Platform CI = sucesso** e **MEG Evolution Visual Preflight = sucesso**.
+- Gates pós-merge no commit de produção: **validate = sucesso**, **build = sucesso**, **smoke = sucesso**, **deploy = sucesso**.
+- GitHub Pages recebeu o deploy do commit de produção com sucesso.
+- O job de aquecimento/availability posterior ao merge também concluiu com sucesso.
+- Android e `apps/web/src/mobile`: permanecem protegidos e não foram alterados pelo fechamento da PR #570.
+- O deploy da API no Render continua protegido por filtro de caminhos: alterações exclusivamente Web não devem reiniciar a API.
+- Login, Loading, Home, Novo Lançamento, Lançamentos, Pendentes/Baixa, Cartões, Benefício, Fluxo de Caixa, Histórico, Relatórios/Financial Copilot e Configurações Mestre compõem agora a baseline oficial do MEG Web.
+- MEG Smart Grid, filtros por coluna, proteção contra duplicidade, idempotência nos fluxos críticos, validação de saldo, comprovante de baixa e responsividade crítica fazem parte da baseline e não podem regredir silenciosamente.
+- Arte customizada persistente de cartão continua dependente de estratégia apropriada de storage/backend; não simular persistência de imagem grande em estado local.
+- A partir deste checkpoint, qualquer evolução deve sair de `main`, em branch própria, com CI e validação pertinente antes do merge.
 
 ---
 
 # 21. Próximo passo oficial
 
-Fechamento da PR #570:
+A fase de reconstrução principal foi encerrada no checkpoint acima. O próximo ciclo passa a ser **produção real + endurecimento pós-merge**, sem reabrir decisões já estabilizadas.
 
-1. executar CI e Evolution Visual Preflight no head final;
-2. inspecionar capturas desktop e 430 px, incluindo Cadastros Mestre;
-3. confirmar proteção de Android/Mobile;
-4. corrigir qualquer regressão visual ou funcional encontrada;
-5. confirmar mergeabilidade;
-6. fazer merge da PR #570 somente com gates verdes;
-7. verificar workflows pós-merge e deploy;
-8. registrar o commit de produção como novo checkpoint oficial.
+Ordem de execução:
 
-Depois do merge, evoluções futuras devem partir deste documento e não reabrir decisões já estabilizadas.
+1. validar a rota publicada do Evolution sem cache e confirmar carregamento do commit de produção;
+2. executar smoke funcional contra o ambiente publicado, sem criar dados financeiros reais durante QA;
+3. revisar visualmente as telas estruturais em desktop e 430 px contra as referências aprovadas;
+4. registrar qualquer divergência como regressão objetiva, não como redesenho livre;
+5. priorizar correções encontradas em uso real;
+6. implementar storage/backend persistente para arte customizada de cartão somente quando a solução de armazenamento estiver definida;
+7. manter Android/Mobile somente leitura em toda evolução Web;
+8. atualizar este documento a cada novo checkpoint de produção.
+
+Nenhuma etapa futura deve partir de branches históricas da reconstrução. A base oficial é `main@2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86`.
 
 ---
 
