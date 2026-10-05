@@ -66,7 +66,7 @@
     "android:sync": "npx cap sync android",
     "android:open": "npx cap open android",
     "test:supabase-rls": "npm --workspace packages/database run test:supabase-rls",
-    "test:evolution-foundation": "node apps/web/src/evolution/evolution-foundation.contract.test.js",
+    "test:evolution-foundation": "node apps/web/src/evolution/evolution-foundation.contract.test.js && node apps/web/src/evolution/evolution-csp.contract.test.js",
     "test:web-rebuild-governance": "node apps/web/src/web-next/web-rebuild-governance.contract.test.js",
     "test:web-next-foundation": "node apps/web/src/web-next/web-next-foundation.contract.test.js",
     "test:web-next-auth": "node apps/web/src/web-next/web-next-auth.contract.test.js",
