@@ -1026,6 +1026,7 @@ Concluído:
 - contrato anti-XSS do Evolution bloqueando `dangerouslySetInnerHTML`, `innerHTML`, `insertAdjacentHTML`, `eval`, `new Function`, `document.write` e URLs `javascript:`;
 - sessão Web protegida contra persistência de access/refresh token em `localStorage`;
 - Financial Copilot atual confirmado como análise determinística local, sem chamada externa de LLM e sem autoridade de mutação financeira.
+- revisão visual pós-hardening identificou e corrigiu regressão semântica em KPIs de contagem: Histórico, Relatórios e visão consolidada de período não podem exibir quantidade como moeda.
 
 Pendente de ciclo posterior:
 - revisar estratégia de CSP do frontend publicado sem quebrar o fluxo Vite/GitHub Pages;
