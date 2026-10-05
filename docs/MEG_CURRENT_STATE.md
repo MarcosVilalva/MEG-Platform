@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `033f254255481fcc25ea495a79e275d866f02905`
+- `main` de partida do bloco atual: `93c4b28c2211ffb8dfd747bc9a368c0026bd3af9`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,24 +72,23 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Pendentes — revisão estrutural e anti-regressão — branch `feat/evolution-payables-structure` em validação.**
+**Cartões — revisão estrutural e anti-regressão — branch `feat/evolution-cards-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595, com CI e Visual Preflight verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596, com CI e Visual Preflight verdes.
 
-Objetivos imediatos de Pendentes:
+Objetivos imediatos de Cartões:
 
-- preservar a tela como fluxo de execução e baixa, não como grade analítica pesada;
-- manter filtros Todas/A pagar/Pagas/Vencidas e busca;
-- preservar agrupamento por data com total por grupo;
-- manter seleção múltipla e soma dos selecionados;
-- impedir nova seleção de itens já pagos;
-- preservar status operacionais e pagamento em lote;
-- manter rolagem interna e recomposição em 430 px;
+- preservar carrossel cíclico e cartão ativo em destaque;
+- manter artes oficiais LATAM Pass, Mercado Pago e Riachuelo sem deformação;
+- preservar fatura atual com valor pagável e vencimento canônicos;
+- manter indicador de limite usado;
+- preservar próximas faturas por competência e parcelas abertas;
+- manter acesso à Central do cartão;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Pendentes: **Cartões**, seguindo então a ordem fixa acima.
+Após Cartões: **Benefícios**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
