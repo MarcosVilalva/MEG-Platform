@@ -1032,3 +1032,41 @@ Fluxo padrão autorizado:
 A execução deve parar para decisão humana apenas diante de risco material de perda de dados, mudança irreversível, credenciais/segredos, custos externos, decisão de produto nova não coberta pelo escopo, conflito entre regras oficiais ou alteração do Android/Mobile sem autorização específica.
 
 Microdecisões de implementação, correções de CI e escolhas técnicas reversíveis dentro do escopo não exigem interrupção.
+
+
+---
+
+# 26. Auditoria Supabase — checkpoint 2026-10-05
+
+Auditoria de segurança realizada em modo somente leitura nos dois projetos Supabase vinculados ao ecossistema.
+
+## Banco principal MEG Finanças — `meg-financas`
+
+- tabelas financeiras e administrativas listadas com RLS habilitado;
+- o advisor informa RLS habilitado sem policies explícitas em 32 tabelas;
+- consulta de grants não encontrou privilégios de tabela para os papéis `anon` e `authenticated`;
+- portanto, a superfície PostgREST pública do banco financeiro está atualmente fechada por padrão;
+- existe aviso separado de extensão `pg_net` instalada no schema `public`, a ser tratada em hardening posterior sem mudança apressada de banco.
+
+## Banco da Evolution API — `meg-evolution`
+
+**ACHADO CRÍTICO PENDENTE DE DECISÃO EXPLÍCITA.**
+
+- 37 tabelas no schema `public` estão com RLS desabilitado;
+- os papéis Supabase `anon` e `authenticated` possuem grants de SELECT, INSERT, UPDATE e DELETE nas 37 tabelas;
+- entre elas existem tabelas de sessão, mensagens, contatos, configurações e credenciais de integrações;
+- o advisor de segurança do Supabase classifica o cenário como erro externo de RLS desabilitado;
+- não aplicar automaticamente `ENABLE ROW LEVEL SECURITY` nem revogar grants sem confirmar o modo de acesso usado pela Evolution API, pois uma alteração de política pode bloquear o serviço;
+- nenhuma alteração foi executada no banco durante esta auditoria.
+
+## Regra de parada
+
+Este item satisfaz o critério de intervenção humana do protocolo de continuidade autônoma: a correção envolve política de acesso de banco e pode afetar serviço externo em produção.
+
+Antes de corrigir:
+1. confirmar se a Evolution API usa conexão PostgreSQL direta, PostgREST/Supabase client ou ambos;
+2. escolher entre RLS + policies apropriadas, bloqueio completo de `anon/authenticated`, ou isolamento do schema exposto;
+3. preparar rollback e teste de disponibilidade da Evolution API;
+4. somente então aplicar migração controlada e repetir o advisor de segurança.
+
+Até essa decisão, não expor chaves Supabase da Evolution em Web, Android, logs ou documentação.
