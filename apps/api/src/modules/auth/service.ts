@@ -229,32 +229,33 @@ export async function requestPasswordReset(emailInput: string) {
     return { accepted: true, notifications: [] as Array<{ channel: string; status: string; detail?: string }> };
   }
 
-  const recentReset = await prisma.auditLog.findFirst({
-    where: {
-      entity: 'User',
-      entityId: target.id,
-      action: 'PASSWORD_RESET_LINK_REQUESTED',
-      createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) }
-    }
-  });
-  if (recentReset) {
-    return { accepted: true, notifications: [] as Array<{ channel: string; status: string; detail?: string }> };
-  }
-
+  const requestedAt = new Date();
+  const throttleBefore = new Date(requestedAt.getTime() - 10 * 60 * 1000);
   const { token, tokenHash } = createPasswordResetToken();
-  const expiresAt = new Date(Date.now() + 20 * 60 * 1000);
-  const link = passwordResetLink(token);
-  const messages = passwordResetLinkMessages(target, link);
+  const expiresAt = new Date(requestedAt.getTime() + 20 * 60 * 1000);
 
-  await prisma.user.update({
-    where: { id: target.id },
+  // A reserva condicional evita que solicitações concorrentes emitam dois links,
+  // situação em que o segundo token invalidaria silenciosamente o primeiro.
+  const claimed = await prisma.user.updateMany({
+    where: {
+      id: target.id,
+      OR: [
+        { passwordResetRequestedAt: null },
+        { passwordResetRequestedAt: { lt: throttleBefore } }
+      ]
+    },
     data: {
       passwordResetTokenHash: tokenHash,
       passwordResetExpiresAt: expiresAt,
-      passwordResetRequestedAt: new Date()
+      passwordResetRequestedAt: requestedAt
     }
   });
+  if (claimed.count !== 1) {
+    return { accepted: true, notifications: [] as Array<{ channel: string; status: string; detail?: string }> };
+  }
 
+  const link = passwordResetLink(token);
+  const messages = passwordResetLinkMessages(target, link);
   const notifications = await notifyUser(
     target,
     messages.subject,
@@ -263,8 +264,8 @@ export async function requestPasswordReset(emailInput: string) {
   );
 
   if (!notifications.some((item) => item.status === 'sent')) {
-    await prisma.user.update({
-      where: { id: target.id },
+    await prisma.user.updateMany({
+      where: { id: target.id, passwordResetTokenHash: tokenHash },
       data: { passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetRequestedAt: null }
     });
     throw new Error('NOTIFICATION_DELIVERY_FAILED');
