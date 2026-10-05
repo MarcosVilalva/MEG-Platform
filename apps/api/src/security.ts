@@ -93,6 +93,13 @@ export function createRateLimitPreHandler(rule: RateLimitRule) {
     reply.header('X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)));
 
     if (!result.allowed) {
+      request.log.warn({
+        securityEvent: 'RATE_LIMITED',
+        scope: rule.scope,
+        ip: request.ip,
+        method: request.method,
+        url: request.url,
+      }, 'Security rate limit blocked request');
       reply.header('Retry-After', String(retryAfterSeconds));
       return reply.code(429).send({
         error: 'RATE_LIMITED',
