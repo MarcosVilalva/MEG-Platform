@@ -3,11 +3,12 @@ import {
   forgotPassword,
   login,
   register,
+  resetPasswordWithToken,
   type AuthSession,
 } from '../../app/auth-client';
 import '../styles/login.css';
 
-type AuthMode='login'|'register'|'forgot';
+type AuthMode='login'|'register'|'forgot'|'reset';
 type Notice={kind:'error'|'success'|'info';text:string}|null;
 
 const REMEMBER_EMAIL_KEY='meg.evolution.remembered-email';
@@ -40,6 +41,12 @@ function CheckIcon(){
 function readRememberedEmail(){
   try{return localStorage.getItem(REMEMBER_EMAIL_KEY)||'';}catch{return '';}
 }
+function readResetToken(){
+  try{
+    const value=new URLSearchParams(window.location.hash.replace(/^#/,'')).get('reset')||'';
+    return value.length>=32?value:'';
+  }catch{return '';}
+}
 function errorMessage(error:unknown){
   const code=String((error as {code?:string;message?:string}|null)?.code||(error as Error|null)?.message||'');
   if(code.includes('INVALID_CREDENTIALS')||code.includes('UNAUTHORIZED')||code.includes('401')) return 'E-mail ou senha não conferem. Revise os dados e tente novamente.';
@@ -51,7 +58,8 @@ function errorMessage(error:unknown){
 
 export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:AuthSession)=>void}){
   const remembered=useMemo(readRememberedEmail,[]);
-  const [mode,setMode]=useState<AuthMode>('login');
+  const resetToken=useMemo(readResetToken,[]);
+  const [mode,setMode]=useState<AuthMode>(()=>resetToken?'reset':'login');
   const [email,setEmail]=useState(remembered);
   const [password,setPassword]=useState('');
   const [confirmPassword,setConfirmPassword]=useState('');
@@ -91,7 +99,25 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
       if(mode==='forgot'){
         if(!email.trim())throw new Error('EMAIL_REQUIRED');
         const result=await forgotPassword(email.trim());
-        setNotice({kind:'success',text:`Senha temporária enviada para ${result.deliveredTo}.`});
+        setNotice({kind:'success',text:result.message||'Se a conta estiver disponível, enviaremos um link seguro de recuperação.'});
+        return;
+      }
+      if(mode==='reset'){
+        if(!resetToken)throw new Error('INVALID_RESET_TOKEN');
+        if(password.length<8){
+          setNotice({kind:'error',text:'Use uma senha com pelo menos 8 caracteres.'});
+          return;
+        }
+        if(password!==confirmPassword){
+          setNotice({kind:'error',text:'A confirmação da senha não corresponde à senha informada.'});
+          return;
+        }
+        await resetPasswordWithToken(resetToken,password,confirmPassword);
+        window.history.replaceState(null,'',window.location.pathname+window.location.search);
+        setPassword('');
+        setConfirmPassword('');
+        setMode('login');
+        setNotice({kind:'success',text:'Senha atualizada. Entre no MEG com a nova senha.'});
         return;
       }
       if(password.length<8){
@@ -131,7 +157,9 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
       ?'Bem-vindo de volta.'
       :mode==='register'
         ?'Crie seu acesso.'
-        :'Recupere seu acesso.';
+        :mode==='reset'
+          ?'Crie uma nova senha.'
+          :'Recupere seu acesso.';
 
   const subtitle=authenticatedName
     ?'Sua autenticação foi validada. Preparando sua visão financeira.'
@@ -139,7 +167,9 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
       ?'Entre na sua conta para continuar.'
       :mode==='register'
         ?'Entre em um espaço existente ou crie o seu MEG.'
-        :'Informe seu e-mail para receber uma senha temporária.';
+        :mode==='reset'
+          ?'Defina uma nova senha. Este link é de uso único.'
+          :'Informe seu e-mail para receber um link seguro de recuperação.';
 
   return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="product-v2">
     <div className="evo-login-bg" aria-hidden="true">
@@ -170,7 +200,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
         <div className="evo-login-card-head">
           <div className="evo-login-lock"><ShieldIcon/></div>
           <div>
-            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO AO MEG':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
+            <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO AO MEG':mode==='register'?'NOVO ACESSO':mode==='reset'?'NOVA SENHA':'RECUPERAÇÃO'}</span>
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
@@ -213,11 +243,12 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
                 </div>
               </label>}
 
+              {(mode==='register'||mode==='reset')&&<label className="evo-login-field">
+                <span>Confirmar senha</span>
+                <div><LockIcon/><input type={showPassword?'text':'password'} autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Repita a senha" required/></div>
+              </label>}
+
               {mode==='register'&&<>
-                <label className="evo-login-field">
-                  <span>Confirmar senha</span>
-                  <div><LockIcon/><input type={showPassword?'text':'password'} autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Repita a senha" required/></div>
-                </label>
 
                 <fieldset className="evo-login-account-type">
                   <legend>Como você quer começar?</legend>
@@ -244,7 +275,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
             </div>
 
             <button className="evo-login-primary" type="submit" disabled={busy}>
-              <span>{busy?'Processando...':mode==='login'?'Entrar no MEG':mode==='register'?'Continuar':'Enviar recuperação'}</span>
+              <span>{busy?'Processando...':mode==='login'?'Entrar no MEG':mode==='register'?'Continuar':mode==='reset'?'Salvar nova senha':'Enviar recuperação'}</span>
               {!busy&&<ArrowIcon/>}
               {busy&&<i className="evo-login-spinner" aria-hidden="true"/>}
             </button>
