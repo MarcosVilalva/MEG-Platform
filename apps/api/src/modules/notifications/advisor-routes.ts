@@ -1,10 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { config } from '../../config';
+import { externalRateLimiters } from '../../security';
 import { alexaSecretsMatch } from './alexa-auth';
 import { alexaFinancialAdvice, type AlexaAdvisorIntent, type AlexaAdvisorQuery } from './financial-advisor';
 
 export async function advisorRoutes(app: FastifyInstance) {
-  app.post('/alexa/advisor', async (request, reply) => {
+  app.post('/alexa/advisor', { preHandler: externalRateLimiters.advisor }, async (request, reply) => {
     const providedSecret = Array.isArray(request.headers['x-alexa-skill-secret'])
       ? request.headers['x-alexa-skill-secret'][0]
       : request.headers['x-alexa-skill-secret'];
