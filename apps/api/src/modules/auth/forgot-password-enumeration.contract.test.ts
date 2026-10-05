@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
-const evolutionLogin = readFileSync(new URL('../../../web/src/evolution/screens/EvolutionLogin.tsx', import.meta.url), 'utf8');
-const legacyLogin = readFileSync(new URL('../../../web/src/modules/auth/LoginScreen.tsx', import.meta.url), 'utf8');
+const evolutionLogin = readFileSync(new URL('../../../../web/src/evolution/screens/EvolutionLogin.tsx', import.meta.url), 'utf8');
+const legacyLogin = readFileSync(new URL('../../../../web/src/modules/auth/LoginScreen.tsx', import.meta.url), 'utf8');
 
 const forgotRoute = routes.match(/app\.post\('\/forgot-password'[\s\S]*?\n  \}\);/u)?.[0] || '';
 
