@@ -1008,3 +1008,27 @@ Lacunas prioritárias a verificar/corrigir:
 - política formal de segurança para o Financial Copilot e futuras ferramentas de IA.
 
 Nenhuma dessas lacunas autoriza afirmar vulnerabilidade sem teste. Elas constituem itens de hardening obrigatórios.
+
+
+---
+
+# 25. Protocolo de continuidade autônoma
+
+O projeto possui escopo, baseline, critérios de qualidade e regras financeiras consolidados. Quando Marcos autorizar continuidade autônoma, a execução deve avançar sem depender de aprovação intermediária para decisões técnicas rotineiras já cobertas por esta especificação.
+
+Fluxo padrão autorizado:
+
+1. partir da `main` corrente;
+2. criar branch temática;
+3. implementar o próximo bloco prioritário;
+4. executar testes, build, smoke e gates aplicáveis;
+5. corrigir regressões encontradas;
+6. abrir PR;
+7. revisar diff, CI e riscos;
+8. fazer merge somente com gates verdes;
+9. verificar pós-merge/deploy quando aplicável;
+10. atualizar o checkpoint oficial.
+
+A execução deve parar para decisão humana apenas diante de risco material de perda de dados, mudança irreversível, credenciais/segredos, custos externos, decisão de produto nova não coberta pelo escopo, conflito entre regras oficiais ou alteração do Android/Mobile sem autorização específica.
+
+Microdecisões de implementação, correções de CI e escolhas técnicas reversíveis dentro do escopo não exigem interrupção.

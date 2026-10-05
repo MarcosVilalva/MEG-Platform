@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { UserRole } from '@meg/database';
+import { authRateLimiters } from '../../security';
 import {
   authenticateUser,
   consumeRefreshSession,
@@ -62,7 +63,7 @@ function requestContext(request: { ip: string; headers: Record<string, unknown> 
 }
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post('/register', async (request, reply) => {
+  app.post('/register', { preHandler: authRateLimiters.register }, async (request, reply) => {
     const parsed = registerSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.flatten().fieldErrors });
@@ -96,7 +97,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/login', async (request, reply) => {
+  app.post('/login', { preHandler: [authRateLimiters.loginIp, authRateLimiters.loginAccount] }, async (request, reply) => {
     const parsed = credentialsSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.flatten().fieldErrors });
 
@@ -112,7 +113,7 @@ export async function authRoutes(app: FastifyInstance) {
     return { user, accessToken, refreshToken: refresh.token, refreshExpiresAt: refresh.expiresAt };
   });
 
-  app.post('/forgot-password', async (request, reply) => {
+  app.post('/forgot-password', { preHandler: [authRateLimiters.forgotPasswordIp, authRateLimiters.forgotPasswordAccount] }, async (request, reply) => {
     const parsed = forgotPasswordSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
     try {
@@ -129,7 +130,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/refresh', async (request, reply) => {
+  app.post('/refresh', { preHandler: authRateLimiters.refresh }, async (request, reply) => {
     const parsed = refreshSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
     const consumed = await consumeRefreshSession(parsed.data.refreshToken);
@@ -140,7 +141,7 @@ export async function authRoutes(app: FastifyInstance) {
     return { user: consumed.user, accessToken, refreshToken: refresh.token, refreshExpiresAt: refresh.expiresAt };
   });
 
-  app.post('/logout', async (request, reply) => {
+  app.post('/logout', { preHandler: authRateLimiters.refresh }, async (request, reply) => {
     const parsed = refreshSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
     await revokeRefreshSession(parsed.data.refreshToken);
