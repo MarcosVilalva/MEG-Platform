@@ -4,6 +4,7 @@ import { UserRole } from '@meg/database';
 import { authRateLimiters } from '../../security';
 import {
   authenticateUser,
+  consumePasswordResetToken,
   consumeRefreshSession,
   createRefreshSession,
   deleteUserAccess,
@@ -40,6 +41,14 @@ const registerSchema = credentialsSchema.extend({
 
 const refreshSchema = z.object({ refreshToken: z.string().min(20) });
 const forgotPasswordSchema = z.object({ email: z.string().email() });
+const resetPasswordSchema = z.object({
+  token: z.string().min(32).max(256),
+  password: z.string().min(8).max(128),
+  confirmPassword: z.string().min(8).max(128),
+}).refine((value) => value.password === value.confirmPassword, {
+  message: 'PASSWORDS_DO_NOT_MATCH',
+  path: ['confirmPassword']
+});
 const accessSchema = z.object({
   action: z.enum(['APPROVE', 'REJECT', 'BLOCK', 'ACTIVATE', 'UPDATE']),
   role: z.nativeEnum(UserRole).optional(),
@@ -117,15 +126,30 @@ export async function authRoutes(app: FastifyInstance) {
     const parsed = forgotPasswordSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
     try {
-      const result = await requestPasswordReset(parsed.data.email);
-      return { status: 'PASSWORD_SENT', deliveredTo: result.deliveredTo, notifications: result.notifications };
+      await requestPasswordReset(parsed.data.email);
+      return reply.status(202).send({
+        status: 'RESET_LINK_REQUESTED',
+        message: 'Se a conta estiver disponível para recuperação, enviaremos um link seguro.'
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (message === 'ACCOUNT_NOT_FOUND') return reply.status(404).send({ error: message });
-      if (['ACCESS_PENDING', 'ACCESS_REJECTED', 'USER_BLOCKED', 'PASSWORD_RESET_RATE_LIMITED'].includes(message)) {
-        return reply.status(409).send({ error: message });
+      if (message === 'EMAIL_DELIVERY_FAILED' || message === 'NOTIFICATION_DELIVERY_FAILED') {
+        return reply.status(502).send({ error: 'RESET_DELIVERY_FAILED' });
       }
-      if (message === 'EMAIL_DELIVERY_FAILED' || message === 'NOTIFICATION_DELIVERY_FAILED') return reply.status(502).send({ error: message });
+      throw error;
+    }
+  });
+
+  app.post('/reset-password', { preHandler: authRateLimiters.resetPassword }, async (request, reply) => {
+    const parsed = resetPasswordSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.flatten().fieldErrors });
+    }
+    try {
+      return await consumePasswordResetToken({ token: parsed.data.token, password: parsed.data.password });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      if (message === 'INVALID_RESET_TOKEN') return reply.status(400).send({ error: message });
       throw error;
     }
   });
