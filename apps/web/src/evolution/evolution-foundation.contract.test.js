@@ -62,8 +62,11 @@ assert.equal(
 );
 
 const app=fs.readFileSync(new URL('./app/EvolutionApp.tsx',import.meta.url),'utf8');
-assert.match(app,/forcedScreen\|\|'login'/,'Acesso normal ao Evolution deve começar no Login.');
-assert.match(app,/onAuthenticated=\{\(\)=>\{/,'Login deve disparar a etapa de carregamento após autenticação.');
+assert.match(app,/storedSession\?'loading':'login'/,'Sessão existente deve iniciar pelo Loading sem piscar o Login.');
+assert.match(app,/readSession/,'Boot do Evolution deve consultar a sessão existente.');
+assert.match(app,/validateSession\(session\)/,'Sessão persistida deve ser validada antes da Home.');
+assert.match(app,/refreshAuthSession/,'Token expirado deve tentar renovação segura.');
+assert.match(app,/prefetchAuthenticatedData\(month\)/,'Loading deve pré-carregar os dados prioritários do período.');
 assert.match(app,/setPhase\('loading'\)/,'Autenticação deve levar ao Loading.');
 assert.match(app,/setPhase\('system'\)/,'Loading deve levar ao sistema.');
 assert.match(app,/phase==='system'\)return <EvolutionHome\/>/,'Sistema deve abrir a Home Evolution.');
