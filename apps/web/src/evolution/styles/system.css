@@ -23,3 +23,22 @@
 .meg-edit-layout{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}.meg-edit-layout>.meg-form-grid,.meg-edit-summary{padding:18px;border:1px solid #087579;border-radius:14px;background:linear-gradient(140deg,#00323566,#00151a99)}.meg-dialog:has(.meg-edit-layout){width:min(1100px,96vw)}.meg-edit-summary h3{margin:0 0 16px;font-size:22px}.meg-edit-summary-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0;border-bottom:1px solid #0c585a}.meg-edit-summary-row span{color:#b6c9cc;font-size:13px}.meg-edit-summary-row strong{text-align:right;font-size:14px;overflow-wrap:anywhere}.meg-card-center-hero{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(260px,1fr);gap:14px}.meg-card-center-main{display:flex;flex-direction:row;align-items:center;gap:24px;padding:20px!important;background:radial-gradient(ellipse at bottom right,#05656888,transparent 60%),linear-gradient(145deg,#01383c,#00141a)!important}.meg-card-center-main>.meg-card-art{width:28%;flex-shrink:0}.meg-card-center-facts{flex:1;min-width:0}.meg-card-center-facts h2{font-size:24px;display:flex;gap:12px;align-items:center;margin:0 0 16px}.meg-card-center-facts h2 .meg-pill{font-size:11px}.meg-center-identity{display:flex;gap:40px;margin-bottom:18px}.meg-center-identity span{font-size:12px;color:#a4c2c7}.meg-center-identity strong{display:block;color:#fff;font-size:17px;margin-top:5px}.meg-card-center-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.meg-card-center-metrics .meg-metric{padding:10px!important;min-width:0}.meg-card-center-metrics .meg-metric strong{font-size:clamp(17px,1.4vw,25px)}.meg-next-invoice>div{display:flex;justify-content:space-between;gap:12px}.meg-next-invoice>div span{display:grid;gap:8px;font-size:13px}.meg-next-invoice>div strong{font-size:clamp(19px,1.8vw,30px)}.meg-next-invoice>div small{font-size:11px}.meg-next-invoice progress{width:100%;height:10px;accent-color:#05e1d5;margin-top:15px}.meg-next-invoice>.meg-control{margin-top:12px;width:100%}.meg-next-invoice>small{font-size:11px;color:#9ab9bf}@media(max-width:1050px){.meg-card-center-hero{grid-template-columns:1fr}.meg-next-invoice{display:none}.meg-card-center-facts h2{font-size:20px}}@media(max-width:720px){.meg-edit-layout{grid-template-columns:1fr}.meg-edit-summary{display:none}.meg-card-center-main{gap:10px;padding:12px!important}.meg-card-center-facts h2{font-size:16px;flex-wrap:wrap;margin-bottom:8px}.meg-card-center-metrics{grid-template-columns:1fr}.meg-card-center-metrics .meg-metric:not(:first-child){display:none}.meg-center-identity{gap:15px;margin-bottom:8px}.meg-card-center-main>.meg-card-art{width:38%}}
 
 .meg-card-center-metrics .meg-metric{flex-direction:column;align-items:flex-start;gap:6px}.meg-card-center-metrics .meg-metric>.meg-icon{position:absolute;right:9px;top:9px;width:24px;height:24px;border-radius:7px}.meg-card-center-metrics .meg-metric>.meg-icon svg{width:15px}.meg-card-center-metrics .meg-metric>span{width:100%}.meg-card-center-metrics .meg-metric small{padding-right:25px;font-size:11px}.meg-card-center-metrics .meg-metric strong{font-size:clamp(14px,1.1vw,19px)}.meg-card-center-metrics .meg-metric em{font-size:10px}
+
+
+/* Correções objetivas do preflight 430 px: o topo de Benefícios deve acomodar
+   o hero completo, sem recortar título, saldo ou arte do Verocard. */
+@media(max-width:720px){
+  .benefit .meg-benefit-top{
+    min-height:92px;
+    max-height:none;
+    grid-template-rows:minmax(92px,auto);
+  }
+  .benefit .meg-benefit-top>.meg-benefit-banner{
+    min-height:92px;
+    height:auto;
+  }
+  .benefit .meg-benefit-top>.meg-benefit-banner>button{
+    min-height:92px;
+    height:auto;
+  }
+}

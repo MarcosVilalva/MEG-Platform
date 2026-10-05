@@ -91,6 +91,7 @@ const loginCss=fs.readFileSync(new URL('./styles/login.css',import.meta.url),'ut
 assert.match(loginCss,/input:-webkit-autofill/,'Login deve neutralizar o fundo automático do navegador nos campos preenchidos.');
 assert.match(loginCss,/background-clip:text/,'Autofill não deve pintar um bloco atrás do texto.');
 assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!important\}/,'Linhas decorativas do Login não podem cruzar o conteúdo.');
+assert.doesNotMatch(loginCss,/\.evo-login-story h1 br:last-child\s*\{\s*display\s*:\s*none\s*\}/,'Título mobile deve preservar a quebra legível entre “clareza para” e “decidir”.');
 
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
 assert.match(home,/EvolutionSystem/,'Home deve abrir o sistema funcional do conjunto de referências.');
@@ -187,6 +188,8 @@ assert.match(homeCss,/overflow:hidden/);
 assert.match(homeCss,/meg-scroll/);
 assert.match(homeCss,/@media\(max-width:720px\)/);
 assert.match(homeCss,/clamp\(/);
+assert.match(homeCss,/@media\(max-width:720px\)[\s\S]*\.benefit \.meg-benefit-top\s*\{[\s\S]*max-height\s*:\s*none/,'Benefícios mobile deve remover o teto que recortava o hero.');
+assert.match(homeCss,/\.benefit \.meg-benefit-top>\.meg-benefit-banner\s*\{[\s\S]*min-height\s*:\s*92px/,'Hero de Benefícios mobile deve reservar altura mínima legível.');
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){
