@@ -739,42 +739,43 @@ Build verde não equivale a produto validado.
 
 ---
 
-# 20. Estado atual — checkpoint 2026-10-04
+# 20. Estado atual — checkpoint 2026-10-05
 
-- PR #570: último modelo visual/funcional em validação.
-- Android: protegido e somente leitura.
-- Visual Preflight da PR #570: passou.
-- Web pública/homologação atual no Render: não representa a PR #570 e possui histórico de build falho; não usar como referência final.
-- Login: próximo do final.
-- Loading: referência forte.
-- Home: base correta, requer acabamento.
-- Lançamentos: requer Smart Grid completo.
-- Pendentes: manter foco em lote/baixa.
-- Cartões: ampliar presença visual e cadastro dinâmico.
-- Central: funcional, precisa refinamento.
-- Benefício: boa base.
-- Fluxo: requer visualização mais rica.
-- Relatórios: prioridade máxima de reconstrução.
-- Histórico: precisa linguagem humana + Smart Grid.
-- Configurações: prioridade máxima como centro de comando mestre.
-- Responsividade 430 px: precisa recomposição real, não redução.
+- PR #570: consolidação visual/funcional final em validação.
+- Android e `apps/web/src/mobile`: protegidos por preflight e somente leitura.
+- Login: estabilizado e responsivo.
+- Loading: preservado como referência visual forte.
+- Home: recomposta, dados reais, sem Plano Premium, carrossel cíclico, benefício e ações rápidas.
+- Novo Lançamento: superfície única, responsiva, fluxo Despesa/Receita/Alimentação/Transferência, categorias visuais, classificação de conta, parcelamento, autocomplete e proteção contra duplicidade.
+- Lançamentos: MEG Smart Grid implementado com filtros por coluna, ordenação, dados reais e adaptação mobile.
+- Pendentes/Baixa: seleção em lote, data da baixa, conta, forma, proteção de saldo e comprovante.
+- Cartões: carrossel, Central de Fatura, filtros Smart Grid, pagamento e cadastro/edição/ativação via Configurações.
+- Benefício: saldo, recarga, consumo e histórico preservados.
+- Fluxo de caixa: série real e visão diária.
+- Histórico: linguagem humana + Smart Grid.
+- Relatórios: reconstruídos como análise dinâmica com dimensões, métricas, tabela dinâmica, gráfico reativo e Financial Copilot baseado no recorte real.
+- Configurações: transformadas em Centro de Comando Mestre, com Perfil, Home, Cadastros, Segurança, Avisos e Sistema.
+- Cadastros Web reais: categorias, contas, formas de pagamento e cartões possuem inclusão/edição/ativação-desativação pelas APIs reais disponíveis.
+- Responsividade: gate visual ampliado para 1366×768 e 430×932 em Home, Lançamentos, Relatórios e Configurações, além de 1024×768 e 768×1024 na Home.
+- QA: CI e Evolution Visual Preflight passam no checkpoint anterior; o head final deve repetir os dois gates antes do merge.
+- Arte customizada persistente de cartão continua condicionada a uma estratégia de storage/backend adequada; não armazenar imagens grandes silenciosamente no app-state apenas para simular suporte.
 
 ---
 
 # 21. Próximo passo oficial
 
-Antes de implantação final:
+Fechamento da PR #570:
 
-1. implementar MEG Smart Grid;
-2. refazer tipografia responsiva;
-3. aplicar profundidade 3D e arredondamento;
-4. reconstruir Configurações mestre;
-5. reconstruir Relatórios / Financial Copilot;
-6. completar cadastros;
-7. tornar cartões dinamicamente cadastráveis e com arte customizável;
-8. recompor mobile/tablet;
-9. rodar validação;
-10. somente então preparar merge/deploy.
+1. executar CI e Evolution Visual Preflight no head final;
+2. inspecionar capturas desktop e 430 px, incluindo Cadastros Mestre;
+3. confirmar proteção de Android/Mobile;
+4. corrigir qualquer regressão visual ou funcional encontrada;
+5. confirmar mergeabilidade;
+6. fazer merge da PR #570 somente com gates verdes;
+7. verificar workflows pós-merge e deploy;
+8. registrar o commit de produção como novo checkpoint oficial.
+
+Depois do merge, evoluções futuras devem partir deste documento e não reabrir decisões já estabilizadas.
 
 ---
 
