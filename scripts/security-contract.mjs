@@ -58,6 +58,26 @@ if (productionSwaggerPattern.test(server)) {
 }
 
 
+const healthBlock = server.match(/app\.get\('\/health'[\s\S]*?\n\}\);/)?.[0] || '';
+const readyBlock = server.match(/app\.get\('\/ready'[\s\S]*?\n\}\);/)?.[0] || '';
+
+if (!healthBlock.includes('financialReady')) {
+  fail('Health público deve expor apenas readiness financeiro mínimo.');
+}
+if (/(environment|features|integrations|RENDER_GIT_COMMIT|dataRepair|normalization:)/.test(healthBlock)) {
+  fail('Health público não pode expor diagnóstico interno, features, commit ou detalhes de normalização.');
+}
+if (!healthBlock.includes("Cache-Control', 'no-store")) {
+  fail('Health público deve usar no-store.');
+}
+if (/(evolutionApiUrl|providers|whatsappProvider)/.test(readyBlock)) {
+  fail('Readiness público não pode aquecer ou revelar provedores externos.');
+}
+if (!readyBlock.includes("status: 'ready'") || !readyBlock.includes("Cache-Control', 'no-store")) {
+  fail('Readiness público deve ser mínimo e não-cacheável.');
+}
+
+
 
 const routeFiles = execFileSync('git', ['ls-files', 'apps/api/src/modules'], { encoding: 'utf8' })
   .split(/\r?\n/)
