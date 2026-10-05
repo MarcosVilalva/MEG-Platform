@@ -119,6 +119,10 @@ assert.doesNotMatch(launch,/Crediário|paymentMode==='installment'/,'Crediário 
 assert.match(launch,/Benefício/);
 assert.match(launch,/financeClient\.createEvent/,'Lançamento comum deve usar API financeira real.');
 assert.match(launch,/cardsClient\.createPurchase/,'Compra no crédito deve usar API real de cartões.');
+assert.match(launch,/async function save\(allowDuplicate=false\)/,'Novo Lançamento deve exigir confirmação consciente antes de liberar duplicidade.');
+assert.match(launch,/POSSIBLE_DUPLICATE[\s\S]*setDuplicateWarning/,'Conflito semântico deve abrir a confirmação de duplicidade.');
+assert.match(launch,/allowDuplicate[\s\S]*Salvar mesmo assim/,'Override de duplicidade deve ser explícito para o usuário.');
+assert.match(launch,/idFor\(payload\)[\s\S]*allowDuplicate/,'Retry consciente deve reutilizar a identidade da tentativa em vez de gerar operação paralela.');
 assert.match(launch,/Math\.min\(48/,'Crédito continua aceitando parcelamento até 48 vezes.');
 assert.match(launch,/financeClient\.listEvents\(1,12,description\.trim\(\)\)/,'Descrição deve consultar histórico real para autocomplete.');
 assert.match(launch,/uniqueCategories/,'Categorias legadas duplicadas devem ser deduplicadas na apresentação.');
@@ -143,6 +147,7 @@ assert.match(launchControlCss,/MEG CONTROL 3D v1/,'Novo Lançamento deve preserv
 assert.match(launchControlCss,/clamp\(/,'Novo Lançamento deve dimensionar tipografia e controles de forma responsiva.');
 assert.match(launchControlCss,/grid-template-columns:minmax\(0,1\.48fr\) minmax\(360px,\.86fr\)/,'Desktop largo deve usar composição espacial própria.');
 assert.match(launchControlCss,/@media\(max-width:920px\)/,'Novo Lançamento deve recompor colunas automaticamente em viewports menores.');
+assert.match(launchControlCss,/evo-launch-duplicate-confirm[\s\S]*PROTEÇÃO CONTRA DUPLICIDADE|evo-launch-duplicate-confirm/,'Confirmação de duplicidade deve possuir tratamento visual próprio.');
 
 const movements=fs.readFileSync(new URL('./screens/EvolutionMovements.tsx',import.meta.url),'utf8');
 assert.match(movements,/data-evolution-screen="movements"/);
