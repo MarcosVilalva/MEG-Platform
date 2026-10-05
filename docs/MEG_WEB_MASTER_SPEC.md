@@ -1038,7 +1038,7 @@ Microdecisões de implementação, correções de CI e escolhas técnicas revers
 
 # 26. Auditoria Supabase — checkpoint 2026-10-05
 
-Auditoria de segurança realizada em modo somente leitura nos dois projetos Supabase vinculados ao ecossistema.
+Auditoria de segurança executada nos dois projetos Supabase vinculados ao ecossistema.
 
 ## Banco principal MEG Finanças — `meg-financas`
 
@@ -1050,23 +1050,40 @@ Auditoria de segurança realizada em modo somente leitura nos dois projetos Supa
 
 ## Banco da Evolution API — `meg-evolution`
 
-**ACHADO CRÍTICO PENDENTE DE DECISÃO EXPLÍCITA.**
+**ACHADO CRÍTICO CORRIGIDO EM 2026-10-05.**
 
-- 37 tabelas no schema `public` estão com RLS desabilitado;
-- os papéis Supabase `anon` e `authenticated` possuem grants de SELECT, INSERT, UPDATE e DELETE nas 37 tabelas;
-- entre elas existem tabelas de sessão, mensagens, contatos, configurações e credenciais de integrações;
-- o advisor de segurança do Supabase classifica o cenário como erro externo de RLS desabilitado;
-- não aplicar automaticamente `ENABLE ROW LEVEL SECURITY` nem revogar grants sem confirmar o modo de acesso usado pela Evolution API, pois uma alteração de política pode bloquear o serviço;
-- nenhuma alteração foi executada no banco durante esta auditoria.
+Estado anterior:
+- 37 tabelas do schema `public` estavam com RLS desabilitado;
+- `anon` e `authenticated` possuíam grants de leitura e escrita nas 37 tabelas.
 
-## Regra de parada
+Validação de arquitetura antes da correção:
+- o serviço Render usa a imagem oficial `evoapicloud/evolution-api:v2.3.7`;
+- a versão 2.3.7 usa conexão PostgreSQL direta por `DATABASE_CONNECTION_URI`/Prisma;
+- logs do Supavisor das 24 horas anteriores mostraram conexões de banco somente como usuário `postgres`;
+- todas as 37 tabelas eram de propriedade de `postgres`;
+- o papel `postgres` possui `rolbypassrls=true`;
+- nenhum indício de uso de `anon` ou `authenticated` como caminho de persistência da Evolution foi encontrado.
 
-Este item satisfaz o critério de intervenção humana do protocolo de continuidade autônoma: a correção envolve política de acesso de banco e pode afetar serviço externo em produção.
+Correção aplicada:
+- migration Supabase `20261005111705_harden_evolution_public_access`;
+- RLS habilitado nas 37 tabelas públicas;
+- removidos privilégios de tabelas, sequências e funções para `anon` e `authenticated`;
+- removidos também os default privileges concedidos por `postgres` a esses dois papéis, evitando reabertura automática em novos objetos criados pela Evolution;
+- `service_role` e `postgres` foram preservados;
+- nenhuma linha de dados foi removida ou alterada pela migração.
 
-Antes de corrigir:
-1. confirmar se a Evolution API usa conexão PostgreSQL direta, PostgREST/Supabase client ou ambos;
-2. escolher entre RLS + policies apropriadas, bloqueio completo de `anon/authenticated`, ou isolamento do schema exposto;
-3. preparar rollback e teste de disponibilidade da Evolution API;
-4. somente então aplicar migração controlada e repetir o advisor de segurança.
+Validação pós-correção:
+- as 37 tabelas reportam `rls_enabled=true`;
+- `anon` e `authenticated` não possuem grants de tabela no schema `public`;
+- default privileges de `postgres` permanecem somente para `postgres` e `service_role`;
+- o Security Advisor deixou de apontar `rls_disabled_in_public` como erro;
+- o aviso remanescente `rls_enabled_no_policy` é informativo e esperado: não existem policies públicas porque o acesso REST direto a essas tabelas não faz parte da arquitetura do MEG/Evolution.
 
-Até essa decisão, não expor chaves Supabase da Evolution em Web, Android, logs ou documentação.
+A SQL executada e a SQL de rollback ficam registradas em `docs/security/evolution-supabase-hardening-20261005.sql` e `docs/security/evolution-supabase-hardening-rollback-20261005.sql`.
+
+## Regra permanente
+
+- não criar policy permissiva para `anon` ou `authenticated` apenas para silenciar o advisor;
+- qualquer futura mudança da Evolution que passe a usar Supabase Client/PostgREST deve reabrir formalmente este desenho de segurança;
+- verificar Security Advisor após upgrades da Evolution API ou criação de novas tabelas;
+- nunca expor credenciais PostgreSQL, `service_role` ou API key da Evolution no Web/Android.

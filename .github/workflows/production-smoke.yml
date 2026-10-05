@@ -11,11 +11,15 @@ jobs:
     steps:
       - name: Wait for deployments
         run: sleep 60
+
       - name: Verify API
         run: |
           set -euo pipefail
           for attempt in $(seq 1 30); do
-            if curl --fail-with-body --silent --show-error --max-time 20 https://meg-platform-api.onrender.com/health -o health.json               && grep -q '"cloud-state"' health.json               && grep -q '"xlsx-import"' health.json               && grep -q '"normalization":{"status":"completed","primary":true,"reconciled":true' health.json; then
+            if curl --fail-with-body --silent --show-error --max-time 20 https://meg-platform-api.onrender.com/health -o health.json \
+              && grep -q '"cloud-state"' health.json \
+              && grep -q '"xlsx-import"' health.json \
+              && grep -q '"normalization":{"status":"completed","primary":true,"reconciled":true' health.json; then
               echo "API pronta e normalização confirmada na tentativa $attempt."
               exit 0
             fi
@@ -25,11 +29,39 @@ jobs:
           echo "API não atingiu estado financeiro pronto no prazo."
           cat health.json || true
           exit 1
+
+      - name: Verify production security hardening
+        run: |
+          set -euo pipefail
+          API="https://meg-platform-api.onrender.com"
+
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            -D health-headers.txt "$API/health" -o /dev/null
+
+          tr -d '\r' < health-headers.txt | tr '[:upper:]' '[:lower:]' > health-headers-normalized.txt
+          grep -q '^x-content-type-options: nosniff$' health-headers-normalized.txt
+          grep -q '^x-frame-options: deny$' health-headers-normalized.txt
+          grep -q '^referrer-policy: no-referrer$' health-headers-normalized.txt
+          grep -q "^content-security-policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'$" health-headers-normalized.txt
+
+          docs_status=$(curl --silent --show-error --max-time 20 -o /dev/null -w '%{http_code}' "$API/docs")
+          test "$docs_status" = "404"
+
+          auth_status=$(curl --silent --show-error --max-time 20 -D auth-headers.txt -o /dev/null -w '%{http_code}' "$API/auth/me")
+          test "$auth_status" = "401"
+
+          tr -d '\r' < auth-headers.txt | tr '[:upper:]' '[:lower:]' > auth-headers-normalized.txt
+          grep -q '^cache-control: no-store$' auth-headers-normalized.txt
+
+          echo "Hardening de produção confirmado: headers, Swagger fechado e rota autenticada protegida."
+
       - name: Verify official Phoenix V15 web application
         run: |
           set -euo pipefail
           for attempt in $(seq 1 24); do
-            if curl --fail-with-body --silent --show-error --max-time 20 https://marcosvilalva.github.io/MEG-Platform/ -o site.html               && grep -q 'data-meg-shell="phoenix-v15"' site.html               && grep -q 'MEG Finanças' site.html; then
+            if curl --fail-with-body --silent --show-error --max-time 20 https://marcosvilalva.github.io/MEG-Platform/ -o site.html \
+              && grep -q 'data-meg-shell="phoenix-v15"' site.html \
+              && grep -q 'MEG Finanças' site.html; then
               echo "Phoenix V15 publicada na tentativa $attempt."
               exit 0
             fi

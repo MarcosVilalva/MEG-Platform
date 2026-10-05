@@ -74,3 +74,16 @@ Parar e pedir decisão humana somente quando houver:
 - bloqueio de acesso que impeça validar com segurança.
 
 Falha de teste, erro de build, conflito de branch ou regressão técnica comum não são motivo para interromper: investigar, corrigir e repetir os gates.
+
+
+## Evolution Supabase — regra de segurança
+
+O projeto Supabase `meg-evolution` foi endurecido em 2026-10-05 pela migration `20261005111705_harden_evolution_public_access`.
+
+Regras permanentes:
+- manter RLS habilitado nas tabelas `public`;
+- não restaurar grants de tabela, sequência ou função para `anon`/`authenticated` sem decisão arquitetural explícita;
+- a Evolution API v2.3.7 usa PostgreSQL direto por `DATABASE_CONNECTION_URI` e o acesso atual foi validado pelo papel `postgres`;
+- não criar policies permissivas apenas para silenciar advisor;
+- após upgrade da Evolution API ou mudança de persistência, revalidar método de conexão e Security Advisor antes de alterar RLS/grants;
+- rollback existe em `docs/security/evolution-supabase-hardening-rollback-20261005.sql` e só deve ser usado diante de falha comprovadamente causada pelo hardening.
