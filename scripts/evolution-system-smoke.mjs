@@ -14,13 +14,25 @@ const events=[event('salary',4850),event('expense',-342.5),event('pending',-125,
 const summary={month,availableBalance:3049.15,income:4850,expense:342.5,projectedResult:4507.5,realizedIncome:4850,realizedExpense:342.5,realizedResult:4507.5,eventCount:events.length,pendingCount:1,pendingAmount:125,topCategories:[{name:'Supermercado',amount:342.5}]};
 const benefit={month,balance:1436.52,credits:2000,used:563.48};
 const card={id:'latam',name:'LATAM Pass',lastFour:'5934',brand:'Mastercard',isActive:true,creditLimit:10000,usedLimit:125,availableLimit:9875,closingDay:2,dueDay:10,statementAmount:125,statement:{month,dueDate:'2026-10-10',charges:125,credits:0,netAmount:125,openCharges:125,openCredits:0,openNetAmount:125,payableAmount:125,creditBalance:0,status:'open',lines:[]},purchases:[]};
-let balance=3049.15,transferFailures=0;const writes=[],pageErrors=[];
+let balance=3049.15,transferFailures=0,duplicateFailures=1;const writes=[],pageErrors=[];
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1');res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Content-Type','application/json');
   if(req.method==='OPTIONS'){res.setHeader('Access-Control-Allow-Headers','Content-Type,Authorization');res.end();return;}
   if(req.method!=='GET'){
     let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw||'{}');writes.push({url:url.pathname,body});
     if(url.pathname==='/finance/transfers'&&transferFailures-- >0){res.writeHead(503);res.end(JSON.stringify({error:'NETWORK_RETRY'}));return;}
+    if(url.pathname==='/finance/events'&&duplicateFailures>0&&!body.allowDuplicate){
+      duplicateFailures-=1;
+      res.writeHead(409);
+      res.end(JSON.stringify({error:'POSSIBLE_DUPLICATE',duplicate:{id:'existing-expense',description:body.description,date:body.date,amount:body.amount,signedAmount:-Math.abs(Number(body.amount||0))},duplicateWindowSeconds:90}));
+      return;
+    }
+    if(url.pathname==='/finance/events'){
+      const created={...event('created-expense',-Math.abs(Number(body.amount||0)),body.status||'paid'),description:body.description,date:body.date,accountId:body.accountId,account,categories:undefined,categoryId:body.categoryId,category,paymentMethodId:body.paymentMethodId,paymentMethod:pix};
+      events.push(created);
+      res.end(JSON.stringify(created));
+      return;
+    }
     if(url.pathname==='/finance/benefit-events'){events.push({...event('new-benefit-credit',body.amount,'paid',true),description:body.description,date:body.date});benefit.balance+=body.amount;benefit.credits+=body.amount;}
     if(url.pathname==='/finance/pending/batch/settle'){
       events.find(e=>e.id==='pending').status='paid';
@@ -84,8 +96,21 @@ try{
   await page.getByRole('button',{name:'Benefícios',exact:true}).click();await page.getByText('RECARGA VEROCARD',{exact:true}).waitFor();
   // Repetir exatamente a transferência após falha preserva o identificador.
   transferFailures=1;await page.getByRole('button',{name:'Início',exact:true}).click();await page.getByRole('button',{name:'Transferência Entre suas contas'}).click();await page.getByLabel('Descrição',{exact:true}).fill('TRANSFERÊNCIA TESTE');await page.getByLabel('Valor (R$)',{exact:true}).fill('10000');await page.getByRole('button',{name:'Salvar transferência',exact:true}).click();await page.getByText('NETWORK_RETRY',{exact:true}).waitFor();await page.getByRole('button',{name:'Salvar transferência',exact:true}).click();await page.getByRole('heading',{name:'Saldo disponível',exact:true}).waitFor();const transfers=writes.filter(x=>x.url==='/finance/transfers');assert.equal(transfers.length,2);assert.equal(transfers[0].body.operationId,transfers[1].body.operationId);
+  // Novo lançamento real: proteção de duplicidade deve interromper a primeira tentativa e preservar operationId no override consciente.
+  await page.goto(base+'/evolution.html?screen=system&view=home&month='+month+'&modal=launch&mode=expense');await page.locator('.evo-launch-form-layout').waitFor();
+  await page.locator('.evo-launch-description input').fill('SUPERMERCADO TESTE FULL');
+  await page.getByRole('button',{name:/Categoria/}).click();const categoryDialog=page.getByRole('dialog',{name:/Categoria/});await categoryDialog.getByRole('button',{name:/Supermercado/}).click();
+  await page.locator('.evo-launch-money input').fill('34250');
+  await page.getByRole('button',{name:'Salvar lançamento',exact:true}).click();
+  await page.getByRole('alertdialog',{name:'Possível lançamento duplicado'}).waitFor();
+  await page.getByText('Encontramos um lançamento muito parecido.',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Salvar mesmo assim',exact:true}).click();
+  await page.getByRole('heading',{name:'Saldo disponível',exact:true}).waitFor({timeout:10000});
+  const createdWrites=writes.filter(x=>x.url==='/finance/events'&&x.body.description==='SUPERMERCADO TESTE FULL');
+  assert.equal(createdWrites.length,2);assert.equal(createdWrites[0].body.allowDuplicate,false);assert.equal(createdWrites[1].body.allowDuplicate,true);assert.equal(createdWrites[0].body.operationId,createdWrites[1].body.operationId);
+
   // Editar ajuste credor existente conserva o sinal contábil.
   await page.getByRole('button',{name:'Lançamentos',exact:true}).click();await page.getByRole('button',{name:'Editar Ajuste credor existente',exact:true}).click();await page.getByRole('button',{name:'Salvar alterações',exact:true}).click();await page.getByRole('heading',{name:'Saldo disponível',exact:true}).waitFor();const edit=writes.find(x=>x.url==='/finance/events/bulk/update');assert.equal(edit.body.changes.amount,25);
-  assert.deepEqual(pageErrors,[]);fs.writeFileSync(path.join(artifacts,'smoke-results.json'),JSON.stringify({passed:true,viewports:3,views:8,checks:['restauração de sessão','sem overflow geral','filtros de tipo e Smart Grid','saldo insuficiente','data da baixa','comprovante da baixa','saldo antes e depois','baixa atômica','recarga exclusiva benefício','histórico recarga','retry idempotente','edição preserva sinal credor','sem erros React'],writesMocked:writes.length},null,2));
+  assert.deepEqual(pageErrors,[]);fs.writeFileSync(path.join(artifacts,'smoke-results.json'),JSON.stringify({passed:true,viewports:3,views:8,checks:['restauração de sessão','sem overflow geral','filtros de tipo e Smart Grid','saldo insuficiente','data da baixa','comprovante da baixa','saldo antes e depois','baixa atômica','recarga exclusiva benefício','histórico recarga','retry idempotente','novo lançamento real','proteção de duplicidade','operationId preservado','edição preserva sinal credor','sem erros React'],writesMocked:writes.length},null,2));
   console.log('Evolution: 24 layouts e fluxos financeiros simulados passaram. Nenhum dado real alterado.');
 }finally{await browser.close();server.close();}
