@@ -3,7 +3,7 @@
 **Status:** FONTE OFICIAL DO PROJETO  
 **Versão:** 2026-10-04 / Expert Baseline + Five-Lens Method  
 **Repositório:** MarcosVilalva/MEG-Platform  
-**Referência visual corrente:** PR #570 `feat/evolution-final-fidelity`  
+**Referência visual corrente:** `main` no commit `2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86`  
 **Regra de proteção:** Android e `apps/web/src/mobile` são referência funcional e permanecem somente leitura durante a evolução Web.
 
 ---
@@ -741,7 +741,7 @@ Build verde não equivale a produto validado.
 
 # 20. Estado atual — checkpoint 2026-10-05
 
-- PR #570: consolidação visual/funcional final em validação.
+- PR #570: **MERGED** em produção no commit `2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86`.
 - Android e `apps/web/src/mobile`: protegidos por preflight e somente leitura.
 - Login: estabilizado e responsivo.
 - Loading: preservado como referência visual forte.
@@ -757,25 +757,26 @@ Build verde não equivale a produto validado.
 - Configurações: transformadas em Centro de Comando Mestre, com Perfil, Home, Cadastros, Segurança, Avisos e Sistema.
 - Cadastros Web reais: categorias, contas, formas de pagamento e cartões possuem inclusão/edição/ativação-desativação pelas APIs reais disponíveis.
 - Responsividade: gate visual ampliado para 1366×768 e 430×932 em Home, Lançamentos, Relatórios e Configurações, além de 1024×768 e 768×1024 na Home.
-- QA: CI e Evolution Visual Preflight passam no checkpoint anterior; o head final deve repetir os dois gates antes do merge.
+- QA da PR #570: CI e Evolution Visual Preflight passaram no head final; Android/Mobile sem alterações.
 - Arte customizada persistente de cartão continua condicionada a uma estratégia de storage/backend adequada; não armazenar imagens grandes silenciosamente no app-state apenas para simular suporte.
 
 ---
 
 # 21. Próximo passo oficial
 
-Fechamento da PR #570:
+Checkpoint de produção fechado em 2026-10-05:
 
-1. executar CI e Evolution Visual Preflight no head final;
-2. inspecionar capturas desktop e 430 px, incluindo Cadastros Mestre;
-3. confirmar proteção de Android/Mobile;
-4. corrigir qualquer regressão visual ou funcional encontrada;
-5. confirmar mergeabilidade;
-6. fazer merge da PR #570 somente com gates verdes;
-7. verificar workflows pós-merge e deploy;
-8. registrar o commit de produção como novo checkpoint oficial.
+- PR #570 mesclada com sucesso;
+- commit de produção: `2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86`;
+- MEG Platform CI pós-merge: verde;
+- MEG Production Smoke Test: verde;
+- Deploy GitHub Pages: verde;
+- URL de produção: `https://marcosvilalva.github.io/MEG-Platform/`;
+- Android/Mobile permaneceram intocados.
 
-Depois do merge, evoluções futuras devem partir deste documento e não reabrir decisões já estabilizadas.
+A partir deste ponto, novas evoluções devem partir do commit acima e deste documento. Não reabrir visual, fluxo ou regra já consolidada sem uma necessidade concreta e registrada.
+
+Pendência deliberada, não simulada: arte customizada persistente para cartões exige storage/backend apropriado. Até existir essa camada, usar as artes internas conhecidas e a identidade configurável sem armazenar imagens grandes no app-state.
 
 ---
 
