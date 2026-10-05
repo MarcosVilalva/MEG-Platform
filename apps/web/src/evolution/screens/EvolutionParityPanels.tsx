@@ -232,7 +232,7 @@ export function EvolutionAnalytics({data}:{data:SystemData}){
     expenseTotal>incomeTotal?{title:'Atenção ao resultado',text:`As despesas realizadas superam as receitas em ${money(expenseTotal-incomeTotal)} neste recorte.`}:{title:'Resultado do recorte',text:`As receitas realizadas superam as despesas em ${money(Math.max(0,incomeTotal-expenseTotal))}.`}
   ].filter(Boolean) as Array<{title:string;text:string}>;
   const exportRows=[['Grupo','Quantidade','Total','Média'],...groups.map(item=>[item.label,String(item.count),item.total.toFixed(2).replace('.',','),item.average.toFixed(2).replace('.',',')])];
-  return <div className="meg-module-grid evo-analysis evo-reports-copilot">
+  return <div className="meg-module-grid evo-analysis evo-reports-copilot" data-meg-reports-structure="dynamic-analysis-v1">
     <header className="meg-page-head"><div><h1>Relatórios</h1><p>Análise dinâmica com dados reais e apoio à decisão financeira.</p></div><div className="evo-report-export"><Button icon="list" onClick={()=>exportExcel('meg-relatorio-'+dimension+'.xls',exportRows)}>Excel</Button></div></header>
     <div className="evo-report-tabs">{([['expenses','Despesas'],['income','Receitas'],['cashflow','Fluxo de caixa'],['categories','Categorias']] as Array<[typeof focus,string]>).map(([key,label])=><button key={key} className={focus===key?'active':''} onClick={()=>{setFocus(key);if(key==='categories')setDimension('category');if(key==='cashflow')setDimension('month');setSelected(null)}}>{label}</button>)}</div>
     <div className="evo-report-builder">
