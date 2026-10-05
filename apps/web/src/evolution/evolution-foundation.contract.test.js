@@ -79,6 +79,10 @@ assert.match(loginScreen,/data-evolution-login-fidelity="product-v2"/);
 assert.match(loginScreen,/Bem-vindo de volta/);
 assert.match(loginScreen,/Entrar no MEG/);
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
+assert.match(loginScreen,/resetPasswordWithToken\(resetToken,password,confirmPassword\)/,'Recuperação deve consumir token de uso único.');
+assert.match(loginScreen,/window\.location\.hash/,'Token de recuperação deve ser lido do fragmento da URL.');
+assert.match(loginScreen,/link seguro de recuperação/,'Login deve explicar o fluxo por link seguro.');
+assert.doesNotMatch(loginScreen,/Senha temporária enviada/,'Fluxo antigo de senha temporária não pode voltar ao Evolution.');
 assert.match(loginScreen,/\.\/brand\/meg-loading-lockup\.svg/,'Login deve usar a marca canônica do MEG.');
 assert.doesNotMatch(loginScreen,/evolution\/brand\/meg-mark\.svg/,'A versão interpretada da marca não pode voltar ao Login.');
 
