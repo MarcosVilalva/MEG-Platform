@@ -5,6 +5,7 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { prisma } from '@meg/database';
 import { config } from './config';
+import { registerSecurityHeaders } from './security';
 import { isAllowedOrigin } from './cors';
 import { registerAuth } from './plugins/auth';
 import { authRoutes } from './modules/auth/routes';
@@ -49,6 +50,8 @@ let dataRepair: { status: 'pending' | 'completed'; scanned: number; repaired: nu
   status: 'pending', scanned: 0, repaired: 0, issues: 0
 };
 
+registerSecurityHeaders(app);
+
 await app.register(cors, {
   origin(origin, callback) {
     if (isAllowedOrigin(origin, config.corsOrigins)) {
@@ -68,19 +71,21 @@ await app.register(compress, {
   threshold: 1024
 });
 
-await app.register(swagger, {
-  openapi: {
-    info: {
-      title: 'MEG Platform API',
-      description: 'API da MEG Platform — Project Phoenix',
-      version: '1.3.0'
+if (!config.isProduction) {
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: 'MEG Platform API',
+        description: 'API da MEG Platform — Project Phoenix',
+        version: '1.3.0'
+      }
     }
-  }
-});
+  });
 
-await app.register(swaggerUi, {
-  routePrefix: '/docs'
-});
+  await app.register(swaggerUi, {
+    routePrefix: '/docs'
+  });
+}
 
 await registerAuth(app);
 
