@@ -756,6 +756,16 @@ Build verde não equivale a produto validado.
 - Arte customizada persistente de cartão continua dependente de estratégia apropriada de storage/backend; não simular persistência de imagem grande em estado local.
 - A partir deste checkpoint, qualquer evolução deve sair de `main`, em branch própria, com CI e validação pertinente antes do merge.
 
+## Checkpoint corrente pós-hardening e revisão visual — 2026-10-05 11:12 BRT
+
+- `main@94c198cdf0bf20ad3c39d3215523ef2f9c7b8630` é o checkpoint integrado mais recente.
+- PR #587: correções objetivas de regressão visual em 430 px, preservando a quebra legível do Login e removendo o recorte do hero de Benefícios; **CI e Visual Preflight verdes**, merge concluído.
+- PR #588: KPIs de contagem passaram a usar formato inteiro em Histórico, Relatórios e visão consolidada; contrato anti-regressão incorporado ao CI; **CI e Visual Preflight verdes**, merge concluído.
+- Pós-merge de #588: **MEG Platform CI = sucesso**, **MEG Production Smoke Test = sucesso** e **Deploy MEG Platform to GitHub Pages = sucesso**.
+- O smoke visual/funcional do Evolution validou três viewports, oito views, ausência de overflow geral, Smart Grid/filtros, saldo insuficiente, data/comprovante de baixa, atomicidade, recarga de benefício, idempotência, novo lançamento real, proteção de duplicidade e ausência de erros React.
+- Branches Web históricas e obsoletas #578, #565, #535, #534 e #521 foram encerradas para impedir retomada acidental fora da baseline oficial; nenhum arquivo Android/Mobile foi alterado por essa limpeza.
+
+
 ---
 
 # 21. Próximo passo oficial
