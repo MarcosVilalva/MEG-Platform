@@ -12,6 +12,8 @@ type LaunchStep='choose'|'form'|'success';
 type AccountClassification='general'|'investment'|'benefit';
 type AccountKind='monetary'|'benefit';
 
+type DuplicateWarning={description?:string;date?:string;amount?:number;windowSeconds?:number};
+
 type Props={
   month:string;
   qaMode?:boolean;
@@ -179,6 +181,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
   const [historyLoading,setHistoryLoading]=useState(false);
   const [historySuggestions,setHistorySuggestions]=useState<FinancialEvent[]>([]);
   const [previewOpen,setPreviewOpen]=useState(false);
+  const [duplicateWarning,setDuplicateWarning]=useState<DuplicateWarning|null>(null);
   const saveLock=useRef(false);
   const lastOperation=useRef<{payload:string;id:string}|null>(null);
   function idFor(payload:unknown){const key=JSON.stringify(payload);if(lastOperation.current?.payload!==key)lastOperation.current={payload:key,id:operationId()};return lastOperation.current!.id;}
@@ -392,6 +395,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
     setAmount('');
     setNotes('');
     setMessage('');
+    setDuplicateWarning(null);
     setHistoryOpen(false);
     setInstallments(1);
     setPaymentMode('cash');
@@ -439,19 +443,20 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
     return '';
   }
 
-  async function save(){
+  async function save(allowDuplicate=false){
     if(busy||saveLock.current)return;
     const error=validate();
     if(error){setMessage(error);return;}
     if(qaMode){setMessage('Prévia visual: operações financeiras desativadas.');return;}
     saveLock.current=true;
+    if(!allowDuplicate)setDuplicateWarning(null);
     setBusy(true);
     setMessage('Salvando lançamento…');
     try{
       const value=parseAmount(amount);
       if(mode==='expense'&&paymentMode==='credit'){
         const payload={cardId,categoryId:categoryId||undefined,description:description.trim().toLocaleUpperCase('pt-BR'),totalAmount:value,purchaseDate:date,installments:Math.max(1,Math.min(48,Math.trunc(installments||1)))};
-        await cardsClient.createPurchase({...payload,operationId:idFor(payload)});
+        await cardsClient.createPurchase({...payload,operationId:idFor(payload),allowDuplicate});
       }else{
         const planned=mode==='expense'&&status==='planned';
         const payload={
@@ -467,12 +472,22 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
         };
         if(mode==='benefit'||incomeBenefit){
           if(!benefitAccount||!verocard)throw Error('Conta benefício e forma Verocard são obrigatórias.');
-          await authenticatedRequest('/finance/benefit-events',{method:'POST',body:JSON.stringify({...payload,accountId:benefitAccount.id,paymentMethodId:verocard.id,operationId:idFor(payload)})});
-        }else await financeClient.createEvent({...payload,operationId:idFor(payload)});
+          await authenticatedRequest('/finance/benefit-events',{method:'POST',body:JSON.stringify({...payload,accountId:benefitAccount.id,paymentMethodId:verocard.id,operationId:idFor(payload),allowDuplicate})});
+        }else await financeClient.createEvent({...payload,operationId:idFor(payload),allowDuplicate});
       }
       setStep('success');
     }catch(error){
-      setMessage(error instanceof Error?error.message:'Não foi possível salvar o lançamento.');
+      const issue=error as Error&{code?:string;duplicate?:{description?:string;date?:string;amount?:number;signedAmount?:number};duplicateWindowSeconds?:number};
+      if(!allowDuplicate&&(issue.message==='POSSIBLE_DUPLICATE'||issue.code==='POSSIBLE_DUPLICATE')){
+        const duplicate=issue.duplicate;
+        setMessage('');
+        setDuplicateWarning({
+          description:duplicate?.description,
+          date:duplicate?.date?.slice(0,10),
+          amount:Math.abs(Number(duplicate?.amount??duplicate?.signedAmount??0))||undefined,
+          windowSeconds:issue.duplicateWindowSeconds
+        });
+      }else setMessage(error instanceof Error?error.message:'Não foi possível salvar o lançamento.');
     }finally{
       saveLock.current=false;
       setBusy(false);
@@ -486,6 +501,7 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
     setNotes('');
     setInstallments(1);
     setMessage('');
+    setDuplicateWarning(null);
     setStep('choose');
   }
 
@@ -635,9 +651,15 @@ export function EvolutionLaunchModal({month,qaMode=false,onClose,onSaved,onTrans
         </main>
 
         {message&&<div className="evo-launch-message" role="status">{message}</div>}
+        {duplicateWarning&&<section className="evo-launch-duplicate-confirm" role="alertdialog" aria-label="Possível lançamento duplicado">
+          <span className="icon"><EvolutionFinancialIcon name="alert" size={23}/></span>
+          <div><small>PROTEÇÃO CONTRA DUPLICIDADE</small><strong>Encontramos um lançamento muito parecido.</strong><p>{duplicateWarning.description||description}{duplicateWarning.date?' · '+formatIso(duplicateWarning.date):''}{duplicateWarning.amount?' · '+money.format(duplicateWarning.amount):''}</p><em>Confira antes de continuar. Se for realmente outro lançamento, você pode confirmar a gravação.</em></div>
+          <button type="button" className="review" disabled={busy} onClick={()=>setDuplicateWarning(null)}>Revisar</button>
+          <button type="button" className="confirm" disabled={busy} onClick={()=>void save(true)}>Salvar mesmo assim</button>
+        </section>}
         <footer className="evo-launch-actions">
           <button type="button" className="cancel" disabled={busy} onClick={()=>setStep('choose')}><EvolutionFinancialIcon name="chevron-left" size={20}/>Voltar</button>
-          <button type="button" className="save" disabled={busy||qaMode} onClick={()=>void save()}><EvolutionFinancialIcon name="check-line" size={21}/>{busy?'Salvando…':'Salvar lançamento'}</button>
+          <button type="button" className="save" disabled={busy||qaMode||Boolean(duplicateWarning)} onClick={()=>void save()}><EvolutionFinancialIcon name="check-line" size={21}/>{busy?'Salvando…':'Salvar lançamento'}</button>
         </footer>
       </>}
 

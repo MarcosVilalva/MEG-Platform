@@ -1,0 +1,75 @@
+.evo-smart-filter-trigger{
+  width:100%;min-height:38px;display:flex;align-items:center;gap:7px;padding:0 10px;
+  border:0;background:transparent;color:#b9d6d3;font:700 clamp(11px,.68vw,14px)/1.1 inherit;
+  text-align:left;cursor:pointer;border-radius:9px;transition:background .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.evo-smart-filter-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evo-smart-filter-trigger>svg{margin-left:auto;color:#5ba9a4;flex:0 0 auto}
+.evo-smart-filter-trigger>b{display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#0b5d61;color:#9dfff3;font-size:9px}
+.evo-smart-filter-trigger:hover,.evo-smart-filter-trigger[aria-expanded="true"]{background:linear-gradient(180deg,#0b343c,#06272e);color:#efffff;box-shadow:inset 0 0 0 1px #1d706f,0 8px 24px #0005;transform:translateY(-1px)}
+.evo-smart-filter-trigger.filtered{background:linear-gradient(180deg,#0b3d43,#062f35);color:#7dffed;box-shadow:inset 0 0 0 1px #19a89c,0 0 16px #14e5ce18}
+.evo-smart-filter-trigger.sorted>svg{color:#5ff7e7}
+.evo-smart-filter-popover{
+  position:fixed;z-index:2147483000;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;
+  max-height:min(560px,calc(100dvh - 24px));overflow:hidden;
+  border:1px solid #176d70;border-radius:20px;
+  background:
+    radial-gradient(circle at 88% 7%,#1dd7c51c,transparent 28%),
+    linear-gradient(180deg,#0a2028 0%,#061820 100%);
+  color:#d9efec;box-shadow:0 28px 80px #000a,0 0 32px #12cbb529,inset 0 1px 0 #80fff01a;
+  font-family:Manrope,Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  animation:evoSmartFilterIn .14s ease-out;
+}
+@keyframes evoSmartFilterIn{from{opacity:0;transform:translateY(-5px) scale(.985)}to{opacity:1;transform:none}}
+.evo-smart-filter-popover>header{display:flex;align-items:center;gap:12px;padding:15px 16px 12px;border-bottom:1px solid #104c52;background:linear-gradient(180deg,#0c2931,#092028)}
+.evo-smart-filter-popover>header>div{display:grid;gap:3px;min-width:0}
+.evo-smart-filter-popover>header small{font-size:9px;letter-spacing:.14em;color:#5f928f;font-weight:800}
+.evo-smart-filter-popover>header strong{font-size:15px;color:#f0ffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evo-smart-filter-popover>header>button{margin-left:auto;width:34px;height:34px;border:1px solid #18595c;border-radius:11px;background:#082e35;color:#9ac8c4;display:grid;place-items:center;cursor:pointer}
+.evo-smart-filter-sort{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;border-bottom:1px solid #10464c;background:#071d24}
+.evo-smart-filter-sort button{min-height:38px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #12535a;border-radius:11px;background:#092830;color:#aecbc8;font:700 11px inherit;cursor:pointer}
+.evo-smart-filter-sort button:hover,.evo-smart-filter-sort button.active{border-color:#28d5c6;background:linear-gradient(180deg,#0c5a5c,#0a4449);color:#eafffc;box-shadow:0 0 18px #1de4cf20}
+.evo-smart-filter-body{min-height:0;overflow:auto;padding:12px;scrollbar-width:thin;scrollbar-color:#18756f #06161c}
+.evo-smart-filter-field,.evo-smart-filter-range label{display:grid;gap:7px}
+.evo-smart-filter-field span,.evo-smart-filter-range span{font-size:10px;font-weight:800;color:#84aaa7}
+.evo-smart-filter-field input,.evo-smart-filter-range input,.evo-smart-filter-search{
+  min-height:40px;border:1px solid #13565d;border-radius:11px;background:#05191f;color:#e7f8f6;
+}
+.evo-smart-filter-field input,.evo-smart-filter-range input{width:100%;padding:0 11px;font:600 12px inherit;outline:none}
+.evo-smart-filter-field input:focus,.evo-smart-filter-range input:focus,.evo-smart-filter-search:focus-within{border-color:#36e0d0;box-shadow:0 0 0 3px #2bd7c319}
+.evo-smart-filter-range{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.evo-smart-filter-search{display:flex;align-items:center;gap:8px;padding:0 10px;margin-bottom:10px}
+.evo-smart-filter-search svg{color:#4bb9b0;flex:0 0 auto}
+.evo-smart-filter-search input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#eafffd;font:600 12px inherit}
+.evo-smart-filter-select-all,.evo-smart-filter-options label{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:9px;min-height:38px;padding:6px 8px;border-radius:9px;color:#cfe3e0;font-size:11px;cursor:pointer}
+.evo-smart-filter-select-all{margin-bottom:5px;background:#0a2c33;border:1px solid #104e53;font-weight:800}
+.evo-smart-filter-options{display:grid;gap:2px;max-height:270px;overflow:auto;padding-right:2px}
+.evo-smart-filter-options label:hover{background:#0a3036}
+.evo-smart-filter-select-all input,.evo-smart-filter-options input{appearance:none;width:17px;height:17px;margin:0;border:1px solid #28736f;border-radius:5px;background:#03151a;display:grid;place-items:center;cursor:pointer}
+.evo-smart-filter-select-all input:checked,.evo-smart-filter-options input:checked{background:linear-gradient(180deg,#35e5d0,#119b91);border-color:#7bfff0;box-shadow:0 0 10px #19d9c857}
+.evo-smart-filter-select-all input:checked::after,.evo-smart-filter-options input:checked::after{content:"✓";font-size:11px;font-weight:900;color:#002c2b}
+.evo-smart-filter-select-all span,.evo-smart-filter-options span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evo-smart-filter-select-all b,.evo-smart-filter-options b{color:#679a96;font-size:9px;font-weight:800}
+.evo-smart-filter-options p{margin:18px 6px;color:#6f9693;text-align:center;font-size:11px}
+.evo-smart-filter-popover>footer{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;padding:11px 12px;border-top:1px solid #10464c;background:#071d24}
+.evo-smart-filter-popover>footer button{min-height:36px;padding:0 12px;border:1px solid #13555a;border-radius:10px;background:#0a2b32;color:#b8d5d2;font:800 10px inherit;cursor:pointer}
+.evo-smart-filter-popover>footer button.primary{background:linear-gradient(180deg,#26d9c7,#118d84);border-color:#62f8e8;color:#002b2a;box-shadow:0 0 15px #21ddc52a}
+.evo-smart-filter-popover>footer button:hover{filter:brightness(1.08)}
+.meg-excel-table>thead>tr:first-child>th{padding:3px 4px!important;background:linear-gradient(180deg,#08252c,#061c23)!important;box-shadow:inset 0 -1px #15565c}
+.meg-excel-table>thead>tr:first-child>th:last-child{width:46px}
+.meg-excel-table tbody tr{transition:background .16s ease,box-shadow .16s ease,transform .16s ease}
+.meg-excel-table tbody tr:hover{background:linear-gradient(90deg,#0d3b4038,#12353b55)!important;box-shadow:inset 3px 0 #24d9c8}
+.meg-excel-table td{font-size:clamp(11.5px,.72vw,14px)!important}
+.meg-excel-table td:nth-child(7){font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap}
+.meg-event-desc>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg-smart-grid-clear{width:34px;height:34px;display:grid;place-items:center;border:1px solid #15545a;border-radius:10px;background:#08272e;color:#7ca6a3;cursor:pointer}
+.meg-smart-grid-clear.active{color:#56f4e1;border-color:#25bdb2;background:#0a3a3f;box-shadow:0 0 14px #1bd4c529}
+
+@media(max-width:720px){
+  .evo-smart-filter-popover{left:10px!important;right:10px!important;bottom:10px!important;top:auto!important;width:auto!important;max-height:min(78dvh,650px);border-radius:24px}
+  .evo-smart-filter-sort{grid-template-columns:1fr}
+  .evo-smart-filter-range{grid-template-columns:1fr}
+  .evo-smart-filter-popover>footer{grid-template-columns:1fr 1fr}
+  .evo-smart-filter-popover>footer>span{display:none}
+  .evo-smart-filter-trigger{min-height:34px;font-size:11px}
+}

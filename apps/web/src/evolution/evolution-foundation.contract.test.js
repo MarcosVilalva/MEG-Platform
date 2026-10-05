@@ -13,6 +13,7 @@ const paths=[
   './screens/EvolutionPreview.tsx',
   './components/EvolutionFinancialIcon.tsx',
   './components/EvolutionPicker.tsx',
+  './components/EvolutionSmartGridFilter.tsx',
   './styles/global.css',
   './styles/tokens.css',
   './styles/loading.css',
@@ -28,7 +29,8 @@ const paths=[
   './app/system-domain.ts',
   './components/SystemUI.tsx',
   './styles/system.css',
-  './styles/evolution-parity.css'
+  './styles/evolution-parity.css',
+  './styles/smart-grid.css'
 ];
 
 for(const filePath of paths){
@@ -60,8 +62,11 @@ assert.equal(
 );
 
 const app=fs.readFileSync(new URL('./app/EvolutionApp.tsx',import.meta.url),'utf8');
-assert.match(app,/forcedScreen\|\|'login'/,'Acesso normal ao Evolution deve começar no Login.');
-assert.match(app,/onAuthenticated=\{\(\)=>\{/,'Login deve disparar a etapa de carregamento após autenticação.');
+assert.match(app,/storedSession\?'loading':'login'/,'Sessão existente deve iniciar pelo Loading sem piscar o Login.');
+assert.match(app,/readSession/,'Boot do Evolution deve consultar a sessão existente.');
+assert.match(app,/validateSession\(session\)/,'Sessão persistida deve ser validada antes da Home.');
+assert.match(app,/refreshAuthSession/,'Token expirado deve tentar renovação segura.');
+assert.match(app,/prefetchAuthenticatedData\(month\)/,'Loading deve pré-carregar os dados prioritários do período.');
 assert.match(app,/setPhase\('loading'\)/,'Autenticação deve levar ao Loading.');
 assert.match(app,/setPhase\('system'\)/,'Loading deve levar ao sistema.');
 assert.match(app,/phase==='system'\)return <EvolutionHome\/>/,'Sistema deve abrir a Home Evolution.');
@@ -90,7 +95,7 @@ assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
 assert.match(home,/EvolutionSystem/,'Home deve abrir o sistema funcional do conjunto de referências.');
 const system=fs.readFileSync(new URL('./screens/EvolutionSystem.tsx',import.meta.url),'utf8');
-for(const name of ['Lançamentos','Contas a pagar','Meus cartões','Benefícios','Relatórios'])assert.ok(system.includes(name),'Módulo obrigatório ausente: '+name);
+for(const name of ['Lançamentos','Contas a pagar','Cartões de crédito','Benefícios','Relatórios'])assert.ok(system.includes(name),'Módulo obrigatório ausente: '+name);
 assert.doesNotMatch(system,/Plano Premium|Upgrade agora/);
 assert.match(system,/loadSystem/,'Produto autenticado deve carregar dados reais.');
 assert.match(system,/operações financeiras desativadas/,'Prévia deve se identificar e bloquear gravações.');
@@ -108,6 +113,9 @@ assert.match(actions,/pending\/batch\/settle/,'Seleção deve usar a baixa atôm
 assert.match(actions,/getMonetaryBalance/,'Saldo deve considerar a data escolhida.');
 assert.match(actions,/benefit-events/,'Recarga deve preservar o fluxo de benefício.');
 assert.match(actions,/idFor/,'Repetir a mesma tentativa deve preservar operationId.');
+assert.match(actions,/SettlementReceipt/,'Baixa e pagamento devem manter comprovante local antes de fechar o modal.');
+assert.match(actions,/Baixa confirmada[\s\S]*Saldo antes[\s\S]*Saldo após/,'Comprovante deve mostrar impacto financeiro antes e depois.');
+assert.match(actions,/idempotentReplay[\s\S]*Nenhum débito foi duplicado/,'Replay idempotente deve ser explicado ao usuário.');
 
 const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
 assert.match(launch,/Novo Lançamento/);
@@ -117,6 +125,10 @@ assert.doesNotMatch(launch,/Crediário|paymentMode==='installment'/,'Crediário 
 assert.match(launch,/Benefício/);
 assert.match(launch,/financeClient\.createEvent/,'Lançamento comum deve usar API financeira real.');
 assert.match(launch,/cardsClient\.createPurchase/,'Compra no crédito deve usar API real de cartões.');
+assert.match(launch,/async function save\(allowDuplicate=false\)/,'Novo Lançamento deve exigir confirmação consciente antes de liberar duplicidade.');
+assert.match(launch,/POSSIBLE_DUPLICATE[\s\S]*setDuplicateWarning/,'Conflito semântico deve abrir a confirmação de duplicidade.');
+assert.match(launch,/allowDuplicate[\s\S]*Salvar mesmo assim/,'Override de duplicidade deve ser explícito para o usuário.');
+assert.match(launch,/idFor\(payload\)[\s\S]*allowDuplicate/,'Retry consciente deve reutilizar a identidade da tentativa em vez de gerar operação paralela.');
 assert.match(launch,/Math\.min\(48/,'Crédito continua aceitando parcelamento até 48 vezes.');
 assert.match(launch,/financeClient\.listEvents\(1,12,description\.trim\(\)\)/,'Descrição deve consultar histórico real para autocomplete.');
 assert.match(launch,/uniqueCategories/,'Categorias legadas duplicadas devem ser deduplicadas na apresentação.');
@@ -141,6 +153,7 @@ assert.match(launchControlCss,/MEG CONTROL 3D v1/,'Novo Lançamento deve preserv
 assert.match(launchControlCss,/clamp\(/,'Novo Lançamento deve dimensionar tipografia e controles de forma responsiva.');
 assert.match(launchControlCss,/grid-template-columns:minmax\(0,1\.48fr\) minmax\(360px,\.86fr\)/,'Desktop largo deve usar composição espacial própria.');
 assert.match(launchControlCss,/@media\(max-width:920px\)/,'Novo Lançamento deve recompor colunas automaticamente em viewports menores.');
+assert.match(launchControlCss,/evo-launch-duplicate-confirm[\s\S]*PROTEÇÃO CONTRA DUPLICIDADE|evo-launch-duplicate-confirm/,'Confirmação de duplicidade deve possuir tratamento visual próprio.');
 
 const movements=fs.readFileSync(new URL('./screens/EvolutionMovements.tsx',import.meta.url),'utf8');
 assert.match(movements,/data-evolution-screen="movements"/);
@@ -215,3 +228,45 @@ assert.match(parityCss,/evo-card-center-legacy-hide/,'Central nova deve substitu
 assert.doesNotMatch(parity,/from\s+['"][^'"]*\/mobile\//i,'Paridade funcional não pode copiar o visual Mobile.');
 assert.doesNotMatch(parity,/\.\.\/phoenix|\/phoenix\//i,'Paridade funcional deve continuar clean-room.');
 console.log('MEG Evolution Android functional parity contract OK');
+
+
+const finalFidelityCss=fs.readFileSync(new URL('./styles/evolution-parity.css',import.meta.url),'utf8');
+const smartGrid=fs.readFileSync(new URL('./components/EvolutionSmartGridFilter.tsx',import.meta.url),'utf8');
+const smartGridCss=fs.readFileSync(new URL('./styles/smart-grid.css',import.meta.url),'utf8');
+const movementGrid=system.slice(system.indexOf('function MovementGrid'),system.indexOf('function NotificationsDialog'));
+assert.match(system,/MovementGrid/,'Lançamentos finais devem usar grid próprio com filtros por coluna.');
+assert.match(movementGrid,/EvolutionSmartGridFilter label="Data"[\s\S]*label="Descrição"[\s\S]*label="Categoria"[\s\S]*label="Conta"[\s\S]*label="Forma"[\s\S]*label="Status"[\s\S]*label="Valor"/,'Todas as colunas analíticas devem usar filtro integrado ao cabeçalho.');
+assert.doesNotMatch(movementGrid,/<select\b/,'MEG Smart Grid não pode voltar a usar select nativo nos filtros.');
+assert.match(smartGrid,/Pesquisar valores[\s\S]*Selecionar tudo/,'Filtro múltiplo deve oferecer pesquisa e checkboxes.');
+assert.match(smartGrid,/Menor → maior[\s\S]*Maior → menor/,'Valores devem possuir ordenação numérica.');
+assert.match(smartGrid,/Mais antiga → recente[\s\S]*Mais recente → antiga/,'Datas devem possuir ordenação cronológica.');
+assert.match(smartGridCss,/evo-smart-filter-popover[\s\S]*border-radius:20px/,'Popover do Smart Grid deve preservar o acabamento premium arredondado.');
+assert.match(system,/meg-home-status[\s\S]*meg-home-metrics[\s\S]*meg-home-bottom/,'Home final deve preservar as três faixas do layout aprovado.');
+assert.match(system,/Cartões[\s\S]*Benefício Alimentação[\s\S]*Ações rápidas/,'Faixa inferior da Home deve preservar Cartões, Benefício e Ações rápidas.');
+assert.match(system,/meg-pending-toolbar/,'Pendentes deve manter filtros e seleção no próprio grid.');
+assert.match(system,/meg-cards-showcase[\s\S]*Fatura atual[\s\S]*Próximas faturas/,'Cartões deve preservar carrossel, fatura atual e futuras.');
+assert.match(finalFidelityCss,/meg-home-grid\.meg-home-final/);
+assert.match(smartGridCss,/evo-smart-filter-trigger/);
+assert.match(finalFidelityCss,/meg-cards-lower/);
+
+assert.match(system,/NotificationsDialog/,'Notificações finais devem ter superfície própria, não apenas resumo numérico.');
+assert.match(system,/A pagar[\s\S]*Pagas[\s\S]*Sistema/,'Modal de notificações deve preservar os filtros aprovados.');
+assert.match(system,/evo-period-month-grid/,'Seletor de período deve usar grade mensal visual.');
+assert.match(finalFidelityCss,/evo-notification-list/);
+assert.match(finalFidelityCss,/evo-period-month-grid/);
+assert.match(finalFidelityCss,/evo-settlement-success[\s\S]*evo-settlement-balance-impact/,'Comprovante financeiro deve possuir hierarquia visual própria.');
+
+assert.match(system,/meg-period-entry[\s\S]*meg-global-search[\s\S]*meg-top-actions/,'Cabeçalho final deve manter período à esquerda, busca ao centro e ações à direita.');
+assert.match(parity,/Despesas[\s\S]*Receitas[\s\S]*Fluxo de caixa[\s\S]*Categorias/,'Relatórios devem preservar as quatro visões da referência final.');
+assert.match(parity,/evo-report-bars/,'Relatórios finais devem priorizar comparação gráfica em barras.');
+assert.match(finalFidelityCss,/evo-report-tabs/);
+assert.match(finalFidelityCss,/evo-report-summary/);
+assert.match(parity,/Financial Copilot/,'Relatórios devem manter apoio à decisão explícito e sem movimentação automática.');
+assert.match(parity,/Categoria[\s\S]*Conta[\s\S]*Forma de pagamento[\s\S]*Competência/,'Relatórios devem oferecer dimensões financeiras reais.');
+assert.match(parity,/Tabela dinâmica/,'Relatórios devem manter tabela dinâmica sincronizada com a análise.');
+assert.match(parity,/Centro de comando do MEG Web/,'Configurações deve ser tratada como centro de comando.');
+assert.match(parity,/Categorias[\s\S]*Contas[\s\S]*Formas de pagamento[\s\S]*Cartões/,'Configurações deve concentrar os cadastros mestres.');
+assert.match(parity,/financeClient\.createCategory[\s\S]*financeClient\.createAccount[\s\S]*financeClient\.createPaymentMethod[\s\S]*cardsClient\.create/,'Cadastros mestre devem gravar pela API real.');
+assert.match(finalFidelityCss,/evo-catalog-master/,'Configurações mestre deve possuir composição desktop própria.');
+assert.match(finalFidelityCss,/@media\(max-width:560px\)[\s\S]*evo-settings-tabs/,'Configurações deve recompor navegação em mobile.');
+
