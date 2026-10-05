@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "test:imports": "tsx src/modules/imports/repair.test.ts",
     "test:notifications": "tsx src/modules/notifications/service.test.ts && tsx src/modules/notifications/alexa-auth.test.ts && tsx src/modules/notifications/financial-advisor.test.ts && tsx src/modules/notifications/watchdog.test.ts",
-    "test:auth": "tsx src/modules/auth/password-reset.test.ts && tsx src/modules/auth/profile-update.contract.test.ts && tsx src/modules/auth/user-removal.contract.test.ts && tsx src/modules/auth/refresh-session.contract.test.ts",
+    "test:auth": "tsx src/modules/auth/password-reset.test.ts && tsx src/modules/auth/profile-update.contract.test.ts && tsx src/modules/auth/user-removal.contract.test.ts && tsx src/modules/auth/refresh-session.contract.test.ts && tsx src/modules/auth/password-reset-link.contract.test.ts",
     "test:cors": "tsx src/cors.test.ts",
     "test:commercial": "tsx src/modules/platform-admin/service.test.ts",
     "test:app-state": "tsx src/modules/app-state/transaction-patch.test.ts && tsx src/modules/app-state/mutation-confirmation.test.ts && tsx src/modules/app-state/mutation-receipt.test.ts && tsx src/modules/app-state/normalization-migration-core.test.ts && tsx src/modules/app-state/normalized-primary-writeback.test.ts && tsx src/modules/app-state/normalized-primary-reconcile.contract.test.ts && tsx src/modules/app-state/transaction-classification-core.test.ts",
