@@ -42,3 +42,25 @@
     height:auto;
   }
 }
+
+
+/* Shell/Navegação estrutural: sidebar e topbar permanecem contidos no viewport.
+   Em larguras reduzidas os rótulos visuais podem recolher, mas a navegação continua
+   acessível por aria-label/title e o próprio menu absorve alturas menores. */
+.meg-system .meg-sidebar{min-height:0;overflow:hidden}
+.meg-system .meg-sidebar nav{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#128b85 transparent}
+.meg-system .meg-sidebar nav::-webkit-scrollbar{width:4px}
+.meg-system .meg-sidebar nav::-webkit-scrollbar-thumb{background:#128b85;border-radius:999px}
+.meg-system .meg-topbar{min-width:0}
+.meg-system .meg-period-entry,.meg-system .meg-top-actions{flex-shrink:0}
+.meg-system .meg-global-search{min-width:0}
+@media(max-width:1050px){
+  .meg-system .meg-sidebar nav{scrollbar-width:none}
+  .meg-system .meg-sidebar nav::-webkit-scrollbar{display:none}
+}
+@media(max-width:720px){
+  .meg-system .meg-period-entry{min-width:0;max-width:46%}
+  .meg-system .meg-period-entry .meg-control{max-width:100%}
+  .meg-system .meg-period-entry .meg-control span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meg-system .meg-global-search{min-width:0}
+}
