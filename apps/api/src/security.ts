@@ -102,6 +102,27 @@ export function createRateLimitPreHandler(rule: RateLimitRule) {
   };
 }
 
+export const externalRateLimiters = {
+  automation: createRateLimitPreHandler({
+    scope: 'external-automation-ip',
+    max: 120,
+    windowMs: 60 * 60 * 1000,
+    key: requestIp,
+  }),
+  voice: createRateLimitPreHandler({
+    scope: 'external-voice-ip',
+    max: 120,
+    windowMs: 15 * 60 * 1000,
+    key: requestIp,
+  }),
+  advisor: createRateLimitPreHandler({
+    scope: 'external-advisor-ip',
+    max: 60,
+    windowMs: 15 * 60 * 1000,
+    key: requestIp,
+  }),
+};
+
 export const authRateLimiters = {
   register: createRateLimitPreHandler({
     scope: 'auth-register-ip',
