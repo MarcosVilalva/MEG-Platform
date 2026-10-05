@@ -35,6 +35,16 @@ requireTokens('apps/api/src/security.ts', [
   "Content-Security-Policy",
   "Cache-Control",
   "RATE_LIMITED",
+  "externalRateLimiters",
+]);
+
+requireTokens('apps/api/src/modules/notifications/routes.ts', [
+  "externalRateLimiters.automation",
+  "externalRateLimiters.voice",
+]);
+
+requireTokens('apps/api/src/modules/notifications/advisor-routes.ts', [
+  "externalRateLimiters.advisor",
 ]);
 
 const productionSwaggerPattern = /if\s*\(\s*config\.isProduction\s*\)[\s\S]{0,500}register\(swagger/;
