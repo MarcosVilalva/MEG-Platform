@@ -261,3 +261,12 @@ assert.match(parity,/Despesas[\s\S]*Receitas[\s\S]*Fluxo de caixa[\s\S]*Categori
 assert.match(parity,/evo-report-bars/,'Relatórios finais devem priorizar comparação gráfica em barras.');
 assert.match(finalFidelityCss,/evo-report-tabs/);
 assert.match(finalFidelityCss,/evo-report-summary/);
+assert.match(parity,/Financial Copilot/,'Relatórios devem manter apoio à decisão explícito e sem movimentação automática.');
+assert.match(parity,/Categoria[\s\S]*Conta[\s\S]*Forma de pagamento[\s\S]*Competência/,'Relatórios devem oferecer dimensões financeiras reais.');
+assert.match(parity,/Tabela dinâmica/,'Relatórios devem manter tabela dinâmica sincronizada com a análise.');
+assert.match(parity,/Centro de comando do MEG Web/,'Configurações deve ser tratada como centro de comando.');
+assert.match(parity,/Categorias[\s\S]*Contas[\s\S]*Formas de pagamento[\s\S]*Cartões/,'Configurações deve concentrar os cadastros mestres.');
+assert.match(parity,/financeClient\.createCategory[\s\S]*financeClient\.createAccount[\s\S]*financeClient\.createPaymentMethod[\s\S]*cardsClient\.create/,'Cadastros mestre devem gravar pela API real.');
+assert.match(finalFidelityCss,/evo-catalog-master/,'Configurações mestre deve possuir composição desktop própria.');
+assert.match(finalFidelityCss,/@media\(max-width:560px\)[\s\S]*evo-settings-tabs/,'Configurações deve recompor navegação em mobile.');
+
