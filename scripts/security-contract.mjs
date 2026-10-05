@@ -59,9 +59,9 @@ if (productionSwaggerPattern.test(server)) {
 
 
 
-const routeFiles = execFileSync('git', ['ls-files', 'apps/api/src/modules/**/*routes.ts', 'apps/api/src/modules/**/routes.ts'], { encoding: 'utf8' })
+const routeFiles = execFileSync('git', ['ls-files', 'apps/api/src/modules'], { encoding: 'utf8' })
   .split(/\r?\n/)
-  .filter(Boolean);
+  .filter((file) => file.endsWith('routes.ts'));
 
 for (const file of routeFiles) {
   const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
