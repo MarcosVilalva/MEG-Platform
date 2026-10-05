@@ -22,31 +22,31 @@
 .evo-login-shell{
   position:relative;
   z-index:1;
-  width:min(1456px,calc(100vw - 64px));
+  width:min(1480px,calc(100vw - 64px));
   height:min(760px,calc(100dvh - 64px));
   display:grid;
   grid-template-columns:minmax(0,1fr) 620px;
   gap:54px;
-  align-items:center;
+  align-items:start;
 }
 .evo-login-story{
   min-width:0;
-  height:100%;
+  height:742px;
   display:flex;
   flex-direction:column;
   justify-content:flex-start;
-  padding:0 0 0 8px;
+  padding:9px 0 18px 20px;
 }
 .evo-login-brand{
   display:block;
-  width:190px;
+  width:230px;
   height:auto;
-  margin:0 0 23px;
+  margin:0 0 43px -43px;
   object-fit:contain;
   filter:drop-shadow(0 11px 25px rgba(0,0,0,.32));
 }
 .evo-login-kicker{
-  margin:0 0 20px;
+  margin:0 0 35px;
   color:#2ee9db;
   font-size:13px;
   line-height:1;
@@ -57,7 +57,7 @@
   margin:0;
   max-width:720px;
   color:#fff;
-  font-size:58px;
+  font-size:67px;
   line-height:1.04;
   font-weight:800;
   letter-spacing:-.042em;
@@ -187,7 +187,7 @@
   column-gap:25px;
   align-items:start;
   flex:0 0 auto;
-  margin:0 0 36px;
+  margin:0 0 46px;
 }
 .evo-login-security-mark{
   width:64px;
@@ -216,7 +216,7 @@
 }
 .evo-login-card-title>span{
   display:block;
-  margin:3px 0 13px;
+  margin:3px 0 20px;
   color:#35eada;
   font-size:12px;
   line-height:1;
@@ -260,7 +260,7 @@
 .evo-login-form-scroll::-webkit-scrollbar-thumb{border-radius:999px;background:rgba(58,222,207,.25)}
 .evo-login-field{
   display:block;
-  margin:0 0 21px;
+  margin:0 0 26px;
 }
 .evo-login-field>span{
   display:block;
