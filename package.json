@@ -87,7 +87,8 @@
     "test:evolution-movements-structure": "node apps/web/src/evolution/evolution-movements-structure.contract.test.js",
     "test:evolution-payables-structure": "node apps/web/src/evolution/evolution-payables-structure.contract.test.js",
     "test:evolution-cards-structure": "node apps/web/src/evolution/evolution-cards-structure.contract.test.js",
-    "test:evolution-benefits-structure": "node apps/web/src/evolution/evolution-benefits-structure.contract.test.js",\n    "test:evolution-cashflow-structure": "node apps/web/src/evolution/evolution-cashflow-structure.contract.test.js",
+    "test:evolution-benefits-structure": "node apps/web/src/evolution/evolution-benefits-structure.contract.test.js",
+    "test:evolution-cashflow-structure": "node apps/web/src/evolution/evolution-cashflow-structure.contract.test.js",
     "test:production-smoke-contract": "node scripts/production-smoke-contract.mjs"
   },
   "dependencies": {
