@@ -207,6 +207,17 @@ jobs:
               "artifacts/evolution-responsive-${preview}-430x932.png"
           done
 
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1366,768" \
+            --wait-for-timeout="1200" \
+            "http://127.0.0.1:4173/evolution.html?screen=preview&preview=settings&settingsTab=catalogs&catalog=categories" \
+            "artifacts/evolution-settings-catalogs-1366x768.png"
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="430,932" \
+            --wait-for-timeout="1200" \
+            "http://127.0.0.1:4173/evolution.html?screen=preview&preview=settings&settingsTab=catalogs&catalog=categories" \
+            "artifacts/evolution-settings-catalogs-430x932.png"
+
           for viewport in "1024,768" "768,1024"; do
             width="${viewport%,*}"
             height="${viewport#*,}"
@@ -252,6 +263,7 @@ jobs:
           preview_menu=1672x941
           responsive_core=home,movements,analytics,settings@1366x768+430x932
           responsive_home_extra=1024x768+768x1024
+          settings_catalogs=1366x768+430x932
           commit=${GITHUB_SHA}
           rule=CI verde nao equivale a validacao visual. Todas as capturas devem ser comparadas com a referencia aprovada antes de declarar pronto.
           EOF
