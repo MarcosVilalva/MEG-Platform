@@ -27,3 +27,12 @@ Aplicar por padrão, em toda implementação, revisão, handoff ou validação r
 Esses cinco nomes são atalhos de metodologia do MEG, não comandos técnicos especiais da plataforma.
 
 Antes de declarar “pronto”, revisar explicitamente as cinco lentes e não concluir a etapa se houver falha crítica em qualquer uma delas.
+
+
+## /FULL — padrão permanente
+
+O projeto adota `/FULL` como metodologia padrão e ativa por default em todo trabalho relevante. Ler também `docs/FULL_METHOD.md`.
+
+`/FULL` = `/EXPERT + /CRITIC + /DEEP + /RISK + /CHANCE + /VERIFY + /REGRESSION + /AUDIT + /SECURE + /ROLLBACK + /RELEASE + /OBSERVE`.
+
+Não é necessário o usuário digitar `/FULL` a cada solicitação. Aplicar automaticamente os gates pertinentes ao estágio atual do trabalho. Não manter qualquer alias `/FU`.
