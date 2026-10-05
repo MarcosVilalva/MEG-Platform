@@ -52,6 +52,7 @@ function errorMessage(error:unknown){
   if(code.includes('INVALID_CREDENTIALS')||code.includes('UNAUTHORIZED')||code.includes('401')) return 'E-mail ou senha não conferem. Revise os dados e tente novamente.';
   if(code.includes('PENDING')) return 'Seu acesso ainda está aguardando aprovação do administrador.';
   if(code.includes('BLOCKED')) return 'Este acesso está bloqueado. Entre em contato com o administrador do MEG.';
+  if(code.includes('INVALID_RESET_TOKEN')) return 'Este link de recuperação é inválido, expirou ou já foi utilizado. Solicite um novo link.';
   if(code.includes('TIMEOUT')||code.includes('Failed to fetch')||code.includes('HTTP_5')) return 'Não foi possível falar com o MEG agora. Tente novamente em instantes.';
   return 'Não foi possível concluir a operação. Revise os dados e tente novamente.';
 }
@@ -74,6 +75,9 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
   const [authenticatedName,setAuthenticatedName]=useState('');
 
   function switchMode(next:AuthMode){
+    if(mode==='reset'&&next==='login'){
+      window.history.replaceState(null,'',window.location.pathname+window.location.search);
+    }
     setMode(next);
     setNotice(null);
     setBusy(false);
@@ -229,10 +233,10 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
                 </label>
               </>}
 
-              <label className="evo-login-field">
+              {mode!=='reset'&&<label className="evo-login-field">
                 <span>E-mail</span>
                 <div><MailIcon/><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seuemail@exemplo.com" required/></div>
-              </label>
+              </label>}
 
               {mode!=='forgot'&&<label className="evo-login-field">
                 <span>Senha</span>
