@@ -52,7 +52,7 @@ export function EvolutionSystem({previewKey}:{previewKey?:string}={}){
       {busy&&!data&&<div className="meg-fetching" role="status"><span/><strong>Carregando seus dados reais…</strong></div>}
       {data&&<div className="meg-page-content">
         {view==='home'&&periodMode!=='month'&&<EvolutionPeriodOverview data={data} events={periodEvents||[]} label={periodLabel} openingBalance={periodBounds?.openingBalance} closingBalance={periodBounds?.closingBalance} onMovements={()=>go('movements')}/>} 
-        {view==='home'&&periodMode==='month'&&<div className="meg-home-grid meg-home-final">
+        {view==='home'&&periodMode==='month'&&<div className="meg-home-grid meg-home-final" data-meg-home-structure="command-center-v1">
           <div className="meg-home-status">
             <button className="meg-home-balance-card meg-panel" onClick={()=>setHideBalance(x=>!x)} aria-label={hideBalance?'Mostrar saldo':'Ocultar saldo'}>
               <span><h2>Saldo disponível</h2><strong>{hideBalance?'R$ •••••':money(data.summary.availableBalance)}</strong><em><Icon name="trend"/> {data.summary.realizedResult>=0?'+ ':''}{money(data.summary.realizedResult)} no mês</em></span>
