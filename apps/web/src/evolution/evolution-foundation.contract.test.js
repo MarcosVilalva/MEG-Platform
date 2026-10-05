@@ -75,7 +75,7 @@ assert.match(app,/screen==='login'\|\|screen==='loading'\|\|screen==='system'\|\
 assert.match(app,/phase==='preview'\)return <EvolutionPreview\/>/,'Galeria de prévias deve ter rota isolada do sistema real.');
 
 const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.meta.url),'utf8');
-assert.match(loginScreen,/data-evolution-login-fidelity="product-v2"/);
+assert.match(loginScreen,/data-evolution-login-fidelity="approved-reference-v1"/);
 assert.match(loginScreen,/Bem-vindo de volta/);
 assert.match(loginScreen,/Entrar no MEG/);
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
@@ -90,7 +90,7 @@ assert.match(loadingCss,/mask-image:linear-gradient/,'Artwork central deve se fu
 const loginCss=fs.readFileSync(new URL('./styles/login.css',import.meta.url),'utf8');
 assert.match(loginCss,/input:-webkit-autofill/,'Login deve neutralizar o fundo automático do navegador nos campos preenchidos.');
 assert.match(loginCss,/background-clip:text/,'Autofill não deve pintar um bloco atrás do texto.');
-assert.match(loginCss,/evo-login-orbit,[\s\S]*evo-login-storyline\{display:none!important\}/,'Linhas decorativas do Login não podem cruzar o conteúdo.');
+assert.match(loginCss,/background:url\('\/bg-login\.webp'\) center \/ cover no-repeat/,'Login deve usar o fundo final aprovado como asset real.');
 assert.doesNotMatch(loginCss,/\.evo-login-story h1 br:last-child\s*\{\s*display\s*:\s*none\s*\}/,'Título mobile deve preservar a quebra legível entre “clareza para” e “decidir”.');
 
 const home=fs.readFileSync(new URL('./screens/EvolutionHome.tsx',import.meta.url),'utf8');
