@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma, UserRole, UserStatus } from '@meg/database';
 import { sendSystemEmail, sendSystemWhatsApp } from '../notifications/service';
 import { config } from '../../config';
-import { createTemporaryPassword, normalizeAccountEmail, passwordResetMessages } from './password-reset';
+import { createPasswordResetToken, createTemporaryPassword, normalizeAccountEmail, passwordResetLink, passwordResetLinkMessages, passwordResetMessages } from './password-reset';
 import { addUserToRequestedWorkspace, assertSameWorkspace, createWorkspaceForOwner, currentWorkspaceForUser, ensurePrimaryWorkspace, resolveWorkspaceContext } from '../workspaces/service';
 import { workspaceSeatSummary } from '../platform-admin/service';
 
@@ -223,47 +223,115 @@ async function notifyUser(
 export async function requestPasswordReset(emailInput: string) {
   const email = normalizeAccountEmail(emailInput);
   const target = await prisma.user.findUnique({ where: { email } });
-  if (!target) throw new Error('ACCOUNT_NOT_FOUND');
-  if (target.status === UserStatus.PENDING) throw new Error('ACCESS_PENDING');
-  if (target.status === UserStatus.REJECTED) throw new Error('ACCESS_REJECTED');
-  if (!target.isActive || target.status === UserStatus.BLOCKED) throw new Error('USER_BLOCKED');
+
+  // Resposta deliberadamente genérica para não permitir enumeração de contas.
+  if (!target || !target.isActive || target.status !== UserStatus.ACTIVE) {
+    return { accepted: true, notifications: [] as Array<{ channel: string; status: string; detail?: string }> };
+  }
 
   const recentReset = await prisma.auditLog.findFirst({
     where: {
       entity: 'User',
       entityId: target.id,
-      action: 'PASSWORD_RESET_BY_USER',
+      action: 'PASSWORD_RESET_LINK_REQUESTED',
       createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) }
     }
   });
-  if (recentReset) throw new Error('PASSWORD_RESET_RATE_LIMITED');
+  if (recentReset) {
+    return { accepted: true, notifications: [] as Array<{ channel: string; status: string; detail?: string }> };
+  }
 
-  const temporaryPassword = createTemporaryPassword();
-  const passwordHash = await bcrypt.hash(temporaryPassword, 12);
-  const messages = passwordResetMessages(target, temporaryPassword);
+  const { token, tokenHash } = createPasswordResetToken();
+  const expiresAt = new Date(Date.now() + 20 * 60 * 1000);
+  const link = passwordResetLink(token);
+  const messages = passwordResetLinkMessages(target, link);
+
+  await prisma.user.update({
+    where: { id: target.id },
+    data: {
+      passwordResetTokenHash: tokenHash,
+      passwordResetExpiresAt: expiresAt,
+      passwordResetRequestedAt: new Date()
+    }
+  });
+
   const notifications = await notifyUser(
     target,
     messages.subject,
     messages.emailText,
     messages.whatsappText
   );
-  if (!notifications.some((item) => item.status === 'sent')) throw new Error('NOTIFICATION_DELIVERY_FAILED');
 
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: target.id }, data: { passwordHash } }),
-    prisma.authSession.updateMany({ where: { userId: target.id, revokedAt: null }, data: { revokedAt: new Date() } }),
-    prisma.auditLog.create({
+  if (!notifications.some((item) => item.status === 'sent')) {
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetRequestedAt: null }
+    });
+    throw new Error('NOTIFICATION_DELIVERY_FAILED');
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      userId: target.id,
+      entity: 'User',
+      entityId: target.id,
+      action: 'PASSWORD_RESET_LINK_REQUESTED',
+      metadata: JSON.stringify({ expiresAt: expiresAt.toISOString(), channels: notifications.map((item) => ({ channel: item.channel, status: item.status })) })
+    }
+  });
+
+  return { accepted: true, notifications };
+}
+
+export async function consumePasswordResetToken(input: { token: string; password: string }) {
+  const tokenHash = hashToken(input.token);
+  const now = new Date();
+  const target = await prisma.user.findUnique({ where: { passwordResetTokenHash: tokenHash } });
+  if (
+    !target
+    || !target.isActive
+    || target.status !== UserStatus.ACTIVE
+    || !target.passwordResetExpiresAt
+    || target.passwordResetExpiresAt <= now
+  ) {
+    throw new Error('INVALID_RESET_TOKEN');
+  }
+
+  const passwordHash = await bcrypt.hash(input.password, 12);
+
+  await prisma.$transaction(async (tx) => {
+    const consumed = await tx.user.updateMany({
+      where: {
+        id: target.id,
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: { gt: now }
+      },
+      data: {
+        passwordHash,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+        passwordResetRequestedAt: null
+      }
+    });
+    if (consumed.count !== 1) throw new Error('INVALID_RESET_TOKEN');
+
+    await tx.authSession.updateMany({
+      where: { userId: target.id, revokedAt: null },
+      data: { revokedAt: now }
+    });
+
+    await tx.auditLog.create({
       data: {
         userId: target.id,
         entity: 'User',
         entityId: target.id,
-        action: 'PASSWORD_RESET_BY_USER',
-        metadata: JSON.stringify({ deliveredTo: target.email })
+        action: 'PASSWORD_RESET_LINK_CONSUMED',
+        metadata: JSON.stringify({ completedAt: now.toISOString() })
       }
-    })
-  ]);
+    });
+  });
 
-  return { deliveredTo: target.email, notifications };
+  return { status: 'PASSWORD_RESET_COMPLETED' as const };
 }
 
 export async function resetUserPassword(input: { actorId: string; userId: string }) {
