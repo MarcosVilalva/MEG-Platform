@@ -276,12 +276,18 @@ export async function register(name: string, email: string, phone: string, passw
 
 export async function forgotPassword(email: string) {
   return request<{
-    status: 'PASSWORD_SENT';
-    deliveredTo: string;
-    notifications: Array<{ channel: 'email' | 'whatsapp'; status: 'sent' | 'failed' | 'skipped'; detail?: string }>;
+    status: 'RESET_LINK_REQUESTED';
+    message: string;
   }>('/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email })
+  });
+}
+
+export async function resetPasswordWithToken(token: string, password: string, confirmPassword: string) {
+  return request<{ status: 'PASSWORD_RESET_COMPLETED' }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password, confirmPassword })
   });
 }
 
