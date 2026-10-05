@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `9f12b72a61cbbbf549e073b7b69f683543e8b676`
+- `main` de partida do bloco atual: `4832fda8aae763e8aebdd39b879af098381b23f4`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,21 +72,22 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Login — revisão estrutural e anti-regressão — PR #591 em validação.**
+**Loading — revisão estrutural e anti-regressão — PR #592 em validação.**
 
-Fundação estrutural global concluída pela PR #590, com CI, Visual Preflight, Production Smoke e deploy verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591, com CI e Visual Preflight verdes.
 
-Objetivos imediatos do Login:
+Objetivos imediatos do Loading:
 
-- preservar composição aprovada em desktop e 430 px;
-- garantir viewport fixo no login mobile sem rolagem geral;
-- manter rolagem interna apenas quando o formulário crescer;
-- eliminar semântica de cadeado no cabeçalho, mantendo o marcador de segurança como escudo;
+- preservar a arte mestre aprovada;
+- garantir ocupação integral do viewport sem rolagem;
+- manter composição quadrada central independente da proporção da tela;
+- preservar tratamento específico de telas largas e verticais;
+- manter barra de progresso sobreposta à arte sem deslocar a composição;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Login: **Loading → Shell/Navegação**, seguindo então a ordem fixa acima.
+Após Loading: **Shell/Navegação → Home**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
