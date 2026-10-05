@@ -141,7 +141,7 @@ export async function authRoutes(app: FastifyInstance) {
     return { user: consumed.user, accessToken, refreshToken: refresh.token, refreshExpiresAt: refresh.expiresAt };
   });
 
-  app.post('/logout', async (request, reply) => {
+  app.post('/logout', { preHandler: authRateLimiters.refresh }, async (request, reply) => {
     const parsed = refreshSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
     await revokeRefreshSession(parsed.data.refreshToken);
