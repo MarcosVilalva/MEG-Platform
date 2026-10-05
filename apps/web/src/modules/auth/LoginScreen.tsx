@@ -40,10 +40,8 @@ export function LoginScreen({ onAuthenticated }: Props) {
 
     try {
       if (mode === 'forgot') {
-        const result = await forgotPassword(email);
-        const channels = result.notifications.filter((item) => item.status === 'sent').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
-        const failed = result.notifications.filter((item) => item.status === 'failed').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
-        setSuccess(`Nova senha temporária enviada por ${channels.join(' e ')}.${failed.length ? ` Não entregue por ${failed.join(' e ')}.` : ''}`);
+        await forgotPassword(email);
+        setSuccess('Se existir uma conta ativa para este e-mail, as instruções de recuperação serão enviadas pelos canais cadastrados.');
         setMode('login');
         setPassword('');
         return;
