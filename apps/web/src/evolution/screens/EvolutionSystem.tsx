@@ -55,7 +55,6 @@ export function EvolutionSystem({previewKey}:{previewKey?:string}={}){
         {view==='home'&&periodMode==='month'&&<div className="meg-home-grid meg-home-final meg-home-visual-v2" data-meg-home-structure="command-center-v2">
           <header className="meg-home-heading-v2">
             <div><small>VISÃO GERAL</small><h1>Seu dinheiro, em uma leitura.</h1></div>
-            <span><Icon name="calendar" size={16}/>{monthPt(month)}</span>
           </header>
           <section className="meg-home-hero-v2">
             <button className="meg-home-balance-card meg-panel meg-home-balance-hero-v2" onClick={()=>setHideBalance(x=>!x)} aria-label={hideBalance?'Mostrar saldo':'Ocultar saldo'}>
