@@ -67,7 +67,10 @@ jobs:
               -H 'Cache-Control: no-cache' \
               "$URL" -o evolution-site.html \
               && grep -q 'data-meg-shell="evolution"' evolution-site.html \
-              && grep -q '<title>MEG Evolution</title>' evolution-site.html; then
+              && grep -q '<title>MEG Evolution</title>' evolution-site.html \
+              && grep -q 'http-equiv="Content-Security-Policy"' evolution-site.html \
+              && grep -q "script-src 'self'" evolution-site.html \
+              && grep -q "object-src 'none'" evolution-site.html; then
               asset=$(grep -oE 'src="[^"]+\.js"' evolution-site.html | head -1 | cut -d'"' -f2 || true)
               if [ -n "$asset" ]; then
                 if [[ "$asset" == http* ]]; then
