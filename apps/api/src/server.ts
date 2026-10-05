@@ -25,7 +25,6 @@ import { repairLegacyImportedEvents } from './modules/imports/repair';
 import { appStateRoutes } from './modules/app-state/routes';
 import { notificationRoutes } from './modules/notifications/routes';
 import { advisorRoutes } from './modules/notifications/advisor-routes';
-import { notificationIntegrationStatus } from './modules/notifications/service';
 import { platformAdminRoutes } from './modules/platform-admin/routes';
 import { ensureCommercialFoundation } from './modules/platform-admin/service';
 import { integrationRoutes } from './modules/integrations/routes';
@@ -89,44 +88,23 @@ if (!config.isProduction) {
 
 await registerAuth(app);
 
-app.get('/health', async () => ({
-  status: 'ok',
-  service: 'meg-api',
-  version: '1.3.0-project-phoenix',
-  environment: config.nodeEnv,
-  timestamp: new Date().toISOString(),
-  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'alexa-reminders', 'alexa-financial-advisor', 'multi-client-workspaces', 'commercial-licenses', 'workspace-integrations', 'subscription-billing'],
-  integrations: notificationIntegrationStatus(),
-  commit: process.env.RENDER_GIT_COMMIT || 'local',
-  dataRepair,
-  normalization: getNormalizationRuntimeStatus(),
-}));
+app.get('/health', async (_request, reply) => {
+  const normalization = getNormalizationRuntimeStatus();
+  reply.header('Cache-Control', 'no-store');
+  return {
+    status: 'ok',
+    financialReady: normalization.status === 'completed' && normalization.primary && normalization.reconciled,
+  };
+});
 
 app.get('/ready', async (_request, reply) => {
+  reply.header('Cache-Control', 'no-store');
   try {
     await prisma.$queryRaw`SELECT 1`;
-    let whatsappProvider: 'awake' | 'degraded' | 'not-configured' = 'not-configured';
-    if (config.evolutionApiUrl) {
-      try {
-        // A Evolution tambem usa uma instancia gratuita. Este acesso a desperta
-        // antes dos horarios de notificacao sem expor a URL ou credenciais.
-        await fetch(config.evolutionApiUrl, { signal: AbortSignal.timeout(70_000) });
-        whatsappProvider = 'awake';
-      } catch (error) {
-        whatsappProvider = 'degraded';
-        app.log.warn({ error }, 'WhatsApp provider warm-up did not complete');
-      }
-    }
-    return {
-      status: 'ready',
-      service: 'meg-api',
-      database: 'ready',
-      providers: { whatsapp: whatsappProvider },
-      timestamp: new Date().toISOString()
-    };
+    return { status: 'ready' };
   } catch (error) {
     app.log.error(error, 'Database readiness check failed');
-    return reply.status(503).send({ status: 'unavailable', service: 'meg-api', database: 'unavailable', timestamp: new Date().toISOString() });
+    return reply.status(503).send({ status: 'unavailable' });
   }
 });
 
