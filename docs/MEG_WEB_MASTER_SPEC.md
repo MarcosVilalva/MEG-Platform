@@ -1,7 +1,7 @@
 # MEG Web — Memória Oficial e Especificação Mestre
 
 **Status:** FONTE OFICIAL DO PROJETO  
-**Versão:** 2026-10-04 / Expert Baseline  
+**Versão:** 2026-10-04 / Expert Baseline + Five-Lens Method  
 **Repositório:** MarcosVilalva/MEG-Platform  
 **Referência visual corrente:** PR #570 `feat/evolution-final-fidelity`  
 **Regra de proteção:** Android e `apps/web/src/mobile` são referência funcional e permanecem somente leitura durante a evolução Web.
@@ -23,6 +23,7 @@ a execução deve:
 3. Verificar o último CI / Visual Preflight.
 4. Continuar do último checkpoint validado, sem reconstruir decisões já fechadas.
 5. Não tocar no Android salvo instrução explícita posterior do usuário.
+6. Aplicar por padrão a metodologia oficial `/EXPERT + /CRITIC + /DEEP + /RISK + /CHANCE`.
 
 Nenhuma afirmação de “pronto” deve ser feita apenas porque o build passou. É obrigatória validação funcional + visual contra as referências aprovadas.
 
@@ -788,3 +789,99 @@ Qualquer mudança estrutural deve:
 - atualizar testes/preflight correspondentes.
 
 Este documento deve evoluir junto com o produto.
+
+---
+
+# 23. Metodologia oficial — Five-Lens Method
+
+Todo trabalho relevante no MEG deve aplicar, por padrão, cinco lentes complementares:
+
+## /EXPERT
+Objetivo: produzir solução de nível profissional.
+
+Antes de implementar:
+- analisar arquitetura;
+- verificar regras de negócio;
+- verificar UX;
+- verificar consistência com módulos existentes;
+- escolher a solução mais robusta, não apenas a mais rápida;
+- considerar banco, API, Web, Android e fluxo completo quando houver impacto.
+
+Uma entrega não deve ser aprovada apenas por funcionar localmente.
+
+## /CRITIC
+Objetivo: procurar ativamente o que está errado.
+
+Obrigatório:
+- apontar incoerências visuais;
+- identificar comportamento de protótipo;
+- detectar regressões;
+- questionar escolhas fracas;
+- comparar com a referência aprovada;
+- não preservar uma solução ruim apenas porque já existe.
+
+A revisão deve assumir que existem defeitos até que sejam descartados por evidência.
+
+## /DEEP
+Objetivo: evitar análise superficial.
+
+Antes de considerar uma mudança concluída:
+- seguir o fluxo ponta a ponta;
+- verificar efeitos indiretos;
+- conferir integração entre módulos;
+- testar estados vazios, erro, carga e persistência;
+- verificar refresh, mudança de período, mudança de resolução e retorno à tela;
+- conferir regras financeiras associadas.
+
+## /RISK
+Objetivo: mapear risco antes de alterar.
+
+Avaliar:
+- risco de perda/corrupção de dados;
+- duplicidade;
+- quebra de saldo;
+- inconsistência entre Web e Android;
+- regressão visual;
+- performance;
+- acessibilidade/legibilidade;
+- responsividade;
+- dependência externa;
+- impacto de migração;
+- impacto de deploy/rollback.
+
+Mudanças financeiras críticas exigem proteção, idempotência e caminho claro de recuperação.
+
+## /CHANCE
+Objetivo: identificar oportunidades de elevar o produto além do pedido literal.
+
+Durante a análise:
+- procurar melhorias de UX;
+- reduzir passos desnecessários;
+- encontrar dados que podem gerar decisão útil;
+- propor automação segura;
+- detectar componentes que podem ser compartilhados;
+- buscar melhor uso do espaço;
+- identificar oportunidades de performance e clareza;
+- sugerir melhorias que preservem as regras já validadas.
+
+O uso de /CHANCE não autoriza alterar escopo silenciosamente. Oportunidades relevantes devem ser compatíveis com a visão oficial ou registradas antes de uma mudança estrutural.
+
+## Combinação padrão
+
+Salvo instrução explícita em contrário, todo trabalho do MEG deve ser conduzido como:
+
+`/EXPERT + /CRITIC + /DEEP + /RISK + /CHANCE`
+
+Esses nomes são atalhos de metodologia do projeto, não recursos especiais da plataforma.
+
+## Regra de saída
+
+Antes de declarar uma etapa pronta, a revisão final deve responder internamente:
+
+1. **EXPERT:** é a melhor implementação razoável para o produto?
+2. **CRITIC:** o que ainda está abaixo do padrão?
+3. **DEEP:** o fluxo inteiro foi verificado?
+4. **RISK:** quais riscos permanecem e estão controlados?
+5. **CHANCE:** existe uma melhoria evidente e segura que estamos deixando passar?
+
+Se alguma resposta crítica estiver insatisfatória, a etapa não deve ser marcada como final.
