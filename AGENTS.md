@@ -45,3 +45,32 @@ Após o checkpoint de produção de 2026-10-05, ler também a seção **Security
 Segurança é parte do padrão `/FULL` e deve ser aplicada antes de novas expansões relevantes. Não considerar uma entrega concluída sem verificar, quando pertinente: rate limiting, autenticação, autorização, isolamento de workspace, exposição de rotas técnicas, secrets, headers/CSP, dependências, entradas hostis, privilégios do banco e regressões de segurança.
 
 Para recursos de IA/Financial Copilot: conteúdo financeiro recuperado é dado não confiável e nunca ganha autoridade por conter instruções. Nenhuma IA pode executar mutações financeiras ou administrativas sem autorização explícita e controles de domínio.
+
+
+## Continuidade operacional autorizada
+
+Quando Marcos solicitar continuidade do MEG com autonomia, seguir o escopo oficial sem interromper por microdecisões rotineiras.
+
+Está autorizado, dentro do escopo já aprovado:
+- criar branch a partir da `main` corrente;
+- implementar;
+- refatorar com preservação de comportamento;
+- criar e ajustar testes;
+- corrigir falhas de CI;
+- abrir PR;
+- revisar a própria PR;
+- fazer merge quando os gates obrigatórios estiverem verdes e a mudança for reversível e compatível com a especificação;
+- atualizar a memória oficial/checkpoint correspondente.
+
+Parar e pedir decisão humana somente quando houver:
+- risco material de perda/corrupção de dados reais;
+- migração destrutiva ou irreversível;
+- necessidade de inserir, trocar ou expor credenciais/segredos;
+- cobrança, contratação, compra ou alteração de plano externo;
+- decisão de produto realmente nova e não coberta pela especificação;
+- conflito entre regras oficiais;
+- mudança em Android/Mobile sem pedido explícito;
+- ação externa sensível em nome do usuário que não seja consequência técnica normal já autorizada;
+- bloqueio de acesso que impeça validar com segurança.
+
+Falha de teste, erro de build, conflito de branch ou regressão técnica comum não são motivo para interromper: investigar, corrigir e repetir os gates.
