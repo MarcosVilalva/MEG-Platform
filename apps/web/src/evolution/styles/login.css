@@ -39,16 +39,16 @@
 }
 .evo-login-brand{
   display:block;
-  width:230px;
+  width:270px;
   height:auto;
-  margin:0 0 43px -43px;
+  margin:0 0 22px -52px;
   object-fit:contain;
   filter:drop-shadow(0 11px 25px rgba(0,0,0,.32));
 }
 .evo-login-kicker{
-  margin:0 0 35px;
+  margin:0 0 21px;
   color:#2ee9db;
-  font-size:13px;
+  font-size:15px;
   line-height:1;
   font-weight:800;
   letter-spacing:.34em;
@@ -57,8 +57,8 @@
   margin:0;
   max-width:720px;
   color:#fff;
-  font-size:67px;
-  line-height:1.04;
+  font-size:80px;
+  line-height:.92;
   font-weight:800;
   letter-spacing:-.042em;
   text-shadow:0 7px 24px rgba(0,0,0,.22);
@@ -73,13 +73,13 @@
   -webkit-text-fill-color:transparent;
 }
 .evo-login-story>p{
-  margin:22px 0 0;
+  margin:18px 0 0;
   max-width:620px;
   color:#eef8f8;
-  font-size:19px;
-  line-height:1.52;
+  font-size:22px;
+  line-height:1.45;
   font-weight:400;
-  letter-spacing:-.01em;
+  letter-spacing:.015em;
   text-shadow:0 3px 12px rgba(0,0,0,.34);
 }
 .evo-login-proof{
