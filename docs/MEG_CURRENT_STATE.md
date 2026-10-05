@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `4832fda8aae763e8aebdd39b879af098381b23f4`
+- `main` de partida do bloco atual: `9dca87ffbc3424a81b95011a69ff43f5486f5193`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,22 +72,23 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Loading — revisão estrutural e anti-regressão — PR #592 em validação.**
+**Shell/Navegação — revisão estrutural e anti-regressão — branch `feat/evolution-shell-navigation-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591, com CI e Visual Preflight verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592, com CI e Visual Preflight verdes antes do merge.
 
-Objetivos imediatos do Loading:
+Objetivos imediatos do Shell/Navegação:
 
-- preservar a arte mestre aprovada;
-- garantir ocupação integral do viewport sem rolagem;
-- manter composição quadrada central independente da proporção da tela;
-- preservar tratamento específico de telas largas e verticais;
-- manter barra de progresso sobreposta à arte sem deslocar a composição;
+- preservar a composição visual aprovada;
+- manter sidebar e topbar contidos no viewport;
+- garantir navegação acessível quando os rótulos visuais recolhem;
+- permitir rolagem apenas dentro do menu quando a altura disponível for insuficiente;
+- preservar período, busca global e ações sem overflow no breakpoint de 430 px;
+- manter a busca global no fluxo canônico de navegação;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Loading: **Shell/Navegação → Home**, seguindo então a ordem fixa acima.
+Após Shell/Navegação: **Home**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
