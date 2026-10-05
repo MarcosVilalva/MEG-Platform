@@ -72,7 +72,7 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Fundação estrutural global.**
+**Fundação estrutural global — PR #590 em validação.**
 
 Objetivos imediatos:
 
