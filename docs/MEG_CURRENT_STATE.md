@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `12dc0a35a918e69f1fe321215d451f7dd8cc3f01`
+- `main` de partida do bloco atual: `314376594b33bfe0205728fd307509a23d082e55`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,24 +72,23 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Home — revisão estrutural e anti-regressão — branch `feat/evolution-home-structure` em validação.**
+**Lançamentos — revisão estrutural e anti-regressão — branch `feat/evolution-movements-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593, com CI e Visual Preflight verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594, com CI e Visual Preflight verdes.
 
-Objetivos imediatos da Home:
+Objetivos imediatos de Lançamentos:
 
-- preservar a composição aprovada do centro de comando;
-- manter saldo, entradas, saídas e resultado ligados aos dados reais;
-- preservar os quatro KPIs operacionais da segunda faixa;
-- manter carrossel cíclico de cartões, benefício e ações rápidas;
-- garantir desktop sem rolagem geral;
-- recompor a hierarquia em 430 px sem simplesmente encolher o desktop;
-- impedir retorno de elementos removidos, como Plano Premium;
+- preservar o Smart Grid como estrutura oficial da tela;
+- garantir filtros por coluna em Data, Descrição, Categoria, Conta, Forma, Status e Valor;
+- manter dados reais, edição por linha e proteção do valor financeiro;
+- impedir retorno do agrupamento por categoria;
+- manter rolagem dentro da grade em resoluções reduzidas;
+- preservar a recomposição móvel dos filtros;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Home: **Lançamentos**, seguindo então a ordem fixa acima.
+Após Lançamentos: **Pendentes**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
