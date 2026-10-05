@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const service = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
 const reset = readFileSync(new URL('./password-reset.ts', import.meta.url), 'utf8');
-const schema = readFileSync(new URL('../../../../database/prisma/schema.prisma', import.meta.url), 'utf8');
+const schema = readFileSync(new URL('../../../../../packages/database/prisma/schema.prisma', import.meta.url), 'utf8');
 
 assert.match(schema, /passwordResetTokenHash\s+String\?\s+@unique/);
 assert.match(schema, /passwordResetExpiresAt\s+DateTime\?/);
