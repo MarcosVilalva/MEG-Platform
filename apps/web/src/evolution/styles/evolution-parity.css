@@ -595,7 +595,8 @@ html[data-meg-evolution-home-agenda="off"] .meg-home-grid>.meg-home-due{display:
   align-content:center;
   min-width:0;
 }
-.meg-home-balance-copy-v2 small{
+.meg-home-balance-copy-v2 h2{
+  margin:0;
   color:#a5c7c4;
   font-size:11px;
   font-weight:850;
