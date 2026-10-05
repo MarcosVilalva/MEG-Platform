@@ -4,6 +4,7 @@ import {readCloudState,patchCloudStateProperties} from '../../app/app-state-clie
 import {cardsClient,type CreditCard} from '../../app/cards-client';
 import {financeClient,type FinancialEvent,type PaymentMethod} from '../../app/finance-client';
 import {EvolutionFinancialIcon as Icon,resolveEvolutionFinancialIcon} from '../components/EvolutionFinancialIcon';
+import {EvolutionSmartGridFilter} from '../components/EvolutionSmartGridFilter';
 import {Button,CategorySummary,Metric,Panel} from '../components/SystemUI';
 import {datePt,isBenefit,money,monthPt,normalize,posted,signed,sum,type SystemData} from '../app/system-domain';
 import '../styles/evolution-parity.css';
@@ -47,15 +48,59 @@ function purchaseRows(card:CreditCard):CardRow[]{
   return (card.purchases||[]).flatMap(purchase=>(purchase.entries||[]).map(entry=>({id:entry.id,purchaseId:purchase.id,description:purchase.description,date:purchase.purchaseDate,amount:Math.abs(Number(entry.amount||0)),installmentNo:entry.number,installmentQty:purchase.installments,statementMonth:entry.statementMonth,category:purchase.category?.name,status:entry.status})));
 }
 function statementRows(card:CreditCard):CardRow[]{
-  return (card.statement?.lines||[]).map(line=>({id:line.id,eventId:line.eventId||undefined,purchaseId:line.purchaseId||undefined,description:line.description,date:line.purchaseDate,amount:Math.abs(Number(line.effect||0)),installmentNo:line.installmentNo,installmentQty:line.installmentQty,statementMonth:line.statementMonth,status:line.isOpen?'open':'paid'}));
+  const purchases=new Map((card.purchases||[]).map(purchase=>[purchase.id,purchase]));
+  return (card.statement?.lines||[]).map(line=>({id:line.id,eventId:line.eventId||undefined,purchaseId:line.purchaseId||undefined,description:line.description,date:line.purchaseDate,amount:Math.abs(Number(line.effect||0)),installmentNo:line.installmentNo,installmentQty:line.installmentQty,statementMonth:line.statementMonth,category:line.purchaseId?purchases.get(line.purchaseId)?.category?.name:undefined,status:line.isOpen?'open':'paid'}));
 }
 export function EvolutionCardCenter({card,month,onPay,onOpenPurchase,onOpenEvent,disabled}:{card:CreditCard;month:string;onPay:()=>void;onOpenPurchase:(purchaseId:string)=>void;onOpenEvent:(eventId:string)=>void;disabled:boolean}){
+  type SortKey='date'|'description'|'category'|'installment'|'statement'|'status'|'amount';
   const [tab,setTab]=useState<CardTab>('summary'),[query,setQuery]=useState('');
+  const [description,setDescription]=useState(''),[fromDate,setFromDate]=useState(''),[toDate,setToDate]=useState(''),[categories,setCategories]=useState<string[]>([]),[installmentFilters,setInstallmentFilters]=useState<string[]>([]),[statements,setStatements]=useState<string[]>([]),[statuses,setStatuses]=useState<string[]>([]),[minAmount,setMinAmount]=useState(''),[maxAmount,setMaxAmount]=useState('');
+  const [sort,setSort]=useState<{key:SortKey;direction:'asc'|'desc'}|null>({key:'date',direction:'desc'});
   const all=useMemo(()=>purchaseRows(card),[card]),current=useMemo(()=>statementRows(card),[card]);
   const source=useMemo(()=>{if(tab==='current')return current;if(tab==='upcoming')return all.filter(row=>(row.statementMonth||'')>month);if(tab==='installments')return all.filter(row=>Number(row.installmentQty||1)>1);if(tab==='history')return all;const currentIds=new Set(current.map(row=>row.id));return current.concat(all.filter(row=>!currentIds.has(row.id)&&(row.statementMonth||'')>month)).slice(0,8)},[tab,current,all,month]);
-  const filtered=source.filter(row=>!normalize(query)||normalize([row.description,row.category,row.statementMonth].filter(Boolean).join(' ')).includes(normalize(query)));
+  const optionCounts=(items:Array<{value:string;label:string}>)=>{const map=new Map<string,{value:string;label:string;count:number}>();for(const item of items){const found=map.get(item.value);found?found.count+=1:map.set(item.value,{...item,count:1})}return [...map.values()]};
+  const categoryValue=(row:CardRow)=>row.category||'__none__',categoryLabel=(row:CardRow)=>row.category||'Sem categoria';
+  const installmentValue=(row:CardRow)=>row.installmentNo&&row.installmentQty?row.installmentNo+'/'+row.installmentQty:'cash',installmentLabel=(row:CardRow)=>row.installmentNo&&row.installmentQty?row.installmentNo+'/'+row.installmentQty:'À vista';
+  const statementValue=(row:CardRow)=>row.statementMonth||month,statusValue=(row:CardRow)=>row.status==='paid'?'paid':'open';
+  const categoryOptions=useMemo(()=>optionCounts(source.map(row=>({value:categoryValue(row),label:categoryLabel(row)}))),[source]);
+  const installmentOptions=useMemo(()=>optionCounts(source.map(row=>({value:installmentValue(row),label:installmentLabel(row)}))),[source]);
+  const statementOptions=useMemo(()=>optionCounts(source.map(row=>({value:statementValue(row),label:monthPt(statementValue(row))}))),[source,month]);
+  const statusOptions=useMemo(()=>optionCounts(source.map(row=>({value:statusValue(row),label:statusValue(row)==='paid'?'Pago':'Na fatura'}))),[source]);
+  const parse=(value:string)=>{if(!value.trim())return null;const number=Number(value.replace(/R\$/gi,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.').replace(/[^0-9.-]/g,''));return Number.isFinite(number)?number:null};
+  const min=parse(minAmount),max=parse(maxAmount),needle=normalize(query),descriptionNeedle=normalize(description);
+  const filtered=useMemo(()=>{
+    const rows=source.filter(row=>{
+      if(needle&&!normalize([row.description,row.category,row.statementMonth].filter(Boolean).join(' ')).includes(needle))return false;
+      if(descriptionNeedle&&!normalize(row.description).includes(descriptionNeedle))return false;
+      if(fromDate&&row.date.slice(0,10)<fromDate)return false;
+      if(toDate&&row.date.slice(0,10)>toDate)return false;
+      if(categories.length&&!categories.includes(categoryValue(row)))return false;
+      if(installmentFilters.length&&!installmentFilters.includes(installmentValue(row)))return false;
+      if(statements.length&&!statements.includes(statementValue(row)))return false;
+      if(statuses.length&&!statuses.includes(statusValue(row)))return false;
+      if(min!==null&&row.amount<min)return false;
+      if(max!==null&&row.amount>max)return false;
+      return true;
+    });
+    if(!sort)return rows;
+    return [...rows].sort((a,b)=>{
+      let result=0;
+      if(sort.key==='date')result=a.date.localeCompare(b.date);
+      else if(sort.key==='amount')result=a.amount-b.amount;
+      else if(sort.key==='description')result=a.description.localeCompare(b.description,'pt-BR',{numeric:true,sensitivity:'base'});
+      else if(sort.key==='category')result=categoryLabel(a).localeCompare(categoryLabel(b),'pt-BR',{sensitivity:'base'});
+      else if(sort.key==='installment')result=installmentLabel(a).localeCompare(installmentLabel(b),'pt-BR',{numeric:true});
+      else if(sort.key==='statement')result=statementValue(a).localeCompare(statementValue(b));
+      else result=statusValue(a).localeCompare(statusValue(b));
+      if(result===0)result=a.id.localeCompare(b.id);
+      return sort.direction==='asc'?result:-result;
+    });
+  },[source,needle,descriptionNeedle,fromDate,toDate,categories,installmentFilters,statements,statuses,min,max,sort,month]);
+  const direction=(key:SortKey)=>sort?.key===key?sort.direction:null,updateSort=(key:SortKey,next:'asc'|'desc'|null)=>setSort(next?{key,direction:next}:null);
+  const clear=()=>{setDescription('');setFromDate('');setToDate('');setCategories([]);setInstallmentFilters([]);setStatements([]);setStatuses([]);setMinAmount('');setMaxAmount('')};
+  const hasFilters=Boolean(description||fromDate||toDate||categories.length||installmentFilters.length||statements.length||statuses.length||minAmount||maxAmount);
   const payable=Number(card.statement?.payableAmount??card.payableStatementAmount??Math.max(0,card.statementAmount)),limit=Number(card.creditLimit||0),used=Number(card.usedLimit||0),available=Number(card.availableLimit??Math.max(0,limit-used)),usage=limit?Math.min(100,Math.max(0,used/limit*100)):0,bestDay=Number(card.closingDay||1)>=28?1:Number(card.closingDay||1)+1;
-  const rows=[['Descrição','Data','Parcela','Valor'],...filtered.map(row=>[row.description,datePt(row.date),row.installmentNo&&row.installmentQty?`${row.installmentNo}/${row.installmentQty}`:'',row.amount.toFixed(2).replace('.',',')])];
+  const exportRows=[['Descrição','Data','Parcela','Valor'],...filtered.map(row=>[row.description,datePt(row.date),row.installmentNo&&row.installmentQty?row.installmentNo+'/'+row.installmentQty:'',row.amount.toFixed(2).replace('.',',')])];
   return <div className="evo-card-center-full">
     <div className="evo-card-center-kpis">
       <Metric label="Limite total" icon="card" value={limit}/><Metric label="Disponível" icon="check-line" tone="green" value={available}/><Metric label="Fatura atual" icon="receipt" tone="yellow" value={payable}/><Metric label="Utilizado" icon="chart" value={used} detail={usage.toFixed(0)+'% do limite'}/>
@@ -63,15 +108,89 @@ export function EvolutionCardCenter({card,month,onPay,onOpenPurchase,onOpenEvent
     <Panel title="Central da fatura" icon="card" className="evo-card-ledger" action={<Button primary icon="wallet" disabled={disabled||payable<=0} onClick={onPay}>Pagar fatura</Button>}>
       <div className="evo-card-facts"><span>Fechamento<strong>Dia {card.closingDay||'—'}</strong></span><span>Vencimento<strong>{card.statement?.dueDate?datePt(card.statement.dueDate):'Dia '+(card.dueDay||'—')}</strong></span><span>Melhor dia<strong>Dia {bestDay}</strong></span><span>Competência<strong>{monthPt(month)}</strong></span></div>
       <div className="evo-subtabs">{([['summary','Resumo'],['current','Atual'],['upcoming','Próximas'],['installments','Parcelas'],['history','Histórico']] as Array<[CardTab,string]>).map(([key,label])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{label}</button>)}</div>
-      <div className="evo-table-tools"><label><Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar lançamentos da fatura"/></label><button title="Exportar Excel" aria-label="Exportar Excel" onClick={()=>exportExcel('fatura-'+normalize(card.name).replace(/\s+/g,'-')+'.xls',rows)}><Icon name="list"/></button><button title="Exportar PDF" aria-label="Exportar PDF" onClick={()=>exportPdf('fatura-'+normalize(card.name).replace(/\s+/g,'-')+'.pdf','Fatura - '+card.name,rows)}><Icon name="note"/></button></div>
-      <div className="meg-scroll"><table className="meg-table"><thead><tr><th>Data</th><th>Descrição</th><th>Parcela</th><th>Fatura</th><th>Status</th><th>Valor</th><th/></tr></thead><tbody>{filtered.map(row=><tr key={row.id}><td>{datePt(row.date)}</td><td><div className="meg-event-desc"><i className="meg-event-icon"><Icon name={resolveEvolutionFinancialIcon({description:row.description,categoryName:row.category})}/></i><span>{row.description}</span></div></td><td>{row.installmentNo&&row.installmentQty?`${row.installmentNo}/${row.installmentQty}`:'À vista'}</td><td>{row.statementMonth?monthPt(row.statementMonth):monthPt(month)}</td><td><span className={'meg-pill '+(row.status==='paid'?'green':'yellow')}>{row.status==='paid'?'Pago':'Na fatura'}</span></td><td>{money(row.amount)}</td><td>{row.purchaseId||row.eventId?<button className="meg-row-edit" onClick={()=>row.purchaseId?onOpenPurchase(row.purchaseId):row.eventId&&onOpenEvent(row.eventId)}><Icon name="note" size={17}/></button>:null}</td></tr>)}</tbody></table>{!filtered.length?<p className="meg-empty">Nenhum lançamento neste filtro.</p>:null}</div>
+      <div className="evo-table-tools"><label><Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Busca rápida na fatura"/></label><button title="Exportar Excel" aria-label="Exportar Excel" onClick={()=>exportExcel('fatura-'+normalize(card.name).replace(/\s+/g,'-')+'.xls',exportRows)}><Icon name="list"/></button><button title="Exportar PDF" aria-label="Exportar PDF" onClick={()=>exportPdf('fatura-'+normalize(card.name).replace(/\s+/g,'-')+'.pdf','Fatura - '+card.name,exportRows)}><Icon name="note"/></button></div>
+      <div className="meg-smart-grid-meta"><span><b>{filtered.length}</b> de {source.length} lançamento(s)</span>{hasFilters&&<button type="button" onClick={clear}><Icon name="x" size={14}/>Limpar filtros</button>}</div>
+      <div className="meg-scroll"><table className="meg-table meg-excel-table" data-smart-grid="card-center"><thead><tr>
+        <th><EvolutionSmartGridFilter label="Data" value={{kind:'date',from:fromDate,to:toDate}} sortDirection={direction('date')} onSort={next=>updateSort('date',next)} onApply={value=>{if(value.kind==='date'){setFromDate(value.from);setToDate(value.to)}}}/></th>
+        <th><EvolutionSmartGridFilter label="Descrição" value={{kind:'text',text:description}} sortDirection={direction('description')} onSort={next=>updateSort('description',next)} onApply={value=>{if(value.kind==='text')setDescription(value.text)}}/></th>
+        <th><EvolutionSmartGridFilter label="Categoria" value={{kind:'multi',values:categories}} options={categoryOptions} sortDirection={direction('category')} onSort={next=>updateSort('category',next)} onApply={value=>{if(value.kind==='multi')setCategories(value.values)}}/></th>
+        <th><EvolutionSmartGridFilter label="Parcela" value={{kind:'multi',values:installmentFilters}} options={installmentOptions} sortDirection={direction('installment')} onSort={next=>updateSort('installment',next)} onApply={value=>{if(value.kind==='multi')setInstallmentFilters(value.values)}}/></th>
+        <th><EvolutionSmartGridFilter label="Fatura" value={{kind:'multi',values:statements}} options={statementOptions} sortDirection={direction('statement')} onSort={next=>updateSort('statement',next)} onApply={value=>{if(value.kind==='multi')setStatements(value.values)}}/></th>
+        <th><EvolutionSmartGridFilter label="Status" value={{kind:'multi',values:statuses}} options={statusOptions} sortDirection={direction('status')} onSort={next=>updateSort('status',next)} onApply={value=>{if(value.kind==='multi')setStatuses(value.values)}}/></th>
+        <th><EvolutionSmartGridFilter label="Valor" value={{kind:'number',min:minAmount,max:maxAmount}} sortDirection={direction('amount')} onSort={next=>updateSort('amount',next)} onApply={value=>{if(value.kind==='number'){setMinAmount(value.min);setMaxAmount(value.max)}}}/></th>
+        <th><button type="button" className={'meg-smart-grid-clear '+(hasFilters?'active':'')} onClick={clear} aria-label="Limpar filtros da fatura"><Icon name="x" size={16}/></button></th>
+      </tr></thead><tbody>{filtered.map(row=><tr key={row.id}><td>{datePt(row.date)}</td><td><div className="meg-event-desc"><i className="meg-event-icon"><Icon name={resolveEvolutionFinancialIcon({description:row.description,categoryName:row.category})}/></i><span title={row.description}>{row.description}</span></div></td><td><span className="meg-pill category">{categoryLabel(row)}</span></td><td>{installmentLabel(row)}</td><td>{monthPt(statementValue(row))}</td><td><span className={'meg-pill '+(row.status==='paid'?'green':'yellow')}>{row.status==='paid'?'Pago':'Na fatura'}</span></td><td>{money(row.amount)}</td><td>{row.purchaseId||row.eventId?<button className="meg-row-edit" onClick={()=>row.purchaseId?onOpenPurchase(row.purchaseId):row.eventId&&onOpenEvent(row.eventId)}><Icon name="note" size={17}/></button>:null}</td></tr>)}</tbody></table>{!filtered.length?<p className="meg-empty">Nenhum lançamento neste filtro.</p>:null}</div>
     </Panel>
   </div>
 }
 
+function auditActionLabel(action:string){
+  const key=String(action||'').toUpperCase();
+  if(key.includes('CARD_STATEMENT_PAID'))return 'Fatura paga';
+  if(key.includes('PAYABLE_PAYMENT'))return 'Conta paga';
+  if(key.includes('SETTLED')||key.includes('PAYMENT'))return 'Pagamento confirmado';
+  if(key.includes('CREATED'))return key.includes('TRANSFER')?'Transferência registrada':'Lançamento criado';
+  if(key.includes('UPDATED'))return 'Lançamento alterado';
+  if(key.includes('ARCHIVED')||key.includes('DELETED'))return 'Lançamento excluído';
+  if(key.includes('REOPEN'))return 'Fatura reaberta';
+  return key.toLocaleLowerCase('pt-BR').replace(/_/g,' ').replace(/(^|\s)\S/g,letter=>letter.toLocaleUpperCase('pt-BR'));
+}
+function auditEntityLabel(entity:string){
+  const key=String(entity||'').toLowerCase();
+  if(key==='financialevent')return 'Lançamento';
+  if(key==='payable')return 'Conta a pagar';
+  if(key==='creditcard')return 'Cartão';
+  if(key.includes('paymentmethod'))return 'Forma de pagamento';
+  if(key.includes('category'))return 'Categoria';
+  if(key.includes('account'))return 'Conta';
+  return entity||'Sistema';
+}
+
 export function EvolutionHistory({data}:{data:SystemData}){
-  const [query,setQuery]=useState(''),items=[...data.audit.items].sort((a,b)=>String(b.at).localeCompare(String(a.at))).filter(item=>!normalize(query)||normalize([item.action,item.entity,item.entityId,item.actor?.name].join(' ')).includes(normalize(query)));
-  return <div className="meg-module-grid evo-history"><header className="meg-page-head"><div><h1>Histórico</h1><p>Alterações e confirmações registradas no MEG.</p></div></header><div className="meg-module-metrics"><Metric label="Registros carregados" icon="clock" value={items.length}/><Metric label="Página de auditoria" icon="list" value={data.audit.page}/></div><Panel title="Atividades" icon="clock"><div className="evo-table-tools"><label><Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar ação, entidade ou usuário"/></label></div><div className="evo-audit-list meg-scroll">{items.map(item=><article key={item.id}><i><Icon name={/settle|paid|payment/i.test(item.action)?'check-line':/delete|archive/i.test(item.action)?'x':'note'}/></i><span><small>{item.at?new Date(item.at).toLocaleString('pt-BR'):'Registro'}</small><strong>{String(item.action||'ATUALIZAÇÃO').replace(/_/g,' ')}</strong><em>{item.entity}{item.entityId?' · '+item.entityId:''}</em></span><b>{item.actor?.name||'Sistema'}</b></article>)}{!items.length?<p className="meg-empty">Nenhuma atividade encontrada.</p>:null}</div></Panel></div>
+  type SortKey='date'|'action'|'entity'|'actor'|'reference';
+  const [query,setQuery]=useState(''),[fromDate,setFromDate]=useState(''),[toDate,setToDate]=useState(''),[actions,setActions]=useState<string[]>([]),[entities,setEntities]=useState<string[]>([]),[actors,setActors]=useState<string[]>([]),[reference,setReference]=useState('');
+  const [sort,setSort]=useState<{key:SortKey;direction:'asc'|'desc'}|null>({key:'date',direction:'desc'});
+  const source=data.audit.items;
+  const countOptions=(items:Array<{value:string;label:string}>)=>{const map=new Map<string,{value:string;label:string;count:number}>();for(const item of items){const found=map.get(item.value);found?found.count+=1:map.set(item.value,{...item,count:1})}return [...map.values()]};
+  const actionOptions=useMemo(()=>countOptions(source.map(item=>({value:item.action||'',label:auditActionLabel(item.action)}))),[source]);
+  const entityOptions=useMemo(()=>countOptions(source.map(item=>({value:item.entity||'',label:auditEntityLabel(item.entity)}))),[source]);
+  const actorOptions=useMemo(()=>countOptions(source.map(item=>({value:item.actor?.id||'system',label:item.actor?.name||'Sistema'}))),[source]);
+  const needle=normalize(query),referenceNeedle=normalize(reference);
+  const items=useMemo(()=>{
+    const rows=source.filter(item=>{
+      const date=String(item.at||'').slice(0,10),actor=item.actor?.id||'system';
+      if(needle&&!normalize([auditActionLabel(item.action),auditEntityLabel(item.entity),item.entityId,item.actor?.name].join(' ')).includes(needle))return false;
+      if(referenceNeedle&&!normalize(item.entityId).includes(referenceNeedle))return false;
+      if(fromDate&&date<fromDate)return false;
+      if(toDate&&date>toDate)return false;
+      if(actions.length&&!actions.includes(item.action||''))return false;
+      if(entities.length&&!entities.includes(item.entity||''))return false;
+      if(actors.length&&!actors.includes(actor))return false;
+      return true;
+    });
+    if(!sort)return rows;
+    return [...rows].sort((a,b)=>{
+      let result=0;
+      if(sort.key==='date')result=String(a.at).localeCompare(String(b.at));
+      else if(sort.key==='action')result=auditActionLabel(a.action).localeCompare(auditActionLabel(b.action),'pt-BR',{sensitivity:'base'});
+      else if(sort.key==='entity')result=auditEntityLabel(a.entity).localeCompare(auditEntityLabel(b.entity),'pt-BR',{sensitivity:'base'});
+      else if(sort.key==='actor')result=String(a.actor?.name||'Sistema').localeCompare(String(b.actor?.name||'Sistema'),'pt-BR',{sensitivity:'base'});
+      else result=String(a.entityId||'').localeCompare(String(b.entityId||''),'pt-BR',{numeric:true});
+      if(result===0)result=a.id.localeCompare(b.id);
+      return sort.direction==='asc'?result:-result;
+    });
+  },[source,needle,referenceNeedle,fromDate,toDate,actions,entities,actors,sort]);
+  const direction=(key:SortKey)=>sort?.key===key?sort.direction:null,updateSort=(key:SortKey,next:'asc'|'desc'|null)=>setSort(next?{key,direction:next}:null);
+  const clear=()=>{setFromDate('');setToDate('');setActions([]);setEntities([]);setActors([]);setReference('')};
+  const hasFilters=Boolean(fromDate||toDate||actions.length||entities.length||actors.length||reference);
+  return <div className="meg-module-grid evo-history"><header className="meg-page-head"><div><h1>Histórico</h1><p>Alterações e confirmações registradas no MEG.</p></div></header><div className="meg-module-metrics"><Metric label="Registros encontrados" icon="clock" value={items.length}/><Metric label="Total carregado" icon="list" value={source.length}/></div><Panel title="Atividades" icon="clock" className="meg-table-panel"><div className="evo-table-tools"><label><Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Busca rápida no histórico"/></label></div><div className="meg-smart-grid-meta"><span><b>{items.length}</b> de {source.length} registro(s)</span>{hasFilters&&<button type="button" onClick={clear}><Icon name="x" size={14}/>Limpar filtros</button>}</div><div className="meg-scroll"><table className="meg-table meg-excel-table evo-history-grid" data-smart-grid="history"><thead><tr>
+    <th><EvolutionSmartGridFilter label="Data / hora" value={{kind:'date',from:fromDate,to:toDate}} sortDirection={direction('date')} onSort={next=>updateSort('date',next)} onApply={value=>{if(value.kind==='date'){setFromDate(value.from);setToDate(value.to)}}}/></th>
+    <th><EvolutionSmartGridFilter label="Operação" value={{kind:'multi',values:actions}} options={actionOptions} sortDirection={direction('action')} onSort={next=>updateSort('action',next)} onApply={value=>{if(value.kind==='multi')setActions(value.values)}}/></th>
+    <th><EvolutionSmartGridFilter label="Origem" value={{kind:'multi',values:entities}} options={entityOptions} sortDirection={direction('entity')} onSort={next=>updateSort('entity',next)} onApply={value=>{if(value.kind==='multi')setEntities(value.values)}}/></th>
+    <th><EvolutionSmartGridFilter label="Usuário" value={{kind:'multi',values:actors}} options={actorOptions} sortDirection={direction('actor')} onSort={next=>updateSort('actor',next)} onApply={value=>{if(value.kind==='multi')setActors(value.values)}}/></th>
+    <th><EvolutionSmartGridFilter label="Referência" value={{kind:'text',text:reference}} sortDirection={direction('reference')} onSort={next=>updateSort('reference',next)} onApply={value=>{if(value.kind==='text')setReference(value.text)}}/></th>
+    <th><button type="button" className={'meg-smart-grid-clear '+(hasFilters?'active':'')} onClick={clear} aria-label="Limpar filtros do histórico"><Icon name="x" size={16}/></button></th>
+  </tr></thead><tbody>{items.map(item=><tr key={item.id}><td>{item.at?new Date(item.at).toLocaleString('pt-BR'):'Registro'}</td><td><span className={'meg-pill '+(/settle|paid|payment/i.test(item.action)?'green':/delete|archive/i.test(item.action)?'red':'')}>{auditActionLabel(item.action)}</span></td><td>{auditEntityLabel(item.entity)}</td><td>{item.actor?.name||'Sistema'}</td><td><span className="evo-audit-reference" title={item.entityId||''}>{item.entityId||'—'}</span></td><td><i className="meg-event-icon"><Icon name={/settle|paid|payment/i.test(item.action)?'check-line':/delete|archive/i.test(item.action)?'x':'note'} size={17}/></i></td></tr>)}</tbody></table>{!items.length?<p className="meg-empty">Nenhuma atividade encontrada.</p>:null}</div></Panel></div>
 }
 
 export function EvolutionCashflow({data}:{data:SystemData}){
