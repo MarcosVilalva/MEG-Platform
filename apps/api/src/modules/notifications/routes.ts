@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
+import { externalRateLimiters } from '../../security';
 import { alexaSecretsMatch } from './alexa-auth';
 import { alexaFinancialPanorama, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
 import { deliverDailyFinancialSummary } from './daily-summary';
@@ -174,7 +175,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     };
   });
 
-  app.post('/cron', async (request, reply) => {
+  app.post('/cron', { preHandler: externalRateLimiters.automation }, async (request, reply) => {
     if (!config.notificationCronSecret || request.headers['x-cron-secret'] !== config.notificationCronSecret) {
       return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
     }
@@ -197,7 +198,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     return { users: results.length, slot: cycle.slot, results };
   });
 
-  app.post('/watchdog', async (request, reply) => {
+  app.post('/watchdog', { preHandler: externalRateLimiters.automation }, async (request, reply) => {
     const providedCron = Array.isArray(request.headers['x-cron-secret'])
       ? request.headers['x-cron-secret'][0]
       : request.headers['x-cron-secret'];
@@ -213,7 +214,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     return runNotificationWatchdog(new Date(), Boolean(body.force));
   });
 
-  app.post('/alexa/cron', async (request, reply) => {
+  app.post('/alexa/cron', { preHandler: externalRateLimiters.automation }, async (request, reply) => {
     if (!config.notificationCronSecret || request.headers['x-cron-secret'] !== config.notificationCronSecret) {
       return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
     }
@@ -234,7 +235,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     return { owner: owner.email, slot: cycle.slot, mode: cycle.task === 'alexa-daily-briefing' ? 'daily-briefing' : 'scheduled', result };
   });
 
-  app.post('/alexa/skill', async (request, reply) => {
+  app.post('/alexa/skill', { preHandler: externalRateLimiters.voice }, async (request, reply) => {
     const providedSecret = Array.isArray(request.headers['x-alexa-skill-secret'])
       ? request.headers['x-alexa-skill-secret'][0]
       : request.headers['x-alexa-skill-secret'];
