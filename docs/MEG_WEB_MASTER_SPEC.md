@@ -1009,6 +1009,30 @@ Lacunas prioritárias a verificar/corrigir:
 
 Nenhuma dessas lacunas autoriza afirmar vulnerabilidade sem teste. Elas constituem itens de hardening obrigatórios.
 
+## Progresso do hardening — 2026-10-05
+
+Concluído:
+- rate limiting em cadastro, login, recuperação de senha, refresh/logout e endpoints externos de automação/voz/advisor;
+- security headers na API;
+- Swagger desabilitado em produção;
+- refresh token tornado de uso único com consumo atômico;
+- comparação timing-safe para segredos externos;
+- auditoria automática de guards explícitos nas rotas da API;
+- gate de segredos e dependências no CI;
+- smoke de produção para headers, Swagger fechado e rota autenticada;
+- Supabase `meg-evolution` endurecido com RLS e remoção de grants `anon/authenticated`;
+- upload de avatar Web limitado a PNG/JPEG/WEBP, 450 KB e validação coerente do data URL;
+- contrato anti-XSS do Evolution bloqueando `dangerouslySetInnerHTML`, `innerHTML`, `insertAdjacentHTML`, `eval`, `new Function`, `document.write` e URLs `javascript:`;
+- sessão Web protegida contra persistência de access/refresh token em `localStorage`;
+- Financial Copilot atual confirmado como análise determinística local, sem chamada externa de LLM e sem autoridade de mutação financeira.
+
+Pendente de ciclo posterior:
+- revisar estratégia de CSP do frontend publicado sem quebrar o fluxo Vite/GitHub Pages;
+- ampliar testes de isolamento/IDOR para domínios administrativos não financeiros;
+- evoluir recuperação de senha temporária para fluxo por token/link quando o desenho de comunicação for revisado;
+- reavaliar rate limiting distribuído caso a API deixe de operar em instância única;
+- revisar `pg_net` no schema `public` do banco principal sem alterar extensões às cegas.
+
 
 ---
 
