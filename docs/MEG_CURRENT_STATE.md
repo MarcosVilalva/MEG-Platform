@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `93c4b28c2211ffb8dfd747bc9a368c0026bd3af9`
+- `main` de partida do bloco atual: `93cb77b658e7e90f7ddd428217f71f8f7c7ad78c`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,23 +72,24 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Cartões — revisão estrutural e anti-regressão — branch `feat/evolution-cards-structure` em validação.**
+**Benefícios — revisão estrutural e anti-regressão — branch `feat/evolution-benefits-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596, com CI e Visual Preflight verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596. Cartões consolidado pela PR #597, com CI e Visual Preflight verdes.
 
-Objetivos imediatos de Cartões:
+Objetivos imediatos de Benefícios:
 
-- preservar carrossel cíclico e cartão ativo em destaque;
-- manter artes oficiais LATAM Pass, Mercado Pago e Riachuelo sem deformação;
-- preservar fatura atual com valor pagável e vencimento canônicos;
-- manter indicador de limite usado;
-- preservar próximas faturas por competência e parcelas abertas;
-- manter acesso à Central do cartão;
+- preservar identidade e arte oficial do Verocard;
+- manter saldo do benefício segregado do saldo monetário;
+- preservar saldo inicial, recargas, compras e saldo atual derivados dos dados reais;
+- manter histórico do benefício baseado apenas em movimentos postados;
+- preservar filtros Todas/Entradas/Saídas e busca própria do extrato;
+- manter fluxos de recarga, compra com benefício e evolução do saldo;
+- preservar a correção de 430 px que impede recorte do hero;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Cartões: **Benefícios**, seguindo então a ordem fixa acima.
+Após Benefícios: **Fluxo de Caixa**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
