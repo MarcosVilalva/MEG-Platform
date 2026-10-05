@@ -77,6 +77,13 @@ function refreshFingerprint(body: unknown) {
   return createHash('sha256').update(raw).digest('hex').slice(0, 24);
 }
 
+function resetTokenFingerprint(body: unknown) {
+  if (!body || typeof body !== 'object') return 'unknown';
+  const raw = (body as Record<string, unknown>).token;
+  if (typeof raw !== 'string' || !raw) return 'unknown';
+  return createHash('sha256').update(raw).digest('hex').slice(0, 24);
+}
+
 function requestIp(request: FastifyRequest) {
   return request.ip || 'unknown';
 }
@@ -166,6 +173,12 @@ export const authRateLimiters = {
     max: 30,
     windowMs: 15 * 60 * 1000,
     key: (request) => refreshFingerprint(request.body),
+  }),
+  resetPassword: createRateLimitPreHandler({
+    scope: 'auth-reset-token',
+    max: 10,
+    windowMs: 15 * 60 * 1000,
+    key: (request) => resetTokenFingerprint(request.body),
   }),
 };
 
