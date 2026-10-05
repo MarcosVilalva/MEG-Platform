@@ -13,6 +13,7 @@ const paths=[
   './screens/EvolutionPreview.tsx',
   './components/EvolutionFinancialIcon.tsx',
   './components/EvolutionPicker.tsx',
+  './components/EvolutionSmartGridFilter.tsx',
   './styles/global.css',
   './styles/tokens.css',
   './styles/loading.css',
@@ -28,7 +29,8 @@ const paths=[
   './app/system-domain.ts',
   './components/SystemUI.tsx',
   './styles/system.css',
-  './styles/evolution-parity.css'
+  './styles/evolution-parity.css',
+  './styles/smart-grid.css'
 ];
 
 for(const filePath of paths){
@@ -218,14 +220,22 @@ console.log('MEG Evolution Android functional parity contract OK');
 
 
 const finalFidelityCss=fs.readFileSync(new URL('./styles/evolution-parity.css',import.meta.url),'utf8');
+const smartGrid=fs.readFileSync(new URL('./components/EvolutionSmartGridFilter.tsx',import.meta.url),'utf8');
+const smartGridCss=fs.readFileSync(new URL('./styles/smart-grid.css',import.meta.url),'utf8');
+const movementGrid=system.slice(system.indexOf('function MovementGrid'),system.indexOf('function NotificationsDialog'));
 assert.match(system,/MovementGrid/,'Lançamentos finais devem usar grid próprio com filtros por coluna.');
-assert.match(system,/Filtrar categoria[\s\S]*Filtrar conta[\s\S]*Filtrar forma de pagamento[\s\S]*Filtrar status/,'Filtros do grid devem permanecer dentro da tabela, no padrão Excel.');
+assert.match(movementGrid,/EvolutionSmartGridFilter label="Data"[\s\S]*label="Descrição"[\s\S]*label="Categoria"[\s\S]*label="Conta"[\s\S]*label="Forma"[\s\S]*label="Status"[\s\S]*label="Valor"/,'Todas as colunas analíticas devem usar filtro integrado ao cabeçalho.');
+assert.doesNotMatch(movementGrid,/<select\b/,'MEG Smart Grid não pode voltar a usar select nativo nos filtros.');
+assert.match(smartGrid,/Pesquisar valores[\s\S]*Selecionar tudo/,'Filtro múltiplo deve oferecer pesquisa e checkboxes.');
+assert.match(smartGrid,/Menor → maior[\s\S]*Maior → menor/,'Valores devem possuir ordenação numérica.');
+assert.match(smartGrid,/Mais antiga → recente[\s\S]*Mais recente → antiga/,'Datas devem possuir ordenação cronológica.');
+assert.match(smartGridCss,/evo-smart-filter-popover[\s\S]*border-radius:20px/,'Popover do Smart Grid deve preservar o acabamento premium arredondado.');
 assert.match(system,/meg-home-status[\s\S]*meg-home-metrics[\s\S]*meg-home-bottom/,'Home final deve preservar as três faixas do layout aprovado.');
 assert.match(system,/Cartões[\s\S]*Benefício Alimentação[\s\S]*Ações rápidas/,'Faixa inferior da Home deve preservar Cartões, Benefício e Ações rápidas.');
 assert.match(system,/meg-pending-toolbar/,'Pendentes deve manter filtros e seleção no próprio grid.');
 assert.match(system,/meg-cards-showcase[\s\S]*Fatura atual[\s\S]*Próximas faturas/,'Cartões deve preservar carrossel, fatura atual e futuras.');
 assert.match(finalFidelityCss,/meg-home-grid\.meg-home-final/);
-assert.match(finalFidelityCss,/meg-filter-row/);
+assert.match(smartGridCss,/evo-smart-filter-trigger/);
 assert.match(finalFidelityCss,/meg-cards-lower/);
 
 assert.match(system,/NotificationsDialog/,'Notificações finais devem ter superfície própria, não apenas resumo numérico.');
