@@ -43,7 +43,7 @@ export function EvolutionSystem({previewKey}:{previewKey?:string}={}){
   function edit(e:FinancialEvent){setDialog({kind:'edit-launch',event:e})}
   function toggleSelection(key:string){setSelected(current=>{const next=new Set(current);next.has(key)?next.delete(key):next.add(key);return next})}
   const paidItems=pending.filter(x=>x.paid),periodBounds=data&&periodMode==='range'&&periodEvents?realizedPeriodBounds(canonicalCurrentBalance(data),periodEvents,periodStart,periodEnd):null,periodLabel=periodMode==='all'?'Histórico completo':periodMode==='range'?datePt(periodStart)+' a '+datePt(periodEnd):monthPt(month);
-  return <main className="meg-system" data-meg-structure="fixed-shell-v1" data-evolution-screen={view} data-evolution-home-fidelity="approved-16-reference-system" aria-busy={busy}>
+  return <main className="meg-system" data-meg-structure="fixed-shell-v2" data-meg-visual-rebuild="shell-home-v2" data-evolution-screen={view} data-evolution-home-fidelity="approved-16-reference-system" aria-busy={busy}>
     <aside className="meg-sidebar" data-meg-navigation="adaptive-sidebar-v1"><img className="meg-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/><nav aria-label="Navegação principal">{navigation.map(([key,label,icon])=><button key={key} title={label} aria-label={label} aria-current={view===key?'page':undefined} className={view===key?'active':''} onClick={()=>go(key)}><Icon name={icon}/><span>{label}</span></button>)}</nav><Button primary icon="plus" onClick={()=>setLaunch(true)}>Novo</Button>{session&&<button className="meg-signout" onClick={()=>{void logout(session).finally(()=>{location.href='./evolution.html?screen=login'})}}>Sair</button>}</aside>
     <section className={'meg-workspace view-'+view}>
       <header className="meg-topbar" data-meg-topbar="fixed-tools-v1"><div className="meg-period-entry"><Button icon="calendar" onClick={()=>setPeriod(true)}>{periodLabel}</Button></div><label className="meg-global-search"><Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&view==='home')go('movements')}} placeholder="Buscar movimentações, contas, cartões…" aria-label="Buscar no MEG"/></label><div className="meg-top-actions"><button className="meg-icon-button" aria-label="Resumo de notificações" onClick={()=>setNotifications(true)}><Icon name="bell"/>{openItems.length>0&&<i/>}</button><button className="meg-user" onClick={()=>go('settings')}><i>{initials}</i><strong>{userName}</strong><Icon name="chevron-down" size={16}/></button></div></header>
@@ -52,24 +52,42 @@ export function EvolutionSystem({previewKey}:{previewKey?:string}={}){
       {busy&&!data&&<div className="meg-fetching" role="status"><span/><strong>Carregando seus dados reais…</strong></div>}
       {data&&<div className="meg-page-content">
         {view==='home'&&periodMode!=='month'&&<EvolutionPeriodOverview data={data} events={periodEvents||[]} label={periodLabel} openingBalance={periodBounds?.openingBalance} closingBalance={periodBounds?.closingBalance} onMovements={()=>go('movements')}/>} 
-        {view==='home'&&periodMode==='month'&&<div className="meg-home-grid meg-home-final" data-meg-home-structure="command-center-v1">
-          <div className="meg-home-status">
-            <button className="meg-home-balance-card meg-panel" onClick={()=>setHideBalance(x=>!x)} aria-label={hideBalance?'Mostrar saldo':'Ocultar saldo'}>
-              <span><h2>Saldo disponível</h2><strong>{hideBalance?'R$ •••••':money(data.summary.availableBalance)}</strong><em><Icon name="trend"/> {data.summary.realizedResult>=0?'+ ':''}{money(data.summary.realizedResult)} no mês</em></span>
+        {view==='home'&&periodMode==='month'&&<div className="meg-home-grid meg-home-final meg-home-visual-v2" data-meg-home-structure="command-center-v2">
+          <header className="meg-home-heading-v2">
+            <div><small>VISÃO GERAL</small><h1>Seu dinheiro, em uma leitura.</h1></div>
+            <span><Icon name="calendar" size={16}/>{monthPt(month)}</span>
+          </header>
+          <section className="meg-home-hero-v2">
+            <button className="meg-home-balance-card meg-panel meg-home-balance-hero-v2" onClick={()=>setHideBalance(x=>!x)} aria-label={hideBalance?'Mostrar saldo':'Ocultar saldo'}>
+              <div className="meg-home-balance-copy-v2">
+                <small>Saldo disponível</small>
+                <strong>{hideBalance?'R$ •••••':money(data.summary.availableBalance)}</strong>
+                <em className={data.summary.realizedResult>=0?'positive':'negative'}><Icon name="trend" size={17}/>{data.summary.realizedResult>=0?'+ ':''}{money(data.summary.realizedResult)} realizado no mês</em>
+              </div>
+              <div className="meg-home-balance-pulse" aria-hidden="true"><span/><span/><span/></div>
               <BalanceArtwork/>
             </button>
-            <Metric icon="up" tone="green" label="Entradas" value={data.summary.realizedIncome}/>
-            <Metric icon="down" tone="red" label="Saídas" value={data.summary.realizedExpense}/>
-            <Metric icon="arrows-right-left" tone="blue" label="Resultado" value={data.summary.realizedResult}/>
-          </div>
-          <div className="meg-home-metrics"><Metric icon="receipt" tone="yellow" label="Contas a pagar" value={sum(openItems.filter(x=>x.source==='payable').map(x=>x.amount))} detail={openItems.filter(x=>x.source==='payable').length+' contas'} onClick={()=>{go('payables');setPendingFilter('open')}}/><Metric icon="card" tone="blue" label="Faturas cartão" value={sum(openItems.filter(x=>x.source==='card').map(x=>x.amount))} detail={openItems.filter(x=>x.source==='card').length+' cartões'} onClick={()=>go('cards')}/><Metric icon="clock" tone="red" label="Outras pendências" value={sum(openItems.filter(x=>x.source==='event').map(x=>x.amount))} detail={openItems.filter(x=>x.source==='event').length+' compromissos'} onClick={()=>go('payables')}/><Metric icon="check-line" tone="green" label="Contas pagas" value={sum(paidItems.map(x=>x.amount))} detail={paidItems.length+' contas'} onClick={()=>{go('payables');setPendingFilter('paid')}}/></div>
-          <div className="meg-home-bottom">
-            <Panel title="Cartões" icon="card" className="meg-home-cards" action={<Button onClick={()=>go('cards')}>Ver todos</Button>}>
-              {data.cards.length?<div className="meg-home-card-carousel"><button aria-label="Cartão anterior" onClick={()=>setCardIndex(i=>i-1)}><Icon name="chevron-left"/></button>{[-1,0,1].map(offset=>{const index=((cardIndex+offset)%data.cards.length+data.cards.length)%data.cards.length;const card=data.cards[index];return <CardImage key={offset} card={card} active={offset===0} onClick={()=>{setCardIndex(index);go('cards')}}/>})}<button aria-label="Próximo cartão" onClick={()=>setCardIndex(i=>i+1)}><Icon name="chevron-right"/></button></div>:<p className="meg-empty">Nenhum cartão ativo cadastrado.</p>}
+            <Panel title="Movimento do mês" icon="trend" className="meg-home-month-v2">
+              <div className="meg-home-month-grid-v2">
+                <article className="income"><i className="meg-icon"><Icon name="up"/></i><span><small>Entradas</small><strong>{money(data.summary.realizedIncome)}</strong><em>realizadas</em></span></article>
+                <article className="expense"><i className="meg-icon red"><Icon name="down"/></i><span><small>Saídas</small><strong>{money(data.summary.realizedExpense)}</strong><em>realizadas</em></span></article>
+                <article className="result"><i className="meg-icon blue"><Icon name="arrows-right-left"/></i><span><small>Resultado</small><strong>{money(data.summary.realizedResult)}</strong><em>saldo do período</em></span></article>
+              </div>
             </Panel>
-            <Panel className="meg-benefit-banner meg-home-benefit-card"><button onClick={()=>go('benefit')}><span><small>Benefício Alimentação</small><strong>{money(data.benefit.balance)}</strong><em>Verocard</em></span><img src="./assets/cards/verocard-alimentacao-v659.svg" alt="Verocard Alimentação"/></button></Panel>
-            <Panel title="Ações rápidas" icon="bolt" className="meg-quick-panel" action={<button className="meg-quick-transfer" onClick={()=>setDialog({kind:'transfer'})}><Icon name="arrows-right-left" size={15}/><span>Transferência</span><small>Entre suas contas</small></button>}><div className="meg-quick-actions">{([['plus','Novo lançamento','',()=>setLaunch(true)],['wallet','Pagar conta','',()=>go('payables')],['arrows-right-left','Fluxo de caixa','',()=>go('cashflow')],['chart','Relatórios','',()=>go('analytics')]] as Array<[IconName,string,string,()=>void]>).map(([icon,label,detail,action])=><button key={label} onClick={action}><i className="meg-icon"><Icon name={icon}/></i><b>{label}</b>{detail&&<small>{detail}</small>}</button>)}</div></Panel>
-          </div>
+          </section>
+          <section className="meg-home-kpi-rail-v2" aria-label="Resumo de compromissos">
+            <Metric icon="receipt" tone="yellow" label="Contas a pagar" value={sum(openItems.filter(x=>x.source==='payable').map(x=>x.amount))} detail={openItems.filter(x=>x.source==='payable').length+' contas'} onClick={()=>{go('payables');setPendingFilter('open')}}/>
+            <Metric icon="card" tone="blue" label="Faturas cartão" value={sum(openItems.filter(x=>x.source==='card').map(x=>x.amount))} detail={openItems.filter(x=>x.source==='card').length+' cartões'} onClick={()=>go('cards')}/>
+            <Metric icon="clock" tone="red" label="Outras pendências" value={sum(openItems.filter(x=>x.source==='event').map(x=>x.amount))} detail={openItems.filter(x=>x.source==='event').length+' compromissos'} onClick={()=>go('payables')}/>
+            <Metric icon="check-line" tone="green" label="Contas pagas" value={sum(paidItems.map(x=>x.amount))} detail={paidItems.length+' contas'} onClick={()=>{go('payables');setPendingFilter('paid')}}/>
+          </section>
+          <section className="meg-home-bottom-v2">
+            <Panel title="Seus cartões" icon="card" className="meg-home-cards meg-home-cards-v2" action={<Button onClick={()=>go('cards')}>Abrir cartões</Button>}>
+              {data.cards.length?<div className="meg-home-card-stage-v2"><button aria-label="Cartão anterior" onClick={()=>setCardIndex(i=>i-1)}><Icon name="chevron-left"/></button><div className="meg-home-card-carousel-v2">{[-1,0,1].map(offset=>{const index=((cardIndex+offset)%data.cards.length+data.cards.length)%data.cards.length;const card=data.cards[index];return <CardImage key={offset} card={card} active={offset===0} onClick={()=>{setCardIndex(index);go('cards')}}/>})}</div><button aria-label="Próximo cartão" onClick={()=>setCardIndex(i=>i+1)}><Icon name="chevron-right"/></button></div>:<p className="meg-empty">Nenhum cartão ativo cadastrado.</p>}
+            </Panel>
+            <Panel className="meg-benefit-banner meg-home-benefit-card meg-home-benefit-v2"><button onClick={()=>go('benefit')}><span><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>{money(data.benefit.balance)}</strong><em>Verocard disponível</em></span><img src="./assets/cards/verocard-alimentacao-v659.svg" alt="Verocard Alimentação"/></button></Panel>
+            <Panel title="Atalhos" icon="bolt" className="meg-quick-panel meg-home-quick-v2" action={<button className="meg-quick-transfer" onClick={()=>setDialog({kind:'transfer'})}><Icon name="arrows-right-left" size={15}/><span>Transferir</span></button>}><div className="meg-quick-actions-v2">{([['plus','Novo lançamento',()=>setLaunch(true)],['wallet','Pagar conta',()=>go('payables')],['arrows-right-left','Fluxo de caixa',()=>go('cashflow')],['chart','Relatórios',()=>go('analytics')]] as Array<[IconName,string,()=>void]>).map(([icon,label,action])=><button key={label} onClick={action}><i className="meg-icon"><Icon name={icon}/></i><span><b>{label}</b><small>Abrir</small></span><Icon name="chevron-right" size={16}/></button>)}</div></Panel>
+          </section>
         </div>}
                 {view==='movements'&&<div className="meg-module-grid movements-final" data-meg-movements-structure="smart-grid-v1"><Head title="Lançamentos" subtitle="Sua vida financeira organizada em um só lugar."><Button primary icon="plus" onClick={()=>setLaunch(true)}>Novo lançamento</Button></Head><Panel title={events.length+' lançamentos'} icon="list" className="meg-table-panel meg-excel-panel"><div className="meg-grid-type-tabs">{[['all','Todas'],['expense','Despesas'],['income','Receitas'],['benefit','Alimentação']].map(([k,label])=><button aria-label={k==='all'?'Todos':k==='benefit'?'Benefício':label} className={kind===k?'active':''} key={k} onClick={()=>setKind(k)}>{label}</button>)}</div><MovementGrid events={events} onEdit={edit}/></Panel></div>}
                 {view==='history'&&<EvolutionHistory data={data}/>} 
