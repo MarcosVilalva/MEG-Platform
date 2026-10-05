@@ -103,7 +103,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const result = await authenticateUser(parsed.data.email, parsed.data.password);
     if ('error' in result) {
-      const status = result.error === 'ACCOUNT_NOT_FOUND' ? 404 : result.error === 'ACCESS_PENDING' ? 403 : 401;
+      const status = result.error === 'ACCESS_PENDING' ? 403 : 401;
       return reply.status(status).send({ error: result.error });
     }
 

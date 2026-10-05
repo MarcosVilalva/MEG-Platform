@@ -9,6 +9,8 @@ import { workspaceSeatSummary } from '../platform-admin/service';
 
 const SESSION_TTL_DAYS = 30;
 const ADMIN_EMAIL = normalizeAccountEmail(config.adminEmail);
+// Mantém custo de bcrypt também para e-mails inexistentes, reduzindo enumeração por timing.
+const INVALID_LOGIN_HASH = bcrypt.hashSync('MEG-invalid-login-placeholder', 12);
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
@@ -110,7 +112,10 @@ export async function authenticateUser(emailInput: string, password: string) {
   const email = normalizeAccountEmail(emailInput);
   const user = await prisma.user.findUnique({ where: { email } });
 
-  if (!user) return { error: 'ACCOUNT_NOT_FOUND' as const };
+  if (!user) {
+    await bcrypt.compare(password, INVALID_LOGIN_HASH);
+    return { error: 'INVALID_CREDENTIALS' as const };
+  }
   if (user.status === UserStatus.PENDING) return { error: 'ACCESS_PENDING' as const };
   if (user.status === UserStatus.REJECTED) return { error: 'ACCESS_REJECTED' as const };
   if (user.status === UserStatus.BLOCKED || !user.isActive) return { error: 'USER_BLOCKED' as const };
