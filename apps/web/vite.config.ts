@@ -12,6 +12,57 @@ const stripEmbeddedApkDownloads = () => ({
   }
 });
 
+
+function productionApiOrigin() {
+  const configured = process.env.VITE_API_URL || 'https://meg-platform-api.onrender.com';
+  try {
+    return new URL(configured).origin;
+  } catch {
+    return 'https://meg-platform-api.onrender.com';
+  }
+}
+
+const evolutionProductionCsp = () => {
+  const apiOrigin = productionApiOrigin();
+  const policy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "media-src 'self' blob: https:",
+    `connect-src 'self' ${apiOrigin}`,
+    "worker-src 'self' blob:",
+    "frame-src 'none'",
+    "form-action 'self'",
+    "upgrade-insecure-requests"
+  ].join('; ');
+
+  return {
+    name: 'evolution-production-csp',
+    apply: 'build' as const,
+    transformIndexHtml: {
+      order: 'pre' as const,
+      handler(html: string, context: { path?: string }) {
+        if (!context.path?.endsWith('/evolution.html')) return html;
+        return {
+          html,
+          tags: [{
+            tag: 'meta',
+            attrs: {
+              'http-equiv': 'Content-Security-Policy',
+              content: policy
+            },
+            injectTo: 'head-prepend' as const
+          }]
+        };
+      }
+    }
+  };
+};
+
 const webInputs = process.env.CAPACITOR_BUILD
   ? { main: path.resolve(__dirname, 'index.html') }
   : {
@@ -24,7 +75,7 @@ export default defineConfig({
   base: process.env.CAPACITOR_BUILD
     ? './'
     : process.env.VITE_PUBLIC_BASE_PATH || (process.env.GITHUB_ACTIONS ? '/MEG-Platform/' : '/'),
-  plugins: [react(), stripEmbeddedApkDownloads()],
+  plugins: [react(), evolutionProductionCsp(), stripEmbeddedApkDownloads()],
   resolve: {
     alias: {
       '@core': path.resolve(__dirname, '../../packages/core/src'),
