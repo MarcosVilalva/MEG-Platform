@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `9dca87ffbc3424a81b95011a69ff43f5486f5193`
+- `main` de partida do bloco atual: `12dc0a35a918e69f1fe321215d451f7dd8cc3f01`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,23 +72,24 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Shell/Navegação — revisão estrutural e anti-regressão — branch `feat/evolution-shell-navigation-structure` em validação.**
+**Home — revisão estrutural e anti-regressão — branch `feat/evolution-home-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592, com CI e Visual Preflight verdes antes do merge.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593, com CI e Visual Preflight verdes.
 
-Objetivos imediatos do Shell/Navegação:
+Objetivos imediatos da Home:
 
-- preservar a composição visual aprovada;
-- manter sidebar e topbar contidos no viewport;
-- garantir navegação acessível quando os rótulos visuais recolhem;
-- permitir rolagem apenas dentro do menu quando a altura disponível for insuficiente;
-- preservar período, busca global e ações sem overflow no breakpoint de 430 px;
-- manter a busca global no fluxo canônico de navegação;
+- preservar a composição aprovada do centro de comando;
+- manter saldo, entradas, saídas e resultado ligados aos dados reais;
+- preservar os quatro KPIs operacionais da segunda faixa;
+- manter carrossel cíclico de cartões, benefício e ações rápidas;
+- garantir desktop sem rolagem geral;
+- recompor a hierarquia em 430 px sem simplesmente encolher o desktop;
+- impedir retorno de elementos removidos, como Plano Premium;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Shell/Navegação: **Home**, seguindo então a ordem fixa acima.
+Após Home: **Lançamentos**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
