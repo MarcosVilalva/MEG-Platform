@@ -1025,14 +1025,17 @@ Concluído:
 - upload de avatar Web limitado a PNG/JPEG/WEBP, 450 KB e validação coerente do data URL;
 - contrato anti-XSS do Evolution bloqueando `dangerouslySetInnerHTML`, `innerHTML`, `insertAdjacentHTML`, `eval`, `new Function`, `document.write` e URLs `javascript:`;
 - sessão Web protegida contra persistência de access/refresh token em `localStorage`;
-- Financial Copilot atual confirmado como análise determinística local, sem chamada externa de LLM e sem autoridade de mutação financeira.
+- Financial Copilot atual confirmado como análise determinística local, sem chamada externa de LLM e sem autoridade de mutação financeira;
+- CSP de produção aplicada ao Evolution e validada no smoke;
+- contratos anti-IDOR ampliados para domínios administrativos;
+- login público neutralizado contra enumeração de conta, inclusive com custo de bcrypt para e-mail inexistente;
+- recuperação pública de senha responde de forma neutra e não revela existência, estado, rate limit ou resultado de entrega da conta;
+- `/health` e `/ready` reduzidos a sinais mínimos de disponibilidade, sem lista de features, integrações, commit, ambiente ou status de provedores; `/ready` não desperta mais a Evolution como efeito colateral;
+- `pg_net` do banco principal revisado: a extensão 0.20.3 é não-relocável, seus objetos pertencem ao schema `net`, o watchdog oficial depende de `net.http_post` e a função pública `meg_run_notification_watchdog()` não é executável por `anon`/`authenticated`. O aviso `extension_in_public` fica aceito como residual até mudança segura suportada pela plataforma.
 
 Pendente de ciclo posterior:
-- revisar estratégia de CSP do frontend publicado sem quebrar o fluxo Vite/GitHub Pages;
-- ampliar testes de isolamento/IDOR para domínios administrativos não financeiros;
 - evoluir recuperação de senha temporária para fluxo por token/link quando o desenho de comunicação for revisado;
-- reavaliar rate limiting distribuído caso a API deixe de operar em instância única;
-- revisar `pg_net` no schema `public` do banco principal sem alterar extensões às cegas.
+- reavaliar rate limiting distribuído caso a API deixe de operar em instância única.
 
 
 ---
