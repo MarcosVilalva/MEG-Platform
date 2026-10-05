@@ -759,20 +759,23 @@ Build verde não equivale a produto validado.
 
 # 21. Próximo passo oficial
 
-A fase de reconstrução principal foi encerrada no checkpoint acima. O próximo ciclo passa a ser **produção real + endurecimento pós-merge**, sem reabrir decisões já estabilizadas.
+A fase de reconstrução principal foi encerrada. O próximo ciclo passa a ser **produção real + Security Hardening + endurecimento pós-merge**, sem reabrir decisões já estabilizadas.
+
+A segurança passa a ser a prioridade anterior a novas funções cosméticas ou expansões de escopo.
 
 Ordem de execução:
 
-1. validar a rota publicada do Evolution sem cache e confirmar carregamento do commit de produção;
-2. executar smoke funcional contra o ambiente publicado, sem criar dados financeiros reais durante QA;
-3. revisar visualmente as telas estruturais em desktop e 430 px contra as referências aprovadas;
-4. registrar qualquer divergência como regressão objetiva, não como redesenho livre;
-5. priorizar correções encontradas em uso real;
-6. implementar storage/backend persistente para arte customizada de cartão somente quando a solução de armazenamento estiver definida;
-7. manter Android/Mobile somente leitura em toda evolução Web;
-8. atualizar este documento a cada novo checkpoint de produção.
+1. executar o **Security Hardening Gate** descrito na seção 24;
+2. validar a rota publicada do Evolution sem cache e confirmar carregamento do commit de produção;
+3. executar smoke funcional contra o ambiente publicado, sem criar dados financeiros reais durante QA;
+4. revisar visualmente as telas estruturais em desktop e 430 px contra as referências aprovadas;
+5. registrar qualquer divergência como regressão objetiva, não como redesenho livre;
+6. priorizar correções encontradas em uso real;
+7. implementar storage/backend persistente para arte customizada de cartão somente quando a solução de armazenamento estiver definida;
+8. manter Android/Mobile somente leitura em toda evolução Web;
+9. atualizar este documento a cada novo checkpoint de produção.
 
-Nenhuma etapa futura deve partir de branches históricas da reconstrução. A base oficial é `main@2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86`.
+Nenhuma etapa futura deve partir de branches históricas da reconstrução. A base oficial de reconstrução concluída é `main@2cdf05cc89d9b9cbfdf713570d7e3c69bdb2ea86`; checkpoints posteriores de documentação e hardening devem sempre partir da `main` corrente.
 
 ---
 
@@ -883,3 +886,125 @@ Antes de declarar uma etapa pronta, a revisão final deve responder internamente
 5. **CHANCE:** existe uma melhoria evidente e segura que estamos deixando passar?
 
 Se alguma resposta crítica estiver insatisfatória, a etapa não deve ser marcada como final.
+
+
+---
+
+# 24. Security Hardening Gate — regra oficial
+
+A partir do checkpoint de produção de 2026-10-05, segurança é uma fase obrigatória e permanente do MEG, não uma revisão opcional posterior.
+
+## Objetivo
+
+Reduzir superfície de ataque e impedir que futuras evoluções reintroduzam vulnerabilidades em autenticação, autorização, dados financeiros, integrações, Web, API, banco, notificações e recursos de IA.
+
+## Prioridades obrigatórias
+
+1. **Rate limiting e proteção contra abuso**
+   - login;
+   - cadastro;
+   - recuperação de senha;
+   - refresh de sessão;
+   - endpoints administrativos;
+   - notificações;
+   - integrações externas;
+   - operações financeiras sensíveis quando aplicável.
+
+2. **Autenticação e autorização**
+   - toda rota não pública deve exigir autenticação;
+   - toda mutação deve verificar papel e acesso de escrita;
+   - toda leitura/escrita de dados deve respeitar workspace/tenant;
+   - testar IDOR e tentativa de acesso cruzado entre usuários/workspaces.
+
+3. **Superfície pública**
+   - revisar Swagger em produção;
+   - proteger, restringir ou desabilitar documentação técnica quando não houver necessidade pública;
+   - manter apenas health/readiness estritamente necessários.
+
+4. **Headers e navegador**
+   - adotar headers de segurança adequados;
+   - definir CSP compatível com a Web publicada;
+   - revisar proteção contra XSS e injeção de conteúdo;
+   - evitar HTML arbitrário e execução dinâmica sem necessidade.
+
+5. **Segredos**
+   - nenhum segredo em código-fonte;
+   - nenhum segredo em variável `VITE_*`;
+   - revisar histórico/repositório para credenciais expostas;
+   - manter segredos apenas em provedores seguros de ambiente;
+   - rotacionar credenciais quando houver suspeita de exposição.
+
+6. **Banco e persistência**
+   - validar permissões efetivas do PostgreSQL/Supabase;
+   - minimizar privilégios do usuário da aplicação;
+   - impedir acesso administrativo desnecessário;
+   - confirmar criptografia em trânsito;
+   - revisar políticas e isolamento de dados;
+   - manter Prisma/queries parametrizadas como padrão.
+
+7. **Entradas hostis**
+   - tratar qualquer entrada do usuário, importação, integração ou IA como não confiável;
+   - validar tamanho, tipo, conteúdo e esquema;
+   - cobrir XSS, SQL/NoSQL injection, path traversal, upload malicioso e payload excessivo conforme aplicável.
+
+8. **Dependências**
+   - manter auditoria automática de dependências;
+   - não instalar pacote apenas porque foi sugerido por IA;
+   - confirmar existência, mantenedor, reputação, versão e necessidade antes de adicionar dependência;
+   - bloquear vulnerabilidades críticas conhecidas no CI.
+
+9. **Financial Copilot / IA**
+   - dados financeiros e descrições nunca devem possuir autoridade para executar comandos;
+   - prompt injection deve ser tratado como dado hostil;
+   - qualquer ferramenta futura do Copilot deve operar com privilégios mínimos;
+   - o Copilot não pode movimentar dinheiro, alterar cadastro ou executar mutação sem ação explícita e autorizada do usuário;
+   - separar instruções de sistema de conteúdo financeiro recuperado.
+
+10. **Observabilidade e resposta**
+    - registrar falhas de autenticação e eventos de segurança sem gravar senha/token;
+    - detectar padrões anormais;
+    - manter caminho de rollback;
+    - documentar rotação de segredo e revogação de sessão;
+    - revisar incidentes e transformar correções em testes anti-regressão.
+
+## Gate de entrega
+
+Antes de considerar o Security Hardening concluído, deve existir evidência automatizada ou revisável de:
+
+- rate limiting funcional;
+- autenticação/autorização por rota;
+- isolamento entre workspaces;
+- ausência de segredo público;
+- headers/CSP adequados;
+- dependências sem vulnerabilidade crítica conhecida;
+- proteção contra classes principais de injeção aplicáveis;
+- Swagger/rotas técnicas com exposição deliberada;
+- testes de regressão de segurança no CI;
+- Android/Mobile preservados salvo solicitação explícita.
+
+O resultado deve ser incorporado ao CI. Uma futura PR que reduza essas proteções deve falhar ou exigir mudança explícita da especificação.
+
+## Estado inicial observado em 2026-10-05
+
+Já existem:
+- JWT com segredo obrigatório em produção;
+- access token curto e refresh sessions;
+- validação de entrada com Zod;
+- autorização por papéis;
+- resolução de workspace e controle de acesso de escrita;
+- CORS com origens configuradas;
+- Prisma como camada principal de banco;
+- segredos de produção fora do código via Render;
+- proteção de duplicidade/idempotência em fluxos financeiros críticos;
+- gate de dependências no CI.
+
+Lacunas prioritárias a verificar/corrigir:
+- rate limiting global e específico de autenticação;
+- política explícita de security headers/CSP;
+- exposição de Swagger em produção;
+- testes automatizados de IDOR/acesso cruzado;
+- auditoria formal de segredos;
+- validação efetiva de privilégios do banco;
+- política formal de segurança para o Financial Copilot e futuras ferramentas de IA.
+
+Nenhuma dessas lacunas autoriza afirmar vulnerabilidade sem teste. Elas constituem itens de hardening obrigatórios.
