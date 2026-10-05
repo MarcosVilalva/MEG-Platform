@@ -358,9 +358,18 @@ export async function createRefreshSession(input: { userId: string; ipAddress?: 
 }
 
 export async function consumeRefreshSession(rawToken: string) {
+  const now = new Date();
   const session = await prisma.authSession.findUnique({ where: { tokenHash: hashToken(rawToken) }, include: { user: true } });
-  if (!session || session.revokedAt || session.expiresAt <= new Date() || !session.user.isActive || session.user.status !== UserStatus.ACTIVE) return null;
-  await prisma.authSession.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+  if (!session || session.revokedAt || session.expiresAt <= now || !session.user.isActive || session.user.status !== UserStatus.ACTIVE) return null;
+
+  // Refresh tokens são de uso único. A atualização condicional torna o consumo
+  // atômico e impede que duas requisições concorrentes reutilizem a mesma sessão.
+  const consumed = await prisma.authSession.updateMany({
+    where: { id: session.id, revokedAt: null, expiresAt: { gt: now } },
+    data: { revokedAt: now }
+  });
+  if (consumed.count !== 1) return null;
+
   return { sessionId: session.id, user: publicUser(session.user) };
 }
 
