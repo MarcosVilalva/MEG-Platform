@@ -199,10 +199,52 @@ export function EvolutionCashflow({data}:{data:SystemData}){
 }
 
 export function EvolutionAnalytics({data}:{data:SystemData}){
-  const [tab,setTab]=useState<'expenses'|'income'|'cashflow'|'categories'>('expenses');
-  const trend=(data.analytics.monthlyTrend?.length?data.analytics.monthlyTrend:[{month:data.summary.month,income:data.analytics.summary.realizedIncome,expense:data.analytics.summary.realizedExpense,result:data.analytics.summary.realizedResult}]).slice(-6);
-  const max=Math.max(1,...trend.flatMap(item=>[Number(item.income||0),Number(item.expense||0),Math.abs(Number(item.result||0))]));
-  return <div className="meg-module-grid evo-analysis evo-reports-final"><header className="meg-page-head"><div><h1>Relatórios</h1><p>Acompanhe a evolução financeira e compare seus resultados.</p></div></header><div className="evo-report-tabs">{([['expenses','Despesas'],['income','Receitas'],['cashflow','Fluxo de caixa'],['categories','Categorias']] as Array<[typeof tab,string]>).map(([key,label])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{label}</button>)}</div><Panel title={tab==='categories'?'Despesas por categoria':'Evolução do período'} icon="chart" className="evo-report-main">{tab==='categories'?<div className="evo-report-categories"><CategorySummary data={data}/></div>:<div className="evo-report-bars" role="img" aria-label="Comparativo financeiro por período">{trend.map(item=><span key={item.month}><b>{tab!=='income'&&<i className="expense" style={{height:Math.max(4,Number(item.expense||0)/max*100)+'%'}}/>}{tab!=='expenses'&&<i className="income" style={{height:Math.max(4,Number(item.income||0)/max*100)+'%'}}/>}{tab==='cashflow'&&<i className={Number(item.result||0)>=0?'result positive':'result negative'} style={{height:Math.max(4,Math.abs(Number(item.result||0))/max*100)+'%'}}/>}</b><small>{monthPt(item.month)}</small></span>)}</div>}</Panel><div className="evo-report-summary"><Metric label="Despesas" icon="receipt" tone="red" value={data.analytics.summary.realizedExpense}/><Metric label="Receitas" icon="banknote" tone="green" value={data.analytics.summary.realizedIncome}/><Metric label="Resultado" icon="chart" tone="blue" value={data.analytics.summary.realizedResult}/></div></div>
+  type Dimension='category'|'account'|'method'|'status'|'type'|'month';
+  type MetricKey='total'|'count'|'average';
+  const [dimension,setDimension]=useState<Dimension>('category'),[metric,setMetric]=useState<MetricKey>('total'),[query,setQuery]=useState(''),[selected,setSelected]=useState<string|null>(null);
+  const realized=useMemo(()=>data.events.filter(event=>posted(event.status)&&event.type!=='transfer'&&!isBenefit(event)),[data.events]);
+  const expenseEvents=useMemo(()=>realized.filter(event=>signed(event)<0),[realized]);
+  const dimensionLabel=(event:FinancialEvent)=>{
+    if(dimension==='category')return event.category?.name||event.sourceDetails?.group||'Sem categoria';
+    if(dimension==='account')return event.account?.name||'Conta não informada';
+    if(dimension==='method')return event.paymentMethod?.name||event.sourceDetails?.paymentMethod||'Forma não informada';
+    if(dimension==='status')return posted(event.status)?'Pago':'Pendente';
+    if(dimension==='type')return signed(event)>=0?'Receita':'Despesa';
+    return monthPt(String(event.competence||event.date).slice(0,7));
+  };
+  const groups=useMemo(()=>{
+    const map=new Map<string,{label:string;total:number;count:number}>();
+    for(const event of realized){
+      const label=dimensionLabel(event),key=normalize(label)||'sem-grupo',current=map.get(key)||{label,total:0,count:0};
+      current.total+=Math.abs(signed(event));current.count+=1;map.set(key,current);
+    }
+    return [...map.entries()].map(([key,item])=>({key,...item,average:item.count?item.total/item.count:0}))
+      .filter(item=>!normalize(query)||normalize(item.label).includes(normalize(query)))
+      .sort((a,b)=>{const av=metric==='count'?a.count:metric==='average'?a.average:a.total,bv=metric==='count'?b.count:metric==='average'?b.average:b.total;return bv-av||a.label.localeCompare(b.label,'pt-BR')});
+  },[realized,dimension,metric,query]);
+  const valueOf=(item:(typeof groups)[number])=>metric==='count'?item.count:metric==='average'?item.average:item.total;
+  const max=Math.max(1,...groups.map(valueOf)),grandTotal=sum(realized.map(event=>Math.abs(signed(event)))),expenseTotal=sum(expenseEvents.map(event=>Math.abs(signed(event)))),incomeTotal=sum(realized.filter(event=>signed(event)>0).map(event=>signed(event)));
+  const top=groups[0],second=groups[1],topShare=top&&grandTotal?top.total/grandTotal*100:0;
+  const insights=[
+    top?{title:'Maior concentração',text:`${top.label} representa ${topShare.toFixed(1).replace('.',',')}% do valor analisado (${money(top.total)}).`}:null,
+    second?{title:'Comparação',text:`${top?.label||'O primeiro grupo'} está ${money(Math.abs((top?.total||0)-second.total))} acima de ${second.label}.`}:null,
+    expenseTotal>incomeTotal?{title:'Atenção ao resultado',text:`As despesas realizadas superam as receitas em ${money(expenseTotal-incomeTotal)} neste recorte.`}:{title:'Resultado do recorte',text:`As receitas realizadas superam as despesas em ${money(Math.max(0,incomeTotal-expenseTotal))}.`}
+  ].filter(Boolean) as Array<{title:string;text:string}>;
+  const exportRows=[['Grupo','Quantidade','Total','Média'],...groups.map(item=>[item.label,String(item.count),item.total.toFixed(2).replace('.',','),item.average.toFixed(2).replace('.',',')])];
+  return <div className="meg-module-grid evo-analysis evo-reports-copilot">
+    <header className="meg-page-head"><div><h1>Relatórios</h1><p>Análise dinâmica com dados reais e apoio à decisão financeira.</p></div><div className="evo-report-export"><Button icon="list" onClick={()=>exportExcel('meg-relatorio-'+dimension+'.xls',exportRows)}>Excel</Button></div></header>
+    <div className="evo-report-builder">
+      <label><span>Dimensão</span><select value={dimension} onChange={e=>{setDimension(e.target.value as Dimension);setSelected(null)}}><option value="category">Categoria</option><option value="account">Conta</option><option value="method">Forma de pagamento</option><option value="status">Status</option><option value="type">Tipo</option><option value="month">Competência</option></select></label>
+      <label><span>Métrica</span><select value={metric} onChange={e=>setMetric(e.target.value as MetricKey)}><option value="total">Valor total</option><option value="count">Quantidade</option><option value="average">Média</option></select></label>
+      <label className="search"><span>Filtrar</span><div><Icon name="search" size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Pesquisar grupos"/></div></label>
+    </div>
+    <div className="meg-module-metrics"><Metric label="Receitas realizadas" icon="banknote" tone="green" value={incomeTotal}/><Metric label="Despesas realizadas" icon="receipt" tone="red" value={expenseTotal}/><Metric label="Resultado" icon="chart" tone={incomeTotal-expenseTotal>=0?'green':'red'} value={incomeTotal-expenseTotal}/><Metric label="Lançamentos analisados" icon="list" value={realized.length}/></div>
+    <div className="evo-copilot-layout">
+      <Panel title="Análise por dimensão" icon="chart" className="evo-dynamic-chart"><div className="evo-dynamic-bars">{groups.slice(0,12).map(item=><button key={item.key} className={selected===item.key?'active':''} onClick={()=>setSelected(current=>current===item.key?null:item.key)} title={item.label}><span><i style={{width:Math.max(2,valueOf(item)/max*100)+'%'}}/></span><b>{item.label}</b><strong>{metric==='count'?item.count:money(valueOf(item))}</strong></button>)}</div>{!groups.length?<p className="meg-empty">Nenhum dado para este filtro.</p>:null}</Panel>
+      <Panel title="Financial Copilot" icon="trend" className="evo-financial-copilot"><p className="evo-copilot-intro">Leitura automática do recorte atual. Nenhuma movimentação é feita pelo Copilot.</p><div>{insights.map((insight,index)=><article key={index}><i><Icon name={index===0?'chart':index===1?'repeat':'wallet'} size={18}/></i><span><strong>{insight.title}</strong><p>{insight.text}</p></span></article>)}</div></Panel>
+    </div>
+    <Panel title="Tabela dinâmica" icon="list" className="meg-table-panel"><div className="meg-scroll"><table className="meg-table meg-excel-table"><thead><tr><th>Grupo</th><th>Quantidade</th><th>Total</th><th>Média</th><th>Participação</th></tr></thead><tbody>{groups.map(item=><tr key={item.key} className={selected===item.key?'selected':''} onClick={()=>setSelected(item.key)}><td>{item.label}</td><td>{item.count}</td><td>{money(item.total)}</td><td>{money(item.average)}</td><td>{grandTotal?(item.total/grandTotal*100).toFixed(1).replace('.',',')+'%':'0,0%'}</td></tr>)}</tbody></table></div></Panel>
+  </div>
 }
 
 type AvatarPreference={kind:'initials'}|{kind:'preset';presetId:string}|{kind:'photo';dataUrl:string};
