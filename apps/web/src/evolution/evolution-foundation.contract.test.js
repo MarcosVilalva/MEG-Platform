@@ -113,6 +113,9 @@ assert.match(actions,/pending\/batch\/settle/,'Seleção deve usar a baixa atôm
 assert.match(actions,/getMonetaryBalance/,'Saldo deve considerar a data escolhida.');
 assert.match(actions,/benefit-events/,'Recarga deve preservar o fluxo de benefício.');
 assert.match(actions,/idFor/,'Repetir a mesma tentativa deve preservar operationId.');
+assert.match(actions,/SettlementReceipt/,'Baixa e pagamento devem manter comprovante local antes de fechar o modal.');
+assert.match(actions,/Baixa confirmada[\s\S]*Saldo antes[\s\S]*Saldo após/,'Comprovante deve mostrar impacto financeiro antes e depois.');
+assert.match(actions,/idempotentReplay[\s\S]*Nenhum débito foi duplicado/,'Replay idempotente deve ser explicado ao usuário.');
 
 const launch=fs.readFileSync(new URL('./screens/EvolutionLaunchModal.tsx',import.meta.url),'utf8');
 assert.match(launch,/Novo Lançamento/);
@@ -251,6 +254,7 @@ assert.match(system,/A pagar[\s\S]*Pagas[\s\S]*Sistema/,'Modal de notificações
 assert.match(system,/evo-period-month-grid/,'Seletor de período deve usar grade mensal visual.');
 assert.match(finalFidelityCss,/evo-notification-list/);
 assert.match(finalFidelityCss,/evo-period-month-grid/);
+assert.match(finalFidelityCss,/evo-settlement-success[\s\S]*evo-settlement-balance-impact/,'Comprovante financeiro deve possuir hierarquia visual própria.');
 
 assert.match(system,/meg-period-entry[\s\S]*meg-global-search[\s\S]*meg-top-actions/,'Cabeçalho final deve manter período à esquerda, busca ao centro e ações à direita.');
 assert.match(parity,/Despesas[\s\S]*Receitas[\s\S]*Fluxo de caixa[\s\S]*Categorias/,'Relatórios devem preservar as quatro visões da referência final.');
