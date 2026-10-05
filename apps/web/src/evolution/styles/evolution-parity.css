@@ -816,22 +816,25 @@ html[data-meg-evolution-home-agenda="off"] .meg-home-grid>.meg-home-due{display:
 }
 .meg-home-benefit-v2>button{
   height:100%;
-  display:grid;
-  grid-template-columns:1fr;
-  align-content:space-between;
+  display:flex!important;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:space-between;
   gap:8px;
   padding:18px!important;
 }
-.meg-home-benefit-v2>button>span{display:grid;gap:5px;align-content:start}
+.meg-home-benefit-v2>button>span{display:grid;gap:5px;align-content:start;min-width:0;position:relative;z-index:2}
 .meg-home-benefit-v2 small{font-size:8px!important;letter-spacing:.14em;color:#9bc3bf!important}
 .meg-home-benefit-v2 strong{font-size:clamp(25px,2vw,36px)!important;line-height:1;color:#54f0d8!important}
 .meg-home-benefit-v2 em{font-style:normal;color:#6caaa4!important;font-size:9px!important}
 .meg-home-benefit-v2 img{
-  width:80%!important;
+  width:min(82%,190px)!important;
   max-width:190px!important;
-  max-height:105px!important;
-  justify-self:end;
-  transform:rotate(-7deg)!important;
+  max-height:94px!important;
+  align-self:flex-end;
+  margin-top:2px;
+  object-fit:contain;
+  transform:rotate(-6deg)!important;
   filter:drop-shadow(0 18px 20px rgba(0,0,0,.45))!important;
 }
 .meg-home-quick-v2{padding:12px 13px!important}
@@ -940,8 +943,10 @@ html[data-meg-evolution-home-agenda="off"] .meg-home-grid>.meg-home-due{display:
   .meg-home-card-carousel-v2 .meg-card-art:not(.active){display:none}
   .meg-home-card-carousel-v2 .meg-card-art.active{width:min(70%,230px)}
   .meg-home-benefit-v2{min-height:150px}
-  .meg-home-benefit-v2>button{grid-template-columns:1fr 44%;align-items:center}
-  .meg-home-benefit-v2 img{width:100%!important;max-height:100px!important}
+  .meg-home-benefit-v2>button{display:grid!important;grid-template-columns:minmax(0,1fr) 42%;align-items:center;gap:7px}
+  .meg-home-benefit-v2>button>span{align-self:center}
+  .meg-home-benefit-v2 strong{font-size:24px!important;white-space:nowrap}
+  .meg-home-benefit-v2 img{width:100%!important;max-height:100px!important;margin:0;align-self:center}
   .meg-home-quick-v2{min-height:220px}
   .meg-quick-actions-v2{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
 }
