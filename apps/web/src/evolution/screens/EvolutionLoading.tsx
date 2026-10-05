@@ -17,6 +17,7 @@ export function EvolutionLoading({
     className="evo-loading"
     data-evolution-screen="loading"
     data-evolution-loading-fidelity="master-artwork-fullscreen"
+    data-evolution-loading-structure="viewport-artboard-v1"
     aria-live="polite"
     aria-busy={normalized < 100}
   >
