@@ -1,6 +1,6 @@
 # MEG — instruções persistentes para retomada
 
-Antes de alterar o MEG Web ou responder a “Retomar MEG — memória oficial — último ponto validado”, ler primeiro `docs/MEG_WEB_MASTER_SPEC.md`. Se `docs/MEG-RETOMADA-OFICIAL.md` estiver presente na branch corrente, usar também seus checkpoints históricos e referências visuais.
+Antes de alterar o MEG Web ou responder a “Retomar MEG — memória oficial — último ponto validado”, ler primeiro `docs/MEG_CURRENT_STATE.md` e depois `docs/MEG_WEB_MASTER_SPEC.md`. Se `docs/MEG-RETOMADA-OFICIAL.md` estiver presente na branch corrente, usar também seus checkpoints históricos e referências visuais.
 
 Referência visual obrigatória: `docs/design/2026-10-03/manifest.json` e os 16 PNGs originais ao lado quando disponíveis. O conjunto define o novo sistema confirmado por Marcos. As regras financeiras existentes do App continuam obrigatórias.
 

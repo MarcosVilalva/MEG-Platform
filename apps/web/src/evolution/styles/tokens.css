@@ -19,5 +19,14 @@
   --evo-radius-lg:28px;
   --evo-shadow:0 30px 90px rgba(0,0,0,.34);
   --evo-glow:0 0 42px rgba(83,207,141,.14);
+
+  /* Fundação estrutural Web: valores-base do shell aprovado. */
+  --meg-shell-sidebar:clamp(170px,12.5vw,214px);
+  --meg-shell-workspace-y:16px;
+  --meg-shell-workspace-x:20px;
+  --meg-shell-gap:12px;
+  --meg-topbar-height:58px;
+  --meg-panel-radius:14px;
+  --meg-module-gap:14px;
   color-scheme:dark;
 }

@@ -1054,6 +1054,8 @@ Pendente de ciclo posterior:
 
 O projeto possui escopo, baseline, critérios de qualidade e regras financeiras consolidados. Quando Marcos autorizar continuidade autônoma, a execução deve avançar sem depender de aprovação intermediária para decisões técnicas rotineiras já cobertas por esta especificação.
 
+Para retomadas rápidas, `docs/MEG_CURRENT_STATE.md` é o checkpoint operacional curto e deve ser lido antes desta especificação completa. Ele não substitui este documento; apenas aponta fase, commit, bloco em execução, próximo bloco e bloqueios reais.
+
 Fluxo padrão autorizado:
 
 1. partir da `main` corrente;
