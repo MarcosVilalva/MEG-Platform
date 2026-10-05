@@ -57,6 +57,26 @@ if (productionSwaggerPattern.test(server)) {
   fail('Swagger não pode ser habilitado explicitamente no bloco de produção.');
 }
 
+
+
+const routeFiles = execFileSync('git', ['ls-files', 'apps/api/src/modules/**/*routes.ts', 'apps/api/src/modules/**/routes.ts'], { encoding: 'utf8' })
+  .split(/\r?\n/)
+  .filter(Boolean);
+
+for (const file of routeFiles) {
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+  lines.forEach((line, index) => {
+    if (!/app\.(?:get|post|put|patch|delete)\(/.test(line)) return;
+    if (!line.includes('preHandler:')) {
+      fail(`rota sem guard explícito em ${file}:${index + 1}: ${line.trim()}`);
+      return;
+    }
+    if (!/(?:app\.(?:authenticate|authorize)|platformGuard|authRateLimiters|externalRateLimiters)/.test(line)) {
+      fail(`guard de rota não reconhecido em ${file}:${index + 1}: ${line.trim()}`);
+    }
+  });
+}
+
 const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
   .split(/\r?\n/)
   .filter(Boolean)
