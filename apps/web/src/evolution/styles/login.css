@@ -193,7 +193,7 @@
   align-items:start;
   margin-bottom:26px;
 }
-.evo-login-lock{
+.evo-login-security-mark{
   width:40px;
   height:40px;
   display:grid;
@@ -203,7 +203,7 @@
   border:1px solid rgba(92,222,211,.17);
   background:rgba(63,207,195,.07);
 }
-.evo-login-lock svg,
+.evo-login-security-mark svg,
 .evo-login-secure svg,
 .evo-login-confirmed-ring svg{
   width:19px;
@@ -626,7 +626,7 @@
     gap:11px;
     margin-bottom:22px;
   }
-  .evo-login-lock{width:36px;height:36px}
+  .evo-login-security-mark{width:36px;height:36px}
   .evo-login-card-head h2{font-size:24px}
   .evo-login-account-type{grid-template-columns:1fr}
 }
