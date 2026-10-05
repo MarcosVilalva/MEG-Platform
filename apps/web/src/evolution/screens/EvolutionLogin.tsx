@@ -141,7 +141,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
         ?'Entre em um espaço existente ou crie o seu MEG.'
         :'Informe seu e-mail para receber uma senha temporária.';
 
-  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="product-v2">
+  return <main className="evo-login" data-evolution-screen="login" data-evolution-login-fidelity="product-v2" data-evolution-login-structure="fixed-card-v1">
     <div className="evo-login-bg" aria-hidden="true">
       <img src="./evolution/artwork/loading-master.webp" alt=""/>
     </div>
@@ -168,7 +168,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
       <section className={`evo-login-card evo-login-card-${mode}`}>
         <div className="evo-login-card-glow" aria-hidden="true"/>
         <div className="evo-login-card-head">
-          <div className="evo-login-lock"><ShieldIcon/></div>
+          <div className="evo-login-security-mark"><ShieldIcon/></div>
           <div>
             <span>{authenticatedName?'SESSÃO VALIDADA':mode==='login'?'ACESSO AO MEG':mode==='register'?'NOVO ACESSO':'RECUPERAÇÃO'}</span>
             <h2>{title}</h2>
