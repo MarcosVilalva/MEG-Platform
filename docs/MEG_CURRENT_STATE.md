@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `93cb77b658e7e90f7ddd428217f71f8f7c7ad78c`
+- `main` de partida do bloco atual: `c6447ae567d1b7fa77ae676c62845c475fe9e445`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,24 +72,23 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Benefícios — revisão estrutural e anti-regressão — branch `feat/evolution-benefits-structure` em validação.**
+**Fluxo de Caixa — revisão estrutural e anti-regressão — branch `feat/evolution-cashflow-structure` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596. Cartões consolidado pela PR #597, com CI e Visual Preflight verdes.
+Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596. Cartões consolidado pela PR #597. Benefícios consolidado pela PR #598, com CI e Visual Preflight verdes.
 
-Objetivos imediatos de Benefícios:
+Objetivos imediatos de Fluxo de Caixa:
 
-- preservar identidade e arte oficial do Verocard;
-- manter saldo do benefício segregado do saldo monetário;
-- preservar saldo inicial, recargas, compras e saldo atual derivados dos dados reais;
-- manter histórico do benefício baseado apenas em movimentos postados;
-- preservar filtros Todas/Entradas/Saídas e busca própria do extrato;
-- manter fluxos de recarga, compra com benefício e evolução do saldo;
-- preservar a correção de 430 px que impede recorte do hero;
+- preservar abas Resumo/Entradas/Saídas sobre os dados reais do período;
+- manter entradas, saídas, resultado e fechamento realizado ligados ao domínio financeiro;
+- preservar evolução diária com escala derivada dos valores reais;
+- manter saldo realizado e projetado por dia;
+- preservar saldo inicial e fechamento projetado da posição do período;
+- manter tabela em rolagem interna e recomposição responsiva em 430 px;
 - reforçar contrato anti-regressão no CI.
 
 ## Próximo bloco
 
-Após Benefícios: **Fluxo de Caixa**, seguindo então a ordem fixa acima.
+Após Fluxo de Caixa: **Relatórios**, seguindo então a ordem fixa acima.
 
 ## Bloqueios que exigem Marcos
 
