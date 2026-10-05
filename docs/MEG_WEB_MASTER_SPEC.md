@@ -747,6 +747,7 @@ Build verde não equivale a produto validado.
 - Gates pré-merge no head final: **MEG Platform CI = sucesso** e **MEG Evolution Visual Preflight = sucesso**.
 - Gates pós-merge no commit de produção: **validate = sucesso**, **build = sucesso**, **smoke = sucesso**, **deploy = sucesso**.
 - GitHub Pages recebeu o deploy do commit de produção com sucesso.
+- O production smoke passa a validar também `evolution.html` com query de cache-busting, identidade `data-meg-shell="evolution"` e disponibilidade do asset JavaScript principal.
 - O job de aquecimento/availability posterior ao merge também concluiu com sucesso.
 - Android e `apps/web/src/mobile`: permanecem protegidos e não foram alterados pelo fechamento da PR #570.
 - O deploy da API no Render continua protegido por filtro de caminhos: alterações exclusivamente Web não devem reiniciar a API.
