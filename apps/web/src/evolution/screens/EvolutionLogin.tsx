@@ -90,8 +90,8 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
       }
       if(mode==='forgot'){
         if(!email.trim())throw new Error('EMAIL_REQUIRED');
-        const result=await forgotPassword(email.trim());
-        setNotice({kind:'success',text:`Senha temporária enviada para ${result.deliveredTo}.`});
+        await forgotPassword(email.trim());
+        setNotice({kind:'success',text:'Se existir uma conta ativa para este e-mail, as instruções de recuperação serão enviadas pelos canais cadastrados.'});
         return;
       }
       if(password.length<8){

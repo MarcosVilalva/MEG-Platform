@@ -116,18 +116,22 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/forgot-password', { preHandler: [authRateLimiters.forgotPasswordIp, authRateLimiters.forgotPasswordAccount] }, async (request, reply) => {
     const parsed = forgotPasswordSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
+
     try {
-      const result = await requestPasswordReset(parsed.data.email);
-      return { status: 'PASSWORD_SENT', deliveredTo: result.deliveredTo, notifications: result.notifications };
+      await requestPasswordReset(parsed.data.email);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (message === 'ACCOUNT_NOT_FOUND') return reply.status(404).send({ error: message });
-      if (['ACCESS_PENDING', 'ACCESS_REJECTED', 'USER_BLOCKED', 'PASSWORD_RESET_RATE_LIMITED'].includes(message)) {
-        return reply.status(409).send({ error: message });
-      }
-      if (message === 'EMAIL_DELIVERY_FAILED' || message === 'NOTIFICATION_DELIVERY_FAILED') return reply.status(502).send({ error: message });
-      throw error;
+      const reason = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      request.log.warn({
+        securityEvent: 'PASSWORD_RESET_REQUEST_SUPPRESSED',
+        reason,
+      }, 'Password reset request completed with generic response');
     }
+
+    return reply.status(202).send({
+      status: 'PASSWORD_SENT',
+      deliveredTo: parsed.data.email.trim().toLowerCase(),
+      notifications: [],
+    });
   });
 
   app.post('/refresh', { preHandler: authRateLimiters.refresh }, async (request, reply) => {
