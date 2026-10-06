@@ -34,6 +34,8 @@ assert.equal(azul.credits, 62);
 assert.equal(azul.netAmount, 1875.52);
 assert.equal(azul.payableAmount, 1875.52);
 assert.equal(azul.creditBalance, 0);
+assert.equal(azul.minimumPaymentAmount, null, 'Pagamento mínimo não pode ser inventado sem regra/dado explícito.');
+assert.equal(azul.minimumPaymentAvailable, false);
 
 const latam = buildCanonicalCardStatement({
   month: '2026-09',
