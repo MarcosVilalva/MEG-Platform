@@ -36,12 +36,19 @@ Classificação:
 | Projeção mensal antiga do core | DIVERGENTE / risco de autoridade dupla | `packages/core/src/projections/cashflow.ts:7-32`; `packages/core/src/finance/financial-engine.ts:28-64` | A projeção soma eventos por data sem aplicar a política canônica de status/conta/benefício; não deve ser adotada pela nova Web como autoridade financeira sem reconciliação. | Home, Relatórios, projeções |
 | Precisão persistida | OK estrutural | `packages/database/prisma/schema.prisma:313-320,369-401,561-617` | Valores financeiros persistem em `Decimal`; comparações operacionais críticas normalizam para centavos. | Todas |
 | Read model financeiro principal | OK / autoridade de leitura atual | `apps/api/src/modules/finance/routes.ts:247-297`; `apps/api/src/modules/finance/read-model.ts:1-310` | `/summary`, `/cashflow` e `/analytics` usam o `read-model.ts`, que consome `monetary-protection.ts` para status, escopo monetário e saldo inicial. | Home, Relatórios, KPIs |
-| Preview Phoenix financeiro | DUPLICADA | `apps/api/src/modules/finance/phoenix-preview-read.ts:17-55,80-220` | Reimplementa localmente `isPosted`, conta monetária, benefício e cálculo de saldo. É compatível em vários pontos, mas duplica a autoridade central. | Preview/compatibilidade |
+| Preview Phoenix financeiro | CONSOLIDADA nesta branch | `apps/api/src/modules/finance/phoenix-preview-read.ts`; `financial-policy.ts`; `monetary-protection.ts` | Helpers duplicados de status, benefício, escopo monetário e saldo foram removidos do preview. O preview passou a consumir a política financeira central sem mudar o contrato de leitura. | Preview/compatibilidade |
 | Summary/Cashflow antigos em `service.ts` | DIVERGENTE / legado não roteado | `apps/api/src/modules/finance/service.ts:251-401`; `apps/api/src/modules/finance/routes.ts:5-13,247-297` | Existem funções antigas que tratam receita passada como realizada e usam heurística Verocard; as rotas principais não as chamam mais. Não devem voltar a ser consumidas pela nova Web. | Nenhuma tela nova deve consumir |
 | Política de status legado | DIVERGENTE / regra não centralizada | `apps/web/src/transaction-status-policy.js:15-29`; `apps/api/src/modules/finance/event-mutation.ts:76-110` | Legado força Receita e Alimentação como `paid`, Crédito novo como `pending`; writer geral da API aceita o status informado pelo cliente. A regra não está centralizada. | Novo Lançamento, Editar Lançamento |
 | Categoria/grupo Fixo | PENDENTE / lacuna de centralização | Documento consolidado vigente; `transaction-status-policy.js:15-29` | Regra consolidada determina Fixo como realizado/pago, mas a política de status auditada não contém tratamento de FIXO e o writer geral da API não o impõe. | Novo Lançamento, Pendentes |
 | Crediário | PENDENTE / representação central não explícita | Regra consolidada vigente; `apps/api/src/modules/cards/routes.ts:31-40`; `apps/api/src/modules/payables/*` | Cartão possui domínio próprio e payables possui parcelamento, mas não foi localizada uma autoridade central explícita chamada Crediário. Não assumir equivalência sem decisão. | Novo Lançamento, Pendentes |
 | Writer alternativo de baixa de payable | DIVERGENTE / não ativo na rota pública | `apps/api/src/modules/payables/payment-mutation.ts:37-132`; `apps/api/src/modules/payables/routes.ts:98-107`; `apps/api/src/server.ts:22,121` | A rota pública registrada usa `payPayableProtected`. O writer `createPayablePaymentProtected` permanece no repositório, mas não está ligado à rota pública e não contém a mesma proteção monetária. | Pendentes / integrações |
+
+## Consolidação segura já executada
+
+- Criado `apps/api/src/modules/finance/financial-policy.ts` como camada pura para regras de classificação monetária, benefício, status realizado, resumo monetário e decisão de saldo em centavos.
+- `monetary-protection.ts` mantém os nomes/assinaturas públicas existentes por reexportação e continua responsável apenas pela proteção transacional/consultas que exigem banco.
+- `phoenix-preview-read.ts` deixou de manter cópias próprias das regras monetárias e agora usa a mesma política central.
+- Nenhuma regra divergente foi corrigida silenciosamente; esta consolidação alcançou apenas implementações equivalentes.
 
 ## Testes de caracterização adicionados
 
@@ -95,7 +102,9 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 - [x] duplicidades e divergências reportadas sem correção;
 - [x] teste de caracterização da nova Web criado;
 - [x] testes financeiros existentes relevantes adicionados ao gate;
-- [x] gate isolado `MEG Web Evolution Foundation` executado com sucesso: caracterização financeira + core + build da API;
+- [x] gate isolado `MEG Web Evolution Foundation` executado com sucesso: caracterização financeira + core + compatibilidade financeira legada + política de status legada + build da API;
+- [x] camada pura `financial-policy.ts` extraída sem quebrar assinaturas existentes;
+- [x] duplicação monetária do Phoenix Preview consolidada na política central;
 - [x] rota pública/caminho ativo de baixa de payable mapeados;
 - [ ] CI global `MEG Platform CI` verde — atualmente bloqueado no security gate por `@capacitor/android` (critical) e `source-map-js` (high);
 - [ ] auditoria de saldo inicial encerrada;
@@ -106,7 +115,7 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 
 ## Estado técnico da PR
 
-O workflow isolado `MEG Web Evolution Foundation` passou integralmente: instalação, geração Prisma, `test:finance`, `test:core` e build da API.
+O workflow isolado `MEG Web Evolution Foundation` passou integralmente: instalação, geração Prisma, `test:finance`, `test:core`, `test:legacy-finance`, `test:transaction-status-policy` e build da API.
 
 O workflow global `MEG Platform CI` continua vermelho antes dos testes por um bloqueio de segurança de dependências já presente no lockfile: `@capacitor/android` em severidade crítica e `source-map-js` em severidade alta. O gate NÃO foi desativado nem contornado. Como Android está congelado, nenhuma atualização do Capacitor será feita automaticamente nesta etapa.
 
