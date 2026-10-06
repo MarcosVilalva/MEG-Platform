@@ -15,9 +15,10 @@ const navigation = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="meg-evolution-bg meg-shell">
+    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand">
           <img
@@ -26,6 +27,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             alt="MEG Finanças"
           />
         </div>
+
+        <button
+          type="button"
+          className="meg-sidebar-toggle"
+          aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
+          aria-expanded={!sidebarCollapsed}
+          onClick={() => setSidebarCollapsed((value) => !value)}
+        >
+          <Icon name={sidebarCollapsed ? 'chevronRight' : 'chevronLeft'} />
+        </button>
 
         <nav className="meg-nav">
           {navigation.map(([icon, label], index) => (
