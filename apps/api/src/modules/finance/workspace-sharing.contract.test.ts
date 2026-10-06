@@ -32,8 +32,12 @@ assert.match(phoenixRead, /userId: dataOwnerId/,
 
 assert.match(eventMutation, /const dataOwnerId = workspace\.workspace\.ownerId;/,
   'Novo lançamento deve separar ator autenticado do proprietário da base.');
-assert.match(eventMutation, /assertActiveCatalogReferences\(tx, dataOwnerId, input\)/,
-  'Novo lançamento deve validar os catálogos compartilhados.');
+assert.match(eventMutation, /activeAccountForUser\(tx, dataOwnerId, input\.accountId\)/,
+  'Novo lançamento deve validar a conta ativa da base compartilhada.');
+assert.match(eventMutation, /activeCategoryForUser\(tx, dataOwnerId, input\.categoryId\)/,
+  'Novo lançamento deve validar a categoria ativa da base compartilhada.');
+assert.match(eventMutation, /activePaymentMethodForUser\(tx, dataOwnerId, input\.paymentMethodId\)/,
+  'Novo lançamento deve validar a forma de pagamento ativa da base compartilhada.');
 assert.match(eventMutation, /userId: dataOwnerId,[\s\S]*workspaceId: workspace\.workspaceId/,
   'Novo lançamento deve permanecer na base oficial do workspace.');
 assert.match(financeService, /updateFinancialEvent[\s\S]*const workspace = await resolveWorkspaceContext\(userId\);[\s\S]*const dataOwnerId = workspace\.workspace\.ownerId;/,
