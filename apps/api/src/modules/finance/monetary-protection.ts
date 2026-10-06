@@ -1,4 +1,5 @@
 import { Prisma, prisma } from '@meg/database';
+import { legacyOpeningBalanceFallbackTotal, openingBalanceFallbackForAccount } from './opening-balance';
 import {
   countsTowardMonetaryBalance,
   isMonetaryAccountType,
@@ -62,14 +63,7 @@ function nextDayExclusive(day: string) {
 }
 
 export async function monetaryOpeningBalance(tx: Tx, userId: string) {
-  const accounts = await tx.account.findMany({
-    where: { userId },
-    select: { type: true, openingBalance: true },
-  });
-  const balance = accounts
-    .filter((account) => isMonetaryAccountType(account.type))
-    .reduce((sum, account) => sum + Number(account.openingBalance), 0);
-  return Math.round(balance * 100) / 100;
+  return legacyOpeningBalanceFallbackTotal(tx, userId, ['checking', 'savings', 'cash']);
 }
 
 export async function monetaryAccountBalanceAt(
@@ -79,6 +73,7 @@ export async function monetaryAccountBalanceAt(
   effectiveAt: string,
 ) {
   const cutoff = nextDayExclusive(effectiveAt.slice(0, 10));
+  const openingFallback = await openingBalanceFallbackForAccount(tx, userId, account);
   const events = await tx.financialEvent.findMany({
     where: {
       userId,
@@ -91,7 +86,7 @@ export async function monetaryAccountBalanceAt(
   });
   const balance = events
     .filter((event) => isPostedFinancialStatus(event.status))
-    .reduce((sum, event) => sum + Number(event.signedAmount), Number(account.openingBalance));
+    .reduce((sum, event) => sum + Number(event.signedAmount), openingFallback);
   return Math.round(balance * 100) / 100;
 }
 
