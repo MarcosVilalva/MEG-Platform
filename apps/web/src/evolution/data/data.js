@@ -57,17 +57,22 @@ export function mergeMegDataSource(current, patch) {
     for (const item of patch[name] ?? []) merged.set(item.id, item);
     mergedCollections[name] = [...merged.values()];
   }
+  const nextMeta = { ...(current.meta ?? {}) };
+  for (const [key, value] of Object.entries(patch.meta ?? {})) {
+    if (key === 'sources') continue;
+    if (value !== null && value !== undefined) nextMeta[key] = value;
+  }
+  nextMeta.sources = [...new Set([...(current.meta?.sources ?? []), ...(patch.meta?.sources ?? [])])];
+
+  const nextReadModels = { ...(current.readModels ?? {}) };
+  for (const [key, value] of Object.entries(patch.readModels ?? {})) {
+    if (value !== null && value !== undefined) nextReadModels[key] = value;
+  }
+
   return createMegDataSource({
     ...mergedCollections,
-    meta: {
-      ...current.meta,
-      ...patch.meta,
-      sources: [...new Set([...(current.meta?.sources ?? []), ...(patch.meta?.sources ?? [])])],
-    },
-    readModels: {
-      ...(current.readModels ?? {}),
-      ...(patch.readModels ?? {}),
-    },
+    meta: nextMeta,
+    readModels: nextReadModels,
   });
 }
 
