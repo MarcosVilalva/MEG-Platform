@@ -148,6 +148,7 @@ export function cardStatementDueDate(month: string, closingDay: number, dueDay: 
 export function cardInstallmentRemaining(entry: { amount: unknown; partialPaidAmount?: unknown; status?: unknown }) {
   if (String(entry.status || 'open').toLowerCase() !== 'open') return 0;
   const amount = Math.round(Number(entry.amount || 0) * 100);
+  if (amount < 0) return amount / 100;
   const partial = Math.max(0, Math.round(Number(entry.partialPaidAmount || 0) * 100));
   return Math.max(0, amount - partial) / 100;
 }
