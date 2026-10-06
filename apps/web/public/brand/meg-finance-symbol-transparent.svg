@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 35 112 84" role="img" aria-labelledby="title desc">
+  <title id="title">MEG Finanças</title>
+  <desc id="desc">Símbolo financeiro MEG com barras e seta de crescimento</desc>
+  <defs>
+    <linearGradient id="arrow" x1="48" y1="100" x2="151" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#25A9E6"/>
+      <stop offset=".50" stop-color="#13D6E2"/>
+      <stop offset="1" stop-color="#35F0A4"/>
+    </linearGradient>
+    <filter id="softGlow" x="-35%" y="-35%" width="170%" height="180%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2.2" flood-color="#00191d" flood-opacity=".42"/>
+    </filter>
+  </defs>
+  <g filter="url(#softGlow)">
+    <rect x="62" y="71" width="13" height="27" rx="3" fill="#279CDE"/>
+    <rect x="84" y="56" width="13" height="42" rx="3" fill="#20C6EB"/>
+    <rect x="106" y="40" width="13" height="58" rx="3" fill="#20D9CF"/>
+    <path d="M47 105c27-3 49-17 68-37l-10-8 40-12-10 39-10-8c-21 20-45 32-73 34z"
+      fill="url(#arrow)" stroke="#BCFFF2" stroke-width="2.2" stroke-linejoin="round"/>
+  </g>
+</svg>
