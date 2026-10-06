@@ -70,6 +70,9 @@ jobs:
       - name: Characterize legacy status policy
         run: npm run test:transaction-status-policy
 
+      - name: Validate Web Evolution single data source
+        run: npm run test:evolution-data
+
       - name: Build API
         run: npm run build:api
         env:
