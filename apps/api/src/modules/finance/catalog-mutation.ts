@@ -3,6 +3,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit, type FinancialAuditAction } from './audit';
 import { serializableFinancialTransaction } from './monetary-protection';
+import { syncOpeningBalanceEvent } from './opening-balance';
 
 type Tx = Prisma.TransactionClient;
 type CatalogEntity = 'Account' | 'Category' | 'PaymentMethod';
@@ -119,6 +120,7 @@ export type AccountCatalogCreate = MutationMeta & {
 export type AccountCatalogUpdate = MutationMeta & {
   name?: string;
   institution?: string | null;
+  openingBalance?: number;
   isActive?: boolean;
 };
 
@@ -139,6 +141,13 @@ export async function createAccountCatalog(actorId: string, input: AccountCatalo
         isActive: input.isActive ?? true,
       },
     });
+    const openingBalance = await syncOpeningBalanceEvent(tx, {
+      actorId,
+      workspaceId: context.workspaceId,
+      userId: context.dataOwnerId,
+      account: result,
+      openingBalance: input.openingBalance,
+    });
     await audit(tx, {
       actorId,
       entity: 'Account',
@@ -146,9 +155,14 @@ export async function createAccountCatalog(actorId: string, input: AccountCatalo
       action: 'ACCOUNT_CREATED',
       before: null,
       after: result,
-      context: { workspaceId: context.workspaceId, operationId: input.operationId ?? null },
+      context: {
+        workspaceId: context.workspaceId,
+        operationId: input.operationId ?? null,
+        openingBalanceAuthority: openingBalance.supported ? 'OPENING_BALANCE_EVENT' : 'ACCOUNT_FIELD_COMPAT',
+        openingBalanceEventId: openingBalance.event?.id ?? null,
+      },
     });
-    return result;
+    return { ...result, openingBalanceAuthority: openingBalance.supported ? 'OPENING_BALANCE_EVENT' : 'ACCOUNT_FIELD_COMPAT' };
   });
 }
 
@@ -169,17 +183,37 @@ export async function updateAccountCatalog(actorId: string, id: string, input: A
       data: {
         ...(input.name !== undefined ? { name: input.name.trim() } : {}),
         ...(input.institution !== undefined ? { institution: input.institution?.trim() || null } : {}),
+        ...(input.openingBalance !== undefined ? { openingBalance: input.openingBalance } : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
       },
     });
+    const openingBalance = input.openingBalance !== undefined
+      ? await syncOpeningBalanceEvent(tx, {
+          actorId,
+          workspaceId: context.workspaceId,
+          userId: context.dataOwnerId,
+          account: result,
+          openingBalance: input.openingBalance,
+        })
+      : null;
     const action: FinancialAuditAction = current.isActive !== result.isActive
       ? result.isActive ? 'ACCOUNT_REACTIVATED' : 'ACCOUNT_DEACTIVATED'
       : 'ACCOUNT_UPDATED';
     await audit(tx, {
       actorId, entity: 'Account', entityId: id, action, before: current, after: result,
-      context: { workspaceId: context.workspaceId, operationId: input.operationId ?? null },
+      context: {
+        workspaceId: context.workspaceId,
+        operationId: input.operationId ?? null,
+        ...(openingBalance ? {
+          openingBalanceAuthority: openingBalance.supported ? 'OPENING_BALANCE_EVENT' : 'ACCOUNT_FIELD_COMPAT',
+          openingBalanceEventId: openingBalance.event?.id ?? null,
+        } : {}),
+      },
     });
-    return result;
+    return {
+      ...result,
+      ...(openingBalance ? { openingBalanceAuthority: openingBalance.supported ? 'OPENING_BALANCE_EVENT' : 'ACCOUNT_FIELD_COMPAT' } : {}),
+    };
   });
 }
 
