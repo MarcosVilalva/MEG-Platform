@@ -2,7 +2,7 @@ import type { ReactNode, SVGProps } from 'react';
 
 type IconName =
   | 'home' | 'list' | 'card' | 'clock' | 'gift' | 'chart' | 'settings'
-  | 'plus' | 'search' | 'calendar' | 'bell' | 'chevronDown' | 'chevronLeft' | 'chevronRight' | 'menu';
+  | 'plus' | 'search' | 'calendar' | 'bell' | 'chevronDown' | 'chevronLeft' | 'chevronRight' | 'panelLeftClose' | 'panelLeftOpen' | 'menu';
 
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
@@ -19,6 +19,8 @@ const paths: Record<IconName, ReactNode> = {
   chevronDown: <path d="m7 10 5 5 5-5"/>,
   chevronLeft: <path d="m15 18-6-6 6-6"/>,
   chevronRight: <path d="m9 18 6-6-6-6"/>,
+  panelLeftClose: <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 9l-3 3 3 3"/></>,
+  panelLeftOpen: <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M13 9l3 3-3 3"/></>,
   menu: <><path d="M4 7h16M4 12h16M4 17h16"/></>,
 };
 
