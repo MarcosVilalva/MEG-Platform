@@ -398,7 +398,7 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     const account = input.accountId
       ? await tx.account.findFirst({
         where: { id: input.accountId, userId: shared.ownerId, isActive: true },
-        select: { id: true, name: true, type: true, institution: true },
+        select: { id: true, name: true, type: true, institution: true, openingBalance: true },
       })
       : null;
     if (!account) throw new CardDomainError('INVALID_ACCOUNT');
