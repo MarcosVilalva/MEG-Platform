@@ -2,6 +2,11 @@
   display: grid;
   grid-template-columns: var(--meg-sidebar-wide) minmax(0, 1fr);
   min-height: 100dvh;
+  transition: grid-template-columns .18s ease;
+}
+
+.meg-shell.is-sidebar-collapsed {
+  grid-template-columns: var(--meg-sidebar-compact) minmax(0, 1fr);
 }
 
 .meg-sidebar {
@@ -71,16 +76,49 @@
 }
 
 .meg-brand {
+  width: 100%;
   min-height: 7.75rem;
   display: grid;
   place-items: center;
+  text-align: center;
 }
 
 .meg-brand-logo {
   display: block;
-  width: 11.25rem;
+  width: min(100%, 11.25rem);
   height: auto;
+  margin-inline: auto;
+  object-position: center;
+  transform: translateX(.2rem);
   filter: drop-shadow(0 0 1rem rgba(20, 227, 200, .08));
+}
+
+.meg-sidebar-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 7.8rem;
+  right: .45rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: .0625rem solid rgba(65, 242, 220, .52);
+  border-radius: 50%;
+  background: rgba(2, 31, 34, .94);
+  color: var(--meg-accent);
+  box-shadow: 0 0 1rem rgba(20, 227, 200, .12);
+  cursor: pointer;
+}
+
+.meg-sidebar-toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.meg-sidebar-toggle:hover {
+  border-color: rgba(65, 242, 220, .88);
+  background: rgba(5, 48, 50, .98);
 }
 
 .meg-nav { display: grid; gap: .38rem; }
@@ -213,6 +251,7 @@
 
 @media (max-width: 1023px) {
   .meg-shell { grid-template-columns: var(--meg-sidebar-compact) minmax(0, 1fr); }
+  .meg-sidebar-toggle { display: none; }
   .meg-sidebar { padding-inline: .55rem; }
   .meg-nav-item span, .meg-new-button span { display: none; }
   .meg-brand { min-height: 6.6rem; }
@@ -250,4 +289,42 @@
   .meg-avatar { width: 2.45rem; height: 2.45rem; }
   .meg-main { padding: .75rem; }
   .meg-shell-stage { min-height: 34rem; }
+}
+
+
+@media (min-width: 1024px) {
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    padding-inline: .55rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    min-height: 6.65rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo {
+    width: 4rem;
+    transform: none;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    justify-content: center;
+    padding-inline: .5rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item span,
+  .meg-shell.is-sidebar-collapsed .meg-new-button span {
+    display: none;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-new-button {
+    width: 100%;
+    margin-inline: 0;
+    justify-content: center;
+    padding-inline: .5rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-toggle {
+    top: 6.7rem;
+    right: .28rem;
+  }
 }
