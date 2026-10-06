@@ -96,3 +96,25 @@ export function paymentBalanceDecision(available: number, requested: number) {
     missing: Math.max(0, requestedCents - availableCents) / 100,
   };
 }
+
+
+export type CanonicalFinancialStatus = 'draft' | 'planned' | 'confirmed' | 'paid' | 'reconciled' | 'archived';
+
+export function resolveCanonicalFinancialStatus(input: {
+  type: string;
+  requestedStatus: CanonicalFinancialStatus;
+  category?: { name?: unknown; group?: unknown } | null;
+  paymentMethod?: { name?: unknown; type?: unknown } | null;
+}) : CanonicalFinancialStatus {
+  const type = normalizeText(input.type);
+  if (type === 'INCOME' || type === 'REDEMPTION') return 'paid';
+
+  const categoryName = normalizeText(input.category?.name);
+  const categoryGroup = normalizeText(input.category?.group);
+  if (type === 'EXPENSE' && (categoryName === 'FIXO' || categoryGroup === 'FIXO')) return 'paid';
+
+  const paymentType = normalizeText(input.paymentMethod?.type);
+  if (type === 'EXPENSE' && paymentType === 'CREDIT') return 'planned';
+
+  return input.requestedStatus;
+}
