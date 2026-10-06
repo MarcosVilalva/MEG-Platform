@@ -350,28 +350,41 @@ export async function cardRoutes(app: FastifyInstance) {
         mutationType: 'CARD_PURCHASE_UPDATE',
         work: async (tx): Promise<JsonRecord> => {
           const before = await editablePurchase(tx, context.ownerId, id);
-          const card = await assertCardAndCategory(tx, context.ownerId, purchaseInput.cardId, purchaseInput.categoryId);
-          const after = await tx.cardPurchase.update({
+          const targetCardId = purchaseInput.cardId ?? before.cardId;
+          const targetCategoryId = purchaseInput.categoryId !== undefined ? purchaseInput.categoryId : before.categoryId;
+          const card = await assertCardAndCategory(tx, context.ownerId, targetCardId, targetCategoryId);
+          const nextPurchaseDate = purchaseInput.purchaseDate ?? before.purchaseDate.toISOString().slice(0, 10);
+          const shouldRecalculateStatementMonths = targetCardId !== before.cardId
+            || nextPurchaseDate !== before.purchaseDate.toISOString().slice(0, 10);
+
+          await tx.cardPurchase.update({
             where: { id },
             data: {
-              cardId: card.id,
-              categoryId: purchaseInput.categoryId,
-              description: purchaseInput.description,
-              totalAmount: purchaseInput.totalAmount,
-              purchaseDate: new Date(purchaseInput.purchaseDate),
-              installments: purchaseInput.installments,
-              entries: {
-                deleteMany: {},
-                create: installmentRows({
-                  purchaseDate: purchaseInput.purchaseDate,
-                  totalAmount: purchaseInput.totalAmount,
-                  installments: purchaseInput.installments,
-                  closingDay: card.closingDay,
-                }),
-              },
+              ...(purchaseInput.cardId !== undefined ? { cardId: card.id } : {}),
+              ...(purchaseInput.categoryId !== undefined ? { categoryId: purchaseInput.categoryId } : {}),
+              ...(purchaseInput.description !== undefined ? { description: purchaseInput.description } : {}),
+              ...(purchaseInput.purchaseDate !== undefined ? { purchaseDate: new Date(purchaseInput.purchaseDate) } : {}),
             },
+          });
+
+          if (shouldRecalculateStatementMonths) {
+            const purchaseDate = new Date(nextPurchaseDate);
+            const purchaseMonth = nextPurchaseDate.slice(0, 7);
+            const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > card.closingDay ? 1 : 0);
+            for (const entry of before.entries) {
+              await tx.cardInstallment.update({
+                where: { id: entry.id },
+                data: { statementMonth: addMonths(firstMonth, entry.number - 1) },
+              });
+            }
+          }
+
+          const after = await tx.cardPurchase.findUnique({
+            where: { id },
             include: { entries: true, category: true, card: true },
           });
+          if (!after) throw new CardMutationError(404, 'PURCHASE_NOT_FOUND');
+
           await recordFinancialAudit(tx, {
             actorId: request.user.sub,
             entity: 'CardPurchase',
@@ -382,7 +395,9 @@ export async function cardRoutes(app: FastifyInstance) {
             context: {
               workspaceId: context.workspaceId,
               operationId,
-              recalculatedInstallments: true,
+              recalculatedInstallments: false,
+              recalculatedStatementMonths: shouldRecalculateStatementMonths,
+              preservedInstallmentIds: before.entries.map((entry) => entry.id),
               previousCardId: before.cardId,
               cardId: after.cardId,
             },
