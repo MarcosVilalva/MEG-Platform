@@ -32,5 +32,8 @@ assert.match(source, /aria-label="Navegação principal"/);
 assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
 assert.match(source, /Outubro de 2026/);
 assert.match(source, /Marcos de Andrade Vilalva/);
+assert.match(source, /meg-loading-lockup\.svg/);
+assert.equal(source.includes('meg-brand-mark'), false);
+assert.equal(source.includes('dashed'), false);
 
 console.log('MEG Web Evolution shell foundation contract: OK');
