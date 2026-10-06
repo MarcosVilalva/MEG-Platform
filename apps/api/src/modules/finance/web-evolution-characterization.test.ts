@@ -19,6 +19,8 @@ const benefitMutation = readFileSync(new URL('./benefit-event-mutation.ts', impo
 const catalogMutation = readFileSync(new URL('./catalog-mutation.ts', import.meta.url), 'utf8');
 const financeRoutes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const readModel = readFileSync(new URL('./read-model.ts', import.meta.url), 'utf8');
+const openingBalance = readFileSync(new URL('./opening-balance.ts', import.meta.url), 'utf8');
+const financialPolicy = readFileSync(new URL('./financial-policy.ts', import.meta.url), 'utf8');
 
 // 1) Virada de mês e calendário civil.
 assert.equal(addMonthsClamped('2026-12-31', 1, 31), '2027-01-31');
@@ -84,8 +86,8 @@ const credit = canonicalCardStatementTotals([
 assert.equal(credit.payableAmount, 0);
 assert.equal(credit.creditBalance, 30);
 
-// 11) Limite comprometido considera todas as parcelas abertas, inclusive futuras.
-assert.match(cardsService, /const officialOpen = entries[\s\S]*filter\(\(entry\) => entry\.status === 'open'\)[\s\S]*reduce/);
+// 11) Limite comprometido considera o saldo REMANESCENTE de todas as parcelas abertas, inclusive futuras.
+assert.match(cardsService, /const officialOpen = entries[\s\S]*cardInstallmentRemaining\(entry\)/);
 assert.match(cardsService, /const usedLimit = Math\.max\(0, officialOpen \+ legacyOpenEffect\)/);
 
 // 12) Transferência interna é conservativa e não aceita a mesma conta.
@@ -106,25 +108,34 @@ assert.throws(() => buildTransferLegs({
   date: '2026-10-05',
 }), /TRANSFER_ACCOUNTS_MUST_DIFFER/);
 
-// 13) Caracterização do pagamento de fatura atual: somente pagamento integral da fatura aberta.
+// 13) Pagamento de fatura: total (amount omitido) ou parcial (amount explícito), sem ultrapassar o saldo aberto.
 const statementSchemaBlock = cardsRoutes.match(/const statementPaymentSchema = z\.object\(\{[\s\S]*?\n\}\);/)?.[0] || '';
 assert.ok(statementSchemaBlock);
-assert.doesNotMatch(statementSchemaBlock, /\bamount\s*:/);
-assert.match(cardsService, /const amount = Math\.round\(entries\.reduce\([\s\S]*?\* 100\) \/ 100/);
-assert.match(cardsService, /updateMany\([\s\S]*status: 'paid'/);
+assert.match(statementSchemaBlock, /amount:\s*z\.coerce\.number\(\)\.positive\(\)\.finite\(\)\.optional\(\)/);
+assert.match(cardsService, /input\.amount === undefined \? openAmount/);
+assert.match(cardsService, /AMOUNT_EXCEEDS_OPEN_STATEMENT/);
+assert.match(cardsService, /partialPaidAmount/);
+assert.match(cardsService, /remainingStatementAmount/);
+assert.match(cardsService, /monetaryAccountBalanceAt/);
 
-// 14) Caracterização da edição de compra atual: parcelas abertas são recriadas em bloco.
-assert.match(cardsRoutes, /entries:\s*\{[\s\S]*deleteMany:\s*\{\}[\s\S]*create:\s*installmentRows/);
-assert.match(cardsRoutes, /recalculatedInstallments:\s*true/);
+// 14) Edição de compra preserva as parcelas; edição unitária altera só a parcela escolhida.
+const purchasePatchBlock = cardsRoutes.split("app.patch('/purchases/:id'")[1]?.split("app.patch('/installments/:id'")[0] || '';
+assert.ok(purchasePatchBlock);
+assert.doesNotMatch(purchasePatchBlock, /deleteMany:\s*\{\}/);
+assert.match(purchasePatchBlock, /preservedInstallmentIds/);
+assert.match(purchasePatchBlock, /recalculatedInstallments:\s*false/);
+const installmentPatchBlock = cardsRoutes.split("app.patch('/installments/:id'")[1]?.split("app.delete('/purchases/:id'")[0] || '';
+assert.ok(installmentPatchBlock);
+assert.match(installmentPatchBlock, /singleInstallmentEdit:\s*true/);
+assert.match(installmentPatchBlock, /reconciledPurchaseTotal/);
+assert.match(installmentPatchBlock, /partialPaidAmount/);
 
-// 15) Caracterização do saldo inicial atual: catálogo grava openingBalance diretamente na conta.
-const createAccountBlock = catalogMutation.match(/export async function createAccountCatalog[\s\S]*?\n\}/)?.[0] || '';
-assert.ok(createAccountBlock);
-assert.match(createAccountBlock, /openingBalance:\s*input\.openingBalance/);
-assert.doesNotMatch(createAccountBlock, /financialEvent\.create/);
-
-console.log('MEG Web Evolution — caracterização financeira da Etapa 1: OK');
-
+// 15) Saldo inicial auditável: OPENING_BALANCE é a autoridade; Account.openingBalance fica como compatibilidade de migração.
+assert.match(catalogMutation, /syncOpeningBalanceEvent/);
+assert.match(financeRoutes, /openingBalance:\s*z\.coerce\.number\(\)\.finite\(\)\.optional\(\)/);
+assert.match(openingBalance, /OPENING_BALANCE_EVENT_PREFIX = 'opening-balance:'/);
+assert.match(openingBalance, /systemGenerated:\s*'OPENING_BALANCE'/);
+assert.match(openingBalance, /legacyOpeningBalanceFallbackTotal/);
 
 // 16) Rotas financeiras principais usam o read-model canônico centralizado na política monetária.
 assert.match(financeRoutes, /getCanonicalFinancialSummary/);
@@ -134,8 +145,13 @@ assert.match(readModel, /from '\.\/monetary-protection'/);
 assert.match(readModel, /summarizeMonetaryEvents/);
 assert.match(readModel, /countsTowardMonetaryBalance/);
 
-// 17) Caracterização do catálogo atual: openingBalance só existe na criação;
-// a atualização de conta ainda não oferece alteração auditável desse valor.
-const updateAccountTypeBlock = catalogMutation.split('export type AccountCatalogUpdate')[1]?.split('export async function createAccountCatalog')[0] || '';
-assert.ok(updateAccountTypeBlock);
-assert.doesNotMatch(updateAccountTypeBlock, /openingBalance/);
+// 17) Status canônico: Receita/Fixo realizados; crédito permanece planejado.
+assert.match(financialPolicy, /type === 'INCOME' \|\| type === 'REDEMPTION'\) return 'paid'/);
+assert.match(financialPolicy, /categoryName === 'FIXO' \|\| categoryGroup === 'FIXO'/);
+assert.match(financialPolicy, /paymentType === 'CREDIT'\) return 'planned'/);
+
+// 18) Crediário não pertence ao contrato canônico da nova Web; parcelamento canônico é cartão.
+assert.doesNotMatch(cardsRoutes, /CREDIARIO/);
+assert.doesNotMatch(cardsService, /CREDIARIO/);
+
+console.log('MEG Web Evolution — caracterização financeira da Etapa 1: OK');
