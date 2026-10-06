@@ -680,3 +680,188 @@
   .evo-login-secure{gap:7px;font-size:10px;white-space:normal;text-align:center;flex-wrap:wrap}
   .evo-login-account-type{grid-template-columns:1fr}
 }
+
+
+/* Desktop com pouca altura: preserva a composição sem cortar conteúdo nem sobrepor ações. */
+@media (min-width:961px) and (max-height:760px){
+  .evo-login-shell{
+    grid-template-columns:minmax(0,1fr) minmax(470px,560px);
+    gap:42px;
+    padding:0 46px 0 66px;
+  }
+
+  .evo-login-story{
+    height:auto;
+    padding-top:0;
+  }
+  .evo-login-brand{
+    width:190px;
+    margin-bottom:2px;
+    transform:translate(-34px,-5px);
+  }
+  .evo-login-kicker{
+    margin-bottom:14px;
+    font-size:10px;
+    letter-spacing:.36em;
+  }
+  .evo-login-story h1{
+    max-width:620px;
+    font-size:56px;
+    line-height:.94;
+  }
+  .evo-login-story>p{
+    max-width:570px;
+    margin-top:12px;
+    font-size:16px;
+    line-height:1.4;
+  }
+  .evo-login-proof{
+    width:min(100%,650px);
+    margin-top:34px;
+    gap:10px;
+  }
+  .evo-login-proof article{
+    height:84px;
+    grid-template-columns:44px minmax(0,1fr);
+    gap:10px;
+    padding:10px 12px;
+  }
+  .evo-login-proof article>i{
+    width:44px;
+    height:44px;
+  }
+  .evo-login-proof article>i svg{
+    width:24px;
+    height:24px;
+  }
+  .evo-login-proof b{font-size:13px}
+  .evo-login-proof small{font-size:10px}
+
+  .evo-login-card{
+    width:100%;
+    height:calc(100dvh - 20px);
+    max-height:none;
+    transform:none;
+    padding:25px 30px 18px;
+    border-radius:24px;
+  }
+  .evo-login-card-head{
+    grid-template-columns:48px minmax(0,1fr);
+    gap:15px;
+  }
+  .evo-login-security-mark{
+    width:48px;
+    height:48px;
+  }
+  .evo-login-security-mark svg{
+    width:24px;
+    height:24px;
+  }
+  .evo-login-head-copy{
+    padding-top:2px;
+  }
+  .evo-login-head-copy>span{
+    margin:1px 0 6px;
+    font-size:10px;
+  }
+  .evo-login-head-copy h2{
+    font-size:36px;
+    line-height:1;
+  }
+  .evo-login-head-copy p{
+    margin-top:8px;
+    font-size:13px;
+  }
+
+  .evo-login-form{
+    margin-top:18px;
+  }
+  .evo-login-form-scroll{
+    flex:0 1 auto;
+    overflow:visible;
+  }
+  .evo-login-field{
+    margin-bottom:12px;
+  }
+  .evo-login-field>span{
+    margin-bottom:6px;
+    font-size:13px;
+  }
+  .evo-login-field>div{
+    height:52px;
+  }
+  .evo-login-field svg{
+    width:20px;
+    height:20px;
+    flex-basis:20px;
+    margin-left:16px;
+  }
+  .evo-login-field input{
+    padding:0 14px;
+    font-size:15px;
+  }
+  .evo-login-eye{
+    width:46px;
+    flex-basis:46px;
+  }
+  .evo-login-eye svg{
+    width:20px;
+    height:20px;
+  }
+
+  .evo-login-options{
+    min-height:28px;
+    gap:12px;
+    margin-top:0;
+    font-size:12px;
+  }
+  .evo-login-remember{
+    gap:8px;
+  }
+  .evo-login-remember>span{
+    width:23px;
+    height:23px;
+  }
+  .evo-login-remember>span svg{
+    width:15px;
+    height:15px;
+  }
+
+  .evo-login-notice{
+    margin-top:4px;
+    padding:7px 10px;
+    font-size:10px;
+    line-height:1.25;
+  }
+
+  .evo-login-primary{
+    height:54px;
+    margin-top:10px;
+    gap:12px;
+    border-radius:12px;
+    font-size:16px;
+  }
+  .evo-login-primary>i{
+    width:32px;
+    height:32px;
+  }
+  .evo-login-primary svg{
+    width:18px;
+    height:18px;
+  }
+
+  .evo-login-switch{
+    margin-top:13px;
+    gap:12px;
+    font-size:11px;
+  }
+  .evo-login-secure{
+    padding-top:10px;
+    gap:7px;
+    font-size:9px;
+  }
+  .evo-login-secure svg{
+    width:15px;
+    height:15px;
+  }
+}
