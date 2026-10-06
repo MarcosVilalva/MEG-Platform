@@ -186,7 +186,10 @@ async function latestStatementLifecycleAudit(tx: Tx, cardId: string, month: stri
       entity: 'CreditCard',
       entityId: cardId,
       action: { in: ['CARD_STATEMENT_PAID', 'CARD_STATEMENT_REOPENED'] },
-      metadata: { contains: `\"month\":\"${month}\"` },
+      OR: [
+        { metadata: { contains: `\"month\":\"${month}\"` } },
+        { metadata: { contains: `\"statementMonth\":\"${month}\"` } },
+      ],
     },
     orderBy: { createdAt: 'desc' },
   });
