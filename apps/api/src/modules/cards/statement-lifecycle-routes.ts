@@ -3,6 +3,7 @@ import { prisma } from '@meg/database';
 import { z } from 'zod';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { readCanonicalCardStatements } from './service';
+import { cardInstallmentRemaining } from '../finance/card-statement-canonical';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
@@ -150,9 +151,9 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
     const canonicalRead = await readCanonicalCardStatements(request.user.sub, card.id, [parsed.data.month]);
     const canonical = canonicalRead.statements[0];
     const hasCanonical = Boolean(canonical?.lines.length);
-    const entryOpenAmount = round(openEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
-    const entryPaidAmount = round(paidEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const entryOpenAmount = round(entries.reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0));
     const entryStatementAmount = round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const entryPaidAmount = round(entryStatementAmount - entryOpenAmount);
     const statementAmount = hasCanonical ? canonical.netAmount : entryStatementAmount;
     const openAmount = hasCanonical ? canonical.payableAmount : entryOpenAmount;
     const paidAmount = hasCanonical
