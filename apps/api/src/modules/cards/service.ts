@@ -1,13 +1,13 @@
 import { prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
-import { buildCanonicalCardStatement, legacyCardStatementEffect } from '../finance/card-statement-canonical';
+import { buildCanonicalCardStatement, cardInstallmentRemaining, legacyCardStatementEffect } from '../finance/card-statement-canonical';
 import {
   SEMANTIC_DUPLICATE_WINDOW_MS,
   findRecentCardPurchaseDuplicate,
   isFutureFinancialDay,
   isMonetaryAccountType,
-  monetaryBalanceAt,
+  monetaryAccountBalanceAt,
   paymentBalanceDecision,
   serializableFinancialTransaction,
 } from '../finance/monetary-protection';
@@ -238,11 +238,10 @@ export async function listCards(userId: string, month: string) {
     const legacyPurchases = legacyPurchasesForCard(card, shared.legacy);
     const legacyOpen = legacyPurchases.filter((item) => item.legacyOpen);
     const officialOpen = entries
-      .filter((entry) => entry.status === 'open')
-      .reduce((sum, entry) => sum + Number(entry.amount), 0);
+      .reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0);
     const officialStatementOpen = entries
-      .filter((entry) => entry.status === 'open' && entry.statementMonth === month)
-      .reduce((sum, entry) => sum + Number(entry.amount), 0);
+      .filter((entry) => entry.statementMonth === month)
+      .reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0);
     const legacyOpenEffect = legacyOpen.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
     const usedLimit = Math.max(0, officialOpen + legacyOpenEffect);
     const periodLegacy = legacyPurchases.filter((item) => item.statementDate.startsWith(month));
@@ -376,6 +375,7 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
   accountId?: string | null;
   paymentMethodId?: string | null;
   paidAt: string;
+  amount?: number;
   operationId?: string;
 }) {
   if (isFutureFinancialDay(input.paidAt)) throw new CardDomainError('FUTURE_PAYMENT_NOT_ALLOWED', { paidAt: input.paidAt.slice(0, 10) });
@@ -434,28 +434,74 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
 
     const entries = await tx.cardInstallment.findMany({
       where: { purchase: { cardId: card.id, userId: shared.ownerId, status: 'active' }, statementMonth: month, status: 'open' },
-      orderBy: { number: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { purchaseId: 'asc' }, { number: 'asc' }],
     });
     if (!entries.length) throw new CardDomainError('EMPTY_STATEMENT');
-    const amount = Math.round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0) * 100) / 100;
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new CardDomainError('CARD_STATEMENT_NOT_PAYABLE', { cardId, month, amount });
+
+    const openAmount = Math.round(entries.reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0) * 100) / 100;
+    const amount = input.amount === undefined ? openAmount : Math.round(Number(input.amount) * 100) / 100;
+    if (!Number.isFinite(openAmount) || openAmount <= 0 || !Number.isFinite(amount) || amount <= 0) {
+      throw new CardDomainError('CARD_STATEMENT_NOT_PAYABLE', { cardId, month, openAmount, requestedAmount: input.amount ?? null });
     }
-    const available = await monetaryBalanceAt(tx, shared.ownerId, input.paidAt);
+    if (Math.round(amount * 100) > Math.round(openAmount * 100)) {
+      throw new CardDomainError('AMOUNT_EXCEEDS_OPEN_STATEMENT', { cardId, month, requested: amount, open: openAmount });
+    }
+
+    const available = await monetaryAccountBalanceAt(tx, shared.ownerId, account, input.paidAt);
     const protection = paymentBalanceDecision(available, amount);
-    if (!protection.allowed) throw new CardDomainError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, at: input.paidAt.slice(0, 10) });
+    if (!protection.allowed) throw new CardDomainError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, accountId: account.id, accountName: account.name, at: input.paidAt.slice(0, 10) });
 
     const paidAt = new Date(`${input.paidAt.slice(0, 10)}T12:00:00.000Z`);
-    const updated = await tx.cardInstallment.updateMany({
-      where: { id: { in: entries.map((entry) => entry.id) }, status: 'open' },
-      data: { status: 'paid', paidAt },
-    });
-    if (updated.count !== entries.length) {
-      throw new CardDomainError('STATEMENT_CHANGED_RETRY', {
-        expectedInstallments: entries.length,
-        updatedInstallments: updated.count,
+    let remainingPaymentCents = Math.round(amount * 100);
+    const allocations: Array<{
+      installmentId: string;
+      purchaseId: string;
+      number: number;
+      allocated: number;
+      closed: boolean;
+      partialPaidBefore: number;
+      partialPaidAfter: number;
+    }> = [];
+
+    for (const entry of entries) {
+      if (remainingPaymentCents <= 0) break;
+      const entryRemainingCents = Math.round(cardInstallmentRemaining(entry) * 100);
+      if (entryRemainingCents <= 0) continue;
+
+      const allocatedCents = Math.min(entryRemainingCents, remainingPaymentCents);
+      const partialBeforeCents = Math.max(0, Math.round(Number(entry.partialPaidAmount || 0) * 100));
+      const closes = allocatedCents === entryRemainingCents;
+      const partialAfterCents = closes ? partialBeforeCents : partialBeforeCents + allocatedCents;
+      const updated = await tx.cardInstallment.updateMany({
+        where: { id: entry.id, status: 'open', partialPaidAmount: entry.partialPaidAmount },
+        data: closes
+          ? { status: 'paid', paidAt }
+          : { partialPaidAmount: partialAfterCents / 100, paidAt: null },
       });
+      if (updated.count !== 1) {
+        throw new CardDomainError('STATEMENT_CHANGED_RETRY', {
+          installmentId: entry.id,
+          expectedPartialPaidAmount: Number(entry.partialPaidAmount || 0),
+        });
+      }
+
+      allocations.push({
+        installmentId: entry.id,
+        purchaseId: entry.purchaseId,
+        number: entry.number,
+        allocated: allocatedCents / 100,
+        closed: closes,
+        partialPaidBefore: partialBeforeCents / 100,
+        partialPaidAfter: partialAfterCents / 100,
+      });
+      remainingPaymentCents -= allocatedCents;
     }
+
+    if (remainingPaymentCents !== 0) {
+      throw new CardDomainError('STATEMENT_CHANGED_RETRY', { remainingPayment: remainingPaymentCents / 100 });
+    }
+
+    const remainingStatementAmount = Math.round((openAmount - amount) * 100) / 100;
 
     const event = await tx.financialEvent.create({ data: {
       userId: shared.ownerId,
@@ -482,7 +528,16 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
       },
     });
 
-    const response = { paid: true, amount, eventId: event.id, protection: { monetary: true, ...protection, at: input.paidAt.slice(0, 10) }, idempotentReplay: false };
+    const response = {
+      paid: remainingStatementAmount === 0,
+      partial: remainingStatementAmount > 0,
+      amount,
+      remainingStatementAmount,
+      limitReleased: amount,
+      eventId: event.id,
+      protection: { monetary: true, ...protection, accountId: account.id, at: input.paidAt.slice(0, 10) },
+      idempotentReplay: false,
+    };
 
     await recordFinancialAudit(tx, {
       actorId: userId,
@@ -492,9 +547,12 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
       before: { card, statementMonth: month, openEntries: entries },
       after: {
         statementMonth: month,
-        paidEntryIds: entries.map((entry) => entry.id),
+        paidEntryIds: allocations.filter((item) => item.closed).map((item) => item.installmentId),
+        partiallyPaidEntryIds: allocations.filter((item) => !item.closed).map((item) => item.installmentId),
+        allocations,
         paidAt: input.paidAt,
         amount,
+        remainingStatementAmount,
         financialEventId: event.id,
         account,
         paymentMethod,
