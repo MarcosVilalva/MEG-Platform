@@ -1,6 +1,13 @@
 import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { listCards } from '../cards/service';
+import {
+  countsTowardMonetaryBalance,
+  isBenefitFinancialEvent,
+  isMonetaryFinancialEvent,
+  isPostedFinancialStatus,
+  monetaryOpeningBalance,
+} from './monetary-protection';
 
 function normalizeText(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
@@ -18,42 +25,6 @@ function round(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-function isPosted(status: string) {
-  return status === 'paid' || status === 'reconciled' || status === 'confirmed';
-}
-
-function isMonetaryAccountType(type: unknown) {
-  return ['CHECKING', 'SAVINGS', 'CASH'].includes(normalizeText(type));
-}
-
-function isBenefitEvent(event: {
-  description?: unknown;
-  paymentMethod?: { name?: unknown } | null;
-  account?: { type?: unknown } | null;
-}) {
-  return normalizeText(event.account?.type) === 'BENEFIT'
-    || normalizeText(event.paymentMethod?.name) === 'VEROCARD'
-    || normalizeText(event.description).includes('VEROCARD');
-}
-
-function isMonetaryEvent(event: {
-  type: string;
-  description?: unknown;
-  paymentMethod?: { name?: unknown } | null;
-  account?: { type?: unknown } | null;
-}) {
-  return event.type !== 'transfer' && !isBenefitEvent(event);
-}
-
-function countsTowardBalance(event: {
-  type: string;
-  status: string;
-  description?: unknown;
-  paymentMethod?: { name?: unknown } | null;
-  account?: { type?: unknown } | null;
-}) {
-  return isMonetaryEvent(event) && isPosted(event.status);
-}
 
 function sourceDetails(rawData: unknown) {
   if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) return null;
@@ -77,15 +48,6 @@ function sourceDetails(rawData: unknown) {
   };
 }
 
-async function openingMonetaryBalance(userId: string) {
-  const accounts = await prisma.account.findMany({
-    where: { userId },
-    select: { type: true, openingBalance: true },
-  });
-  return round(accounts
-    .filter((account) => isMonetaryAccountType(account.type))
-    .reduce((sum, account) => sum + Number(account.openingBalance), 0));
-}
 
 async function canonicalSummary(userId: string, month: string) {
   const { start, end } = monthRange(month);
@@ -110,7 +72,7 @@ async function canonicalSummary(userId: string, month: string) {
       take: 100,
       select: { id: true, description: true, type: true, status: true, date: true, amount: true, signedAmount: true, account: { select: { type: true } }, paymentMethod: { select: { name: true } } },
     }),
-    openingMonetaryBalance(userId),
+    monetaryOpeningBalance(prisma, userId),
   ]);
 
   let income = 0;
@@ -121,7 +83,7 @@ async function canonicalSummary(userId: string, month: string) {
   const categoryTotals = new Map<string, number>();
 
   for (const event of monthEvents) {
-    if (!isMonetaryEvent(event)) continue;
+    if (!isMonetaryFinancialEvent(event)) continue;
     const signed = Number(event.signedAmount);
     if (!Number.isFinite(signed)) continue;
     eventCount += 1;
@@ -132,16 +94,16 @@ async function canonicalSummary(userId: string, month: string) {
       const category = event.category?.name || 'Sem categoria';
       categoryTotals.set(category, (categoryTotals.get(category) || 0) - signed);
     }
-    if (!isPosted(event.status)) continue;
+    if (!isPostedFinancialStatus(event.status)) continue;
     if (incomeLike) realizedIncome += signed;
     else realizedExpense += -signed;
   }
 
   const availableBalance = round(historicalEvents
-    .filter(countsTowardBalance)
+    .filter(countsTowardMonetaryBalance)
     .reduce((sum, event) => sum + Number(event.signedAmount), openingBalance));
-  const pendingEvents = monthEvents.filter((event) => event.status === 'planned' && isMonetaryEvent(event) && event.type !== 'income' && event.type !== 'redemption');
-  const nextDue = futureCandidates.find((event) => isMonetaryEvent(event) && event.type !== 'income' && event.type !== 'redemption') || null;
+  const pendingEvents = monthEvents.filter((event) => event.status === 'planned' && isMonetaryFinancialEvent(event) && event.type !== 'income' && event.type !== 'redemption');
+  const nextDue = futureCandidates.find((event) => isMonetaryFinancialEvent(event) && event.type !== 'income' && event.type !== 'redemption') || null;
   const topCategories = [...categoryTotals.entries()]
     .map(([name, amount]) => ({ name, amount: round(amount) }))
     .sort((left, right) => right.amount - left.amount)
@@ -180,11 +142,11 @@ async function canonicalCashflow(userId: string, month: string) {
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       select: { id: true, date: true, description: true, status: true, type: true, amount: true, signedAmount: true, account: { select: { type: true } }, category: { select: { name: true } }, paymentMethod: { select: { name: true } } },
     }),
-    openingMonetaryBalance(userId),
+    monetaryOpeningBalance(prisma, userId),
   ]);
 
   const events = rawEvents.filter(isMonetaryEvent);
-  const openingBalance = round(openingEvents.filter(countsTowardBalance).reduce((sum, event) => sum + Number(event.signedAmount), accountOpeningBalance));
+  const openingBalance = round(openingEvents.filter(countsTowardMonetaryBalance).reduce((sum, event) => sum + Number(event.signedAmount), accountOpeningBalance));
   let projectedBalance = openingBalance;
   let realizedBalance = openingBalance;
   const days = new Map<string, { date: string; income: number; expense: number; net: number; projectedBalance: number; realizedBalance: number; eventCount: number }>();
@@ -194,7 +156,7 @@ async function canonicalCashflow(userId: string, month: string) {
     const signed = Number(event.signedAmount);
     const incomeLike = event.type === 'income' || event.type === 'redemption';
     projectedBalance += signed;
-    if (countsTowardBalance(event)) realizedBalance += signed;
+    if (countsTowardMonetaryBalance(event)) realizedBalance += signed;
     const day = days.get(date) || { date, income: 0, expense: 0, net: 0, projectedBalance: 0, realizedBalance: 0, eventCount: 0 };
     if (incomeLike) day.income += signed;
     else day.expense += -signed;
@@ -299,8 +261,8 @@ async function benefitSummary(userId: string, month: string) {
     }),
   ]);
   const openingBalance = accounts.reduce((sum, account) => sum + Number(account.openingBalance || 0), 0);
-  const realized = allEvents.filter((event) => isBenefitEvent(event) && isPosted(event.status));
-  const realizedMonth = monthEvents.filter((event) => isBenefitEvent(event) && isPosted(event.status));
+  const realized = allEvents.filter((event) => isBenefitFinancialEvent(event) && isPostedFinancialStatus(event.status));
+  const realizedMonth = monthEvents.filter((event) => isBenefitFinancialEvent(event) && isPostedFinancialStatus(event.status));
   return {
     month,
     balance: round(realized.reduce((sum, event) => sum + Number(event.signedAmount), openingBalance)),
