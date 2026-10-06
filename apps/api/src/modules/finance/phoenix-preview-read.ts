@@ -1,6 +1,7 @@
 import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { listCards } from '../cards/service';
+import { cardInstallmentRemaining } from './card-statement-canonical';
 import {
   countsTowardMonetaryBalance,
   isBenefitFinancialEvent,
@@ -337,8 +338,8 @@ async function cardsReadOnly(userId: string, month: string) {
       };
     });
     const legacyOpen = legacyPurchases.filter((item) => item.legacyOpen);
-    const usedLimit = entries.filter((entry) => entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0) + legacyOpen.reduce((sum, item) => sum + item.totalAmount, 0);
-    const payableStatementAmount = entries.filter((entry) => entry.statementMonth === month && entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0);
+    const usedLimit = entries.reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0) + legacyOpen.reduce((sum, item) => sum + item.totalAmount, 0);
+    const payableStatementAmount = entries.filter((entry) => entry.statementMonth === month).reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0);
     const statementAmount = payableStatementAmount + legacyOpen.filter((item) => item.purchaseDate.startsWith(month)).reduce((sum, item) => sum + item.totalAmount, 0);
     const periodLegacy = legacyPurchases.filter((item) => item.purchaseDate.startsWith(month));
     return {
