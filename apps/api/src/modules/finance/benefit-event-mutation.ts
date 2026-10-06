@@ -88,7 +88,6 @@ async function benefitBalanceAt(tx: Tx, userId: string, effectiveAt: string, exc
       },
     }),
   ]);
-  const openingBalance = accounts.reduce((sum, account) => sum + Number(account.openingBalance || 0), 0);
   const balance = events
     .filter((event) => isBenefitFinancialEvent(event) && isPostedFinancialStatus(event.status))
     .reduce((sum, event) => sum + Number(event.signedAmount), openingBalance);
