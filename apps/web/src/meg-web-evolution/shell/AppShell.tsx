@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <source
               media="(min-width: 1024px)"
               srcSet={sidebarCollapsed
-                ? `${import.meta.env.BASE_URL}brand/meg-finance-system-mark-transparent.svg`
+                ? `${import.meta.env.BASE_URL}brand/meg-finance-symbol-transparent.svg`
                 : `${import.meta.env.BASE_URL}brand/meg-loading-lockup.svg`}
             />
             <img
@@ -41,9 +41,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           className="meg-sidebar-toggle"
           aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
           aria-expanded={!sidebarCollapsed}
+          data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
           onClick={() => setSidebarCollapsed((value) => !value)}
         >
-          <Icon name={sidebarCollapsed ? 'chevronRight' : 'chevronLeft'} />
+          <Icon name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'} />
         </button>
 
         <nav className="meg-nav">
