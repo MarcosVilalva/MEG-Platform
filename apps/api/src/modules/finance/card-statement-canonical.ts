@@ -31,6 +31,8 @@ export type CanonicalCardStatement = {
   openNetAmount: number;
   payableAmount: number;
   creditBalance: number;
+  minimumPaymentAmount: number | null;
+  minimumPaymentAvailable: boolean;
   status: 'empty' | 'open' | 'partial' | 'paid' | 'zero' | 'credit';
   lines: CanonicalCardStatementLine[];
 };
@@ -272,5 +274,13 @@ export function buildCanonicalCardStatement(input: {
           ? 'zero'
           : 'paid';
 
-  return { month: input.month, dueDate, ...totals, status, lines };
+  return {
+    month: input.month,
+    dueDate,
+    ...totals,
+    minimumPaymentAmount: null,
+    minimumPaymentAvailable: false,
+    status,
+    lines,
+  };
 }
