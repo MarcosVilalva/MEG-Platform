@@ -7,13 +7,7 @@ const css = readFileSync(new URL('./styles/login.css', import.meta.url), 'utf8')
 assert.match(
   screen,
   /data-evolution-login-fidelity="approved-reference-v3"/,
-  'Login deve declarar a referência visual aprovada, não uma interpretação.'
-);
-
-assert.match(
-  screen,
-  /data-evolution-login-structure="faithful-desktop-v1"/,
-  'Login deve usar a composição fiel do desktop validado.'
+  'Login deve declarar a referência visual aprovada.'
 );
 
 for (const literal of [
@@ -21,99 +15,96 @@ for (const literal of [
   'Sua vida financeira,',
   'com clareza para',
   'decidir.',
-  'Saldo, compromissos e projeções em uma visão única',
   'Saldo real',
-  'Visão completa',
   'Projetos',
-  'Mais controle',
   'Controle',
-  'Decisões melhores',
   'ACESSO SEGURO',
   'Bem-vindo de volta.',
   'Entre na sua conta para acessar o MEG.',
-  'seu@email.com',
   'Lembrar meu e-mail',
   'Esqueci minha senha',
   'Entrar no MEG',
-  'Ainda não tem acesso?',
-  'Criar conta',
-  'Sessão protegida',
-  'Conexão segura com o MEG',
 ]) {
   assert.ok(screen.includes(literal), `Texto aprovado ausente no Login: ${literal}`);
 }
 
 assert.match(
-  screen,
-  /function ShieldLockIcon\(\)[\s\S]*<rect x="9" y="10\.5" width="6" height="5\.5"/,
-  'Cabeçalho deve usar escudo com cadeado interno.'
-);
-
-assert.ok(screen.includes('<BalanceIcon/>'), 'Card Saldo real deve usar o ícone de barras.');
-assert.ok(screen.includes('<TargetIcon/>'), 'Card Projetos deve usar o ícone de alvo.');
-assert.ok(screen.includes('<ControlsIcon/>'), 'Card Controle deve usar o ícone de controles.');
-
-assert.match(
-  screen,
-  /\[rememberEmail,setRememberEmail\]=useState\(true\)/,
-  'A referência aprovada mostra Lembrar meu e-mail marcado por padrão.'
-);
-
-assert.ok(!screen.includes('evo-login-bg'), 'Fundo ilustrado não deve ser recriado por elementos HTML.');
-assert.ok(!screen.includes('loading-master.webp'), 'Login não deve reutilizar a arte antiga de Loading.');
-
-assert.match(
   css,
-  /background:url\('\/bg-login\.webp'\) center \/ cover no-repeat;/,
-  'Fundo deve ser o asset aprovado /bg-login.webp.'
-);
-
-assert.match(
-  css,
-  /\.evo-login::before\{[\s\S]*background:rgba\(0,0,0,\.25\)/,
-  'Overlay do fundo deve permanecer rgba(0,0,0,.25).'
-);
-
-assert.match(
-  css,
-  /grid-template-columns:minmax\(0,1fr\) 628px;[\s\S]*padding:0 74px 0 116px;/,
-  'Desktop de referência deve preservar a distribuição esquerda/direita medida contra 1672x941.'
-);
-
-assert.match(
-  css,
-  /\.evo-login-card\{[\s\S]*width:628px;[\s\S]*height:752px;[\s\S]*border-radius:29px;/,
-  'Card de login deve preservar proporção e raio auditados na referência.'
-);
-
-assert.match(
-  css,
-  /\.evo-login-story h1\{[\s\S]*font-size:80px;[\s\S]*line-height:\.925;/,
-  'Título institucional deve manter escala dominante da referência.'
-);
-
-assert.match(
-  css,
-  /\.evo-login-primary\{[\s\S]*height:72px;[\s\S]*linear-gradient\(90deg,#15d9e8 0%,#62efb8 100%\)/,
-  'Botão Entrar deve preservar altura e gradiente aprovado.'
-);
-
-assert.match(
-  css,
-  /backdrop-filter:blur\(14px\)/,
-  'Card de login deve manter vidro fosco.'
-);
-
-assert.match(
-  css,
-  /@media\(max-width:960px\)\{[\s\S]*flex-direction:column;[\s\S]*\.evo-login-card\{[\s\S]*width:min\(100%,600px\)/,
-  'Em telas menores a composição deve empilhar e centralizar o card.'
+  /\.evo-login\{[\s\S]*min-height:100dvh;/,
+  'Login deve usar min-height:100dvh.'
 );
 
 assert.doesNotMatch(
   css,
-  /\.evo-login-proof article:nth-child\(n\+2\)\{display:none\}/,
-  'Responsividade deve empilhar os três cards, não omitir conteúdo.'
+  /\b(?:100)?vh\b/,
+  'Login não deve depender de vh.'
 );
 
-console.log('Contrato visual fiel do Login aprovado validado.');
+assert.match(
+  css,
+  /\.evo-login::before\{[\s\S]*position:fixed;[\s\S]*inset:0;[\s\S]*background:url\('\/bg-login\.webp'\) 35% center \/ cover no-repeat;/,
+  'Fundo deve permanecer fixo e ancorado em 35% center.'
+);
+
+assert.match(
+  css,
+  /\.evo-login-shell\{[\s\S]*max-width:1440px;[\s\S]*margin:0 auto;[\s\S]*grid-template-columns:minmax\(0,1fr\) 420px;[\s\S]*gap:4rem;/,
+  'Container desktop deve ser centralizado em 1440px com coluna fixa de 420px.'
+);
+
+assert.match(
+  css,
+  /\.evo-login-card\{[\s\S]*width:420px;[\s\S]*max-width:100%;/,
+  'Card desktop deve permanecer em 420px e limitar-se a 100% em telas estreitas.'
+);
+
+assert.doesNotMatch(
+  css,
+  /\.evo-login-card\{[^}]*position:absolute/s,
+  'Card não pode usar position:absolute.'
+);
+
+assert.doesNotMatch(
+  css,
+  /\bvw\b/,
+  'Layout não deve usar vw.'
+);
+
+assert.match(
+  css,
+  /\.evo-login-field>div\{[\s\S]*overflow:hidden;[\s\S]*box-sizing:border-box;/,
+  'Wrapper do input deve proteger o recorte do autofill.'
+);
+
+assert.match(
+  css,
+  /input:-webkit-autofill,[\s\S]*input:-webkit-autofill:focus\{[\s\S]*-webkit-box-shadow:0 0 0 1000px #04161a inset!important;[\s\S]*-webkit-text-fill-color:#fff!important;[\s\S]*caret-color:#fff;[\s\S]*border-radius:inherit;/,
+  'Autofill deve preservar fundo, texto, caret e raio.'
+);
+
+assert.match(
+  css,
+  /\.evo-login-notice\{[\s\S]*display:none;/,
+  'Mensagem deve ficar oculta por padrão.'
+);
+
+assert.match(
+  css,
+  /\.evo-login-notice-error\{[\s\S]*display:block;/,
+  'Mensagem de erro deve aparecer apenas quando houver falha.'
+);
+
+const mediaQueries = css.match(/@media\s*\([^)]*\)/g) || [];
+assert.deepEqual(
+  mediaQueries,
+  ['@media(max-width:900px)'],
+  'Login deve ter um único breakpoint em 900px.'
+);
+
+assert.match(
+  css,
+  /@media\(max-width:900px\)\{[\s\S]*grid-template-columns:1fr;[\s\S]*\.evo-login-card\{[\s\S]*width:100%;[\s\S]*max-width:420px;/,
+  'Em 900px a composição deve empilhar e centralizar o card.'
+);
+
+console.log('Contrato estável do Login em zoom, autofill e resize validado.');
