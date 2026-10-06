@@ -75,7 +75,7 @@ assert.match(app,/screen==='login'\|\|screen==='loading'\|\|screen==='system'\|\
 assert.match(app,/phase==='preview'\)return <EvolutionPreview\/>/,'Galeria de prévias deve ter rota isolada do sistema real.');
 
 const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.meta.url),'utf8');
-assert.match(loginScreen,/data-evolution-login-fidelity="approved-reference-v1"/);
+assert.match(loginScreen,/data-evolution-login-fidelity="approved-reference-v3"/);
 assert.match(loginScreen,/Bem-vindo de volta/);
 assert.match(loginScreen,/Entrar no MEG/);
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
