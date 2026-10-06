@@ -21,11 +21,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand">
-          <img
-            className="meg-brand-logo"
-            src={`${import.meta.env.BASE_URL}brand/meg-loading-lockup.svg`}
-            alt="MEG Finanças"
-          />
+          <picture>
+            <source
+              media="(min-width: 1024px)"
+              srcSet={sidebarCollapsed
+                ? `${import.meta.env.BASE_URL}brand/meg-finance-system-mark-transparent.svg`
+                : `${import.meta.env.BASE_URL}brand/meg-loading-lockup.svg`}
+            />
+            <img
+              className="meg-brand-logo"
+              src={`${import.meta.env.BASE_URL}brand/meg-loading-lockup.svg`}
+              alt="MEG Finanças"
+            />
+          </picture>
         </div>
 
         <button
