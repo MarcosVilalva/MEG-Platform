@@ -1,0 +1,78 @@
+# MEG Web Evolution — Contrato Estrutural da Home
+
+## Status
+
+Contrato estrutural aprovado pelo usuário para a futura implementação da tela **INÍCIO**.
+
+Este documento registra somente a estrutura soberana da Home. A implementação da Home não é autorizada antes da conclusão das etapas anteriores definidas no checkpoint oficial.
+
+## Regra de soberania
+
+O CSS abaixo é **SOBERANO**. Os percentuais visuais do print são apenas referência descritiva e não substituem os spans definidos.
+
+### Grid desktop definitivo
+
+- Linha 1: `balance` span 7 + `flow` span 5
+- Linha 2: 4 KPIs, cada um span 3
+- Linha 3: `benefits` span 6 + `quick` span 6
+- Linha 4: `recent` span 6 + `upcoming` span 6
+
+## Estrutura HTML obrigatória
+
+```html
+<div class="app">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <header class="topbar"></header>
+    <main class="dash">
+      <section class="card balance"></section>
+      <section class="card flow"></section>
+      <a class="card kpi kpi--pay"></a>
+      <a class="card kpi kpi--invoice"></a>
+      <a class="card kpi kpi--pending"></a>
+      <a class="card kpi kpi--paid"></a>
+      <section class="card benefits"></section>
+      <section class="card quick"></section>
+      <section class="card recent"></section>
+      <section class="card upcoming"></section>
+    </main>
+  </div>
+</div>
+```
+
+## CSS estrutural obrigatório
+
+```css
+.app{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1fr)}
+.main{min-width:0;display:grid;grid-template-rows:auto 1fr;gap:1rem;padding:1rem}
+.dash{display:grid;gap:1rem;grid-template-columns:minmax(0,1fr)}
+.dash>*{min-width:0}
+
+@media (min-width:640px){
+  .app{grid-template-columns:4.5rem minmax(0,1fr)}
+  .dash{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .balance,.flow,.benefits,.quick,.recent,.upcoming{grid-column:1/-1}
+}
+
+@media (min-width:1024px){
+  .app{grid-template-columns:13rem minmax(0,1fr)}
+  .main{padding:1.25rem}
+  .dash{grid-template-columns:repeat(12,minmax(0,1fr))}
+  .balance{grid-column:span 7}
+  .flow{grid-column:span 5}
+  .kpi{grid-column:span 3}
+  .benefits{grid-column:span 6}
+  .quick{grid-column:span 6}
+  .recent,.upcoming{grid-column:span 6}
+}
+```
+
+## Regras da futura implementação
+
+- Não alterar nomes de classe nem o grid acima.
+- Dados devem vir da fonte única.
+- Nenhum número financeiro pode ser digitado manualmente na UI.
+- Saldo, fatura, status, totais e competência devem consumir exclusivamente as autoridades financeiras registradas em `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`.
+- Responsividade somente nos breakpoints principais de 640px e 1024px.
+- Zero rolagem horizontal.
+- DataGrid deve ser usado apenas quando a etapa específica estiver concluída e disponível; até lá, a Home não deve ser antecipada.
