@@ -203,7 +203,10 @@ Não avançar prematuramente para telas futuras.
 - Base auditada: `main@87e04b989568d95c182927c6f493061be26440db`.
 - Auditoria financeira por arquivo/linha registrada em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
 - Testes de caracterização financeira criados e adicionados ao gate.
-- Workflow isolado `MEG Web Evolution Foundation` passou em caracterização financeira, testes core e build da API.
+- Camada pura `financial-policy.ts` criada para regras monetárias centrais sem DOM nem acesso a banco.
+- `monetary-protection.ts` mantém as assinaturas existentes e reexporta a política pura.
+- `phoenix-preview-read.ts` foi consolidado para consumir a mesma política central, removendo duplicação equivalente sem alterar comportamento.
+- Workflow isolado `MEG Web Evolution Foundation` passou em caracterização financeira, testes core, compatibilidade financeira legada, política de status legada e build da API.
 - CI global permanece vermelho antes dos testes por security gate de dependências: `@capacitor/android` (critical) e `source-map-js` (high).
 - O security gate não foi desativado nem contornado.
 - Divergências continuam sendo reportadas antes de qualquer refatoração.
@@ -238,7 +241,7 @@ Os seguintes pontos já foram identificados como relevantes para a Etapa 1:
 3. **Pagamento de fatura:** a API ativa caracteriza pagamento integral da fatura aberta; não existe valor parcial no contrato ativo.
 4. **Edição de compra parcelada:** a rota atual apaga e recria as parcelas abertas da compra.
 5. **Baixa de payable:** a rota pública usa `payPayableProtected`; existe um writer alternativo `payment-mutation.ts` que não está ligado à rota pública e não possui a mesma proteção de saldo.
-6. **Read models:** o read model principal consome `monetary-protection.ts`, mas `phoenix-preview-read.ts` ainda duplica regras financeiras localmente.
+6. **Read models:** o read model principal já consome a política central e, nesta branch, `phoenix-preview-read.ts` também foi consolidado para a mesma autoridade monetária. Permanecem apenas divergências que exigem decisão de negócio.
 7. **Código legado de summary/cashflow:** funções antigas em `finance/service.ts` permanecem no repositório, embora não sejam usadas pelas rotas principais e tenham comportamento divergente da política monetária canônica.
 
 Todas devem permanecer visíveis e caracterizadas antes de consolidação.
@@ -324,11 +327,11 @@ As imagens oficiais atuais definem o padrão visual, mas **uma tela só passa a 
 **Prosseguir com a Etapa 1: Auditoria e Fundação.**
 
 Sequência imediata:
-1. concluir o mapa das regras financeiras e autoridades ativas;
-2. manter os testes de caracterização verdes;
-3. registrar e decidir o destino das divergências críticas: saldo inicial, pagamento parcial de fatura, edição de parcelas, benefício/VEROCARD e read models duplicados;
+1. fechar as divergências que realmente alteram comportamento: saldo inicial, pagamento parcial de fatura, edição de parcelas, regra central de status/Fixo e representação de Crediário;
+2. manter os testes de caracterização verdes durante qualquer decisão;
+3. preservar a ponte de compatibilidade entre `financialScope` legado, conta explícita normalizada e heurísticas Verocard até migração segura;
 4. tratar separadamente o bloqueio do CI global sem violar o congelamento do Android;
-5. somente depois iniciar a consolidação da camada financeira central;
+5. concluir a consolidação da camada financeira somente após as decisões de negócio;
 6. após a consolidação verde, criar a fonte única de dados/mocks.
 
 Nenhum código de interface deve ser escrito antes da conclusão e aprovação desta etapa.
