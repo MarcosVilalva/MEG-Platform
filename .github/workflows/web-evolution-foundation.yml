@@ -46,6 +46,12 @@ jobs:
         env:
           NODE_ENV: test
 
+      - name: Characterize legacy financial compatibility
+        run: npm run test:legacy-finance
+
+      - name: Characterize legacy status policy
+        run: npm run test:transaction-status-policy
+
       - name: Build API
         run: npm run build:api
         env:
