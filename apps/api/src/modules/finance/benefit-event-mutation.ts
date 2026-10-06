@@ -4,6 +4,7 @@ import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-pri
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
+import { legacyOpeningBalanceFallbackTotal } from './opening-balance';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
 import {
   SEMANTIC_DUPLICATE_WINDOW_MS,
@@ -74,11 +75,8 @@ function nextDayExclusive(day: string) {
 
 async function benefitBalanceAt(tx: Tx, userId: string, effectiveAt: string, excludeEventId?: string) {
   const cutoff = nextDayExclusive(effectiveAt);
-  const [accounts, events] = await Promise.all([
-    tx.account.findMany({
-      where: { userId, type: 'benefit' },
-      select: { openingBalance: true },
-    }),
+  const [openingBalance, events] = await Promise.all([
+    legacyOpeningBalanceFallbackTotal(tx, userId, ['benefit']),
     tx.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { lt: cutoff }, ...(excludeEventId ? { id: { not: excludeEventId } } : {}) },
       select: {
