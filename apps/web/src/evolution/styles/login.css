@@ -40,8 +40,8 @@
   min-height:100dvh;
   margin:0 auto;
   display:grid;
-  grid-template-columns:minmax(0,1fr) 420px;
-  gap:3rem;
+  grid-template-columns:minmax(0,1fr) minmax(380px,440px);
+  gap:2.5rem;
   align-items:center;
   padding:1.5rem 2rem;
 }
@@ -167,8 +167,8 @@
 
 .evo-login-card{
   position:relative;
-  width:420px;
-  max-width:100%;
+  width:100%;
+  max-width:440px;
   justify-self:center;
   display:flex;
   flex-direction:column;
@@ -186,8 +186,8 @@
 .evo-login-card-head{
   display:grid;
   grid-template-columns:48px minmax(0,1fr);
-  gap:.75rem 1rem;
-  align-items:center;
+  gap:1rem;
+  align-items:start;
 }
 
 .evo-login-security-mark{
@@ -212,13 +212,13 @@
 }
 
 .evo-login-head-copy{
-  display:contents;
+  min-width:0;
+  padding-top:.125rem;
 }
 
 .evo-login-head-copy>span{
   display:block;
-  grid-column:2;
-  margin:0;
+  margin:0 0 .45rem;
   color:#22efe0;
   font-size:.6875rem;
   line-height:1;
@@ -227,8 +227,8 @@
 }
 
 .evo-login-head-copy h2{
-  grid-column:1/-1;
   margin:0;
+  white-space:nowrap;
   color:#fff;
   font-size:clamp(1.9rem,1.95rem,2rem);
   line-height:1.02;
@@ -237,8 +237,7 @@
 }
 
 .evo-login-head-copy p{
-  grid-column:1/-1;
-  margin:.125rem 0 0;
+  margin:.4rem 0 0;
   color:#c5d6d6;
   font-size:.875rem;
   line-height:1.4;
@@ -705,10 +704,105 @@
   transition:background-color 9999s ease-in-out 0s;
 }
 
+
+@media(max-width:1180px){
+  .evo-login-shell{
+    grid-template-columns:minmax(0,1fr) minmax(360px,400px);
+    gap:2rem;
+    padding:1.25rem 1.5rem;
+  }
+
+  .evo-login-brand{
+    width:155px;
+  }
+
+  .evo-login-kicker{
+    margin-bottom:.75rem;
+    font-size:.6875rem;
+  }
+
+  .evo-login-story h1{
+    max-width:620px;
+    font-size:clamp(2.5rem,2.65rem,2.8rem);
+  }
+
+  .evo-login-story>p{
+    max-width:560px;
+    font-size:.9375rem;
+  }
+
+  .evo-login-proof{
+    margin-top:1.25rem;
+    gap:.75rem;
+  }
+
+  .evo-login-proof article{
+    min-height:70px;
+    grid-template-columns:38px minmax(0,1fr);
+    gap:.625rem;
+    padding:.5rem .625rem;
+  }
+
+  .evo-login-proof article>i{
+    width:38px;
+    height:38px;
+  }
+
+  .evo-login-proof article>i svg{
+    width:21px;
+    height:21px;
+  }
+
+  .evo-login-proof b{
+    font-size:.8125rem;
+  }
+
+  .evo-login-proof small{
+    font-size:.6875rem;
+  }
+
+  .evo-login-card{
+    max-width:400px;
+    padding:1.35rem;
+  }
+
+  .evo-login-head-copy h2{
+    font-size:1.75rem;
+  }
+
+  .evo-login-head-copy p{
+    font-size:.8125rem;
+  }
+
+  .evo-login-form{
+    margin-top:.875rem;
+  }
+
+  .evo-login-field{
+    margin-bottom:.625rem;
+  }
+
+  .evo-login-field>div{
+    height:48px;
+  }
+
+  .evo-login-primary{
+    height:50px;
+  }
+
+  .evo-login-switch{
+    margin-top:.75rem;
+  }
+
+  .evo-login-secure{
+    margin-top:.625rem;
+  }
+}
+
 @media(max-width:900px){
   .evo-login-shell{
     grid-template-columns:1fr;
-    gap:2rem;
+    gap:1.75rem;
     align-items:start;
     padding:1.5rem;
   }
@@ -719,17 +813,12 @@
   }
 
   .evo-login-brand{
-    width:180px;
-  }
-
-  .evo-login-kicker{
-    font-size:.75rem;
-    letter-spacing:.3em;
+    width:165px;
   }
 
   .evo-login-story h1{
-    max-width:600px;
-    font-size:clamp(2.4rem,2.65rem,2.9rem);
+    max-width:620px;
+    font-size:clamp(2.35rem,2.5rem,2.7rem);
   }
 
   .evo-login-story>p{
@@ -743,26 +832,86 @@
 
   .evo-login-proof{
     max-width:620px;
-    margin-top:2rem;
-    grid-template-columns:1fr;
+    margin-top:1.5rem;
+    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 
   .evo-login-card{
     width:100%;
-    max-width:420px;
+    max-width:440px;
     justify-self:center;
-    padding:1.5rem;
+  }
+}
+
+@media(max-width:560px){
+  .evo-login-shell{
+    gap:1.25rem;
+    padding:1rem;
   }
 
-  .evo-login-account-type{
+  .evo-login-brand{
+    width:140px;
+  }
+
+  .evo-login-kicker{
+    font-size:.625rem;
+    letter-spacing:.26em;
+  }
+
+  .evo-login-story h1{
+    font-size:clamp(2rem,2.1rem,2.2rem);
+  }
+
+  .evo-login-story>p{
+    font-size:.875rem;
+  }
+
+  .evo-login-proof{
     grid-template-columns:1fr;
+    gap:.5rem;
+  }
+
+  .evo-login-proof article{
+    min-height:62px;
+  }
+
+  .evo-login-card{
+    max-width:100%;
+    padding:1.1rem;
+    border-radius:20px;
+  }
+
+  .evo-login-card-head{
+    grid-template-columns:42px minmax(0,1fr);
+    gap:.75rem;
+  }
+
+  .evo-login-security-mark{
+    width:42px;
+    height:42px;
+  }
+
+  .evo-login-head-copy h2{
+    white-space:normal;
+    font-size:1.55rem;
+  }
+
+  .evo-login-head-copy p{
+    font-size:.75rem;
   }
 
   .evo-login-options{
-    align-items:flex-start;
+    flex-direction:column;
+    align-items:stretch;
+    gap:.5rem;
+  }
+
+  .evo-login-options>button{
+    align-self:flex-start;
   }
 
   .evo-login-switch{
+    grid-template-columns:24px minmax(0,1fr) 24px;
     white-space:normal;
   }
 
@@ -770,5 +919,9 @@
     white-space:normal;
     text-align:center;
     flex-wrap:wrap;
+  }
+
+  .evo-login-account-type{
+    grid-template-columns:1fr;
   }
 }
