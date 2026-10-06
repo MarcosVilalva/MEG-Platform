@@ -57,9 +57,10 @@ O CSS abaixo é **SOBERANO**. Os percentuais visuais do print são apenas refer�
 ## CSS estrutural obrigatório
 
 ```css
-.app{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1fr)}
-.main{min-width:0;display:grid;grid-template-rows:auto 1fr;gap:1rem;padding:1rem}
-.dash{display:grid;gap:1rem;grid-template-columns:minmax(0,1fr)}
+.app{height:100vh;height:100dvh;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr)}
+.main{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:1rem}
+.topbar{flex:0 0 auto}
+.dash{flex:1;min-height:0;overflow-y:auto;display:grid;gap:1rem;grid-template-columns:minmax(0,1fr)}
 .dash>*{min-width:0}
 
 @media (min-width:640px){
