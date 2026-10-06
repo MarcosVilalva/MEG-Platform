@@ -6,6 +6,20 @@ Contrato estrutural aprovado pelo usuário para a futura implementação da tela
 
 Este documento registra somente a estrutura soberana da Home. A implementação da Home não é autorizada antes da conclusão das etapas anteriores definidas no checkpoint oficial.
 
+## Premissa global do viewport e do Shell
+
+Esta regra passa a ser obrigatória para a nova Web:
+
+- a aplicação é validada com o navegador em **zoom 100%**;
+- ao abrir, o Shell deve ocupar exatamente a janela disponível;
+- a página/documento não pode apresentar barra de rolagem vertical nem horizontal;
+- `html`, `body`, raiz React e Shell permanecem limitados ao viewport;
+- apenas a área de conteúdo abaixo da topbar pode rolar verticalmente quando o conteúdo exceder o espaço disponível;
+- a sidebar pode rolar verticalmente somente quando seus itens não couberem;
+- nenhum container aninhado pode usar `min-height: 100vh` ou `min-height: 100dvh`;
+- a validação obrigatória do Shell inclui os viewports `1366x600`, `1366x768` e `1920x1080`, nos estados expandido e recolhido;
+- em todos esses casos, `document.documentElement.scrollHeight <= window.innerHeight`;
+- o logo nunca pode se sobrepor ao primeiro item do menu: o topo de `Início` deve ficar em posição vertical maior ou igual à base do logo ativo.
 ## Regra de soberania
 
 O CSS abaixo é **SOBERANO**. Os percentuais visuais do print são apenas referência descritiva e não substituem os spans definidos.
