@@ -109,8 +109,25 @@
   box-shadow: var(--meg-shadow-active);
 }
 
-.meg-new-button { margin: auto .7rem 0; width: calc(100% - 1.4rem); }
-.meg-new-button svg { width: 1.25rem; height: 1.25rem; }
+.meg-new-button {
+  margin: auto .7rem 0;
+  width: calc(100% - 1.4rem);
+  justify-content: flex-start;
+  padding-inline: .9rem;
+  border-color: rgba(57, 242, 220, .72);
+  background: linear-gradient(90deg, rgba(20, 227, 200, .17), rgba(20, 227, 200, .08));
+  color: var(--meg-text);
+  box-shadow: 0 0 1.4rem rgba(20, 227, 200, .10), inset 0 0 1rem rgba(20, 227, 200, .06);
+}
+.meg-new-button svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: .28rem;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #50f0df, #22d9c5);
+  color: #04302d;
+  box-shadow: 0 0 .85rem rgba(20, 227, 200, .22);
+}
 
 .meg-shell-body { min-width: 0; display: grid; grid-template-rows: auto minmax(0,1fr); }
 
