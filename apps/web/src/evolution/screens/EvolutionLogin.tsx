@@ -161,7 +161,9 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
     data-evolution-login-structure="faithful-desktop-v1"
   >
     <section className="evo-login-shell">
-      <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
+      <div className="evo-login-brand-row">
+        <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
+      </div>
       <div className="evo-login-story">
         <div className="evo-login-kicker">MEG EVOLUTION</div>
         <h1>Sua vida financeira,<strong>com clareza para<br/>decidir.</strong></h1>
