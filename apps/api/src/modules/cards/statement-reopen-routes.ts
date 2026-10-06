@@ -353,13 +353,13 @@ export async function cardStatementReopenRoutes(app: FastifyInstance) {
               where: { id: { in: entries.map((entry) => entry.id) }, status: 'paid' },
               data: { status: 'open', paidAt: null },
             });
-            if (reopenedCount !== entries.length) {
+            if (reopened.count !== entries.length) {
               throw new StatementReopenError(409, 'STATEMENT_CHANGED_RETRY', {
                 expectedInstallments: entries.length,
-                reopenedInstallments: reopenedCount,
+                reopenedInstallments: reopened.count,
               });
             }
-            reopenedCount = reopenedCount;
+            reopenedCount = reopened.count;
           }
 
           if (ledger) await tx.ledgerEntry.delete({ where: { id: ledger.id } });
