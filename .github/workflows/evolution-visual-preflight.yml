@@ -114,6 +114,12 @@ jobs:
             "artifacts/evolution-login-desktop-1440x900.png"
 
           npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1672,941" \
+            --wait-for-timeout="1800" \
+            "http://127.0.0.1:4173/evolution.html?screen=login" \
+            "artifacts/evolution-login-reference-1672x941.png"
+
+          npx --yes playwright@1.55.0 screenshot \
             --viewport-size="430,932" \
             --wait-for-timeout="1200" \
             "http://127.0.0.1:4173/evolution.html?screen=login" \
@@ -234,6 +240,7 @@ jobs:
           requested_route=${PREVIEW_ROUTE}
           requested_viewport=${PREVIEW_WIDTH}x${PREVIEW_HEIGHT}
           login_desktop=1440x900
+          login_reference=1672x941
           login_vertical=430x932
           loading_frozen=1254x1254
           loading_wide=1364x626
