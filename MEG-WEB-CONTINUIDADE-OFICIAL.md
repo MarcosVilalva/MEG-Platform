@@ -168,7 +168,15 @@ Padrão estrutural:
 - nenhum conteúdo cortado ou sobreposto;
 - tabelas adaptadas corretamente;
 - alvos de toque adequados;
-- responsividade estrutural, nunca remendada.
+- responsividade estrutural, nunca remendada;
+- validação do sistema em navegador com **zoom 100%**;
+- Shell ajustado exatamente à janela, sem rolagem no documento/página;
+- somente a área de conteúdo abaixo da topbar pode rolar verticalmente;
+- sidebar pode rolar verticalmente apenas quando seu conteúdo não couber;
+- `html`, `body`, raiz React e Shell permanecem limitados ao viewport;
+- nenhum container aninhado usa `min-height: 100vh` ou `min-height: 100dvh`;
+- contrato obrigatório nos viewports `1366x600`, `1366x768` e `1920x1080`, expandido e recolhido, com `document.documentElement.scrollHeight <= window.innerHeight`;
+- logo ativo sempre participa do fluxo e não pode se sobrepor ao primeiro item do menu.
 
 ---
 
@@ -248,7 +256,11 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Vulnerabilidade transitiva `shell-quote` detectada pelo CI durante a Etapa 03 e corrigida para `1.12.0`; gates retornaram verdes antes dos refinamentos visuais seguintes.
 - Cabeçalho da sidebar refinado novamente no desktop: controle de recolher passou para botão glass `28x28` com ícones `PanelLeftClose/PanelLeftOpen`, tooltip, metade para dentro/metade para fora da borda; logo expandida usa lockup desktop próprio com `FINANÇAS` centralizado; estado recolhido exibe apenas o símbolo financeiro `32x32`; ícones do menu recolhido permanecem no mesmo eixo horizontal da marca. Mobile não foi alterado nesta rodada. Head visual da rodada: `7bce0b93e3a44d1768c5a36f889c56aabddcfec4`.
 - Identidade da sidebar atualizada com os SVGs oficiais anexados pelo usuário, sem redesenho: `logo-meg-financas.svg` para o estado expandido (`140px`, altura automática) e `simbolo-meg-financas.svg` para o estado recolhido (`36px`, altura automática), com crossfade de opacidade em `200ms`. Assets gerados anteriormente para a sidebar foram removidos para evitar referência visual concorrente.
-- Espaçamento desktop do branding refinado sem alterar os SVGs: expandido com `padding-top: 20px` e `margin-bottom: 20px`; recolhido com `padding-block: 16px`; container com `overflow: visible`; larguras preservadas em `140px` e `36px` com altura automática.\n- Status visual: ainda não validado pelo usuário; não declarar Etapa 03 validada até aprovação explícita.
+- Espaçamento desktop do branding refinado sem alterar os SVGs: expandido com `padding-top: 20px` e `margin-bottom: 20px`; recolhido com `padding-block: 16px`; container com `overflow: visible`; larguras preservadas em `140px` e `36px` com altura automática.
+- Correção estrutural de viewport e sidebar aplicada: documento travado ao viewport, Shell em `100vh/100dvh` com overflow externo bloqueado, coluna principal em flex, rolagem vertical restrita ao conteúdo, sidebar com overflow vertical próprio, botão de recolher removido do container rolável e crossfade do logo corrigido para que somente o asset ativo participe do fluxo.
+- Contrato automatizado de navegador adicionado em `shell.viewport.browser.test.mjs`, cobrindo `1366x600`, `1366x768` e `1920x1080`, nos estados expandido e recolhido, verificando scroll do documento e não sobreposição entre logo e `Início`.
+- O workflow `MEG Web Evolution Foundation` agora executa esse contrato em Chrome headless.
+- Status visual: ainda não validado pelo usuário; não declarar Etapa 03 validada até aprovação explícita.
 
 ### Etapa 02 — encerrada
 - Fonte única criada em `apps/web/src/evolution/data/data.js`.
