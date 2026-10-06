@@ -55,24 +55,53 @@ assert.equal(merged.transactions.find((item) => item.id === 'tx-1').description,
 assert.deepEqual(merged.meta.sources, ['patch']);
 
 const catalogs = fromFinanceCatalogs({
-  accounts: [{ id: 'acc-1', name: 'Conta', type: 'checking', openingBalance: '100.00' }],
+  accounts: [
+    { id: 'acc-1', name: 'Conta', type: 'checking', openingBalance: '100.00' },
+    { id: 'acc-2', name: 'Conta destino', type: 'checking', openingBalance: '0' },
+  ],
   categories: [{ id: 'cat-1', name: 'Mercado', type: 'expense' }],
   paymentMethods: [{ id: 'pm-1', name: 'PIX', type: 'instant' }],
 });
 const events = fromFinancialEvents({
-  items: [{
-    id: 'evt-1',
-    description: 'Compra',
-    type: 'expense',
-    status: 'paid',
-    date: '2026-10-06T12:00:00.000Z',
-    competence: '2026-10',
-    amount: '25.50',
-    signedAmount: '-25.50',
-    accountId: 'acc-1',
-    categoryId: 'cat-1',
-    paymentMethodId: 'pm-1',
-  }],
+  items: [
+    {
+      id: 'evt-1',
+      description: 'Compra',
+      type: 'expense',
+      status: 'paid',
+      date: '2026-10-06T12:00:00.000Z',
+      competence: '2026-10',
+      amount: '25.50',
+      signedAmount: '-25.50',
+      accountId: 'acc-1',
+      categoryId: 'cat-1',
+      paymentMethodId: 'pm-1',
+    },
+    {
+      id: 'evt-transfer-source',
+      description: 'Transferência entre contas',
+      type: 'transfer',
+      status: 'paid',
+      date: '2026-10-06T12:00:00.000Z',
+      competence: '2026-10',
+      amount: '20.00',
+      signedAmount: '-20.00',
+      accountId: 'acc-1',
+      sourcePayload: { transferId: 'transfer-123', transferLeg: 'source', counterpartyAccountId: 'acc-2' },
+    },
+    {
+      id: 'evt-transfer-destination',
+      description: 'Transferência entre contas',
+      type: 'transfer',
+      status: 'paid',
+      date: '2026-10-06T12:00:00.000Z',
+      competence: '2026-10',
+      amount: '20.00',
+      signedAmount: '20.00',
+      accountId: 'acc-2',
+      sourcePayload: { transferId: 'transfer-123', transferLeg: 'destination', counterpartyAccountId: 'acc-1' },
+    },
+  ],
 });
 const payables = fromPayables([{
   id: 'pay-1',
@@ -116,6 +145,18 @@ assert.equal(snapshot.meta.mode, 'api');
 assert.equal(snapshot.meta.month, '2026-10');
 assert.equal(snapshot.meta.syncToken, 'sync-1');
 assert.equal(snapshot.transactions[0].amount, 25.5);
+assert.equal(snapshot.transfers.length, 1);
+assert.deepEqual(snapshot.transfers[0], {
+  id: 'transfer-123',
+  fromAccountId: 'acc-1',
+  toAccountId: 'acc-2',
+  amount: 20,
+  date: '2026-10-06',
+  status: 'paid',
+  description: 'Transferência entre contas',
+  sourceEventId: 'evt-transfer-source',
+  destinationEventId: 'evt-transfer-destination',
+});
 assert.equal(snapshot.cards[0].availableLimit, 700);
 assert.equal(snapshot.installments.length, 2);
 assert.ok(snapshot.statements.some((item) => item.id === 'card-1:2026-11'));
