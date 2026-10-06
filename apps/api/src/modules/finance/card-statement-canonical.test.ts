@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   buildCanonicalCardStatement,
+  cardInstallmentRemaining,
   cardStatementDueDate,
   cardStatementEffectFromSignedAmount,
   canonicalCardStatementTotals,
@@ -120,3 +121,34 @@ assert.equal(paidHistory.openNetAmount, 0, 'itens pagos não permanecem no saldo
 assert.equal(paidHistory.status, 'paid');
 
 console.log('Canonical card statement sign rules: OK');
+
+
+assert.equal(cardInstallmentRemaining({ amount: 100, partialPaidAmount: 25, status: 'open' }), 75);
+assert.equal(cardInstallmentRemaining({ amount: 100, partialPaidAmount: 25, status: 'paid' }), 0);
+
+const partiallyPaidOfficial = buildCanonicalCardStatement({
+  month: '2026-09',
+  closingDay: 8,
+  dueDay: 16,
+  aliases: ['LATAM'],
+  events: [],
+  purchases: [{
+    id: 'partial-purchase',
+    description: 'Compra parcialmente paga',
+    purchaseDate: '2026-08-10',
+    installments: 1,
+    status: 'active',
+    entries: [{
+      id: 'partial-entry',
+      number: 1,
+      amount: 100,
+      partialPaidAmount: 40,
+      statementMonth: '2026-09',
+      status: 'open',
+    }],
+  }],
+});
+assert.equal(partiallyPaidOfficial.netAmount, 100);
+assert.equal(partiallyPaidOfficial.openNetAmount, 60);
+assert.equal(partiallyPaidOfficial.payableAmount, 60);
+assert.equal(partiallyPaidOfficial.status, 'partial');
