@@ -54,8 +54,8 @@ assert.match(financeService, /deleteFinancialEvent[\s\S]*writeBackNormalizedEven
   'Exclusão individual deve remover o espelho legado para evitar divergência da base normalizada.');
 assert.match(benefitMutation, /benefitBalanceAt\(tx, dataOwnerId,/,
   'Saldo do Vale Alimentação deve ser único por base compartilhada.');
-assert.match(transfer, /sourceAccountBalanceAt\(tx, dataOwnerId,/,
-  'Transferência deve conferir o saldo da base compartilhada.');
+assert.match(transfer, /monetaryAccountBalanceAt\(tx, dataOwnerId, source, input\.date\)/,
+  'Transferência deve conferir o saldo da conta origem na base compartilhada pela política monetária canônica.');
 assert.match(bulk, /readEditableEvents\(tx, dataOwnerId, ids\)/,
   'Edição e exclusão em lote devem alcançar os lançamentos oficiais do workspace.');
 
