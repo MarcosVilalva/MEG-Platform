@@ -202,7 +202,7 @@ Não avançar prematuramente para telas futuras.
 - Branch atual: `meg-web-evolution/02-fonte-unica-dados-mocks`.
 - Etapa 02 mesclada na `main`: `db5e5ee4ba763db299e3bf005a5f63eac1c3666f`.
 - Branch atual: `meg-web-evolution/03-shell-tokens-base`.
-- PR da Etapa 03: a abrir.
+- PR da Etapa 03: **#605**, em Draft.
 - Base auditada: `main@87e04b989568d95c182927c6f493061be26440db`.
 - Auditoria financeira por arquivo/linha registrada em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
 - Testes de caracterização financeira criados e adicionados ao gate.
@@ -228,6 +228,7 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Contrato `test:web-evolution-shell` adicionado ao gate.
 - Android permanece congelado.
 - DataGrid não iniciado.
+- Preview dedicado publicado em Render: `https://meg-web-evolution-preview.onrender.com/web-evolution.html`.
 - Status visual: ainda não validado pelo usuário.
 
 ### Etapa 02 — encerrada
