@@ -411,6 +411,88 @@ export async function cardRoutes(app: FastifyInstance) {
     }
   });
 
+  app.patch('/installments/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const parsed = installmentUpdateSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const { id } = request.params as { id: string };
+    const context = await sharedCardContext(request.user.sub);
+    const { operationId, ...changes } = parsed.data;
+    const requestHash = mutationRequestHash({ id, installment: changes });
+
+    try {
+      const response = await protectedCardMutation({
+        context,
+        operationId,
+        requestHash,
+        mutationType: 'CARD_INSTALLMENT_UPDATE',
+        work: async (tx): Promise<JsonRecord> => {
+          const before = await tx.cardInstallment.findFirst({
+            where: {
+              id,
+              purchase: { userId: context.ownerId, status: 'active' },
+            },
+            include: { purchase: { include: { card: true, category: true } } },
+          });
+          if (!before) throw new CardMutationError(404, 'CARD_INSTALLMENT_NOT_FOUND');
+          if (before.status !== 'open') {
+            throw new CardMutationError(409, 'CARD_INSTALLMENT_ALREADY_PAID', { installmentId: id, status: before.status });
+          }
+          if (Number(before.partialPaidAmount || 0) > 0) {
+            throw new CardMutationError(409, 'CARD_INSTALLMENT_PARTIALLY_PAID', {
+              installmentId: id,
+              partialPaidAmount: Number(before.partialPaidAmount),
+            });
+          }
+
+          const after = await tx.cardInstallment.update({
+            where: { id },
+            data: {
+              ...(changes.amount !== undefined ? { amount: changes.amount } : {}),
+              ...(changes.statementMonth !== undefined ? { statementMonth: changes.statementMonth } : {}),
+            },
+          });
+
+          const entries = await tx.cardInstallment.findMany({
+            where: { purchaseId: before.purchaseId },
+            orderBy: { number: 'asc' },
+          });
+          const totalAmount = Math.round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0) * 100) / 100;
+          const purchase = await tx.cardPurchase.update({
+            where: { id: before.purchaseId },
+            data: { totalAmount },
+            include: { entries: true, category: true, card: true },
+          });
+
+          await recordFinancialAudit(tx, {
+            actorId: request.user.sub,
+            entity: 'CardPurchase',
+            entityId: before.purchaseId,
+            action: 'CARD_PURCHASE_UPDATED',
+            before: { purchase: before.purchase, installment: before },
+            after: { purchase, installment: after },
+            context: {
+              workspaceId: context.workspaceId,
+              operationId,
+              singleInstallmentEdit: true,
+              installmentId: id,
+              preservedInstallmentIds: entries.filter((entry) => entry.id !== id).map((entry) => entry.id),
+              reconciledPurchaseTotal: totalAmount,
+            },
+          });
+
+          return { installment: after, purchase };
+        },
+      });
+      return reply.send({
+        ...(response.installment as object),
+        purchase: response.purchase,
+        idempotentReplay: Boolean(response.idempotentReplay),
+      });
+    } catch (error) {
+      return mutationError(reply, error);
+    }
+  });
+
   app.delete('/purchases/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const parsed = purchaseCancelSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
