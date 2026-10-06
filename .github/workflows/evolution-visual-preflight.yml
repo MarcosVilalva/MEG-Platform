@@ -125,6 +125,33 @@ jobs:
             "http://127.0.0.1:4173/evolution.html?screen=login" \
             "artifacts/evolution-login-vertical-430x932.png"
 
+
+          # Login obrigatório: tela cheia, meia tela, notebook dividido e celular
+          # em 80%, 100% e 125%. O viewport efetivo simula o CSS viewport após zoom.
+          while IFS='|' read -r physical zoom effective; do
+            [ -z "$physical" ] && continue
+            ew="${effective%x*}"
+            eh="${effective#*x}"
+            npx --yes playwright@1.55.0 screenshot \
+              --viewport-size="${ew},${eh}" \
+              --wait-for-timeout="1200" \
+              "http://127.0.0.1:4173/evolution.html?screen=login" \
+              "artifacts/evolution-login-${physical}-zoom-${zoom}.png"
+          done <<'LOGIN_MATRIX'
+          1920x1080|80|2400x1350
+          1920x1080|100|1920x1080
+          1920x1080|125|1536x864
+          960x1080|80|1200x1350
+          960x1080|100|960x1080
+          960x1080|125|768x864
+          683x768|80|854x960
+          683x768|100|683x768
+          683x768|125|546x614
+          390x844|80|488x1055
+          390x844|100|390x844
+          390x844|125|312x675
+          LOGIN_MATRIX
+
           npx --yes playwright@1.55.0 screenshot \
             --viewport-size="1254,1254" \
             --wait-for-timeout="1200" \
@@ -242,6 +269,7 @@ jobs:
           login_desktop=1440x900
           login_reference=1672x941
           login_vertical=430x932
+          login_required_matrix=1920x1080,960x1080,683x768,390x844@80+100+125
           loading_frozen=1254x1254
           loading_wide=1364x626
           loading_vertical=430x932
