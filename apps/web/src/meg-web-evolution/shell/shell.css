@@ -38,26 +38,26 @@
 
 .meg-brand {
   width: 100%;
-  min-height: 7.75rem;
+  min-height: 5.75rem;
   display: grid;
   place-items: center;
+  padding: .15rem .35rem 0;
   text-align: center;
 }
 
 .meg-brand-logo {
   display: block;
-  width: min(100%, 11.25rem);
+  width: min(100%, 6.75rem);
   height: auto;
   margin-inline: auto;
   object-position: center;
-  transform: translateX(.2rem);
-  filter: drop-shadow(0 0 1rem rgba(20, 227, 200, .08));
+  filter: drop-shadow(0 0 1rem rgba(20, 227, 200, .10));
 }
 
 .meg-sidebar-toggle {
   position: absolute;
   z-index: 3;
-  top: 7.8rem;
+  top: 5.15rem;
   right: .45rem;
   width: 2rem;
   height: 2rem;
@@ -281,12 +281,13 @@
   }
 
   .meg-shell.is-sidebar-collapsed .meg-brand {
-    min-height: 6.65rem;
+    min-height: 5.75rem;
+    padding-inline: 0;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-brand-logo {
-    width: 3.7rem;
-    max-height: 3.7rem;
+    width: 2.95rem;
+    max-height: 3.25rem;
     object-fit: contain;
     transform: none;
   }
@@ -320,7 +321,7 @@
   }
 
   .meg-shell.is-sidebar-collapsed .meg-sidebar-toggle {
-    top: 6.7rem;
+    top: 5.15rem;
     right: .28rem;
   }
 }
