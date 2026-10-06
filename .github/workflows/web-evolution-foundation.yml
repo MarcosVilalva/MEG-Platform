@@ -30,6 +30,12 @@ jobs:
       - name: Install dependencies
         run: npm install --audit=false
 
+      - name: Inspect security blocker dependency paths
+        shell: bash
+        run: |
+          npm explain @capacitor/android || true
+          npm explain source-map-js || true
+
       - name: Generate Prisma client
         run: npm run db:generate
         env:
