@@ -40,5 +40,9 @@ assert.match(source, /Expandir menu lateral/);
 assert.match(source, /is-sidebar-collapsed/);
 assert.match(source, /meg-sidebar-toggle/);
 assert.match(source, /margin-inline:\s*auto/);
+assert.match(source, /className="sidebar__art"/);
+assert.match(source, /margin:\s*auto\s+-\.75rem\s+0/);
+assert.equal(source.includes('.meg-sidebar::before'), false);
+assert.equal(source.includes('.meg-sidebar::after'), false);
 
 console.log('MEG Web Evolution shell foundation contract: OK');
