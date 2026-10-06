@@ -190,7 +190,7 @@ Não avançar prematuramente para telas futuras.
 ## 10. Estado atual
 
 ### Etapa atual
-**Etapa 2 — Fonte Única de Dados e Mocks: EM EXECUÇÃO**
+**Etapa 2 — Fonte Única de Dados e Mocks: ENCERRADA**
 
 ### Situação
 - Prompt Master definido.
@@ -200,7 +200,7 @@ Não avançar prematuramente para telas futuras.
 - Decisão mantida de não usar a PR visual anterior como base da nova Web.
 - Etapa 01 mesclada na `main` pelo commit `0d21136c3993b11b127d8339a5b849b3727275ed`.
 - Branch atual: `meg-web-evolution/02-fonte-unica-dados-mocks`.
-- PR atual: **#604**, em Draft.
+- PR atual: **#604**, gates verdes; etapa encerrada tecnicamente.
 - Base auditada: `main@87e04b989568d95c182927c6f493061be26440db`.
 - Auditoria financeira por arquivo/linha registrada em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
 - Testes de caracterização financeira criados e adicionados ao gate.
@@ -224,7 +224,8 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Contrato documentado em `docs/MEG-WEB-DATA-SOURCE.md`.
 - Teste `test:evolution-data` adicionado ao gate específico `MEG Web Evolution Foundation`.
 - PR atual: **#604**.
-- Nenhum Shell, DataGrid ou tela iniciado.
+- Gates concluídos com sucesso: `MEG Platform CI`, `MEG Web Evolution Foundation` e `MEG Evolution Visual Preflight`.
+- Nenhum Shell, DataGrid ou tela iniciado nesta etapa.
 
 ---
 
@@ -340,15 +341,15 @@ As imagens oficiais atuais definem o padrão visual, mas **uma tela só passa a 
 
 ## 16. Próximo passo autorizado
 
-**Concluir a Etapa 2 — Fonte Única de Dados e Mocks antes de iniciar Shell/UI.**
+**Iniciar a Etapa 3 — Shell, tokens e componentes base.**
 
 Sequência imediata:
-1. manter `apps/web/src/evolution/data/data.js` como fonte única da nova Web;
-2. manter derivações estruturais em `apps/web/src/evolution/data/derived.js`, sem recriar regras financeiras;
-3. ampliar os mocks somente com dados oficiais/explicitamente aprovados, sem inventar valores de produto;
-4. garantir que KPIs, gráficos, totais, contadores e filtros derivem dessa mesma fonte;
-5. manter o contrato `data.contract.test.js` no gate;
-6. não iniciar Shell/UI antes do encerramento da Etapa 2.
+1. criar branch nova a partir da `main` após o merge da PR #604;
+2. construir Shell, tokens e componentes base do zero, usando somente os prints oficiais atuais;
+3. preservar `apps/web/src/evolution/data/` como fonte única da nova Web;
+4. não implementar DataGrid antes da fundação visual/base estar coerente;
+5. publicar preview quando houver UI e fornecer link sem cache;
+6. aguardar validação visual explícita antes de considerar a etapa validada.
 
 ---
 
