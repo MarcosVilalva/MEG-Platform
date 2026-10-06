@@ -93,16 +93,19 @@
     "test:production-smoke-contract": "node scripts/production-smoke-contract.mjs"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.3",
+    "@capacitor/android": "^7.6.9",
     "@capacitor/app": "^7.1.2",
-    "@capacitor/core": "^7.4.3",
+    "@capacitor/core": "^7.6.9",
     "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/status-bar": "^7.0.6",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3",
+    "@capacitor/cli": "^7.6.9",
     "npm-run-all": "^4.1.5",
     "brace-expansion": "5.0.12"
+  },
+  "overrides": {
+    "source-map-js": "1.2.2"
   }
 }
