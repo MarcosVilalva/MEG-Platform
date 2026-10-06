@@ -35,17 +35,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="meg-sidebar-toggle"
-          aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
-          aria-expanded={!sidebarCollapsed}
-          data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          onClick={() => setSidebarCollapsed((value) => !value)}
-        >
-          <Icon name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'} />
-        </button>
-
         <nav className="meg-nav">
           {navigation.map(([icon, label], index) => (
             <button key={label} className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`} type="button">
@@ -129,6 +118,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span>Novo</span>
         </PrimaryButton>
       </aside>
+
+      <button
+        type="button"
+        className="meg-sidebar-toggle"
+        aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
+        aria-expanded={!sidebarCollapsed}
+        data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+        onClick={() => setSidebarCollapsed((value) => !value)}
+      >
+        <Icon name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'} />
+      </button>
 
       {drawerOpen && <button className="meg-drawer-scrim" aria-label="Fechar menu" onClick={() => setDrawerOpen(false)} />}
 
