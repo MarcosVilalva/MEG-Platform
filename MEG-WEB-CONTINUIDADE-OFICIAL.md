@@ -246,7 +246,7 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Grafismo inferior da sidebar reconstruído como SVG inline em `sidebar__art`, com fluxo normal de layout, `margin-top:auto`, recorte pela largura, baixa opacidade e fade superior; pseudo-elementos absolutos anteriores removidos.
 - Contrato estrutural soberano da futura Home registrado em `docs/MEG-WEB-HOME-CONTRACT.md`: 7/5 na linha 1, quatro KPIs 3/3/3/3, 6/6 na linha 3 e 6/6 na linha 4.
 - Vulnerabilidade transitiva `shell-quote` detectada pelo CI durante a Etapa 03 e corrigida para `1.12.0`; gates retornaram verdes antes dos refinamentos visuais seguintes.
-- Status visual: ainda não validado pelo usuário; não declarar Etapa 03 validada até aprovação explícita.
+- Cabeçalho da sidebar refinado no commit `7b4ffa5b3a48c8d269e8633160acbd245813131f`: logo reduzido e centralizado conforme a referência oficial, com controle de recolher reposicionado junto ao cabeçalho; estado recolhido mantém marca compacta dedicada.\n- Status visual: ainda não validado pelo usuário; não declarar Etapa 03 validada até aprovação explícita.
 
 ### Etapa 02 — encerrada
 - Fonte única criada em `apps/web/src/evolution/data/data.js`.
