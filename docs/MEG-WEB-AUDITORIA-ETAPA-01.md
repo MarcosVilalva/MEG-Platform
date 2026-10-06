@@ -79,19 +79,19 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 - `payables/core.test.ts`;
 - `web-evolution-characterization.test.ts`.
 
-## Divergências que NÃO serão corrigidas automaticamente
+## Divergências e decisões atuais
 
-1. **Saldo inicial:** evento sistemático auditável no documento x campo direto no código.
-2. **Pagamento parcial de fatura:** exigido na matriz de caracterização, mas a API ativa hoje só faz pagamento integral.
-3. **Edição de parcelas:** requisito de preservar parcelas x rota atual recria todas.
-4. **Benefício:** coexistência de `financialScope` legado, conta explícita normalizada e heurísticas VEROCARD.
-5. **Projeção mensal:** `packages/core` e política monetária do API não calculam o mesmo conceito de saldo.
-6. **Baixa de payable:** a rota pública foi confirmada em `payPayableProtected`; o writer `payment-mutation.ts` ficou caracterizado como alternativo e não conectado à rota pública.
-7. **Read models duplicados:** `phoenix-preview-read.ts` ainda replica política monetária que já existe em `monetary-protection.ts`.
-8. **Summary/Cashflow antigos:** funções divergentes permanecem em `service.ts`, embora não sejam usadas pelas rotas principais.
-9. **Status de lançamento:** Receita/Alimentação/Crédito possuem política histórica no Web legado, mas o writer geral da API ainda confia no status enviado pelo cliente.
-10. **Fixo:** regra validada no documento consolidado ainda não foi localizada em uma autoridade central executável.
-11. **Crediário:** a regra exige modalidade própria, mas a representação central atual ainda precisa ser definida sem confundi-la com cartão.
+1. **Saldo inicial — DECIDIDO/IMPLEMENTADO NA FUNDAÇÃO:** `OPENING_BALANCE` foi aprovado como autoridade auditável. A API passou a sincronizar o evento sistemático e mantém `Account.openingBalance` apenas como fallback de compatibilidade durante migração.
+2. **Pagamento de fatura — DECIDIDO/IMPLEMENTADO NA FUNDAÇÃO:** pagamento total e parcial (`Outro`) passam a ser suportados. `Mínimo` permanece indisponível enquanto não existir valor explícito proveniente do domínio/dado da fatura; nenhum percentual será inventado.
+3. **Edição de parcelas — DECIDIDO/IMPLEMENTADO NA FUNDAÇÃO:** existe edição unitária de parcela aberta, preservando os IDs e valores das demais; o total agregado da compra é reconciliado pela soma das parcelas.
+4. **Benefício — COMPATIBILIDADE MANTIDA:** coexistem `financialScope` legado, conta explícita normalizada e heurísticas VEROCARD. A nova Web deve consumir a conta explícita; heurísticas permanecem apenas como ponte de migração.
+5. **Projeção mensal — PENDENTE DE ENCERRAMENTO:** `packages/core` e a política monetária da API ainda precisam ter autoridade explicitamente definida para a nova Web.
+6. **Baixa de payable — CARACTERIZADA:** a rota pública usa `payPayableProtected`; o writer `payment-mutation.ts` permanece alternativo e não conectado à rota pública.
+7. **Read models duplicados — CONSOLIDADO:** `phoenix-preview-read.ts` passou a consumir a política monetária central.
+8. **Summary/Cashflow antigos — LEGADO NÃO ROTEADO:** funções divergentes permanecem em `service.ts`, mas as rotas principais usam `read-model.ts`. Não devem ser reutilizadas pela nova Web.
+9. **Status de lançamento — DECIDIDO/IMPLEMENTADO NA FUNDAÇÃO:** writer geral resolve status no domínio. Receita e Fixo entram como `paid`; cartão de crédito prevalece como `planned`; benefício continua no writer próprio.
+10. **Fixo — DECIDIDO/IMPLEMENTADO NA FUNDAÇÃO:** regra centralizada em `financial-policy.ts`.
+11. **Crediário — REMOVIDO DO ESCOPO:** a nova Web não utilizará crediário. O parcelamento canônico será o de cartão de crédito; código legado de crediário não será autoridade.
 
 ## Gates da Etapa 1
 
@@ -106,10 +106,10 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 - [x] camada pura `financial-policy.ts` extraída sem quebrar assinaturas existentes;
 - [x] duplicação monetária do Phoenix Preview consolidada na política central;
 - [x] rota pública/caminho ativo de baixa de payable mapeados;
-- [ ] CI global `MEG Platform CI` verde — atualmente bloqueado no security gate por `@capacitor/android` (critical) e `source-map-js` (high);
-- [ ] auditoria de saldo inicial encerrada;
-- [ ] decisão formal sobre pagamento parcial de fatura;
-- [ ] decisão formal sobre edição individual de parcelas;
+- [ ] CI global `MEG Platform CI` verde — advisories de `@capacitor/android` e `source-map-js` já foram corrigidos no lockfile; execução atual ainda precisa fechar todos os testes;
+- [x] auditoria de saldo inicial encerrada e autoridade `OPENING_BALANCE` aprovada;
+- [x] decisão formal sobre pagamento parcial de fatura registrada;
+- [x] decisão formal sobre edição individual de parcelas registrada;
 - [ ] consolidação da camada financeira central;
 - [ ] fonte única de dados/mocks.
 
@@ -117,13 +117,13 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 
 O workflow isolado `MEG Web Evolution Foundation` passou integralmente: instalação, geração Prisma, `test:finance`, `test:core`, `test:legacy-finance`, `test:transaction-status-policy` e build da API.
 
-O workflow global `MEG Platform CI` continua vermelho antes dos testes por um bloqueio de segurança de dependências já presente no lockfile: `@capacitor/android` em severidade crítica e `source-map-js` em severidade alta. O gate NÃO foi desativado nem contornado. Como Android está congelado, nenhuma atualização do Capacitor será feita automaticamente nesta etapa.
+O security gate global já passou após a autorização de atualização técnica: `@capacitor/android/@capacitor/core/@capacitor/cli` foram atualizados para a linha 7.6.9 e `source-map-js` foi fixado em 1.2.2. O Android permanece congelado funcional e visualmente; a exceção foi apenas para correção de dependência de segurança. O CI global ainda aguarda fechamento de todos os testes da branch.
 
 ## Observação sobre `financialScope`
 
 A auditoria aprofundada confirmou que `financialScope` existe no legado Web, especialmente em `apps/web/src/legacy-financial-accounts.js`, ao lado de `financialAccountId`. A camada normalizada da API não persiste esse campo: usa `accountId` e `Account.type`. Portanto, o problema real é uma coexistência de modelos entre legado e API, com heurísticas VEROCARD como ponte de compatibilidade.
 
-**Importante:** os testes de caracterização da fundação estão verdes. A consolidação financeira só deve começar depois de dar destino explícito às divergências de saldo inicial, pagamento parcial de fatura, edição de parcelas e autoridades duplicadas.
+**Importante:** as decisões críticas já foram formalizadas e parte da consolidação foi implementada. A Etapa 1 só pode ser encerrada quando os gates estiverem verdes e as autoridades legadas restantes estiverem explicitamente classificadas como canônicas, compatibilidade ou não utilizadas.
 
 
 ## Decisões aprovadas — 06/10/2026
