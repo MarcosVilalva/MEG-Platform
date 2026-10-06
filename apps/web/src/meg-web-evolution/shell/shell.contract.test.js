@@ -35,5 +35,10 @@ assert.match(source, /Marcos de Andrade Vilalva/);
 assert.match(source, /meg-loading-lockup\.svg/);
 assert.equal(source.includes('meg-brand-mark'), false);
 assert.equal(source.includes('dashed'), false);
+assert.match(source, /Recolher menu lateral/);
+assert.match(source, /Expandir menu lateral/);
+assert.match(source, /is-sidebar-collapsed/);
+assert.match(source, /meg-sidebar-toggle/);
+assert.match(source, /margin-inline:\s*auto/);
 
 console.log('MEG Web Evolution shell foundation contract: OK');
