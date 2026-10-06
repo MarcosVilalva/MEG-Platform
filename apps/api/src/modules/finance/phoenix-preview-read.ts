@@ -8,6 +8,7 @@ import {
   isPostedFinancialStatus,
   monetaryOpeningBalance,
 } from './monetary-protection';
+import { legacyOpeningBalanceFallbackTotal } from './opening-balance';
 
 function normalizeText(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
@@ -249,8 +250,8 @@ async function canonicalAnalytics(userId: string, month: string) {
 
 async function benefitSummary(userId: string, month: string) {
   const { start, end } = monthRange(month);
-  const [accounts, allEvents, monthEvents] = await Promise.all([
-    prisma.account.findMany({ where: { userId, type: 'benefit' }, select: { openingBalance: true } }),
+  const [openingBalance, allEvents, monthEvents] = await Promise.all([
+    legacyOpeningBalanceFallbackTotal(prisma, userId, ['benefit']),
     prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { lt: end } },
       select: { description: true, type: true, status: true, signedAmount: true, account: { select: { type: true } }, paymentMethod: { select: { name: true } } },
@@ -260,7 +261,6 @@ async function benefitSummary(userId: string, month: string) {
       select: { description: true, type: true, status: true, signedAmount: true, account: { select: { type: true } }, paymentMethod: { select: { name: true } } },
     }),
   ]);
-  const openingBalance = accounts.reduce((sum, account) => sum + Number(account.openingBalance || 0), 0);
   const realized = allEvents.filter((event) => isBenefitFinancialEvent(event) && isPostedFinancialStatus(event.status));
   const realizedMonth = monthEvents.filter((event) => isBenefitFinancialEvent(event) && isPostedFinancialStatus(event.status));
   return {
