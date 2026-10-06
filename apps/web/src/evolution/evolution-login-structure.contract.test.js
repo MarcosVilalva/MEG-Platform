@@ -53,6 +53,12 @@ assert.ok(screen.includes('<BalanceIcon/>'), 'Card Saldo real deve usar o ícone
 assert.ok(screen.includes('<TargetIcon/>'), 'Card Projetos deve usar o ícone de alvo.');
 assert.ok(screen.includes('<ControlsIcon/>'), 'Card Controle deve usar o ícone de controles.');
 
+assert.match(
+  screen,
+  /\[rememberEmail,setRememberEmail\]=useState\(true\)/,
+  'A referência aprovada mostra Lembrar meu e-mail marcado por padrão.'
+);
+
 assert.ok(!screen.includes('evo-login-bg'), 'Fundo ilustrado não deve ser recriado por elementos HTML.');
 assert.ok(!screen.includes('loading-master.webp'), 'Login não deve reutilizar a arte antiga de Loading.');
 
@@ -102,6 +108,12 @@ assert.match(
   css,
   /@media\(max-width:960px\)\{[\s\S]*flex-direction:column;[\s\S]*\.evo-login-card\{[\s\S]*width:min\(100%,600px\)/,
   'Em telas menores a composição deve empilhar e centralizar o card.'
+);
+
+assert.doesNotMatch(
+  css,
+  /\.evo-login-proof article:nth-child\(n\+2\)\{display:none\}/,
+  'Responsividade deve empilhar os três cards, não omitir conteúdo.'
 );
 
 console.log('Contrato visual fiel do Login aprovado validado.');
