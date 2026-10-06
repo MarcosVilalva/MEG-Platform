@@ -61,14 +61,18 @@ body:has(.evo-login){
   padding:2rem;
 }
 
-.evo-login-brand{
+.evo-login-brand-row{
   grid-area:brand;
+  width:min(100%,44rem);
+  justify-self:center;
+  align-self:end;
+}
+
+.evo-login-brand{
   width:13.5rem;
   max-width:100%;
   height:auto;
   display:block;
-  justify-self:center;
-  align-self:end;
   margin:0 0 .75rem;
   object-fit:contain;
   filter:drop-shadow(0 8px 18px rgba(0,0,0,.25));
@@ -690,10 +694,14 @@ body:has(.evo-login){
     padding:1.5rem;
   }
 
+  .evo-login-brand-row{
+    width:100%;
+    justify-self:stretch;
+    align-self:auto;
+  }
+
   .evo-login-brand{
     width:10rem;
-    justify-self:start;
-    align-self:auto;
     margin:0;
   }
 
