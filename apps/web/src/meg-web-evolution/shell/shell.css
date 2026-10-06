@@ -128,8 +128,8 @@
   min-height: 3.15rem;
   display: flex;
   align-items: center;
-  gap: .82rem;
-  padding: .7rem .82rem;
+  gap: .95rem;
+  padding: .7rem 1.4rem;
   border: .0625rem solid transparent;
   border-radius: .82rem;
   background: transparent;
@@ -148,8 +148,8 @@
 }
 
 .meg-new-button {
-  margin: auto .7rem 0;
-  width: calc(100% - 1.4rem);
+  margin: auto 1.35rem 0;
+  width: calc(100% - 2.7rem);
   justify-content: flex-start;
   padding-inline: .9rem;
   border-color: rgba(57, 242, 220, .72);
@@ -302,7 +302,9 @@
   }
 
   .meg-shell.is-sidebar-collapsed .meg-brand-logo {
-    width: 4rem;
+    width: 3.7rem;
+    max-height: 3.7rem;
+    object-fit: contain;
     transform: none;
   }
 
