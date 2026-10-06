@@ -145,7 +145,7 @@ async function canonicalCashflow(userId: string, month: string) {
     monetaryOpeningBalance(prisma, userId),
   ]);
 
-  const events = rawEvents.filter(isMonetaryEvent);
+  const events = rawEvents.filter(isMonetaryFinancialEvent);
   const openingBalance = round(openingEvents.filter(countsTowardMonetaryBalance).reduce((sum, event) => sum + Number(event.signedAmount), accountOpeningBalance));
   let projectedBalance = openingBalance;
   let realizedBalance = openingBalance;
@@ -202,8 +202,8 @@ async function canonicalAnalytics(userId: string, month: string) {
     }),
   ]);
 
-  const events = rawEvents.filter(isMonetaryEvent);
-  const trendEvents = rawTrendEvents.filter(isMonetaryEvent);
+  const events = rawEvents.filter(isMonetaryFinancialEvent);
+  const trendEvents = rawTrendEvents.filter(isMonetaryFinancialEvent);
   const paymentTotals = new Map<string, number>();
   const categoryTotals = new Map<string, number>();
   const expenseDays = new Set<string>();
