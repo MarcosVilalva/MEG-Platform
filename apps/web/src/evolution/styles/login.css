@@ -56,7 +56,8 @@ body:has(.evo-login){
   max-width:100%;
   height:auto;
   display:block;
-  margin:0;
+  margin-inline:auto;
+  margin-block:0;
   object-fit:contain;
   filter:drop-shadow(0 .5rem 1.125rem rgba(0,0,0,.25));
 }
@@ -78,6 +79,7 @@ body:has(.evo-login){
 
 .evo-login-kicker{
   margin:0;
+  text-align:center;
   color:#14e3c8;
   font-size:.75rem;
   line-height:1.2;
@@ -800,12 +802,14 @@ body:has(.evo-login){
 
   .evo-login-brand{
     width:12rem;
+    margin-inline:0;
     margin-bottom:.25rem;
   }
 
   .evo-login-kicker{
     margin:0;
     font-size:.8125rem;
+    text-align:left;
   }
 
   .evo-login-hero h1{
