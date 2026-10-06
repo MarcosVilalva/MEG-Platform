@@ -410,7 +410,9 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
         action: 'CARD_STATEMENT_PAID',
         before: { card: item.card, statementMonth: item.statementMonth, openEntries: item.entries },
         after: {
+          month: item.statementMonth,
           statementMonth: item.statementMonth,
+          installmentIds: item.entries.map((entry) => entry.id),
           paidEntryIds: item.entries.map((entry) => entry.id),
           allocations: item.entries.map((entry) => ({
             installmentId: entry.id,
@@ -428,6 +430,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
           account,
           paymentMethod,
         },
+        context: { workspaceId: context.workspaceId, operationId: input.operationId, month: item.statementMonth, source: 'pending-batch' },
         context: { operationId: input.operationId, batch: true, workspaceId: context.workspaceId },
       });
       results.push({ source: 'card', sourceId: item.sourceId, statementMonth: item.statementMonth, amount: item.amount, financialEventId: event.id });
