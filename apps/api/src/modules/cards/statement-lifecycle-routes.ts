@@ -121,7 +121,11 @@ function eventSnapshot(event: {
 }
 
 function auditMonth(metadata: ReturnType<typeof parseAuditMetadata>) {
-  const candidate = text(metadata.after.month) || text(metadata.context.month) || text(metadata.before.month);
+  const candidate = text(metadata.after.month)
+    || text(metadata.after.statementMonth)
+    || text(metadata.context.month)
+    || text(metadata.before.month)
+    || text(metadata.before.statementMonth);
   return monthSchema.safeParse(candidate).success ? candidate : '';
 }
 
@@ -171,7 +175,10 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       userId: { in: memberIds },
       entity: 'CreditCard',
       entityId: card.id,
-      metadata: { contains: `\"month\":\"${parsed.data.month}\"` },
+      OR: [
+        { metadata: { contains: `\"month\":\"${parsed.data.month}\"` } },
+        { metadata: { contains: `\"statementMonth\":\"${parsed.data.month}\"` } },
+      ],
     };
     const lifecycleAudits = await prisma.auditLog.findMany({
       where: { ...auditWhere, action: { in: ['CARD_STATEMENT_PAID', 'CARD_STATEMENT_REOPENED'] } },
