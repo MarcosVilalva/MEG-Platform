@@ -233,8 +233,8 @@ Os seguintes pontos já foram identificados como relevantes para a Etapa 1:
 
 ### Divergências confirmadas
 
-1. **Benefício:** a autoridade atual usa contas explícitas (`accountId` + `Account.type`) e mantém heurísticas históricas baseadas em `VEROCARD` para compatibilidade. O identificador `financialScope` citado em versão anterior deste checkpoint não foi localizado na `main` auditada.
-2. **Saldo inicial:** `docs/GLOBAL_FINANCIAL_FOUNDATION.md` determina evento sistemático auditável `OPENING_BALANCE`, mas o código atual grava e soma `Account.openingBalance` diretamente.
+1. **Benefício:** há coexistência real entre o legado `financialAccountId` + `financialScope` em `apps/web/src/legacy-financial-accounts.js` e a camada normalizada da API baseada em `accountId` + `Account.type`. As heurísticas históricas `VEROCARD` continuam existindo para compatibilidade.
+2. **Saldo inicial:** o legado Web implementa evento sistemático `OPENING_BALANCE` (`legacy-financial-accounts.js`), coerente com `docs/GLOBAL_FINANCIAL_FOUNDATION.md`; já a camada normalizada/API grava e soma `Account.openingBalance` diretamente. A divergência é entre camadas, não ausência da regra.
 3. **Pagamento de fatura:** a API ativa caracteriza pagamento integral da fatura aberta; não existe valor parcial no contrato ativo.
 4. **Edição de compra parcelada:** a rota atual apaga e recria as parcelas abertas da compra.
 5. **Baixa de payable:** a rota pública usa `payPayableProtected`; existe um writer alternativo `payment-mutation.ts` que não está ligado à rota pública e não possui a mesma proteção de saldo.
@@ -268,7 +268,7 @@ A Etapa 1 deve cobrir, no mínimo:
 - transferência conservativa;
 - comportamento atual do saldo inicial e divergência com `OPENING_BALANCE`;
 - comportamento atual de edição de compra parcelada e divergência com preservação individual;
-- compatibilidade entre conta explícita de benefício e legado Verocard.
+- compatibilidade entre `financialScope` legado, conta explícita normalizada e heurísticas Verocard.
 
 Nenhuma camada financeira deve ser consolidada antes desses testes estarem caracterizando o comportamento atual.
 
