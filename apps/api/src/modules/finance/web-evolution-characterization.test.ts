@@ -24,9 +24,9 @@ assert.equal(addMonthsClamped('2026-01-31', 1, 31), '2026-02-28');
 assert.equal(addMonthsClamped('2026-04-30', 1, 30), '2026-05-30');
 
 // 2) Saldo anterior / realizado: somente status postados compõem saldo disponível.
-assert.equal(countsTowardMonetaryBalance({ type: 'income', status: 'planned', signedAmount: 100, description: 'Prevista' }), false);
-assert.equal(countsTowardMonetaryBalance({ type: 'income', status: 'confirmed', signedAmount: 100, description: 'Confirmada' }), true);
-assert.equal(countsTowardMonetaryBalance({ type: 'expense', status: 'paid', signedAmount: -50, description: 'Paga' }), true);
+assert.equal(countsTowardMonetaryBalance({ type: 'income', status: 'planned', description: 'Prevista' }), false);
+assert.equal(countsTowardMonetaryBalance({ type: 'income', status: 'confirmed', description: 'Confirmada' }), true);
+assert.equal(countsTowardMonetaryBalance({ type: 'expense', status: 'paid', description: 'Paga' }), true);
 
 // 3) Saldo insuficiente monetário preserva centavos.
 assert.deepEqual(paymentBalanceDecision(100.01, 100.02), {
