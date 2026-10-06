@@ -4,7 +4,7 @@ import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
-import { isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
+import { isBenefitPaymentMethod, isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
 import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventMutationError extends Error {
@@ -70,7 +70,8 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       if (input.accountId && !account) throw new FinancialEventMutationError('INVALID_ACCOUNT');
       if (input.categoryId && !category) throw new FinancialEventMutationError('INVALID_CATEGORY');
       if (input.paymentMethodId && !paymentMethod) throw new FinancialEventMutationError('INVALID_PAYMENT_METHOD');
-      if (account && String(account.type || '').trim().toLowerCase() === 'benefit') {
+      if ((account && String(account.type || '').trim().toLowerCase() === 'benefit')
+        || (paymentMethod && isBenefitPaymentMethod(paymentMethod.name))) {
         throw new FinancialEventMutationError('BENEFIT_CONTRACT_REQUIRED');
       }
 
