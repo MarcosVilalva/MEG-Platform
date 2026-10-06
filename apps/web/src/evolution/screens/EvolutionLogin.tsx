@@ -157,7 +157,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
     data-evolution-login-structure="mobile-first-v1"
   >
     <section className="evo-login-hero hero">
-      <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
+      <img className="evo-login-brand" src="./brand/meg-login-lockup.svg" alt="MEG Finanças"/>
       <div className="evo-login-kicker">MEG EVOLUTION</div>
       <h1>Sua vida financeira,<strong>com clareza para<br/>decidir.</strong></h1>
       <p>Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde está indo.</p>
