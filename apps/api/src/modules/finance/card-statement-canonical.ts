@@ -260,12 +260,14 @@ export function buildCanonicalCardStatement(input: {
   const totals = canonicalCardStatementTotals(lines);
   const hasOpen = lines.some((line) => line.isOpen);
   const hasClosed = lines.some((line) => !line.isOpen);
+  const hasPartial = lines.some((line) =>
+    line.isOpen && round(line.openEffect ?? line.effect) !== round(line.effect));
   const status: CanonicalCardStatement['status'] = !lines.length
     ? 'empty'
     : totals.openNetAmount < 0
       ? 'credit'
       : totals.openNetAmount > 0
-        ? hasClosed ? 'partial' : 'open'
+        ? (hasClosed || hasPartial) ? 'partial' : 'open'
         : hasOpen
           ? 'zero'
           : 'paid';
