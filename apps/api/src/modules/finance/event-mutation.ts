@@ -3,7 +3,8 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
-import { assertActiveCatalogReferences } from './catalog-scope';
+import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
+import { isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
 import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventMutationError extends Error {
@@ -27,9 +28,6 @@ export type CreateFinancialEventMutationInput = {
   allowDuplicate?: boolean;
 };
 
-function isPosted(status: string) {
-  return status === 'paid' || status === 'reconciled' || status === 'confirmed';
-}
 
 function replayResponse(response: unknown) {
   if (response && typeof response === 'object' && !Array.isArray(response)) {
@@ -64,15 +62,24 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         }
       }
 
-      try {
-        await assertActiveCatalogReferences(tx, dataOwnerId, input);
-      } catch (error) {
-        if (error instanceof Error && ['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
-          throw new FinancialEventMutationError(error.message);
-        }
-        throw error;
+      const [account, category, paymentMethod] = await Promise.all([
+        input.accountId ? activeAccountForUser(tx, dataOwnerId, input.accountId) : Promise.resolve(null),
+        input.categoryId ? activeCategoryForUser(tx, dataOwnerId, input.categoryId) : Promise.resolve(null),
+        input.paymentMethodId ? activePaymentMethodForUser(tx, dataOwnerId, input.paymentMethodId) : Promise.resolve(null),
+      ]);
+      if (input.accountId && !account) throw new FinancialEventMutationError('INVALID_ACCOUNT');
+      if (input.categoryId && !category) throw new FinancialEventMutationError('INVALID_CATEGORY');
+      if (input.paymentMethodId && !paymentMethod) throw new FinancialEventMutationError('INVALID_PAYMENT_METHOD');
+      if (account && String(account.type || '').trim().toLowerCase() === 'benefit') {
+        throw new FinancialEventMutationError('BENEFIT_CONTRACT_REQUIRED');
       }
 
+      const resolvedStatus = resolveCanonicalFinancialStatus({
+        type: input.type,
+        requestedStatus: input.status,
+        category,
+        paymentMethod,
+      });
       const values = financialAmountValues(input.type, input.amount);
       if (!input.allowDuplicate) {
         const duplicate = await findRecentFinancialEventDuplicate(tx, {
@@ -80,7 +87,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           userId: dataOwnerId,
           description: input.description,
           type: input.type,
-          status: input.status,
+          status: resolvedStatus,
           date: input.date,
           amount: values.amount,
           signedAmount: values.signedAmount,
@@ -102,7 +109,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           workspaceId: workspace.workspaceId,
           description: input.description.trim(),
           type: input.type,
-          status: input.status,
+          status: resolvedStatus,
           date: new Date(input.date),
           competence: input.competence || input.date.slice(0, 7),
           amount: values.amount,
@@ -116,7 +123,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       });
 
       let ledgerEntry = null;
-      if (event.accountId && isPosted(event.status)) {
+      if (event.accountId && isPostedFinancialStatus(event.status)) {
         const value = Number(event.amount);
         ledgerEntry = await tx.ledgerEntry.create({
           data: {
@@ -146,6 +153,8 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           competence: result.competence,
           workspaceId: workspace.workspaceId,
           duplicateOverride: Boolean(input.allowDuplicate),
+          requestedStatus: input.status,
+          resolvedStatus,
         },
       });
 
