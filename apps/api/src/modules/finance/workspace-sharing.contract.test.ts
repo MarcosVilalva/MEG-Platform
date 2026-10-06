@@ -90,8 +90,10 @@ for (const source of [eventMutation, benefitMutation, transfer, payable, payable
 
 assert.match(routes, /accountUpdateSchema[\s\S]*expectedUpdatedAt[\s\S]*operationId[\s\S]*\.strict\(\)/,
   'Alteração de conta deve aceitar metadados de concorrência/idempotência e rejeitar campos estruturais desconhecidos.');
-assert.doesNotMatch(routes, /const accountUpdateSchema = z\.object\(\{[\s\S]{0,600}openingBalance/,
-  'Saldo inicial não pode permanecer mutável pela rota de edição de conta.');
+assert.match(routes, /const accountUpdateSchema = z\.object\(\{[\s\S]{0,600}openingBalance:\s*z\.coerce\.number\(\)\.finite\(\)\.optional\(\)/,
+  'Edição da conta pode receber saldo inicial somente para sincronizar a autoridade OPENING_BALANCE.');
+assert.match(catalogMutation, /updateAccountCatalog[\s\S]*input\.openingBalance !== undefined[\s\S]*syncOpeningBalanceEvent/,
+  'Alteração de saldo inicial deve materializar/sincronizar o evento auditável OPENING_BALANCE.');
 assert.match(catalogMutation, /ACCOUNT_ALREADY_EXISTS/,
   'Contas duplicadas devem ser recusadas pelo serviço protegido.');
 assert.match(catalogMutation, /CATEGORY_ALREADY_EXISTS/,
