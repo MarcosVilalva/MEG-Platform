@@ -26,8 +26,8 @@ assert.match(service, /CARD_PURCHASE_CREATED/,
   'Compra no cartão deve gerar auditoria financeira estrutural.');
 assert.match(service, /workspaceId: shared\.workspaceId/,
   'Evento financeiro gerado pelo pagamento da fatura deve persistir o workspace compartilhado.');
-assert.match(service, /monetaryBalanceAt/,
-  'Fatura deve usar a política monetária compartilhada.');
+assert.match(service, /monetaryAccountBalanceAt/,
+  'Fatura deve validar o saldo da conta monetária selecionada na data do pagamento.');
 assert.match(service, /serializableFinancialTransaction/,
   'Compras críticas e fatura devem executar em transação serializável.');
 assert.match(service, /INSUFFICIENT_MONETARY_BALANCE/,
@@ -62,3 +62,21 @@ assert.match(service, /allowDuplicate: undefined/,
   'Override de duplicidade não pode mudar a identidade idempotente da compra.');
 assert.match(service, /duplicateOverride: Boolean\(input\.allowDuplicate\)/,
   'Compra duplicada confirmada deve ficar registrada na auditoria.');
+
+assert.match(routes, /amount:\s*z\.coerce\.number\(\)\.positive\(\)\.finite\(\)\.optional\(\)/,
+  'Pagamento de fatura deve aceitar valor explícito para pagamento parcial.');
+assert.match(service, /AMOUNT_EXCEEDS_OPEN_STATEMENT/,
+  'Pagamento parcial não pode superar o saldo aberto da fatura.');
+assert.match(service, /partialPaidAmount/,
+  'Pagamento parcial deve preservar saldo pago dentro da parcela.');
+assert.match(service, /remainingStatementAmount/,
+  'Resposta deve informar o saldo remanescente da fatura.');
+assert.match(routes, /app\.patch\('\/installments\/:id'/,
+  'Edição individual de parcela deve possuir rota dedicada.');
+assert.match(routes, /singleInstallmentEdit:\s*true/,
+  'Edição individual de parcela deve ser auditável.');
+assert.doesNotMatch(
+  routes.split("app.patch('/purchases/:id'")[1]?.split("app.patch('/installments/:id'")[0] || '',
+  /deleteMany:\s*\{\}/,
+  'Edição da compra não pode apagar e recriar todas as parcelas.'
+);
