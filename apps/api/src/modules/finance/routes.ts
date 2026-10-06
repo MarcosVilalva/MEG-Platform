@@ -65,6 +65,7 @@ const accountCreateSchema = z.object({
 const accountUpdateSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
   institution: z.string().trim().max(120).optional().nullable(),
+  openingBalance: z.coerce.number().finite().optional(),
   isActive: z.boolean().optional(),
   expectedUpdatedAt: expectedUpdatedAtSchema,
   operationId: operationIdSchema,
