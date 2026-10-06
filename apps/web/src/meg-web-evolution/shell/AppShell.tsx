@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               media="(min-width: 1024px)"
               srcSet={sidebarCollapsed
                 ? `${import.meta.env.BASE_URL}brand/meg-finance-symbol-transparent.svg`
-                : `${import.meta.env.BASE_URL}brand/meg-loading-lockup.svg`}
+                : `${import.meta.env.BASE_URL}brand/meg-sidebar-lockup.svg`}
             />
             <img
               className="meg-brand-logo"
