@@ -43,25 +43,54 @@ export function fromFinanceCatalogs(payload = {}) {
 
 export function fromFinancialEvents(payload = {}) {
   const items = asArray(payload.items ?? payload);
+  const transactions = items.map((item) => ({
+    id: item.id,
+    description: item.description,
+    type: item.type,
+    status: item.status,
+    date: isoDay(item.date),
+    competence: item.competence ?? null,
+    amount: number(item.amount),
+    signedAmount: number(item.signedAmount),
+    accountId: item.accountId ?? item.account?.id ?? null,
+    categoryId: item.categoryId ?? item.category?.id ?? null,
+    paymentMethodId: item.paymentMethodId ?? item.paymentMethod?.id ?? null,
+    notes: item.notes ?? null,
+    classification: item.sourceDetails?.expenseClass ?? null,
+    sourceDetails: item.sourceDetails ?? null,
+    sourcePayload: item.sourcePayload ?? null,
+    updatedAt: item.updatedAt ?? null,
+  }));
+
+  const transferGroups = new Map();
+  for (const item of transactions) {
+    if (item.type !== 'transfer' || !item.sourcePayload || typeof item.sourcePayload !== 'object') continue;
+    const transferId = item.sourcePayload.transferId;
+    const leg = item.sourcePayload.transferLeg;
+    if (!transferId || !['source', 'destination'].includes(leg)) continue;
+    const group = transferGroups.get(transferId) ?? { id: transferId, source: null, destination: null };
+    group[leg] = item;
+    transferGroups.set(transferId, group);
+  }
+
+  const transfers = [...transferGroups.values()]
+    .filter((group) => group.source && group.destination)
+    .map((group) => ({
+      id: group.id,
+      fromAccountId: group.source.accountId,
+      toAccountId: group.destination.accountId,
+      amount: Math.abs(group.source.signedAmount),
+      date: group.source.date,
+      status: group.source.status,
+      description: group.source.description,
+      sourceEventId: group.source.id,
+      destinationEventId: group.destination.id,
+    }));
+
   return createMegDataSource({
     meta: { mode: 'api', sources: ['finance-events'] },
-    transactions: items.map((item) => ({
-      id: item.id,
-      description: item.description,
-      type: item.type,
-      status: item.status,
-      date: isoDay(item.date),
-      competence: item.competence ?? null,
-      amount: number(item.amount),
-      signedAmount: number(item.signedAmount),
-      accountId: item.accountId ?? item.account?.id ?? null,
-      categoryId: item.categoryId ?? item.category?.id ?? null,
-      paymentMethodId: item.paymentMethodId ?? item.paymentMethod?.id ?? null,
-      notes: item.notes ?? null,
-      classification: item.sourceDetails?.expenseClass ?? null,
-      sourceDetails: item.sourceDetails ?? null,
-      updatedAt: item.updatedAt ?? null,
-    })),
+    transactions,
+    transfers,
   });
 }
 
