@@ -47,11 +47,20 @@
 
 .meg-brand-logo {
   display: block;
-  width: min(100%, 6.75rem);
   height: auto;
   margin-inline: auto;
-  object-position: center;
-  filter: drop-shadow(0 0 1rem rgba(20, 227, 200, .10));
+  transition: opacity 200ms ease;
+}
+
+.meg-brand-logo--expanded {
+  width: 140px;
+  opacity: 1;
+}
+
+.meg-brand-logo--collapsed {
+  position: absolute;
+  width: 36px;
+  opacity: 0;
 }
 
 .meg-sidebar-toggle {
@@ -235,7 +244,8 @@
   .meg-sidebar { padding-inline: .55rem; }
   .meg-nav-item span, .meg-new-button span { display: none; }
   .meg-brand { min-height: 6.6rem; }
-  .meg-brand-logo { width: 4rem; }
+  .meg-brand-logo--expanded { width: 140px; }
+  .meg-brand-logo--collapsed { width: 36px; }
   .meg-nav-item { justify-content: center; padding-inline: .5rem; }
   .sidebar__art { width: calc(100% + 1.1rem); margin-inline: -.55rem; opacity: .5; }
   .sidebar__art svg { width: 13rem; min-width: 13rem; }
@@ -257,7 +267,8 @@
   .meg-sidebar.is-open { transform: translateX(0); }
   .meg-nav-item span, .meg-new-button span { display: inline; }
   .meg-brand { min-height: 7.4rem; }
-  .meg-brand-logo { width: 10.8rem; }
+  .meg-brand-logo--expanded { width: 140px; }
+  .meg-brand-logo--collapsed { width: 36px; }
   .meg-nav-item { justify-content: flex-start; padding-inline: .82rem; }
   .sidebar__art { display: none; }
   .meg-new-button { width: 100%; margin: auto 0 0; padding-inline: 1rem; }
@@ -292,17 +303,14 @@
     padding-block: 0;
   }
 
-  .meg-brand picture {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
+  .meg-brand-logo--expanded {
+    width: 140px;
+    opacity: 1;
   }
 
-  .meg-brand-logo {
-    width: min(100%, 6.75rem);
-    margin-inline: auto;
-    transform: none;
+  .meg-brand-logo--collapsed {
+    width: 36px;
+    opacity: 0;
   }
 
   .meg-sidebar-toggle {
@@ -371,13 +379,13 @@
     padding-inline: 0;
   }
 
-  .meg-shell.is-sidebar-collapsed .meg-brand-logo {
-    width: 2rem;
-    height: 2rem;
-    max-height: 2rem;
-    margin-inline: auto;
-    object-fit: contain;
-    transform: none;
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--expanded {
+    opacity: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
+    width: 36px;
+    opacity: 1;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-nav-item {
