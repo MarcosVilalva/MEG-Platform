@@ -106,24 +106,28 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 - [x] camada pura `financial-policy.ts` extraída sem quebrar assinaturas existentes;
 - [x] duplicação monetária do Phoenix Preview consolidada na política central;
 - [x] rota pública/caminho ativo de baixa de payable mapeados;
-- [ ] CI global `MEG Platform CI` verde — advisories de `@capacitor/android` e `source-map-js` já foram corrigidos no lockfile; execução atual ainda precisa fechar todos os testes;
+- [x] CI global `MEG Platform CI` verde após correções de segurança e ajustes de contratos;
 - [x] auditoria de saldo inicial encerrada e autoridade `OPENING_BALANCE` aprovada;
 - [x] decisão formal sobre pagamento parcial de fatura registrada;
 - [x] decisão formal sobre edição individual de parcelas registrada;
-- [ ] consolidação da camada financeira central;
-- [ ] fonte única de dados/mocks.
+- [x] consolidação da camada financeira central para as autoridades necessárias à nova Web;
+- [x] autoridades legadas restantes classificadas como canônicas, compatibilidade ou não utilizadas;
+- [x] contrato automático de autoridade financeira da nova Web incluído no gate;
+- [x] Etapa 1 encerrada tecnicamente.
+
+**Próxima etapa:** Fonte Única de Dados e Mocks. Essa atividade não é pendência da Etapa 1; é o início formal da Etapa 2.
 
 ## Estado técnico da PR
 
 O workflow isolado `MEG Web Evolution Foundation` passou integralmente: instalação, geração Prisma, `test:finance`, `test:core`, `test:legacy-finance`, `test:transaction-status-policy` e build da API.
 
-O security gate global já passou após a autorização de atualização técnica: `@capacitor/android/@capacitor/core/@capacitor/cli` foram atualizados para a linha 7.6.9 e `source-map-js` foi fixado em 1.2.2. O Android permanece congelado funcional e visualmente; a exceção foi apenas para correção de dependência de segurança. O CI global ainda aguarda fechamento de todos os testes da branch.
+O security gate global passou após a autorização de atualização técnica: `@capacitor/android/@capacitor/core/@capacitor/cli` foram atualizados para a linha 7.6.9 e `source-map-js` foi fixado em 1.2.2. O Android permanece congelado funcional e visualmente; a exceção foi apenas para correção de dependência de segurança. O workflow global `MEG Platform CI` e o gate isolado `MEG Web Evolution Foundation` estão verdes no encerramento da etapa.
 
 ## Observação sobre `financialScope`
 
 A auditoria aprofundada confirmou que `financialScope` existe no legado Web, especialmente em `apps/web/src/legacy-financial-accounts.js`, ao lado de `financialAccountId`. A camada normalizada da API não persiste esse campo: usa `accountId` e `Account.type`. Portanto, o problema real é uma coexistência de modelos entre legado e API, com heurísticas VEROCARD como ponte de compatibilidade.
 
-**Importante:** as decisões críticas já foram formalizadas e parte da consolidação foi implementada. A Etapa 1 só pode ser encerrada quando os gates estiverem verdes e as autoridades legadas restantes estiverem explicitamente classificadas como canônicas, compatibilidade ou não utilizadas.
+**Encerramento:** decisões críticas formalizadas, camada financeira central consolidada para a nova Web, autoridades legadas classificadas, testes de caracterização verdes e CI global verde. A Etapa 1 está encerrada.
 
 
 ## Decisões aprovadas — 06/10/2026
@@ -134,3 +138,25 @@ A auditoria aprofundada confirmou que `financialScope` existe no legado Web, esp
 - **Status:** aprovado centralizar Receita/Fixo como `paid`; cartão de crédito permanece pendente até pagamento da fatura; benefício continua no contrato próprio.
 - **Crediário:** removido do escopo da nova Web por decisão atual. A regra canônica de parcelamento passa a ser cartão de crédito.
 - **Capacitor:** autorizada atualização necessária para corrigir o advisory crítico, sem liberar mudanças funcionais/visuais no Android.
+
+
+## Encerramento formal da Etapa 1
+
+**Status:** ENCERRADA  
+**Data:** 06/10/2026  
+**Branch:** `meg-web-evolution/01-auditoria-fundacao`  
+**PR:** #603  
+**Head validado:** `0fe83535f1644bf73bf06db793e6a0310a1afa0d`
+
+Gates finais:
+- `MEG Web Evolution Foundation`: **SUCCESS**
+- `MEG Platform CI`: **SUCCESS**
+- security gate: **SUCCESS**
+- build API: **SUCCESS**
+- testes de caracterização financeira: **SUCCESS**
+- Android funcional/visual: **não alterado**
+- UI nova: **não iniciada nesta etapa**
+
+A nova Web deve partir das autoridades registradas em `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`.
+
+**Próximo passo oficial:** abrir a Etapa 2 — Fonte Única de Dados e Mocks.
