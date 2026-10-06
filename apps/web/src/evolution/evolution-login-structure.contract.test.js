@@ -15,8 +15,8 @@ for (const literal of [
 
 assert.match(
   screen,
-  /<section className="evo-login-shell">[\s\S]*<img className="evo-login-brand"[^>]+>[\s\S]*<div className="evo-login-story">/,
-  'Logo deve ser irmão estrutural do story para permitir ordem responsiva.'
+  /<section className="evo-login-shell">[\s\S]*<div className="evo-login-brand-row">[\s\S]*<img className="evo-login-brand"[^>]+>[\s\S]*<div className="evo-login-story">/,
+  'Marca deve ter linha estrutural própria antes do story para preservar ordem responsiva e alinhamento.'
 );
 
 assert.match(
