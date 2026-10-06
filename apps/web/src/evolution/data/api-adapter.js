@@ -95,6 +95,17 @@ export function fromCards(payload = []) {
   const cards = [];
   const installments = [];
   const statements = [];
+  const statementIds = new Set();
+
+  const ensureStatement = (cardId, month, value = {}) => {
+    if (!month) return null;
+    const id = `${cardId}:${month}`;
+    if (!statementIds.has(id)) {
+      statements.push({ id, cardId, month, ...value });
+      statementIds.add(id);
+    }
+    return id;
+  };
 
   for (const card of asArray(payload)) {
     cards.push({
@@ -115,14 +126,7 @@ export function fromCards(payload = []) {
       statementCreditBalance: number(card.statementCreditBalance),
     });
 
-    if (card.statement?.month) {
-      statements.push({
-        id: `${card.id}:${card.statement.month}`,
-        cardId: card.id,
-        month: card.statement.month,
-        ...card.statement,
-      });
-    }
+    if (card.statement?.month) ensureStatement(card.id, card.statement.month, card.statement);
 
     for (const purchase of asArray(card.purchases)) {
       for (const entry of asArray(purchase.entries)) {
@@ -131,7 +135,7 @@ export function fromCards(payload = []) {
           cardId: card.id,
           transactionId: null,
           purchaseId: purchase.id,
-          statementId: entry.statementMonth ? `${card.id}:${entry.statementMonth}` : null,
+          statementId: ensureStatement(card.id, entry.statementMonth),
           number: entry.number,
           amount: number(entry.amount),
           partialPaidAmount: number(entry.partialPaidAmount),
