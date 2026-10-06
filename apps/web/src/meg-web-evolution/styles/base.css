@@ -1,12 +1,20 @@
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 
-html { min-width: 20rem; background: var(--meg-bg); }
-
+html,
 body {
   margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+html {
   min-width: 20rem;
-  min-height: 100dvh;
-  overflow-x: hidden;
+  background: var(--meg-bg);
+}
+
+body {
+  min-width: 20rem;
   background:
     radial-gradient(circle at 76% 2%, rgba(12, 192, 176, .10), transparent 32rem),
     linear-gradient(180deg, #031516 0%, var(--meg-bg) 52%, #010c0d 100%);
@@ -24,7 +32,11 @@ button { color: inherit; }
   outline-offset: .18rem;
 }
 
-#meg-web-evolution-root { min-height: 100dvh; }
+#meg-web-evolution-root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
 .meg-evolution-bg::before,
 .meg-evolution-bg::after {
