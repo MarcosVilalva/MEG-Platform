@@ -32,8 +32,12 @@ assert.match(phoenixRead, /userId: dataOwnerId/,
 
 assert.match(eventMutation, /const dataOwnerId = workspace\.workspace\.ownerId;/,
   'Novo lançamento deve separar ator autenticado do proprietário da base.');
-assert.match(eventMutation, /assertActiveCatalogReferences\(tx, dataOwnerId, input\)/,
-  'Novo lançamento deve validar os catálogos compartilhados.');
+assert.match(eventMutation, /activeAccountForUser\(tx, dataOwnerId, input\.accountId\)/,
+  'Novo lançamento deve validar a conta ativa da base compartilhada.');
+assert.match(eventMutation, /activeCategoryForUser\(tx, dataOwnerId, input\.categoryId\)/,
+  'Novo lançamento deve validar a categoria ativa da base compartilhada.');
+assert.match(eventMutation, /activePaymentMethodForUser\(tx, dataOwnerId, input\.paymentMethodId\)/,
+  'Novo lançamento deve validar a forma de pagamento ativa da base compartilhada.');
 assert.match(eventMutation, /userId: dataOwnerId,[\s\S]*workspaceId: workspace\.workspaceId/,
   'Novo lançamento deve permanecer na base oficial do workspace.');
 assert.match(financeService, /updateFinancialEvent[\s\S]*const workspace = await resolveWorkspaceContext\(userId\);[\s\S]*const dataOwnerId = workspace\.workspace\.ownerId;/,
@@ -50,8 +54,8 @@ assert.match(financeService, /deleteFinancialEvent[\s\S]*writeBackNormalizedEven
   'Exclusão individual deve remover o espelho legado para evitar divergência da base normalizada.');
 assert.match(benefitMutation, /benefitBalanceAt\(tx, dataOwnerId,/,
   'Saldo do Vale Alimentação deve ser único por base compartilhada.');
-assert.match(transfer, /sourceAccountBalanceAt\(tx, dataOwnerId,/,
-  'Transferência deve conferir o saldo da base compartilhada.');
+assert.match(transfer, /monetaryAccountBalanceAt\(tx, dataOwnerId, source, input\.date\)/,
+  'Transferência deve conferir o saldo da conta origem na base compartilhada pela política monetária canônica.');
 assert.match(bulk, /readEditableEvents\(tx, dataOwnerId, ids\)/,
   'Edição e exclusão em lote devem alcançar os lançamentos oficiais do workspace.');
 
@@ -86,8 +90,10 @@ for (const source of [eventMutation, benefitMutation, transfer, payable, payable
 
 assert.match(routes, /accountUpdateSchema[\s\S]*expectedUpdatedAt[\s\S]*operationId[\s\S]*\.strict\(\)/,
   'Alteração de conta deve aceitar metadados de concorrência/idempotência e rejeitar campos estruturais desconhecidos.');
-assert.doesNotMatch(routes, /const accountUpdateSchema = z\.object\(\{[\s\S]{0,600}openingBalance/,
-  'Saldo inicial não pode permanecer mutável pela rota de edição de conta.');
+assert.match(routes, /const accountUpdateSchema = z\.object\(\{[\s\S]{0,600}openingBalance:\s*z\.coerce\.number\(\)\.finite\(\)\.optional\(\)/,
+  'Edição da conta pode receber saldo inicial somente para sincronizar a autoridade OPENING_BALANCE.');
+assert.match(catalogMutation, /updateAccountCatalog[\s\S]*input\.openingBalance !== undefined[\s\S]*syncOpeningBalanceEvent/,
+  'Alteração de saldo inicial deve materializar/sincronizar o evento auditável OPENING_BALANCE.');
 assert.match(catalogMutation, /ACCOUNT_ALREADY_EXISTS/,
   'Contas duplicadas devem ser recusadas pelo serviço protegido.');
 assert.match(catalogMutation, /CATEGORY_ALREADY_EXISTS/,

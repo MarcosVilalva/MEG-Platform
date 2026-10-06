@@ -3,6 +3,7 @@ import { prisma } from '@meg/database';
 import { z } from 'zod';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { readCanonicalCardStatements } from './service';
+import { cardInstallmentRemaining } from '../finance/card-statement-canonical';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
@@ -120,7 +121,11 @@ function eventSnapshot(event: {
 }
 
 function auditMonth(metadata: ReturnType<typeof parseAuditMetadata>) {
-  const candidate = text(metadata.after.month) || text(metadata.context.month) || text(metadata.before.month);
+  const candidate = text(metadata.after.month)
+    || text(metadata.after.statementMonth)
+    || text(metadata.context.month)
+    || text(metadata.before.month)
+    || text(metadata.before.statementMonth);
   return monthSchema.safeParse(candidate).success ? candidate : '';
 }
 
@@ -150,9 +155,9 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
     const canonicalRead = await readCanonicalCardStatements(request.user.sub, card.id, [parsed.data.month]);
     const canonical = canonicalRead.statements[0];
     const hasCanonical = Boolean(canonical?.lines.length);
-    const entryOpenAmount = round(openEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
-    const entryPaidAmount = round(paidEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const entryOpenAmount = round(entries.reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0));
     const entryStatementAmount = round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const entryPaidAmount = round(entryStatementAmount - entryOpenAmount);
     const statementAmount = hasCanonical ? canonical.netAmount : entryStatementAmount;
     const openAmount = hasCanonical ? canonical.payableAmount : entryOpenAmount;
     const paidAmount = hasCanonical
@@ -170,7 +175,10 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       userId: { in: memberIds },
       entity: 'CreditCard',
       entityId: card.id,
-      metadata: { contains: `\"month\":\"${parsed.data.month}\"` },
+      OR: [
+        { metadata: { contains: `\"month\":\"${parsed.data.month}\"` } },
+        { metadata: { contains: `\"statementMonth\":\"${parsed.data.month}\"` } },
+      ],
     };
     const lifecycleAudits = await prisma.auditLog.findMany({
       where: { ...auditWhere, action: { in: ['CARD_STATEMENT_PAID', 'CARD_STATEMENT_REOPENED'] } },

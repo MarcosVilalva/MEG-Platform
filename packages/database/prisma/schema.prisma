@@ -606,6 +606,7 @@ model CardInstallment {
   purchaseId  String
   number      Int
   amount      Decimal
+  partialPaidAmount Decimal @default(0)
   statementMonth String
   status      String   @default("open")
   paidAt      DateTime?

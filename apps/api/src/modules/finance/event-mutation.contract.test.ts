@@ -48,3 +48,10 @@ assert.match(protection, /SEMANTIC_DUPLICATE_WINDOW_MS\s*=\s*10 \* 60_000/,
   'Janela de proteção multiplataforma deve permanecer curta e explícita.');
 assert.match(protection, /findRecentFinancialEventDuplicate[\s\S]*workspaceId:[\s\S]*createdAt: \{ gte: duplicateWindowStart\(\) \}/,
   'Detector deve limitar a comparação ao workspace e às gravações realmente recentes.');
+
+assert.match(mutation, /resolveCanonicalFinancialStatus/,
+  'Writer geral deve resolver status no domínio, sem delegar a regra à tela.');
+assert.match(mutation, /BENEFIT_CONTRACT_REQUIRED/,
+  'Movimentação de benefício deve permanecer no writer protegido próprio.');
+assert.match(mutation, /requestedStatus:\s*input\.status[\s\S]*resolvedStatus/,
+  'Auditoria deve registrar o status pedido e o status efetivamente aplicado.');

@@ -37,12 +37,31 @@ const purchaseSchema = z.object({
   installments: z.coerce.number().int().min(1).max(48).default(1)
 });
 const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional(), allowDuplicate: z.boolean().optional() });
-const purchaseUpdateSchema = purchaseSchema.extend({ operationId: operationSchema });
+const purchaseUpdateSchema = z.object({
+  cardId: z.string().min(1).optional(),
+  categoryId: z.string().optional().nullable(),
+  description: z.string().trim().min(2).max(160).optional(),
+  purchaseDate: isoDateSchema.optional(),
+  operationId: operationSchema,
+}).refine((value) => value.cardId !== undefined
+  || value.categoryId !== undefined
+  || value.description !== undefined
+  || value.purchaseDate !== undefined, {
+  message: 'Informe ao menos uma alteração da compra.',
+});
+const installmentUpdateSchema = z.object({
+  amount: z.coerce.number().positive().finite().optional(),
+  statementMonth: monthSchema.optional(),
+  operationId: operationSchema,
+}).refine((value) => value.amount !== undefined || value.statementMonth !== undefined, {
+  message: 'Informe valor e/ou competência da parcela.',
+});
 const purchaseCancelSchema = z.object({ operationId: operationSchema.optional() }).optional();
 const statementPaymentSchema = z.object({
   accountId: z.string().trim().min(1),
   paymentMethodId: z.string().trim().min(1).optional().nullable(),
   paidAt: isoDateSchema,
+  amount: z.coerce.number().positive().finite().optional(),
   operationId: operationSchema,
 });
 
@@ -259,10 +278,14 @@ async function editablePurchase(tx: Tx, ownerId: string, id: string) {
     include: { entries: true, category: true, card: true },
   });
   if (!purchase) throw new CardMutationError(404, 'PURCHASE_NOT_FOUND');
-  const paidEntries = purchase.entries.filter((entry) => entry.status === 'paid');
-  if (paidEntries.length) {
-    throw new CardMutationError(409, 'CARD_PURCHASE_ALREADY_PAID', {
-      paidInstallments: paidEntries.map((entry) => entry.number),
+  const lockedEntries = purchase.entries.filter((entry) => entry.status === 'paid' || Number(entry.partialPaidAmount || 0) > 0);
+  if (lockedEntries.length) {
+    throw new CardMutationError(409, 'CARD_PURCHASE_PAYMENT_EXISTS', {
+      installments: lockedEntries.map((entry) => ({
+        number: entry.number,
+        status: entry.status,
+        partialPaidAmount: Number(entry.partialPaidAmount || 0),
+      })),
     });
   }
   return purchase;
@@ -327,28 +350,41 @@ export async function cardRoutes(app: FastifyInstance) {
         mutationType: 'CARD_PURCHASE_UPDATE',
         work: async (tx): Promise<JsonRecord> => {
           const before = await editablePurchase(tx, context.ownerId, id);
-          const card = await assertCardAndCategory(tx, context.ownerId, purchaseInput.cardId, purchaseInput.categoryId);
-          const after = await tx.cardPurchase.update({
+          const targetCardId = purchaseInput.cardId ?? before.cardId;
+          const targetCategoryId = purchaseInput.categoryId !== undefined ? purchaseInput.categoryId : before.categoryId;
+          const card = await assertCardAndCategory(tx, context.ownerId, targetCardId, targetCategoryId);
+          const nextPurchaseDate = purchaseInput.purchaseDate ?? before.purchaseDate.toISOString().slice(0, 10);
+          const shouldRecalculateStatementMonths = targetCardId !== before.cardId
+            || nextPurchaseDate !== before.purchaseDate.toISOString().slice(0, 10);
+
+          await tx.cardPurchase.update({
             where: { id },
             data: {
-              cardId: card.id,
-              categoryId: purchaseInput.categoryId,
-              description: purchaseInput.description,
-              totalAmount: purchaseInput.totalAmount,
-              purchaseDate: new Date(purchaseInput.purchaseDate),
-              installments: purchaseInput.installments,
-              entries: {
-                deleteMany: {},
-                create: installmentRows({
-                  purchaseDate: purchaseInput.purchaseDate,
-                  totalAmount: purchaseInput.totalAmount,
-                  installments: purchaseInput.installments,
-                  closingDay: card.closingDay,
-                }),
-              },
+              ...(purchaseInput.cardId !== undefined ? { cardId: card.id } : {}),
+              ...(purchaseInput.categoryId !== undefined ? { categoryId: purchaseInput.categoryId } : {}),
+              ...(purchaseInput.description !== undefined ? { description: purchaseInput.description } : {}),
+              ...(purchaseInput.purchaseDate !== undefined ? { purchaseDate: new Date(purchaseInput.purchaseDate) } : {}),
             },
+          });
+
+          if (shouldRecalculateStatementMonths) {
+            const purchaseDate = new Date(nextPurchaseDate);
+            const purchaseMonth = nextPurchaseDate.slice(0, 7);
+            const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > card.closingDay ? 1 : 0);
+            for (const entry of before.entries) {
+              await tx.cardInstallment.update({
+                where: { id: entry.id },
+                data: { statementMonth: addMonths(firstMonth, entry.number - 1) },
+              });
+            }
+          }
+
+          const after = await tx.cardPurchase.findUnique({
+            where: { id },
             include: { entries: true, category: true, card: true },
           });
+          if (!after) throw new CardMutationError(404, 'PURCHASE_NOT_FOUND');
+
           await recordFinancialAudit(tx, {
             actorId: request.user.sub,
             entity: 'CardPurchase',
@@ -359,7 +395,9 @@ export async function cardRoutes(app: FastifyInstance) {
             context: {
               workspaceId: context.workspaceId,
               operationId,
-              recalculatedInstallments: true,
+              recalculatedInstallments: false,
+              recalculatedStatementMonths: shouldRecalculateStatementMonths,
+              preservedInstallmentIds: before.entries.map((entry) => entry.id),
               previousCardId: before.cardId,
               cardId: after.cardId,
             },
@@ -368,6 +406,88 @@ export async function cardRoutes(app: FastifyInstance) {
         },
       });
       return reply.send({ ...(response.purchase as object), idempotentReplay: Boolean(response.idempotentReplay) });
+    } catch (error) {
+      return mutationError(reply, error);
+    }
+  });
+
+  app.patch('/installments/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const parsed = installmentUpdateSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const { id } = request.params as { id: string };
+    const context = await sharedCardContext(request.user.sub);
+    const { operationId, ...changes } = parsed.data;
+    const requestHash = mutationRequestHash({ id, installment: changes });
+
+    try {
+      const response = await protectedCardMutation({
+        context,
+        operationId,
+        requestHash,
+        mutationType: 'CARD_INSTALLMENT_UPDATE',
+        work: async (tx): Promise<JsonRecord> => {
+          const before = await tx.cardInstallment.findFirst({
+            where: {
+              id,
+              purchase: { userId: context.ownerId, status: 'active' },
+            },
+            include: { purchase: { include: { card: true, category: true } } },
+          });
+          if (!before) throw new CardMutationError(404, 'CARD_INSTALLMENT_NOT_FOUND');
+          if (before.status !== 'open') {
+            throw new CardMutationError(409, 'CARD_INSTALLMENT_ALREADY_PAID', { installmentId: id, status: before.status });
+          }
+          if (Number(before.partialPaidAmount || 0) > 0) {
+            throw new CardMutationError(409, 'CARD_INSTALLMENT_PARTIALLY_PAID', {
+              installmentId: id,
+              partialPaidAmount: Number(before.partialPaidAmount),
+            });
+          }
+
+          const after = await tx.cardInstallment.update({
+            where: { id },
+            data: {
+              ...(changes.amount !== undefined ? { amount: changes.amount } : {}),
+              ...(changes.statementMonth !== undefined ? { statementMonth: changes.statementMonth } : {}),
+            },
+          });
+
+          const entries = await tx.cardInstallment.findMany({
+            where: { purchaseId: before.purchaseId },
+            orderBy: { number: 'asc' },
+          });
+          const totalAmount = Math.round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0) * 100) / 100;
+          const purchase = await tx.cardPurchase.update({
+            where: { id: before.purchaseId },
+            data: { totalAmount },
+            include: { entries: true, category: true, card: true },
+          });
+
+          await recordFinancialAudit(tx, {
+            actorId: request.user.sub,
+            entity: 'CardPurchase',
+            entityId: before.purchaseId,
+            action: 'CARD_PURCHASE_UPDATED',
+            before: { purchase: before.purchase, installment: before },
+            after: { purchase, installment: after },
+            context: {
+              workspaceId: context.workspaceId,
+              operationId,
+              singleInstallmentEdit: true,
+              installmentId: id,
+              preservedInstallmentIds: entries.filter((entry) => entry.id !== id).map((entry) => entry.id),
+              reconciledPurchaseTotal: totalAmount,
+            },
+          });
+
+          return { installment: after, purchase };
+        },
+      });
+      return reply.send({
+        ...(response.installment as object),
+        purchase: response.purchase,
+        idempotentReplay: Boolean(response.idempotentReplay),
+      });
     } catch (error) {
       return mutationError(reply, error);
     }

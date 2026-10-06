@@ -3,7 +3,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { financialAuditMetadata, recordFinancialAudit } from './audit';
-import { cardStatementEffectFromSignedAmount } from './card-statement-canonical';
+import { cardInstallmentRemaining, cardStatementEffectFromSignedAmount } from './card-statement-canonical';
 import {
   isBenefitFinancialEvent,
   isFutureFinancialDay,
@@ -182,7 +182,7 @@ async function loadBatchItems(tx: Tx, ownerId: string, items: PendingBatchItemIn
     }
     const card = await loadCard(tx, ownerId, item.sourceId);
     const entries = await loadCardEntries(tx, ownerId, item.sourceId, statementMonth);
-    const amount = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+    const amount = entries.reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0);
     if (!Number.isFinite(amount) || amount <= 0) throw new PendingBatchSettlementError('CARD_STATEMENT_NOT_PAYABLE', { cardId: item.sourceId, statementMonth });
     loaded.push({ source: 'card', sourceId: item.sourceId, statementMonth, amount, card, entries });
   }
@@ -409,8 +409,29 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
         entityId: item.sourceId,
         action: 'CARD_STATEMENT_PAID',
         before: { card: item.card, statementMonth: item.statementMonth, openEntries: item.entries },
-        after: { statementMonth: item.statementMonth, paidEntryIds: item.entries.map((entry) => entry.id), paidAt: input.paidAt, amount: item.amount, financialEventId: event.id, account, paymentMethod },
-        context: { operationId: input.operationId, batch: true, workspaceId: context.workspaceId },
+        after: {
+          month: item.statementMonth,
+          statementMonth: item.statementMonth,
+          installmentIds: item.entries.map((entry) => entry.id),
+          paidEntryIds: item.entries.map((entry) => entry.id),
+          allocations: item.entries.map((entry) => ({
+            installmentId: entry.id,
+            purchaseId: entry.purchaseId,
+            number: entry.number,
+            allocated: cardInstallmentRemaining(entry),
+            closed: true,
+            partialPaidBefore: Number(entry.partialPaidAmount || 0),
+            partialPaidAfter: Number(entry.partialPaidAmount || 0),
+          })),
+          paidAt: input.paidAt,
+          amount: item.amount,
+          remainingStatementAmount: 0,
+          eventId: event.id,
+          financialEventId: event.id,
+          account,
+          paymentMethod,
+        },
+        context: { operationId: input.operationId, batch: true, workspaceId: context.workspaceId, month: item.statementMonth, source: 'pending-batch' },
       });
       results.push({ source: 'card', sourceId: item.sourceId, statementMonth: item.statementMonth, amount: item.amount, financialEventId: event.id });
     }

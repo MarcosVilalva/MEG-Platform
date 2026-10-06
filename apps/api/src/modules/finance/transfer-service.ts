@@ -2,7 +2,7 @@ import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
-import { SEMANTIC_DUPLICATE_WINDOW_MS, isFutureFinancialDay, isMonetaryAccountType, isPostedFinancialStatus, serializableFinancialTransaction } from './monetary-protection';
+import { SEMANTIC_DUPLICATE_WINDOW_MS, isFutureFinancialDay, isMonetaryAccountType, monetaryAccountBalanceAt, serializableFinancialTransaction } from './monetary-protection';
 import { buildTransferLegs } from './transfer-core';
 
 export class FinancialTransferError extends Error {
@@ -41,29 +41,6 @@ function nextDayExclusive(day: string) {
   const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + 1));
   if (Number.isNaN(date.getTime())) throw new FinancialTransferError('INVALID_TRANSFER_DATE');
   return date;
-}
-
-async function sourceAccountBalanceAt(
-  tx: Prisma.TransactionClient,
-  userId: string,
-  account: { id: string; openingBalance: Prisma.Decimal },
-  day: string,
-) {
-  const cutoff = nextDayExclusive(day);
-  const events = await tx.financialEvent.findMany({
-    where: {
-      userId,
-      accountId: account.id,
-      archivedAt: null,
-      date: { lt: cutoff },
-      status: { in: ['paid', 'reconciled', 'confirmed'] },
-    },
-    select: { signedAmount: true, status: true },
-  });
-  const balance = events
-    .filter((event) => isPostedFinancialStatus(event.status))
-    .reduce((sum, event) => sum + Number(event.signedAmount), Number(account.openingBalance));
-  return Math.round(balance * 100) / 100;
 }
 
 export async function createFinancialTransfer(userId: string, input: CreateFinancialTransferInput) {
@@ -162,7 +139,7 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
       }
     }
 
-    const sourceBalanceBefore = await sourceAccountBalanceAt(tx, dataOwnerId, source, input.date);
+    const sourceBalanceBefore = await monetaryAccountBalanceAt(tx, dataOwnerId, source, input.date);
     if (requested > sourceBalanceBefore) {
       throw new FinancialTransferError('INSUFFICIENT_SOURCE_ACCOUNT_BALANCE', {
         available: sourceBalanceBefore,

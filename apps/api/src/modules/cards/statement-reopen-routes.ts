@@ -70,6 +70,33 @@ function stringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.length > 0) : [];
 }
 
+type StatementPaymentAllocation = {
+  installmentId: string;
+  allocated: number;
+  closed: boolean;
+  partialPaidBefore: number;
+  partialPaidAfter: number;
+};
+
+function allocationArray(value: unknown): StatementPaymentAllocation[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const row = record(item);
+    const installmentId = text(row.installmentId);
+    const allocated = number(row.allocated);
+    const partialPaidBefore = number(row.partialPaidBefore);
+    const partialPaidAfter = number(row.partialPaidAfter);
+    if (!installmentId || allocated <= 0 || partialPaidBefore < 0 || partialPaidAfter < 0) return [];
+    return [{
+      installmentId,
+      allocated,
+      closed: Boolean(row.closed),
+      partialPaidBefore,
+      partialPaidAfter,
+    }];
+  });
+}
+
 function replayResponse(value: unknown): JsonRecord {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return { ...(value as JsonRecord), idempotentReplay: true };
@@ -159,7 +186,10 @@ async function latestStatementLifecycleAudit(tx: Tx, cardId: string, month: stri
       entity: 'CreditCard',
       entityId: cardId,
       action: { in: ['CARD_STATEMENT_PAID', 'CARD_STATEMENT_REOPENED'] },
-      metadata: { contains: `\"month\":\"${month}\"` },
+      OR: [
+        { metadata: { contains: `\"month\":\"${month}\"` } },
+        { metadata: { contains: `\"statementMonth\":\"${month}\"` } },
+      ],
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -224,7 +254,10 @@ export async function cardStatementReopenRoutes(app: FastifyInstance) {
             throw new StatementReopenError(409, 'STATEMENT_PAYMENT_EVENT_CHANGED');
           }
 
-          const auditedInstallmentIds = stringArray(audit.after.installmentIds);
+          const allocations = allocationArray(audit.after.allocations);
+          const auditedInstallmentIds = allocations.length
+            ? allocations.map((item) => item.installmentId)
+            : stringArray(audit.after.installmentIds);
           const entries = auditedInstallmentIds.length
             ? await tx.cardInstallment.findMany({
               where: {
@@ -232,7 +265,7 @@ export async function cardStatementReopenRoutes(app: FastifyInstance) {
                 purchase: { cardId: card.id, userId: context.ownerId, status: 'active' },
                 statementMonth: params.data.month,
               },
-              orderBy: { number: 'asc' },
+              orderBy: [{ createdAt: 'asc' }, { purchaseId: 'asc' }, { number: 'asc' }],
             })
             : await tx.cardInstallment.findMany({
               where: {
@@ -240,21 +273,46 @@ export async function cardStatementReopenRoutes(app: FastifyInstance) {
                 statementMonth: params.data.month,
                 status: 'paid',
               },
-              orderBy: { number: 'asc' },
+              orderBy: [{ createdAt: 'asc' }, { purchaseId: 'asc' }, { number: 'asc' }],
             });
 
-          if (!entries.length
-            || (auditedInstallmentIds.length && entries.length !== auditedInstallmentIds.length)
-            || entries.some((entry) => entry.status !== 'paid')) {
+          if (!entries.length || (auditedInstallmentIds.length && entries.length !== auditedInstallmentIds.length)) {
             throw new StatementReopenError(409, 'STATEMENT_REOPEN_CONFLICT');
           }
 
-          const installmentAmount = entries.reduce((sum, entry) => sum + cents(entry.amount), 0);
-          if (installmentAmount !== cents(event.amount)) {
-            throw new StatementReopenError(409, 'STATEMENT_REOPEN_CONFLICT', {
-              eventAmount: Number(event.amount),
-              installmentAmount: installmentAmount / 100,
-            });
+          if (allocations.length) {
+            const byId = new Map(entries.map((entry) => [entry.id, entry]));
+            const allocationAmount = allocations.reduce((sum, item) => sum + cents(item.allocated), 0);
+            if (allocationAmount !== cents(event.amount)) {
+              throw new StatementReopenError(409, 'STATEMENT_REOPEN_CONFLICT', {
+                eventAmount: Number(event.amount),
+                allocationAmount: allocationAmount / 100,
+              });
+            }
+            for (const allocation of allocations) {
+              const entry = byId.get(allocation.installmentId);
+              if (!entry
+                || cents(entry.partialPaidAmount) !== cents(allocation.partialPaidAfter)
+                || (allocation.closed ? entry.status !== 'paid' : entry.status !== 'open')) {
+                throw new StatementReopenError(409, 'STATEMENT_REOPEN_CONFLICT', {
+                  installmentId: allocation.installmentId,
+                });
+              }
+            }
+          } else {
+            if (entries.some((entry) => entry.status !== 'paid')) {
+              throw new StatementReopenError(409, 'STATEMENT_REOPEN_CONFLICT');
+            }
+            const installmentAmount = entries.reduce(
+              (sum, entry) => sum + Math.max(0, cents(entry.amount) - cents(entry.partialPaidAmount)),
+              0,
+            );
+            if (installmentAmount !== cents(event.amount)) {
+              throw new StatementReopenError(409, 'STATEMENT_REOPEN_CONFLICT', {
+                eventAmount: Number(event.amount),
+                installmentAmount: installmentAmount / 100,
+              });
+            }
           }
 
           if (event.ledgerEntries.length > 1) {
@@ -269,15 +327,42 @@ export async function cardStatementReopenRoutes(app: FastifyInstance) {
             throw new StatementReopenError(409, 'STATEMENT_PAYMENT_LEDGER_CHANGED');
           }
 
-          const reopened = await tx.cardInstallment.updateMany({
-            where: { id: { in: entries.map((entry) => entry.id) }, status: 'paid' },
-            data: { status: 'open', paidAt: null },
-          });
-          if (reopened.count !== entries.length) {
-            throw new StatementReopenError(409, 'STATEMENT_CHANGED_RETRY', {
-              expectedInstallments: entries.length,
-              reopenedInstallments: reopened.count,
+          let reopenedCount = 0;
+          if (allocations.length) {
+            const byId = new Map(entries.map((entry) => [entry.id, entry]));
+            for (const allocation of allocations) {
+              const entry = byId.get(allocation.installmentId)!;
+              const reverted = await tx.cardInstallment.updateMany({
+                where: {
+                  id: entry.id,
+                  status: allocation.closed ? 'paid' : 'open',
+                  partialPaidAmount: entry.partialPaidAmount,
+                },
+                data: {
+                  status: 'open',
+                  paidAt: null,
+                  partialPaidAmount: allocation.partialPaidBefore,
+                },
+              });
+              if (reverted.count !== 1) {
+                throw new StatementReopenError(409, 'STATEMENT_CHANGED_RETRY', {
+                  installmentId: entry.id,
+                });
+              }
+              reopenedCount += 1;
+            }
+          } else {
+            const reopened = await tx.cardInstallment.updateMany({
+              where: { id: { in: entries.map((entry) => entry.id) }, status: 'paid' },
+              data: { status: 'open', paidAt: null },
             });
+            if (reopened.count !== entries.length) {
+              throw new StatementReopenError(409, 'STATEMENT_CHANGED_RETRY', {
+                expectedInstallments: entries.length,
+                reopenedInstallments: reopened.count,
+              });
+            }
+            reopenedCount = reopened.count;
           }
 
           if (ledger) await tx.ledgerEntry.delete({ where: { id: ledger.id } });
@@ -323,7 +408,7 @@ export async function cardStatementReopenRoutes(app: FastifyInstance) {
               account,
               paymentMethod,
               installmentIds,
-              reopenedInstallments: reopened.count,
+              reopenedInstallments: reopenedCount,
               financialEventStatus: archivedEvent.status,
               installmentStatus: 'open',
               reason,
@@ -342,7 +427,7 @@ export async function cardStatementReopenRoutes(app: FastifyInstance) {
             reopened: true,
             amount: Number(event.amount),
             eventId: event.id,
-            installments: reopened.count,
+            installments: reopenedCount,
           };
         },
       });

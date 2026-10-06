@@ -9,6 +9,7 @@ export type CanonicalCardStatementLine = {
   installmentId?: string;
   description: string;
   effect: number;
+  openEffect?: number;
   kind: CanonicalCardStatementLineKind;
   purchaseDate: string;
   dueDate: string;
@@ -30,6 +31,8 @@ export type CanonicalCardStatement = {
   openNetAmount: number;
   payableAmount: number;
   creditBalance: number;
+  minimumPaymentAmount: number | null;
+  minimumPaymentAvailable: boolean;
   status: 'empty' | 'open' | 'partial' | 'paid' | 'zero' | 'credit';
   lines: CanonicalCardStatementLine[];
 };
@@ -56,6 +59,7 @@ type CardPurchaseLike = {
     id: string;
     number: number;
     amount: unknown;
+    partialPaidAmount?: unknown;
     statementMonth: string;
     status: string;
   }>;
@@ -141,13 +145,21 @@ export function cardStatementDueDate(month: string, closingDay: number, dueDay: 
   return nextWeekdayDueDate(`${dueMonth}-${String(day).padStart(2, '0')}`);
 }
 
+export function cardInstallmentRemaining(entry: { amount: unknown; partialPaidAmount?: unknown; status?: unknown }) {
+  if (String(entry.status || 'open').toLowerCase() !== 'open') return 0;
+  const amount = Math.round(Number(entry.amount || 0) * 100);
+  if (amount < 0) return amount / 100;
+  const partial = Math.max(0, Math.round(Number(entry.partialPaidAmount || 0) * 100));
+  return Math.max(0, amount - partial) / 100;
+}
+
 export function canonicalCardStatementTotals(lines: CanonicalCardStatementLine[]) {
   const charges = round(lines.reduce((sum, line) => sum + Math.max(0, line.effect), 0));
   const credits = round(lines.reduce((sum, line) => sum + Math.max(0, -line.effect), 0));
   const netAmount = round(charges - credits);
   const openLines = lines.filter((line) => line.isOpen !== false);
-  const openCharges = round(openLines.reduce((sum, line) => sum + Math.max(0, line.effect), 0));
-  const openCredits = round(openLines.reduce((sum, line) => sum + Math.max(0, -line.effect), 0));
+  const openCharges = round(openLines.reduce((sum, line) => sum + Math.max(0, line.openEffect ?? line.effect), 0));
+  const openCredits = round(openLines.reduce((sum, line) => sum + Math.max(0, -(line.openEffect ?? line.effect)), 0));
   const openNetAmount = round(openCharges - openCredits);
   return {
     charges,
@@ -193,6 +205,7 @@ export function buildCanonicalCardStatement(input: {
       if (entry.statementMonth !== input.month || ['cancelled', 'canceled'].includes(entryStatus)) continue;
       const effect = round(numberValue(entry.amount) ?? 0);
       if (!effect) continue;
+      const openEffect = round(cardInstallmentRemaining(entry));
       lines.push({
         id: `installment:${entry.id}`,
         source: 'card-installment',
@@ -200,13 +213,14 @@ export function buildCanonicalCardStatement(input: {
         installmentId: entry.id,
         description: purchase.description,
         effect,
+        openEffect,
         kind: effect < 0 ? 'credit' : 'charge',
         purchaseDate: isoDay(purchase.purchaseDate),
         dueDate,
         statementMonth: input.month,
         installmentNo: Math.max(1, Number(entry.number || 1)),
         installmentQty: Math.max(1, Number(purchase.installments || 1)),
-        isOpen: entryStatus === 'open',
+        isOpen: entryStatus === 'open' && openEffect !== 0,
         sourceStatus: entryStatus || 'open',
       });
     }
@@ -229,6 +243,7 @@ export function buildCanonicalCardStatement(input: {
       eventId: event.id,
       description: event.description,
       effect,
+      openEffect: String(event.status || '').toLowerCase() === 'planned' ? effect : 0,
       kind: effect < 0 ? 'credit' : 'charge',
       purchaseDate: isoDay(payload?.purchaseDate) || eventDay,
       dueDate: sourceDueDay || eventDay || dueDate,
@@ -248,15 +263,25 @@ export function buildCanonicalCardStatement(input: {
   const totals = canonicalCardStatementTotals(lines);
   const hasOpen = lines.some((line) => line.isOpen);
   const hasClosed = lines.some((line) => !line.isOpen);
+  const hasPartial = lines.some((line) =>
+    line.isOpen && round(line.openEffect ?? line.effect) !== round(line.effect));
   const status: CanonicalCardStatement['status'] = !lines.length
     ? 'empty'
     : totals.openNetAmount < 0
       ? 'credit'
       : totals.openNetAmount > 0
-        ? hasClosed ? 'partial' : 'open'
+        ? (hasClosed || hasPartial) ? 'partial' : 'open'
         : hasOpen
           ? 'zero'
           : 'paid';
 
-  return { month: input.month, dueDate, ...totals, status, lines };
+  return {
+    month: input.month,
+    dueDate,
+    ...totals,
+    minimumPaymentAmount: null,
+    minimumPaymentAvailable: false,
+    status,
+    lines,
+  };
 }

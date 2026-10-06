@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';
+import { cardInstallmentRemaining } from '../finance/card-statement-canonical';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 
@@ -184,10 +185,10 @@ export async function cardManagementRoutes(app: FastifyInstance) {
     return cards.map((card) => {
       const entries = card.purchases.flatMap((purchase) => purchase.entries);
       const openEntries = entries.filter((entry) => entry.status === 'open');
-      const usedLimit = openEntries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+      const usedLimit = openEntries.reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0);
       const payableStatementAmount = openEntries
         .filter((entry) => entry.statementMonth === parsed.data.month)
-        .reduce((sum, entry) => sum + Number(entry.amount), 0);
+        .reduce((sum, entry) => sum + cardInstallmentRemaining(entry), 0);
 
       return {
         ...card,
