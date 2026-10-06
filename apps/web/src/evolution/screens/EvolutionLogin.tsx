@@ -72,7 +72,7 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
   const [workspaceName,setWorkspaceName]=useState('');
   const [accountType,setAccountType]=useState<'REQUEST_ACCESS'|'CREATE_WORKSPACE'>('REQUEST_ACCESS');
   const [showPassword,setShowPassword]=useState(false);
-  const [rememberEmail,setRememberEmail]=useState(Boolean(remembered));
+  const [rememberEmail,setRememberEmail]=useState(true);
   const [busy,setBusy]=useState(false);
   const [notice,setNotice]=useState<Notice>(null);
   const [authenticatedName,setAuthenticatedName]=useState('');
