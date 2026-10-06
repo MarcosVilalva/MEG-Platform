@@ -124,3 +124,13 @@ O workflow global `MEG Platform CI` continua vermelho antes dos testes por um bl
 A auditoria aprofundada confirmou que `financialScope` existe no legado Web, especialmente em `apps/web/src/legacy-financial-accounts.js`, ao lado de `financialAccountId`. A camada normalizada da API não persiste esse campo: usa `accountId` e `Account.type`. Portanto, o problema real é uma coexistência de modelos entre legado e API, com heurísticas VEROCARD como ponte de compatibilidade.
 
 **Importante:** os testes de caracterização da fundação estão verdes. A consolidação financeira só deve começar depois de dar destino explícito às divergências de saldo inicial, pagamento parcial de fatura, edição de parcelas e autoridades duplicadas.
+
+
+## Decisões aprovadas — 06/10/2026
+
+- **OPENING_BALANCE:** aprovado como autoridade definitiva do saldo inicial, com migração compatível.
+- **Fatura:** aprovado pagamento total e parcial. `Mínimo` não terá percentual inventado; deve vir de dado/regra explícita.
+- **Parcelas:** aprovado editar somente a parcela escolhida, preservando as demais e reconciliando o total da compra pela soma das parcelas.
+- **Status:** aprovado centralizar Receita/Fixo como `paid`; cartão de crédito permanece pendente até pagamento da fatura; benefício continua no contrato próprio.
+- **Crediário:** removido do escopo da nova Web por decisão atual. A regra canônica de parcelamento passa a ser cartão de crédito.
+- **Capacitor:** autorizada atualização necessária para corrigir o advisory crítico, sem liberar mudanças funcionais/visuais no Android.
