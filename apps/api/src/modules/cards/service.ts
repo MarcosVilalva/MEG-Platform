@@ -546,7 +546,9 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
       action: 'CARD_STATEMENT_PAID',
       before: { card, statementMonth: month, openEntries: entries },
       after: {
+        month,
         statementMonth: month,
+        installmentIds: allocations.map((item) => item.installmentId),
         paidEntryIds: allocations.filter((item) => item.closed).map((item) => item.installmentId),
         partiallyPaidEntryIds: allocations.filter((item) => !item.closed).map((item) => item.installmentId),
         allocations,
@@ -562,6 +564,7 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
         operationId: input.operationId ?? null,
         ownerId: shared.ownerId,
         workspaceId: shared.workspaceId,
+        month,
       }
     });
 
