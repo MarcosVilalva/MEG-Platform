@@ -660,7 +660,7 @@ body:has(.evo-login){
 }
 
 /* Compacto: meia tela, proporção quase quadrada e mobile. */
-@media (max-width:1100px), (max-aspect-ratio:5/4), (max-height:760px){
+@media (max-width:1100px), (max-aspect-ratio:5/4){
   html:has(.evo-login){font-size:16px}
 
   .evo-login::before{
@@ -752,8 +752,7 @@ body:has(.evo-login){
 
 /* No compacto, a partir de 600px os três cards voltam lado a lado. */
 @media (min-width:600px) and (max-width:1100px),
-       (min-width:600px) and (max-aspect-ratio:5/4),
-       (min-width:600px) and (max-height:760px){
+       (min-width:600px) and (max-aspect-ratio:5/4){
   .evo-login-proof{
     grid-template-columns:repeat(3,minmax(0,1fr));
   }
