@@ -1,4 +1,4 @@
-import {FormEvent,useMemo,useState} from 'react';
+import {FormEvent,useState} from 'react';
 import {
   forgotPassword,
   login,
@@ -49,9 +49,6 @@ function ControlsIcon(){
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="14" cy="18" r="2"/></svg>;
 }
 
-function readRememberedEmail(){
-  try{return localStorage.getItem(REMEMBER_EMAIL_KEY)||'';}catch{return '';}
-}
 function errorMessage(error:unknown){
   const code=String((error as {code?:string;message?:string}|null)?.code||(error as Error|null)?.message||'');
   if(code.includes('INVALID_CREDENTIALS')||code.includes('UNAUTHORIZED')||code.includes('401')) return 'E-mail ou senha não conferem. Revise os dados e tente novamente.';
@@ -62,9 +59,8 @@ function errorMessage(error:unknown){
 }
 
 export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:AuthSession)=>void}){
-  const remembered=useMemo(readRememberedEmail,[]);
   const [mode,setMode]=useState<AuthMode>('login');
-  const [email,setEmail]=useState(remembered);
+  const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [confirmPassword,setConfirmPassword]=useState('');
   const [name,setName]=useState('');
@@ -155,36 +151,34 @@ export function EvolutionLogin({onAuthenticated}:{onAuthenticated?:(session:Auth
         :'Informe seu e-mail para receber uma senha temporária.';
 
   return <main
-    className="evo-login"
+    className="evo-login page"
     data-evolution-screen="login"
-    data-evolution-login-fidelity="approved-reference-v3"
-    data-evolution-login-structure="faithful-desktop-v1"
+    data-evolution-login-fidelity="fluid-responsive-v1"
+    data-evolution-login-structure="mobile-first-v1"
   >
-    <section className="evo-login-shell">
-      <div className="evo-login-brand-row">
-        <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
-      </div>
-      <div className="evo-login-story">
-        <div className="evo-login-kicker">MEG EVOLUTION</div>
-        <h1>Sua vida financeira,<strong>com clareza para<br/>decidir.</strong></h1>
-        <p>Saldo, compromissos e projeções em uma visão única<br className="evo-login-desktop-break"/> para você saber onde está e para onde está indo.</p>
+    <section className="evo-login-hero hero">
+      <img className="evo-login-brand" src="./brand/meg-loading-lockup.svg" alt="MEG Finanças"/>
+      <div className="evo-login-kicker">MEG EVOLUTION</div>
+      <h1>Sua vida financeira,<strong>com clareza para<br/>decidir.</strong></h1>
+      <p>Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde está indo.</p>
 
-        <div className="evo-login-proof" aria-label="Recursos do MEG">
-          <article>
-            <i><BalanceIcon/></i>
-            <span><b>Saldo real</b><small>Visão completa<br/>e atualizada</small></span>
-          </article>
-          <article>
-            <i><TargetIcon/></i>
-            <span><b>Projetos</b><small>Mais controle<br/>para seus planos</small></span>
-          </article>
-          <article>
-            <i><ControlsIcon/></i>
-            <span><b>Controle</b><small>Decisões melhores<br/>todos os dias</small></span>
-          </article>
-        </div>
+      <div className="evo-login-proof" aria-label="Recursos do MEG">
+        <article>
+          <i><BalanceIcon/></i>
+          <span><b>Saldo real</b><small>Visão completa<br/>e atualizada</small></span>
+        </article>
+        <article>
+          <i><TargetIcon/></i>
+          <span><b>Projetos</b><small>Mais controle<br/>para seus planos</small></span>
+        </article>
+        <article>
+          <i><ControlsIcon/></i>
+          <span><b>Controle</b><small>Decisões melhores<br/>todos os dias</small></span>
+        </article>
       </div>
+    </section>
 
+    <section className="evo-login-auth auth">
       <section className={`evo-login-card evo-login-card-${mode}`}>
         <div className="evo-login-card-head">
           <div className="evo-login-security-mark"><ShieldLockIcon/></div>
