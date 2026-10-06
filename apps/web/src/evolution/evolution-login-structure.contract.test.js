@@ -97,14 +97,26 @@ assert.match(
 const mediaQueries = css.match(/@media\s*\([^)]*\)/g) || [];
 assert.deepEqual(
   mediaQueries,
-  ['@media(max-width:900px)'],
-  'Login deve ter um único breakpoint em 900px.'
+  ['@media(max-width:1180px)','@media(max-width:900px)','@media(max-width:560px)'],
+  'Login deve cobrir desktop comprimido, empilhamento e mobile estreito.'
 );
 
 assert.match(
   css,
-  /@media\(max-width:900px\)\{[\s\S]*grid-template-columns:1fr;[\s\S]*\.evo-login-card\{[\s\S]*width:100%;[\s\S]*max-width:420px;/,
+  /@media\(max-width:1180px\)\{[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(360px,400px\)/,
+  'Desktop comprimido deve reduzir a coluna do login sem quebrar a composição.'
+);
+
+assert.match(
+  css,
+  /@media\(max-width:900px\)\{[\s\S]*grid-template-columns:1fr;[\s\S]*\.evo-login-card\{[\s\S]*width:100%;[\s\S]*max-width:440px;/,
   'Em 900px a composição deve empilhar e centralizar o card.'
+);
+
+assert.match(
+  css,
+  /@media\(max-width:560px\)\{[\s\S]*\.evo-login-proof\{[\s\S]*grid-template-columns:1fr/,
+  'Mobile estreito deve empilhar os cards informativos.'
 );
 
 console.log('Contrato estável do Login em zoom, autofill e resize validado.');
