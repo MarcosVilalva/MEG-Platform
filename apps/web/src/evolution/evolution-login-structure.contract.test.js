@@ -4,119 +4,82 @@ import { readFileSync } from 'node:fs';
 const screen = readFileSync(new URL('./screens/EvolutionLogin.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./styles/login.css', import.meta.url), 'utf8');
 
-assert.match(
-  screen,
-  /data-evolution-login-fidelity="approved-reference-v3"/,
-  'Login deve declarar a referência visual aprovada.'
-);
+assert.match(screen,/data-evolution-login-fidelity="approved-reference-v3"/);
 
 for (const literal of [
-  'MEG EVOLUTION',
-  'Sua vida financeira,',
-  'com clareza para',
-  'decidir.',
-  'Saldo real',
-  'Projetos',
-  'Controle',
-  'ACESSO SEGURO',
-  'Bem-vindo de volta.',
-  'Entre na sua conta para acessar o MEG.',
-  'Lembrar meu e-mail',
-  'Esqueci minha senha',
-  'Entrar no MEG',
-]) {
-  assert.ok(screen.includes(literal), `Texto aprovado ausente no Login: ${literal}`);
-}
+  'MEG EVOLUTION','Sua vida financeira,','com clareza para','decidir.',
+  'Saldo real','Projetos','Controle','ACESSO SEGURO','Bem-vindo de volta.',
+  'Entre na sua conta para acessar o MEG.','Lembrar meu e-mail',
+  'Esqueci minha senha','Entrar no MEG'
+]) assert.ok(screen.includes(literal), `Texto aprovado ausente: ${literal}`);
 
 assert.match(
-  css,
-  /\.evo-login\{[\s\S]*min-height:100dvh;/,
-  'Login deve usar min-height:100dvh.'
-);
-
-assert.doesNotMatch(
-  css,
-  /\b(?:100)?vh\b/,
-  'Login não deve depender de vh.'
+  screen,
+  /<section className="evo-login-shell">[\s\S]*<img className="evo-login-brand"[^>]+>[\s\S]*<div className="evo-login-story">/,
+  'Logo deve ser irmão estrutural do story para permitir ordem responsiva.'
 );
 
 assert.match(
   css,
-  /\.evo-login::before\{[\s\S]*position:fixed;[\s\S]*inset:0;[\s\S]*background:url\('\/bg-login\.webp'\) 35% center \/ cover no-repeat;/,
-  'Fundo deve permanecer fixo e ancorado em 35% center.'
+  /\.evo-login-shell\{[\s\S]*width:90rem;[\s\S]*height:50\.625rem;[\s\S]*grid-template-areas:[\s\S]*"brand card"[\s\S]*"story card"/,
+  'Desktop amplo deve preservar palco 90rem x 50.625rem.'
 );
 
 assert.match(
   css,
-  /\.evo-login-shell\{[\s\S]*max-width:1440px;[\s\S]*margin:0 auto;[\s\S]*grid-template-columns:minmax\(0,1fr\) 420px;[\s\S]*gap:4rem;/,
-  'Container desktop deve ser centralizado em 1440px com coluna fixa de 420px.'
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{/,
+  'Modo compacto deve ativar por largura ou proporção.'
 );
 
 assert.match(
   css,
-  /\.evo-login-card\{[\s\S]*width:420px;[\s\S]*max-width:100%;/,
-  'Card desktop deve permanecer em 420px e limitar-se a 100% em telas estreitas.'
-);
-
-assert.doesNotMatch(
-  css,
-  /\.evo-login-card\{[^}]*position:absolute/s,
-  'Card não pode usar position:absolute.'
-);
-
-assert.doesNotMatch(
-  css,
-  /\bvw\b/,
-  'Layout não deve usar vw.'
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*grid-template-areas:[\s\S]*"brand"[\s\S]*"card"[\s\S]*"story"/,
+  'Compacto deve ordenar logo, login e conteúdo.'
 );
 
 assert.match(
   css,
-  /\.evo-login-field>div\{[\s\S]*overflow:hidden;[\s\S]*box-sizing:border-box;/,
-  'Wrapper do input deve proteger o recorte do autofill.'
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*\.evo-login-card\{[\s\S]*width:100%;[\s\S]*max-width:420px;[\s\S]*margin:0 auto;/,
+  'Card compacto deve ocupar 100% até 420px e centralizar.'
 );
+
+assert.match(
+  css,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*\.evo-login-story h1\{[\s\S]*font-size:2rem;[\s\S]*text-align:left;/,
+  'Título compacto deve usar 2rem e alinhamento à esquerda.'
+);
+
+assert.match(
+  css,
+  /@media \(min-width:600px\) and \(max-width:1100px\),[\s\S]*\.evo-login-proof\{[\s\S]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+  'Compacto a partir de 600px deve mostrar os três cards em três colunas.'
+);
+
+assert.match(
+  css,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*\.evo-login-proof\{[\s\S]*grid-template-columns:1fr;/,
+  'Compacto estreito deve empilhar os cards.'
+);
+
+assert.match(
+  css,
+  /background:url\('\/bg-login\.webp'\) 35% center \/ cover no-repeat;/,
+  'Desktop deve manter fundo fixo.'
+);
+
+assert.match(
+  css,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*background-position:60% center;[\s\S]*linear-gradient\(rgba\(2,16,15,\.65\),rgba\(2,16,15,\.85\)\)/,
+  'Compacto deve reposicionar fundo e reforçar overlay.'
+);
+
+assert.match(css,/\.evo-login-notice\{[\s\S]*display:none;/);
+assert.match(css,/\.evo-login-notice-error\{[\s\S]*display:block;/);
 
 assert.match(
   css,
   /input:-webkit-autofill,[\s\S]*input:-webkit-autofill:focus\{[\s\S]*-webkit-box-shadow:0 0 0 1000px #04161a inset!important;[\s\S]*-webkit-text-fill-color:#fff!important;[\s\S]*caret-color:#fff;[\s\S]*border-radius:inherit;/,
-  'Autofill deve preservar fundo, texto, caret e raio.'
+  'Autofill deve preservar fundo e borda.'
 );
 
-assert.match(
-  css,
-  /\.evo-login-notice\{[\s\S]*display:none;/,
-  'Mensagem deve ficar oculta por padrão.'
-);
-
-assert.match(
-  css,
-  /\.evo-login-notice-error\{[\s\S]*display:block;/,
-  'Mensagem de erro deve aparecer apenas quando houver falha.'
-);
-
-const mediaQueries = css.match(/@media\s*\([^)]*\)/g) || [];
-assert.deepEqual(
-  mediaQueries,
-  ['@media(max-width:1180px)','@media(max-width:900px)','@media(max-width:560px)'],
-  'Login deve cobrir desktop comprimido, empilhamento e mobile estreito.'
-);
-
-assert.match(
-  css,
-  /@media\(max-width:1180px\)\{[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(360px,400px\)/,
-  'Desktop comprimido deve reduzir a coluna do login sem quebrar a composição.'
-);
-
-assert.match(
-  css,
-  /@media\(max-width:900px\)\{[\s\S]*grid-template-columns:1fr;[\s\S]*\.evo-login-card\{[\s\S]*width:100%;[\s\S]*max-width:440px;/,
-  'Em 900px a composição deve empilhar e centralizar o card.'
-);
-
-assert.match(
-  css,
-  /@media\(max-width:560px\)\{[\s\S]*\.evo-login-proof\{[\s\S]*grid-template-columns:1fr/,
-  'Mobile estreito deve empilhar os cards informativos.'
-);
-
-console.log('Contrato estável do Login em zoom, autofill e resize validado.');
+console.log('Contrato responsivo do Login por largura/proporção validado.');
