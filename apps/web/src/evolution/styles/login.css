@@ -1,3 +1,15 @@
+html:has(.evo-login),
+body:has(.evo-login),
+#root:has(.evo-login){
+  min-height:100%;
+  height:auto;
+}
+
+body:has(.evo-login){
+  overflow-x:hidden;
+  overflow-y:auto;
+}
+
 /* MEG Finanças — Login estável em zoom e redimensionamento. */
 .evo-login,
 .evo-login *{
@@ -9,6 +21,7 @@
   width:100%;
   min-height:100dvh;
   overflow-x:hidden;
+  overflow-y:visible;
   color:#fff;
   font-family:"Segoe UI",Arial,sans-serif;
   background:#04161a;
