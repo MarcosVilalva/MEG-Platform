@@ -1,5 +1,14 @@
 # MEG WEB — CONTINUIDADE OFICIAL
 
+> [!IMPORTANT]
+> **AVISO OPERACIONAL ENTRE CHATS**
+>
+> - Cada chat trabalha **SOMENTE a etapa indicada no seu título**.
+> - A instrução `Comece AGORA pela etapa 1` do Prompt Master vale **somente para o chat 01** e não reinicia o projeto nos chats seguintes.
+> - Antes de iniciar qualquer etapa, ler este arquivo e `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`, confirmar a etapa autorizada e respeitar todas as decisões já aprovadas.
+> - Do PDF **MEG Finanças — Regras Consolidadas, consolidado em 29/09/2026**, somente as regras de negócio expressamente mantidas na Seção 19 se aplicam à nova Web. Regras visuais históricas do Android não substituem os prints oficiais atuais.
+> - Não avançar para outra etapa enquanto a etapa do chat atual não estiver formalmente encerrada.
+
 **Projeto:** MEG Finanças Web Evolution  
 **Repositório oficial:** `MarcosVilalva/MEG-Platform`  
 **Finalidade:** manter um checkpoint único, atualizado e operacional do novo MEG Web, preservando continuidade entre chats, etapas, branches e validações.
@@ -202,7 +211,8 @@ Não avançar prematuramente para telas futuras.
 - Branch atual: `meg-web-evolution/02-fonte-unica-dados-mocks`.
 - Etapa 02 mesclada na `main`: `db5e5ee4ba763db299e3bf005a5f63eac1c3666f`.
 - Branch atual: `meg-web-evolution/03-shell-tokens-base`.
-- PR da Etapa 03: **#605**, em Draft.
+- PR da Etapa 03: **#605**, em Draft, mergeável.
+- Head técnico da Etapa 03 antes desta atualização de continuidade: `4d872b03e2d3b5b4b01e7a55814be6a0ea35e401`.
 - Base auditada: `main@87e04b989568d95c182927c6f493061be26440db`.
 - Auditoria financeira por arquivo/linha registrada em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
 - Testes de caracterização financeira criados e adicionados ao gate.
@@ -404,7 +414,140 @@ Essas decisões substituem referências históricas conflitantes apenas nos pont
 
 ---
 
-## 19. Encerramento formal da Etapa 1
+## 19. DECISÕES APROVADAS (organização dos chats)
+
+As decisões abaixo foram aprovadas para organizar a continuidade do MEG Web Evolution entre chats e consolidar regras estruturais já definidas para a nova Web.
+
+### 19.1. Um chat por etapa
+
+Cada chat trabalha exclusivamente a etapa indicada no título. Ao encerrar uma etapa, o checkpoint deve ser atualizado e o próximo chat deve começar pela etapa seguinte, sem reabrir etapas encerradas salvo correção expressamente autorizada.
+
+Sequência oficial de **15 chats**:
+
+1. **01 - Auditoria e Fundação**
+2. **02 - Fonte Única de Dados e Mocks**
+3. **03 - Shell, Tokens e Componentes Base**
+4. **04 - DataGrid**
+5. **05 - Loading, Login, Criar Conta e Recuperar Senha**
+6. **06 - Home**
+7. **07 - Lançamentos**
+8. **08 - Novo Lançamento e Editar Lançamento**
+9. **09 - Pendentes e Confirmar Pagamento**
+10. **10 - Cartões e Pagar Fatura**
+11. **11 - Benefícios e Registrar Recarga**
+12. **12 - Nova Transferência e Selecionar Período**
+13. **13 - Relatórios**
+14. **14 - Configurações**
+15. **15 - Funcionalidades Diferenciais e Fechamento**
+
+Essa organização por chats não altera a ordem técnica detalhada da Seção 9; ela define apenas como o trabalho e a continuidade serão separados operacionalmente.
+
+### 19.2. Estado atual da organização
+
+- Chats **01** e **02** encerrados.
+- Etapa 01 mesclada na `main`.
+- Etapa 02 mesclada na `main` pelo commit `db5e5ee4ba763db299e3bf005a5f63eac1c3666f`.
+- Chat/Etapa atual: **03 - Shell, Tokens e Componentes Base**.
+- Branch atual: `meg-web-evolution/03-shell-tokens-base`.
+- PR atual: **#605**, em Draft e mergeável.
+- A Etapa 03 permanece **em execução** e **sem validação visual final**.
+- DataGrid pertence ao chat 04 e não deve ser iniciado antes do encerramento formal do chat 03.
+
+### 19.3. Grid soberano da Home
+
+Para `>=1024px`, a Home usa grid de **12 colunas**:
+
+- linha 1: `.balance` span **7** + `.flow` span **5**;
+- linha 2: quatro KPIs com span **3** cada:
+  - `.kpi--pay`;
+  - `.kpi--invoice`;
+  - `.kpi--pending`;
+  - `.kpi--paid`;
+- linha 3: `.benefits` span **6** + `.quick` span **6**;
+- linha 4: `.recent` span **6** + `.upcoming` span **6**.
+
+O **CSS é soberano** para a estrutura do grid. Percentuais, proporções aparentes ou medições extraídas do print servem apenas como referência visual e não substituem o contrato estrutural acima.
+
+Classes estruturais oficiais da Home:
+
+- `.app`
+- `.sidebar`
+- `.main`
+- `.topbar`
+- `.dash`
+- `.balance`
+- `.flow`
+- `.kpi--pay`
+- `.kpi--invoice`
+- `.kpi--pending`
+- `.kpi--paid`
+- `.benefits`
+- `.quick`
+- `.recent`
+- `.upcoming`
+
+### 19.4. Sidebar e grafismo inferior
+
+O grafismo inferior da sidebar deve ser implementado em **SVG inline** dentro de `.sidebar__art`, com:
+
+- `aria-hidden="true"`;
+- participação no fluxo normal do layout;
+- `margin-top:auto`;
+- nenhuma utilização de `position:absolute` para organizar o layout do grafismo;
+- ocultação no drawer mobile;
+- entre `640px` e `1023px`, exibir somente o conteúdo que couber naturalmente no espaço disponível.
+
+### 19.5. Datas e textos relativos
+
+Status temporais e textos relativos, incluindo exemplos como **“Amanhã”**, **“Vencido”** e **“Em 3 dias”**, devem ser sempre calculados a partir da data atual em tempo de execução com `new Date()`.
+
+Esses textos e status **nunca podem ficar fixos em mocks, HTML ou componentes**.
+
+### 19.6. Regras Consolidadas válidas para a nova Web
+
+Do PDF **MEG Finanças — Regras Consolidadas**, consolidado em **29/09/2026**, valem para a nova Web somente as regras de negócio dos itens **7–16, 18–19 e 21–22**, com a exceção expressa do item 11 sobre Crediário, que não se aplica por decisão mais recente da Seção 18.
+
+Regras mantidas:
+
+- **Lançamentos em ordem cronológica:** sem agrupamento por categoria; forma de pagamento visível; detalhes/edição, busca, filtros, KPIs e classificação preservados.
+- **Autocomplete:** pesquisar histórico pela descrição e, ao selecionar item conhecido, recuperar categoria, conta e forma de pagamento, sem copiar valor nem data.
+- **Despesa à vista:** manter modalidade própria e formas de pagamento cadastradas.
+- **Crédito e competência:** cartão, parcelas e fatura aparecem quando aplicáveis; competência segue fechamento e vencimento do cartão.
+- **Alimentação:** aplicar automaticamente **Conta Benefício + Verocard + Pago**, com vínculos travados; não movimentar a conta monetária principal.
+- **Fixo:** lançamentos do grupo/categoria Fixo entram automaticamente como realizados/pagos.
+- **Pendente:** permanece exceção explícita, vai para Pendentes e recebe baixa com data de pagamento, conta monetária e forma de pagamento; só é considerado baixado após confirmação do servidor e atualização dos dados.
+- **Editar lançamento:** recuperar corretamente Categoria, Conta e Forma de pagamento; preservar pendente, estorno, edição e exclusão.
+- **Parcelamento e cartões:** preservar competência por vencimento, seleção de cartão, parcelamento, Visualizar parcelas e alteração das parcelas conforme as regras existentes.
+- **Iconografia semântica em SVG:** resolução por tipo do lançamento, categoria, grupo/classificação e fallback.
+- **Consistência da iconografia:** o mesmo lançamento deve manter o mesmo ícone em Home, Lançamentos, Pendentes, autocomplete, detalhes, modais e demais áreas.
+- **Pendentes:** preservar filtro próprio, soma correta, rolagem apenas na área destinada, modal detalhado e ações de editar/baixar sem perder contexto.
+- **Benefício:** manter card de saldo e acesso à evolução e aos lançamentos da Conta Benefício.
+
+### 19.7. Novo Lançamento como estrutura única
+
+Além do recorte do PDF acima, fica registrada como **decisão atual explícita do projeto** a estrutura única de Novo Lançamento: Despesa, Receita e Alimentação compartilham uma estrutura visual canônica, alterando somente campos e regras aplicáveis a cada tipo.
+
+Esta decisão é registrada diretamente aqui e não amplia, por inferência, o conjunto de outros itens do PDF aceitos como regra para a nova Web.
+
+### 19.8. Crediário
+
+A decisão da Seção 18 permanece soberana:
+
+- **Crediário está fora do escopo da nova Web**;
+- o item 11 do PDF, “Crediário separado de cartão”, **não é aplicado**;
+- o parcelamento canônico de compras na nova Web permanece vinculado ao domínio de cartão de crédito;
+- código legado de Crediário não deve ser promovido a autoridade.
+
+### 19.9. Conflitos com a Seção 18
+
+O único conflito identificado entre as regras listadas acima e a Seção 18 é o item 11 do PDF sobre **Crediário**. Esse item foi explicitamente excluído e não foi aplicado.
+
+Nenhum outro conflito com a Seção 18 foi identificado nas decisões registradas nesta seção.
+
+
+---
+
+## 20. Encerramento formal da Etapa 1
 
 **Status:** ENCERRADA  
 **Data:** 06/10/2026  
