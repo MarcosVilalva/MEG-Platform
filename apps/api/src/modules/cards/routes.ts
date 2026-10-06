@@ -37,7 +37,25 @@ const purchaseSchema = z.object({
   installments: z.coerce.number().int().min(1).max(48).default(1)
 });
 const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional(), allowDuplicate: z.boolean().optional() });
-const purchaseUpdateSchema = purchaseSchema.extend({ operationId: operationSchema });
+const purchaseUpdateSchema = z.object({
+  cardId: z.string().min(1).optional(),
+  categoryId: z.string().optional().nullable(),
+  description: z.string().trim().min(2).max(160).optional(),
+  purchaseDate: isoDateSchema.optional(),
+  operationId: operationSchema,
+}).refine((value) => value.cardId !== undefined
+  || value.categoryId !== undefined
+  || value.description !== undefined
+  || value.purchaseDate !== undefined, {
+  message: 'Informe ao menos uma alteração da compra.',
+});
+const installmentUpdateSchema = z.object({
+  amount: z.coerce.number().positive().finite().optional(),
+  statementMonth: monthSchema.optional(),
+  operationId: operationSchema,
+}).refine((value) => value.amount !== undefined || value.statementMonth !== undefined, {
+  message: 'Informe valor e/ou competência da parcela.',
+});
 const purchaseCancelSchema = z.object({ operationId: operationSchema.optional() }).optional();
 const statementPaymentSchema = z.object({
   accountId: z.string().trim().min(1),
@@ -260,10 +278,14 @@ async function editablePurchase(tx: Tx, ownerId: string, id: string) {
     include: { entries: true, category: true, card: true },
   });
   if (!purchase) throw new CardMutationError(404, 'PURCHASE_NOT_FOUND');
-  const paidEntries = purchase.entries.filter((entry) => entry.status === 'paid');
-  if (paidEntries.length) {
-    throw new CardMutationError(409, 'CARD_PURCHASE_ALREADY_PAID', {
-      paidInstallments: paidEntries.map((entry) => entry.number),
+  const lockedEntries = purchase.entries.filter((entry) => entry.status === 'paid' || Number(entry.partialPaidAmount || 0) > 0);
+  if (lockedEntries.length) {
+    throw new CardMutationError(409, 'CARD_PURCHASE_PAYMENT_EXISTS', {
+      installments: lockedEntries.map((entry) => ({
+        number: entry.number,
+        status: entry.status,
+        partialPaidAmount: Number(entry.partialPaidAmount || 0),
+      })),
     });
   }
   return purchase;
