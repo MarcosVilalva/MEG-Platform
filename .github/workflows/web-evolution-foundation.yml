@@ -35,6 +35,18 @@ jobs:
         run: |
           npm explain @capacitor/android || true
           npm explain source-map-js || true
+          node <<'NODE'
+          const lock = require('./package-lock.json');
+          for (const key of [
+            '',
+            'node_modules/@capacitor/android',
+            'node_modules/@capacitor/core',
+            'node_modules/@capacitor/cli',
+            'node_modules/source-map-js',
+          ]) {
+            console.log('LOCK_ENTRY', key || '<root>', JSON.stringify(lock.packages?.[key] || null));
+          }
+          NODE
 
       - name: Generate Prisma client
         run: npm run db:generate
