@@ -207,8 +207,9 @@ Não avançar prematuramente para telas futuras.
 - `monetary-protection.ts` mantém as assinaturas existentes e reexporta a política pura.
 - `phoenix-preview-read.ts` foi consolidado para consumir a mesma política central, removendo duplicação equivalente sem alterar comportamento.
 - Workflow isolado `MEG Web Evolution Foundation` passou em caracterização financeira, testes core, compatibilidade financeira legada, política de status legada e build da API.
-- CI global permanece vermelho antes dos testes por security gate de dependências: `@capacitor/android` (critical) e `source-map-js` (high).
-- O security gate não foi desativado nem contornado.
+- Correção técnica de segurança autorizada e aplicada: Capacitor atualizado para 7.6.9 e `source-map-js` fixado em 1.2.2.
+- O security gate global já deixou de ser o bloqueio; o CI segue sendo acompanhado até todos os testes fecharem verdes.
+- Android permanece congelado funcional e visualmente; a exceção foi apenas de dependência de segurança.
 - Divergências continuam sendo reportadas antes de qualquer refatoração.
 
 ### Direção aprovada
@@ -238,11 +239,13 @@ Os seguintes pontos já foram identificados como relevantes para a Etapa 1:
 
 1. **Benefício:** há coexistência real entre o legado `financialAccountId` + `financialScope` em `apps/web/src/legacy-financial-accounts.js` e a camada normalizada da API baseada em `accountId` + `Account.type`. As heurísticas históricas `VEROCARD` continuam existindo para compatibilidade.
 2. **Saldo inicial:** o legado Web implementa evento sistemático `OPENING_BALANCE` (`legacy-financial-accounts.js`), coerente com `docs/GLOBAL_FINANCIAL_FOUNDATION.md`; já a camada normalizada/API grava e soma `Account.openingBalance` diretamente. A divergência é entre camadas, não ausência da regra.
-3. **Pagamento de fatura:** a API ativa caracteriza pagamento integral da fatura aberta; não existe valor parcial no contrato ativo.
-4. **Edição de compra parcelada:** a rota atual apaga e recria as parcelas abertas da compra.
+3. **Pagamento de fatura:** regra aprovada e implementada na fundação para pagamento total e parcial (`Outro`). `Mínimo` só fica disponível quando existir valor explícito do domínio/dado da fatura; nenhum percentual será inventado.
+4. **Edição de compra parcelada:** regra aprovada e implementada para edição unitária de parcela aberta, preservando as demais e reconciliando o total agregado da compra.
 5. **Baixa de payable:** a rota pública usa `payPayableProtected`; existe um writer alternativo `payment-mutation.ts` que não está ligado à rota pública e não possui a mesma proteção de saldo.
-6. **Read models:** o read model principal já consome a política central e, nesta branch, `phoenix-preview-read.ts` também foi consolidado para a mesma autoridade monetária. Permanecem apenas divergências que exigem decisão de negócio.
-7. **Código legado de summary/cashflow:** funções antigas em `finance/service.ts` permanecem no repositório, embora não sejam usadas pelas rotas principais e tenham comportamento divergente da política monetária canônica.
+6. **Read models:** o read model principal e o Phoenix Preview consomem a mesma política monetária central nesta branch.
+7. **Código legado de summary/cashflow:** funções antigas em `finance/service.ts` permanecem no repositório, embora não sejam usadas pelas rotas principais e tenham comportamento divergente da política monetária canônica. A nova Web não deve consumi-las.
+8. **Status/Fixo:** regra centralizada em `financial-policy.ts`: Receita e Fixo são realizados/pagos; cartão de crédito prevalece como pendente até pagamento da fatura; benefício permanece no writer próprio.
+9. **Crediário:** removido do escopo da nova Web. O único parcelamento canônico de compra será cartão de crédito.
 
 Todas devem permanecer visíveis e caracterizadas antes de consolidação.
 
@@ -327,12 +330,12 @@ As imagens oficiais atuais definem o padrão visual, mas **uma tela só passa a 
 **Prosseguir com a Etapa 1: Auditoria e Fundação.**
 
 Sequência imediata:
-1. fechar as divergências que realmente alteram comportamento: saldo inicial, pagamento parcial de fatura, edição de parcelas, regra central de status/Fixo e representação de Crediário;
-2. manter os testes de caracterização verdes durante qualquer decisão;
+1. fechar os gates técnicos da Etapa 1 com as decisões aprovadas já materializadas em testes e domínio;
+2. manter os testes de caracterização verdes durante a consolidação;
 3. preservar a ponte de compatibilidade entre `financialScope` legado, conta explícita normalizada e heurísticas Verocard até migração segura;
-4. tratar separadamente o bloqueio do CI global sem violar o congelamento do Android;
-5. concluir a consolidação da camada financeira somente após as decisões de negócio;
-6. após a consolidação verde, criar a fonte única de dados/mocks.
+4. confirmar o CI global verde após as correções de segurança e ajustes de contratos;
+5. classificar definitivamente os caminhos legados restantes como canônico, compatibilidade ou não utilizado;
+6. somente depois encerrar a Etapa 1 e iniciar a fonte única de dados/mocks.
 
 Nenhum código de interface deve ser escrito antes da conclusão e aprovação desta etapa.
 
