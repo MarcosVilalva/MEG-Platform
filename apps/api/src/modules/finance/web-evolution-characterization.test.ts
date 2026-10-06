@@ -17,6 +17,8 @@ const cardsRoutes = readFileSync(new URL('../cards/routes.ts', import.meta.url),
 const cardsService = readFileSync(new URL('../cards/service.ts', import.meta.url), 'utf8');
 const benefitMutation = readFileSync(new URL('./benefit-event-mutation.ts', import.meta.url), 'utf8');
 const catalogMutation = readFileSync(new URL('./catalog-mutation.ts', import.meta.url), 'utf8');
+const financeRoutes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
+const readModel = readFileSync(new URL('./read-model.ts', import.meta.url), 'utf8');
 
 // 1) Virada de mês e calendário civil.
 assert.equal(addMonthsClamped('2026-12-31', 1, 31), '2027-01-31');
@@ -122,3 +124,18 @@ assert.match(createAccountBlock, /openingBalance:\s*input\.openingBalance/);
 assert.doesNotMatch(createAccountBlock, /financialEvent\.create/);
 
 console.log('MEG Web Evolution — caracterização financeira da Etapa 1: OK');
+
+
+// 16) Rotas financeiras principais usam o read-model canônico centralizado na política monetária.
+assert.match(financeRoutes, /getCanonicalFinancialSummary/);
+assert.match(financeRoutes, /getCanonicalFinancialCashflow/);
+assert.match(financeRoutes, /getCanonicalFinancialAnalytics/);
+assert.match(readModel, /from '\.\/monetary-protection'/);
+assert.match(readModel, /summarizeMonetaryEvents/);
+assert.match(readModel, /countsTowardMonetaryBalance/);
+
+// 17) Caracterização do catálogo atual: openingBalance só existe na criação;
+// a atualização de conta ainda não oferece alteração auditável desse valor.
+const updateAccountTypeBlock = catalogMutation.split('export type AccountCatalogUpdate')[1]?.split('export async function createAccountCatalog')[0] || '';
+assert.ok(updateAccountTypeBlock);
+assert.doesNotMatch(updateAccountTypeBlock, /openingBalance/);
