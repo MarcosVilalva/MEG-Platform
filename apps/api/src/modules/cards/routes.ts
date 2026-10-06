@@ -43,6 +43,7 @@ const statementPaymentSchema = z.object({
   accountId: z.string().trim().min(1),
   paymentMethodId: z.string().trim().min(1).optional().nullable(),
   paidAt: isoDateSchema,
+  amount: z.coerce.number().positive().finite().optional(),
   operationId: operationSchema,
 });
 
