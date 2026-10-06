@@ -78,7 +78,7 @@
 
 .meg-brand-logo {
   display: block;
-  width: 7.45rem;
+  width: 11.25rem;
   height: auto;
   filter: drop-shadow(0 0 1rem rgba(20, 227, 200, .08));
 }
@@ -219,7 +219,7 @@
   .meg-sidebar.is-open { transform: translateX(0); }
   .meg-nav-item span, .meg-new-button span { display: inline; }
   .meg-brand { min-height: 7.4rem; }
-  .meg-brand-logo { width: 7.2rem; }
+  .meg-brand-logo { width: 10.8rem; }
   .meg-nav-item { justify-content: flex-start; padding-inline: .82rem; }
   .meg-new-button { padding-inline: 1rem; }
   .meg-drawer-scrim { position: fixed; inset: 0; z-index: 20; display: block; border: 0; background: rgba(0,8,9,.72); backdrop-filter: blur(.25rem); }
