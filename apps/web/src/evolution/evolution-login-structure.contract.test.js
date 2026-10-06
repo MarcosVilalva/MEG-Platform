@@ -27,25 +27,25 @@ assert.match(
 
 assert.match(
   css,
-  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{/,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\), \(max-height:760px\)\{/,
   'Modo compacto deve ativar por largura ou proporção.'
 );
 
 assert.match(
   css,
-  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*grid-template-areas:[\s\S]*"brand"[\s\S]*"card"[\s\S]*"story"/,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\), \(max-height:760px\)\{[\s\S]*grid-template-areas:[\s\S]*"brand"[\s\S]*"card"[\s\S]*"story"/,
   'Compacto deve ordenar logo, login e conteúdo.'
 );
 
 assert.match(
   css,
-  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*\.evo-login-card\{[\s\S]*width:100%;[\s\S]*max-width:420px;[\s\S]*margin:0 auto;/,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\), \(max-height:760px\)\{[\s\S]*\.evo-login-card\{[\s\S]*width:100%;[\s\S]*max-width:420px;[\s\S]*margin:0 auto;/,
   'Card compacto deve ocupar 100% até 420px e centralizar.'
 );
 
 assert.match(
   css,
-  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*\.evo-login-story h1\{[\s\S]*font-size:2rem;[\s\S]*text-align:left;/,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\), \(max-height:760px\)\{[\s\S]*\.evo-login-story h1\{[\s\S]*font-size:2rem;[\s\S]*text-align:left;/,
   'Título compacto deve usar 2rem e alinhamento à esquerda.'
 );
 
@@ -57,7 +57,7 @@ assert.match(
 
 assert.match(
   css,
-  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*\.evo-login-proof\{[\s\S]*grid-template-columns:1fr;/,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\), \(max-height:760px\)\{[\s\S]*\.evo-login-proof\{[\s\S]*grid-template-columns:1fr;/,
   'Compacto estreito deve empilhar os cards.'
 );
 
@@ -69,7 +69,7 @@ assert.match(
 
 assert.match(
   css,
-  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\)\{[\s\S]*background-position:60% center;[\s\S]*linear-gradient\(rgba\(2,16,15,\.65\),rgba\(2,16,15,\.85\)\)/,
+  /@media \(max-width:1100px\), \(max-aspect-ratio:5\/4\), \(max-height:760px\)\{[\s\S]*background-position:60% center;[\s\S]*linear-gradient\(rgba\(2,16,15,\.65\),rgba\(2,16,15,\.85\)\)/,
   'Compacto deve reposicionar fundo e reforçar overlay.'
 );
 
