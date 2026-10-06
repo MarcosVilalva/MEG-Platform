@@ -67,6 +67,7 @@ body:has(.evo-login){
   max-width:100%;
   height:auto;
   display:block;
+  justify-self:center;
   align-self:end;
   margin:0 0 .75rem;
   object-fit:contain;
