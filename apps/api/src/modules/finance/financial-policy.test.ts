@@ -33,6 +33,13 @@ assert.equal(resolveCanonicalFinancialStatus({
 assert.equal(resolveCanonicalFinancialStatus({
   type: 'expense',
   requestedStatus: 'paid',
+  category: { name: 'Fixo', group: 'Fixo' },
+  paymentMethod: { name: 'LATAM Pass', type: 'credit' },
+}), 'planned', 'Cartão de crédito prevalece sobre Fixo: a compra só realiza no pagamento da fatura.');
+
+assert.equal(resolveCanonicalFinancialStatus({
+  type: 'expense',
+  requestedStatus: 'paid',
   category: { name: 'Mercado', group: 'Alimentação' },
   paymentMethod: { name: 'PIX', type: 'instant' },
 }), 'paid', 'Despesa comum preserva o status solicitado.');
