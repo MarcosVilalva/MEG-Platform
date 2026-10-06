@@ -19,11 +19,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="meg-evolution-bg meg-shell">
       <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
-        <div className="meg-brand" aria-label="MEG Finanças">
-          <span className="meg-brand-mark" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </span>
-          <span className="meg-brand-copy"><strong>MEG</strong><small>FINANÇAS</small></span>
+        <div className="meg-brand">
+          <img
+            className="meg-brand-logo"
+            src={`${import.meta.env.BASE_URL}brand/meg-loading-lockup.svg`}
+            alt="MEG Finanças"
+          />
         </div>
 
         <nav className="meg-nav">
