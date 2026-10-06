@@ -190,7 +190,7 @@ Não avançar prematuramente para telas futuras.
 ## 10. Estado atual
 
 ### Etapa atual
-**Etapa 1 — Auditoria e Fundação**
+**Etapa 1 — Auditoria e Fundação: ENCERRADA**
 
 ### Situação
 - Prompt Master definido.
@@ -208,12 +208,13 @@ Não avançar prematuramente para telas futuras.
 - `phoenix-preview-read.ts` foi consolidado para consumir a mesma política central, removendo duplicação equivalente sem alterar comportamento.
 - Workflow isolado `MEG Web Evolution Foundation` passou em caracterização financeira, testes core, compatibilidade financeira legada, política de status legada e build da API.
 - Correção técnica de segurança autorizada e aplicada: Capacitor atualizado para 7.6.9 e `source-map-js` fixado em 1.2.2.
-- O security gate global já deixou de ser o bloqueio; o CI segue sendo acompanhado até todos os testes fecharem verdes.
+- O security gate global passou e o `MEG Platform CI` fechou verde.
+- O gate isolado `MEG Web Evolution Foundation` também fechou verde.
 - Android permanece congelado funcional e visualmente; a exceção foi apenas de dependência de segurança.
 - Divergências continuam sendo reportadas antes de qualquer refatoração.
 
 ### Direção aprovada
-Continuar exclusivamente na Etapa 1 até encerrar auditoria e dar destino explícito às divergências. Nenhuma UI deve ser iniciada antes disso.
+A Etapa 1 foi encerrada após caracterização, consolidação das autoridades financeiras, correções de segurança e gates verdes. Nenhuma UI foi iniciada nesta etapa.
 
 ---
 
@@ -327,17 +328,15 @@ As imagens oficiais atuais definem o padrão visual, mas **uma tela só passa a 
 
 ## 16. Próximo passo autorizado
 
-**Prosseguir com a Etapa 1: Auditoria e Fundação.**
+**Iniciar a Etapa 2 — Fonte Única de Dados e Mocks.**
 
 Sequência imediata:
-1. fechar os gates técnicos da Etapa 1 com as decisões aprovadas já materializadas em testes e domínio;
-2. manter os testes de caracterização verdes durante a consolidação;
-3. preservar a ponte de compatibilidade entre `financialScope` legado, conta explícita normalizada e heurísticas Verocard até migração segura;
-4. confirmar o CI global verde após as correções de segurança e ajustes de contratos;
-5. classificar definitivamente os caminhos legados restantes como canônico, compatibilidade ou não utilizado;
-6. somente depois encerrar a Etapa 1 e iniciar a fonte única de dados/mocks.
-
-Nenhum código de interface deve ser escrito antes da conclusão e aprovação desta etapa.
+1. abrir um novo chat com o nome `02 - Fonte Única de Dados e Mocks`;
+2. retomar por este checkpoint e por `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`;
+3. definir uma única fonte de dados para contas, lançamentos, pendências, cartões, parcelas, faturas, benefícios, transferências, categorias, classificações e formas de pagamento;
+4. garantir que KPIs, gráficos, totais, contadores e filtros derivem dessa mesma fonte;
+5. adicionar testes de consistência entre módulos e valores derivados;
+6. não iniciar Shell/UI antes do encerramento da Etapa 2.
 
 ---
 
@@ -367,3 +366,28 @@ As decisões abaixo foram aprovadas explicitamente e passam a orientar a consoli
 6. **Capacitor:** fica autorizada a atualização necessária do Capacitor para eliminar o advisory crítico do security gate. A autorização é restrita à dependência/compatibilidade técnica necessária; não autoriza alteração funcional ou visual do Android.
 
 Essas decisões substituem referências históricas conflitantes apenas nos pontos acima.
+
+
+---
+
+## 19. Encerramento formal da Etapa 1
+
+**Status:** ENCERRADA  
+**Data:** 06/10/2026  
+**Branch:** `meg-web-evolution/01-auditoria-fundacao`  
+**PR:** #603  
+**Head técnico validado antes do commit de fechamento:** `0fe83535f1644bf73bf06db793e6a0310a1afa0d`
+
+Gates confirmados:
+- `MEG Web Evolution Foundation`: **SUCCESS**
+- `MEG Platform CI`: **SUCCESS**
+- security gate: **SUCCESS**
+- build API: **SUCCESS**
+- testes financeiros e de caracterização: **SUCCESS**
+
+Arquivo de autoridade da nova Web:
+- `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`
+
+Nenhuma tela foi implementada ou validada nesta etapa.
+
+**Próxima etapa oficial:** `02 - Fonte Única de Dados e Mocks`.
