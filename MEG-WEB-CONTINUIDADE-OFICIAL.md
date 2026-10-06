@@ -190,7 +190,7 @@ Não avançar prematuramente para telas futuras.
 ## 10. Estado atual
 
 ### Etapa atual
-**Etapa 1 — Auditoria e Fundação: ENCERRADA**
+**Etapa 2 — Fonte Única de Dados e Mocks: ENCERRADA**
 
 ### Situação
 - Prompt Master definido.
@@ -198,8 +198,9 @@ Não avançar prematuramente para telas futuras.
 - Novo conjunto de imagens oficiais definido como única referência visual.
 - Android congelado.
 - Decisão mantida de não usar a PR visual anterior como base da nova Web.
-- Branch isolada criada a partir da `main`: `meg-web-evolution/01-auditoria-fundacao`.
-- PR atual: **#603**, em Draft.
+- Etapa 01 mesclada na `main` pelo commit `0d21136c3993b11b127d8339a5b849b3727275ed`.
+- Branch atual: `meg-web-evolution/02-fonte-unica-dados-mocks`.
+- PR atual: **#604**, gates verdes; etapa encerrada tecnicamente.
 - Base auditada: `main@87e04b989568d95c182927c6f493061be26440db`.
 - Auditoria financeira por arquivo/linha registrada em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
 - Testes de caracterização financeira criados e adicionados ao gate.
@@ -215,6 +216,16 @@ Não avançar prematuramente para telas futuras.
 
 ### Direção aprovada
 A Etapa 1 foi encerrada após caracterização, consolidação das autoridades financeiras, correções de segurança e gates verdes. Nenhuma UI foi iniciada nesta etapa.
+
+### Etapa 02 — execução atual
+- Fonte única criada em `apps/web/src/evolution/data/data.js`.
+- Adaptadores da API criados em `apps/web/src/evolution/data/api-adapter.js`.
+- Derivações estruturais de filtro/agrupamento isoladas em `derived.js`, sem regra financeira.
+- Contrato documentado em `docs/MEG-WEB-DATA-SOURCE.md`.
+- Teste `test:evolution-data` adicionado ao gate específico `MEG Web Evolution Foundation`.
+- PR atual: **#604**.
+- Gates concluídos com sucesso: `MEG Platform CI`, `MEG Web Evolution Foundation` e `MEG Evolution Visual Preflight`.
+- Nenhum Shell, DataGrid ou tela iniciado nesta etapa.
 
 ---
 
@@ -247,6 +258,8 @@ Os seguintes pontos já foram identificados como relevantes para a Etapa 1:
 7. **Código legado de summary/cashflow:** funções antigas em `finance/service.ts` permanecem no repositório, embora não sejam usadas pelas rotas principais e tenham comportamento divergente da política monetária canônica. A nova Web não deve consumi-las.
 8. **Status/Fixo:** regra centralizada em `financial-policy.ts`: Receita e Fixo são realizados/pagos; cartão de crédito prevalece como pendente até pagamento da fatura; benefício permanece no writer próprio.
 9. **Crediário:** removido do escopo da nova Web. O único parcelamento canônico de compra será cartão de crédito.
+10. **Classificações:** o schema atual não possui catálogo `Classification` próprio. A fonte única mantém a coleção reservada, porém vazia, e preserva classificação histórica apenas como atributo do lançamento até existir fonte oficial.
+11. **Benefício — leitura:** existe writer canônico, mas a Etapa 01 não declarou um read model canônico específico para histórico/saldo de benefício. A nova Web não promoverá silenciosamente o endpoint de compatibilidade a autoridade.
 
 Todas devem permanecer visíveis e caracterizadas antes de consolidação.
 
@@ -328,15 +341,15 @@ As imagens oficiais atuais definem o padrão visual, mas **uma tela só passa a 
 
 ## 16. Próximo passo autorizado
 
-**Iniciar a Etapa 2 — Fonte Única de Dados e Mocks.**
+**Iniciar a Etapa 3 — Shell, tokens e componentes base.**
 
 Sequência imediata:
-1. abrir um novo chat com o nome `02 - Fonte Única de Dados e Mocks`;
-2. retomar por este checkpoint e por `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`;
-3. definir uma única fonte de dados para contas, lançamentos, pendências, cartões, parcelas, faturas, benefícios, transferências, categorias, classificações e formas de pagamento;
-4. garantir que KPIs, gráficos, totais, contadores e filtros derivem dessa mesma fonte;
-5. adicionar testes de consistência entre módulos e valores derivados;
-6. não iniciar Shell/UI antes do encerramento da Etapa 2.
+1. criar branch nova a partir da `main` após o merge da PR #604;
+2. construir Shell, tokens e componentes base do zero, usando somente os prints oficiais atuais;
+3. preservar `apps/web/src/evolution/data/` como fonte única da nova Web;
+4. não implementar DataGrid antes da fundação visual/base estar coerente;
+5. publicar preview quando houver UI e fornecer link sem cache;
+6. aguardar validação visual explícita antes de considerar a etapa validada.
 
 ---
 
