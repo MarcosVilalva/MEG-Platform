@@ -73,6 +73,9 @@ jobs:
       - name: Validate Web Evolution single data source
         run: npm run test:evolution-data
 
+      - name: Validate Web Evolution shell foundation
+        run: npm run test:web-evolution-shell
+
       - name: Build API
         run: npm run build:api
         env:
