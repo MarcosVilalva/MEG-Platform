@@ -352,7 +352,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
             fineAmount: 0,
             accountId: account.id,
             paymentMethodId: paymentMethod.id,
-            eventId: event.id,
+            financialEventId: event.id,
             notes: `Baixa em lote ${input.operationId}`,
           },
         });
