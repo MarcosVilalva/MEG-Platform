@@ -55,6 +55,75 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
+        <div className="sidebar__art" aria-hidden="true">
+          <svg viewBox="0 0 208 320" role="presentation" focusable="false">
+            <defs>
+              <linearGradient id="sidebarBarFront" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#0fbba9" stopOpacity=".18" />
+                <stop offset="100%" stopColor="#18e2c5" stopOpacity=".52" />
+              </linearGradient>
+              <linearGradient id="sidebarBarSide" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#063d3c" stopOpacity=".44" />
+                <stop offset="100%" stopColor="#0b6a63" stopOpacity=".24" />
+              </linearGradient>
+              <linearGradient id="sidebarBarTop" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#3cf7de" stopOpacity=".44" />
+                <stop offset="100%" stopColor="#0b7f75" stopOpacity=".16" />
+              </linearGradient>
+              <linearGradient id="sidebarArc" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#14e3c8" stopOpacity=".16" />
+                <stop offset="45%" stopColor="#37f2db" stopOpacity=".72" />
+                <stop offset="100%" stopColor="#14e3c8" stopOpacity=".20" />
+              </linearGradient>
+              <linearGradient id="sidebarFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="white" stopOpacity="0" />
+                <stop offset="26%" stopColor="white" stopOpacity=".35" />
+                <stop offset="48%" stopColor="white" stopOpacity=".82" />
+                <stop offset="100%" stopColor="white" stopOpacity="1" />
+              </linearGradient>
+              <mask id="sidebarFadeMask">
+                <rect width="208" height="320" fill="url(#sidebarFade)" />
+              </mask>
+            </defs>
+
+            <g mask="url(#sidebarFadeMask)">
+              <g transform="translate(27 0)">
+                <polygon points="15,258 31,244 31,320 15,320" fill="url(#sidebarBarFront)" />
+                <polygon points="31,244 37,238 37,314 31,320" fill="url(#sidebarBarSide)" />
+                <polygon points="15,258 21,252 37,238 31,244" fill="url(#sidebarBarTop)" />
+
+                <polygon points="52,218 68,202 68,320 52,320" fill="url(#sidebarBarFront)" />
+                <polygon points="68,202 75,195 75,313 68,320" fill="url(#sidebarBarSide)" />
+                <polygon points="52,218 59,211 75,195 68,202" fill="url(#sidebarBarTop)" />
+
+                <polygon points="91,157 108,140 108,320 91,320" fill="url(#sidebarBarFront)" />
+                <polygon points="108,140 115,132 115,312 108,320" fill="url(#sidebarBarSide)" />
+                <polygon points="91,157 98,149 115,132 108,140" fill="url(#sidebarBarTop)" />
+
+                <polygon points="132,91 149,73 149,320 132,320" fill="url(#sidebarBarFront)" />
+                <polygon points="149,73 157,65 157,312 149,320" fill="url(#sidebarBarSide)" />
+                <polygon points="132,91 140,83 157,65 149,73" fill="url(#sidebarBarTop)" />
+              </g>
+
+              <path
+                d="M-28 238 C 20 198, 70 176, 122 176 C 155 176, 187 184, 236 210"
+                fill="none"
+                stroke="url(#sidebarArc)"
+                strokeWidth="1.25"
+                strokeLinecap="round"
+              />
+              <path
+                d="M-24 242 C 24 202, 72 181, 123 181 C 158 181, 190 189, 238 214"
+                fill="none"
+                stroke="#12a99a"
+                strokeOpacity=".12"
+                strokeWidth="5"
+                strokeLinecap="round"
+              />
+            </g>
+          </svg>
+        </div>
+
         <PrimaryButton className="meg-new-button" type="button">
           <Icon name="plus" />
           <span>Novo</span>
