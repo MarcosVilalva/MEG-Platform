@@ -35,7 +35,10 @@ Classificação:
 | Saldo inicial auditável | DIVERGENTE | `docs/GLOBAL_FINANCIAL_FOUNDATION.md:25-27`; `apps/api/src/modules/finance/catalog-mutation.ts:125-153`; `monetary-protection.ts:139-147` | Documento determina evento sistemático `OPENING_BALANCE`, mas o catálogo atual grava `Account.openingBalance` diretamente e o saldo monetário soma esse campo. | Configurações, Home, Relatórios |
 | Projeção mensal antiga do core | DIVERGENTE / risco de autoridade dupla | `packages/core/src/projections/cashflow.ts:7-32`; `packages/core/src/finance/financial-engine.ts:28-64` | A projeção soma eventos por data sem aplicar a política canônica de status/conta/benefício; não deve ser adotada pela nova Web como autoridade financeira sem reconciliação. | Home, Relatórios, projeções |
 | Precisão persistida | OK estrutural | `packages/database/prisma/schema.prisma:313-320,369-401,561-617` | Valores financeiros persistem em `Decimal`; comparações operacionais críticas normalizam para centavos. | Todas |
-| Writer alternativo de baixa de payable | PENDENTE / risco de divergência | `apps/api/src/modules/payables/payment-mutation.ts:37-132` vs. `payables/service.ts:240-337` | Há segundo writer que cria baixa/ledger, mas não contém a mesma proteção de saldo da rota principal. Callers precisam ser mapeados antes de qualquer alteração. | Pendentes / integrações |
+| Read model financeiro principal | OK / autoridade de leitura atual | `apps/api/src/modules/finance/routes.ts:247-297`; `apps/api/src/modules/finance/read-model.ts:1-310` | `/summary`, `/cashflow` e `/analytics` usam o `read-model.ts`, que consome `monetary-protection.ts` para status, escopo monetário e saldo inicial. | Home, Relatórios, KPIs |
+| Preview Phoenix financeiro | DUPLICADA | `apps/api/src/modules/finance/phoenix-preview-read.ts:17-55,80-220` | Reimplementa localmente `isPosted`, conta monetária, benefício e cálculo de saldo. É compatível em vários pontos, mas duplica a autoridade central. | Preview/compatibilidade |
+| Summary/Cashflow antigos em `service.ts` | DIVERGENTE / legado não roteado | `apps/api/src/modules/finance/service.ts:251-401`; `apps/api/src/modules/finance/routes.ts:5-13,247-297` | Existem funções antigas que tratam receita passada como realizada e usam heurística Verocard; as rotas principais não as chamam mais. Não devem voltar a ser consumidas pela nova Web. | Nenhuma tela nova deve consumir |
+| Writer alternativo de baixa de payable | DIVERGENTE / não ativo na rota pública | `apps/api/src/modules/payables/payment-mutation.ts:37-132`; `apps/api/src/modules/payables/routes.ts:98-107`; `apps/api/src/server.ts:22,121` | A rota pública registrada usa `payPayableProtected`. O writer `createPayablePaymentProtected` permanece no repositório, mas não está ligado à rota pública e não contém a mesma proteção monetária. | Pendentes / integrações |
 
 ## Testes de caracterização adicionados
 
@@ -73,7 +76,9 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 3. **Edição de parcelas:** requisito de preservar parcelas x rota atual recria todas.
 4. **Benefício:** coexistência de autoridade por conta explícita e heurísticas VEROCARD.
 5. **Projeção mensal:** `packages/core` e política monetária do API não calculam o mesmo conceito de saldo.
-6. **Baixa de payable:** há writer alternativo que precisa ter callers confirmados antes de ser classificado como ativo, legado ou morto.
+6. **Baixa de payable:** a rota pública foi confirmada em `payPayableProtected`; o writer `payment-mutation.ts` ficou caracterizado como alternativo e não conectado à rota pública.
+7. **Read models duplicados:** `phoenix-preview-read.ts` ainda replica política monetária que já existe em `monetary-protection.ts`.
+8. **Summary/Cashflow antigos:** funções divergentes permanecem em `service.ts`, embora não sejam usadas pelas rotas principais.
 
 ## Gates da Etapa 1
 
@@ -84,12 +89,23 @@ Também foram incluídos no `test:finance` testes financeiros que existiam no re
 - [x] duplicidades e divergências reportadas sem correção;
 - [x] teste de caracterização da nova Web criado;
 - [x] testes financeiros existentes relevantes adicionados ao gate;
-- [ ] CI da branch/PR executada;
-- [ ] callers do writer alternativo de payable mapeados;
+- [x] gate isolado `MEG Web Evolution Foundation` executado com sucesso: caracterização financeira + core + build da API;
+- [x] rota pública/caminho ativo de baixa de payable mapeados;
+- [ ] CI global `MEG Platform CI` verde — atualmente bloqueado no security gate por `@capacitor/android` (critical) e `source-map-js` (high);
 - [ ] auditoria de saldo inicial encerrada;
 - [ ] decisão formal sobre pagamento parcial de fatura;
 - [ ] decisão formal sobre edição individual de parcelas;
 - [ ] consolidação da camada financeira central;
 - [ ] fonte única de dados/mocks.
 
-**Importante:** nenhuma consolidação financeira deve começar enquanto os testes de caracterização não estiverem verdes e as divergências acima não tiverem destino explícito.
+## Estado técnico da PR
+
+O workflow isolado `MEG Web Evolution Foundation` passou integralmente: instalação, geração Prisma, `test:finance`, `test:core` e build da API.
+
+O workflow global `MEG Platform CI` continua vermelho antes dos testes por um bloqueio de segurança de dependências já presente no lockfile: `@capacitor/android` em severidade crítica e `source-map-js` em severidade alta. O gate NÃO foi desativado nem contornado. Como Android está congelado, nenhuma atualização do Capacitor será feita automaticamente nesta etapa.
+
+## Observação sobre `financialScope`
+
+O checkpoint anterior mencionava coexistência com `financialScope`. Na `main` auditada não foi localizada ocorrência desse identificador. A fundação atual representa o escopo financeiro por `accountId` e `Account.type` (`checking`, `savings`, `cash`, `investment`, `credit`, `benefit`), mantendo heurísticas VEROCARD apenas para compatibilidade. O checkpoint deve ser atualizado para refletir o código real.
+
+**Importante:** os testes de caracterização da fundação estão verdes. A consolidação financeira só deve começar depois de dar destino explícito às divergências de saldo inicial, pagamento parcial de fatura, edição de parcelas e autoridades duplicadas.
