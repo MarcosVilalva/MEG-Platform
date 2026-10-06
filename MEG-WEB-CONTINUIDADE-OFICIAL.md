@@ -190,7 +190,7 @@ Não avançar prematuramente para telas futuras.
 ## 10. Estado atual
 
 ### Etapa atual
-**Etapa 1 — Auditoria e Fundação: ENCERRADA**
+**Etapa 2 — Fonte Única de Dados e Mocks: EM EXECUÇÃO**
 
 ### Situação
 - Prompt Master definido.
@@ -328,14 +328,14 @@ As imagens oficiais atuais definem o padrão visual, mas **uma tela só passa a 
 
 ## 16. Próximo passo autorizado
 
-**Iniciar a Etapa 2 — Fonte Única de Dados e Mocks.**
+**Concluir a Etapa 2 — Fonte Única de Dados e Mocks antes de iniciar Shell/UI.**
 
 Sequência imediata:
-1. abrir um novo chat com o nome `02 - Fonte Única de Dados e Mocks`;
-2. retomar por este checkpoint e por `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`;
-3. definir uma única fonte de dados para contas, lançamentos, pendências, cartões, parcelas, faturas, benefícios, transferências, categorias, classificações e formas de pagamento;
+1. manter `apps/web/src/evolution/data/data.js` como fonte única da nova Web;
+2. manter derivações estruturais em `apps/web/src/evolution/data/derived.js`, sem recriar regras financeiras;
+3. ampliar os mocks somente com dados oficiais/explicitamente aprovados, sem inventar valores de produto;
 4. garantir que KPIs, gráficos, totais, contadores e filtros derivem dessa mesma fonte;
-5. adicionar testes de consistência entre módulos e valores derivados;
+5. manter o contrato `data.contract.test.js` no gate;
 6. não iniciar Shell/UI antes do encerramento da Etapa 2.
 
 ---
