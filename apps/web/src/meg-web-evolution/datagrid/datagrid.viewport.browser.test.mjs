@@ -64,6 +64,44 @@ try {
       await browser.pressKey('Enter', 'Enter');
       const groupAfter = await browser.evaluate("document.querySelector('.meg-datagrid-table .meg-datagrid-group-button')?.getAttribute('aria-expanded')");
       assert.notEqual(groupAfter, groupBefore, label + ': Enter não alternou grupo recolhível');
+
+      if (viewport.width === 1920) {
+        await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); button.click(); return true; })()");
+        await browser.sleep(80);
+        assert.equal(await browser.evaluate("Boolean(document.querySelector('.meg-datagrid-column-menu'))"), true, label + ': menu Colunas não abriu');
+
+        const beforeVisibility = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
+        await browser.evaluate("(() => { const item=[...document.querySelectorAll('.meg-datagrid-column-menu__item')].find((node)=>node.textContent.includes('Quantidade')); item.querySelector('input[type=checkbox]').click(); return true; })()");
+        await browser.sleep(80);
+        const hiddenHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
+        assert.ok(beforeVisibility.includes('Quantidade'), label + ': coluna Quantidade deveria começar visível');
+        assert.equal(hiddenHeaders.includes('Quantidade'), false, label + ': ocultar coluna não removeu Quantidade');
+
+        await browser.evaluate("(() => { const item=[...document.querySelectorAll('.meg-datagrid-column-menu__item')].find((node)=>node.textContent.includes('Quantidade')); item.querySelector('input[type=checkbox]').click(); return true; })()");
+        await browser.sleep(80);
+        const restoredHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
+        assert.ok(restoredHeaders.includes('Quantidade'), label + ': mostrar coluna não restaurou Quantidade');
+
+        await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-column-menu button[aria-label="Mover Data para baixo"]'); button.click(); return true; })()");
+        await browser.sleep(80);
+        const reorderedHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
+        assert.equal(reorderedHeaders[0], 'Descrição técnica', label + ': reordenação acessível de colunas não foi aplicada');
+        assert.equal(reorderedHeaders[1], 'Data', label + ': Data deveria ter sido movida para a segunda posição');
+
+        await browser.evaluate("(() => { const headers=[...document.querySelectorAll('.meg-datagrid-table thead th')]; const th=headers.find((item)=>item.textContent.includes('Data')); const resizer=th.querySelector('.meg-datagrid-resizer'); resizer.focus(); return true; })()");
+        await browser.pressKey('ArrowRight', 'ArrowRight');
+        const persistedAfterResize = await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
+        assert.ok(persistedAfterResize.widths.date >= 140, label + ': resize por teclado não persistiu largura respeitando minWidth');
+        assert.equal(persistedAfterResize.columnOrder[0], 'description', label + ': ordem de colunas não foi persistida');
+
+        await browser.evaluate("document.querySelector('.meg-datagrid-column-menu .meg-datagrid-dialog-header button').click()");
+        await browser.navigate(appUrl);
+        await browser.sleep(120);
+        const persistedHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
+        assert.equal(persistedHeaders[0], 'Descrição técnica', label + ': ordem persistida não sobreviveu ao reload');
+        const persistedReload = await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
+        assert.ok(persistedReload.widths.date >= 140, label + ': largura persistida não sobreviveu ao reload');
+      }
     } else {
       assert.equal(snapshot.tableDisplay, 'none', label + ': abaixo de 1024 a tabela deve ficar oculta');
       assert.notEqual(snapshot.cardsDisplay, 'none', label + ': abaixo de 1024 as linhas devem virar cards');
@@ -97,6 +135,28 @@ try {
 
     console.log('OK DataGrid ' + label);
   }
+
+  await browser.setViewport(1920, 1080);
+
+  await browser.navigate(appUrl + '?state=loading');
+  assert.equal(await browser.evaluate("document.querySelector('[data-datagrid]')?.getAttribute('data-state')"), 'loading', 'Skeleton: estado loading não exposto');
+  assert.equal(await browser.evaluate("Boolean(document.querySelector('.meg-datagrid-skeleton[role=status]'))"), true, 'Skeleton: estrutura não renderizada');
+  assert.equal(await browser.evaluate("document.querySelector('[data-datagrid]')?.getAttribute('aria-busy')"), 'true', 'Skeleton: aria-busy ausente');
+
+  await browser.navigate(appUrl + '?state=empty');
+  const emptyText = await browser.evaluate("document.querySelector('.meg-datagrid-empty')?.textContent || ''");
+  assert.ok(emptyText.includes('Nenhum dado disponível'), 'Estado vazio sem dados não renderizado');
+
+  await browser.evaluate("(() => { localStorage.setItem('meg-web-evolution:datagrid:stage-04-harness-filtered-empty', JSON.stringify({ filters:{ description:{ type:'text', operator:'equals', value:'__sem_resultado__' } }, sort:[], columnOrder:[], hiddenColumns:[], widths:{}, pageSize:600 })); return true; })()");
+  await browser.navigate(appUrl + '?state=filtered-empty');
+  await browser.sleep(100);
+  const filteredEmpty = await browser.evaluate("(() => { const element=document.querySelector('.meg-datagrid-empty'); return { text:element?.textContent || '', clear:Boolean(element?.querySelector('button')) }; })()");
+  assert.ok(filteredEmpty.text.includes('Nenhum resultado com os filtros atuais'), 'Estado vazio filtrado não renderizado');
+  assert.equal(filteredEmpty.clear, true, 'Estado vazio filtrado precisa oferecer ação de limpar');
+
+  const isolatedKeys = await browser.evaluate("(() => ({ normal:localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'), filtered:localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness-filtered-empty') }))()");
+  assert.ok(isolatedKeys.filtered, 'Persistência da instância filtrada não existe');
+  assert.notEqual(isolatedKeys.normal, isolatedKeys.filtered, 'Chaves de persistência não podem colidir entre grids');
 
   console.log('MEG Web Evolution DataGrid viewport contract: OK');
 } catch (error) {
