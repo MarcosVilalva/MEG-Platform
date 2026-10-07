@@ -1,0 +1,427 @@
+import { useEffect, useMemo, useState } from 'react';
+import {
+  dateRangeForShortcut,
+  distinctKey,
+  displayValue,
+  isFilterActive,
+  parsePtBrNumber,
+  toDateKey,
+} from './core';
+import type {
+  DataGridColumn,
+  DataGridFilter,
+  DateShortcut,
+  DistinctOption,
+} from './types';
+
+const textOperators = [
+  ['contains', 'Contém'],
+  ['notContains', 'Não contém'],
+  ['startsWith', 'Começa com'],
+  ['endsWith', 'Termina com'],
+  ['equals', 'É igual a'],
+  ['empty', 'Está vazio'],
+] as const;
+
+const numberOperators = [
+  ['eq', '='],
+  ['neq', '≠'],
+  ['gt', '>'],
+  ['gte', '≥'],
+  ['lt', '<'],
+  ['lte', '≤'],
+  ['between', 'Entre'],
+  ['empty', 'Está vazio'],
+] as const;
+
+const dateOperators = [
+  ['between', 'Está entre'],
+  ['equals', 'É igual a'],
+  ['before', 'Antes de'],
+  ['after', 'Depois de'],
+] as const;
+
+const shortcuts: Array<[DateShortcut, string]> = [
+  ['today', 'Hoje'],
+  ['thisWeek', 'Esta semana'],
+  ['thisMonth', 'Este mês'],
+  ['lastMonth', 'Mês passado'],
+  ['last30Days', 'Últimos 30 dias'],
+  ['thisYear', 'Este ano'],
+];
+
+function emptyFilter(type: DataGridFilter['type']): DataGridFilter {
+  if (type === 'boolean') return { type, booleanValue: null };
+  if (type === 'date') return { type, operator: 'between', value: '', value2: '', selected: [] };
+  if (type === 'number' || type === 'currency') return { type, operator: 'eq', value: '', value2: '', selected: [] };
+  if (type === 'text') return { type, operator: 'contains', value: '', selected: [] };
+  return { type, selected: [] };
+}
+
+function formatDistinct(option: DistinctOption, type: DataGridFilter['type']) {
+  if (type === 'currency') {
+    const number = parsePtBrNumber(option.value);
+    return number == null
+      ? option.label
+      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(number);
+  }
+  if (type === 'number') {
+    const number = parsePtBrNumber(option.value);
+    return number == null ? option.label : new Intl.NumberFormat('pt-BR').format(number);
+  }
+  if (type === 'date') {
+    const key = toDateKey(option.value);
+    if (!key) return option.label;
+    const [year, month, day] = key.split('-').map(Number);
+    return new Intl.DateTimeFormat('pt-BR').format(new Date(year, month - 1, day));
+  }
+  return option.label;
+}
+
+function DistinctList<T extends Record<string, unknown>>({
+  column,
+  options,
+  selected,
+  onSelected,
+}: {
+  column: DataGridColumn<T>;
+  options: DistinctOption[];
+  selected: string[];
+  onSelected: (next: string[]) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const visible = useMemo(() => {
+    const needle = search.trim().toLocaleLowerCase('pt-BR');
+    if (!needle) return options;
+    return options.filter((option) =>
+      formatDistinct(option, column.type).toLocaleLowerCase('pt-BR').includes(needle),
+    );
+  }, [column.type, options, search]);
+
+  const allVisibleSelected = visible.length > 0 && visible.every((option) => selected.includes(option.key));
+
+  const toggle = (key: string) => {
+    onSelected(selected.includes(key) ? selected.filter((item) => item !== key) : [...selected, key]);
+  };
+
+  return (
+    <div className="meg-datagrid-filter__distinct">
+      <label className="meg-datagrid-filter__search">
+        <span>Buscar valores</span>
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar..."
+        />
+      </label>
+
+      <label className="meg-datagrid-check meg-datagrid-check--all">
+        <input
+          type="checkbox"
+          checked={allVisibleSelected}
+          onChange={() => {
+            if (allVisibleSelected) {
+              const visibleKeys = new Set(visible.map((option) => option.key));
+              onSelected(selected.filter((key) => !visibleKeys.has(key)));
+            } else {
+              onSelected([...new Set([...selected, ...visible.map((option) => option.key)])]);
+            }
+          }}
+        />
+        <span>Selecionar tudo</span>
+      </label>
+
+      <div className="meg-datagrid-filter__values" role="group" aria-label={`Valores de ${column.label}`}>
+        {visible.map((option) => {
+          const visual = column.enumValues?.[option.key];
+          return (
+            <label className="meg-datagrid-check" key={option.key}>
+              <input
+                type="checkbox"
+                checked={selected.includes(option.key)}
+                onChange={() => toggle(option.key)}
+              />
+              {column.type === 'enum' && (
+                <span
+                  className="meg-datagrid-enum-dot"
+                  style={visual?.color ? { backgroundColor: visual.color } : undefined}
+                  aria-hidden="true"
+                />
+              )}
+              <span className="meg-datagrid-check__label">
+                {visual?.icon}
+                {visual?.label ?? formatDistinct(option, column.type)}
+              </span>
+              <span className="meg-datagrid-count" aria-label={`${option.count} ocorrências`}>{option.count}</span>
+            </label>
+          );
+        })}
+        {!visible.length && <p className="meg-datagrid-filter__no-values">Nenhum valor encontrado.</p>}
+      </div>
+    </div>
+  );
+}
+
+function DateTree({
+  options,
+  selected,
+  onSelected,
+}: {
+  options: DistinctOption[];
+  selected: string[];
+  onSelected: (next: string[]) => void;
+}) {
+  const tree = useMemo(() => {
+    const years = new Map<string, Map<string, DistinctOption[]>>();
+    for (const option of options) {
+      const key = toDateKey(option.value);
+      if (!key) continue;
+      const [year, month] = key.split('-');
+      const months = years.get(year) ?? new Map<string, DistinctOption[]>();
+      const days = months.get(month) ?? [];
+      days.push({ ...option, key });
+      months.set(month, days);
+      years.set(year, months);
+    }
+    return years;
+  }, [options]);
+
+  const toggle = (key: string) => {
+    onSelected(selected.includes(key) ? selected.filter((item) => item !== key) : [...selected, key]);
+  };
+
+  return (
+    <div className="meg-datagrid-date-tree" aria-label="Árvore de datas">
+      {[...tree.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([year, months]) => (
+        <details key={year}>
+          <summary>{year}</summary>
+          {[...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, days]) => {
+            const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
+              new Date(Number(year), Number(month) - 1, 1),
+            );
+            return (
+              <details key={month}>
+                <summary>{monthLabel}</summary>
+                {days.sort((a, b) => a.key.localeCompare(b.key)).map((day) => (
+                  <label className="meg-datagrid-check" key={day.key}>
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(day.key)}
+                      onChange={() => toggle(day.key)}
+                    />
+                    <span>{day.key.slice(-2)}</span>
+                    <span className="meg-datagrid-count">{day.count}</span>
+                  </label>
+                ))}
+              </details>
+            );
+          })}
+        </details>
+      ))}
+    </div>
+  );
+}
+
+export function FilterPanel<T extends Record<string, unknown>>({
+  column,
+  filter,
+  distinctOptions,
+  onApply,
+  onClear,
+}: {
+  column: DataGridColumn<T>;
+  filter?: DataGridFilter;
+  distinctOptions: DistinctOption[];
+  onApply: (filter: DataGridFilter | null) => void;
+  onClear: () => void;
+}) {
+  const [draft, setDraft] = useState<DataGridFilter>(() => filter ?? emptyFilter(column.type));
+
+  useEffect(() => {
+    setDraft(filter ?? emptyFilter(column.type));
+  }, [column.type, filter]);
+
+  const setSelected = (selected: string[]) => setDraft((current) => ({ ...current, selected }));
+
+  const applyShortcut = (shortcut: DateShortcut) => {
+    const { from, to } = dateRangeForShortcut(shortcut, new Date());
+    setDraft((current) => ({
+      ...current,
+      operator: 'between',
+      value: from,
+      value2: to,
+      shortcut,
+    }));
+  };
+
+  return (
+    <div className="meg-datagrid-filter-panel">
+      <div className="meg-datagrid-filter-panel__body">
+        {column.type === 'text' && (
+          <>
+            <label className="meg-datagrid-field">
+              <span>Operador</span>
+              <select
+                value={String(draft.operator ?? 'contains')}
+                onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
+              >
+                {textOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            {draft.operator !== 'empty' && (
+              <label className="meg-datagrid-field">
+                <span>Texto</span>
+                <input
+                  value={String(draft.value ?? '')}
+                  onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                />
+              </label>
+            )}
+            <DistinctList column={column} options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
+          </>
+        )}
+
+        {(column.type === 'number' || column.type === 'currency') && (
+          <>
+            <label className="meg-datagrid-field">
+              <span>Operador</span>
+              <select
+                value={String(draft.operator ?? 'eq')}
+                onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
+              >
+                {numberOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            {draft.operator !== 'empty' && (
+              <div className="meg-datagrid-filter__range">
+                <label className="meg-datagrid-field">
+                  <span>{draft.operator === 'between' ? 'De' : 'Valor'}</span>
+                  <input
+                    inputMode="decimal"
+                    value={String(draft.value ?? '')}
+                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                    placeholder={column.type === 'currency' ? '0,00' : '0'}
+                  />
+                </label>
+                {draft.operator === 'between' && (
+                  <label className="meg-datagrid-field">
+                    <span>Até</span>
+                    <input
+                      inputMode="decimal"
+                      value={String(draft.value2 ?? '')}
+                      onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value }))}
+                      placeholder={column.type === 'currency' ? '0,00' : '0'}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
+            <DistinctList column={column} options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
+          </>
+        )}
+
+        {column.type === 'date' && (
+          <>
+            <label className="meg-datagrid-field">
+              <span>Operador</span>
+              <select
+                value={String(draft.operator ?? 'between')}
+                onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'], shortcut: null }))}
+              >
+                {dateOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            <div className="meg-datagrid-filter__range">
+              <label className="meg-datagrid-field">
+                <span>{draft.operator === 'between' ? 'De' : 'Data'}</span>
+                <input
+                  type="date"
+                  value={String(draft.value ?? '')}
+                  onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value, shortcut: null }))}
+                />
+              </label>
+              {draft.operator === 'between' && (
+                <label className="meg-datagrid-field">
+                  <span>Até</span>
+                  <input
+                    type="date"
+                    value={String(draft.value2 ?? '')}
+                    onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value, shortcut: null }))}
+                  />
+                </label>
+              )}
+            </div>
+            <div className="meg-datagrid-shortcuts" aria-label="Atalhos de data">
+              {shortcuts.map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  className={draft.shortcut === value ? 'is-active' : ''}
+                  onClick={() => applyShortcut(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <DateTree options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
+          </>
+        )}
+
+        {column.type === 'enum' && (
+          <DistinctList column={column} options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
+        )}
+
+        {column.type === 'boolean' && (
+          <fieldset className="meg-datagrid-boolean">
+            <legend>Valor</legend>
+            {[
+              [null, 'Todos'],
+              [true, 'Sim'],
+              [false, 'Não'],
+            ].map(([value, label]) => (
+              <label key={label as string}>
+                <input
+                  type="radio"
+                  name={`boolean-${column.key}`}
+                  checked={draft.booleanValue === value}
+                  onChange={() => setDraft((current) => ({ ...current, booleanValue: value as boolean | null }))}
+                />
+                <span>{label as string}</span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+      </div>
+
+      <footer className="meg-datagrid-filter-panel__footer">
+        <button
+          type="button"
+          className="meg-datagrid-secondary-action"
+          onClick={() => {
+            setDraft(emptyFilter(column.type));
+            onClear();
+          }}
+        >
+          Limpar
+        </button>
+        <button
+          type="button"
+          className="meg-datagrid-primary-action"
+          onClick={() => onApply(isFilterActive(draft) ? draft : null)}
+        >
+          Aplicar
+        </button>
+      </footer>
+    </div>
+  );
+}
+
+export function filterSummary(filter: DataGridFilter | undefined): string {
+  if (!filter || !isFilterActive(filter)) return '';
+  if (filter.type === 'boolean') return filter.booleanValue ? 'Sim' : 'Não';
+  if (filter.selected?.length) return `${filter.selected.length} selecionado(s)`;
+  if (filter.operator === 'empty') return 'Está vazio';
+  if (filter.operator === 'between') return `${displayValue(filter.value)} a ${displayValue(filter.value2)}`;
+  return displayValue(filter.value);
+}
