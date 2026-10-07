@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <img
               className="meg-brand-logo meg-brand-logo--collapsed"
-              src={`${import.meta.env.BASE_URL}brand/simbolo-meg-financas.svg`}
+              src={`${import.meta.env.BASE_URL}brand/logo-meg-financas.svg`}
               alt=""
             />
           </div>
