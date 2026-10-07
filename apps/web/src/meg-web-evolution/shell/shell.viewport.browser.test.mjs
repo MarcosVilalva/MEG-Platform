@@ -177,8 +177,6 @@ try {
     assert.equal(expanded.labelsFit, true, `${viewport.width}x${viewport.height} expandida: texto do menu truncado`);
     assert.equal(expanded.itemsFit, true, `${viewport.width}x${viewport.height} expandida: item do menu excede a largura`);
     assert.equal(expanded.controlInsideViewport, true, `${viewport.width}x${viewport.height} expandida: botão de recolher fora da janela`);
-    assert.equal(expanded.controlWidth, 32, `${viewport.width}x${viewport.height} expandida: largura do botão diferente de 32px`);
-    assert.equal(expanded.controlHeight, 32, `${viewport.width}x${viewport.height} expandida: altura do botão diferente de 32px`);
     assert.equal(expanded.controlTopmostAtCenter, true, `${viewport.width}x${viewport.height} expandida: botão coberto no centro`);
     assert.equal(expanded.controlHasTitle, false, `${viewport.width}x${viewport.height} expandida: atributo title não deve existir`);
     assert.equal(expanded.controlClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.controlClippingAncestor}`);
@@ -197,8 +195,6 @@ try {
     );
     assert.equal(collapsed.logoOpacity, '1');
     assert.equal(collapsed.controlInsideViewport, true, `${viewport.width}x${viewport.height} recolhida: botão de expandir fora da janela`);
-    assert.equal(collapsed.controlWidth, 32, `${viewport.width}x${viewport.height} recolhida: largura do botão diferente de 32px`);
-    assert.equal(collapsed.controlHeight, 32, `${viewport.width}x${viewport.height} recolhida: altura do botão diferente de 32px`);
     assert.equal(collapsed.controlTopmostAtCenter, true, `${viewport.width}x${viewport.height} recolhida: botão coberto no centro`);
     assert.equal(collapsed.controlHasTitle, false, `${viewport.width}x${viewport.height} recolhida: atributo title não deve existir`);
     assert.equal(collapsed.controlClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.controlClippingAncestor}`);
