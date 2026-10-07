@@ -238,7 +238,7 @@ try {
         collapsed.logoCenterX > 0,
         `${viewport.width}x${viewport.height} recolhida: centro do símbolo inválido`,
       );
-      assert.ok(collapsed.logoWidth >= 30, `${viewport.width}x${viewport.height} recolhida: símbolo menor que 30px (${collapsed.logoWidth})`);
+      assert.ok(collapsed.logoWidth >= 40, `${viewport.width}x${viewport.height} recolhida: logo reduzido menor que 40px (${collapsed.logoWidth})`);
       assert.equal(collapsed.navIcons.length, 7, `${viewport.width}x${viewport.height} recolhida: esperado 7 ícones de menu`);
       collapsed.navIcons.forEach((icon, index) => {
         assert.ok(icon.width > 0 && icon.height > 0, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} sem dimensão`);
