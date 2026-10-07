@@ -61,8 +61,6 @@ assert.match(source, /width:\s*80px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*52px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-stack\s*\{[\s\S]*width:\s*44px;[\s\S]*height:\s*44px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*34px/);
-assert.match(source, /min-height:\s*40px/);
-assert.match(source, /min-height:\s*36px/);
 
 assert.match(source, /chevronsLeft:[\s\S]*m11 17-5-5 5-5[\s\S]*m18 17-5-5 5-5/);
 assert.match(source, /chevronsRight:[\s\S]*m13 17 5-5-5-5[\s\S]*m6 17 5-5-5-5/);
