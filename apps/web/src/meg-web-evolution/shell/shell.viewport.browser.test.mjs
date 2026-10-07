@@ -169,6 +169,8 @@ async function measure(state) {
         ) === control,
       controlHasTitle: control.hasAttribute('title'),
       controlBorderWidth: getComputedStyle(control).borderTopWidth,
+      controlOpacity: getComputedStyle(control).opacity,
+      controlVisibility: getComputedStyle(control).visibility,
       navIcons,
       collapsedArtDisplay: getComputedStyle(document.querySelector('.sidebar__art')).display,
       controlClippingAncestor: clippingAncestor,
@@ -245,7 +247,9 @@ try {
         assert.equal(icon.fullyInsideNav, true, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} cortado pelo nav`);
         assert.equal(icon.visibleAtCenter, true, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} coberto no centro`);
       });
-      assert.equal(collapsed.controlBorderWidth, '0px', `${viewport.width}x${viewport.height} recolhida: botão expandir não pode ter borda em repouso`);
+      assert.equal(collapsed.controlBorderWidth, '1px', `${viewport.width}x${viewport.height} recolhida: controle neon deve manter borda de 1px`);
+      assert.equal(collapsed.controlOpacity, '1', `${viewport.width}x${viewport.height} recolhida: controle não pode desaparecer por opacity`);
+      assert.equal(collapsed.controlVisibility, 'visible', `${viewport.width}x${viewport.height} recolhida: controle não pode desaparecer por visibility`);
       assert.equal(collapsed.collapsedArtDisplay, 'none', `${viewport.width}x${viewport.height} recolhida: marca d'água deve ficar oculta`);
     }
 
