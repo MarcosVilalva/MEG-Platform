@@ -610,6 +610,12 @@ try {
       expanded.firstItemTop >= expanded.logoBottom,
       `${viewport.width}x${viewport.height} expandida: Início (${expanded.firstItemTop}) sobrepõe logo (${expanded.logoBottom})`,
     );
+    if (viewport.height < 768) {
+      assert.ok(
+        expanded.firstItemTop - expanded.logoBottom >= 6,
+        `${viewport.width}x${viewport.height} expandida: respiro entre logo e Início menor que 6px (${expanded.firstItemTop - expanded.logoBottom})`,
+      );
+    }
     assert.equal(expanded.logoOpacity, '1');
     assert.equal(expanded.labelsFit, true, `${viewport.width}x${viewport.height} expandida: texto do menu truncado`);
     assert.equal(expanded.itemsFit, true, `${viewport.width}x${viewport.height} expandida: item do menu excede a largura`);
