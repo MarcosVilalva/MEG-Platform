@@ -26,7 +26,9 @@ const chrome = spawn(chromePath, [
   '--disable-dev-shm-usage',
   '--disable-gpu',
   '--force-device-scale-factor=1',
+  '--remote-debugging-address=127.0.0.1',
   '--remote-debugging-port=9222',
+  '--user-data-dir=/tmp/meg-web-evolution-chrome',
   '--window-size=1366,768',
   'about:blank',
 ], { stdio: 'ignore' });
