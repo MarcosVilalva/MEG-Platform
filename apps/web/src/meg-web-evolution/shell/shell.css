@@ -302,6 +302,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  container-type: inline-size;
+  container-name: meg-shell-body;
 }
 
 .meg-topbar {
@@ -498,37 +500,61 @@
   .meg-profile-name { display: none; }
 
   .meg-topbar {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "search"
-      "actions";
-    gap: .7rem;
+    grid-template-columns: minmax(46px, 1fr) auto;
+    grid-template-areas: "search actions";
+    gap: .75rem;
     padding: .8rem 1rem;
   }
 
   .meg-search {
     grid-area: search;
     width: 100%;
-    min-width: 0;
+    min-width: 46px;
+    max-width: 38.5rem;
   }
 
   .meg-topbar-actions {
     grid-area: actions;
-    width: 100%;
-    display: grid;
-    grid-template-columns: minmax(max-content, 1fr) auto auto;
+    width: auto;
+    display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: .6rem;
     margin-left: 0;
   }
 
   .meg-period {
-    justify-self: start;
+    justify-self: auto;
   }
 
   .meg-notification,
   .meg-profile {
-    justify-self: end;
+    justify-self: auto;
+  }
+}
+
+@container meg-shell-body (max-width: 39rem) {
+  .meg-search {
+    width: 46px;
+    min-width: 46px;
+    max-width: 46px;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .meg-search input {
+    flex: 0 1 0;
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .meg-search svg {
+    flex: 0 0 1.2rem;
+    margin: 0;
   }
 }
 
@@ -584,6 +610,17 @@
     grid-area: search;
     width: 100%;
     min-width: 0;
+    max-width: none;
+    justify-content: flex-start;
+    gap: .7rem;
+    padding-inline: .9rem;
+  }
+
+  .meg-search input {
+    flex: 1 1 auto;
+    width: 100%;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .meg-topbar-actions {
