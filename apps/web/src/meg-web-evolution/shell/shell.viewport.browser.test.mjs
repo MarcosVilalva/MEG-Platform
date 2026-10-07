@@ -29,12 +29,11 @@ const chrome = spawn(chromePath, [
   '--no-first-run',
   '--no-default-browser-check',
   '--force-device-scale-factor=1',
-  '--remote-debugging-address=127.0.0.1',
-  '--remote-debugging-port=0',
+  '--remote-debugging-pipe',
   `--user-data-dir=${chromeUserDataDir}`,
   '--window-size=1366,768',
   'about:blank',
-], { stdio: ['ignore', 'ignore', 'pipe'] });
+], { stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'] });
 
 chrome.stderr.setEncoding('utf8');
 
@@ -43,79 +42,77 @@ chrome.stderr.on('data', (chunk) => {
   chromeStderr += chunk;
 });
 
+const cdpInput = chrome.stdio[3];
+const cdpOutput = chrome.stdio[4];
+assert.ok(cdpInput && cdpOutput, 'Pipes CDP do Chrome não foram criados.');
+
+cdpOutput.setEncoding('utf8');
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function waitForJson(url, retries = 50) {
-  for (let attempt = 0; attempt < retries; attempt += 1) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return response.json();
-    } catch {}
-    await sleep(100);
-  }
-  throw new Error(`Chrome DevTools indisponível: ${url}`);
-}
-
-const devToolsActivePortPath = `${chromeUserDataDir}/DevToolsActivePort`;
-let devToolsPort = null;
-
-for (let attempt = 0; attempt < 120; attempt += 1) {
-  const stderrMatch = chromeStderr.match(/DevTools listening on ws:\/\/[^:]+:(\d+)\//);
-  if (stderrMatch) {
-    devToolsPort = Number(stderrMatch[1]);
-    break;
-  }
-
-  if (existsSync(devToolsActivePortPath)) {
-    const [portLine] = readFileSync(devToolsActivePortPath, 'utf8').trim().split(/\r?\n/);
-    const parsedPort = Number(portLine);
-    if (Number.isInteger(parsedPort) && parsedPort > 0) {
-      devToolsPort = parsedPort;
-      break;
-    }
-  }
-
-  if (chrome.exitCode !== null) {
-    throw new Error(
-      `Chrome encerrou antes de publicar DevTools (exitCode=${chrome.exitCode}). stderr: ${chromeStderr.slice(-2000)}`,
-    );
-  }
-
-  await sleep(100);
-}
-
-assert.ok(
-  devToolsPort,
-  `Chrome não publicou endpoint DevTools. stderr: ${chromeStderr.slice(-2000)}`,
-);
-
-const pages = await waitForJson(`http://127.0.0.1:${devToolsPort}/json/list`, 120);
-const page = pages.find((item) => item.type === 'page') || pages[0];
-assert.ok(page?.webSocketDebuggerUrl, 'Página CDP não encontrada.');
-
-const socket = new WebSocket(page.webSocketDebuggerUrl);
-await new Promise((resolve, reject) => {
-  socket.addEventListener('open', resolve, { once: true });
-  socket.addEventListener('error', reject, { once: true });
-});
 
 let requestId = 0;
 const pending = new Map();
+let cdpBuffer = '';
+let pageSessionId = null;
 
-socket.addEventListener('message', (event) => {
-  const payload = JSON.parse(event.data);
-  if (!payload.id) return;
-  const item = pending.get(payload.id);
-  if (!item) return;
-  pending.delete(payload.id);
-  if (payload.error) item.reject(new Error(payload.error.message));
-  else item.resolve(payload.result);
+cdpOutput.on('data', (chunk) => {
+  cdpBuffer += chunk;
+
+  while (true) {
+    const separatorIndex = cdpBuffer.indexOf('\0');
+    if (separatorIndex < 0) break;
+
+    const rawMessage = cdpBuffer.slice(0, separatorIndex);
+    cdpBuffer = cdpBuffer.slice(separatorIndex + 1);
+    if (!rawMessage) continue;
+
+    const payload = JSON.parse(rawMessage);
+    if (!payload.id) continue;
+
+    const item = pending.get(payload.id);
+    if (!item) continue;
+
+    pending.delete(payload.id);
+    clearTimeout(item.timeout);
+
+    if (payload.error) item.reject(new Error(payload.error.message));
+    else item.resolve(payload.result);
+  }
 });
 
-function command(method, params = {}) {
+function sendCommand(method, params = {}, sessionId = null, timeoutMs = 12000) {
   const id = ++requestId;
-  socket.send(JSON.stringify({ id, method, params }));
-  return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  const payload = { id, method, params };
+  if (sessionId) payload.sessionId = sessionId;
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pending.delete(id);
+      reject(
+        new Error(
+          `Timeout CDP em ${method}. exitCode=${chrome.exitCode}; stderr=${chromeStderr.slice(-2000)}`,
+        ),
+      );
+    }, timeoutMs);
+
+    pending.set(id, { resolve, reject, timeout });
+    cdpInput.write(JSON.stringify(payload) + '\0');
+  });
+}
+
+const targets = await sendCommand('Target.getTargets');
+const pageTarget = targets.targetInfos.find((item) => item.type === 'page');
+assert.ok(pageTarget?.targetId, 'Página CDP não encontrada via remote-debugging-pipe.');
+
+const attached = await sendCommand('Target.attachToTarget', {
+  targetId: pageTarget.targetId,
+  flatten: true,
+});
+pageSessionId = attached.sessionId;
+assert.ok(pageSessionId, 'Sessão CDP da página não foi criada.');
+
+function command(method, params = {}) {
+  return sendCommand(method, params, pageSessionId);
 }
 
 async function evaluate(expression) {
