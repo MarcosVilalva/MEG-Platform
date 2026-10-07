@@ -17,9 +17,16 @@ const navigation = [
 type TooltipPlacement = 'right' | 'bottom';
 type TooltipState = { label: string; x: number; y: number; placement: TooltipPlacement } | null;
 
+const SIDEBAR_PREFERENCE_KEY = 'meg-web-evolution:sidebar-collapsed';
+
+function readSidebarPreference() {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(false);
+  const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
   );
@@ -28,16 +35,32 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1024px)');
 
-    const syncSidebarToViewport = (matches: boolean) => {
-      setIsDesktopWide(matches);
+    const syncSidebarState = () => {
+      setIsDesktopWide(media.matches);
+      setSidebarPreferenceCollapsed(readSidebarPreference());
       setTooltip(null);
     };
 
-    syncSidebarToViewport(media.matches);
+    syncSidebarState();
 
-    const handleChange = (event: MediaQueryListEvent) => syncSidebarToViewport(event.matches);
+    const handleChange = () => syncSidebarState();
+    const handlePageShow = () => syncSidebarState();
+    const handleFocus = () => syncSidebarState();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') syncSidebarState();
+    };
+
     media.addEventListener('change', handleChange);
-    return () => media.removeEventListener('change', handleChange);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      media.removeEventListener('change', handleChange);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const showTooltip = (
@@ -207,7 +230,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => {
                 if (!isDesktopWide) return;
                 hideTooltip();
-                setSidebarPreferenceCollapsed((value) => !value);
+                setSidebarPreferenceCollapsed((value) => {
+                  const nextValue = !value;
+                  window.localStorage.setItem(SIDEBAR_PREFERENCE_KEY, String(nextValue));
+                  return nextValue;
+                });
               }}
             >
               <Icon
