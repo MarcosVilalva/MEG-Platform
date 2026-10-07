@@ -213,7 +213,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <label className="meg-search">
             <Icon name="search" />
             <span className="sr-only">Buscar</span>
-            <input placeholder="Buscar movimentações, contas, cartões, relatórios..." />
+            <input aria-label="Buscar" placeholder="Buscar movimentações, contas, cartões, relatórios..." />
           </label>
 
           <div className="meg-topbar-actions">
