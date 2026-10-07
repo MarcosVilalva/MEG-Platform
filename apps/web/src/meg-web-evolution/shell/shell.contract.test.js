@@ -45,21 +45,21 @@ assert.match(source, /\.meg-nav::\-webkit\-scrollbar\s*\{[\s\S]*display:\s*none/
 assert.match(source, /\.meg-nav\s*\{[\s\S]*margin-top:\s*0/);
 
 assert.match(source, /logo-meg-financas\.svg/);
-assert.match(source, /simbolo-meg-financas\.svg/);
+assert.equal(source.includes('simbolo-meg-financas.svg'), false, 'collapsed sidebar must scale the full logo instead of swapping to symbol');
 assert.match(source, /transition:\s*opacity\s+150ms\s+ease/);
 assert.match(source, /\.meg-brand\s*\{[\s\S]*position:\s*relative[\s\S]*overflow:\s*visible/);
 assert.match(source, /\.meg-brand-stack\s*\{[\s\S]*position:\s*relative[\s\S]*overflow:\s*visible/);
 assert.match(source, /\.meg-brand-logo--expanded\s*\{[\s\S]*position:\s*relative[\s\S]*width:\s*112px/);
 assert.match(source, /\.meg-brand-logo--collapsed\s*\{[\s\S]*position:\s*absolute/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*64px;[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*14px\s+0;[\s\S]*overflow:\s*visible/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*flex:\s*0\s+0\s+auto;[\s\S]*width:\s*36px;[\s\S]*min-width:\s*36px;[\s\S]*max-width:\s*36px;[\s\S]*height:\s*auto;[\s\S]*object-fit:\s*contain/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*64px;[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*8px\s+0;[\s\S]*overflow:\s*visible/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*flex:\s*0\s+0\s+auto;[\s\S]*width:\s*48px;[\s\S]*min-width:\s*48px;[\s\S]*max-width:\s*48px;[\s\S]*height:\s*auto;[\s\S]*object-fit:\s*contain/);
 assert.match(source, /padding:\s*16px\s+\.75rem\s+0/);
 assert.match(source, /margin-bottom:\s*16px/);
 assert.match(source, /padding:\s*16px\s+0/);
 assert.match(source, /width:\s*96px/);
 assert.match(source, /width:\s*80px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*52px/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*30px/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*40px/);
 assert.match(source, /min-height:\s*40px/);
 assert.match(source, /min-height:\s*36px/);
 
@@ -104,3 +104,5 @@ assert.equal(source.includes('.meg-sidebar::after'), false);
 console.log('MEG Web Evolution shell foundation contract: OK');
 
 assert.equal(source.includes('.meg-sidebar-toggle'), false, 'floating sidebar toggle must remain removed');
+
+assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*700px\)[\s\S]*\.sidebar__art\s*\{\s*display:\s*none/);
