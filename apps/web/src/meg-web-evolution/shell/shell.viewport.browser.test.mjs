@@ -136,6 +136,8 @@ async function measure(state) {
         toggleRect.top >= 0 &&
         toggleRect.right <= window.innerWidth &&
         toggleRect.bottom <= window.innerHeight,
+      toggleWidth: toggleRect.width,
+      toggleHeight: toggleRect.height,
       toggleClippingAncestor: clippingAncestor,
     };
   })()`);
@@ -169,6 +171,8 @@ try {
     assert.equal(expanded.labelsFit, true, `${viewport.width}x${viewport.height} expandida: texto do menu truncado`);
     assert.equal(expanded.itemsFit, true, `${viewport.width}x${viewport.height} expandida: item do menu excede a largura`);
     assert.equal(expanded.toggleInsideViewport, true, `${viewport.width}x${viewport.height} expandida: botão de recolher fora da janela`);
+    assert.equal(expanded.toggleWidth, 32, `${viewport.width}x${viewport.height} expandida: largura do botão diferente de 32px`);
+    assert.equal(expanded.toggleHeight, 32, `${viewport.width}x${viewport.height} expandida: altura do botão diferente de 32px`);
     assert.equal(expanded.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.toggleClippingAncestor}`);
 
     await evaluate(`document.querySelector('.meg-sidebar-toggle')?.click()`);
@@ -185,6 +189,8 @@ try {
     );
     assert.equal(collapsed.logoOpacity, '1');
     assert.equal(collapsed.toggleInsideViewport, true, `${viewport.width}x${viewport.height} recolhida: botão de expandir fora da janela`);
+    assert.equal(collapsed.toggleWidth, 32, `${viewport.width}x${viewport.height} recolhida: largura do botão diferente de 32px`);
+    assert.equal(collapsed.toggleHeight, 32, `${viewport.width}x${viewport.height} recolhida: altura do botão diferente de 32px`);
     assert.equal(collapsed.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.toggleClippingAncestor}`);
 
     console.log(
