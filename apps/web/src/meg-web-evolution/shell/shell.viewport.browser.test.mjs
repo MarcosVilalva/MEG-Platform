@@ -293,8 +293,11 @@ async function measure(state) {
 
 const responsiveViewports = [
   { width: 1023, height: 768 },
+  { width: 900, height: 700 },
   { width: 768, height: 600 },
+  { width: 700, height: 600 },
   { width: 640, height: 600 },
+  { width: 639, height: 600 },
   { width: 390, height: 844 },
 ];
 
@@ -372,6 +375,8 @@ async function measureResponsiveTopbar() {
           periodLabel.scrollWidth <= periodLabel.clientWidth
         : false,
       searchWidth: rects.search?.width || 0,
+      searchInputWidth: elements.search?.querySelector('input')?.getBoundingClientRect().width || 0,
+      searchInputOpacity: elements.search?.querySelector('input') ? getComputedStyle(elements.search.querySelector('input')).opacity : '0',
       periodWidth: rects.period?.width || 0,
       topbarHeight: topbarRect?.height || 0,
     };
@@ -562,6 +567,29 @@ try {
       responsive.searchWidth > 0 && responsive.periodWidth > 0,
       `${viewport.width}x${viewport.height}: busca ou período sem largura útil`,
     );
+
+    if (viewport.width >= 640 && viewport.width <= 700) {
+      assert.ok(
+        responsive.searchWidth <= 48,
+        `${viewport.width}x${viewport.height}: busca deveria compactar para ícone antes de quebrar (${responsive.searchWidth}px)`,
+      );
+      assert.ok(
+        responsive.searchInputWidth <= 1 && responsive.searchInputOpacity === '0',
+        `${viewport.width}x${viewport.height}: texto da busca deveria estar recolhido no estado compacto`,
+      );
+    }
+
+    if (viewport.width < 640) {
+      assert.ok(
+        responsive.searchWidth > 200,
+        `${viewport.width}x${viewport.height}: no mobile a busca deve voltar a ocupar a linha própria`,
+      );
+      assert.equal(
+        responsive.searchInputOpacity,
+        '1',
+        `${viewport.width}x${viewport.height}: input da busca deve reaparecer após o reflow mobile`,
+      );
+    }
 
     console.log(
       `OK responsive ${viewport.width}x${viewport.height}: topbar=${responsive.topbarHeight}px, busca=${responsive.searchWidth}px, período=${responsive.periodWidth}px`,
