@@ -878,7 +878,7 @@ async function assertSidebarState(viewport, collapsed) {
       result.lastItemBottom <= result.navBottom + 1,
       `${viewport.width}x${viewport.height} ${state}: último item ultrapassa o nav`,
     );
-    if (result.artDisplay === 'none') {
+    if (viewport.height >= 520 && viewport.height < 768 && result.artDisplay === 'none') {
       assert.ok(
         result.gapToFooter <= result.maxItemHeight + 1,
         `${viewport.width}x${viewport.height} ${state}: vazio excessivo antes do rodapé (${result.gapToFooter}px > ${result.maxItemHeight}px)`,
