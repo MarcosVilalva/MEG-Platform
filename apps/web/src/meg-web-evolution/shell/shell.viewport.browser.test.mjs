@@ -868,17 +868,67 @@ try {
   }
 
   await command('Emulation.setDeviceMetricsOverride', {
+    width: 1366,
+    height: 768,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await navigate(`${appUrl}?sidebar-restore-contract=user-preference`);
+  await sleep(220);
+
+  await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
+  await sleep(120);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    true,
+    '1366x768: usuário escolheu sidebar recolhida',
+  );
+
+  await command('Emulation.setDeviceMetricsOverride', {
     width: 900,
     height: 700,
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await navigate(`${appUrl}?sidebar-restore-contract=compact`);
   await sleep(220);
   assert.equal(
     await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
     true,
-    '900x700: sidebar deve iniciar recolhida',
+    '900x700: sidebar deve permanecer forçadamente recolhida',
+  );
+
+  await command('Emulation.setDeviceMetricsOverride', {
+    width: 1366,
+    height: 768,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await sleep(260);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    true,
+    '1366x768 após ampliar: preferência recolhida do usuário deve ser restaurada',
+  );
+
+  await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
+  await sleep(120);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    false,
+    '1366x768: usuário escolheu sidebar expandida',
+  );
+
+  await command('Emulation.setDeviceMetricsOverride', {
+    width: 900,
+    height: 700,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await sleep(220);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    true,
+    '900x700: sidebar expandida do desktop deve ser forçada a recolher',
   );
 
   await command('Emulation.setDeviceMetricsOverride', {
@@ -891,7 +941,7 @@ try {
   assert.equal(
     await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
     false,
-    '1366x768 após ampliar: sidebar deve voltar expandida automaticamente',
+    '1366x768 após ampliar: preferência expandida do usuário deve ser restaurada',
   );
 
   console.log('MEG Web Evolution responsive sidebar contract: OK');
