@@ -273,7 +273,7 @@ function sendCommand(method, params = {}, sessionId = null, timeoutMs = 12000) {
     }, timeoutMs);
 
     pending.set(id, { resolve, reject, timeout });
-    cdpInput.write(JSON.stringify(payload) + '\0');
+    writeCdp(payload);
   });
 }
 
