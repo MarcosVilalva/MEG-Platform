@@ -38,7 +38,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="meg-nav">
           {navigation.map(([icon, label], index) => (
-            <button key={label} className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`} type="button">
+            <button
+              key={label}
+              className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`}
+              type="button"
+              aria-label={label}
+              data-tooltip={label}
+            >
               <Icon name={icon} />
               <span>{label}</span>
             </button>
@@ -119,6 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             type="button"
             className="meg-nav-item meg-logout-button"
             aria-label="Sair"
+            data-tooltip="Sair"
           >
             <Icon name="logOut" width={20} height={20} strokeWidth={1.75} />
             <span>Sair</span>
@@ -142,6 +149,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="meg-topbar-launcher meg-sidebar-toggle-topbar"
               aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
               aria-expanded={!sidebarCollapsed}
+              data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
               onClick={() => setSidebarCollapsed((value) => !value)}
             >
               <Icon
@@ -156,6 +164,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               className="meg-topbar-launcher meg-topbar-new"
               aria-label="Novo lançamento"
+              data-tooltip="Novo lançamento"
             >
               <Icon name="plus" width={22} height={22} strokeWidth={1.85} />
             </button>
@@ -174,7 +183,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Icon name="chevronDown" />
             </button>
 
-            <IconButton label="Notificações" className="meg-notification">
+            <IconButton label="Notificações" className="meg-notification" data-tooltip="Notificações">
               <Icon name="bell" />
               <span className="meg-notification-dot" aria-hidden="true" />
             </IconButton>
