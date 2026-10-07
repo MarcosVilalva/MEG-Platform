@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   dateRangeForShortcut,
   distinctKey,
@@ -147,7 +147,7 @@ function DistinctList<T extends Record<string, unknown>>({
             : null;
           const visual = column.enumValues?.[option.key];
           const color = visual?.color ?? (typeof record?.color === 'string' ? record.color : undefined);
-          const icon = visual?.icon ?? (record?.icon as React.ReactNode | undefined);
+          const icon = visual?.icon ?? (record?.icon as ReactNode | undefined);
           const label = visual?.label ?? (typeof record?.label === 'string' ? record.label : undefined);
           return (
             <label className="meg-datagrid-check" key={option.key}>
