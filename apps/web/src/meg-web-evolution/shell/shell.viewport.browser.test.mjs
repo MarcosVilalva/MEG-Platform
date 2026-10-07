@@ -944,6 +944,33 @@ try {
     '1366x768 após ampliar: preferência expandida do usuário deve ser restaurada',
   );
 
+  await command('Emulation.setDeviceMetricsOverride', {
+    width: 1366,
+    height: 768,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await navigate(`${appUrl}?sidebar-tab-restore=collapsed`);
+  await sleep(220);
+
+  await evaluate(`localStorage.setItem('meg-web-evolution:sidebar-collapsed', 'true')`);
+  await navigate(`${appUrl}?sidebar-tab-restore=collapsed-reload`);
+  await sleep(220);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    true,
+    'recarregamento/restauração de aba deve preservar preferência recolhida',
+  );
+
+  await evaluate(`localStorage.setItem('meg-web-evolution:sidebar-collapsed', 'false')`);
+  await navigate(`${appUrl}?sidebar-tab-restore=expanded-reload`);
+  await sleep(220);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    false,
+    'recarregamento/restauração de aba deve preservar preferência expandida',
+  );
+
   console.log('MEG Web Evolution responsive sidebar contract: OK');
 
   console.log('MEG Web Evolution viewport contract: OK');
