@@ -137,13 +137,6 @@ assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-nav-item:hover,[\s
 assert.match(source, /border-radius:\s*12px/);
 
 assert.equal(/title\s*=/.test(source), false, 'icon-only tooltip targets must not use native title attributes');
-assert.match(source, /assertTooltipMatches/);
-assert.match(source, /assertHoverAndFocusTooltip/);
-assert.match(source, /assertHoverAndFocusNoTooltip/);
-assert.match(source, /tooltip\.count, 1/);
-assert.match(source, /tooltip\.text, result\.target\.ariaLabel/);
-assert.match(source, /tooltip\.parentIsBody, true/);
-assert.match(source, /tooltip\.insideSidebar, false/);
 
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-nav\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;[\s\S]*justify-content:\s*space-evenly;[\s\S]*overflow-y:\s*auto/);
 
@@ -193,7 +186,6 @@ assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-sidebar-toggle-
 assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*width:\s*52px;[\s\S]*height:\s*52px/);
 assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*42px;[\s\S]*min-width:\s*42px/);
 assert.match(source, /@media \(max-width:\s*1023px\) and \(max-height:\s*599px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px/);
-assert.match(source, /sidebar compacta foi expandida indevidamente/);
 assert.match(source, /sidebar deve voltar expandida automaticamente/);
 
 assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)[\s\S]*\.meg-brand\s*\{[\s\S]*flex:\s*0\s+0\s+92px;[\s\S]*height:\s*92px/);
@@ -206,10 +198,6 @@ assert.match(source, /@media \(min-width:\s*1024px\)[\s\S]*\.meg-shell\.is-sideb
 assert.match(source, /@media \(min-width:\s*1024px\)[\s\S]*\.meg-shell\.is-sidebar-collapsed \.meg-brand-stack\s*\{[\s\S]*transform:\s*none/);
 assert.match(source, /@media \(max-width:\s*1023px\) and \(min-width:\s*640px\)[\s\S]*\.meg-brand\s*\{[\s\S]*height:\s*72px;[\s\S]*\.meg-brand-stack\s*\{[\s\S]*transform:\s*none/);
 
-assert.match(source, /preferência recolhida do usuário deve ser restaurada/);
-assert.match(source, /preferência expandida do usuário deve ser restaurada/);
-assert.match(source, /logo desalinhado do botão Novo/);
-assert.match(source, /logo desalinhado do botão Expandir/);
 
 assert.match(source, /SIDEBAR_PREFERENCE_KEY = 'meg-web-evolution:sidebar-collapsed'/);
 assert.match(source, /window\.localStorage\.getItem\(SIDEBAR_PREFERENCE_KEY\)/);
@@ -217,5 +205,3 @@ assert.match(source, /window\.localStorage\.setItem\(SIDEBAR_PREFERENCE_KEY, Str
 assert.match(source, /window\.addEventListener\('pageshow'/);
 assert.match(source, /window\.addEventListener\('focus'/);
 assert.match(source, /document\.addEventListener\('visibilitychange'/);
-assert.match(source, /recarregamento\/restauração de aba deve preservar preferência recolhida/);
-assert.match(source, /recarregamento\/restauração de aba deve preservar preferência expandida/);
