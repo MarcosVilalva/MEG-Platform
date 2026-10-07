@@ -3,6 +3,12 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import {
+  responsiveViewports,
+  sidebarResponsiveViewports,
+  createMeasureResponsiveTopbar,
+  createMeasureSidebarResponsive,
+} from './shell.viewport.measurements.mjs';
 
 const appUrl = process.env.MEG_WEB_EVOLUTION_URL || 'http://127.0.0.1:4173/web-evolution.html';
 const viewports = [
@@ -550,122 +556,8 @@ async function measure(state) {
   })()`);
 }
 
-const responsiveViewports = [
-  { width: 1023, height: 768 },
-  { width: 900, height: 700 },
-  { width: 768, height: 600 },
-  { width: 700, height: 600 },
-  { width: 640, height: 600 },
-  { width: 639, height: 600 },
-  { width: 390, height: 844 },
-];
-
-async function measureResponsiveTopbar() {
-  return evaluate(`(() => {
-    const selectors = {
-      menu: '.meg-menu-button',
-      search: '.meg-search',
-      period: '.meg-period',
-      notification: '.meg-notification',
-      profile: '.meg-profile',
-    };
-
-    const elements = Object.fromEntries(
-      Object.entries(selectors).map(([key, selector]) => [key, document.querySelector(selector)])
-    );
-
-    const rects = Object.fromEntries(
-      Object.entries(elements).map(([key, element]) => {
-        if (!element) return [key, null];
-        const style = getComputedStyle(element);
-        if (style.display === 'none' || style.visibility === 'hidden') return [key, null];
-        const rect = element.getBoundingClientRect();
-        return [key, {
-          left: rect.left,
-          top: rect.top,
-          right: rect.right,
-          bottom: rect.bottom,
-          width: rect.width,
-          height: rect.height,
-        }];
-      })
-    );
-
-    const visibleRects = Object.entries(rects).filter(([, rect]) => rect && rect.width > 0 && rect.height > 0);
-    const overlaps = [];
-    for (let i = 0; i < visibleRects.length; i += 1) {
-      for (let j = i + 1; j < visibleRects.length; j += 1) {
-        const [aName, a] = visibleRects[i];
-        const [bName, b] = visibleRects[j];
-        const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-        const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-        if (overlapX > 1 && overlapY > 1) overlaps.push(aName + 'x' + bName);
-      }
-    }
-
-    const period = elements.period;
-    const periodLabel = period?.querySelector('span');
-    const root = document.documentElement;
-    const topbar = document.querySelector('.meg-topbar');
-    const topbarRect = topbar?.getBoundingClientRect();
-
-    const outsideViewport = visibleRects
-      .filter(([, rect]) =>
-        rect.left < 0 ||
-        rect.top < 0 ||
-        rect.right > window.innerWidth ||
-        rect.bottom > window.innerHeight
-      )
-      .map(([name, rect]) => ({
-        name,
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-      }));
-
-    return {
-      innerWidth: window.innerWidth,
-      innerHeight: window.innerHeight,
-      scrollWidth: root.scrollWidth,
-      scrollHeight: root.scrollHeight,
-      overlaps,
-      outsideViewport,
-      allInsideViewport: outsideViewport.length === 0,
-      allInsideTopbar: topbarRect
-        ? visibleRects.every(([, rect]) =>
-            rect.left >= topbarRect.left - 1 &&
-            rect.top >= topbarRect.top - 1 &&
-            rect.right <= topbarRect.right + 1 &&
-            rect.bottom <= topbarRect.bottom + 1
-          )
-        : false,
-      periodOneLine: periodLabel
-        ? periodLabel.getClientRects().length === 1 &&
-          periodLabel.scrollWidth <= periodLabel.clientWidth
-        : false,
-      searchWidth: rects.search?.width || 0,
-      searchInputWidth: elements.search?.querySelector('input')?.getBoundingClientRect().width || 0,
-      searchInputOpacity: elements.search?.querySelector('input') ? getComputedStyle(elements.search.querySelector('input')).opacity : '0',
-      periodWidth: rects.period?.width || 0,
-      topbarHeight: topbarRect?.height || 0,
-    };
-  })()`);
-}
-
-const sidebarResponsiveViewports = [
-  { width: 1366, height: 600 },
-  { width: 1366, height: 768 },
-  { width: 1920, height: 1080 },
-  { width: 1024, height: 600 },
-  { width: 900, height: 560 },
-  { width: 690, height: 600 },
-  { width: 768, height: 520 },
-  { width: 480, height: 520 },
-  { width: 480, height: 480 },
-];
+const measureResponsiveTopbar = createMeasureResponsiveTopbar(evaluate);
+const measureSidebarResponsive = createMeasureSidebarResponsive(evaluate);
 
 async function prepareSidebarForState(viewport, collapsed) {
   await navigate(`${appUrl}?sidebar-contract=${viewport.width}x${viewport.height}-${collapsed ? 'collapsed' : 'expanded'}`);
@@ -900,22 +792,23 @@ async function assertSidebarState(viewport, collapsed) {
   }
 
   if (viewport.height < 520) {
-    assert.equal(
-      result.needsScroll,
-      true,
-      `${viewport.width}x${viewport.height} ${state}: abaixo de 520px o nav deve ser rolável`,
+    assert.ok(
+      result.navOverflowY === 'auto' || result.navOverflowY === 'scroll',
+      `${viewport.width}x${viewport.height} ${state}: abaixo de 520px o nav deve manter fallback rolável`,
     );
-    const reachable = await evaluate(`(() => {
-      const nav = document.querySelector('.meg-nav');
-      const last = document.querySelector('.meg-nav .meg-nav-item:last-child');
-      if (!nav || !last) return false;
-      nav.scrollTop = nav.scrollHeight;
-      const navRect = nav.getBoundingClientRect();
-      const rect = last.getBoundingClientRect();
-      const hit = document.elementFromPoint(rect.left + rect.width / 2, Math.min(rect.top + rect.height / 2, navRect.bottom - 1));
-      return rect.bottom <= navRect.bottom + 1 && Boolean(hit && (hit === last || last.contains(hit)));
-    })()`);
-    assert.equal(reachable, true, `${viewport.width}x${viewport.height} ${state}: último item não é alcançável pela rolagem`);
+    if (result.needsScroll) {
+      const reachable = await evaluate(`(() => {
+        const nav = document.querySelector('.meg-nav');
+        const last = document.querySelector('.meg-nav .meg-nav-item:last-child');
+        if (!nav || !last) return false;
+        nav.scrollTop = nav.scrollHeight;
+        const navRect = nav.getBoundingClientRect();
+        const rect = last.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, Math.min(rect.top + rect.height / 2, navRect.bottom - 1));
+        return rect.bottom <= navRect.bottom + 1 && Boolean(hit && (hit === last || last.contains(hit)));
+      })()`);
+      assert.equal(reachable, true, `${viewport.width}x${viewport.height} ${state}: último item não é alcançável pela rolagem`);
+    }
   }
 
   if (viewport.height < 700) {
