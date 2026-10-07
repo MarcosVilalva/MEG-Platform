@@ -540,6 +540,11 @@ export function DataGrid<T extends Record<string, unknown>>({
     });
   }, [activeFilterKeys, filteredRows.length, filters, onFilterChange]);
 
+  const filteredGroups = useMemo(() => {
+    if (!groupBy) return new Map<string, T[]>();
+    return new Map(groupRows(sortedRows, groupBy).map((group) => [group.id, group.rows]));
+  }, [groupBy, sortedRows]);
+
   const page = useMemo(
     () => paginateRows(sortedRows, pageIndex, currentPageSize),
     [currentPageSize, pageIndex, sortedRows],
@@ -703,6 +708,13 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   const renderGroupHeader = (entry: Extract<DataGridDisplayEntry<T>, { kind: 'group' }>, asCard = false) => {
     const expanded = !collapsedGroups.has(entry.group.id);
+    const totalGroupRows = filteredGroups.get(entry.group.id) ?? entry.group.rows;
+    const totalCount = totalGroupRows.length;
+    const pageCount = entry.group.rows.length;
+    const countLabel = totalCount === pageCount
+      ? `${totalCount} ${totalCount === 1 ? 'item' : 'itens'}`
+      : `${totalCount} itens no conjunto · ${pageCount} nesta página`;
+    const subtotal = groupSummary(totalGroupRows);
     const toggle = () => setCollapsedGroups((current) => {
       const next = new Set(current);
       expanded ? next.add(entry.group.id) : next.delete(entry.group.id);
@@ -722,8 +734,8 @@ export function DataGrid<T extends Record<string, unknown>>({
       >
         <GridIcon name={expanded ? 'chevronDown' : 'chevronRight'} />
         <strong>{entry.group.label}</strong>
-        <span>{entry.group.rows.length} {entry.group.rows.length === 1 ? 'item' : 'itens'}</span>
-        {groupSummary(entry.group.rows) && <span className="meg-datagrid-group-subtotal">{groupSummary(entry.group.rows)}</span>}
+        <span>{countLabel}</span>
+        {subtotal && <span className="meg-datagrid-group-subtotal">{subtotal}</span>}
       </button>
     );
     return asCard ? <div className="meg-datagrid-card-group" data-grid-group>{button}</div> : (

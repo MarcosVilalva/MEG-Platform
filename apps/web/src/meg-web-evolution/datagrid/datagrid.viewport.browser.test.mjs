@@ -14,7 +14,63 @@ const viewports = [
 
 const browser = await createDataGridBrowser();
 
+async function assertDesktopContainment(width, height, collapsed) {
+  const label = width + 'x' + height + (collapsed ? ' recolhida' : ' expandida');
+  await browser.setViewport(width, height);
+  await browser.navigate(appUrl);
+  await browser.evaluate(`(() => {
+    localStorage.removeItem('meg-web-evolution:datagrid:stage-04-harness');
+    localStorage.setItem('meg-web-evolution:sidebar-collapsed', '${collapsed ? 'true' : 'false'}');
+    return true;
+  })()`);
+  await browser.navigate(appUrl);
+  await browser.sleep(180);
+
+  const snapshot = await browser.evaluate(`(() => {
+    const visible = (element) => Boolean(element && element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden' && getComputedStyle(element).display !== 'none');
+    const rect = (element) => {
+      const value = element.getBoundingClientRect();
+      return { left:value.left, right:value.right, top:value.top, bottom:value.bottom, width:value.width, height:value.height };
+    };
+    const within = (child, parent) => child.left >= parent.left - 1 && child.right <= parent.right + 1 && child.top >= parent.top - 1 && child.bottom <= parent.bottom + 1;
+    const topbar = document.querySelector('.meg-topbar');
+    const grid = document.querySelector('[data-datagrid]');
+    const main = document.querySelector('.meg-main');
+    const viewport = document.querySelector('.meg-datagrid__viewport');
+    const topbarRect = rect(topbar);
+    const gridRect = rect(grid);
+    const topbarControls = [...topbar.querySelectorAll('button, input')].filter(visible).map((element) => ({ selector:element.getAttribute('aria-label') || element.className, rect:rect(element) }));
+    const profileChevron = document.querySelector('.meg-profile svg:last-child');
+    if (visible(profileChevron)) topbarControls.push({ selector:'profile-chevron', rect:rect(profileChevron) });
+    const gridControls = [...grid.querySelectorAll('.meg-datagrid-toolbar button, .meg-datagrid-footer button, .meg-datagrid-footer select')].filter(visible).map((element) => ({ selector:element.getAttribute('aria-label') || element.textContent.trim() || element.tagName, rect:rect(element) }));
+    return {
+      collapsed: document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed'),
+      documentScrollWidth: document.documentElement.scrollWidth,
+      mainClientWidth: main.clientWidth,
+      mainScrollWidth: main.scrollWidth,
+      viewportOverflowX: getComputedStyle(viewport).overflowX,
+      clippedTopbar: topbarControls.filter((item) => !within(item.rect, topbarRect)),
+      clippedGrid: gridControls.filter((item) => !within(item.rect, gridRect)),
+    };
+  })()`);
+
+  assert.equal(snapshot.collapsed, collapsed, label + ': estado da sidebar incorreto');
+  assert.ok(snapshot.documentScrollWidth <= width, label + ': documento criou rolagem horizontal');
+  assert.ok(snapshot.mainScrollWidth <= snapshot.mainClientWidth + 1, label + ': área principal criou rolagem horizontal');
+  assert.equal(snapshot.viewportOverflowX, 'auto', label + ': scroll horizontal deve ficar confinado ao grid');
+  assert.deepEqual(snapshot.clippedTopbar, [], label + ': controle da topbar cortado');
+  assert.deepEqual(snapshot.clippedGrid, [], label + ': controle do grid cortado');
+}
+
 try {
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1366, height: 600 },
+    { width: 1024, height: 768 },
+  ]) {
+    await assertDesktopContainment(viewport.width, viewport.height, false);
+    await assertDesktopContainment(viewport.width, viewport.height, true);
+  }
   for (const viewport of viewports) {
     await browser.setViewport(viewport.width, viewport.height);
     await browser.navigate(appUrl);
@@ -44,6 +100,11 @@ try {
       assert.equal(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados móveis devem ficar ocultos no desktop');
       assert.equal(snapshot.viewportOverflowX, 'auto', label + ': rolagem horizontal desktop deve ficar confinada ao componente');
       assert.ok(snapshot.viewportScrollWidth >= snapshot.viewportClientWidth, label + ': viewport interno inválido');
+
+      const aggregateFooter = await browser.evaluate("(() => { const footer=document.querySelector('.meg-datagrid-table tfoot'); const cell=footer?.querySelector('td'); if(!footer || !cell) return null; const alpha=(value)=>{ const match=value.match(/rgba?\\(([^)]+)\\)/); if(!match) return 0; const parts=match[1].split(',').map((part)=>part.trim()); return parts.length < 4 ? 1 : Number(parts[3]); }; return { footerBackground:getComputedStyle(footer).backgroundColor, cellBackground:getComputedStyle(cell).backgroundColor, footerAlpha:alpha(getComputedStyle(footer).backgroundColor), cellAlpha:alpha(getComputedStyle(cell).backgroundColor) }; })()");
+      assert.ok(aggregateFooter, label + ': rodapé de agregados ausente');
+      assert.equal(aggregateFooter.footerAlpha, 1, label + ': fundo do rodapé de agregados não é opaco');
+      assert.equal(aggregateFooter.cellAlpha, 1, label + ': células do rodapé de agregados não são opacas');
 
       await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-sort-button'); button.focus(); button.click(); return true; })()");
       await browser.sleep(80);

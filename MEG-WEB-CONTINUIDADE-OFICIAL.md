@@ -224,6 +224,8 @@ Não avançar prematuramente para telas futuras.
 - Etapa 04 autorizada: **DataGrid**.
 - Branch atual: `meg-web-evolution/04-datagrid`.
 - Base da Etapa 04: `main@6307387efd5a1b5322b0ff89ca6656be799aeb72`.
+- Validação visual da Etapa 04 permanece **PENDENTE / NÃO APROVADA**. PR #606 deve continuar Draft e sem merge até nova aprovação explícita.
+- Rodada de correção visual autorizada: confinamento horizontal do grid em viewports desktop, rodapé de agregados opaco, semântica de grupos atravessando páginas e cobertura adicional de navegador, sem alteração do Shell ou de regras financeiras.
 - Base auditada: `main@87e04b989568d95c182927c6f493061be26440db`.
 - Auditoria financeira por arquivo/linha registrada em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
 - Testes de caracterização financeira criados e adicionados ao gate.

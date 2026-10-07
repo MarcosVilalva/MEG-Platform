@@ -72,7 +72,6 @@ export const dataGridHarnessColumns: DataGridColumn<HarnessRow>[] = [
     minWidth: 180,
     sortable: true,
     filterable: true,
-    aggregate: 'count',
   },
   {
     key: 'segment',
@@ -117,6 +116,5 @@ export const dataGridHarnessColumns: DataGridColumn<HarnessRow>[] = [
     minWidth: 104,
     sortable: true,
     filterable: true,
-    aggregate: 'count',
   },
 ];

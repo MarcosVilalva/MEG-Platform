@@ -1,5 +1,6 @@
 .meg-datagrid {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -37,12 +38,15 @@
 
 .meg-datagrid-toolbar,
 .meg-datagrid-footer {
+  width: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: .75rem;
   min-width: 0;
   padding: .75rem;
+  box-sizing: border-box;
 }
 
 .meg-datagrid-toolbar {
@@ -66,7 +70,9 @@
 
 .meg-datagrid-toolbar__actions {
   flex: 1 1 auto;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  max-width: 100%;
 }
 
 .meg-datagrid-tool,
@@ -384,6 +390,7 @@
 .meg-datagrid-footer {
   flex-wrap: wrap;
   border-top: .0625rem solid rgba(20, 227, 200, .12);
+  background: #031c1f;
   color: var(--meg-muted);
   font-size: .78rem;
 }
@@ -1176,13 +1183,14 @@
 
   .meg-datagrid-table tfoot {
     position: sticky;
-    z-index: 7;
+    z-index: 12;
     bottom: 0;
+    background: #031c1f;
   }
 
   .meg-datagrid-table tfoot td {
     height: 3.3rem;
-    background: rgba(3, 28, 31, .985);
+    background: #031c1f;
     border-top: .0625rem solid rgba(20, 227, 200, .22);
     border-bottom: 0;
   }
@@ -1211,7 +1219,7 @@
   }
 
   .meg-datagrid-footer {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 }
 

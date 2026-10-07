@@ -219,4 +219,30 @@ assert.equal(harnessRows.length, 640);
 assert.equal(new Set(harnessRows.map((row) => row.id)).size, 640);
 assert.deepEqual(new Set(dataGridHarnessColumns.map((column) => column.type)), new Set(['date', 'text', 'enum', 'number', 'currency', 'boolean']));
 
+// Agrupamento paginado: somar os itens de cada grupo em todas as páginas
+// deve reconstruir exatamente o conjunto filtrado, sem inflar ou perder linhas.
+const groupedFilteredHarness = applyFilters(harnessRows, dataGridHarnessColumns, {
+  active: { type: 'boolean', booleanValue: true },
+});
+const canonicalGroupedCounts = new Map(
+  groupRows(groupedFilteredHarness, 'segment').map((group) => [group.id, group.rows.length]),
+);
+const pagedGroupedCounts = new Map<string, number>();
+const groupContractPageSize = 125;
+const groupContractPages = Math.max(1, Math.ceil(groupedFilteredHarness.length / groupContractPageSize));
+for (let index = 0; index < groupContractPages; index += 1) {
+  const current = paginateRows(groupedFilteredHarness, index, groupContractPageSize);
+  for (const group of groupRows(current.rows, 'segment')) {
+    pagedGroupedCounts.set(group.id, (pagedGroupedCounts.get(group.id) ?? 0) + group.rows.length);
+  }
+}
+assert.equal(
+  [...pagedGroupedCounts.values()].reduce((total, count) => total + count, 0),
+  groupedFilteredHarness.length,
+);
+assert.deepEqual(
+  [...pagedGroupedCounts.entries()].sort(([left], [right]) => left.localeCompare(right)),
+  [...canonicalGroupedCounts.entries()].sort(([left], [right]) => left.localeCompare(right)),
+);
+
 console.log('MEG Web Evolution DataGrid pure contract: OK');

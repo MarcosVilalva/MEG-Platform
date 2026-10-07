@@ -85,9 +85,13 @@ Larguras respeitam `minWidth`. O desktop oferece resize por ponteiro e teclado, 
 
 ## Agrupamento e agregados
 
-`groupBy` é estritamente estrutural. Grupos são recolhíveis e expõem quantidade e agregados genéricos configurados nas colunas.
+`groupBy` é estritamente estrutural. Grupos são recolhíveis e expõem a quantidade total do grupo no conjunto filtrado. Quando um grupo atravessa páginas, o cabeçalho informa também quantos itens daquele grupo estão na página atual; paginação nunca altera o total canônico do grupo.
 
-`sum`, `count` e `avg` operam somente sobre valores já recebidos pelo componente. Eles não substituem nenhum total cuja definição pertença à camada financeira.
+A ordem dos grupos segue a primeira ocorrência de cada grupo no conjunto já filtrado e ordenado. Sem ordenação ativa, isso preserva a ordem da fonte recebida; com ordenação, a sequência dos grupos acompanha o primeiro aparecimento no resultado ordenado. Um mesmo grupo pode reaparecer em páginas posteriores quando cruza o limite de paginação.
+
+Os subtotais de grupo usam o grupo completo do conjunto filtrado, não apenas o recorte da página. `sum`, `count` e `avg` continuam sendo estritamente genéricos e só aparecem quando configurados na coluna. O harness da Etapa 04 configura `sum` em moeda e `avg` em número; não configura `count` redundante nas colunas text/boolean porque o próprio cabeçalho já fornece a contagem do grupo.
+
+Esses agregados operam somente sobre valores já recebidos pelo componente. Eles não substituem nenhum total cuja definição pertença à camada financeira.
 
 ## Paginação e virtualização
 
