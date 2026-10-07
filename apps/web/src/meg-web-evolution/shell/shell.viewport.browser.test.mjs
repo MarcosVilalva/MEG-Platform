@@ -275,6 +275,8 @@ async function measure(state) {
       controlOpacity: getComputedStyle(control).opacity,
       controlVisibility: getComputedStyle(control).visibility,
       navIcons,
+      navScrollHeight: nav.scrollHeight,
+      navClientHeight: nav.clientHeight,
       collapsedArtDisplay: getComputedStyle(document.querySelector('.sidebar__art')).display,
       periodOneLine:
         periodLabel.getClientRects().length === 1 &&
@@ -407,6 +409,10 @@ try {
       );
       assert.ok(collapsed.logoWidth >= 34, `${viewport.width}x${viewport.height} recolhida: logo reduzido menor que 34px (${collapsed.logoWidth})`);
       assert.equal(collapsed.navIcons.length, 7, `${viewport.width}x${viewport.height} recolhida: esperado 7 ícones de menu`);
+      assert.ok(
+        collapsed.navScrollHeight <= collapsed.navClientHeight + 1,
+        `${viewport.width}x${viewport.height} recolhida: nav não deveria exigir rolagem (${collapsed.navScrollHeight}/${collapsed.navClientHeight})`,
+      );
       collapsed.navIcons.forEach((icon, index) => {
         assert.ok(icon.width > 0 && icon.height > 0, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} sem dimensão`);
         assert.equal(icon.fullyInsideNav, true, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} cortado pelo nav`);
