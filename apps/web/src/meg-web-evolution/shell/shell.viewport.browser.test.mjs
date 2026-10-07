@@ -142,7 +142,15 @@ async function navigate(url) {
       shellReady: Boolean(document.querySelector('.meg-shell')),
     }))()`);
 
-    if (ready?.readyState === 'complete' && ready.shellReady) return;
+    if (ready?.readyState === 'complete' && ready.shellReady) {
+      await evaluate(`(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        return true;
+      })()`);
+      return;
+    }
     await sleep(100);
   }
 
