@@ -343,7 +343,9 @@
 }
 .meg-period {
   flex: 0 0 auto;
-  min-width: max-content;
+  width: max-content;
+  min-width: 11.75rem;
+  max-width: 100%;
   justify-content: center;
   padding: .65rem .9rem;
   font-weight: 650;
@@ -351,7 +353,11 @@
 }
 
 .meg-period span {
+  display: inline-block;
+  flex: 0 0 auto;
+  min-width: max-content;
   white-space: nowrap;
+  line-height: 1.15;
 }
 .meg-period svg { width: 1.18rem; height: 1.18rem; color: var(--meg-accent); }
 .meg-period svg:last-child { width: .95rem; color: var(--meg-muted); }
@@ -461,7 +467,18 @@
   .meg-menu-button { display: inline-grid; }
   .meg-search { order: 3; width: 100%; min-width: 0; }
   .meg-topbar-actions { margin-left: auto; gap: .45rem; }
-  .meg-period { order: 4; width: 100%; min-width: 0; justify-content: center; }
+  .meg-period {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    justify-content: center;
+  }
+
+  .meg-period span {
+    min-width: 0;
+    white-space: nowrap;
+  }
   .meg-profile { padding-right: 0; }
   .meg-profile svg { display: none; }
   .meg-avatar { width: 2.45rem; height: 2.45rem; }
