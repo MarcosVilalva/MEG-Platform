@@ -144,10 +144,26 @@
   border: 0;
   box-shadow: none;
   color: var(--meg-muted);
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
-.meg-sidebar-control svg {
+.meg-sidebar-control-icon {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  background:
+    linear-gradient(145deg, rgba(20, 227, 200, .10), rgba(20, 227, 200, .035));
+  box-shadow:
+    inset 0 0 0 1px rgba(20, 227, 200, .12),
+    0 0 .9rem rgba(20, 227, 200, .035);
+  color: #a9cfca;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.meg-sidebar-control-icon svg {
   width: 20px;
   height: 20px;
   min-width: 20px;
@@ -155,9 +171,32 @@
   pointer-events: none;
 }
 
+.meg-sidebar-control-label {
+  color: #a9c5c2;
+  font-weight: 650;
+  letter-spacing: .01em;
+  transition: color 150ms ease;
+}
+
 .meg-sidebar-control:hover {
-  background: rgba(20, 227, 200, .07);
+  background: linear-gradient(90deg, rgba(20, 227, 200, .075), rgba(20, 227, 200, .025));
   color: var(--meg-accent);
+}
+
+.meg-sidebar-control:hover .meg-sidebar-control-icon,
+.meg-sidebar-control:focus-visible .meg-sidebar-control-icon {
+  background:
+    linear-gradient(145deg, rgba(20, 227, 200, .18), rgba(43, 227, 139, .08));
+  color: var(--meg-accent);
+  box-shadow:
+    inset 0 0 0 1px rgba(20, 227, 200, .22),
+    0 0 1rem rgba(20, 227, 200, .09);
+  transform: translateX(-1px);
+}
+
+.meg-sidebar-control:hover .meg-sidebar-control-label,
+.meg-sidebar-control:focus-visible .meg-sidebar-control-label {
+  color: var(--meg-text);
 }
 
 .meg-sidebar-control:focus-visible {
@@ -465,7 +504,8 @@
     margin-inline: auto;
   }
 
-  .meg-shell.is-sidebar-collapsed .meg-nav-item span,
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item span,
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-control-label,
   .meg-shell.is-sidebar-collapsed .meg-new-button span {
     display: none;
   }
@@ -486,7 +526,11 @@
     box-shadow: none;
   }
 
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control svg {
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-control-icon {
+    margin-inline: auto;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-control-icon svg {
     margin-inline: auto;
   }
 
