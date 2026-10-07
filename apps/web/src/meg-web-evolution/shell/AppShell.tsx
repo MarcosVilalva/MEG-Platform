@@ -170,7 +170,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="meg-topbar-actions">
             <button type="button" className="meg-period">
               <Icon name="calendar" />
-              <span>Outubro de 2026</span>
+              <span>Outubro&nbsp;de&nbsp;2026</span>
               <Icon name="chevronDown" />
             </button>
 
