@@ -697,15 +697,30 @@ async function measureSidebarResponsive() {
       return { missing: true, itemCount: items.length };
     }
 
+    const brand = document.querySelector('.meg-brand');
+    const artRectElement = document.querySelector('.sidebar__art');
+    const brandRect = brand?.getBoundingClientRect();
     const sidebarRect = sidebar.getBoundingClientRect();
     const navRect = nav.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
-    const itemRects = items.map((item) => {
+    const artRect = artRectElement?.getBoundingClientRect();
+    const dividerTop = footerRect.top + (parseFloat(dividerStyle?.top || '0') || 0);
+    const dividerHeight = parseFloat(dividerStyle?.height || '0') || 0;
+    const dividerRect = {
+      top: dividerTop,
+      bottom: dividerTop + dividerHeight,
+      height: dividerHeight,
+      left: footerRect.left,
+      right: footerRect.right,
+    };
+    const itemRects = items.map((item, index) => {
       const rect = item.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const hit = document.elementFromPoint(centerX, centerY);
       return {
+        index: index + 1,
+        label: item.getAttribute('aria-label') || item.textContent?.trim() || `item-${index + 1}`,
         width: rect.width,
         height: rect.height,
         top: rect.top,
@@ -732,6 +747,27 @@ async function measureSidebarResponsive() {
     const lastItem = itemRects[itemRects.length - 1];
     const needsScroll = nav.scrollHeight > nav.clientHeight + 1;
     const gapToFooter = Math.max(0, footerRect.top - lastItem.bottom);
+    const item5 = itemRects[4] || null;
+    const overlaps = [];
+    if (item5) {
+      const overlapY = (name, rect) => {
+        if (!rect) return;
+        const overlap = Math.min(item5.bottom, rect.bottom) - Math.max(item5.top, rect.top);
+        if (overlap > 1) overlaps.push({ name, overlap });
+      };
+      overlapY('logo', brandRect);
+      overlapY('divisor', dividerRect);
+      overlapY('rodape', footerRect);
+      overlapY('grafismo', artRect);
+      if (item5.top < navRect.top - 1) overlaps.push({ name: 'nav-top-clipping', overlap: navRect.top - item5.top });
+      if (item5.bottom > navRect.bottom + 1) overlaps.push({ name: 'nav-bottom-clipping', overlap: item5.bottom - navRect.bottom });
+    }
+
+    const rectSummary = (rect) => rect ? ({
+      top: rect.top,
+      bottom: rect.bottom,
+      height: rect.height,
+    }) : null;
 
     return {
       missing: false,
@@ -739,10 +775,14 @@ async function measureSidebarResponsive() {
       documentScrollHeight: root.scrollHeight,
       sidebarTop: sidebarRect.top,
       sidebarBottom: sidebarRect.bottom,
+      sidebarRect: rectSummary(sidebarRect),
+      brandRect: rectSummary(brandRect),
       navTop: navRect.top,
       navBottom: navRect.bottom,
+      navRect: rectSummary(navRect),
       navClientHeight: nav.clientHeight,
       navScrollHeight: nav.scrollHeight,
+      navOverflowY: getComputedStyle(nav).overflowY,
       needsScroll,
       itemCount: items.length,
       itemRects,
@@ -750,6 +790,10 @@ async function measureSidebarResponsive() {
       lastItemBottom: lastItem.bottom,
       gapToFooter,
       footerTop: footerRect.top,
+      footerRect: rectSummary(footerRect),
+      dividerRect: rectSummary(dividerRect),
+      artRect: rectSummary(artRect),
+      item5Overlaps: overlaps,
       dividerNeutral,
       dividerColor: dividerStyle?.backgroundColor || '',
       artDisplay: art ? getComputedStyle(art).display : 'missing',
@@ -778,7 +822,23 @@ async function assertSidebarState(viewport, collapsed) {
   for (const [index, item] of result.itemRects.entries()) {
     assert.ok(item.width > 0 && item.height > 0, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} sem dimensão`);
     if (viewport.height >= 520) {
-      assert.equal(item.fullyInsideNav, true, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} parcialmente cortado`);
+      assert.equal(
+        item.fullyInsideNav,
+        true,
+        `${viewport.width}x${viewport.height} ${state}: item ${index + 1} parcialmente cortado; diagnóstico=${JSON.stringify({
+          sidebar: result.sidebarRect,
+          logo: result.brandRect,
+          nav: result.navRect,
+          itens: result.itemRects.map(({ index, label, top, bottom, height }) => ({ index, label, top, bottom, height })),
+          divisor: result.dividerRect,
+          rodape: result.footerRect,
+          grafismo: result.artRect,
+          navOverflowY: result.navOverflowY,
+          navScrollHeight: result.navScrollHeight,
+          navClientHeight: result.navClientHeight,
+          item5Overlaps: result.item5Overlaps,
+        })}`,
+      );
       assert.equal(item.visibleAtCenter, true, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} não está visível no centro`);
     }
   }
