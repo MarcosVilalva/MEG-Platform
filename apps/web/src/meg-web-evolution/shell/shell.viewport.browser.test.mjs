@@ -96,17 +96,44 @@ async function measure(state) {
   return evaluate(`(() => {
     const root = document.documentElement;
     const firstItem = document.querySelector('.meg-nav-item');
+    const items = [...document.querySelectorAll('.meg-nav-item')];
+    const labels = [...document.querySelectorAll('.meg-nav-item span')];
     const logo = document.querySelector('.meg-brand-logo--${state}');
-    if (!firstItem || !logo) throw new Error('Elementos do contrato do Shell não encontrados.');
+    const toggle = document.querySelector('.meg-sidebar-toggle');
+    if (!firstItem || !logo || !toggle) throw new Error('Elementos do contrato do Shell não encontrados.');
+
     const logoRect = logo.getBoundingClientRect();
     const itemRect = firstItem.getBoundingClientRect();
+    const toggleRect = toggle.getBoundingClientRect();
+
+    const clippingAncestor = (() => {
+      let node = toggle.parentElement;
+      while (node && node !== document.documentElement) {
+        const style = getComputedStyle(node);
+        const clipsX = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowX);
+        const clipsY = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowY);
+        if (clipsX || clipsY) return node.className || node.tagName;
+        node = node.parentElement;
+      }
+      return null;
+    })();
+
     return {
+      innerWidth: window.innerWidth,
       innerHeight: window.innerHeight,
       scrollHeight: root.scrollHeight,
       logoBottom: logoRect.bottom,
       firstItemTop: itemRect.top,
       logoOpacity: getComputedStyle(logo).opacity,
       logoPosition: getComputedStyle(logo).position,
+      labelsFit: labels.every((label) => label.scrollWidth <= label.clientWidth),
+      itemsFit: items.every((item) => item.scrollWidth <= item.clientWidth),
+      toggleInsideViewport:
+        toggleRect.left >= 0 &&
+        toggleRect.top >= 0 &&
+        toggleRect.right <= window.innerWidth &&
+        toggleRect.bottom <= window.innerHeight,
+      toggleClippingAncestor: clippingAncestor,
     };
   })()`);
 }
@@ -136,6 +163,10 @@ try {
       `${viewport.width}x${viewport.height} expandida: Início (${expanded.firstItemTop}) sobrepõe logo (${expanded.logoBottom})`,
     );
     assert.equal(expanded.logoOpacity, '1');
+    assert.equal(expanded.labelsFit, true, `${viewport.width}x${viewport.height} expandida: texto do menu truncado`);
+    assert.equal(expanded.itemsFit, true, `${viewport.width}x${viewport.height} expandida: item do menu excede a largura`);
+    assert.equal(expanded.toggleInsideViewport, true, `${viewport.width}x${viewport.height} expandida: botão de recolher fora da janela`);
+    assert.equal(expanded.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.toggleClippingAncestor}`);
 
     await evaluate(`document.querySelector('.meg-sidebar-toggle')?.click()`);
     await sleep(250);
@@ -150,6 +181,8 @@ try {
       `${viewport.width}x${viewport.height} recolhida: Início (${collapsed.firstItemTop}) sobrepõe símbolo (${collapsed.logoBottom})`,
     );
     assert.equal(collapsed.logoOpacity, '1');
+    assert.equal(collapsed.toggleInsideViewport, true, `${viewport.width}x${viewport.height} recolhida: botão de expandir fora da janela`);
+    assert.equal(collapsed.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.toggleClippingAncestor}`);
 
     console.log(
       `OK ${viewport.width}x${viewport.height}: expandida ${expanded.scrollHeight}/${expanded.innerHeight}, recolhida ${collapsed.scrollHeight}/${collapsed.innerHeight}`,
