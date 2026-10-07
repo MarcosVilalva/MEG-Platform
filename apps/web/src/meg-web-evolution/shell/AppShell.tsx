@@ -114,27 +114,30 @@ export function AppShell({ children }: { children: ReactNode }) {
           </svg>
         </div>
 
+        <div className="meg-sidebar-control-wrap">
+          <button
+            type="button"
+            className="meg-nav-item meg-sidebar-control"
+            aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            aria-expanded={!sidebarCollapsed}
+            data-tooltip={sidebarCollapsed ? 'Expandir menu' : undefined}
+            onClick={() => setSidebarCollapsed((value) => !value)}
+          >
+            <Icon
+              name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'}
+              width={20}
+              height={20}
+              strokeWidth={1.75}
+            />
+            <span>Recolher menu</span>
+          </button>
+        </div>
+
         <PrimaryButton className="meg-new-button" type="button">
           <Icon name="plus" />
           <span>Novo</span>
         </PrimaryButton>
         </aside>
-
-        <button
-          type="button"
-          className="meg-sidebar-toggle"
-          aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          aria-expanded={!sidebarCollapsed}
-          data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          onClick={() => setSidebarCollapsed((value) => !value)}
-        >
-          <Icon
-            name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'}
-            width={18}
-            height={18}
-            strokeWidth={1.75}
-          />
-        </button>
       </div>
 
       {drawerOpen && <button className="meg-drawer-scrim" aria-label="Fechar menu" onClick={() => setDrawerOpen(false)} />}
