@@ -717,7 +717,7 @@
 
 
 
-@media (max-height: 767px) {
+@media (max-height: 768px) {
   .meg-sidebar {
     gap: 0;
   }
