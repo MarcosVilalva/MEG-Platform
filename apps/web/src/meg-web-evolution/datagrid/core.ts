@@ -145,7 +145,6 @@ function matchesText(value: unknown, filter: DataGridFilter): boolean {
       case 'startsWith': operatorMatch = haystack.startsWith(needle); break;
       case 'endsWith': operatorMatch = haystack.endsWith(needle); break;
       case 'equals': operatorMatch = haystack === needle; break;
-      case 'empty': operatorMatch = value == null || String(value).trim() === ''; break;
       default: operatorMatch = true;
     }
   }
@@ -171,7 +170,6 @@ function matchesNumber(value: unknown, filter: DataGridFilter): boolean {
       case 'between':
         operatorMatch = actual != null && second != null && actual >= Math.min(first, second) && actual <= Math.max(first, second);
         break;
-      case 'empty': operatorMatch = actual == null; break;
       default: operatorMatch = true;
     }
   }
