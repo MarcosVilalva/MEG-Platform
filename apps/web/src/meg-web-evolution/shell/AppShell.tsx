@@ -19,7 +19,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
-      <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
+      <div className="meg-sidebar-wrap">
+        <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand" aria-label="MEG Finanças">
           <div className="meg-brand-stack" aria-hidden="true">
             <img
@@ -117,18 +118,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Icon name="plus" />
           <span>Novo</span>
         </PrimaryButton>
-      </aside>
+        </aside>
 
-      <button
-        type="button"
-        className="meg-sidebar-toggle"
-        aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
-        aria-expanded={!sidebarCollapsed}
-        data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-        onClick={() => setSidebarCollapsed((value) => !value)}
-      >
-        <Icon name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'} />
-      </button>
+        <button
+          type="button"
+          className="meg-sidebar-toggle"
+          aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
+          aria-expanded={!sidebarCollapsed}
+          data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          onClick={() => setSidebarCollapsed((value) => !value)}
+        >
+          <Icon name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'} />
+        </button>
+      </div>
 
       {drawerOpen && <button className="meg-drawer-scrim" aria-label="Fechar menu" onClick={() => setDrawerOpen(false)} />}
 
