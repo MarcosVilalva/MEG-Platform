@@ -590,6 +590,25 @@
     overflow: visible;
   }
 
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    border: 1px solid rgba(20, 227, 200, .24);
+    border-radius: 13px;
+    background:
+      radial-gradient(circle at 32% 22%, rgba(65, 242, 220, .12), transparent 52%),
+      linear-gradient(145deg, rgba(7, 46, 48, .96), rgba(2, 25, 28, .98));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.045),
+      inset 0 -1px 0 rgba(0,0,0,.28),
+      0 6px 16px rgba(0,0,0,.22),
+      0 0 14px rgba(20, 227, 200, .11);
+  }
+
   .meg-shell.is-sidebar-collapsed .meg-brand-logo--expanded {
     position: absolute;
     inset: 50% auto auto 50%;
@@ -601,12 +620,13 @@
     position: relative;
     inset: auto;
     flex: 0 0 auto;
-    width: 48px;
-    min-width: 48px;
-    max-width: 48px;
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
     height: auto;
     object-fit: contain;
     opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(20, 227, 200, .16));
     transform: none;
   }
 
@@ -702,10 +722,16 @@
     padding-block: 6px;
   }
 
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
   .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
+    width: 34px;
+    min-width: 34px;
+    max-width: 34px;
   }
 
   .meg-nav {
