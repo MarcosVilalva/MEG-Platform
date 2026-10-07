@@ -46,7 +46,7 @@ const evolutionProductionCsp = () => {
     transformIndexHtml: {
       order: 'pre' as const,
       handler(html: string, context: { path?: string }) {
-        if (!context.path?.endsWith('/evolution.html')) return html;
+        if (!context.path?.endsWith('/evolution.html') && !context.path?.endsWith('/web-evolution.html')) return html;
         return {
           html,
           tags: [{
@@ -68,7 +68,8 @@ const webInputs = process.env.CAPACITOR_BUILD
   : {
       main: path.resolve(__dirname, 'index.html'),
       phoenix: path.resolve(__dirname, 'phoenix.html'),
-      evolution: path.resolve(__dirname, 'evolution.html')
+      evolution: path.resolve(__dirname, 'evolution.html'),
+      webEvolution: path.resolve(__dirname, 'web-evolution.html')
     };
 
 export default defineConfig({

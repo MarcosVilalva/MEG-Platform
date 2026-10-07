@@ -1,0 +1,1342 @@
+.meg-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--meg-sidebar-wide) minmax(0, 1fr);
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  transition: grid-template-columns .18s ease;
+}
+
+.meg-shell.is-sidebar-collapsed {
+  grid-template-columns: var(--meg-sidebar-compact) minmax(0, 1fr);
+}
+
+.meg-sidebar-wrap {
+  position: relative;
+  z-index: 40;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.meg-sidebar {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.05rem .75rem 1rem;
+  overflow: hidden;
+  border-right: .0625rem solid rgba(20, 227, 200, .28);
+  background:
+    radial-gradient(circle at 50% 8%, rgba(20, 227, 200, .08), transparent 8rem),
+    radial-gradient(circle at 50% 91%, rgba(20, 227, 200, .12), transparent 11rem),
+    linear-gradient(180deg, rgba(2, 25, 28, .99), rgba(1, 15, 17, .99));
+  box-shadow: .8rem 0 2.8rem rgba(0,0,0,.18);
+  z-index: 30;
+}
+
+.meg-brand,
+.meg-nav,
+.sidebar__art {
+  position: relative;
+  z-index: 1;
+}
+
+.meg-brand {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 5.75rem;
+  display: grid;
+  place-items: center;
+  padding: .15rem .35rem 0;
+  text-align: center;
+}
+
+.meg-brand-stack {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.meg-brand-logo {
+  display: block;
+  height: auto;
+  margin-inline: auto;
+  transition: opacity 150ms ease;
+}
+
+.meg-brand-logo--expanded {
+  position: relative;
+  width: 140px;
+  opacity: 1;
+}
+
+.meg-brand-logo--collapsed {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 36px;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+.meg-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: .38rem;
+  margin-top: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.meg-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.meg-nav-item {
+  min-width: 0;
+  min-height: 3.15rem;
+  display: flex;
+  align-items: center;
+  gap: .95rem;
+  padding: .7rem .875rem;
+  border: .0625rem solid transparent;
+  border-radius: .82rem;
+  background: transparent;
+  color: #cde4e1;
+  text-align: left;
+  cursor: pointer;
+}
+.meg-nav-item svg {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  overflow: visible;
+}
+.meg-nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; font-weight: 650; }
+.meg-nav-item:hover { background: rgba(20,227,200,.055); }
+
+.meg-nav-item,
+.meg-logout-button,
+.meg-topbar-launcher,
+.meg-notification {
+  position: relative;
+}
+
+.meg-global-tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: min(18rem, calc(100vw - 1rem));
+  padding: 6px 9px;
+  border: 1px solid rgba(20, 227, 200, .18);
+  border-radius: 8px;
+  background: #03191c;
+  color: #d9efec;
+  box-shadow: 0 8px 20px rgba(0,0,0,.24), 0 0 10px rgba(20,227,200,.06);
+  font-size: .75rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.meg-global-tooltip.is-right {
+  transform: translateY(-50%);
+}
+
+.meg-global-tooltip.is-bottom {
+  transform: translateX(-50%);
+}
+
+.meg-shell.is-sidebar-collapsed .meg-nav-item,
+.meg-shell.is-sidebar-collapsed .meg-logout-button,
+.meg-topbar-launcher,
+.meg-notification {
+  border-radius: 12px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.meg-shell.is-sidebar-collapsed .meg-nav-item:hover,
+.meg-shell.is-sidebar-collapsed .meg-nav-item:focus-visible,
+.meg-shell.is-sidebar-collapsed .meg-logout-button:hover,
+.meg-shell.is-sidebar-collapsed .meg-logout-button:focus-visible,
+.meg-topbar-launcher:hover,
+.meg-topbar-launcher:focus-visible,
+.meg-notification:hover,
+.meg-notification:focus-visible {
+  border-color: rgba(20, 227, 200, .42);
+  background: rgba(20, 227, 200, .08);
+  color: var(--meg-accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 6px 16px rgba(0,0,0,.18),
+    0 0 12px rgba(20, 227, 200, .10);
+}
+
+.meg-shell.is-sidebar-collapsed .meg-nav-item:focus-visible,
+.meg-shell.is-sidebar-collapsed .meg-logout-button:focus-visible,
+.meg-topbar-launcher:focus-visible,
+.meg-notification:focus-visible {
+  outline: 2px solid var(--meg-accent);
+  outline-offset: 2px;
+}
+
+.meg-sidebar-footer {
+  position: relative;
+  z-index: 6;
+  flex: 0 0 auto;
+  margin-block: 8px;
+  padding-top: 8px;
+  border-top: 0;
+}
+
+.meg-sidebar-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: .45rem;
+  right: .45rem;
+  height: 1px;
+  background: rgba(255, 255, 255, .08);
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.meg-logout-button {
+  width: 100%;
+  min-height: 44px;
+  border-color: transparent;
+  color: #aac8c4;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.meg-logout-button svg {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  color: #91bcb7;
+  transition: color 150ms ease, filter 150ms ease;
+}
+
+.meg-logout-button:hover,
+.meg-logout-button:focus-visible {
+  border-color: rgba(255, 112, 112, .28);
+  background: rgba(255, 112, 112, .06);
+  color: #f2f7f6;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 6px 16px rgba(0,0,0,.18),
+    0 0 12px rgba(255, 105, 110, .10);
+}
+
+.meg-logout-button:hover svg,
+.meg-logout-button:focus-visible svg {
+  color: #ff8a8f;
+  filter: drop-shadow(0 0 4px rgba(255, 105, 110, .18));
+}
+
+.meg-logout-button:focus-visible {
+  outline: 2px solid var(--meg-accent);
+  outline-offset: 2px;
+}
+
+.meg-nav-item.is-active {
+  color: #effffc;
+  border-color: rgba(65, 242, 220, .7);
+  background: linear-gradient(90deg, rgba(20,227,200,.20), rgba(20,227,200,.08));
+  box-shadow: var(--meg-shadow-active);
+}
+
+.sidebar__art {
+  width: calc(100% + 1.5rem);
+  height: 20rem;
+  min-height: 12rem;
+  margin: auto -.75rem 0;
+  overflow: hidden;
+  opacity: .66;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.18) 18%, rgba(0,0,0,.82) 42%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.18) 18%, rgba(0,0,0,.82) 42%, #000 100%);
+}
+
+.sidebar__art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 13rem;
+}
+
+.meg-shell-body {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: meg-shell-body;
+}
+
+.meg-topbar {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 5.35rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.55rem 1rem 1.75rem;
+  border-bottom: .0625rem solid rgba(20,227,200,.10);
+  background:
+    linear-gradient(90deg, rgba(2,17,19,.92), rgba(2,24,26,.82) 58%, rgba(1,15,17,.94));
+  backdrop-filter: blur(.95rem);
+}
+
+.meg-menu-button { display: none; }
+
+.meg-topbar-launchers {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meg-topbar-launcher {
+  width: 46px;
+  height: 46px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(20, 227, 200, .22);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(4, 35, 38, .92), rgba(2, 24, 28, .96));
+  color: #9bc6c1;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.03),
+    0 5px 14px rgba(0,0,0,.16);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.meg-topbar-launcher svg {
+  pointer-events: none;
+}
+
+.meg-topbar-new {
+  border-color: rgba(20, 227, 200, .62);
+  background:
+    linear-gradient(180deg, rgba(12, 79, 77, .96), rgba(4, 45, 47, .98));
+  color: #dffff9;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.07),
+    0 5px 14px rgba(0,0,0,.18),
+    0 0 12px rgba(20, 227, 200, .12);
+}
+
+.meg-topbar-new svg {
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #4ce8d9, #1fcbb9);
+  color: #053936;
+  box-shadow: 0 0 9px rgba(20, 227, 200, .20);
+}
+
+.meg-search {
+  min-width: 0;
+  width: min(38.5rem, 100%);
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: 0 .9rem;
+  border: .0625rem solid rgba(20, 227, 200, .50);
+  border-radius: .8rem;
+  background: rgba(2, 24, 28, .82);
+}
+.meg-search svg { width: 1.2rem; height: 1.2rem; color: #d8eeee; }
+.meg-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--meg-text); font-size: .88rem; }
+.meg-search input::placeholder { color: #a4bebb; }
+
+.meg-topbar-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .78rem;
+  white-space: nowrap;
+}
+
+.meg-period,
+.meg-profile {
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  border: .0625rem solid var(--meg-line);
+  border-radius: .8rem;
+  background: rgba(3, 23, 27, .76);
+  cursor: pointer;
+}
+.meg-period {
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 11.75rem;
+  max-width: 100%;
+  justify-content: center;
+  padding: .65rem .9rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.meg-period span {
+  display: inline-block;
+  flex: 0 0 auto;
+  min-width: max-content;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+.meg-period svg { width: 1.18rem; height: 1.18rem; color: var(--meg-accent); }
+.meg-period svg:last-child { width: .95rem; color: var(--meg-muted); }
+
+.meg-notification { position: relative; }
+.meg-notification-dot { position: absolute; top: .43rem; right: .45rem; width: .46rem; height: .46rem; border-radius: 50%; background: var(--meg-danger); box-shadow: 0 0 .6rem rgba(255,90,95,.7); }
+
+.meg-profile { padding: .35rem .5rem .35rem .4rem; border-color: transparent; background: transparent; }
+.meg-avatar { width: 2.55rem; height: 2.55rem; display: inline-grid; place-items: center; border: .0625rem solid rgba(20,227,200,.36); border-radius: 50%; background: linear-gradient(145deg, #0b5a5e, #063236); font-weight: 700; }
+.meg-profile-name {
+  min-width: 0;
+  max-width: clamp(7rem, 13vw, 13.5rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .88rem;
+  font-weight: 650;
+}
+.meg-profile svg { width: 1rem; color: var(--meg-muted); }
+
+.meg-main {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.meg-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 62% 0%, rgba(17, 153, 143, .08), transparent 30rem),
+    linear-gradient(180deg, rgba(3,22,24,.20), rgba(1,12,13,.02));
+}
+
+.meg-shell-stage {
+  position: relative;
+  min-height: 0;
+}
+
+.meg-drawer-scrim { display: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@media (max-width: 1023px) {
+  .meg-shell { grid-template-columns: var(--meg-sidebar-compact) minmax(0, 1fr); }
+  .meg-topbar-launchers { display: inline-flex; }
+  .meg-sidebar-toggle-topbar { display: none; }
+  .meg-sidebar { padding-inline: .55rem; }
+  .meg-nav-item span { display: none; }
+
+  .meg-brand {
+    flex: 0 0 76px;
+    height: 76px;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    margin-bottom: 0;
+    overflow: visible;
+  }
+
+  .meg-brand-stack {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    border: 1px solid rgba(20, 227, 200, .22);
+    border-radius: 13px;
+    background:
+      radial-gradient(circle at 32% 22%, rgba(65, 242, 220, .10), transparent 52%),
+      linear-gradient(145deg, rgba(7, 46, 48, .92), rgba(2, 25, 28, .96));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.035),
+      0 5px 14px rgba(0,0,0,.18),
+      0 0 12px rgba(20, 227, 200, .08);
+  }
+
+  .meg-brand-logo--expanded {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 140px;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  .meg-brand-logo--collapsed {
+    position: relative;
+    inset: auto;
+    flex: 0 0 auto;
+    width: 42px;
+    min-width: 42px;
+    max-width: 42px;
+    height: auto;
+    object-fit: contain;
+    opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(20, 227, 200, .12));
+    transform: none;
+  }
+  .meg-nav-item { justify-content: center; padding-inline: .5rem; }
+  .sidebar__art { width: calc(100% + 1.1rem); margin-inline: -.55rem; opacity: .5; }
+  .sidebar__art svg { width: 13rem; min-width: 13rem; }
+  .meg-profile-name { display: none; }
+
+  .meg-topbar {
+    grid-template-columns: auto minmax(46px, 1fr) auto;
+    grid-template-areas: "launchers search actions";
+    gap: .75rem;
+    padding: .8rem 1rem;
+  }
+
+  .meg-topbar-launchers {
+    grid-area: launchers;
+  }
+
+  .meg-search {
+    grid-area: search;
+    width: 100%;
+    min-width: 46px;
+    max-width: 38.5rem;
+  }
+
+  .meg-topbar-actions {
+    grid-area: actions;
+    width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .6rem;
+    margin-left: 0;
+  }
+
+  .meg-period {
+    justify-self: auto;
+  }
+
+  .meg-notification,
+  .meg-profile {
+    justify-self: auto;
+  }
+}
+
+@container meg-shell-body (max-width: 40rem) {
+  .meg-search {
+    width: 46px;
+    min-width: 46px;
+    max-width: 46px;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .meg-search input {
+    flex: 0 1 0;
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .meg-search svg {
+    flex: 0 0 1.2rem;
+    margin: 0;
+  }
+}
+
+@media (max-width: 639px) {
+  .meg-shell { display: block; }
+  .meg-sidebar-wrap {
+    position: fixed;
+    inset: 0 auto auto 0;
+    width: 0;
+    height: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: visible;
+  }
+  .meg-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(19rem, 84vw);
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+  }
+  .meg-sidebar.is-open { transform: translateX(0); }
+  .meg-nav-item span { display: inline; }
+  .meg-brand { min-height: 7.4rem; }
+  .meg-brand-logo--expanded {
+    position: relative;
+    inset: auto;
+    width: 140px;
+    opacity: 1;
+    transform: none;
+  }
+  .meg-brand-logo--collapsed {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 36px;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+  .meg-nav-item { justify-content: flex-start; padding-inline: .82rem; }
+  .sidebar__art { display: none; }
+  .meg-drawer-scrim { position: fixed; inset: 0; z-index: 20; display: block; border: 0; background: rgba(0,8,9,.72); backdrop-filter: blur(.25rem); }
+
+  .meg-topbar {
+    min-height: auto;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "menu launchers . notification profile"
+      "period period period period period"
+      "search search search search search";
+    gap: .65rem;
+    padding: .75rem;
+  }
+
+  .meg-menu-button {
+    grid-area: menu;
+    display: inline-grid;
+    justify-self: start;
+  }
+
+  .meg-topbar-launchers {
+    grid-area: launchers;
+    display: inline-flex;
+    justify-self: start;
+    margin-left: 0;
+  }
+
+  .meg-sidebar-toggle-topbar {
+    display: none;
+  }
+
+  .meg-search {
+    grid-area: search;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    justify-content: flex-start;
+    gap: .7rem;
+    padding-inline: .9rem;
+  }
+
+  .meg-search input {
+    flex: 1 1 auto;
+    width: 100%;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .meg-topbar-actions {
+    display: contents;
+  }
+
+  .meg-period {
+    grid-area: period;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    justify-self: stretch;
+    justify-content: center;
+  }
+
+  .meg-period span {
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .meg-notification {
+    grid-area: notification;
+    justify-self: end;
+  }
+
+  .meg-profile {
+    grid-area: profile;
+    justify-self: end;
+    padding-right: 0;
+  }
+
+  .meg-profile svg { display: none; }
+  .meg-avatar { width: 2.45rem; height: 2.45rem; }
+  .meg-main { padding: .75rem; }
+  .meg-shell-stage { min-height: 34rem; }
+}
+
+
+
+
+@media (max-height: 767px) {
+  .meg-sidebar {
+    gap: 0;
+  }
+
+  .meg-brand {
+    flex: 0 0 64px;
+    height: 64px;
+    min-height: 64px;
+    margin-bottom: 0;
+  }
+
+  .meg-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: stretch;
+    gap: clamp(2px, .8vh, 6px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .meg-nav-item {
+    flex: 0 0 clamp(34px, 6.2vh, 42px);
+    height: clamp(34px, 6.2vh, 42px);
+    min-height: clamp(34px, 6.2vh, 42px);
+    max-height: clamp(34px, 6.2vh, 42px);
+    padding-block: 0;
+  }
+
+  .meg-sidebar-footer {
+    flex: 0 0 auto;
+    margin-block: 8px;
+  }
+
+  .sidebar__art {
+    display: none;
+  }
+}
+
+@media (max-height: 599px) {
+  .meg-brand {
+    flex-basis: 52px;
+    height: 52px;
+    min-height: 52px;
+  }
+}
+
+@media (max-height: 519px) {
+  .meg-nav {
+    justify-content: flex-start;
+    overflow-y: auto;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+  }
+}
+
+@media (min-width: 1024px) {
+  .meg-sidebar {
+    padding-top: 0;
+    overflow: visible;
+  }
+
+  .meg-brand {
+    position: relative;
+    flex: 0 0 auto;
+    min-height: 0;
+    display: block;
+    padding: 16px .75rem 0;
+    margin-bottom: 16px;
+    overflow: visible;
+  }
+
+  .meg-brand-logo--expanded {
+    width: 112px;
+    opacity: 1;
+  }
+
+  .meg-brand-logo--collapsed {
+    width: 36px;
+    opacity: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-wrap,
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    padding-inline: 8px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    position: relative;
+    flex: 0 0 64px;
+    width: 100%;
+    height: 64px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    margin-bottom: 0;
+    overflow: visible;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    border: 1px solid rgba(20, 227, 200, .24);
+    border-radius: 13px;
+    background:
+      radial-gradient(circle at 32% 22%, rgba(65, 242, 220, .12), transparent 52%),
+      linear-gradient(145deg, rgba(7, 46, 48, .96), rgba(2, 25, 28, .98));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.045),
+      inset 0 -1px 0 rgba(0,0,0,.28),
+      0 6px 16px rgba(0,0,0,.22),
+      0 0 14px rgba(20, 227, 200, .11);
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--expanded {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
+    position: relative;
+    inset: auto;
+    flex: 0 0 auto;
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+    height: auto;
+    object-fit: contain;
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(20, 227, 200, .16));
+    transform: none;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    flex: 0 0 auto;
+    width: 100%;
+    justify-content: center;
+    padding-inline: 0;
+    overflow: visible;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item svg {
+    margin-inline: auto;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item span,
+  .meg-shell.is-sidebar-collapsed .meg-logout-button span {
+    display: none;
+  }
+
+  .meg-shell.is-sidebar-collapsed .sidebar__art {
+    display: none;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-footer {
+    flex: 0 0 auto;
+    padding-top: .5rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-logout-button {
+    width: 100%;
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-logout-button svg {
+    margin-inline: auto;
+  }
+
+}
+
+@media (min-width: 1024px) and (max-height: 700px) {
+  .meg-brand-logo--expanded {
+    width: 96px;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 600px) {
+  .meg-brand-logo--expanded {
+    width: 80px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    flex-basis: 52px;
+    height: 52px;
+    min-height: 52px;
+    padding-block: 6px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
+    width: 34px;
+    min-width: 34px;
+    max-width: 34px;
+  }
+}
+
+/* Height-responsive sidebar contract: must win after width-specific desktop/tablet rules. */
+@media (max-height: 767px) {
+  .meg-sidebar {
+    gap: 0;
+  }
+
+  .meg-brand,
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    box-sizing: border-box;
+    flex: 0 0 72px;
+    width: 100%;
+    height: 72px;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0 8px;
+    margin-bottom: 0;
+    overflow: visible;
+  }
+
+  .meg-brand-stack {
+    width: 100%;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+  }
+
+  .meg-brand-logo--expanded {
+    width: 88px;
+    max-height: 54px;
+    object-fit: contain;
+  }
+
+  .meg-nav,
+  .meg-shell.is-sidebar-collapsed .meg-nav {
+    padding-top: 8px;
+  }
+
+  .meg-nav,
+  .meg-shell.is-sidebar-collapsed .meg-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: stretch;
+    gap: clamp(2px, .8vh, 6px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .meg-nav-item,
+  .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    flex: 0 0 clamp(34px, 6.2vh, 42px);
+    height: clamp(34px, 6.2vh, 42px);
+    min-height: clamp(34px, 6.2vh, 42px);
+    max-height: clamp(34px, 6.2vh, 42px);
+    padding-block: 0;
+  }
+
+  .meg-sidebar-footer,
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-footer {
+    flex: 0 0 auto;
+    margin-block: 8px;
+    padding-top: 8px;
+  }
+}
+
+@media (max-height: 699px) {
+  .sidebar__art,
+  .meg-shell.is-sidebar-collapsed .sidebar__art {
+    display: none;
+  }
+}
+
+@media (max-height: 599px) {
+  .meg-brand,
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    flex-basis: 60px;
+    height: 60px;
+    min-height: 60px;
+    padding: 4px 0 6px;
+  }
+
+  .meg-brand-logo--expanded {
+    width: 76px;
+    max-height: 46px;
+  }
+
+  .meg-nav,
+  .meg-shell.is-sidebar-collapsed .meg-nav {
+    padding-top: 6px;
+  }
+}
+
+@media (max-height: 519px) {
+  .meg-nav,
+  .meg-shell.is-sidebar-collapsed .meg-nav {
+    justify-content: flex-start;
+    overflow-y: auto;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+  }
+}
+
+
+@media (max-height: 767px) and (min-width: 640px) {
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
+    max-height: none;
+  }
+}
+
+@media (max-width: 1023px) and (max-height: 599px) {
+  .meg-brand {
+    flex-basis: 60px;
+    height: 60px;
+    min-height: 60px;
+    padding: 4px 0 6px;
+  }
+
+  .meg-brand-stack {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+  }
+
+  .meg-brand-logo--collapsed {
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+  }
+}
+
+/* Wide desktop keeps the approved expanded brand scale even when browser chrome reduces viewport height. */
+@media (min-width: 1024px) and (max-height: 767px) {
+  .meg-brand {
+    flex: 0 0 96px;
+    height: 96px;
+    min-height: 96px;
+    padding: 14px 0 6px;
+    margin-bottom: 0;
+  }
+
+  .meg-brand-stack {
+    width: 100%;
+    height: auto;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .meg-brand-logo--expanded {
+    width: 112px;
+    max-height: none;
+    object-fit: contain;
+  }
+
+  .meg-nav {
+    padding-top: 10px;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 519px) {
+  .meg-brand {
+    flex-basis: 82px;
+    height: 82px;
+    min-height: 82px;
+    padding: 8px 0 6px;
+  }
+
+  .meg-brand-logo--expanded {
+    width: 104px;
+  }
+
+  .meg-nav {
+    padding-top: 6px;
+  }
+}
+
+
+/* Final optical alignment: collapsed brand shares the same vertical control band as the topbar actions. */
+@media (min-width: 1024px) {
+  .meg-brand-stack {
+    transform: translateY(4px);
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    flex: 0 0 5.35rem;
+    height: 5.35rem;
+    min-height: 5.35rem;
+    padding: 0;
+    margin-bottom: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
+    transform: none;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 640px) {
+  .meg-brand {
+    flex: 0 0 72px;
+    height: 72px;
+    min-height: 72px;
+    padding: 0;
+  }
+
+  .meg-brand-stack {
+    transform: none;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 640px) and (max-height: 519px) {
+  .meg-brand {
+    flex-basis: 60px;
+    height: 60px;
+    min-height: 60px;
+  }
+}
+
+
+/* Expanded desktop sidebar: canonical fit contract.
+   Intentionally scoped away from the collapsed state. */
+@media (min-width: 1024px) {
+  .meg-shell:not(.is-sidebar-collapsed) .meg-sidebar {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    gap: .5rem;
+    overflow: hidden;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-brand {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    padding-block: clamp(8px, 1.5vh, 16px);
+    margin-bottom: 0;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-brand-stack {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-brand-logo--expanded {
+    width: 88px;
+    max-width: 88px;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-nav {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 0;
+    padding-top: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-nav-item {
+    box-sizing: border-box;
+    flex: 1 1 0;
+    min-height: 40px;
+    max-height: 56px;
+    height: auto;
+    display: flex;
+    align-items: center;
+    padding-block: clamp(6px, .8vh, 11px);
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .sidebar__art {
+    flex: 0 1 min(20rem, 30dvh);
+    height: min(20rem, 30dvh);
+    min-height: 0;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-sidebar-footer {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-sidebar-footer::before {
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 699px) {
+  .meg-shell:not(.is-sidebar-collapsed) .meg-sidebar {
+    gap: .25rem;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-brand {
+    padding-block: 8px;
+  }
+
+  .meg-shell:not(.is-sidebar-collapsed) .meg-nav-item {
+    padding-block: 4px;
+  }
+}
+
+/* Collapsed desktop/compact sidebar: canonical viewport fit contract.
+   Scoped to the collapsed state only; expanded sidebar remains untouched. */
+@media (min-width: 640px) {
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    gap: .5rem;
+    overflow: hidden;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    flex-shrink: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 0;
+    padding-top: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    box-sizing: border-box;
+    flex: 1 1 0;
+    min-height: 40px;
+    max-height: 56px;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: clamp(6px, .8vh, 11px);
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-footer {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 640px) and (max-height: 699px) {
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    gap: .25rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    padding-block: 6px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    padding-block: 4px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .sidebar__art {
+    display: none;
+  }
+}
+
