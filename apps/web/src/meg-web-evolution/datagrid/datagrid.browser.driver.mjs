@@ -172,7 +172,7 @@ export async function createDataGridBrowser() {
   }
 
   async function pressKey(key, code = key) {
-    const keyCodes = { Enter: 13, Escape: 27, ' ': 32, Space: 32, Tab: 9 };
+    const keyCodes = { Enter: 13, Escape: 27, ' ': 32, Space: 32, Tab: 9, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40 };
     const virtualKeyCode = keyCodes[key] ?? 0;
     const params = {
       key,
