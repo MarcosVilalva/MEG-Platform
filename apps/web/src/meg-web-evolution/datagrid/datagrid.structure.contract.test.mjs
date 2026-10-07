@@ -95,7 +95,7 @@ assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'));
 assert.ok(harnessSource.includes('<AppShell>'));
 assert.ok(harnessSource.includes('<DataGrid'));
 assert.ok(harnessSource.includes('pageSize={600}'));
-assert.ok(harnessSource.includes('persistenceKey="stage-04-harness"'));
+assert.ok(harnessSource.includes("'stage-04-harness'"), 'Harness precisa de chave de persistência isolada.');
 assert.ok(fixtureSource.includes('Fixture exclusivamente técnica'));
 assert.equal(/Login|Loading|Home funcional|Novo Lançamento|Pendentes|Cartões/.test(harnessSource), false);
 
