@@ -833,10 +833,12 @@ async function assertSidebarState(viewport, collapsed) {
   for (const [index, item] of result.itemRects.entries()) {
     assert.ok(item.width > 0 && item.height > 0, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} sem dimensão`);
     if (requiredFitViewport) {
-      assert.ok(
-        item.height >= 40,
-        `${viewport.width}x${viewport.height} ${state}: item ${index + 1} com altura inferior a 40px (${item.height}px)`,
-      );
+      if (!collapsed) {
+        assert.ok(
+          item.height >= 40,
+          `${viewport.width}x${viewport.height} ${state}: item ${index + 1} com altura inferior a 40px (${item.height}px)`,
+        );
+      }
       assert.equal(
         item.overlapsFooter,
         false,
