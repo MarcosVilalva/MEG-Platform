@@ -142,7 +142,7 @@ assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-nav\s*\{[\s\S]*dis
 
 assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar\s*\{[\s\S]*grid-template-columns:\s*auto minmax\(46px, 1fr\) auto;[\s\S]*grid-template-areas:\s*"launchers search actions"/);
 assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar-actions\s*\{[\s\S]*display:\s*flex;[\s\S]*justify-content:\s*flex-end/);
-assert.match(source, /@media \(max-width: 639px\)[\s\S]*grid-template-areas:[\s\S]*"menu \. notification profile"[\s\S]*"period period period period"[\s\S]*"search search search search"/);
+assert.match(source, /@media \(max-width: 639px\)[\s\S]*grid-template-columns:\s*auto auto minmax\(0, 1fr\) auto auto;[\s\S]*grid-template-areas:[\s\S]*"menu launchers \. notification profile"[\s\S]*"period period period period period"[\s\S]*"search search search search search"/);
 assert.match(source, /@media \(max-width: 639px\)[\s\S]*\.meg-topbar-actions\s*\{[\s\S]*display:\s*contents/);
 
 assert.match(source, /container-type:\s*inline-size/);
@@ -196,3 +196,5 @@ assert.match(source, /window\.addEventListener\('focus'/);
 assert.match(source, /document\.addEventListener\('visibilitychange'/);
 
 assert.match(source, /\.meg-nav-item\s*\{[\s\S]*padding:\s*\.7rem\s+\.875rem/);
+
+assert.match(source, /@media \(max-width:\s*639px\)[\s\S]*\.meg-topbar-launchers\s*\{[\s\S]*grid-area:\s*launchers;[\s\S]*margin-left:\s*0/);
