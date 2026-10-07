@@ -110,8 +110,11 @@ async function measure(state) {
       let node = toggle.parentElement;
       while (node && node !== document.documentElement) {
         const style = getComputedStyle(node);
-        const clipsX = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowX);
-        const clipsY = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowY);
+        const rect = node.getBoundingClientRect();
+        const clipsX = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowX) &&
+          (toggleRect.left < rect.left || toggleRect.right > rect.right);
+        const clipsY = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowY) &&
+          (toggleRect.top < rect.top || toggleRect.bottom > rect.bottom);
         if (clipsX || clipsY) return node.className || node.tagName;
         node = node.parentElement;
       }
