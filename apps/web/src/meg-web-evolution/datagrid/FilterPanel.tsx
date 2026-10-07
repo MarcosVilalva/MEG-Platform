@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import {
   dateRangeForShortcut,
   distinctKey,
@@ -107,9 +107,25 @@ function DistinctList<T extends Record<string, unknown>>({
   }, [column.type, options, search]);
 
   const allVisibleSelected = visible.length > 0 && visible.every((option) => selected.includes(option.key));
+  const rendered = visible.slice(0, 200);
 
   const toggle = (key: string) => {
     onSelected(selected.includes(key) ? selected.filter((item) => item !== key) : [...selected, key]);
+  };
+
+  const moveOptionFocus = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    event.preventDefault();
+    const current = event.currentTarget;
+    const list = current.closest('.meg-datagrid-filter__values');
+    const inputs = list ? [...list.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')] : [];
+    const index = inputs.indexOf(current);
+    if (index < 0 || !inputs.length) return;
+    const nextIndex = event.key === 'ArrowDown'
+      ? Math.min(inputs.length - 1, index + 1)
+      : Math.max(0, index - 1);
+    inputs[nextIndex]?.focus();
+    inputs[nextIndex]?.scrollIntoView({ block: 'nearest' });
   };
 
   return (
@@ -141,7 +157,7 @@ function DistinctList<T extends Record<string, unknown>>({
       </label>
 
       <div className="meg-datagrid-filter__values" role="group" aria-label={`Valores de ${column.label}`}>
-        {visible.map((option) => {
+        {rendered.map((option) => {
           const record = option.value && typeof option.value === 'object'
             ? option.value as Record<string, unknown>
             : null;
@@ -155,6 +171,7 @@ function DistinctList<T extends Record<string, unknown>>({
                 type="checkbox"
                 checked={selected.includes(option.key)}
                 onChange={() => toggle(option.key)}
+                onKeyDown={moveOptionFocus}
               />
               {column.type === 'enum' && (
                 <span
@@ -163,7 +180,7 @@ function DistinctList<T extends Record<string, unknown>>({
                   aria-hidden="true"
                 />
               )}
-              <span className="meg-datagrid-check__label">
+              <span className="meg-datagrid-check__label" title={String(label ?? formatDistinct(option, column.type))}>
                 {icon}
                 {label ?? formatDistinct(option, column.type)}
               </span>
@@ -172,6 +189,9 @@ function DistinctList<T extends Record<string, unknown>>({
           );
         })}
         {!visible.length && <p className="meg-datagrid-filter__no-values">Nenhum valor encontrado.</p>}
+        {visible.length > rendered.length && (
+          <p className="meg-datagrid-filter__limit-note">Mostrando {rendered.length} de {visible.length}. Refine a busca para localizar outros valores.</p>
+        )}
       </div>
     </div>
   );
@@ -468,7 +488,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
 export function filterSummary(filter: DataGridFilter | undefined): string {
   if (!filter || !isFilterActive(filter)) return '';
   if (filter.type === 'boolean') return filter.booleanValue ? 'Sim' : 'Não';
-  if (filter.selected?.length) return `${filter.selected.length} selecionado(s)`;
+  if (filter.selected?.length) return filter.selected.length === 1 ? '1 selecionado' : `${filter.selected.length} selecionados`;
   if (filter.operator === 'empty') return 'Está vazio';
   if (filter.operator === 'between') return `${displayValue(filter.value)} a ${displayValue(filter.value2)}`;
   return displayValue(filter.value);

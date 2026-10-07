@@ -70,16 +70,24 @@ assert.ok(dataGridSource.includes('ColumnManager'));
 assert.ok(dataGridSource.includes('Mover '));
 assert.ok(dataGridSource.includes('hiddenColumns'));
 
-for (const text of ['Carregando dados', 'Nenhum dado disponível', 'Nenhum resultado com os filtros atuais', 'Limpar filtros']) {
+for (const text of ['Carregando dados', 'Nenhum dado disponível', 'Nenhum resultado com os filtros atuais', 'Limpar tudo']) {
   assert.ok(dataGridSource.includes(text), `Estado obrigatório ausente: ${text}`);
 }
+assert.equal(dataGridSource.includes('>Limpar filtros</button>'), false, 'Estado vazio não deve duplicar a ação de limpeza.');
 
 assert.ok(dataGridSource.includes('role="dialog"'));
 assert.ok(dataGridSource.includes("event.key === 'Escape'"));
 assert.ok(dataGridSource.includes('previous?.focus()'));
 assert.ok(dataGridSource.includes("event.key !== 'Tab'"));
-assert.ok(dataGridSource.includes('aria-modal="true"'));
+assert.ok(dataGridSource.includes('aria-modal="false"'));
+assert.equal(dataGridSource.includes('data-datagrid-low-height-sheet'), false, 'Popover não pode voltar a usar bottom sheet por baixa altura.');
 assert.ok(dataGridSource.includes('aria-expanded={mobileFiltersOpen}'));
+assert.ok(dataGridSource.includes('aria-haspopup="dialog"'));
+assert.ok(dataGridSource.includes("document.addEventListener('pointerdown'"), 'Popover deve fechar em clique fora.');
+assert.ok(dataGridSource.includes("window.addEventListener('resize'"), 'Popover deve reposicionar em resize.');
+assert.ok(dataGridSource.includes("window.addEventListener('scroll'"), 'Popover deve reposicionar em scroll.');
+assert.ok(filterSource.includes("visible.slice(0, 200)"), 'Listas grandes devem limitar renderização.');
+assert.ok(filterSource.includes("'1 selecionado'"), 'Resumo singular de seleção ausente.');
 
 const minWidthBreakpoints = [...css.matchAll(/@media\s*\(min-width:\s*(\d+)px\)/g)].map((match) => Number(match[1]));
 assert.deepEqual([...new Set(minWidthBreakpoints)].sort((a, b) => a - b), [640, 1024]);

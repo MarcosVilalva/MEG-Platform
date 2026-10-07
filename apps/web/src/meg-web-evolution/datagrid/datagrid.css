@@ -437,8 +437,10 @@
 .meg-datagrid-column-menu {
   position: fixed;
   z-index: 130;
-  width: min(20rem, calc(100vw - 1.5rem));
-  max-height: calc(100dvh - 1.5rem);
+  width: clamp(280px, 24vw, 360px);
+  max-width: calc(100vw - 16px);
+  height: auto;
+  max-height: min(560px, calc(100dvh - 16px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -446,13 +448,6 @@
   border-radius: .9rem;
   background: #02181b;
   box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, .42), 0 0 1.4rem rgba(20, 227, 200, .1);
-}
-
-.meg-datagrid-column-menu--sheet {
-  inset: auto 0 0 0 !important;
-  width: 100% !important;
-  max-height: calc(100dvh - .75rem) !important;
-  border-radius: 1rem 1rem 0 0;
 }
 
 .meg-datagrid-column-menu__list {
@@ -506,10 +501,14 @@
   padding: 0;
 }
 
-.meg-datagrid-filter-dialog {
+.meg-datagrid-filter-dialog,
+.meg-datagrid-filter-popover {
   position: fixed;
   z-index: 120;
-  max-height: calc(100dvh - 1.5rem);
+  width: clamp(280px, 24vw, 360px);
+  max-width: calc(100vw - 16px);
+  height: auto;
+  max-height: min(560px, calc(100dvh - 16px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -568,8 +567,7 @@
   flex-direction: column;
 }
 
-.meg-datagrid-filter-dialog > .meg-datagrid-filter-panel,
-.meg-datagrid-filter-sheet--single > .meg-datagrid-filter-panel {
+.meg-datagrid-filter-dialog > .meg-datagrid-filter-panel {
   flex: 1 1 auto;
   overflow: hidden;
 }
@@ -578,16 +576,21 @@
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  gap: .8rem;
-  padding: .8rem;
+  gap: .5rem;
+  padding: .55rem .65rem;
 }
 
-.meg-datagrid-filter-dialog > .meg-datagrid-filter-panel > .meg-datagrid-filter-panel__body,
-.meg-datagrid-filter-sheet--single > .meg-datagrid-filter-panel > .meg-datagrid-filter-panel__body {
-  overflow: auto;
+.meg-datagrid-filter-dialog > .meg-datagrid-filter-panel > .meg-datagrid-filter-panel__body {
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(20, 227, 200, .35) transparent;
+  scrollbar-gutter: stable;
+  scroll-padding-block: .5rem 3.6rem;
+  box-shadow:
+    inset 0 .75rem .8rem -.9rem rgba(20, 227, 200, .28),
+    inset 0 -.75rem .8rem -.9rem rgba(20, 227, 200, .28);
 }
 
 .meg-datagrid-field {
@@ -600,8 +603,16 @@
 
 .meg-datagrid-filter__range {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: .55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .45rem;
+}
+
+.meg-datagrid-filter-dialog input:not([type="checkbox"]):not([type="radio"]),
+.meg-datagrid-filter-dialog select,
+.meg-datagrid-filter-popover input:not([type="checkbox"]):not([type="radio"]),
+.meg-datagrid-filter-popover select {
+  min-height: 2.25rem;
+  height: 2.25rem;
 }
 
 .meg-datagrid-filter__distinct {
@@ -611,14 +622,19 @@
 }
 
 .meg-datagrid-filter__search {
+  position: sticky;
+  z-index: 3;
+  top: -.55rem;
   display: grid;
-  gap: .3rem;
+  gap: .25rem;
+  padding: .45rem 0 .35rem;
+  background: #02171a;
   color: var(--meg-muted);
   font-size: .72rem;
 }
 
 .meg-datagrid-check {
-  min-height: 2.6rem;
+  min-height: 2.125rem;
   display: flex;
   align-items: center;
   gap: .5rem;
@@ -633,8 +649,12 @@
 }
 
 .meg-datagrid-check--all {
+  position: sticky;
+  z-index: 2;
+  top: 3.9rem;
   border-bottom: .0625rem solid rgba(20, 227, 200, .10);
   border-radius: 0;
+  background: #02171a;
   font-weight: 700;
 }
 
@@ -673,19 +693,18 @@
 }
 
 .meg-datagrid-filter__values {
-  max-height: 12rem;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(20, 227, 200, .35) transparent;
+  display: grid;
+  max-height: none;
+  overflow: visible;
+  scroll-padding-block: .35rem;
 }
 
 
-.meg-datagrid-filter-dialog .meg-datagrid-filter__values,
-.meg-datagrid-filter-dialog .meg-datagrid-date-tree,
-.meg-datagrid-filter-sheet--single .meg-datagrid-filter__values,
-.meg-datagrid-filter-sheet--single .meg-datagrid-date-tree {
-  max-height: none;
-  overflow: visible;
+.meg-datagrid-filter__limit-note {
+  margin: .35rem 0 0;
+  color: var(--meg-muted-2);
+  font-size: .68rem;
+  line-height: 1.35;
 }
 
 .meg-datagrid-filter__no-values {
@@ -701,8 +720,10 @@
 }
 
 .meg-datagrid-shortcuts button {
-  min-height: 2.35rem;
-  padding: .35rem .55rem;
+  flex: 0 0 auto;
+  min-width: max-content;
+  min-height: 1.75rem;
+  padding: .2rem .48rem;
   border: .0625rem solid rgba(20, 227, 200, .18);
   border-radius: var(--meg-radius-pill);
   background: rgba(4, 32, 35, .75);
@@ -718,8 +739,8 @@
 }
 
 .meg-datagrid-date-tree {
-  max-height: 13rem;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   padding: .25rem;
   border: .0625rem solid rgba(20, 227, 200, .12);
   border-radius: .65rem;
@@ -776,15 +797,15 @@
   display: flex;
   justify-content: flex-end;
   gap: .55rem;
-  padding: .7rem .8rem;
+  padding: .5rem .65rem;
   border-top: .0625rem solid rgba(20, 227, 200, .14);
   background: #02171a;
 }
 
 .meg-datagrid-primary-action,
 .meg-datagrid-secondary-action {
-  min-height: 3rem;
-  padding: .65rem .9rem;
+  min-height: 2.35rem;
+  padding: .4rem .75rem;
   border-radius: .7rem;
   cursor: pointer;
   font-weight: 750;
@@ -833,20 +854,20 @@
 }
 
 
-.meg-datagrid-filter-sheet--single {
-  height: min(calc(100dvh - .75rem), 36rem);
-  max-height: calc(100dvh - .75rem);
-}
-
-.meg-datagrid-filter-sheet--single > .meg-datagrid-dialog-header {
-  background: #021417;
-}
-
 .meg-datagrid-filter-accordions {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-  padding: .55rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 227, 200, .35) transparent;
+  scrollbar-gutter: stable;
+  scroll-padding-block: .4rem 3.25rem;
+  padding: .35rem .45rem;
+  box-shadow:
+    inset 0 .75rem .8rem -.9rem rgba(20, 227, 200, .28),
+    inset 0 -.75rem .8rem -.9rem rgba(20, 227, 200, .28);
 }
 
 .meg-datagrid-filter-accordion {
@@ -1003,10 +1024,6 @@
 @media (min-width: 640px) {
   .meg-datagrid-toolbar__primary {
     flex: 1 1 20rem;
-  }
-
-  .meg-datagrid-filter__range {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .meg-datagrid-filter-sheet {
@@ -1289,4 +1306,24 @@
   .meg-datagrid-skeleton__row {
     animation: none;
   }
+}
+
+.meg-datagrid-filter-popover .meg-datagrid-filter-panel__body {
+  overflow: visible;
+  box-shadow: none;
+  padding: .45rem .5rem;
+}
+
+.meg-datagrid-filter-popover .meg-datagrid-filter-panel__footer {
+  position: sticky;
+  bottom: 0;
+  margin-inline: -.45rem;
+}
+
+.meg-datagrid-filter-popover .meg-datagrid-filter__search {
+  top: -.35rem;
+}
+
+.meg-datagrid-filter-popover .meg-datagrid-check--all {
+  top: 3.7rem;
 }

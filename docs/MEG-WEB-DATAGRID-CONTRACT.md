@@ -71,7 +71,9 @@ A lógica é AND entre colunas e OR entre valores selecionados da mesma coluna. 
 
 Atalhos de data são resolvidos em runtime com `new Date()`. Nenhuma data relativa fica gravada em mock, HTML ou componente.
 
-Os filtros desktop são posicionados em relação ao funil com clamp horizontal/vertical e podem abrir para cima quando o espaço inferior é insuficiente. O contêiner nunca ultrapassa a viewport: cabeçalho e rodapé permanecem fixos e somente o corpo do filtro rola. Em viewports com altura inferior a 640px, inclusive notebooks desktop largos, o filtro individual troca para o mesmo padrão visual de bottom sheet usado no mobile. A regra vale para TEXT, NUMBER, CURRENCY, DATE, ENUM e BOOLEAN. O seletor de colunas segue a mesma contenção vertical e também troca para bottom sheet em altura reduzida.
+Filtros e seletor de colunas usam popover compacto ancorado ao gatilho em qualquer altura de viewport. A largura segue `clamp(280px, 24vw, 360px)`, limitada por `calc(100vw - 16px)`; a altura é automática, com `max-height: min(560px, calc(100dvh - 16px))`. O posicionamento recalcula flip/shift/clamp em resize e scroll, abre para cima quando necessário e evita sobrepor a sidebar quando o gatilho está na área principal. Se o gatilho sair da viewport, o popover fecha.
+
+Cabeçalho e rodapé permanecem visíveis; somente o corpo rola, com overscroll contido, scrollbar estável e indicação visual de continuidade. Não existe fallback para bottom sheet por baixa altura. TEXT, NUMBER, CURRENCY, DATE, ENUM e BOOLEAN seguem a mesma regra. O filtro TEXT mantém sua lista de valores distintos de forma intencional, além do operador livre: isso faz parte do contrato Excel/Power BI da Etapa 04, e não transforma a coluna em ENUM.
 
 ## Ordenação
 
@@ -137,6 +139,6 @@ O workflow `MEG Web Evolution Foundation` mantém todos os contratos da Etapa 03
 
 1. contrato puro do DataGrid;
 2. contrato estrutural/clean-room;
-3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 900x700, 640x600 e 390x844, incluindo cobertura específica de filtros em 1366x600 e 1024x600 para todos os tipos e para o seletor de colunas.
+3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 900x700, 640x600 e 390x844, com cobertura adicional dos popovers em 1024x600, 1093x480 e 910x400, sidebar expandida e recolhida, clique fora, Esc, foco, contenção, ações e evidências visuais.
 
 A validação técnica não substitui a validação visual explícita.

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createDataGridBrowser } from './datagrid.browser.driver.mjs';
 
 const appUrl = process.env.MEG_WEB_EVOLUTION_DATAGRID_URL || 'http://127.0.0.1:4173/datagrid-harness.html';
@@ -62,122 +64,202 @@ async function assertDesktopContainment(width, height, collapsed) {
   assert.deepEqual(snapshot.clippedGrid, [], label + ': controle do grid cortado');
 }
 
-async function assertLowHeightFilterDialogs(width, height) {
-  const label = width + 'x' + height;
-  const filters = [
-    ['date', 'Data'],
-    ['description', 'Descrição técnica'],
-    ['quantity', 'Quantidade'],
-    ['amount', 'Valor técnico'],
-    ['segment', 'Segmento'],
-    ['active', 'Ativo'],
-  ];
+async function captureEvidence(name) {
+  const result = await browser.command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+  const dir = resolve('artifacts/datagrid-evidence');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(resolve(dir, name + '.png'), Buffer.from(result.data, 'base64'));
+}
 
+async function openDesktopFilter(columnLabel) {
+  const opened = await browser.evaluate(`(() => {
+    const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)}));
+    const button=th?.querySelector('.meg-datagrid-filter-button');
+    if (!button) return false;
+    button.focus();
+    button.click();
+    return true;
+  })()`);
+  return opened;
+}
+
+async function assertPopoverGeometry(label, selector, height, requireFilterActions = false) {
+  const geometry = await browser.evaluate(`(() => {
+    const dialog=document.querySelector(${JSON.stringify(selector)});
+    if (!dialog) return null;
+    const rect=dialog.getBoundingClientRect();
+    const clear=[...dialog.querySelectorAll('button')].find((button)=>button.textContent.trim()==='Limpar');
+    const apply=[...dialog.querySelectorAll('button')].find((button)=>button.textContent.trim()==='Aplicar');
+    const clickable=(button)=>{
+      if(!button) return false;
+      const buttonRect=button.getBoundingClientRect();
+      const hit=document.elementFromPoint(buttonRect.left + buttonRect.width / 2, buttonRect.top + buttonRect.height / 2);
+      return !button.disabled && buttonRect.top >= -1 && buttonRect.bottom <= window.innerHeight + 1 && Boolean(hit && button.contains(hit));
+    };
+    return {
+      top:rect.top,
+      bottom:rect.bottom,
+      left:rect.left,
+      right:rect.right,
+      width:rect.width,
+      clearClickable:clickable(clear),
+      applyClickable:clickable(apply),
+      hasSheetLayer:Boolean(dialog.closest('.meg-datagrid-sheet-layer')),
+    };
+  })()`);
+  assert.ok(geometry, label + ': popover não abriu');
+  assert.equal(geometry.hasSheetLayer, false, label + ': popover não pode virar bottom sheet');
+  assert.ok(geometry.top >= -1 && geometry.bottom <= height + 1, label + ': popover ultrapassou a altura da viewport');
+  assert.ok(geometry.left >= -1 && geometry.right <= (await browser.evaluate('window.innerWidth')) + 1, label + ': popover ultrapassou a largura da viewport');
+  if (requireFilterActions) {
+    assert.equal(geometry.clearClickable, true, label + ': Limpar precisa ficar visível e clicável');
+    assert.equal(geometry.applyClickable, true, label + ': Aplicar precisa ficar visível e clicável');
+  }
+  return geometry;
+}
+
+async function assertCompactOverlays(width, height, collapsed) {
+  const label = width + 'x' + height + (collapsed ? ' recolhida' : ' expandida');
   await browser.setViewport(width, height);
   await browser.navigate(appUrl);
-  await browser.evaluate("(() => { localStorage.removeItem('meg-web-evolution:datagrid:stage-04-harness'); return true; })()");
+  await browser.evaluate(`(() => {
+    localStorage.removeItem('meg-web-evolution:datagrid:stage-04-harness');
+    localStorage.setItem('meg-web-evolution:sidebar-collapsed', '${collapsed ? 'true' : 'false'}');
+    return true;
+  })()`);
   await browser.navigate(appUrl);
   await browser.sleep(160);
 
-  for (const [key, columnLabel] of filters) {
-    const open = async () => {
-      const opened = await browser.evaluate(`(() => {
-        const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)}));
-        const button=th?.querySelector('.meg-datagrid-filter-button');
-        if (!button) return false;
-        button.focus();
-        button.click();
+  if (width >= 1024) {
+    for (const [key, columnLabel] of [
+      ['date', 'Data'],
+      ['description', 'Descrição técnica'],
+      ['quantity', 'Quantidade'],
+      ['amount', 'Valor técnico'],
+      ['segment', 'Segmento'],
+      ['active', 'Ativo'],
+    ]) {
+      assert.equal(await openDesktopFilter(columnLabel), true, label + ': funil ausente para ' + columnLabel);
+      await browser.sleep(50);
+      await assertPopoverGeometry(label + ' ' + columnLabel, '[data-datagrid-filter-dialog="' + key + '"]', height, true);
+
+      if (columnLabel === 'Descrição técnica' && width === 1093 && height === 480 && !collapsed) {
+        const listBehavior = await browser.evaluate(`(() => {
+          const dialog=document.querySelector('[data-datagrid-filter-dialog="description"]');
+          const body=dialog?.querySelector('.meg-datagrid-filter-panel__body');
+          const inputs=[...dialog?.querySelectorAll('.meg-datagrid-filter__values input[type="checkbox"]') || []];
+          if(!body || inputs.length < 2) return null;
+          inputs[0].focus();
+          const before=document.activeElement===inputs[0];
+          const bodyCanScroll=body.scrollHeight > body.clientHeight;
+          body.scrollTop=body.scrollHeight;
+          const last=inputs[inputs.length - 1];
+          last.scrollIntoView({block:'nearest'});
+          const bodyRect=body.getBoundingClientRect();
+          const lastRect=last.getBoundingClientRect();
+          return {
+            before,
+            bodyCanScroll,
+            lastVisible:lastRect.top >= bodyRect.top - 1 && lastRect.bottom <= bodyRect.bottom + 1,
+            rendered:inputs.length,
+          };
+        })()`);
+        assert.ok(listBehavior, label + ': lista longa de texto não disponível');
+        assert.equal(listBehavior.before, true, label + ': primeiro valor não recebeu foco');
+        assert.equal(listBehavior.bodyCanScroll, true, label + ': lista longa deve rolar no corpo único');
+        assert.equal(listBehavior.lastVisible, true, label + ': lista não rola até o último item renderizado');
+        assert.ok(listBehavior.rendered <= 200, label + ': lista longa ultrapassou limite de renderização');
+
+        await browser.evaluate("document.querySelector('[data-datagrid-filter-dialog="description"] .meg-datagrid-filter__values input[type="checkbox"]')?.focus()");
+        await browser.pressKey('ArrowDown', 'ArrowDown');
+        const arrowMoved = await browser.evaluate("(() => { const inputs=[...document.querySelectorAll('[data-datagrid-filter-dialog="description"] .meg-datagrid-filter__values input[type="checkbox"]')]; return inputs.length > 1 && document.activeElement===inputs[1]; })()");
+        assert.equal(arrowMoved, true, label + ': ArrowDown não moveu foco entre valores');
+      }
+
+      if (columnLabel === 'Data' && width === 1366 && height === 600 && !collapsed) {
+        await captureEvidence('data-1366x600-expanded');
+      }
+
+      const triggerFocusedAfterOutside = await browser.evaluate(`(() => {
+        const dialog=document.querySelector('[data-datagrid-filter-dialog="${key}"]');
+        const point={ x:Math.max(2, dialog.getBoundingClientRect().left - 4), y:Math.max(2, dialog.getBoundingClientRect().top - 4) };
+        const target=document.elementFromPoint(point.x, point.y);
+        target?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1}));
         return true;
       })()`);
-      assert.equal(opened, true, label + ': funil ausente para ' + columnLabel);
-      await browser.sleep(60);
-    };
+      assert.equal(triggerFocusedAfterOutside, true);
+      await browser.sleep(40);
+      assert.equal(await browser.evaluate(`Boolean(document.querySelector('[data-datagrid-filter-dialog="${key}"]'))`), false, label + ': clique fora não fechou ' + columnLabel);
 
-    await open();
-    const geometry = await browser.evaluate(`(() => {
-      const dialog=document.querySelector('[data-datagrid-filter-dialog="${key}"]');
-      if (!dialog) return null;
-      const rect=dialog.getBoundingClientRect();
-      const footer=dialog.querySelector('.meg-datagrid-filter-panel__footer');
-      const clear=[...dialog.querySelectorAll('button')].find((button)=>button.textContent.trim()==='Limpar');
-      const apply=[...dialog.querySelectorAll('button')].find((button)=>button.textContent.trim()==='Aplicar');
-      const footerRect=footer?.getBoundingClientRect();
-      const clearRect=clear?.getBoundingClientRect();
-      const applyRect=apply?.getBoundingClientRect();
-      const clickable=(button, buttonRect)=>{
-        if(!button || !buttonRect) return false;
-        const hit=document.elementFromPoint(buttonRect.left + buttonRect.width / 2, buttonRect.top + buttonRect.height / 2);
-        return !button.disabled && Boolean(hit && button.contains(hit));
-      };
-      return {
-        lowSheet: dialog.hasAttribute('data-datagrid-low-height-sheet'),
-        top:rect.top,
-        bottom:rect.bottom,
-        height:rect.height,
-        footerTop:footerRect?.top,
-        footerBottom:footerRect?.bottom,
-        clearTop:clearRect?.top,
-        clearBottom:clearRect?.bottom,
-        applyTop:applyRect?.top,
-        applyBottom:applyRect?.bottom,
-        clearClickable:clickable(clear, clearRect),
-        applyClickable:clickable(apply, applyRect),
-      };
-    })()`);
-    assert.ok(geometry, label + ': filtro ' + columnLabel + ' não abriu');
-    assert.equal(geometry.lowSheet, true, label + ': viewport baixa deve usar bottom sheet em ' + columnLabel);
-    assert.ok(geometry.top >= -1 && geometry.bottom <= height + 1, label + ': diálogo de ' + columnLabel + ' ultrapassou a viewport');
-    assert.ok(geometry.footerTop >= -1 && geometry.footerBottom <= height + 1, label + ': rodapé de ' + columnLabel + ' saiu da viewport');
-    assert.ok(geometry.clearTop >= -1 && geometry.clearBottom <= height + 1 && geometry.clearClickable, label + ': Limpar inacessível em ' + columnLabel);
-    assert.ok(geometry.applyTop >= -1 && geometry.applyBottom <= height + 1 && geometry.applyClickable, label + ': Aplicar inacessível em ' + columnLabel);
+      if (columnLabel === 'Data') {
+        assert.equal(await openDesktopFilter(columnLabel), true);
+        await browser.sleep(30);
+        assert.equal(await openDesktopFilter(columnLabel), true, label + ': gatilho não respondeu ao toggle');
+        await browser.sleep(30);
+        assert.equal(await browser.evaluate(`Boolean(document.querySelector('[data-datagrid-filter-dialog="${key}"]'))`), false, label + ': segundo clique no gatilho deve fechar sem reabrir');
+      }
 
-    await browser.evaluate(`(() => {
-      const dialog=document.querySelector('[data-datagrid-filter-dialog="${key}"]');
-      const button=[...dialog.querySelectorAll('button')].find((item)=>item.textContent.trim()==='Limpar');
-      button.click();
-      return true;
-    })()`);
-    await browser.sleep(40);
-    assert.equal(await browser.evaluate(`Boolean(document.querySelector('[data-datagrid-filter-dialog="${key}"]'))`), false, label + ': Limpar não fechou ' + columnLabel);
-    assert.equal(await browser.evaluate(`(() => { const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)})); return document.activeElement===th?.querySelector('.meg-datagrid-filter-button'); })()`), true, label + ': foco não voltou após Limpar em ' + columnLabel);
+      assert.equal(await openDesktopFilter(columnLabel), true);
+      await browser.sleep(40);
+      await browser.pressKey('Escape', 'Escape');
+      assert.equal(await browser.evaluate(`Boolean(document.querySelector('[data-datagrid-filter-dialog="${key}"]'))`), false, label + ': Esc não fechou ' + columnLabel);
+      assert.equal(await browser.evaluate(`(() => { const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)})); return document.activeElement===th?.querySelector('.meg-datagrid-filter-button'); })()`), true, label + ': Esc não devolveu foco em ' + columnLabel);
+    }
+  } else {
+    const opened = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-mobile-filter'); if(!button) return false; button.focus(); button.click(); return true; })()");
+    assert.equal(opened, true, label + ': botão Filtros ausente');
+    await browser.sleep(50);
+    await assertPopoverGeometry(label + ' Filtros', '[data-datagrid-mobile-sheet]', height, false);
 
-    await open();
-    await browser.evaluate(`(() => {
-      const dialog=document.querySelector('[data-datagrid-filter-dialog="${key}"]');
-      const button=[...dialog.querySelectorAll('button')].find((item)=>item.textContent.trim()==='Aplicar');
-      button.click();
-      return true;
-    })()`);
-    await browser.sleep(40);
-    assert.equal(await browser.evaluate(`Boolean(document.querySelector('[data-datagrid-filter-dialog="${key}"]'))`), false, label + ': Aplicar não fechou ' + columnLabel);
-    assert.equal(await browser.evaluate(`(() => { const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)})); return document.activeElement===th?.querySelector('.meg-datagrid-filter-button'); })()`), true, label + ': foco não voltou após Aplicar em ' + columnLabel);
+    if (width === 910 && height === 400 && !collapsed) {
+      await browser.evaluate("(() => { const trigger=[...document.querySelectorAll('.meg-datagrid-filter-accordion__trigger')].find((item)=>item.textContent.includes('Segmento')); if(trigger?.getAttribute('aria-expanded')!=='true') trigger?.click(); trigger?.scrollIntoView({block:'start'}); return true; })()");
+      await browser.sleep(50);
+      await captureEvidence('segmento-910x400-expanded');
+    }
 
-    await open();
+    await browser.evaluate("(() => { const dialog=document.querySelector('[data-datagrid-mobile-sheet]'); const rect=dialog.getBoundingClientRect(); const target=document.elementFromPoint(Math.max(2, rect.left - 4), Math.max(2, rect.top - 4)); target?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1})); return true; })()");
+    await browser.sleep(30);
+    assert.equal(await browser.evaluate("Boolean(document.querySelector('[data-datagrid-mobile-sheet]'))"), false, label + ': clique fora não fechou popover móvel');
+
+    await browser.evaluate("document.querySelector('.meg-datagrid-mobile-filter')?.click()");
+    await browser.sleep(30);
     await browser.pressKey('Escape', 'Escape');
-    assert.equal(await browser.evaluate(`Boolean(document.querySelector('[data-datagrid-filter-dialog="${key}"]'))`), false, label + ': Esc não fechou ' + columnLabel);
-    assert.equal(await browser.evaluate(`(() => { const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)})); return document.activeElement===th?.querySelector('.meg-datagrid-filter-button'); })()`), true, label + ': Esc não devolveu foco em ' + columnLabel);
+    assert.equal(await browser.evaluate("Boolean(document.querySelector('[data-datagrid-mobile-sheet]'))"), false, label + ': Esc não fechou popover de filtros');
+    assert.equal(await browser.evaluate("document.activeElement===document.querySelector('.meg-datagrid-mobile-filter')"), true, label + ': Esc não devolveu foco ao botão Filtros');
   }
 
   const openedColumns = await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); if(!button) return false; button.focus(); button.click(); return true; })()");
   assert.equal(openedColumns, true, label + ': seletor de colunas ausente');
-  await browser.sleep(60);
-  const columnGeometry = await browser.evaluate(`(() => { const dialog=document.querySelector('[data-datagrid-column-dialog]'); if(!dialog) return null; const rect=dialog.getBoundingClientRect(); const close=dialog.querySelector('button[aria-label="Fechar colunas"]'); const closeRect=close?.getBoundingClientRect(); const hit=closeRect ? document.elementFromPoint(closeRect.left + closeRect.width / 2, closeRect.top + closeRect.height / 2) : null; return { top:rect.top, bottom:rect.bottom, closeTop:closeRect?.top, closeBottom:closeRect?.bottom, closeClickable:Boolean(close && hit && close.contains(hit)) }; })()`);
-  assert.ok(columnGeometry, label + ': seletor de colunas não abriu');
-  assert.ok(columnGeometry.top >= -1 && columnGeometry.bottom <= height + 1, label + ': seletor de colunas ultrapassou a viewport');
-  assert.ok(columnGeometry.closeTop >= -1 && columnGeometry.closeBottom <= height + 1 && columnGeometry.closeClickable, label + ': fechar colunas inacessível');
+  await browser.sleep(50);
+  await assertPopoverGeometry(label + ' Colunas', '[data-datagrid-column-dialog]', height, false);
+  await browser.evaluate("(() => { const dialog=document.querySelector('[data-datagrid-column-dialog]'); const rect=dialog.getBoundingClientRect(); const target=document.elementFromPoint(Math.max(2, rect.left - 4), Math.max(2, rect.top - 4)); target?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1})); return true; })()");
+  await browser.sleep(30);
+  assert.equal(await browser.evaluate("Boolean(document.querySelector('[data-datagrid-column-dialog]'))"), false, label + ': clique fora não fechou Colunas');
+  await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); button?.click(); return true; })()");
+  await browser.sleep(30);
   await browser.pressKey('Escape', 'Escape');
   assert.equal(await browser.evaluate("Boolean(document.querySelector('[data-datagrid-column-dialog]'))"), false, label + ': Esc não fechou seletor de colunas');
   assert.equal(await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); return document.activeElement===button; })()"), true, label + ': Esc não devolveu foco ao seletor de colunas');
 }
 
 try {
-  await assertLowHeightFilterDialogs(1366, 600);
-  await assertLowHeightFilterDialogs(1024, 600);
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1366, height: 600 },
+    { width: 1024, height: 600 },
+    { width: 1093, height: 480 },
+    { width: 910, height: 400 },
+  ]) {
+    await assertCompactOverlays(viewport.width, viewport.height, false);
+    await assertCompactOverlays(viewport.width, viewport.height, true);
+  }
 
   for (const viewport of [
     { width: 1366, height: 768 },
     { width: 1366, height: 600 },
     { width: 1024, height: 768 },
+    { width: 1024, height: 600 },
+    { width: 1093, height: 480 },
   ]) {
     await assertDesktopContainment(viewport.width, viewport.height, false);
     await assertDesktopContainment(viewport.width, viewport.height, true);
@@ -286,14 +368,13 @@ try {
       await browser.sleep(80);
       const sheetOpen = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-mobile-filter'); return { expanded:button.getAttribute('aria-expanded') }; })()");
       assert.equal(sheetOpen.expanded, 'true', label + ': botão Filtros não marcou aria-expanded');
-      const sheet = await browser.evaluate("(() => { const element=document.querySelector('[data-datagrid-mobile-sheet]'); if(!element) return null; const rect=element.getBoundingClientRect(); return { role:element.getAttribute('role'), modal:element.getAttribute('aria-modal'), top:rect.top, bottom:rect.bottom, width:rect.width }; })()");
-      assert.ok(sheet, label + ': bottom sheet não abriu');
-      assert.equal(sheet.role, 'dialog', label + ': bottom sheet sem role=dialog');
-      assert.equal(sheet.modal, 'true', label + ': bottom sheet sem aria-modal');
-      assert.ok(sheet.width <= viewport.width + 1, label + ': bottom sheet excedeu largura');
-      if (viewport.width < 640) {
-        assert.ok(sheet.top <= 1 && sheet.bottom >= viewport.height - 1, label + ': abaixo de 640 o bottom sheet deve ocupar a tela');
-      }
+      const sheet = await browser.evaluate("(() => { const element=document.querySelector('[data-datagrid-mobile-sheet]'); if(!element) return null; const rect=element.getBoundingClientRect(); return { role:element.getAttribute('role'), modal:element.getAttribute('aria-modal'), top:rect.top, bottom:rect.bottom, left:rect.left, right:rect.right, width:rect.width, sheetLayer:Boolean(element.closest('.meg-datagrid-sheet-layer')) }; })()");
+      assert.ok(sheet, label + ': popover de filtros não abriu');
+      assert.equal(sheet.role, 'dialog', label + ': popover de filtros sem role=dialog');
+      assert.equal(sheet.modal, 'false', label + ': popover compacto não deve ser modal');
+      assert.equal(sheet.sheetLayer, false, label + ': filtros não podem usar bottom sheet');
+      assert.ok(sheet.width <= viewport.width + 1 && sheet.left >= -1 && sheet.right <= viewport.width + 1, label + ': popover excedeu largura');
+      assert.ok(sheet.top >= -1 && sheet.bottom <= viewport.height + 1, label + ': popover excedeu altura');
       await browser.pressKey('Escape', 'Escape');
       assert.equal(await browser.evaluate("Boolean(document.querySelector('[data-datagrid-mobile-sheet]'))"), false, label + ': Esc não fechou bottom sheet');
       assert.equal(await browser.evaluate("document.activeElement===document.querySelector('.meg-datagrid-mobile-filter')"), true, label + ': foco não voltou ao botão Filtros');
@@ -322,9 +403,10 @@ try {
   await browser.evaluate("(() => { localStorage.setItem('meg-web-evolution:datagrid:stage-04-harness-filtered-empty', JSON.stringify({ filters:{ description:{ type:'text', operator:'equals', value:'__sem_resultado__' } }, sort:[], columnOrder:[], hiddenColumns:[], widths:{}, pageSize:600 })); return true; })()");
   await browser.navigate(appUrl + '?state=filtered-empty');
   await browser.sleep(100);
-  const filteredEmpty = await browser.evaluate("(() => { const element=document.querySelector('.meg-datagrid-empty'); return { text:element?.textContent || '', clear:Boolean(element?.querySelector('button')) }; })()");
+  const filteredEmpty = await browser.evaluate("(() => { const element=document.querySelector('.meg-datagrid-empty'); const clearAll=[...document.querySelectorAll('button')].filter((button)=>button.textContent.trim()==='Limpar tudo'); return { text:element?.textContent || '', emptyButtons:element?.querySelectorAll('button').length || 0, clearAllCount:clearAll.length }; })()");
   assert.ok(filteredEmpty.text.includes('Nenhum resultado com os filtros atuais'), 'Estado vazio filtrado não renderizado');
-  assert.equal(filteredEmpty.clear, true, 'Estado vazio filtrado precisa oferecer ação de limpar');
+  assert.equal(filteredEmpty.emptyButtons, 0, 'Estado vazio não deve duplicar a ação de limpeza');
+  assert.equal(filteredEmpty.clearAllCount, 1, 'Deve existir uma única ação Limpar tudo para o estado filtrado vazio');
 
   const isolatedKeys = await browser.evaluate("(() => ({ normal:localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'), filtered:localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness-filtered-empty') }))()");
   assert.ok(isolatedKeys.filtered, 'Persistência da instância filtrada não existe');

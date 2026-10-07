@@ -100,6 +100,14 @@ jobs:
           node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
           node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs
 
+      - name: Upload DataGrid visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-web-evolution-datagrid-evidence
+          path: artifacts/datagrid-evidence
+          if-no-files-found: ignore
+
       - name: Print Vite log tail
         if: always()
         shell: bash

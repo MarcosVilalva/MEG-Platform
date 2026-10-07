@@ -107,27 +107,13 @@ function useDesktopGrid() {
   return desktop;
 }
 
-function useLowViewportHeight() {
-  const [lowHeight, setLowHeight] = useState(() =>
-    typeof window === 'undefined' ? false : window.innerHeight < 640,
-  );
-
-  useEffect(() => {
-    const sync = () => setLowHeight(window.innerHeight < 640);
-    sync();
-    window.addEventListener('resize', sync);
-    return () => window.removeEventListener('resize', sync);
-  }, []);
-
-  return lowHeight;
-}
-
-function anchoredOverlayStyle(trigger: HTMLElement | null, preferredWidth: number): CSSProperties {
-  const margin = 12;
+function getAnchoredOverlayStyle(trigger: HTMLElement | null, preferredWidth: number, measuredHeight = 560): CSSProperties {
+  const margin = 8;
   const gap = 8;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const width = Math.min(preferredWidth, Math.max(280, viewportWidth - margin * 2));
+  const responsiveWidth = Math.max(280, Math.min(360, viewportWidth * .24));
+  const width = Math.min(preferredWidth, responsiveWidth, Math.max(1, viewportWidth - margin * 2));
   const rect = trigger?.getBoundingClientRect();
 
   if (!rect) {
@@ -135,23 +121,101 @@ function anchoredOverlayStyle(trigger: HTMLElement | null, preferredWidth: numbe
       left: margin,
       top: margin,
       width,
-      maxHeight: Math.max(1, viewportHeight - margin * 2),
+      maxHeight: Math.max(1, Math.min(560, viewportHeight - margin * 2)),
     };
   }
 
-  const left = Math.min(
-    Math.max(margin, rect.right - width),
-    Math.max(margin, viewportWidth - width - margin),
-  );
-  const spaceBelow = Math.max(0, viewportHeight - rect.bottom - margin - gap);
-  const spaceAbove = Math.max(0, rect.top - margin - gap);
-  const viewportLimit = Math.max(1, viewportHeight - margin * 2);
-  const openUp = spaceBelow < Math.min(420, viewportLimit) && spaceAbove > spaceBelow;
-  const available = Math.max(1, Math.min(viewportLimit, openUp ? spaceAbove : spaceBelow));
+  const sidebar = document.querySelector<HTMLElement>('.meg-sidebar-wrap');
+  const sidebarRect = sidebar?.getBoundingClientRect();
+  const sidebarRight = sidebarRect && sidebarRect.width > 0 && rect.left >= sidebarRect.right - 1
+    ? sidebarRect.right + margin
+    : margin;
+  const minLeft = Math.max(margin, sidebarRight);
+  const maxLeft = Math.max(minLeft, viewportWidth - width - margin);
+  const preferLeft = rect.left + width <= viewportWidth - margin ? rect.left : rect.right - width;
+  const left = Math.min(Math.max(minLeft, preferLeft), maxLeft);
+
+  const viewportMaxHeight = Math.max(1, Math.min(560, viewportHeight - margin * 2));
+  const desiredHeight = Math.min(viewportMaxHeight, Math.max(180, measuredHeight));
+  const spaceBelow = Math.max(0, viewportHeight - rect.bottom - gap - margin);
+  const spaceAbove = Math.max(0, rect.top - gap - margin);
+  const openUp = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+  const available = Math.max(1, Math.min(viewportMaxHeight, openUp ? spaceAbove : spaceBelow));
 
   return openUp
-    ? { left, bottom: Math.max(margin, viewportHeight - rect.top + gap), width, maxHeight: available }
-    : { left, top: Math.max(margin, rect.bottom + gap), width, maxHeight: available };
+    ? {
+      left,
+      bottom: Math.max(margin, viewportHeight - rect.top + gap),
+      width,
+      maxHeight: available,
+    }
+    : {
+      left,
+      top: Math.max(margin, rect.bottom + gap),
+      width,
+      maxHeight: available,
+    };
+}
+
+function useAnchoredOverlay(
+  trigger: HTMLElement | null,
+  containerRef: React.RefObject<HTMLElement | null>,
+  preferredWidth: number,
+  onClose: () => void,
+) {
+  const [style, setStyle] = useState<CSSProperties>(() =>
+    typeof window === 'undefined' ? {} : getAnchoredOverlayStyle(trigger, preferredWidth),
+  );
+
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const rect = trigger?.getBoundingClientRect();
+        if (!rect || rect.bottom < 0 || rect.top > window.innerHeight || rect.right < 0 || rect.left > window.innerWidth) {
+          onClose();
+          return;
+        }
+        const measuredHeight = containerRef.current?.scrollHeight ?? 560;
+        setStyle(getAnchoredOverlayStyle(trigger, preferredWidth, measuredHeight));
+      });
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    const observer = typeof ResizeObserver !== 'undefined' && containerRef.current
+      ? new ResizeObserver(update)
+      : null;
+    if (containerRef.current) observer?.observe(containerRef.current);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+      observer?.disconnect();
+    };
+  }, [containerRef, onClose, preferredWidth, trigger]);
+
+  return style;
+}
+
+function useOutsideDismiss(
+  containerRef: React.RefObject<HTMLElement | null>,
+  trigger: HTMLElement | null,
+  onClose: () => void,
+) {
+  useEffect(() => {
+    const onPointerDown = (event: globalThis.PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (containerRef.current?.contains(target) || trigger?.contains(target)) return;
+      onClose();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [containerRef, onClose, trigger]);
 }
 
 function useDialogKeyboard(
@@ -221,62 +285,13 @@ function FilterDialog<T extends Record<string, unknown>>({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const lowHeight = useLowViewportHeight();
-  useDialogKeyboard(true, ref, trigger, onClose);
-
-  const closeAndRestore = () => {
+  const closeAndRestore = useCallback(() => {
     onClose();
     window.setTimeout(() => trigger?.focus(), 0);
-  };
-
-  const panel = (
-    <FilterPanel
-      column={column}
-      filter={filter}
-      distinctOptions={distinctOptions}
-      onApply={(next) => {
-        onApply(next);
-        closeAndRestore();
-      }}
-      onClear={() => {
-        onClear();
-        closeAndRestore();
-      }}
-    />
-  );
-
-  const header = (
-    <header className="meg-datagrid-dialog-header">
-      <div>
-        <span className="meg-datagrid-dialog-kicker">Filtrar coluna</span>
-        <strong>{column.label}</strong>
-      </div>
-      <button type="button" aria-label="Fechar filtro" onClick={closeAndRestore}>
-        <GridIcon name="x" />
-      </button>
-    </header>
-  );
-
-  if (lowHeight) {
-    return createPortal(
-      <div className="meg-datagrid-sheet-layer">
-        <button className="meg-datagrid-sheet-scrim" type="button" aria-label="Fechar filtro" onClick={closeAndRestore} />
-        <div
-          ref={ref}
-          className="meg-datagrid-filter-sheet meg-datagrid-filter-sheet--single"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Filtro: ${column.label}`}
-          data-datagrid-filter-dialog={column.key}
-          data-datagrid-low-height-sheet
-        >
-          {header}
-          {panel}
-        </div>
-      </div>,
-      document.body,
-    );
-  }
+  }, [onClose, trigger]);
+  const style = useAnchoredOverlay(trigger, ref, 360, closeAndRestore);
+  useDialogKeyboard(true, ref, trigger, closeAndRestore);
+  useOutsideDismiss(ref, trigger, closeAndRestore);
 
   return createPortal(
     <div
@@ -285,11 +300,31 @@ function FilterDialog<T extends Record<string, unknown>>({
       role="dialog"
       aria-modal="false"
       aria-label={`Filtro: ${column.label}`}
-      style={anchoredOverlayStyle(trigger, 390)}
+      style={style}
       data-datagrid-filter-dialog={column.key}
     >
-      {header}
-      {panel}
+      <header className="meg-datagrid-dialog-header">
+        <div>
+          <span className="meg-datagrid-dialog-kicker">Filtrar coluna</span>
+          <strong>{column.label}</strong>
+        </div>
+        <button type="button" aria-label="Fechar filtro" onClick={closeAndRestore}>
+          <GridIcon name="x" />
+        </button>
+      </header>
+      <FilterPanel
+        column={column}
+        filter={filter}
+        distinctOptions={distinctOptions}
+        onApply={(next) => {
+          onApply(next);
+          closeAndRestore();
+        }}
+        onClear={() => {
+          onClear();
+          closeAndRestore();
+        }}
+      />
     </div>,
     document.body,
   );
@@ -313,69 +348,74 @@ function MobileFilterSheet<T extends Record<string, unknown>>({
   onClearAll: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  useDialogKeyboard(true, ref, trigger, onClose);
-  const [expanded, setExpanded] = useState<string | null>(() => columns.find((column) => isFilterActive(filters[column.key]))?.key ?? null);
+  const closeAndRestore = useCallback(() => {
+    onClose();
+    window.setTimeout(() => trigger?.focus(), 0);
+  }, [onClose, trigger]);
+  const style = useAnchoredOverlay(trigger, ref, 360, closeAndRestore);
+  useDialogKeyboard(true, ref, trigger, closeAndRestore);
+  useOutsideDismiss(ref, trigger, closeAndRestore);
+  const [expanded, setExpanded] = useState<string | null>(() =>
+    columns.find((column) => isFilterActive(filters[column.key]))?.key
+      ?? columns.find((column) => column.filterable !== false)?.key
+      ?? null,
+  );
 
   return createPortal(
-    <div className="meg-datagrid-sheet-layer">
-      <button className="meg-datagrid-sheet-scrim" type="button" aria-label="Fechar filtros" onClick={onClose} />
-      <section
-        ref={ref}
-        className="meg-datagrid-filter-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Filtros do DataGrid"
-        data-datagrid-mobile-sheet
-      >
-        <header className="meg-datagrid-dialog-header">
-          <div>
-            <span className="meg-datagrid-dialog-kicker">DataGrid</span>
-            <strong>Filtros</strong>
-          </div>
-          <button type="button" aria-label="Fechar filtros" onClick={onClose}>
-            <GridIcon name="x" />
-          </button>
-        </header>
-
-        <div className="meg-datagrid-filter-accordions">
-          {columns.filter((column) => column.filterable !== false).map((column) => {
-            const active = isFilterActive(filters[column.key]);
-            const isOpen = expanded === column.key;
-            return (
-              <section className={`meg-datagrid-filter-accordion ${active ? 'is-active' : ''}`} key={column.key}>
-                <button
-                  type="button"
-                  className="meg-datagrid-filter-accordion__trigger"
-                  aria-expanded={isOpen}
-                  onClick={() => setExpanded(isOpen ? null : column.key)}
-                >
-                  <span>{column.label}</span>
-                  {active && <span className="meg-datagrid-active-dot">Ativo</span>}
-                  <GridIcon name={isOpen ? 'chevronUp' : 'chevronDown'} />
-                </button>
-                {isOpen && (
-                  <FilterPanel
-                    column={column}
-                    filter={filters[column.key]}
-                    distinctOptions={getOptions(column)}
-                    onApply={(next) => onChange(column.key, next)}
-                    onClear={() => onChange(column.key, null)}
-                  />
-                )}
-              </section>
-            );
-          })}
+    <section
+      ref={ref}
+      className="meg-datagrid-filter-popover"
+      role="dialog"
+      aria-modal="false"
+      aria-label="Filtros do DataGrid"
+      style={style}
+      data-datagrid-mobile-sheet
+    >
+      <header className="meg-datagrid-dialog-header">
+        <div>
+          <span className="meg-datagrid-dialog-kicker">DataGrid</span>
+          <strong>Filtros</strong>
         </div>
+        <button type="button" aria-label="Fechar filtros" onClick={closeAndRestore}>
+          <GridIcon name="x" />
+        </button>
+      </header>
 
-        <footer className="meg-datagrid-sheet-footer">
-          <button type="button" className="meg-datagrid-secondary-action" onClick={onClearAll}>Limpar tudo</button>
-          <button type="button" className="meg-datagrid-primary-action" onClick={() => {
-            onClose();
-            window.setTimeout(() => trigger?.focus(), 0);
-          }}>Concluir</button>
-        </footer>
-      </section>
-    </div>,
+      <div className="meg-datagrid-filter-accordions">
+        {columns.filter((column) => column.filterable !== false).map((column) => {
+          const active = isFilterActive(filters[column.key]);
+          const isOpen = expanded === column.key;
+          return (
+            <section className={`meg-datagrid-filter-accordion ${active ? 'is-active' : ''}`} key={column.key}>
+              <button
+                type="button"
+                className="meg-datagrid-filter-accordion__trigger"
+                aria-expanded={isOpen}
+                onClick={() => setExpanded(isOpen ? null : column.key)}
+              >
+                <span>{column.label}</span>
+                {active && <span className="meg-datagrid-active-dot">Ativo</span>}
+                <GridIcon name={isOpen ? 'chevronUp' : 'chevronDown'} />
+              </button>
+              {isOpen && (
+                <FilterPanel
+                  column={column}
+                  filter={filters[column.key]}
+                  distinctOptions={getOptions(column)}
+                  onApply={(next) => onChange(column.key, next)}
+                  onClear={() => onChange(column.key, null)}
+                />
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      <footer className="meg-datagrid-sheet-footer">
+        <button type="button" className="meg-datagrid-secondary-action" onClick={onClearAll}>Limpar tudo</button>
+        <button type="button" className="meg-datagrid-primary-action" onClick={closeAndRestore}>Concluir</button>
+      </footer>
+    </section>,
     document.body,
   );
 }
@@ -455,24 +495,25 @@ function ColumnManager<T extends Record<string, unknown>>({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const lowHeight = useLowViewportHeight();
-  useDialogKeyboard(true, ref, trigger, onClose);
+  const closeAndRestore = useCallback(() => {
+    onClose();
+    window.setTimeout(() => trigger?.focus(), 0);
+  }, [onClose, trigger]);
+  const style = useAnchoredOverlay(trigger, ref, 340, closeAndRestore);
+  useDialogKeyboard(true, ref, trigger, closeAndRestore);
+  useOutsideDismiss(ref, trigger, closeAndRestore);
+
   const ordered = order.map((key) => columns.find((column) => column.key === key)).filter(Boolean) as DataGridColumn<T>[];
   const visibleCount = ordered.filter((column) => !hidden.has(column.key)).length;
 
-  const closeAndRestore = () => {
-    onClose();
-    window.setTimeout(() => trigger?.focus(), 0);
-  };
-
-  const menu = (
+  return createPortal(
     <div
       ref={ref}
-      className={`meg-datagrid-column-menu ${lowHeight ? 'meg-datagrid-column-menu--sheet' : ''}`}
+      className="meg-datagrid-column-menu"
       role="dialog"
-      aria-modal={lowHeight ? 'true' : 'false'}
+      aria-modal="false"
       aria-label="Colunas"
-      style={lowHeight ? undefined : anchoredOverlayStyle(trigger, 320)}
+      style={style}
       data-datagrid-column-dialog
     >
       <header className="meg-datagrid-dialog-header">
@@ -490,7 +531,7 @@ function ColumnManager<T extends Record<string, unknown>>({
                 disabled={!hidden.has(column.key) && visibleCount === 1}
                 onChange={() => onToggle(column.key)}
               />
-              <span>{column.label}</span>
+              <span title={column.label}>{column.label}</span>
             </label>
             <span className="meg-datagrid-column-menu__moves">
               <button type="button" aria-label={`Mover ${column.label} para cima`} disabled={index === 0} onClick={() => onMove(column.key, -1)}>
@@ -503,18 +544,9 @@ function ColumnManager<T extends Record<string, unknown>>({
           </div>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
-
-  return lowHeight
-    ? createPortal(
-      <div className="meg-datagrid-sheet-layer">
-        <button className="meg-datagrid-sheet-scrim" type="button" aria-label="Fechar colunas" onClick={closeAndRestore} />
-        {menu}
-      </div>,
-      document.body,
-    )
-    : createPortal(menu, document.body);
 }
 
 export function DataGrid<T extends Record<string, unknown>>({
@@ -874,7 +906,12 @@ export function DataGrid<T extends Record<string, unknown>>({
             type="button"
             className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterKeys.length ? 'is-active' : ''}`}
             aria-expanded={mobileFiltersOpen}
-            onClick={() => setMobileFiltersOpen(true)}
+            aria-haspopup="dialog"
+            onClick={() => {
+              setOpenFilterKey(null);
+              setColumnMenuOpen(false);
+              setMobileFiltersOpen((open) => !open);
+            }}
           >
             <GridIcon name="filter" />
             Filtros
@@ -925,7 +962,12 @@ export function DataGrid<T extends Record<string, unknown>>({
               type="button"
               className="meg-datagrid-tool"
               aria-expanded={columnMenuOpen}
-              onClick={() => setColumnMenuOpen((open) => !open)}
+              aria-haspopup="dialog"
+              onClick={() => {
+                setOpenFilterKey(null);
+                setMobileFiltersOpen(false);
+                setColumnMenuOpen((open) => !open);
+              }}
             >
               <GridIcon name="columns" />
               Colunas
@@ -984,7 +1026,7 @@ export function DataGrid<T extends Record<string, unknown>>({
       ) : !filteredRows.length ? (
         <div className="meg-datagrid-empty" role="status">
           <strong>Nenhum resultado com os filtros atuais</strong>
-          <button type="button" className="meg-datagrid-primary-action" onClick={clearAllFilters}>Limpar filtros</button>
+          <span>Use “Limpar tudo” na barra de filtros ativos para restaurar os resultados.</span>
         </div>
       ) : (
         <>
@@ -1065,7 +1107,12 @@ export function DataGrid<T extends Record<string, unknown>>({
                               className={`meg-datagrid-filter-button ${activeFilter ? 'is-active' : ''}`}
                               aria-label={`Filtrar ${column.label}`}
                               aria-expanded={openFilterKey === column.key}
-                              onClick={() => setOpenFilterKey((current) => current === column.key ? null : column.key)}
+                              aria-haspopup="dialog"
+                              onClick={() => {
+                                setColumnMenuOpen(false);
+                                setMobileFiltersOpen(false);
+                                setOpenFilterKey((current) => current === column.key ? null : column.key);
+                              }}
                             >
                               <GridIcon name="funnel" size={16} />
                               {activeFilter && <span className="sr-only">Filtro ativo</span>}
