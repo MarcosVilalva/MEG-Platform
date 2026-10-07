@@ -160,3 +160,11 @@ assert.match(source, /responsiveViewports[\s\S]*1023[\s\S]*768[\s\S]*640[\s\S]*3
 assert.match(source, /responsive\.overlaps/);
 assert.match(source, /responsive\.allInsideViewport/);
 assert.match(source, /responsive\.periodOneLine/);
+
+assert.match(source, /container-type:\s*inline-size/);
+assert.match(source, /container-name:\s*meg-shell-body/);
+assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)/);
+assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*grid-template-columns:\s*minmax\(46px, 1fr\) auto/);
+assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
+assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
+assert.match(source, /aria-label="Buscar"/);
