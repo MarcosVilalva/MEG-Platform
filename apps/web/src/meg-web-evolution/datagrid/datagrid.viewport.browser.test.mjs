@@ -82,7 +82,7 @@ try {
         const restoredHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
         assert.ok(restoredHeaders.includes('Quantidade'), label + ': mostrar coluna não restaurou Quantidade');
 
-        await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-column-menu button[aria-label="Mover Data para baixo"]'); button.click(); return true; })()");
+        await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-column-menu button[aria-label=\"Mover Data para baixo\"]'); button.click(); return true; })()");
         await browser.sleep(80);
         const reorderedHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
         assert.equal(reorderedHeaders[0], 'Descrição técnica', label + ': reordenação acessível de colunas não foi aplicada');
