@@ -627,11 +627,11 @@
 
   .meg-topbar {
     min-height: auto;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
     grid-template-areas:
-      "menu . notification profile"
-      "period period period period"
-      "search search search search";
+      "menu launchers . notification profile"
+      "period period period period period"
+      "search search search search search";
     gap: .65rem;
     padding: .75rem;
   }
@@ -643,10 +643,10 @@
   }
 
   .meg-topbar-launchers {
-    grid-area: menu;
+    grid-area: launchers;
     display: inline-flex;
     justify-self: start;
-    margin-left: 3.25rem;
+    margin-left: 0;
   }
 
   .meg-sidebar-toggle-topbar {
