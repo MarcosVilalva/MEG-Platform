@@ -47,6 +47,8 @@ assert.match(source, /\.meg-brand-logo--collapsed\s*\{[\s\S]*position:\s*absolut
 assert.match(source, /padding:\s*20px\s+\.75rem\s+0/);
 assert.match(source, /margin-bottom:\s*20px/);
 assert.match(source, /padding:\s*16px\s+0/);
+assert.match(source, /\.meg-brand\s*\{[\s\S]*flex:\s*0\s+0\s+auto/);
+assert.match(source, /\.meg-nav\s*\{[\s\S]*flex:\s*0\s+0\s+auto[\s\S]*margin-top:\s*0/);
 assert.equal(source.includes('meg-sidebar-lockup.svg'), false);
 assert.equal(source.includes('meg-finance-symbol-transparent.svg'), false);
 assert.equal(source.includes('meg-brand-mark'), false);
