@@ -124,3 +124,13 @@ assert.match(source, /\.meg-period span\s*\{[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /Outubro&nbsp;de&nbsp;2026/);
 assert.match(source, /\.meg-period\s*\{[\s\S]*width:\s*max-content;[\s\S]*min-width:\s*11\.75rem;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*display:\s*inline-block;[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
+
+assert.match(source, /data-tooltip=\{label\}/);
+assert.match(source, /data-tooltip="Sair"/);
+assert.match(source, /data-tooltip=\{sidebarCollapsed \? 'Expandir menu' : 'Recolher menu'\}/);
+assert.match(source, /data-tooltip="Novo lançamento"/);
+assert.match(source, /data-tooltip="Notificações"/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-nav-item\[data-tooltip\]::after/);
+assert.match(source, /\.meg-topbar-launcher\[data-tooltip\]::after/);
+assert.match(source, /visibility:\s*hidden/);
+assert.match(source, /visibility:\s*visible/);
