@@ -19,8 +19,8 @@ const paths: Record<IconName, ReactNode> = {
   chevronDown: <path d="m7 10 5 5 5-5"/>,
   chevronLeft: <path d="m15 18-6-6 6-6"/>,
   chevronRight: <path d="m9 18 6-6-6-6"/>,
-  panelLeftClose: <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 9l-3 3 3 3"/></>,
-  panelLeftOpen: <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M13 9l3 3-3 3"/></>,
+  panelLeftClose: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></>,
+  panelLeftOpen: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></>,
   menu: <><path d="M4 7h16M4 12h16M4 17h16"/></>,
 };
 
