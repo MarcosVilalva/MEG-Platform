@@ -1061,6 +1061,12 @@ try {
 
   console.log('MEG Web Evolution viewport contract: OK');
 } finally {
-  socket.close();
+  for (const item of pending.values()) {
+    clearTimeout(item.timeout);
+    item.reject(new Error('Contrato encerrado antes da resposta CDP.'));
+  }
+  pending.clear();
+  cdpInput.end();
+  cdpOutput.destroy();
   chrome.kill('SIGTERM');
 }
