@@ -1025,6 +1025,8 @@ try {
     console.log(`OK sidebar responsive ${viewport.width}x${viewport.height}`);
   }
 
+  await evaluate(`localStorage.setItem('meg-web-evolution:sidebar-collapsed', 'false')`);
+
   await command('Emulation.setDeviceMetricsOverride', {
     width: 1366,
     height: 768,
