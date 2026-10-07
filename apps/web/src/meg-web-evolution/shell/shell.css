@@ -496,7 +496,40 @@
   .sidebar__art { width: calc(100% + 1.1rem); margin-inline: -.55rem; opacity: .5; }
   .sidebar__art svg { width: 13rem; min-width: 13rem; }
   .meg-profile-name { display: none; }
-  .meg-search { width: min(30rem, 42vw); }
+
+  .meg-topbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "search"
+      "actions";
+    gap: .7rem;
+    padding: .8rem 1rem;
+  }
+
+  .meg-search {
+    grid-area: search;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .meg-topbar-actions {
+    grid-area: actions;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr) auto auto;
+    align-items: center;
+    gap: .6rem;
+    margin-left: 0;
+  }
+
+  .meg-period {
+    justify-self: start;
+  }
+
+  .meg-notification,
+  .meg-profile {
+    justify-self: end;
+  }
 }
 
 @media (max-width: 639px) {
@@ -529,15 +562,40 @@
   .meg-nav-item { justify-content: flex-start; padding-inline: .82rem; }
   .sidebar__art { display: none; }
   .meg-drawer-scrim { position: fixed; inset: 0; z-index: 20; display: block; border: 0; background: rgba(0,8,9,.72); backdrop-filter: blur(.25rem); }
-  .meg-topbar { min-height: auto; flex-wrap: wrap; padding: .75rem; gap: .65rem; }
-  .meg-menu-button { display: inline-grid; }
-  .meg-search { order: 3; width: 100%; min-width: 0; }
-  .meg-topbar-actions { margin-left: auto; gap: .45rem; }
+
+  .meg-topbar {
+    min-height: auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "menu . notification profile"
+      "period period period period"
+      "search search search search";
+    gap: .65rem;
+    padding: .75rem;
+  }
+
+  .meg-menu-button {
+    grid-area: menu;
+    display: inline-grid;
+    justify-self: start;
+  }
+
+  .meg-search {
+    grid-area: search;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .meg-topbar-actions {
+    display: contents;
+  }
+
   .meg-period {
-    grid-column: 1 / -1;
+    grid-area: period;
     width: 100%;
     min-width: 0;
     max-width: none;
+    justify-self: stretch;
     justify-content: center;
   }
 
@@ -545,7 +603,18 @@
     min-width: 0;
     white-space: nowrap;
   }
-  .meg-profile { padding-right: 0; }
+
+  .meg-notification {
+    grid-area: notification;
+    justify-self: end;
+  }
+
+  .meg-profile {
+    grid-area: profile;
+    justify-self: end;
+    padding-right: 0;
+  }
+
   .meg-profile svg { display: none; }
   .meg-avatar { width: 2.45rem; height: 2.45rem; }
   .meg-main { padding: .75rem; }
