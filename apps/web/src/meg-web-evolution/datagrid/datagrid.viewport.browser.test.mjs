@@ -43,13 +43,16 @@ try {
       assert.equal(snapshot.viewportOverflowX, 'auto', label + ': rolagem horizontal desktop deve ficar confinada ao componente');
       assert.ok(snapshot.viewportScrollWidth >= snapshot.viewportClientWidth, label + ': viewport interno inválido');
 
-      const sortState = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-sort-button'); button.focus(); button.click(); const th=button.closest('th'); return { sort:th.getAttribute('aria-sort'), focused:document.activeElement===button }; })()");
+      await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-sort-button'); button.focus(); button.click(); return true; })()");
+      await browser.sleep(80);
+      const sortState = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-sort-button'); const th=button.closest('th'); return { sort:th.getAttribute('aria-sort'), focused:document.activeElement===button }; })()");
       assert.equal(sortState.sort, 'ascending', label + ': aria-sort não refletiu ordenação crescente');
       assert.equal(sortState.focused, true, label + ': botão de ordenação perdeu foco');
 
-      const filterOpen = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-filter-button'); button.focus(); button.click(); return { expanded:button.getAttribute('aria-expanded'), focused:document.activeElement===button }; })()");
-      assert.equal(filterOpen.expanded, 'true', label + ': funil não marcou aria-expanded');
+      await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-filter-button'); button.focus(); button.click(); return true; })()");
       await browser.sleep(80);
+      const filterOpen = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-filter-button'); return { expanded:button.getAttribute('aria-expanded') }; })()");
+      assert.equal(filterOpen.expanded, 'true', label + ': funil não marcou aria-expanded');
       assert.equal(await browser.evaluate("Boolean(document.querySelector('[role=dialog][data-datagrid-filter-dialog]'))"), true, label + ': popover role=dialog não abriu');
       await browser.pressKey('Escape', 'Escape');
       assert.equal(await browser.evaluate("Boolean(document.querySelector('[role=dialog][data-datagrid-filter-dialog]'))"), false, label + ': Esc não fechou popover');
@@ -65,9 +68,10 @@ try {
       assert.notEqual(snapshot.mobileFilterDisplay, 'none', label + ': botão Filtros deve ficar disponível');
       assert.equal(snapshot.viewportOverflowX, 'hidden', label + ': cards não podem criar rolagem horizontal interna');
 
-      const sheetOpen = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-mobile-filter'); button.focus(); button.click(); return { expanded:button.getAttribute('aria-expanded') }; })()");
-      assert.equal(sheetOpen.expanded, 'true', label + ': botão Filtros não marcou aria-expanded');
+      await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-mobile-filter'); button.focus(); button.click(); return true; })()");
       await browser.sleep(80);
+      const sheetOpen = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-mobile-filter'); return { expanded:button.getAttribute('aria-expanded') }; })()");
+      assert.equal(sheetOpen.expanded, 'true', label + ': botão Filtros não marcou aria-expanded');
       const sheet = await browser.evaluate("(() => { const element=document.querySelector('[data-datagrid-mobile-sheet]'); if(!element) return null; const rect=element.getBoundingClientRect(); return { role:element.getAttribute('role'), modal:element.getAttribute('aria-modal'), top:rect.top, bottom:rect.bottom, width:rect.width }; })()");
       assert.ok(sheet, label + ': bottom sheet não abriu');
       assert.equal(sheet.role, 'dialog', label + ': bottom sheet sem role=dialog');
