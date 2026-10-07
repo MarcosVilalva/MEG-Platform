@@ -92,7 +92,8 @@
     "test:evolution-reports-structure": "node apps/web/src/evolution/evolution-reports-structure.contract.test.js",
     "test:production-smoke-contract": "node scripts/production-smoke-contract.mjs",
     "test:evolution-data": "node apps/web/src/evolution/data/data.contract.test.js",
-    "test:web-evolution-shell": "node apps/web/src/meg-web-evolution/shell/shell.contract.test.js"
+    "test:web-evolution-shell": "node apps/web/src/meg-web-evolution/shell/shell.contract.test.js",
+    "test:web-evolution-datagrid": "tsx apps/web/src/meg-web-evolution/datagrid/datagrid.contract.test.ts && node apps/web/src/meg-web-evolution/datagrid/datagrid.structure.contract.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",
