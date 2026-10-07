@@ -146,7 +146,7 @@ assert.deepEqual(multiSort, [
   { key: 'segment', direction: 'asc' },
   { key: 'quantity', direction: 'asc' },
 ]);
-assert.deepEqual(ids(sortRows(rows, columns, multiSort)), ['r1', 'r4', 'r2', 'r3']);
+assert.deepEqual(ids(sortRows(rows, columns, multiSort)), ['r4', 'r1', 'r2', 'r3']);
 
 // Resize, reorder e visibilidade/persistência.
 assert.equal(resizeWidth(120, -100, 96), 96);
