@@ -114,24 +114,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </svg>
         </div>
 
-        <div className="meg-sidebar-control-wrap">
+        <div className="meg-sidebar-footer">
           <button
             type="button"
-            className="meg-nav-item meg-sidebar-control"
-            aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-            aria-expanded={!sidebarCollapsed}
-            data-tooltip={sidebarCollapsed ? 'Expandir menu' : undefined}
-            onClick={() => setSidebarCollapsed((value) => !value)}
+            className="meg-nav-item meg-logout-button"
+            aria-label="Sair"
           >
-            <span className="meg-sidebar-control-icon" aria-hidden="true">
-              <Icon
-                name={sidebarCollapsed ? 'chevronsRight' : 'chevronsLeft'}
-                width={20}
-                height={20}
-                strokeWidth={1.75}
-              />
-            </span>
-            <span className="meg-sidebar-control-label">Recolher menu</span>
+            <Icon name="logOut" width={20} height={20} strokeWidth={1.75} />
+            <span>Sair</span>
           </button>
         </div>
 
@@ -149,6 +139,29 @@ export function AppShell({ children }: { children: ReactNode }) {
           <IconButton label="Abrir menu" className="meg-menu-button" onClick={() => setDrawerOpen(true)}>
             <Icon name="menu" />
           </IconButton>
+
+          <div className="meg-sidebar-switcher" aria-label="Controle da sidebar">
+            <button
+              type="button"
+              className="meg-sidebar-switcher-button"
+              aria-label="Recolher menu"
+              aria-pressed={!sidebarCollapsed}
+              disabled={sidebarCollapsed}
+              onClick={() => setSidebarCollapsed(true)}
+            >
+              <Icon name="chevronsLeft" width={18} height={18} strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              className="meg-sidebar-switcher-button"
+              aria-label="Expandir menu"
+              aria-pressed={sidebarCollapsed}
+              disabled={!sidebarCollapsed}
+              onClick={() => setSidebarCollapsed(false)}
+            >
+              <Icon name="chevronsRight" width={18} height={18} strokeWidth={1.75} />
+            </button>
+          </div>
 
           <label className="meg-search">
             <Icon name="search" />
