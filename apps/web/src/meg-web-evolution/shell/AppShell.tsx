@@ -123,13 +123,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             data-tooltip={sidebarCollapsed ? 'Expandir menu' : undefined}
             onClick={() => setSidebarCollapsed((value) => !value)}
           >
-            <Icon
-              name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'}
-              width={20}
-              height={20}
-              strokeWidth={1.75}
-            />
-            <span>Recolher menu</span>
+            <span className="meg-sidebar-control-icon" aria-hidden="true">
+              <Icon
+                name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'}
+                width={20}
+                height={20}
+                strokeWidth={1.75}
+              />
+            </span>
+            <span className="meg-sidebar-control-label">Recolher menu</span>
           </button>
         </div>
 
