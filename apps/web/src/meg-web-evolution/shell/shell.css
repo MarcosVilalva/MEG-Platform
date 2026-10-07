@@ -1088,3 +1088,50 @@
     max-width: 38px;
   }
 }
+
+/* Wide desktop keeps the approved expanded brand scale even when browser chrome reduces viewport height. */
+@media (min-width: 1024px) and (max-height: 767px) {
+  .meg-brand {
+    flex: 0 0 92px;
+    height: 92px;
+    min-height: 92px;
+    padding: 10px 0 8px;
+    margin-bottom: 0;
+  }
+
+  .meg-brand-stack {
+    width: 100%;
+    height: auto;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .meg-brand-logo--expanded {
+    width: 112px;
+    max-height: none;
+    object-fit: contain;
+  }
+
+  .meg-nav {
+    padding-top: 8px;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 519px) {
+  .meg-brand {
+    flex-basis: 82px;
+    height: 82px;
+    min-height: 82px;
+    padding: 8px 0 6px;
+  }
+
+  .meg-brand-logo--expanded {
+    width: 104px;
+  }
+
+  .meg-nav {
+    padding-top: 6px;
+  }
+}
+
