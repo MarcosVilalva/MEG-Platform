@@ -502,21 +502,21 @@ async function measure(state) {
         const style = getComputedStyle(label);
         const rect = label.getBoundingClientRect();
         if (style.display === 'none' || style.visibility === 'hidden' || rect.width === 0) return true;
-        return label.scrollWidth <= label.clientWidth + 2;
+        return label.scrollWidth <= label.clientWidth + 1;
       }),
       truncatedLabels: labels
         .filter((label) => {
           const style = getComputedStyle(label);
           const rect = label.getBoundingClientRect();
           if (style.display === 'none' || style.visibility === 'hidden' || rect.width === 0) return false;
-          return label.scrollWidth > label.clientWidth + 2;
+          return label.scrollWidth > label.clientWidth + 1;
         })
         .map((label) => ({
           text: label.textContent?.trim() || '',
           scrollWidth: label.scrollWidth,
           clientWidth: label.clientWidth,
         })),
-      itemsFit: items.every((item) => item.scrollWidth <= item.clientWidth + 2),
+      itemsFit: items.every((item) => item.scrollWidth <= item.clientWidth + 1),
       controlInsideViewport:
         controlRect.left >= 0 &&
         controlRect.top >= 0 &&
@@ -656,7 +656,9 @@ async function measureResponsiveTopbar() {
 }
 
 const sidebarResponsiveViewports = [
+  { width: 1366, height: 600 },
   { width: 1366, height: 768 },
+  { width: 1920, height: 1080 },
   { width: 1024, height: 600 },
   { width: 900, height: 560 },
   { width: 690, height: 600 },
@@ -689,11 +691,12 @@ async function measureSidebarResponsive() {
     const sidebar = document.querySelector('.meg-sidebar');
     const nav = document.querySelector('.meg-nav');
     const footer = document.querySelector('.meg-sidebar-footer');
+    const logout = footer?.querySelector('.meg-logout-button');
     const art = document.querySelector('.sidebar__art');
     const items = [...document.querySelectorAll('.meg-nav .meg-nav-item')];
     const dividerStyle = footer ? getComputedStyle(footer, '::before') : null;
 
-    if (!sidebar || !nav || !footer || items.length !== 7) {
+    if (!sidebar || !nav || !footer || !logout || items.length !== 7) {
       return { missing: true, itemCount: items.length };
     }
 
@@ -703,6 +706,7 @@ async function measureSidebarResponsive() {
     const sidebarRect = sidebar.getBoundingClientRect();
     const navRect = nav.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
+    const logoutRect = logout.getBoundingClientRect();
     const artRect = artRectElement?.getBoundingClientRect();
     const dividerTop = footerRect.top + (parseFloat(dividerStyle?.top || '0') || 0);
     const dividerHeight = parseFloat(dividerStyle?.height || '0') || 0;
@@ -730,6 +734,8 @@ async function measureSidebarResponsive() {
           rect.right <= navRect.right + 1 &&
           rect.top >= navRect.top - 1 &&
           rect.bottom <= navRect.bottom + 1,
+        overlapsFooter:
+          Math.min(rect.bottom, footerRect.bottom) - Math.max(rect.top, footerRect.top) > 1,
         visibleAtCenter: Boolean(hit && (hit === item || item.contains(hit))),
       };
     });
@@ -791,6 +797,7 @@ async function measureSidebarResponsive() {
       gapToFooter,
       footerTop: footerRect.top,
       footerRect: rectSummary(footerRect),
+      logoutRect: rectSummary(logoutRect),
       dividerRect: rectSummary(dividerRect),
       artRect: rectSummary(artRect),
       item5Overlaps: overlaps,
@@ -819,8 +826,23 @@ async function assertSidebarState(viewport, collapsed) {
     `${viewport.width}x${viewport.height} ${state}: divisor de Sair não é neutro (${result.dividerColor})`,
   );
 
+  const requiredFitViewport =
+    (viewport.width === 1366 && (viewport.height === 600 || viewport.height === 768)) ||
+    (viewport.width === 1920 && viewport.height === 1080);
+
   for (const [index, item] of result.itemRects.entries()) {
     assert.ok(item.width > 0 && item.height > 0, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} sem dimensão`);
+    if (requiredFitViewport) {
+      assert.ok(
+        item.height >= 40,
+        `${viewport.width}x${viewport.height} ${state}: item ${index + 1} com altura inferior a 40px (${item.height}px)`,
+      );
+      assert.equal(
+        item.overlapsFooter,
+        false,
+        `${viewport.width}x${viewport.height} ${state}: item ${index + 1} sobrepõe o rodapé`,
+      );
+    }
     if (viewport.height >= 520) {
       assert.equal(
         item.fullyInsideNav,
@@ -832,6 +854,7 @@ async function assertSidebarState(viewport, collapsed) {
           itens: result.itemRects.map(({ index, label, top, bottom, height }) => ({ index, label, top, bottom, height })),
           divisor: result.dividerRect,
           rodape: result.footerRect,
+          sair: result.logoutRect,
           grafismo: result.artRect,
           navOverflowY: result.navOverflowY,
           navScrollHeight: result.navScrollHeight,
@@ -843,11 +866,11 @@ async function assertSidebarState(viewport, collapsed) {
     }
   }
 
-  if (viewport.height >= 520 && viewport.height < 768) {
+  if (requiredFitViewport || (viewport.height >= 520 && viewport.height < 768)) {
     assert.equal(
       result.needsScroll,
       false,
-      `${viewport.width}x${viewport.height} ${state}: nav não deveria rolar a partir de 520px`,
+      `${viewport.width}x${viewport.height} ${state}: nav não deveria rolar a partir de 600px nos viewports de fechamento`,
     );
     assert.ok(
       result.lastItemBottom <= result.navBottom + 1,
@@ -856,6 +879,17 @@ async function assertSidebarState(viewport, collapsed) {
     assert.ok(
       result.gapToFooter <= result.maxItemHeight + 1,
       `${viewport.width}x${viewport.height} ${state}: vazio excessivo antes do rodapé (${result.gapToFooter}px > ${result.maxItemHeight}px)`,
+    );
+  }
+
+  if (requiredFitViewport) {
+    assert.ok(
+      result.logoutRect && result.logoutRect.height >= 40,
+      `${viewport.width}x${viewport.height} ${state}: Sair deve ter ao menos 40px de altura`,
+    );
+    assert.ok(
+      result.logoutRect.top >= result.navBottom - 1,
+      `${viewport.width}x${viewport.height} ${state}: rodapé invade o nav`,
     );
   }
 
