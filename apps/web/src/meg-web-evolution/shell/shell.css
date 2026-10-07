@@ -98,7 +98,7 @@
   align-content: start;
   gap: .38rem;
   margin-top: 0;
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -131,6 +131,72 @@
 }
 .meg-nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; font-weight: 650; }
 .meg-nav-item:hover { background: rgba(20,227,200,.055); }
+
+.meg-nav-item,
+.meg-logout-button,
+.meg-topbar-launcher,
+.meg-notification {
+  position: relative;
+}
+
+.meg-shell.is-sidebar-collapsed .meg-nav-item[data-tooltip]::after,
+.meg-shell.is-sidebar-collapsed .meg-logout-button[data-tooltip]::after,
+.meg-topbar-launcher[data-tooltip]::after,
+.meg-notification[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 90;
+  top: 50%;
+  left: calc(100% + 10px);
+  padding: 6px 9px;
+  border: 1px solid rgba(20, 227, 200, .18);
+  border-radius: 8px;
+  background: #03191c;
+  color: #d9efec;
+  box-shadow: 0 8px 20px rgba(0,0,0,.24), 0 0 10px rgba(20,227,200,.06);
+  font-size: .75rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(-3px);
+  transition: opacity 150ms ease, transform 150ms ease, visibility 150ms ease;
+}
+
+.meg-topbar-launcher[data-tooltip]::after,
+.meg-notification[data-tooltip]::after {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, -3px);
+}
+
+.meg-shell.is-sidebar-collapsed .meg-nav-item[data-tooltip]:hover::after,
+.meg-shell.is-sidebar-collapsed .meg-nav-item[data-tooltip]:focus-visible::after,
+.meg-shell.is-sidebar-collapsed .meg-logout-button[data-tooltip]:hover::after,
+.meg-shell.is-sidebar-collapsed .meg-logout-button[data-tooltip]:focus-visible::after,
+.meg-topbar-launcher[data-tooltip]:hover::after,
+.meg-topbar-launcher[data-tooltip]:focus-visible::after,
+.meg-notification[data-tooltip]:hover::after,
+.meg-notification[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.meg-shell.is-sidebar-collapsed .meg-nav-item[data-tooltip]:hover::after,
+.meg-shell.is-sidebar-collapsed .meg-nav-item[data-tooltip]:focus-visible::after,
+.meg-shell.is-sidebar-collapsed .meg-logout-button[data-tooltip]:hover::after,
+.meg-shell.is-sidebar-collapsed .meg-logout-button[data-tooltip]:focus-visible::after {
+  transform: translateY(-50%) translateX(0);
+}
+
+.meg-topbar-launcher[data-tooltip]:hover::after,
+.meg-topbar-launcher[data-tooltip]:focus-visible::after,
+.meg-notification[data-tooltip]:hover::after,
+.meg-notification[data-tooltip]:focus-visible::after {
+  transform: translate(-50%, 0);
+}
 
 .meg-sidebar-footer {
   position: relative;
