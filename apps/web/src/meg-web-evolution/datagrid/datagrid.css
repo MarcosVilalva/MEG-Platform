@@ -1039,6 +1039,11 @@
     background: rgba(20, 227, 200, .1);
   }
 
+  .meg-datagrid-filter-button.is-active svg path:first-of-type {
+    fill: currentColor;
+    fill-opacity: .22;
+  }
+
   .meg-datagrid-filter-button.is-active::after {
     content: "";
     position: absolute;
