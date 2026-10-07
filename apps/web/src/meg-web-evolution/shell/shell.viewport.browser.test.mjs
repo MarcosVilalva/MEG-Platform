@@ -323,7 +323,7 @@ async function measure(state) {
       periodFits:
         period.scrollWidth <= period.clientWidth &&
         periodLabel.scrollWidth <= periodLabel.clientWidth &&
-        !periodLabel.textContent.includes('\n'),
+        !periodLabel.textContent.includes('\\n'),
       periodInsideViewport: periodRect.right <= window.innerWidth && periodRect.left >= 0,
       controlClippingAncestor: clippingAncestor,
     };
