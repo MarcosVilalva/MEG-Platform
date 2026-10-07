@@ -114,3 +114,9 @@ assert.match(source, /0 0 10px rgba\(20, 227, 200, \.08\)/);
 
 assert.equal(source.includes('meg-new-button'), false, 'Novo must live in the topbar, not sidebar');
 assert.equal(source.includes('PrimaryButton'), false, 'sidebar Novo PrimaryButton must be removed from shell');
+
+assert.match(source, /\.meg-topbar\s*\{[\s\S]*display:\s*grid;[\s\S]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto/);
+assert.match(source, /\.meg-search\s*\{[\s\S]*min-width:\s*0;[\s\S]*width:\s*min\(38\.5rem, 100%\)/);
+assert.match(source, /\.meg-topbar-actions\s*\{[\s\S]*white-space:\s*nowrap/);
+assert.match(source, /\.meg-period\s*\{[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
+assert.match(source, /\.meg-period span\s*\{[\s\S]*white-space:\s*nowrap/);
