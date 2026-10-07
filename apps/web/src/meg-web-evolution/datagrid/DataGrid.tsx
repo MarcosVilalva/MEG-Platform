@@ -735,7 +735,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   if (loading) {
     return (
-      <section className="meg-datagrid" aria-label={ariaLabel} aria-busy="true">
+      <section className="meg-datagrid" aria-label={ariaLabel} aria-busy="true" data-datagrid data-state="loading">
         <div className="meg-datagrid-skeleton" role="status" aria-label="Carregando dados">
           <div className="meg-datagrid-skeleton__toolbar" />
           {Array.from({ length: 8 }, (_, index) => <div className="meg-datagrid-skeleton__row" key={index} />)}
