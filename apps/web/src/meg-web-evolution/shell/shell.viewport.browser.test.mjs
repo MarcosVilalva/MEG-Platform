@@ -138,6 +138,12 @@ async function measure(state) {
         toggleRect.bottom <= window.innerHeight,
       toggleWidth: toggleRect.width,
       toggleHeight: toggleRect.height,
+      toggleTopmostAtCenter:
+        document.elementFromPoint(
+          toggleRect.left + toggleRect.width / 2,
+          toggleRect.top + toggleRect.height / 2,
+        ) === toggle,
+      toggleHasTitle: toggle.hasAttribute('title'),
       toggleClippingAncestor: clippingAncestor,
     };
   })()`);
@@ -173,6 +179,8 @@ try {
     assert.equal(expanded.toggleInsideViewport, true, `${viewport.width}x${viewport.height} expandida: botão de recolher fora da janela`);
     assert.equal(expanded.toggleWidth, 32, `${viewport.width}x${viewport.height} expandida: largura do botão diferente de 32px`);
     assert.equal(expanded.toggleHeight, 32, `${viewport.width}x${viewport.height} expandida: altura do botão diferente de 32px`);
+    assert.equal(expanded.toggleTopmostAtCenter, true, `${viewport.width}x${viewport.height} expandida: botão coberto no centro`);
+    assert.equal(expanded.toggleHasTitle, false, `${viewport.width}x${viewport.height} expandida: atributo title não deve existir`);
     assert.equal(expanded.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.toggleClippingAncestor}`);
 
     await evaluate(`document.querySelector('.meg-sidebar-toggle')?.click()`);
@@ -191,6 +199,8 @@ try {
     assert.equal(collapsed.toggleInsideViewport, true, `${viewport.width}x${viewport.height} recolhida: botão de expandir fora da janela`);
     assert.equal(collapsed.toggleWidth, 32, `${viewport.width}x${viewport.height} recolhida: largura do botão diferente de 32px`);
     assert.equal(collapsed.toggleHeight, 32, `${viewport.width}x${viewport.height} recolhida: altura do botão diferente de 32px`);
+    assert.equal(collapsed.toggleTopmostAtCenter, true, `${viewport.width}x${viewport.height} recolhida: botão coberto no centro`);
+    assert.equal(collapsed.toggleHasTitle, false, `${viewport.width}x${viewport.height} recolhida: atributo title não deve existir`);
     assert.equal(collapsed.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.toggleClippingAncestor}`);
 
     console.log(
