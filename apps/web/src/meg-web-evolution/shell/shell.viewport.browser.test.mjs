@@ -26,13 +26,22 @@ const chrome = spawn(chromePath, [
   '--no-sandbox',
   '--disable-dev-shm-usage',
   '--disable-gpu',
+  '--no-first-run',
+  '--no-default-browser-check',
   '--force-device-scale-factor=1',
   '--remote-debugging-address=127.0.0.1',
   '--remote-debugging-port=0',
   `--user-data-dir=${chromeUserDataDir}`,
   '--window-size=1366,768',
   'about:blank',
-], { stdio: 'ignore' });
+], { stdio: ['ignore', 'ignore', 'pipe'] });
+
+chrome.stderr.setEncoding('utf8');
+
+let chromeStderr = '';
+chrome.stderr.on('data', (chunk) => {
+  chromeStderr += chunk;
+});
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -50,7 +59,13 @@ async function waitForJson(url, retries = 50) {
 const devToolsActivePortPath = `${chromeUserDataDir}/DevToolsActivePort`;
 let devToolsPort = null;
 
-for (let attempt = 0; attempt < 80; attempt += 1) {
+for (let attempt = 0; attempt < 120; attempt += 1) {
+  const stderrMatch = chromeStderr.match(/DevTools listening on ws:\/\/[^:]+:(\d+)\//);
+  if (stderrMatch) {
+    devToolsPort = Number(stderrMatch[1]);
+    break;
+  }
+
   if (existsSync(devToolsActivePortPath)) {
     const [portLine] = readFileSync(devToolsActivePortPath, 'utf8').trim().split(/\r?\n/);
     const parsedPort = Number(portLine);
@@ -61,14 +76,20 @@ for (let attempt = 0; attempt < 80; attempt += 1) {
   }
 
   if (chrome.exitCode !== null) {
-    throw new Error(`Chrome encerrou antes de publicar DevToolsActivePort (exitCode=${chrome.exitCode})`);
+    throw new Error(
+      `Chrome encerrou antes de publicar DevTools (exitCode=${chrome.exitCode}). stderr: ${chromeStderr.slice(-2000)}`,
+    );
   }
 
   await sleep(100);
 }
 
-assert.ok(devToolsPort, 'Chrome não publicou DevToolsActivePort.');
-const pages = await waitForJson(`http://127.0.0.1:${devToolsPort}/json/list`, 80);
+assert.ok(
+  devToolsPort,
+  `Chrome não publicou endpoint DevTools. stderr: ${chromeStderr.slice(-2000)}`,
+);
+
+const pages = await waitForJson(`http://127.0.0.1:${devToolsPort}/json/list`, 120);
 const page = pages.find((item) => item.type === 'page') || pages[0];
 assert.ok(page?.webSocketDebuggerUrl, 'Página CDP não encontrada.');
 
