@@ -125,11 +125,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           className="meg-sidebar-toggle"
           aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
           aria-expanded={!sidebarCollapsed}
-          title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
           data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
           onClick={() => setSidebarCollapsed((value) => !value)}
         >
-          <Icon name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'} strokeWidth={1.75} />
+          <Icon
+            name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'}
+            width={18}
+            height={18}
+            strokeWidth={1.75}
+          />
         </button>
       </div>
 
