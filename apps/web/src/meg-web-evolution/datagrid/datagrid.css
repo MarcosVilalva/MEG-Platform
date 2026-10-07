@@ -61,6 +61,7 @@
 
 .meg-datagrid-toolbar__primary {
   flex: 1 1 100%;
+  flex-wrap: wrap;
 }
 
 .meg-datagrid-toolbar__actions {
@@ -119,6 +120,22 @@
   color: #02231f;
   font-size: .72rem;
   font-weight: 800;
+}
+
+.meg-datagrid-mobile-select-all {
+  min-height: 3rem;
+  min-width: 0;
+  flex: 1 1 10rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem .65rem;
+  border: .0625rem solid rgba(20, 227, 200, .18);
+  border-radius: .7rem;
+  background: rgba(3, 31, 34, .72);
+  color: var(--meg-muted);
+  font-size: .76rem;
+  cursor: pointer;
 }
 
 .meg-datagrid-mobile-sort {
@@ -330,6 +347,38 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.meg-datagrid-mobile-aggregates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .45rem;
+  padding: .7rem .75rem;
+  border-top: .0625rem solid rgba(20, 227, 200, .12);
+}
+
+.meg-datagrid-mobile-aggregates > span {
+  min-width: 0;
+  display: grid;
+  gap: .12rem;
+  padding: .5rem .6rem;
+  border: .0625rem solid rgba(20, 227, 200, .1);
+  border-radius: .65rem;
+  background: rgba(20, 227, 200, .045);
+}
+
+.meg-datagrid-mobile-aggregates small {
+  color: var(--meg-muted);
+  font-size: .66rem;
+}
+
+.meg-datagrid-mobile-aggregates strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--meg-text);
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .meg-datagrid-footer {
@@ -549,6 +598,7 @@
 .meg-datagrid-check input,
 .meg-datagrid-select-column input,
 .meg-datagrid-card-select input,
+.meg-datagrid-mobile-select-all input,
 .meg-datagrid-boolean input,
 .meg-datagrid-column-menu input {
   width: 1.05rem;
@@ -909,7 +959,9 @@
   }
 
   .meg-datagrid-mobile-filter,
-  .meg-datagrid-mobile-sort {
+  .meg-datagrid-mobile-select-all,
+  .meg-datagrid-mobile-sort,
+  .meg-datagrid-mobile-aggregates {
     display: none;
   }
 
