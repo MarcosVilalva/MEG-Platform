@@ -228,7 +228,7 @@ async function assertCompactOverlays(width, height, collapsed) {
           const search=dialog?.querySelector('.meg-datagrid-filter__search input');
           if(!search) return null;
           const descriptor=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
-          descriptor?.set?.call(search,'Lançamento técnico 1');
+          descriptor?.set?.call(search,'Registro técnico 1');
           search.dispatchEvent(new Event('input',{bubbles:true}));
           return true;
         })()`);
