@@ -177,8 +177,13 @@ async function measure(state) {
       controlVisibility: getComputedStyle(control).visibility,
       navIcons,
       collapsedArtDisplay: getComputedStyle(document.querySelector('.sidebar__art')).display,
-      periodOneLine: periodLabelRect.height <= parseFloat(getComputedStyle(periodLabel).lineHeight || periodLabelRect.height) + 1,
-      periodFits: period.scrollWidth <= period.clientWidth && periodLabel.scrollWidth <= periodLabel.clientWidth,
+      periodOneLine:
+        periodLabel.getClientRects().length === 1 &&
+        periodLabelRect.height <= parseFloat(getComputedStyle(periodLabel).lineHeight || periodLabelRect.height) + 1,
+      periodFits:
+        period.scrollWidth <= period.clientWidth &&
+        periodLabel.scrollWidth <= periodLabel.clientWidth &&
+        !periodLabel.textContent.includes('\n'),
       periodInsideViewport: periodRect.right <= window.innerWidth && periodRect.left >= 0,
       controlClippingAncestor: clippingAncestor,
     };
