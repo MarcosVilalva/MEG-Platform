@@ -133,7 +133,7 @@
 .meg-nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; font-weight: 650; }
 .meg-nav-item:hover { background: rgba(20,227,200,.055); }
 
-.meg-sidebar-control-wrap {
+.meg-sidebar-footer {
   position: relative;
   z-index: 6;
   flex: 0 0 auto;
@@ -141,73 +141,39 @@
   border-top: 1px solid rgba(20, 227, 200, .12);
 }
 
-.meg-sidebar-control {
+.meg-logout-button {
   width: 100%;
   min-height: 44px;
-  border: 1px solid rgba(20, 227, 200, .12);
-  border-radius: 11px;
-  background: linear-gradient(180deg, rgba(4, 35, 38, .72), rgba(2, 24, 27, .78));
-  color: var(--meg-muted);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.025),
-    0 4px 12px rgba(0,0,0,.12);
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  border-color: transparent;
+  color: #aac8c4;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-.meg-sidebar-control-icon {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 8px;
-  background: rgba(20, 227, 200, .06);
-  color: #9bc6c1;
-  box-shadow: inset 0 0 0 1px rgba(20, 227, 200, .08);
-  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
-}
-
-.meg-sidebar-control-icon svg {
+.meg-logout-button svg {
   width: 20px;
   height: 20px;
   min-width: 20px;
   min-height: 20px;
-  pointer-events: none;
+  color: #91bcb7;
+  transition: color 150ms ease, filter 150ms ease;
 }
 
-.meg-sidebar-control-label {
-  color: #a9c5c2;
-  font-weight: 650;
-  letter-spacing: .01em;
-  transition: color 150ms ease;
+.meg-logout-button:hover,
+.meg-logout-button:focus-visible {
+  border-color: rgba(255, 112, 112, .18);
+  background: linear-gradient(90deg, rgba(255, 112, 112, .07), rgba(20, 227, 200, .025));
+  color: #f2f7f6;
 }
 
-.meg-sidebar-control:hover,
-.meg-sidebar-control:focus-visible {
-  border-color: rgba(20, 227, 200, .34);
-  background: linear-gradient(180deg, rgba(6, 48, 49, .82), rgba(3, 30, 33, .88));
-  color: var(--meg-accent);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.035),
-    0 4px 14px rgba(0,0,0,.16),
-    0 0 10px rgba(20, 227, 200, .08);
+.meg-logout-button:hover svg,
+.meg-logout-button:focus-visible svg {
+  color: #ff8a8f;
+  filter: drop-shadow(0 0 6px rgba(255, 105, 110, .22));
 }
 
-.meg-sidebar-control:hover .meg-sidebar-control-icon,
-.meg-sidebar-control:focus-visible .meg-sidebar-control-icon {
-  background: rgba(20, 227, 200, .11);
-  color: var(--meg-accent);
-  box-shadow:
-    inset 0 0 0 1px rgba(20, 227, 200, .16),
-    0 0 8px rgba(20, 227, 200, .10);
-}
-
-.meg-sidebar-control:hover .meg-sidebar-control-label,
-.meg-sidebar-control:focus-visible .meg-sidebar-control-label {
-  color: var(--meg-text);
-}
-
-.meg-sidebar-control:focus-visible {
+.meg-logout-button:focus-visible {
   outline: 2px solid var(--meg-accent);
   outline-offset: 2px;
 }
@@ -282,6 +248,56 @@
 
 .meg-menu-button { display: none; }
 
+.meg-sidebar-switcher {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(20, 227, 200, .18);
+  border-radius: 11px;
+  background: rgba(2, 24, 28, .78);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.meg-sidebar-switcher-button {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9cbfbb;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.meg-sidebar-switcher-button svg {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.meg-sidebar-switcher-button:hover:not(:disabled),
+.meg-sidebar-switcher-button:focus-visible:not(:disabled) {
+  background: rgba(20, 227, 200, .09);
+  color: var(--meg-accent);
+  box-shadow: 0 0 10px rgba(20, 227, 200, .08);
+}
+
+.meg-sidebar-switcher-button:focus-visible {
+  outline: 2px solid var(--meg-accent);
+  outline-offset: 2px;
+}
+
+.meg-sidebar-switcher-button:disabled {
+  cursor: default;
+  color: rgba(156, 191, 187, .34);
+  background: rgba(255,255,255,.018);
+}
+
 .meg-search {
   min-width: 12rem;
   width: min(38.5rem, 48vw);
@@ -353,7 +369,7 @@
 
 @media (max-width: 1023px) {
   .meg-shell { grid-template-columns: var(--meg-sidebar-compact) minmax(0, 1fr); }
-  .meg-sidebar-control-wrap { display: none; }
+  .meg-sidebar-switcher { display: none; }
   .meg-sidebar { padding-inline: .55rem; }
   .meg-nav-item span, .meg-new-button span { display: none; }
   .meg-brand { min-height: 6.6rem; }
@@ -511,84 +527,28 @@
   }
 
   .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item span,
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control-label,
+  .meg-shell.is-sidebar-collapsed .meg-logout-button span,
   .meg-shell.is-sidebar-collapsed .meg-new-button span {
     display: none;
   }
 
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control-wrap {
-    position: relative;
-    z-index: 8;
-    display: block;
-    flex: 0 0 auto;
-    overflow: visible;
-    padding-top: .55rem;
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control {
-    position: relative;
-    width: 42px;
-    min-width: 42px;
-    min-height: 42px;
-    margin-inline: auto;
-    justify-content: center;
-    padding: 0;
-    overflow: visible;
-    border: 1px solid rgba(20, 227, 200, .16);
-    border-radius: 11px;
-    background: linear-gradient(180deg, rgba(4, 38, 40, .80), rgba(2, 24, 27, .88));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.025),
-      0 4px 12px rgba(0,0,0,.15);
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control-icon {
-    flex: 0 0 28px;
-    width: 28px;
-    height: 28px;
-    margin-inline: auto;
-    background: rgba(20, 227, 200, .07);
-    color: #a4d8d2;
-    box-shadow: inset 0 0 0 1px rgba(20, 227, 200, .10);
-  }
-
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control-icon svg {
-    margin-inline: auto;
-  }
-
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: calc(100% + .6rem);
-    top: 50%;
-    z-index: 60;
-    padding: .38rem .5rem;
-    border: 1px solid rgba(20, 227, 200, .20);
-    border-radius: .45rem;
-    background: #02181c;
-    color: var(--meg-text);
-    font-size: .72rem;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-50%) translateX(-.2rem);
-    transition: opacity 150ms ease, transform 150ms ease;
-  }
-
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control:hover::after,
-  .meg-shell.is-sidebar-collapsed .meg-sidebar-control:focus-visible::after {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
-
   .meg-shell.is-sidebar-collapsed .sidebar__art {
     display: none;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-footer {
+    flex: 0 0 auto;
+    padding-top: .5rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-logout-button {
+    width: 100%;
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-logout-button svg {
+    margin-inline: auto;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-new-button {
@@ -621,10 +581,6 @@
   .meg-nav-item {
     min-height: 40px;
     padding-block: .45rem;
-  }
-
-  .meg-sidebar-control {
-    min-height: 40px;
   }
 
   .sidebar__art {
@@ -665,10 +621,6 @@
   .meg-nav-item {
     min-height: 36px;
     padding-block: .35rem;
-  }
-
-  .meg-sidebar-control {
-    min-height: 36px;
   }
 
   .sidebar__art {
