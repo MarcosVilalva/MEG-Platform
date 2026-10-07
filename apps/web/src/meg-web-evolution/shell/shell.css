@@ -137,58 +137,34 @@
   position: relative;
   z-index: 6;
   flex: 0 0 auto;
-  padding-top: .7rem;
-  border-top: 1px solid rgba(20, 227, 200, .18);
+  padding-top: .65rem;
+  border-top: 1px solid rgba(20, 227, 200, .12);
 }
 
 .meg-sidebar-control {
-  position: relative;
   width: 100%;
-  min-height: 46px;
-  border: 1px solid rgba(20, 227, 200, .24);
-  border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(8, 49, 51, .92), rgba(2, 27, 30, .96)),
-    radial-gradient(circle at 20% 10%, rgba(20, 227, 200, .16), transparent 55%);
-  color: #b7d8d4;
+  min-height: 44px;
+  border: 1px solid rgba(20, 227, 200, .12);
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(4, 35, 38, .72), rgba(2, 24, 27, .78));
+  color: var(--meg-muted);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.045),
-    inset 0 -1px 0 rgba(0,0,0,.28),
-    0 8px 18px rgba(0,0,0,.22),
-    0 0 14px rgba(20, 227, 200, .10);
-  overflow: visible;
-  isolation: isolate;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-}
-
-.meg-sidebar-control::before {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  z-index: -1;
-  border-radius: 10px;
-  pointer-events: none;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.035), transparent 38%),
-    linear-gradient(180deg, rgba(20,227,200,.035), transparent 65%);
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 4px 12px rgba(0,0,0,.12);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
 }
 
 .meg-sidebar-control-icon {
-  flex: 0 0 32px;
-  width: 32px;
-  height: 32px;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
   display: inline-grid;
   place-items: center;
-  border-radius: 10px;
-  background:
-    linear-gradient(145deg, rgba(34, 211, 197, .34), rgba(4, 63, 64, .88));
-  color: #7ff7e9;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.12),
-    inset 0 -2px 4px rgba(0,0,0,.30),
-    0 4px 9px rgba(0,0,0,.28),
-    0 0 16px rgba(20, 227, 200, .24);
-  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  border-radius: 8px;
+  background: rgba(20, 227, 200, .06);
+  color: #9bc6c1;
+  box-shadow: inset 0 0 0 1px rgba(20, 227, 200, .08);
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
 }
 
 .meg-sidebar-control-icon svg {
@@ -196,50 +172,39 @@
   height: 20px;
   min-width: 20px;
   min-height: 20px;
-  filter: drop-shadow(0 0 4px rgba(20, 227, 200, .42));
   pointer-events: none;
 }
 
 .meg-sidebar-control-label {
-  color: #c9e1de;
-  font-weight: 700;
+  color: #a9c5c2;
+  font-weight: 650;
   letter-spacing: .01em;
-  text-shadow: 0 1px 0 rgba(0,0,0,.4);
-  transition: color 150ms ease, text-shadow 150ms ease;
+  transition: color 150ms ease;
 }
 
 .meg-sidebar-control:hover,
 .meg-sidebar-control:focus-visible {
-  border-color: rgba(20, 227, 200, .72);
-  background:
-    linear-gradient(180deg, rgba(11, 65, 64, .98), rgba(3, 35, 37, .98)),
-    radial-gradient(circle at 20% 10%, rgba(20, 227, 200, .24), transparent 58%);
+  border-color: rgba(20, 227, 200, .34);
+  background: linear-gradient(180deg, rgba(6, 48, 49, .82), rgba(3, 30, 33, .88));
   color: var(--meg-accent);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.07),
-    inset 0 -1px 0 rgba(0,0,0,.32),
-    0 8px 20px rgba(0,0,0,.28),
-    0 0 20px rgba(20, 227, 200, .24);
-  transform: translateY(-1px);
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 4px 14px rgba(0,0,0,.16),
+    0 0 10px rgba(20, 227, 200, .08);
 }
 
 .meg-sidebar-control:hover .meg-sidebar-control-icon,
 .meg-sidebar-control:focus-visible .meg-sidebar-control-icon {
-  background:
-    linear-gradient(145deg, rgba(43, 227, 139, .46), rgba(11, 108, 101, .88));
-  color: #dffff9;
+  background: rgba(20, 227, 200, .11);
+  color: var(--meg-accent);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.16),
-    inset 0 -2px 4px rgba(0,0,0,.28),
-    0 5px 12px rgba(0,0,0,.30),
-    0 0 22px rgba(20, 227, 200, .42);
-  transform: translateY(-1px) scale(1.04);
+    inset 0 0 0 1px rgba(20, 227, 200, .16),
+    0 0 8px rgba(20, 227, 200, .10);
 }
 
 .meg-sidebar-control:hover .meg-sidebar-control-label,
 .meg-sidebar-control:focus-visible .meg-sidebar-control-label {
-  color: #effffc;
-  text-shadow: 0 0 10px rgba(20,227,200,.18);
+  color: var(--meg-text);
 }
 
 .meg-sidebar-control:focus-visible {
@@ -564,38 +529,31 @@
 
   .meg-shell.is-sidebar-collapsed .meg-sidebar-control {
     position: relative;
-    width: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 42px;
+    min-width: 42px;
+    min-height: 42px;
     margin-inline: auto;
     justify-content: center;
     padding: 0;
     overflow: visible;
-    border: 1px solid rgba(20, 227, 200, .34);
-    border-radius: 12px;
-    background:
-      linear-gradient(180deg, rgba(8, 53, 54, .98), rgba(2, 27, 30, .99));
+    border: 1px solid rgba(20, 227, 200, .16);
+    border-radius: 11px;
+    background: linear-gradient(180deg, rgba(4, 38, 40, .80), rgba(2, 24, 27, .88));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.06),
-      inset 0 -1px 0 rgba(0,0,0,.30),
-      0 6px 14px rgba(0,0,0,.25),
-      0 0 18px rgba(20, 227, 200, .18);
+      inset 0 1px 0 rgba(255,255,255,.025),
+      0 4px 12px rgba(0,0,0,.15);
     opacity: 1;
     visibility: visible;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-sidebar-control-icon {
-    flex: 0 0 34px;
-    width: 34px;
-    height: 34px;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
     margin-inline: auto;
-    background:
-      linear-gradient(145deg, rgba(34, 211, 197, .38), rgba(5, 76, 75, .92));
-    color: #83fff0;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.14),
-      inset 0 -2px 4px rgba(0,0,0,.28),
-      0 0 18px rgba(20, 227, 200, .30);
+    background: rgba(20, 227, 200, .07);
+    color: #a4d8d2;
+    box-shadow: inset 0 0 0 1px rgba(20, 227, 200, .10);
   }
 
   .meg-shell.is-sidebar-collapsed .meg-sidebar-control-icon svg {
@@ -670,7 +628,10 @@
   }
 
   .sidebar__art {
-    display: none;
+    display: block;
+    height: 8.5rem;
+    min-height: 5.5rem;
+    opacity: .42;
   }
 
 }
@@ -711,7 +672,10 @@
   }
 
   .sidebar__art {
-    display: none;
+    display: block;
+    height: 6.5rem;
+    min-height: 4.5rem;
+    opacity: .34;
   }
 
 }
