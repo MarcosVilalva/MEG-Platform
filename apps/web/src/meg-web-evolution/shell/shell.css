@@ -1245,7 +1245,8 @@
   }
 
   .meg-shell:not(.is-sidebar-collapsed) .sidebar__art {
-    flex: 0 1 20rem;
+    flex: 0 1 min(20rem, 30dvh);
+    height: min(20rem, 30dvh);
     min-height: 0;
   }
 
