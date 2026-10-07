@@ -56,6 +56,7 @@ assert.equal(source.includes('dashed'), false);
 assert.match(source, /Recolher menu lateral/);
 assert.match(source, /Expandir menu lateral/);
 assert.match(source, /is-sidebar-collapsed/);
+assert.match(source, /className="meg-sidebar-wrap"/);
 assert.match(source, /meg-sidebar-toggle/);
 assert.match(source, /margin-inline:\s*auto/);
 assert.match(source, /className="sidebar__art"/);
