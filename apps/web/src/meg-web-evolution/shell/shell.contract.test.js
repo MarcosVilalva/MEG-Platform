@@ -70,12 +70,14 @@ assert.match(source, /aria-label=\{sidebarCollapsed \? 'Expandir menu' : 'Recolh
 assert.match(source, /aria-expanded=\{!sidebarCollapsed\}/);
 assert.equal(/title=\{sidebarCollapsed/.test(source), false, 'native title tooltip must not exist');
 assert.match(source, /className="meg-nav-item meg-sidebar-control"/);
-assert.match(source, /<span>Recolher menu<\/span>/);
+assert.match(source, /className="meg-sidebar-control-icon"/);
+assert.match(source, /className="meg-sidebar-control-label">Recolher menu<\/span>/);
 assert.match(source, /width=\{20\}/);
 assert.match(source, /height=\{20\}/);
 assert.match(source, /\.meg-sidebar-control-wrap\s*\{[\s\S]*flex:\s*0\s+0\s+auto[\s\S]*border-top:\s*1px/);
 assert.match(source, /\.meg-sidebar-control\s*\{[\s\S]*width:\s*100%;[\s\S]*border:\s*0;[\s\S]*box-shadow:\s*none/);
-assert.match(source, /\.meg-sidebar-control svg\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px;[\s\S]*pointer-events:\s*none/);
+assert.match(source, /\.meg-sidebar-control-icon\s*\{[\s\S]*width:\s*30px;[\s\S]*height:\s*30px;[\s\S]*border-radius:\s*9px/);
+assert.match(source, /\.meg-sidebar-control-icon svg\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px;[\s\S]*pointer-events:\s*none/);
 assert.match(source, /\.meg-sidebar-control:hover\s*\{[\s\S]*color:\s*var\(--meg-accent\)/);
 assert.match(source, /\.meg-sidebar-control:focus-visible\s*\{[\s\S]*outline:\s*2px solid var\(--meg-accent\)/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed\s*\{[\s\S]*grid-template-columns:\s*72px/);
