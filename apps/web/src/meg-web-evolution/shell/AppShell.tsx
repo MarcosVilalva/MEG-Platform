@@ -1,4 +1,4 @@
-import { useState, type FocusEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FocusEvent, type MouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../components/Icon';
 import { IconButton } from '../components/primitives';
@@ -20,7 +20,26 @@ type TooltipState = { label: string; x: number; y: number; placement: TooltipPla
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isDesktopWide, setIsDesktopWide] = useState(() =>
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
+  );
   const [tooltip, setTooltip] = useState<TooltipState>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+
+    const syncSidebarToViewport = (matches: boolean) => {
+      setIsDesktopWide(matches);
+      setSidebarCollapsed(!matches);
+      setTooltip(null);
+    };
+
+    syncSidebarToViewport(media.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => syncSidebarToViewport(event.matches);
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, []);
 
   const showTooltip = (
     event: MouseEvent<HTMLButtonElement> | FocusEvent<HTMLButtonElement>,
@@ -178,12 +197,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="meg-topbar-launcher meg-sidebar-toggle-topbar"
               aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
               aria-expanded={!sidebarCollapsed}
+              aria-hidden={!isDesktopWide}
+              tabIndex={isDesktopWide ? 0 : -1}
               data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-              onMouseEnter={(event) => showTooltip(event, sidebarCollapsed ? 'Expandir menu' : 'Recolher menu', 'bottom')}
+              onMouseEnter={(event) => isDesktopWide && showTooltip(event, sidebarCollapsed ? 'Expandir menu' : 'Recolher menu', 'bottom')}
               onMouseLeave={hideTooltip}
-              onFocus={(event) => showTooltip(event, sidebarCollapsed ? 'Expandir menu' : 'Recolher menu', 'bottom')}
+              onFocus={(event) => isDesktopWide && showTooltip(event, sidebarCollapsed ? 'Expandir menu' : 'Recolher menu', 'bottom')}
               onBlur={hideTooltip}
               onClick={() => {
+                if (!isDesktopWide) return;
                 hideTooltip();
                 setSidebarCollapsed((value) => !value);
               }}
