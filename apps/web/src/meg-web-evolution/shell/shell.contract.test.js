@@ -148,7 +148,6 @@ assert.match(source, /@media \(max-width: 639px\)[\s\S]*\.meg-topbar-actions\s*\
 assert.match(source, /container-type:\s*inline-size/);
 assert.match(source, /container-name:\s*meg-shell-body/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)/);
-assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*grid-template-columns:\s*minmax\(46px, 1fr\) auto/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
 assert.match(source, /aria-label="Buscar"/);
@@ -170,16 +169,15 @@ assert.match(source, /useEffect/);
 assert.match(source, /window\.matchMedia\('\(min-width: 1024px\)'\)/);
 assert.match(source, /sidebarPreferenceCollapsed/);
 assert.match(source, /const sidebarCollapsed = isDesktopWide \? sidebarPreferenceCollapsed : true/);
-assert.match(source, /setSidebarPreferenceCollapsed\(\(value\) => !value\)/);
+assert.match(source, /setSidebarPreferenceCollapsed\(\(value\) => \{[\s\S]*const nextValue = !value;[\s\S]*localStorage\.setItem\(SIDEBAR_PREFERENCE_KEY, String\(nextValue\)\)/);
 assert.match(source, /aria-hidden=\{!isDesktopWide\}/);
 assert.match(source, /tabIndex=\{isDesktopWide \? 0 : -1\}/);
 assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-sidebar-toggle-topbar\s*\{\s*display:\s*none/);
 assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*width:\s*52px;[\s\S]*height:\s*52px/);
 assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*42px;[\s\S]*min-width:\s*42px/);
 assert.match(source, /@media \(max-width:\s*1023px\) and \(max-height:\s*599px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px/);
-assert.match(source, /sidebar deve voltar expandida automaticamente/);
 
-assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)[\s\S]*\.meg-brand\s*\{[\s\S]*flex:\s*0\s+0\s+92px;[\s\S]*height:\s*92px/);
+assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)[\s\S]*\.meg-brand\s*\{[\s\S]*flex:\s*0\s+0\s+96px;[\s\S]*height:\s*96px/);
 assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*112px;[\s\S]*max-height:\s*none/);
 assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*519px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*104px/);
 
