@@ -215,7 +215,8 @@
   flex: 0 0 auto;
   min-width: 0;
   min-height: 5.35rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.55rem 1rem 1.75rem;
@@ -305,8 +306,8 @@
 }
 
 .meg-search {
-  min-width: 12rem;
-  width: min(38.5rem, 48vw);
+  min-width: 0;
+  width: min(38.5rem, 100%);
   min-height: 3rem;
   display: flex;
   align-items: center;
@@ -320,7 +321,14 @@
 .meg-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--meg-text); font-size: .88rem; }
 .meg-search input::placeholder { color: #a4bebb; }
 
-.meg-topbar-actions { margin-left: auto; min-width: 0; display: flex; align-items: center; gap: .78rem; }
+.meg-topbar-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .78rem;
+  white-space: nowrap;
+}
 
 .meg-period,
 .meg-profile {
@@ -333,7 +341,18 @@
   background: rgba(3, 23, 27, .76);
   cursor: pointer;
 }
-.meg-period { min-width: 13.1rem; justify-content: center; padding: .65rem .9rem; font-weight: 650; }
+.meg-period {
+  flex: 0 0 auto;
+  min-width: max-content;
+  justify-content: center;
+  padding: .65rem .9rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.meg-period span {
+  white-space: nowrap;
+}
 .meg-period svg { width: 1.18rem; height: 1.18rem; color: var(--meg-accent); }
 .meg-period svg:last-child { width: .95rem; color: var(--meg-muted); }
 
@@ -342,7 +361,15 @@
 
 .meg-profile { padding: .35rem .5rem .35rem .4rem; border-color: transparent; background: transparent; }
 .meg-avatar { width: 2.55rem; height: 2.55rem; display: inline-grid; place-items: center; border: .0625rem solid rgba(20,227,200,.36); border-radius: 50%; background: linear-gradient(145deg, #0b5a5e, #063236); font-weight: 700; }
-.meg-profile-name { max-width: 13.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; font-weight: 650; }
+.meg-profile-name {
+  min-width: 0;
+  max-width: clamp(7rem, 13vw, 13.5rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .88rem;
+  font-weight: 650;
+}
 .meg-profile svg { width: 1rem; color: var(--meg-muted); }
 
 .meg-main {
