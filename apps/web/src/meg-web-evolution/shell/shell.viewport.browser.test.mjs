@@ -383,6 +383,209 @@ async function measureResponsiveTopbar() {
   })()`);
 }
 
+const sidebarResponsiveViewports = [
+  { width: 1366, height: 768 },
+  { width: 1024, height: 600 },
+  { width: 900, height: 560 },
+  { width: 690, height: 600 },
+  { width: 768, height: 520 },
+  { width: 480, height: 520 },
+  { width: 480, height: 480 },
+];
+
+async function prepareSidebarForState(viewport, collapsed) {
+  await navigate(`${appUrl}?sidebar-contract=${viewport.width}x${viewport.height}-${collapsed ? 'collapsed' : 'expanded'}`);
+  await sleep(180);
+
+  if (viewport.width < 640) {
+    await evaluate(`document.querySelector('.meg-menu-button')?.click()`);
+    await sleep(120);
+    await evaluate(`document.querySelector('.meg-shell')?.classList.toggle('is-sidebar-collapsed', ${collapsed})`);
+    return;
+  }
+
+  const isCollapsed = await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`);
+  if (Boolean(isCollapsed) !== collapsed) {
+    await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
+    await sleep(120);
+  }
+}
+
+async function measureSidebarResponsive() {
+  return evaluate(`(() => {
+    const root = document.documentElement;
+    const sidebar = document.querySelector('.meg-sidebar');
+    const nav = document.querySelector('.meg-nav');
+    const footer = document.querySelector('.meg-sidebar-footer');
+    const art = document.querySelector('.sidebar__art');
+    const items = [...document.querySelectorAll('.meg-nav .meg-nav-item')];
+    const dividerStyle = footer ? getComputedStyle(footer, '::before') : null;
+
+    if (!sidebar || !nav || !footer || items.length !== 7) {
+      return { missing: true, itemCount: items.length };
+    }
+
+    const sidebarRect = sidebar.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    const footerRect = footer.getBoundingClientRect();
+    const itemRects = items.map((item) => {
+      const rect = item.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const hit = document.elementFromPoint(centerX, centerY);
+      return {
+        width: rect.width,
+        height: rect.height,
+        top: rect.top,
+        bottom: rect.bottom,
+        fullyInsideNav:
+          rect.left >= navRect.left - 1 &&
+          rect.right <= navRect.right + 1 &&
+          rect.top >= navRect.top - 1 &&
+          rect.bottom <= navRect.bottom + 1,
+        visibleAtCenter: Boolean(hit && (hit === item || item.contains(hit))),
+      };
+    });
+
+    const parseRgb = (value) => {
+      const match = value?.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+      return match ? match.slice(1, 4).map(Number) : null;
+    };
+    const dividerRgb = parseRgb(dividerStyle?.backgroundColor);
+    const dividerNeutral = dividerRgb
+      ? Math.max(...dividerRgb) - Math.min(...dividerRgb) <= 8
+      : false;
+
+    const maxItemHeight = Math.max(...itemRects.map((item) => item.height), 0);
+    const lastItem = itemRects[itemRects.length - 1];
+    const needsScroll = nav.scrollHeight > nav.clientHeight + 1;
+    const gapToFooter = Math.max(0, footerRect.top - lastItem.bottom);
+
+    return {
+      missing: false,
+      innerHeight: window.innerHeight,
+      documentScrollHeight: root.scrollHeight,
+      sidebarTop: sidebarRect.top,
+      sidebarBottom: sidebarRect.bottom,
+      navTop: navRect.top,
+      navBottom: navRect.bottom,
+      navClientHeight: nav.clientHeight,
+      navScrollHeight: nav.scrollHeight,
+      needsScroll,
+      itemCount: items.length,
+      itemRects,
+      maxItemHeight,
+      lastItemBottom: lastItem.bottom,
+      gapToFooter,
+      footerTop: footerRect.top,
+      dividerNeutral,
+      dividerColor: dividerStyle?.backgroundColor || '',
+      artDisplay: art ? getComputedStyle(art).display : 'missing',
+    };
+  })()`);
+}
+
+async function assertSidebarState(viewport, collapsed) {
+  await prepareSidebarForState(viewport, collapsed);
+  await clearPointerAndFocus();
+  const result = await measureSidebarResponsive();
+  const state = collapsed ? 'recolhida' : 'expandida';
+
+  assert.equal(result.missing, false, `${viewport.width}x${viewport.height} ${state}: estrutura da sidebar ausente`);
+  assert.equal(result.itemCount, 7, `${viewport.width}x${viewport.height} ${state}: esperado 7 itens`);
+  assert.ok(
+    result.documentScrollHeight <= result.innerHeight,
+    `${viewport.width}x${viewport.height} ${state}: documento não pode rolar (${result.documentScrollHeight}/${result.innerHeight})`,
+  );
+  assert.equal(
+    result.dividerNeutral,
+    true,
+    `${viewport.width}x${viewport.height} ${state}: divisor de Sair não é neutro (${result.dividerColor})`,
+  );
+
+  for (const [index, item] of result.itemRects.entries()) {
+    assert.ok(item.width > 0 && item.height > 0, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} sem dimensão`);
+    if (viewport.height >= 520) {
+      assert.equal(item.fullyInsideNav, true, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} parcialmente cortado`);
+      assert.equal(item.visibleAtCenter, true, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} não está visível no centro`);
+    }
+  }
+
+  if (viewport.height >= 520 && viewport.height < 768) {
+    assert.equal(
+      result.needsScroll,
+      false,
+      `${viewport.width}x${viewport.height} ${state}: nav não deveria rolar a partir de 520px`,
+    );
+    assert.ok(
+      result.lastItemBottom <= result.navBottom + 1,
+      `${viewport.width}x${viewport.height} ${state}: último item ultrapassa o nav`,
+    );
+    assert.ok(
+      result.gapToFooter <= result.maxItemHeight + 1,
+      `${viewport.width}x${viewport.height} ${state}: vazio excessivo antes do rodapé (${result.gapToFooter}px > ${result.maxItemHeight}px)`,
+    );
+  }
+
+  if (viewport.height < 520) {
+    assert.equal(
+      result.needsScroll,
+      true,
+      `${viewport.width}x${viewport.height} ${state}: abaixo de 520px o nav deve ser rolável`,
+    );
+    const reachable = await evaluate(`(() => {
+      const nav = document.querySelector('.meg-nav');
+      const last = document.querySelector('.meg-nav .meg-nav-item:last-child');
+      if (!nav || !last) return false;
+      nav.scrollTop = nav.scrollHeight;
+      const navRect = nav.getBoundingClientRect();
+      const rect = last.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, Math.min(rect.top + rect.height / 2, navRect.bottom - 1));
+      return rect.bottom <= navRect.bottom + 1 && Boolean(hit && (hit === last || last.contains(hit)));
+    })()`);
+    assert.equal(reachable, true, `${viewport.width}x${viewport.height} ${state}: último item não é alcançável pela rolagem`);
+  }
+
+  if (viewport.height < 700) {
+    assert.equal(result.artDisplay, 'none', `${viewport.width}x${viewport.height} ${state}: marca d'água deve ficar oculta abaixo de 700px`);
+  }
+
+  if (collapsed && viewport.width >= 640) {
+    for (const [label, selector] of [
+      ['Início', '.meg-nav .meg-nav-item[aria-label="Início"]'],
+      ['Lançamentos', '.meg-nav .meg-nav-item[aria-label="Lançamentos"]'],
+      ['Cartões', '.meg-nav .meg-nav-item[aria-label="Cartões"]'],
+      ['Pendentes', '.meg-nav .meg-nav-item[aria-label="Pendentes"]'],
+      ['Benefícios', '.meg-nav .meg-nav-item[aria-label="Benefícios"]'],
+      ['Relatórios', '.meg-nav .meg-nav-item[aria-label="Relatórios"]'],
+      ['Configurações', '.meg-nav .meg-nav-item[aria-label="Configurações"]'],
+      ['Sair', '.meg-logout-button[aria-label="Sair"]'],
+    ]) {
+      await assertHoverAndFocusTooltip(selector, `${viewport.width}x${viewport.height} ${state} / ${label}`);
+    }
+  }
+}
+
+async function assertReducedTopbarLaunchers(viewport) {
+  if (viewport.width < 640) return;
+  const launchers = await evaluate(`(() => {
+    const wrap = document.querySelector('.meg-topbar-launchers');
+    const toggle = document.querySelector('.meg-sidebar-toggle-topbar');
+    const add = document.querySelector('.meg-topbar-new');
+    if (!wrap || !toggle || !add) return null;
+    const visible = (element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    };
+    return { wrap: visible(wrap), toggle: visible(toggle), add: visible(add) };
+  })()`);
+  assert.ok(launchers, `${viewport.width}x${viewport.height}: controles rápidos ausentes`);
+  assert.equal(launchers.wrap, true, `${viewport.width}x${viewport.height}: grupo de ações rápidas sumiu`);
+  assert.equal(launchers.toggle, true, `${viewport.width}x${viewport.height}: recolher/expandir sumiu`);
+  assert.equal(launchers.add, true, `${viewport.width}x${viewport.height}: Novo sumiu`);
+}
+
 try {
   await command('Page.enable');
   await command('Runtime.enable');
@@ -597,6 +800,23 @@ try {
   }
 
   console.log('MEG Web Evolution responsive topbar contract: OK');
+
+  for (const viewport of sidebarResponsiveViewports) {
+    await command('Emulation.setDeviceMetricsOverride', {
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: 1,
+      mobile: viewport.width < 640,
+    });
+
+    await assertReducedTopbarLaunchers(viewport);
+    await assertSidebarState(viewport, false);
+    await assertSidebarState(viewport, true);
+
+    console.log(`OK sidebar responsive ${viewport.width}x${viewport.height}`);
+  }
+
+  console.log('MEG Web Evolution responsive sidebar contract: OK');
 
   console.log('MEG Web Evolution viewport contract: OK');
 } finally {
