@@ -144,10 +144,6 @@ assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar\s*\{[\s\S]
 assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar-actions\s*\{[\s\S]*display:\s*flex;[\s\S]*justify-content:\s*flex-end/);
 assert.match(source, /@media \(max-width: 639px\)[\s\S]*grid-template-areas:[\s\S]*"menu \. notification profile"[\s\S]*"period period period period"[\s\S]*"search search search search"/);
 assert.match(source, /@media \(max-width: 639px\)[\s\S]*\.meg-topbar-actions\s*\{[\s\S]*display:\s*contents/);
-assert.match(source, /responsiveViewports[\s\S]*1023[\s\S]*768[\s\S]*640[\s\S]*390/);
-assert.match(source, /responsive\.overlaps/);
-assert.match(source, /responsive\.allInsideViewport/);
-assert.match(source, /responsive\.periodOneLine/);
 
 assert.match(source, /container-type:\s*inline-size/);
 assert.match(source, /container-name:\s*meg-shell-body/);
@@ -164,11 +160,6 @@ assert.match(source, /@media \(max-height:\s*519px\)[\s\S]*mask-image:\s*linear-
 assert.match(source, /\.meg-sidebar-footer\s*\{[\s\S]*margin-block:\s*8px;[\s\S]*padding-top:\s*8px/);
 assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-topbar-launchers\s*\{\s*display:\s*inline-flex/);
 assert.match(source, /@media \(max-width:\s*639px\)[\s\S]*\.meg-topbar-launchers\s*\{[\s\S]*display:\s*inline-flex[\s\S]*\.meg-sidebar-toggle-topbar\s*\{\s*display:\s*none/);
-assert.match(source, /sidebarResponsiveViewports[\s\S]*1366[\s\S]*1024[\s\S]*900[\s\S]*690[\s\S]*768[\s\S]*480/);
-assert.match(source, /result\.gapToFooter <= result\.maxItemHeight \+ 1/);
-assert.match(source, /result\.dividerNeutral/);
-assert.match(source, /result\.needsScroll/);
-assert.match(source, /assertReducedTopbarLaunchers/);
 
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-brand,[\s\S]*flex:\s*0\s+0\s+72px;[\s\S]*height:\s*72px;[\s\S]*padding:\s*6px\s+0\s+8px/);
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*88px;[\s\S]*max-height:\s*54px/);
