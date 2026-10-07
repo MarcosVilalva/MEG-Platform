@@ -51,15 +51,15 @@ assert.match(source, /\.meg-brand\s*\{[\s\S]*position:\s*relative[\s\S]*overflow
 assert.match(source, /\.meg-brand-stack\s*\{[\s\S]*position:\s*relative[\s\S]*overflow:\s*visible/);
 assert.match(source, /\.meg-brand-logo--expanded\s*\{[\s\S]*position:\s*relative[\s\S]*width:\s*112px/);
 assert.match(source, /\.meg-brand-logo--collapsed\s*\{[\s\S]*position:\s*absolute/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*56px;[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*12px\s+0;[\s\S]*overflow:\s*visible/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*28px;[\s\S]*max-width:\s*40%;[\s\S]*height:\s*auto;[\s\S]*object-fit:\s*contain/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*64px;[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*14px\s+0;[\s\S]*overflow:\s*visible/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*flex:\s*0\s+0\s+auto;[\s\S]*width:\s*36px;[\s\S]*min-width:\s*36px;[\s\S]*max-width:\s*36px;[\s\S]*height:\s*auto;[\s\S]*object-fit:\s*contain/);
 assert.match(source, /padding:\s*16px\s+\.75rem\s+0/);
 assert.match(source, /margin-bottom:\s*16px/);
 assert.match(source, /padding:\s*16px\s+0/);
 assert.match(source, /width:\s*96px/);
 assert.match(source, /width:\s*80px/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*48px/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*24px/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*52px/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*30px/);
 assert.match(source, /min-height:\s*40px/);
 assert.match(source, /min-height:\s*36px/);
 
@@ -78,6 +78,11 @@ assert.match(source, /\.meg-sidebar-control\s*\{[\s\S]*width:\s*100%;[\s\S]*bord
 assert.match(source, /\.meg-sidebar-control svg\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px;[\s\S]*pointer-events:\s*none/);
 assert.match(source, /\.meg-sidebar-control:hover\s*\{[\s\S]*color:\s*var\(--meg-accent\)/);
 assert.match(source, /\.meg-sidebar-control:focus-visible\s*\{[\s\S]*outline:\s*2px solid var\(--meg-accent\)/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed\s*\{[\s\S]*grid-template-columns:\s*72px/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-wrap,[\s\S]*width:\s*72px;[\s\S]*min-width:\s*72px;[\s\S]*max-width:\s*72px/);
+assert.match(source, /\.meg-nav-item svg\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.sidebar__art\s*\{[\s\S]*display:\s*none/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-control\s*\{[\s\S]*border:\s*0;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-control::after/);
 assert.equal(source.includes('.meg-sidebar-toggle'), false, 'floating sidebar toggle must not exist');
 
