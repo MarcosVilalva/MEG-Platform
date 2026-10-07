@@ -113,7 +113,7 @@
   display: flex;
   align-items: center;
   gap: .95rem;
-  padding: .7rem 1rem;
+  padding: .7rem .875rem;
   border: .0625rem solid transparent;
   border-radius: .82rem;
   background: transparent;
