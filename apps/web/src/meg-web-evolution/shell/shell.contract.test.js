@@ -204,3 +204,6 @@ assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)
 assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*519px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*104px/);
 
 assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)[\s\S]*\.meg-brand\s*\{[\s\S]*flex:\s*0\s+0\s+96px;[\s\S]*padding:\s*14px\s+0\s+6px/);
+
+assert.match(source, /@media \(min-width:\s*1024px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*transform:\s*translateY\(4px\)/);
+assert.match(source, /@media \(max-width:\s*1023px\) and \(min-width:\s*640px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*transform:\s*translateY\(4px\)/);
