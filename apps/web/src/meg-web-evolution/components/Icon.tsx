@@ -2,7 +2,7 @@ import type { ReactNode, SVGProps } from 'react';
 
 type IconName =
   | 'home' | 'list' | 'card' | 'clock' | 'gift' | 'chart' | 'settings'
-  | 'plus' | 'search' | 'calendar' | 'bell' | 'chevronDown' | 'chevronLeft' | 'chevronRight' | 'panelLeftClose' | 'panelLeftOpen' | 'menu';
+  | 'plus' | 'search' | 'calendar' | 'bell' | 'chevronDown' | 'chevronLeft' | 'chevronRight' | 'panelLeftClose' | 'panelLeftOpen' | 'chevronsLeft' | 'chevronsRight' | 'menu';
 
 const paths: Record<IconName, ReactNode> = {
   home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
@@ -21,6 +21,8 @@ const paths: Record<IconName, ReactNode> = {
   chevronRight: <path d="m9 18 6-6-6-6"/>,
   panelLeftClose: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></>,
   panelLeftOpen: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></>,
+  chevronsLeft: <><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></>,
+  chevronsRight: <><path d="m13 17 5-5-5-5"/><path d="m6 17 5-5-5-5"/></>,
   menu: <><path d="M4 7h16M4 12h16M4 17h16"/></>,
 };
 
