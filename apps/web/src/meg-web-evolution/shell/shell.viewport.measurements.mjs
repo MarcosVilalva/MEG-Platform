@@ -12,6 +12,7 @@ export const sidebarResponsiveViewports = [
   { width: 1366, height: 600 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
+  { width: 1000, height: 890 },
   { width: 1024, height: 600 },
   { width: 900, height: 560 },
   { width: 690, height: 600 },

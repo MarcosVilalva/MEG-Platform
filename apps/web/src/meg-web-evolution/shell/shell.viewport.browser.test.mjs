@@ -597,17 +597,20 @@ async function assertSidebarState(viewport, collapsed) {
 
   const requiredFitViewport =
     (viewport.width === 1366 && (viewport.height === 600 || viewport.height === 768)) ||
-    (viewport.width === 1920 && viewport.height === 1080);
+    (viewport.width === 1920 && viewport.height === 1080) ||
+    (viewport.width === 1000 && viewport.height === 890);
 
   for (const [index, item] of result.itemRects.entries()) {
     assert.ok(item.width > 0 && item.height > 0, `${viewport.width}x${viewport.height} ${state}: item ${index + 1} sem dimensão`);
     if (requiredFitViewport) {
-      if (!collapsed) {
-        assert.ok(
-          item.height >= 40,
-          `${viewport.width}x${viewport.height} ${state}: item ${index + 1} com altura inferior a 40px (${item.height}px)`,
-        );
-      }
+      assert.ok(
+        item.height >= 40,
+        `${viewport.width}x${viewport.height} ${state}: item ${index + 1} com altura inferior a 40px (${item.height}px)`,
+      );
+      assert.ok(
+        item.height <= 56 + 1,
+        `${viewport.width}x${viewport.height} ${state}: item ${index + 1} com altura superior a 56px + 1px de tolerância (${item.height}px)`,
+      );
       assert.equal(
         item.overlapsFooter,
         false,
@@ -656,12 +659,10 @@ async function assertSidebarState(viewport, collapsed) {
   }
 
   if (requiredFitViewport) {
-    if (!collapsed) {
-      assert.ok(
-        result.logoutRect && result.logoutRect.height >= 40,
-        `${viewport.width}x${viewport.height} ${state}: Sair deve ter ao menos 40px de altura`,
-      );
-    }
+    assert.ok(
+      result.logoutRect && result.logoutRect.height >= 40,
+      `${viewport.width}x${viewport.height} ${state}: Sair deve ter ao menos 40px de altura`,
+    );
     assert.ok(
       result.logoutRect.top >= result.navBottom - 1,
       `${viewport.width}x${viewport.height} ${state}: rodapé invade o nav`,
@@ -690,6 +691,16 @@ async function assertSidebarState(viewport, collapsed) {
 
   if (viewport.height < 700) {
     assert.equal(result.artDisplay, 'none', `${viewport.width}x${viewport.height} ${state}: marca d'água deve ficar oculta abaixo de 700px`);
+  }
+
+  if (
+    collapsed &&
+    ((viewport.width === 1366 && viewport.height === 600) ||
+      (viewport.width === 1000 && viewport.height === 890))
+  ) {
+    console.log(
+      `METRIC ${viewport.width}x${viewport.height} recolhida: itemHeights=${result.itemRects.map((item) => item.height).join(',')}`,
+    );
   }
 
   if (collapsed && viewport.width >= 640) {

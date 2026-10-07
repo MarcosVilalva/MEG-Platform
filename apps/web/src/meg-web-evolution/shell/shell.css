@@ -1273,3 +1273,78 @@
     padding-block: 4px;
   }
 }
+
+/* Collapsed desktop/compact sidebar: canonical viewport fit contract.
+   Scoped to the collapsed state only; expanded sidebar remains untouched. */
+@media (min-width: 640px) {
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    gap: .5rem;
+    overflow: hidden;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    flex-shrink: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 0;
+    padding-top: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    box-sizing: border-box;
+    flex: 1 1 0;
+    min-height: 40px;
+    max-height: 56px;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: clamp(6px, .8vh, 11px);
+  }
+
+  .meg-shell.is-sidebar-collapsed .sidebar__art {
+    display: block;
+    flex: 0 1 min(12rem, 18dvh);
+    height: min(12rem, 18dvh);
+    min-height: 0;
+    margin-top: 0;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-footer {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 640px) and (max-height: 699px) {
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    gap: .25rem;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    padding-block: 6px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    padding-block: 4px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .sidebar__art {
+    display: none;
+  }
+}
+
