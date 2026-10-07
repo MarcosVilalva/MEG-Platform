@@ -340,7 +340,7 @@ async function measureResponsiveTopbar() {
         const [bName, b] = visibleRects[j];
         const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
         const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-        if (overlapX > 1 && overlapY > 1) overlaps.push(`${aName}x${bName}`);
+        if (overlapX > 1 && overlapY > 1) overlaps.push(aName + 'x' + bName);
       }
     }
 
