@@ -99,7 +99,11 @@ async function measure(state) {
     const items = [...document.querySelectorAll('.meg-nav-item')];
     const labels = [...document.querySelectorAll('.meg-nav-item span')];
     const logo = document.querySelector('.meg-brand-logo--${state}');
-    const control = document.querySelector('.meg-sidebar-control');
+    const control = document.querySelector(
+      state === 'expanded'
+        ? '.meg-sidebar-switcher-button[aria-label="Recolher menu"]'
+        : '.meg-sidebar-switcher-button[aria-label="Expandir menu"]'
+    );
     const firstIcon = firstItem.querySelector('svg');
     const nav = document.querySelector('.meg-nav');
     const sidebar = document.querySelector('.meg-sidebar');
@@ -210,7 +214,7 @@ try {
     assert.equal(expanded.controlHasTitle, false, `${viewport.width}x${viewport.height} expandida: atributo title não deve existir`);
     assert.equal(expanded.controlClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.controlClippingAncestor}`);
 
-    await evaluate(`document.querySelector('.meg-sidebar-control')?.click()`);
+    await evaluate(`document.querySelector('.meg-sidebar-switcher-button[aria-label="Recolher menu"]')?.click()`);
     await sleep(250);
 
     const collapsed = await measure('collapsed');
