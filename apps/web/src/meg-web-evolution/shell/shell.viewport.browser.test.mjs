@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const appUrl = process.env.MEG_WEB_EVOLUTION_URL || 'http://127.0.0.1:4173/web-evolution.html';
 const viewports = [
@@ -9,19 +11,81 @@ const viewports = [
   { width: 1920, height: 1080 },
 ];
 
-const chromeCandidates = [
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const isCI = Boolean(process.env.CI);
+
+function resolveChromeCandidate(candidate) {
+  if (!candidate) return null;
+
+  if (candidate.includes('/') || candidate.includes('\\')) {
+    return existsSync(candidate) ? candidate : null;
+  }
+
+  const resolved = spawnSync('which', [candidate], { encoding: 'utf8' });
+  if (resolved.status !== 0) return null;
+
+  const executable = resolved.stdout.trim().split(/\r?\n/, 1)[0];
+  return executable && existsSync(executable) ? executable : null;
+}
+
+const ciChromeCandidates = [
+  process.env.CHROME_BIN,
+  'google-chrome',
+  'google-chrome-stable',
+  'chromium',
+  'chromium-browser',
+];
+
+const localChromeCandidates = [
   process.env.CHROME_PATH,
   '/usr/bin/google-chrome',
   '/usr/bin/google-chrome-stable',
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',
-].filter(Boolean);
+];
 
-const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
-assert.ok(chromePath, 'Chrome/Chromium não encontrado para o contrato visual do Shell.');
+const chromeCandidates = isCI ? ciChromeCandidates : localChromeCandidates;
+const attemptedChromeCandidates = isCI
+  ? [
+      process.env.CHROME_BIN ? `CHROME_BIN=${process.env.CHROME_BIN}` : 'CHROME_BIN=(não definido)',
+      'google-chrome',
+      'google-chrome-stable',
+      'chromium',
+      'chromium-browser',
+    ]
+  : chromeCandidates.filter(Boolean);
 
-const chromeUserDataDir = `/tmp/meg-web-evolution-chrome-${process.pid}`;
-const chrome = spawn(chromePath, [
+let chromePath = null;
+for (const candidate of chromeCandidates) {
+  chromePath = resolveChromeCandidate(candidate);
+  if (chromePath) break;
+}
+
+assert.ok(
+  chromePath,
+  `Chrome/Chromium não encontrado para o contrato visual do Shell. Tentativas: ${attemptedChromeCandidates.join(', ')}`,
+);
+
+const chromeUserDataDir = isCI
+  ? mkdtempSync(join(tmpdir(), 'meg-web-evolution-chrome-'))
+  : `/tmp/meg-web-evolution-chrome-${process.pid}`;
+
+const ciChromeArgs = [
+  '--headless=new',
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-gpu',
+  '--disable-dev-shm-usage',
+  '--no-first-run',
+  '--no-default-browser-check',
+  '--remote-debugging-port=0',
+  `--user-data-dir=${chromeUserDataDir}`,
+  '--force-device-scale-factor=1',
+  '--window-size=1366,768',
+  'about:blank',
+];
+
+const localChromeArgs = [
   '--headless=new',
   '--no-sandbox',
   '--disable-dev-shm-usage',
@@ -33,52 +97,164 @@ const chrome = spawn(chromePath, [
   `--user-data-dir=${chromeUserDataDir}`,
   '--window-size=1366,768',
   'about:blank',
-], { stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'] });
+];
+
+const chrome = spawn(chromePath, isCI ? ciChromeArgs : localChromeArgs, {
+  stdio: isCI ? ['ignore', 'pipe', 'pipe'] : ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'],
+});
+
+let chromeStdout = '';
+let chromeStderr = '';
+let chromeExitCode = null;
+let chromeSignal = null;
+
+if (chrome.stdout) {
+  chrome.stdout.setEncoding('utf8');
+  chrome.stdout.on('data', (chunk) => {
+    chromeStdout += chunk;
+  });
+}
 
 chrome.stderr.setEncoding('utf8');
-
-let chromeStderr = '';
 chrome.stderr.on('data', (chunk) => {
   chromeStderr += chunk;
 });
 
-const cdpInput = chrome.stdio[3];
-const cdpOutput = chrome.stdio[4];
-assert.ok(cdpInput && cdpOutput, 'Pipes CDP do Chrome não foram criados.');
+chrome.on('exit', (code, signal) => {
+  chromeExitCode = code;
+  chromeSignal = signal;
+});
 
-cdpOutput.setEncoding('utf8');
+chrome.on('error', (error) => {
+  chromeStderr += `\n[spawn error] ${error.stack || error.message}`;
+});
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function chromeDiagnostics() {
+  return [
+    `exitCode=${chromeExitCode ?? chrome.exitCode ?? 'null'}`,
+    `signal=${chromeSignal ?? chrome.signalCode ?? 'null'}`,
+    `stdout=${chromeStdout.slice(-4000) || '(vazio)'}`,
+    `stderr=${chromeStderr.slice(-4000) || '(vazio)'}`,
+  ].join('; ');
+}
+
+async function waitForDevToolsEndpoint() {
+  const activePortFile = join(chromeUserDataDir, 'DevToolsActivePort');
+  const deadline = Date.now() + 20_000;
+
+  while (Date.now() < deadline) {
+    if (chrome.exitCode !== null || chrome.signalCode !== null || chromeExitCode !== null || chromeSignal !== null) {
+      throw new Error(
+        `Chrome encerrou antes de publicar o endpoint DevTools. ${chromeDiagnostics()}`,
+      );
+    }
+
+    if (existsSync(activePortFile)) {
+      try {
+        const [portLine, browserPath] = readFileSync(activePortFile, 'utf8').trim().split(/\r?\n/);
+        const port = Number(portLine);
+        if (Number.isInteger(port) && port > 0 && browserPath) {
+          return `ws://127.0.0.1:${port}${browserPath}`;
+        }
+      } catch {
+        // O Chrome pode criar o arquivo antes de concluir a gravação; continue o polling.
+      }
+    }
+
+    await sleep(100);
+  }
+
+  throw new Error(
+    `Chrome não publicou DevToolsActivePort em até 20s. ${chromeDiagnostics()}`,
+  );
+}
+
+let cdpInput = null;
+let cdpOutput = null;
+let cdpSocket = null;
+
+try {
+  if (isCI) {
+    const endpoint = await waitForDevToolsEndpoint();
+    assert.equal(typeof WebSocket, 'function', 'WebSocket global indisponível no Node usado pelo CI.');
+
+    cdpSocket = new WebSocket(endpoint);
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Timeout ao conectar no endpoint DevTools. ${chromeDiagnostics()}`));
+      }, 5000);
+
+      cdpSocket.addEventListener('open', () => {
+        clearTimeout(timeout);
+        resolve();
+      }, { once: true });
+
+      cdpSocket.addEventListener('error', () => {
+        clearTimeout(timeout);
+        reject(new Error(`Falha ao conectar no endpoint DevTools. ${chromeDiagnostics()}`));
+      }, { once: true });
+    });
+  } else {
+    cdpInput = chrome.stdio[3];
+    cdpOutput = chrome.stdio[4];
+    assert.ok(cdpInput && cdpOutput, 'Pipes CDP do Chrome não foram criados.');
+    cdpOutput.setEncoding('utf8');
+  }
+} catch (error) {
+  if (!chrome.killed) chrome.kill('SIGTERM');
+  if (isCI) rmSync(chromeUserDataDir, { recursive: true, force: true });
+  throw error;
+}
 
 let requestId = 0;
 const pending = new Map();
 let cdpBuffer = '';
 let pageSessionId = null;
 
-cdpOutput.on('data', (chunk) => {
-  cdpBuffer += chunk;
+function handleCdpMessage(rawMessage) {
+  if (!rawMessage) return;
 
-  while (true) {
-    const separatorIndex = cdpBuffer.indexOf('\0');
-    if (separatorIndex < 0) break;
+  const payload = JSON.parse(rawMessage);
+  if (!payload.id) return;
 
-    const rawMessage = cdpBuffer.slice(0, separatorIndex);
-    cdpBuffer = cdpBuffer.slice(separatorIndex + 1);
-    if (!rawMessage) continue;
+  const item = pending.get(payload.id);
+  if (!item) return;
 
-    const payload = JSON.parse(rawMessage);
-    if (!payload.id) continue;
+  pending.delete(payload.id);
+  clearTimeout(item.timeout);
 
-    const item = pending.get(payload.id);
-    if (!item) continue;
+  if (payload.error) item.reject(new Error(payload.error.message));
+  else item.resolve(payload.result);
+}
 
-    pending.delete(payload.id);
-    clearTimeout(item.timeout);
+if (isCI) {
+  cdpSocket.addEventListener('message', (event) => {
+    handleCdpMessage(String(event.data));
+  });
+} else {
+  cdpOutput.on('data', (chunk) => {
+    cdpBuffer += chunk;
 
-    if (payload.error) item.reject(new Error(payload.error.message));
-    else item.resolve(payload.result);
+    while (true) {
+      const separatorIndex = cdpBuffer.indexOf('\0');
+      if (separatorIndex < 0) break;
+
+      const rawMessage = cdpBuffer.slice(0, separatorIndex);
+      cdpBuffer = cdpBuffer.slice(separatorIndex + 1);
+      handleCdpMessage(rawMessage);
+    }
+  });
+}
+
+function writeCdp(payload) {
+  if (isCI) {
+    assert.equal(cdpSocket?.readyState, WebSocket.OPEN, `Socket CDP indisponível. ${chromeDiagnostics()}`);
+    cdpSocket.send(JSON.stringify(payload));
+    return;
   }
-});
+
+  cdpInput.write(JSON.stringify(payload) + '\0');
+}
 
 function sendCommand(method, params = {}, sessionId = null, timeoutMs = 12000) {
   const id = ++requestId;
@@ -1087,7 +1263,9 @@ try {
     item.reject(new Error('Contrato encerrado antes da resposta CDP.'));
   }
   pending.clear();
-  cdpInput.end();
-  cdpOutput.destroy();
-  chrome.kill('SIGTERM');
+  if (cdpSocket) cdpSocket.close();
+  if (cdpInput) cdpInput.end();
+  if (cdpOutput) cdpOutput.destroy();
+  if (!chrome.killed) chrome.kill('SIGTERM');
+  if (isCI) rmSync(chromeUserDataDir, { recursive: true, force: true });
 }
