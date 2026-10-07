@@ -147,9 +147,9 @@ assert.match(source, /@media \(max-width: 639px\)[\s\S]*\.meg-topbar-actions\s*\
 
 assert.match(source, /container-type:\s*inline-size/);
 assert.match(source, /container-name:\s*meg-shell-body/);
-assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)/);
-assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
-assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
+assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)/);
+assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
+assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
 assert.match(source, /aria-label="Buscar"/);
 
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav,[\s\S]*flex:\s*1\s+1\s+auto;[\s\S]*min-height:\s*0;[\s\S]*justify-content:\s*space-evenly;[\s\S]*gap:\s*clamp\(2px, \.8vh, 6px\)/);
