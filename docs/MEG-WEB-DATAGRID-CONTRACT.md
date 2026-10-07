@@ -71,6 +71,8 @@ A lógica é AND entre colunas e OR entre valores selecionados da mesma coluna. 
 
 Atalhos de data são resolvidos em runtime com `new Date()`. Nenhuma data relativa fica gravada em mock, HTML ou componente.
 
+Os filtros desktop são posicionados em relação ao funil com clamp horizontal/vertical e podem abrir para cima quando o espaço inferior é insuficiente. O contêiner nunca ultrapassa a viewport: cabeçalho e rodapé permanecem fixos e somente o corpo do filtro rola. Em viewports com altura inferior a 640px, inclusive notebooks desktop largos, o filtro individual troca para o mesmo padrão visual de bottom sheet usado no mobile. A regra vale para TEXT, NUMBER, CURRENCY, DATE, ENUM e BOOLEAN. O seletor de colunas segue a mesma contenção vertical e também troca para bottom sheet em altura reduzida.
+
 ## Ordenação
 
 Cada coluna percorre três estados: crescente, decrescente e sem ordenação. Shift+clique preserva as regras anteriores e acrescenta a nova coluna, formando multi-sort estável.
@@ -135,6 +137,6 @@ O workflow `MEG Web Evolution Foundation` mantém todos os contratos da Etapa 03
 
 1. contrato puro do DataGrid;
 2. contrato estrutural/clean-room;
-3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 900x700, 640x600 e 390x844.
+3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 900x700, 640x600 e 390x844, incluindo cobertura específica de filtros em 1366x600 e 1024x600 para todos os tipos e para o seletor de colunas.
 
 A validação técnica não substitui a validação visual explícita.

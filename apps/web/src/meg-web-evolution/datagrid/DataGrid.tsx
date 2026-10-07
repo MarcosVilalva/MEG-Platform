@@ -107,6 +107,53 @@ function useDesktopGrid() {
   return desktop;
 }
 
+function useLowViewportHeight() {
+  const [lowHeight, setLowHeight] = useState(() =>
+    typeof window === 'undefined' ? false : window.innerHeight < 640,
+  );
+
+  useEffect(() => {
+    const sync = () => setLowHeight(window.innerHeight < 640);
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  }, []);
+
+  return lowHeight;
+}
+
+function anchoredOverlayStyle(trigger: HTMLElement | null, preferredWidth: number): CSSProperties {
+  const margin = 12;
+  const gap = 8;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const width = Math.min(preferredWidth, Math.max(280, viewportWidth - margin * 2));
+  const rect = trigger?.getBoundingClientRect();
+
+  if (!rect) {
+    return {
+      left: margin,
+      top: margin,
+      width,
+      maxHeight: Math.max(1, viewportHeight - margin * 2),
+    };
+  }
+
+  const left = Math.min(
+    Math.max(margin, rect.right - width),
+    Math.max(margin, viewportWidth - width - margin),
+  );
+  const spaceBelow = Math.max(0, viewportHeight - rect.bottom - margin - gap);
+  const spaceAbove = Math.max(0, rect.top - margin - gap);
+  const viewportLimit = Math.max(1, viewportHeight - margin * 2);
+  const openUp = spaceBelow < Math.min(420, viewportLimit) && spaceAbove > spaceBelow;
+  const available = Math.max(1, Math.min(viewportLimit, openUp ? spaceAbove : spaceBelow));
+
+  return openUp
+    ? { left, bottom: Math.max(margin, viewportHeight - rect.top + gap), width, maxHeight: available }
+    : { left, top: Math.max(margin, rect.bottom + gap), width, maxHeight: available };
+}
+
 function useDialogKeyboard(
   open: boolean,
   containerRef: React.RefObject<HTMLElement | null>,
@@ -174,12 +221,62 @@ function FilterDialog<T extends Record<string, unknown>>({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const lowHeight = useLowViewportHeight();
   useDialogKeyboard(true, ref, trigger, onClose);
 
-  const rect = trigger?.getBoundingClientRect();
-  const width = Math.min(390, Math.max(300, window.innerWidth - 24));
-  const left = rect ? Math.min(Math.max(12, rect.right - width), window.innerWidth - width - 12) : 12;
-  const top = rect ? Math.min(rect.bottom + 8, window.innerHeight - 120) : 80;
+  const closeAndRestore = () => {
+    onClose();
+    window.setTimeout(() => trigger?.focus(), 0);
+  };
+
+  const panel = (
+    <FilterPanel
+      column={column}
+      filter={filter}
+      distinctOptions={distinctOptions}
+      onApply={(next) => {
+        onApply(next);
+        closeAndRestore();
+      }}
+      onClear={() => {
+        onClear();
+        closeAndRestore();
+      }}
+    />
+  );
+
+  const header = (
+    <header className="meg-datagrid-dialog-header">
+      <div>
+        <span className="meg-datagrid-dialog-kicker">Filtrar coluna</span>
+        <strong>{column.label}</strong>
+      </div>
+      <button type="button" aria-label="Fechar filtro" onClick={closeAndRestore}>
+        <GridIcon name="x" />
+      </button>
+    </header>
+  );
+
+  if (lowHeight) {
+    return createPortal(
+      <div className="meg-datagrid-sheet-layer">
+        <button className="meg-datagrid-sheet-scrim" type="button" aria-label="Fechar filtro" onClick={closeAndRestore} />
+        <div
+          ref={ref}
+          className="meg-datagrid-filter-sheet meg-datagrid-filter-sheet--single"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Filtro: ${column.label}`}
+          data-datagrid-filter-dialog={column.key}
+          data-datagrid-low-height-sheet
+        >
+          {header}
+          {panel}
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   return createPortal(
     <div
@@ -188,33 +285,11 @@ function FilterDialog<T extends Record<string, unknown>>({
       role="dialog"
       aria-modal="false"
       aria-label={`Filtro: ${column.label}`}
-      style={{ left, top, width }}
+      style={anchoredOverlayStyle(trigger, 390)}
       data-datagrid-filter-dialog={column.key}
     >
-      <header className="meg-datagrid-dialog-header">
-        <div>
-          <span className="meg-datagrid-dialog-kicker">Filtrar coluna</span>
-          <strong>{column.label}</strong>
-        </div>
-        <button type="button" aria-label="Fechar filtro" onClick={onClose}>
-          <GridIcon name="x" />
-        </button>
-      </header>
-      <FilterPanel
-        column={column}
-        filter={filter}
-        distinctOptions={distinctOptions}
-        onApply={(next) => {
-          onApply(next);
-          onClose();
-          window.setTimeout(() => trigger?.focus(), 0);
-        }}
-        onClear={() => {
-          onClear();
-          onClose();
-          window.setTimeout(() => trigger?.focus(), 0);
-        }}
-      />
+      {header}
+      {panel}
     </div>,
     document.body,
   );
@@ -366,6 +441,7 @@ function ColumnManager<T extends Record<string, unknown>>({
   columns,
   order,
   hidden,
+  trigger,
   onToggle,
   onMove,
   onClose,
@@ -373,18 +449,35 @@ function ColumnManager<T extends Record<string, unknown>>({
   columns: DataGridColumn<T>[];
   order: string[];
   hidden: Set<string>;
+  trigger: HTMLElement | null;
   onToggle: (key: string) => void;
   onMove: (key: string, direction: -1 | 1) => void;
   onClose: () => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const lowHeight = useLowViewportHeight();
+  useDialogKeyboard(true, ref, trigger, onClose);
   const ordered = order.map((key) => columns.find((column) => column.key === key)).filter(Boolean) as DataGridColumn<T>[];
   const visibleCount = ordered.filter((column) => !hidden.has(column.key)).length;
 
-  return (
-    <div className="meg-datagrid-column-menu" role="dialog" aria-label="Colunas">
+  const closeAndRestore = () => {
+    onClose();
+    window.setTimeout(() => trigger?.focus(), 0);
+  };
+
+  const menu = (
+    <div
+      ref={ref}
+      className={`meg-datagrid-column-menu ${lowHeight ? 'meg-datagrid-column-menu--sheet' : ''}`}
+      role="dialog"
+      aria-modal={lowHeight ? 'true' : 'false'}
+      aria-label="Colunas"
+      style={lowHeight ? undefined : anchoredOverlayStyle(trigger, 320)}
+      data-datagrid-column-dialog
+    >
       <header className="meg-datagrid-dialog-header">
         <strong>Colunas</strong>
-        <button type="button" aria-label="Fechar colunas" onClick={onClose}><GridIcon name="x" /></button>
+        <button type="button" aria-label="Fechar colunas" onClick={closeAndRestore}><GridIcon name="x" /></button>
       </header>
       <div className="meg-datagrid-column-menu__list">
         {ordered.map((column, index) => (
@@ -412,6 +505,16 @@ function ColumnManager<T extends Record<string, unknown>>({
       </div>
     </div>
   );
+
+  return lowHeight
+    ? createPortal(
+      <div className="meg-datagrid-sheet-layer">
+        <button className="meg-datagrid-sheet-scrim" type="button" aria-label="Fechar colunas" onClick={closeAndRestore} />
+        {menu}
+      </div>,
+      document.body,
+    )
+    : createPortal(menu, document.body);
 }
 
 export function DataGrid<T extends Record<string, unknown>>({
@@ -462,6 +565,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [viewportHeight, setViewportHeight] = useState(480);
   const viewportRef = useRef<HTMLDivElement>(null);
   const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const columnMenuButtonRef = useRef<HTMLButtonElement>(null);
   const filterButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const isDesktop = useDesktopGrid();
 
@@ -817,6 +921,7 @@ export function DataGrid<T extends Record<string, unknown>>({
         <div className="meg-datagrid-toolbar__actions">
           <div className="meg-datagrid-column-menu-wrap">
             <button
+              ref={columnMenuButtonRef}
               type="button"
               className="meg-datagrid-tool"
               aria-expanded={columnMenuOpen}
@@ -830,6 +935,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 columns={columns}
                 order={columnOrder}
                 hidden={hiddenColumns}
+                trigger={columnMenuButtonRef.current}
                 onToggle={(key) => setHiddenColumns((current) => {
                   const next = new Set(current);
                   next.has(key) ? next.delete(key) : next.add(key);
