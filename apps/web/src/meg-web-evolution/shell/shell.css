@@ -1136,19 +1136,42 @@
 }
 
 
-/* Final optical alignment: brand center follows the topbar launcher axis. */
+/* Final optical alignment: collapsed brand shares the same vertical control band as the topbar actions. */
 @media (min-width: 1024px) {
   .meg-brand-stack {
     transform: translateY(4px);
   }
 
+  .meg-shell.is-sidebar-collapsed .meg-brand {
+    flex: 0 0 5.35rem;
+    height: 5.35rem;
+    min-height: 5.35rem;
+    padding: 0;
+    margin-bottom: 0;
+  }
+
   .meg-shell.is-sidebar-collapsed .meg-brand-stack {
-    transform: translateY(4px);
+    transform: none;
   }
 }
 
 @media (max-width: 1023px) and (min-width: 640px) {
+  .meg-brand {
+    flex: 0 0 72px;
+    height: 72px;
+    min-height: 72px;
+    padding: 0;
+  }
+
   .meg-brand-stack {
-    transform: translateY(4px);
+    transform: none;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 640px) and (max-height: 519px) {
+  .meg-brand {
+    flex-basis: 60px;
+    height: 60px;
+    min-height: 60px;
   }
 }
