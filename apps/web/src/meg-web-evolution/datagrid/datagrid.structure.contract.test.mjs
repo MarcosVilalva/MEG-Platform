@@ -59,7 +59,9 @@ assert.ok(coreSource.includes("meg-web-evolution:datagrid:"));
 assert.ok(coreSource.includes('total <= 500'));
 assert.ok(dataGridSource.includes('data-virtualized='));
 assert.ok(dataGridSource.includes('rowKey ??'), 'DataGrid precisa de chave estável de linha.');
-assert.ok(!/key=\{index\}/.test(dataGridSource), 'Índice visual não pode ser chave de linha.');
+assert.ok(dataGridSource.includes('data-row-key={key}'), 'Linha real precisa expor chave estável.');
+assert.ok(dataGridSource.includes('key={key}'), 'Linha real precisa usar chave estável no React.');
+assert.equal(/data-grid-row[\\s\\S]{0,240}key=\\{index\\}/.test(dataGridSource), false, 'Índice visual não pode ser chave de linha real.');
 
 assert.ok(dataGridSource.includes('onPointerDown={(event) => beginResize(event, column)}'));
 assert.ok(dataGridSource.includes('role="separator"'));
