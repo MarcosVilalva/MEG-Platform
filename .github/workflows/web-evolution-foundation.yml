@@ -76,24 +76,29 @@ jobs:
       - name: Validate Web Evolution shell foundation
         run: npm run test:web-evolution-shell
 
+      - name: Validate Web Evolution DataGrid contract
+        run: npm run test:web-evolution-datagrid
+
       - name: Report Chrome binary
         shell: bash
         run: which google-chrome && google-chrome --version
 
-      - name: Validate Web Evolution viewport contract
+      - name: Validate Web Evolution viewport contracts
         shell: bash
         run: |
           VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-web-evolution-vite.log 2>&1 &
           VITE_PID=$!
           trap 'kill $VITE_PID 2>/dev/null || true' EXIT
           for attempt in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null; then
+            if curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null && curl -fsS http://127.0.0.1:4173/datagrid-harness.html >/dev/null; then
               break
             fi
             sleep 1
           done
           curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
+          curl -fsS http://127.0.0.1:4173/datagrid-harness.html >/dev/null
           node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
+          node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs
 
       - name: Print Vite log tail
         if: always()
