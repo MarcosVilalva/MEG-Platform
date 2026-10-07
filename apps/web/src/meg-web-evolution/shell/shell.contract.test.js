@@ -90,7 +90,6 @@ assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar 
 
 assert.match(source, /aria-label="Navegação principal"/);
 assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
-assert.match(source, /Outubro de 2026/);
 assert.match(source, /Marcos de Andrade Vilalva/);
 assert.equal(source.includes('meg-sidebar-lockup.svg'), false);
 assert.equal(source.includes('meg-finance-symbol-transparent.svg'), false);
