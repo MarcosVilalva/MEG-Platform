@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Icon } from '../components/Icon';
-import { IconButton, PrimaryButton } from '../components/primitives';
+import { IconButton } from '../components/primitives';
 import './shell.css';
 
 const navigation = [
@@ -125,10 +125,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <PrimaryButton className="meg-new-button" type="button">
-          <Icon name="plus" />
-          <span>Novo</span>
-        </PrimaryButton>
         </aside>
       </div>
 
@@ -140,26 +136,28 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Icon name="menu" />
           </IconButton>
 
-          <div className="meg-sidebar-switcher" aria-label="Controle da sidebar">
+          <div className="meg-topbar-launchers" aria-label="Ações rápidas">
             <button
               type="button"
-              className="meg-sidebar-switcher-button"
-              aria-label="Recolher menu"
-              aria-pressed={!sidebarCollapsed}
-              disabled={sidebarCollapsed}
-              onClick={() => setSidebarCollapsed(true)}
+              className="meg-topbar-launcher meg-sidebar-toggle-topbar"
+              aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+              aria-expanded={!sidebarCollapsed}
+              onClick={() => setSidebarCollapsed((value) => !value)}
             >
-              <Icon name="chevronsLeft" width={18} height={18} strokeWidth={1.75} />
+              <Icon
+                name={sidebarCollapsed ? 'chevronsRight' : 'chevronsLeft'}
+                width={18}
+                height={18}
+                strokeWidth={1.75}
+              />
             </button>
+
             <button
               type="button"
-              className="meg-sidebar-switcher-button"
-              aria-label="Expandir menu"
-              aria-pressed={sidebarCollapsed}
-              disabled={!sidebarCollapsed}
-              onClick={() => setSidebarCollapsed(false)}
+              className="meg-topbar-launcher meg-topbar-new"
+              aria-label="Novo lançamento"
             >
-              <Icon name="chevronsRight" width={18} height={18} strokeWidth={1.75} />
+              <Icon name="plus" width={22} height={22} strokeWidth={1.85} />
             </button>
           </div>
 
