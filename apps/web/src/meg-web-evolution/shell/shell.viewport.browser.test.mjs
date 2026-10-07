@@ -1267,6 +1267,26 @@ try {
   if (cdpSocket) cdpSocket.close();
   if (cdpInput) cdpInput.end();
   if (cdpOutput) cdpOutput.destroy();
-  if (!chrome.killed) chrome.kill('SIGTERM');
-  if (isCI) rmSync(chromeUserDataDir, { recursive: true, force: true });
+
+  if (chrome.exitCode === null && chrome.signalCode === null && !chrome.killed) {
+    const chromeStopped = new Promise((resolve) => {
+      chrome.once('exit', resolve);
+      setTimeout(resolve, 1500);
+    });
+    chrome.kill('SIGTERM');
+    await chromeStopped;
+  }
+
+  if (isCI) {
+    try {
+      rmSync(chromeUserDataDir, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100,
+      });
+    } catch (error) {
+      console.warn(`Falha não fatal ao limpar user-data-dir do Chrome: ${error.message}`);
+    }
+  }
 }
