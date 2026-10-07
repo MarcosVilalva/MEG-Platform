@@ -92,57 +92,103 @@ async function navigate(url) {
   throw new Error('A página do Shell não concluiu o carregamento.');
 }
 
-async function hoverTooltip(selector) {
-  const point = await evaluate(`(() => {
-    const element = document.querySelector(${JSON.stringify(selector)});
-    if (!element) return null;
-    const rect = element.getBoundingClientRect();
-    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-  })()`);
-  assert.ok(point, `Elemento não encontrado para hover: ${selector}`);
-  await command('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x, y: point.y });
-  await sleep(80);
+async function tooltipSnapshot() {
   return evaluate(`(() => {
-    const tooltip = document.querySelector('.meg-global-tooltip');
-    if (!tooltip) return null;
-    const rect = tooltip.getBoundingClientRect();
+    const tooltips = [...document.querySelectorAll('.meg-global-tooltip')];
     return {
-      text: tooltip.textContent,
-      width: rect.width,
-      height: rect.height,
-      insideViewport:
-        rect.left >= 0 &&
-        rect.top >= 0 &&
-        rect.right <= window.innerWidth &&
-        rect.bottom <= window.innerHeight,
+      count: tooltips.length,
+      items: tooltips.map((tooltip) => {
+        const rect = tooltip.getBoundingClientRect();
+        return {
+          text: tooltip.textContent,
+          width: rect.width,
+          height: rect.height,
+          insideViewport:
+            rect.left >= 0 &&
+            rect.top >= 0 &&
+            rect.right <= window.innerWidth &&
+            rect.bottom <= window.innerHeight,
+          parentIsBody: tooltip.parentElement === document.body,
+          insideSidebar: Boolean(tooltip.closest('.meg-sidebar, .meg-sidebar-wrap, .meg-nav')),
+        };
+      }),
     };
   })()`);
 }
 
-async function focusTooltip(selector) {
-  await evaluate(`document.querySelector(${JSON.stringify(selector)})?.focus()`);
-  await sleep(80);
+async function targetSnapshot(selector) {
   return evaluate(`(() => {
-    const tooltip = document.querySelector('.meg-global-tooltip');
-    if (!tooltip) return null;
-    const rect = tooltip.getBoundingClientRect();
+    const element = document.querySelector(${JSON.stringify(selector)});
+    if (!element) return null;
+    const rect = element.getBoundingClientRect();
     return {
-      text: tooltip.textContent,
-      width: rect.width,
-      height: rect.height,
-      insideViewport:
-        rect.left >= 0 &&
-        rect.top >= 0 &&
-        rect.right <= window.innerWidth &&
-        rect.bottom <= window.innerHeight,
+      ariaLabel: element.getAttribute('aria-label'),
+      hasTitle: element.hasAttribute('title'),
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
     };
   })()`);
+}
+
+async function hoverTarget(selector) {
+  const target = await targetSnapshot(selector);
+  assert.ok(target, `Elemento não encontrado para hover: ${selector}`);
+  await command('Input.dispatchMouseEvent', { type: 'mouseMoved', x: target.x, y: target.y });
+  await sleep(90);
+  return { target, tooltip: await tooltipSnapshot() };
+}
+
+async function focusTarget(selector) {
+  const target = await targetSnapshot(selector);
+  assert.ok(target, `Elemento não encontrado para foco: ${selector}`);
+  await evaluate(`document.querySelector(${JSON.stringify(selector)})?.focus()`);
+  await sleep(90);
+  return { target, tooltip: await tooltipSnapshot() };
 }
 
 async function clearPointerAndFocus() {
   await command('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1 }).catch(() => {});
   await evaluate(`document.activeElement instanceof HTMLElement && document.activeElement.blur()`);
-  await sleep(40);
+  await sleep(50);
+  const tooltip = await tooltipSnapshot();
+  assert.equal(tooltip.count, 0, 'Tooltip residual permaneceu após mouseleave/blur');
+}
+
+function assertTooltipMatches(result, context) {
+  assert.equal(result.target.hasTitle, false, `${context}: atributo title não pode existir`);
+  assert.ok(result.target.ariaLabel, `${context}: aria-label ausente`);
+  assert.equal(result.tooltip.count, 1, `${context}: esperado exatamente 1 tooltip, encontrado ${result.tooltip.count}`);
+  const tooltip = result.tooltip.items[0];
+  assert.equal(tooltip.text, result.target.ariaLabel, `${context}: texto do tooltip difere do aria-label`);
+  assert.ok(tooltip.width > 0 && tooltip.height > 0, `${context}: tooltip sem dimensão visível`);
+  assert.equal(tooltip.insideViewport, true, `${context}: tooltip saiu da janela`);
+  assert.equal(tooltip.parentIsBody, true, `${context}: tooltip não foi portado para document.body`);
+  assert.equal(tooltip.insideSidebar, false, `${context}: tooltip ficou sujeito ao overflow da sidebar/nav`);
+}
+
+function assertNoTooltip(result, context) {
+  assert.equal(result.target.hasTitle, false, `${context}: atributo title não pode existir`);
+  assert.equal(result.tooltip.count, 0, `${context}: não deveria haver tooltip, encontrado ${result.tooltip.count}`);
+}
+
+async function assertHoverAndFocusTooltip(selector, context) {
+  await clearPointerAndFocus();
+  const hover = await hoverTarget(selector);
+  assertTooltipMatches(hover, `${context} / hover`);
+  await clearPointerAndFocus();
+  const focus = await focusTarget(selector);
+  assertTooltipMatches(focus, `${context} / foco`);
+  await clearPointerAndFocus();
+}
+
+async function assertHoverAndFocusNoTooltip(selector, context) {
+  await clearPointerAndFocus();
+  const hover = await hoverTarget(selector);
+  assertNoTooltip(hover, `${context} / hover`);
+  await clearPointerAndFocus();
+  const focus = await focusTarget(selector);
+  assertNoTooltip(focus, `${context} / foco`);
+  await clearPointerAndFocus();
 }
 
 async function measure(state) {
@@ -278,15 +324,36 @@ try {
     assert.equal(expanded.periodFits, true, `${viewport.width}x${viewport.height}: período foi espremido/cortado`);
     assert.equal(expanded.periodInsideViewport, true, `${viewport.width}x${viewport.height}: período saiu da janela`);
 
-    const topbarHoverTooltip = await hoverTooltip('.meg-topbar-new');
-    assert.equal(topbarHoverTooltip?.text, 'Novo lançamento', `${viewport.width}x${viewport.height}: tooltip hover do Novo não apareceu`);
-    assert.equal(topbarHoverTooltip?.insideViewport, true, `${viewport.width}x${viewport.height}: tooltip hover do Novo saiu da janela`);
-    await clearPointerAndFocus();
+    const navSelectors = [
+      ['Início', '.meg-nav .meg-nav-item[aria-label="Início"]'],
+      ['Lançamentos', '.meg-nav .meg-nav-item[aria-label="Lançamentos"]'],
+      ['Cartões', '.meg-nav .meg-nav-item[aria-label="Cartões"]'],
+      ['Pendentes', '.meg-nav .meg-nav-item[aria-label="Pendentes"]'],
+      ['Benefícios', '.meg-nav .meg-nav-item[aria-label="Benefícios"]'],
+      ['Relatórios', '.meg-nav .meg-nav-item[aria-label="Relatórios"]'],
+      ['Configurações', '.meg-nav .meg-nav-item[aria-label="Configurações"]'],
+    ];
 
-    const topbarFocusTooltip = await focusTooltip('.meg-sidebar-toggle-topbar');
-    assert.equal(topbarFocusTooltip?.text, 'Recolher menu', `${viewport.width}x${viewport.height}: tooltip focus do recolher não apareceu`);
-    assert.equal(topbarFocusTooltip?.insideViewport, true, `${viewport.width}x${viewport.height}: tooltip focus do recolher saiu da janela`);
-    await clearPointerAndFocus();
+    for (const [label, selector] of navSelectors) {
+      await assertHoverAndFocusNoTooltip(
+        selector,
+        `${viewport.width}x${viewport.height} expandida / ${label}`,
+      );
+    }
+
+    await assertHoverAndFocusNoTooltip(
+      '.meg-logout-button[aria-label="Sair"]',
+      `${viewport.width}x${viewport.height} expandida / Sair`,
+    );
+
+    await assertHoverAndFocusTooltip(
+      '.meg-sidebar-toggle-topbar',
+      `${viewport.width}x${viewport.height} expandida / Recolher menu («)`,
+    );
+    await assertHoverAndFocusTooltip(
+      '.meg-topbar-new[aria-label="Novo lançamento"]',
+      `${viewport.width}x${viewport.height} expandida / Novo lançamento (+)`,
+    );
 
     await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
     await sleep(250);
@@ -306,15 +373,25 @@ try {
     assert.equal(collapsed.controlHasTitle, false, `${viewport.width}x${viewport.height} recolhida: atributo title não deve existir`);
     assert.equal(collapsed.controlClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.controlClippingAncestor}`);
 
-    const navHoverTooltip = await hoverTooltip('.meg-nav .meg-nav-item[data-tooltip="Início"]');
-    assert.equal(navHoverTooltip?.text, 'Início', `${viewport.width}x${viewport.height} recolhida: tooltip hover de Início não apareceu`);
-    assert.equal(navHoverTooltip?.insideViewport, true, `${viewport.width}x${viewport.height} recolhida: tooltip hover de Início saiu da janela`);
-    await clearPointerAndFocus();
+    for (const [label, selector] of navSelectors) {
+      await assertHoverAndFocusTooltip(
+        selector,
+        `${viewport.width}x${viewport.height} recolhida / ${label}`,
+      );
+    }
 
-    const navFocusTooltip = await focusTooltip('.meg-nav .meg-nav-item[data-tooltip="Configurações"]');
-    assert.equal(navFocusTooltip?.text, 'Configurações', `${viewport.width}x${viewport.height} recolhida: tooltip focus de Configurações não apareceu`);
-    assert.equal(navFocusTooltip?.insideViewport, true, `${viewport.width}x${viewport.height} recolhida: tooltip focus de Configurações saiu da janela`);
-    await clearPointerAndFocus();
+    await assertHoverAndFocusTooltip(
+      '.meg-logout-button[aria-label="Sair"]',
+      `${viewport.width}x${viewport.height} recolhida / Sair`,
+    );
+    await assertHoverAndFocusTooltip(
+      '.meg-sidebar-toggle-topbar',
+      `${viewport.width}x${viewport.height} recolhida / Expandir menu (»)`,
+    );
+    await assertHoverAndFocusTooltip(
+      '.meg-topbar-new[aria-label="Novo lançamento"]',
+      `${viewport.width}x${viewport.height} recolhida / Novo lançamento (+)`,
+    );
     if (viewport.width === 1366 && (viewport.height === 600 || viewport.height === 768)) {
       assert.ok(
         Math.abs(collapsed.logoCenterX - collapsed.firstIconCenterX) <= 1,
