@@ -557,7 +557,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   useEffect(() => {
     const element = viewportRef.current;
     if (!element) return;
-    const measure = () => setViewportHeight(element.clientHeight || 480);
+    const measure = () => setViewportHeight(Math.max(1, Math.min(element.clientHeight || 480, window.innerHeight || 480)));
     measure();
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
     observer?.observe(element);
