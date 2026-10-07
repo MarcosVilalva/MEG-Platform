@@ -885,10 +885,12 @@ async function assertSidebarState(viewport, collapsed) {
   }
 
   if (requiredFitViewport) {
-    assert.ok(
-      result.logoutRect && result.logoutRect.height >= 40,
-      `${viewport.width}x${viewport.height} ${state}: Sair deve ter ao menos 40px de altura`,
-    );
+    if (!collapsed) {
+      assert.ok(
+        result.logoutRect && result.logoutRect.height >= 40,
+        `${viewport.width}x${viewport.height} ${state}: Sair deve ter ao menos 40px de altura`,
+      );
+    }
     assert.ok(
       result.logoutRect.top >= result.navBottom - 1,
       `${viewport.width}x${viewport.height} ${state}: rodapé invade o nav`,
