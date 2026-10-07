@@ -181,3 +181,8 @@ assert.match(source, /result\.gapToFooter <= result\.maxItemHeight \+ 1/);
 assert.match(source, /result\.dividerNeutral/);
 assert.match(source, /result\.needsScroll/);
 assert.match(source, /assertReducedTopbarLaunchers/);
+
+assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-brand,[\s\S]*flex:\s*0\s+0\s+72px;[\s\S]*height:\s*72px;[\s\S]*padding:\s*6px\s+0\s+8px/);
+assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*88px;[\s\S]*max-height:\s*54px/);
+assert.match(source, /@media \(max-height:\s*599px\)[\s\S]*flex-basis:\s*60px;[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*76px;[\s\S]*max-height:\s*46px/);
+assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav,[\s\S]*padding-top:\s*8px/);
