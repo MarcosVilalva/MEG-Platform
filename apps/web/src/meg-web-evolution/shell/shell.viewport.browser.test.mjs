@@ -424,18 +424,31 @@ async function measureResponsiveTopbar() {
     const topbar = document.querySelector('.meg-topbar');
     const topbarRect = topbar?.getBoundingClientRect();
 
+    const outsideViewport = visibleRects
+      .filter(([, rect]) =>
+        rect.left < 0 ||
+        rect.top < 0 ||
+        rect.right > window.innerWidth ||
+        rect.bottom > window.innerHeight
+      )
+      .map(([name, rect]) => ({
+        name,
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      }));
+
     return {
       innerWidth: window.innerWidth,
       innerHeight: window.innerHeight,
       scrollWidth: root.scrollWidth,
       scrollHeight: root.scrollHeight,
       overlaps,
-      allInsideViewport: visibleRects.every(([, rect]) =>
-        rect.left >= 0 &&
-        rect.top >= 0 &&
-        rect.right <= window.innerWidth &&
-        rect.bottom <= window.innerHeight
-      ),
+      outsideViewport,
+      allInsideViewport: outsideViewport.length === 0,
       allInsideTopbar: topbarRect
         ? visibleRects.every(([, rect]) =>
             rect.left >= topbarRect.left - 1 &&
@@ -871,7 +884,7 @@ try {
     assert.equal(
       responsive.allInsideViewport,
       true,
-      `${viewport.width}x${viewport.height}: controle da topbar saiu da janela`,
+      `${viewport.width}x${viewport.height}: controle da topbar saiu da janela ${JSON.stringify(responsive.outsideViewport)}`,
     );
     assert.equal(
       responsive.allInsideTopbar,
