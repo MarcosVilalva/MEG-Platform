@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const appUrl = process.env.MEG_WEB_EVOLUTION_URL || 'http://127.0.0.1:4173/web-evolution.html';
 const viewports = [
@@ -20,6 +20,7 @@ const chromeCandidates = [
 const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
 assert.ok(chromePath, 'Chrome/Chromium não encontrado para o contrato visual do Shell.');
 
+const chromeUserDataDir = `/tmp/meg-web-evolution-chrome-${process.pid}`;
 const chrome = spawn(chromePath, [
   '--headless=new',
   '--no-sandbox',
@@ -27,8 +28,8 @@ const chrome = spawn(chromePath, [
   '--disable-gpu',
   '--force-device-scale-factor=1',
   '--remote-debugging-address=127.0.0.1',
-  '--remote-debugging-port=9222',
-  '--user-data-dir=/tmp/meg-web-evolution-chrome',
+  '--remote-debugging-port=0',
+  `--user-data-dir=${chromeUserDataDir}`,
   '--window-size=1366,768',
   'about:blank',
 ], { stdio: 'ignore' });
@@ -46,7 +47,28 @@ async function waitForJson(url, retries = 50) {
   throw new Error(`Chrome DevTools indisponível: ${url}`);
 }
 
-const pages = await waitForJson('http://127.0.0.1:9222/json/list');
+const devToolsActivePortPath = `${chromeUserDataDir}/DevToolsActivePort`;
+let devToolsPort = null;
+
+for (let attempt = 0; attempt < 80; attempt += 1) {
+  if (existsSync(devToolsActivePortPath)) {
+    const [portLine] = readFileSync(devToolsActivePortPath, 'utf8').trim().split(/\r?\n/);
+    const parsedPort = Number(portLine);
+    if (Number.isInteger(parsedPort) && parsedPort > 0) {
+      devToolsPort = parsedPort;
+      break;
+    }
+  }
+
+  if (chrome.exitCode !== null) {
+    throw new Error(`Chrome encerrou antes de publicar DevToolsActivePort (exitCode=${chrome.exitCode})`);
+  }
+
+  await sleep(100);
+}
+
+assert.ok(devToolsPort, 'Chrome não publicou DevToolsActivePort.');
+const pages = await waitForJson(`http://127.0.0.1:${devToolsPort}/json/list`, 80);
 const page = pages.find((item) => item.type === 'page') || pages[0];
 assert.ok(page?.webSocketDebuggerUrl, 'Página CDP não encontrada.');
 
