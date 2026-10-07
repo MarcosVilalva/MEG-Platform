@@ -142,7 +142,13 @@ function DistinctList<T extends Record<string, unknown>>({
 
       <div className="meg-datagrid-filter__values" role="group" aria-label={`Valores de ${column.label}`}>
         {visible.map((option) => {
+          const record = option.value && typeof option.value === 'object'
+            ? option.value as Record<string, unknown>
+            : null;
           const visual = column.enumValues?.[option.key];
+          const color = visual?.color ?? (typeof record?.color === 'string' ? record.color : undefined);
+          const icon = visual?.icon ?? (record?.icon as React.ReactNode | undefined);
+          const label = visual?.label ?? (typeof record?.label === 'string' ? record.label : undefined);
           return (
             <label className="meg-datagrid-check" key={option.key}>
               <input
@@ -153,13 +159,13 @@ function DistinctList<T extends Record<string, unknown>>({
               {column.type === 'enum' && (
                 <span
                   className="meg-datagrid-enum-dot"
-                  style={visual?.color ? { backgroundColor: visual.color } : undefined}
+                  style={color ? { backgroundColor: color } : undefined}
                   aria-hidden="true"
                 />
               )}
               <span className="meg-datagrid-check__label">
-                {visual?.icon}
-                {visual?.label ?? formatDistinct(option, column.type)}
+                {icon}
+                {label ?? formatDistinct(option, column.type)}
               </span>
               <span className="meg-datagrid-count" aria-label={`${option.count} ocorrências`}>{option.count}</span>
             </label>
@@ -199,34 +205,66 @@ function DateTree({
     onSelected(selected.includes(key) ? selected.filter((item) => item !== key) : [...selected, key]);
   };
 
+  const toggleMany = (keys: string[]) => {
+    const allSelected = keys.length > 0 && keys.every((key) => selected.includes(key));
+    const keySet = new Set(keys);
+    if (allSelected) onSelected(selected.filter((key) => !keySet.has(key)));
+    else onSelected([...new Set([...selected, ...keys])]);
+  };
+
   return (
     <div className="meg-datagrid-date-tree" aria-label="Árvore de datas">
-      {[...tree.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([year, months]) => (
-        <details key={year}>
-          <summary>{year}</summary>
-          {[...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, days]) => {
-            const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
-              new Date(Number(year), Number(month) - 1, 1),
-            );
-            return (
-              <details key={month}>
-                <summary>{monthLabel}</summary>
-                {days.sort((a, b) => a.key.localeCompare(b.key)).map((day) => (
-                  <label className="meg-datagrid-check" key={day.key}>
+      {[...tree.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([year, months]) => {
+        const yearKeys = [...months.values()].flat().map((day) => day.key);
+        const yearChecked = yearKeys.length > 0 && yearKeys.every((key) => selected.includes(key));
+        return (
+          <details key={year}>
+            <summary>{year}</summary>
+            <label className="meg-datagrid-check meg-datagrid-date-tree__level">
+              <input
+                type="checkbox"
+                checked={yearChecked}
+                onChange={() => toggleMany(yearKeys)}
+                aria-label={`Selecionar ano ${year}`}
+              />
+              <span>Todos de {year}</span>
+            </label>
+            {[...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, days]) => {
+              const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
+                new Date(Number(year), Number(month) - 1, 1),
+              );
+              const sortedDays = [...days].sort((a, b) => a.key.localeCompare(b.key));
+              const monthKeys = sortedDays.map((day) => day.key);
+              const monthChecked = monthKeys.length > 0 && monthKeys.every((key) => selected.includes(key));
+              return (
+                <details key={month}>
+                  <summary>{monthLabel}</summary>
+                  <label className="meg-datagrid-check meg-datagrid-date-tree__level">
                     <input
                       type="checkbox"
-                      checked={selected.includes(day.key)}
-                      onChange={() => toggle(day.key)}
+                      checked={monthChecked}
+                      onChange={() => toggleMany(monthKeys)}
+                      aria-label={`Selecionar mês ${monthLabel} de ${year}`}
                     />
-                    <span>{day.key.slice(-2)}</span>
-                    <span className="meg-datagrid-count">{day.count}</span>
+                    <span>Todo o mês</span>
                   </label>
-                ))}
-              </details>
-            );
-          })}
-        </details>
-      ))}
+                  {sortedDays.map((day) => (
+                    <label className="meg-datagrid-check" key={day.key}>
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(day.key)}
+                        onChange={() => toggle(day.key)}
+                      />
+                      <span>{day.key.slice(-2)}</span>
+                      <span className="meg-datagrid-count">{day.count}</span>
+                    </label>
+                  ))}
+                </details>
+              );
+            })}
+          </details>
+        );
+      })}
     </div>
   );
 }
