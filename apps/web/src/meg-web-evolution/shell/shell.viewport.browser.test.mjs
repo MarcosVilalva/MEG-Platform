@@ -1005,8 +1005,12 @@ try {
     );
     if (viewport.width >= 1024) {
       assert.ok(
-        expanded.logoWidth >= (viewport.height < 520 ? 104 : 112),
-        `${viewport.width}x${viewport.height} expandida: logo desktop perdeu escala (${expanded.logoWidth}px)`,
+        Math.abs(expanded.logoWidth - 88) <= 1,
+        `${viewport.width}x${viewport.height} expandida: logo desktop deve permanecer em 88px (${expanded.logoWidth}px)`,
+      );
+      assert.ok(
+        expanded.logoWidth <= 89,
+        `${viewport.width}x${viewport.height} expandida: logo desktop excedeu 88px além da tolerância subpixel (${expanded.logoWidth}px)`,
       );
     }
     if (viewport.height < 768) {
