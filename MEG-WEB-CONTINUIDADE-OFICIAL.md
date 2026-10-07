@@ -207,7 +207,7 @@ Não avançar prematuramente para telas futuras.
 ## 10. Estado atual
 
 ### Etapa atual
-**Etapa 3 — Shell, tokens e componentes base: EM EXECUÇÃO**
+**Etapa 04 — DataGrid: EM EXECUÇÃO**
 
 ### Situação
 - Prompt Master definido.
@@ -218,9 +218,12 @@ Não avançar prematuramente para telas futuras.
 - Etapa 01 mesclada na `main` pelo commit `0d21136c3993b11b127d8339a5b849b3727275ed`.
 - Branch atual: `meg-web-evolution/02-fonte-unica-dados-mocks`.
 - Etapa 02 mesclada na `main`: `db5e5ee4ba763db299e3bf005a5f63eac1c3666f`.
-- Branch atual: `meg-web-evolution/03-shell-tokens-base`.
-- PR da Etapa 03: **#605**, em Draft, mergeável.
-- Head técnico da Etapa 03 antes desta atualização de continuidade: `4d872b03e2d3b5b4b01e7a55814be6a0ea35e401`.
+- Etapa 03 **ENCERRADA** e mesclada na `main` pelo commit `6307387efd5a1b5322b0ff89ca6656be799aeb72`.
+- PR da Etapa 03: **#605**, mesclada em 07/10/2026.
+- Branch `meg-web-evolution/03-shell-tokens-base` removida após o merge.
+- Etapa 04 autorizada: **DataGrid**.
+- Branch atual: `meg-web-evolution/04-datagrid`.
+- Base da Etapa 04: `main@6307387efd5a1b5322b0ff89ca6656be799aeb72`.
 - Base auditada: `main@87e04b989568d95c182927c6f493061be26440db`.
 - Auditoria financeira por arquivo/linha registrada em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
 - Testes de caracterização financeira criados e adicionados ao gate.
@@ -237,7 +240,7 @@ Não avançar prematuramente para telas futuras.
 ### Direção aprovada
 A Etapa 1 foi encerrada após caracterização, consolidação das autoridades financeiras, correções de segurança e gates verdes. Nenhuma UI foi iniciada nesta etapa.
 
-### Etapa 03 — execução atual
+### Etapa 03 — encerrada
 - Entrada isolada criada em `apps/web/web-evolution.html`.
 - Nova camada visual criada em `apps/web/src/meg-web-evolution/`, sem importação de UI Phoenix/Web Next/Android.
 - Tokens oficiais aplicados em `styles/tokens.css`.
@@ -420,7 +423,9 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Refatoração técnica do harness: medições de viewport foram extraídas para `shell.viewport.measurements.mjs`, sem alterar comportamento visual, reduzindo duplicação do teste principal.
 - Gates finais desta rodada no head `a5b35eea9911b640ea50b866c6569e20bf96dccd`: `MEG Platform CI` run **#5041 — SUCCESS** e `MEG Web Evolution Foundation` run **#686 — SUCCESS**. O contrato completo de viewport encerrou verde.
 - Correção posterior autorizada em 07/10/2026 para a sidebar recolhida: o estado `.is-sidebar-collapsed` passa a usar a mesma disciplina estrutural de flex da sidebar expandida, com nav elástico, sete itens entre 40px e 56px e logo/rodapé sem compressão. O grafismo inferior permanece oculto (`display:none`) no estado recolhido, como no head `87fefc5`. O cenário recolhido `1000x890` foi adicionado ao contrato sem remover a matriz existente; a tolerância geométrica continua em 1px. A alteração não alcança a sidebar expandida, SVGs ou topbar e aguarda nova validação visual do usuário antes do merge.
-- Status visual: a validação anterior foi reaberta exclusivamente para esta correção da sidebar recolhida; o novo preview precisa de aprovação explícita antes do merge da PR #605.
+- Status final da Etapa 03: **ENCERRADA** após validação visual explícita do usuário, gates finais verdes no head `190fef587223d588627d807626752cd6b18af4df` e merge da PR #605 em `main@6307387efd5a1b5322b0ff89ca6656be799aeb72`.
+- A falha do Foundation no commit intermediário `748275f26f11ee968d434d7a3d929e55da87628f` foi causada pelo contrato real de viewport (`1366x768 recolhida: marca d'água deve ficar oculta`) e foi corrigida antes do head final. O commit `87fefc59941dd034b38306e3c685c1734e2182b7` possui `MEG Platform CI` e `MEG Web Evolution Foundation` verdes.
+- O DataGrid permaneceu fora da Etapa 03.
 
 ### Etapa 02 — encerrada
 - Fonte única criada em `apps/web/src/evolution/data/data.js`.
@@ -551,15 +556,16 @@ As imagens oficiais atuais definem o padrão visual, mas **uma tela só passa a 
 
 ## 16. Próximo passo autorizado
 
-**Concluir e validar visualmente a Etapa 3 — Shell, tokens e componentes base.**
+**Executar a Etapa 04 — DataGrid, exclusivamente.**
 
 Sequência imediata:
-1. manter a nova entrada isolada `web-evolution.html`, sem reaproveitar Phoenix, Web Next, Android ou UI anterior;
-2. validar sidebar, topbar, tokens e componentes base contra os prints oficiais atuais;
-3. preservar `apps/web/src/evolution/data/` como fonte única da nova Web;
-4. não implementar DataGrid antes da aprovação desta fundação visual;
-5. publicar preview da nova entrada e fornecer link sem cache;
-6. aguardar validação visual explícita antes de encerrar a Etapa 03.
+1. partir somente de `main@6307387efd5a1b5322b0ff89ca6656be799aeb72`;
+2. preservar Shell, topbar, sidebar, SVGs oficiais, tokens, fonte única da Etapa 02 e camada financeira;
+3. construir o DataGrid reutilizável e isolado em `apps/web/src/meg-web-evolution/`, sem tela funcional futura disfarçada;
+4. usar apenas a fonte única da Etapa 02 ou fixture técnica isolada no harness;
+5. adicionar contrato do DataGrid ao gate `MEG Web Evolution Foundation` sem remover ou relaxar contratos da Etapa 03;
+6. publicar preview com link sem cache e aguardar validação visual explícita antes de merge;
+7. não iniciar Etapa 05 ou posterior neste chat.
 
 ---
 
@@ -623,14 +629,14 @@ Essa organização por chats não altera a ordem técnica detalhada da Seção 9
 
 ### 19.2. Estado atual da organização
 
-- Chats **01** e **02** encerrados.
+- Chats/Etapas **01, 02 e 03 encerrados**.
 - Etapa 01 mesclada na `main`.
 - Etapa 02 mesclada na `main` pelo commit `db5e5ee4ba763db299e3bf005a5f63eac1c3666f`.
-- Chat/Etapa atual: **03 - Shell, Tokens e Componentes Base**.
-- Branch atual: `meg-web-evolution/03-shell-tokens-base`.
-- PR atual: **#605**, em Draft e mergeável.
-- A Etapa 03 permanece **em execução** e **sem validação visual final**.
-- DataGrid pertence ao chat 04 e não deve ser iniciado antes do encerramento formal do chat 03.
+- Etapa 03 mesclada na `main` pela PR **#605**, commit `6307387efd5a1b5322b0ff89ca6656be799aeb72`; branch antiga removida.
+- Chat/Etapa atual: **04 - DataGrid**.
+- Branch atual: `meg-web-evolution/04-datagrid`.
+- A frase histórica do Prompt Master que situa o DataGrid na etapa 2 não redefine a organização atual: para este projeto/chats, **DataGrid = Etapa 04**.
+- Etapa 05 e posteriores permanecem bloqueadas até encerramento formal e validação visual da Etapa 04.
 
 ### 19.3. Grid soberano da Home
 
@@ -766,3 +772,28 @@ Arquivo de autoridade da nova Web:
 Nenhuma tela foi implementada ou validada nesta etapa.
 
 **Próxima etapa oficial:** `02 - Fonte Única de Dados e Mocks`.
+
+
+---
+
+## 21. Encerramento formal da Etapa 03
+
+**Status:** ENCERRADA  
+**Data:** 07/10/2026  
+**Branch:** `meg-web-evolution/03-shell-tokens-base` — removida após merge  
+**PR:** #605  
+**Head técnico final:** `190fef587223d588627d807626752cd6b18af4df`  
+**Merge na main:** `6307387efd5a1b5322b0ff89ca6656be799aeb72`
+
+Gates finais confirmados no head da PR:
+- `MEG Platform CI`: **SUCCESS** (run #5044)
+- `MEG Web Evolution Foundation`: **SUCCESS** (run #692)
+
+Registro sobre checks intermediários:
+- `87fefc59941dd034b38306e3c685c1734e2182b7`: Platform CI e Foundation **SUCCESS**;
+- `748275f26f11ee968d434d7a3d929e55da87628f`: Platform CI **SUCCESS** e Foundation **FAILURE** exclusivamente no contrato de viewport da sidebar recolhida; falha corrigida nos commits seguintes sem relaxar a asserção válida;
+- o head final `190fef587223d588627d807626752cd6b18af4df` fechou os dois gates verdes antes do merge.
+
+Validação visual explícita da Etapa 03 foi recebida antes do merge. CI não substituiu essa aprovação.
+
+**Próxima etapa oficial:** `04 - DataGrid`.
