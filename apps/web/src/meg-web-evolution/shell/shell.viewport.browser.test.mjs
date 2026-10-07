@@ -100,10 +100,14 @@ async function measure(state) {
     const labels = [...document.querySelectorAll('.meg-nav-item span')];
     const logo = document.querySelector('.meg-brand-logo--${state}');
     const control = document.querySelector('.meg-sidebar-control');
-    if (!firstItem || !logo || !control) throw new Error('Elementos do contrato do Shell não encontrados.');
+    const firstIcon = firstItem.querySelector('svg');
+    const sidebar = document.querySelector('.meg-sidebar');
+    if (!firstItem || !logo || !control || !firstIcon || !sidebar) throw new Error('Elementos do contrato do Shell não encontrados.');
 
     const logoRect = logo.getBoundingClientRect();
     const itemRect = firstItem.getBoundingClientRect();
+    const iconRect = firstIcon.getBoundingClientRect();
+    const sidebarRect = sidebar.getBoundingClientRect();
     const controlRect = control.getBoundingClientRect();
 
     const clippingAncestor = (() => {
@@ -129,6 +133,9 @@ async function measure(state) {
       firstItemTop: itemRect.top,
       logoOpacity: getComputedStyle(logo).opacity,
       logoPosition: getComputedStyle(logo).position,
+      logoCenterX: logoRect.left + logoRect.width / 2,
+      firstIconCenterX: iconRect.left + iconRect.width / 2,
+      logoTopOffset: logoRect.top - sidebarRect.top,
       labelsFit: labels.every((label) => label.scrollWidth <= label.clientWidth),
       itemsFit: items.every((item) => item.scrollWidth <= item.clientWidth),
       controlInsideViewport:
@@ -198,6 +205,16 @@ try {
     assert.equal(collapsed.controlTopmostAtCenter, true, `${viewport.width}x${viewport.height} recolhida: botão coberto no centro`);
     assert.equal(collapsed.controlHasTitle, false, `${viewport.width}x${viewport.height} recolhida: atributo title não deve existir`);
     assert.equal(collapsed.controlClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.controlClippingAncestor}`);
+    if (viewport.width === 1366 && (viewport.height === 600 || viewport.height === 768)) {
+      assert.ok(
+        Math.abs(collapsed.logoCenterX - collapsed.firstIconCenterX) <= 1,
+        `${viewport.width}x${viewport.height} recolhida: símbolo fora do eixo dos ícones (${collapsed.logoCenterX} vs ${collapsed.firstIconCenterX})`,
+      );
+      assert.ok(
+        collapsed.logoTopOffset >= 12,
+        `${viewport.width}x${viewport.height} recolhida: símbolo com menos de 12px de respiro superior (${collapsed.logoTopOffset})`,
+      );
+    }
 
     console.log(
       `OK ${viewport.width}x${viewport.height}: expandida ${expanded.scrollHeight}/${expanded.innerHeight}, recolhida ${collapsed.scrollHeight}/${collapsed.innerHeight}`,
