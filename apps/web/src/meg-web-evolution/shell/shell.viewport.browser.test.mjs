@@ -99,22 +99,22 @@ async function measure(state) {
     const items = [...document.querySelectorAll('.meg-nav-item')];
     const labels = [...document.querySelectorAll('.meg-nav-item span')];
     const logo = document.querySelector('.meg-brand-logo--${state}');
-    const toggle = document.querySelector('.meg-sidebar-toggle');
-    if (!firstItem || !logo || !toggle) throw new Error('Elementos do contrato do Shell não encontrados.');
+    const control = document.querySelector('.meg-sidebar-control');
+    if (!firstItem || !logo || !control) throw new Error('Elementos do contrato do Shell não encontrados.');
 
     const logoRect = logo.getBoundingClientRect();
     const itemRect = firstItem.getBoundingClientRect();
-    const toggleRect = toggle.getBoundingClientRect();
+    const controlRect = control.getBoundingClientRect();
 
     const clippingAncestor = (() => {
-      let node = toggle.parentElement;
+      let node = control.parentElement;
       while (node && node !== document.documentElement) {
         const style = getComputedStyle(node);
         const rect = node.getBoundingClientRect();
         const clipsX = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowX) &&
-          (toggleRect.left < rect.left || toggleRect.right > rect.right);
+          (controlRect.left < rect.left || controlRect.right > rect.right);
         const clipsY = ['hidden', 'clip', 'scroll', 'auto'].includes(style.overflowY) &&
-          (toggleRect.top < rect.top || toggleRect.bottom > rect.bottom);
+          (controlRect.top < rect.top || controlRect.bottom > rect.bottom);
         if (clipsX || clipsY) return node.className || node.tagName;
         node = node.parentElement;
       }
@@ -131,20 +131,20 @@ async function measure(state) {
       logoPosition: getComputedStyle(logo).position,
       labelsFit: labels.every((label) => label.scrollWidth <= label.clientWidth),
       itemsFit: items.every((item) => item.scrollWidth <= item.clientWidth),
-      toggleInsideViewport:
-        toggleRect.left >= 0 &&
-        toggleRect.top >= 0 &&
-        toggleRect.right <= window.innerWidth &&
-        toggleRect.bottom <= window.innerHeight,
-      toggleWidth: toggleRect.width,
-      toggleHeight: toggleRect.height,
-      toggleTopmostAtCenter:
+      controlInsideViewport:
+        controlRect.left >= 0 &&
+        controlRect.top >= 0 &&
+        controlRect.right <= window.innerWidth &&
+        controlRect.bottom <= window.innerHeight,
+      controlWidth: controlRect.width,
+      controlHeight: controlRect.height,
+      controlTopmostAtCenter:
         document.elementFromPoint(
-          toggleRect.left + toggleRect.width / 2,
-          toggleRect.top + toggleRect.height / 2,
-        ) === toggle,
-      toggleHasTitle: toggle.hasAttribute('title'),
-      toggleClippingAncestor: clippingAncestor,
+          controlRect.left + controlRect.width / 2,
+          controlRect.top + controlRect.height / 2,
+        ) === control,
+      controlHasTitle: control.hasAttribute('title'),
+      controlClippingAncestor: clippingAncestor,
     };
   })()`);
 }
@@ -176,14 +176,14 @@ try {
     assert.equal(expanded.logoOpacity, '1');
     assert.equal(expanded.labelsFit, true, `${viewport.width}x${viewport.height} expandida: texto do menu truncado`);
     assert.equal(expanded.itemsFit, true, `${viewport.width}x${viewport.height} expandida: item do menu excede a largura`);
-    assert.equal(expanded.toggleInsideViewport, true, `${viewport.width}x${viewport.height} expandida: botão de recolher fora da janela`);
-    assert.equal(expanded.toggleWidth, 32, `${viewport.width}x${viewport.height} expandida: largura do botão diferente de 32px`);
-    assert.equal(expanded.toggleHeight, 32, `${viewport.width}x${viewport.height} expandida: altura do botão diferente de 32px`);
-    assert.equal(expanded.toggleTopmostAtCenter, true, `${viewport.width}x${viewport.height} expandida: botão coberto no centro`);
-    assert.equal(expanded.toggleHasTitle, false, `${viewport.width}x${viewport.height} expandida: atributo title não deve existir`);
-    assert.equal(expanded.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.toggleClippingAncestor}`);
+    assert.equal(expanded.controlInsideViewport, true, `${viewport.width}x${viewport.height} expandida: botão de recolher fora da janela`);
+    assert.equal(expanded.controlWidth, 32, `${viewport.width}x${viewport.height} expandida: largura do botão diferente de 32px`);
+    assert.equal(expanded.controlHeight, 32, `${viewport.width}x${viewport.height} expandida: altura do botão diferente de 32px`);
+    assert.equal(expanded.controlTopmostAtCenter, true, `${viewport.width}x${viewport.height} expandida: botão coberto no centro`);
+    assert.equal(expanded.controlHasTitle, false, `${viewport.width}x${viewport.height} expandida: atributo title não deve existir`);
+    assert.equal(expanded.controlClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.controlClippingAncestor}`);
 
-    await evaluate(`document.querySelector('.meg-sidebar-toggle')?.click()`);
+    await evaluate(`document.querySelector('.meg-sidebar-control')?.click()`);
     await sleep(250);
 
     const collapsed = await measure('collapsed');
@@ -196,12 +196,12 @@ try {
       `${viewport.width}x${viewport.height} recolhida: Início (${collapsed.firstItemTop}) sobrepõe símbolo (${collapsed.logoBottom})`,
     );
     assert.equal(collapsed.logoOpacity, '1');
-    assert.equal(collapsed.toggleInsideViewport, true, `${viewport.width}x${viewport.height} recolhida: botão de expandir fora da janela`);
-    assert.equal(collapsed.toggleWidth, 32, `${viewport.width}x${viewport.height} recolhida: largura do botão diferente de 32px`);
-    assert.equal(collapsed.toggleHeight, 32, `${viewport.width}x${viewport.height} recolhida: altura do botão diferente de 32px`);
-    assert.equal(collapsed.toggleTopmostAtCenter, true, `${viewport.width}x${viewport.height} recolhida: botão coberto no centro`);
-    assert.equal(collapsed.toggleHasTitle, false, `${viewport.width}x${viewport.height} recolhida: atributo title não deve existir`);
-    assert.equal(collapsed.toggleClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.toggleClippingAncestor}`);
+    assert.equal(collapsed.controlInsideViewport, true, `${viewport.width}x${viewport.height} recolhida: botão de expandir fora da janela`);
+    assert.equal(collapsed.controlWidth, 32, `${viewport.width}x${viewport.height} recolhida: largura do botão diferente de 32px`);
+    assert.equal(collapsed.controlHeight, 32, `${viewport.width}x${viewport.height} recolhida: altura do botão diferente de 32px`);
+    assert.equal(collapsed.controlTopmostAtCenter, true, `${viewport.width}x${viewport.height} recolhida: botão coberto no centro`);
+    assert.equal(collapsed.controlHasTitle, false, `${viewport.width}x${viewport.height} recolhida: atributo title não deve existir`);
+    assert.equal(collapsed.controlClippingAncestor, null, `${viewport.width}x${viewport.height} recolhida: botão sujeito a clipping por ancestral ${collapsed.controlClippingAncestor}`);
 
     console.log(
       `OK ${viewport.width}x${viewport.height}: expandida ${expanded.scrollHeight}/${expanded.innerHeight}, recolhida ${collapsed.scrollHeight}/${collapsed.innerHeight}`,
