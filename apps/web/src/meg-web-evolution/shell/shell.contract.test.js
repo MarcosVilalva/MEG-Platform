@@ -140,8 +140,8 @@ assert.equal(/title\s*=/.test(source), false, 'icon-only tooltip targets must no
 
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-nav\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;[\s\S]*justify-content:\s*space-evenly;[\s\S]*overflow-y:\s*auto/);
 
-assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar\s*\{[\s\S]*grid-template-areas:[\s\S]*"search"[\s\S]*"actions"/);
-assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar-actions\s*\{[\s\S]*display:\s*grid;[\s\S]*grid-template-columns:\s*minmax\(max-content, 1fr\) auto auto/);
+assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar\s*\{[\s\S]*grid-template-columns:\s*auto minmax\(46px, 1fr\) auto;[\s\S]*grid-template-areas:\s*"launchers search actions"/);
+assert.match(source, /@media \(max-width: 1023px\)[\s\S]*\.meg-topbar-actions\s*\{[\s\S]*display:\s*flex;[\s\S]*justify-content:\s*flex-end/);
 assert.match(source, /@media \(max-width: 639px\)[\s\S]*grid-template-areas:[\s\S]*"menu \. notification profile"[\s\S]*"period period period period"[\s\S]*"search search search search"/);
 assert.match(source, /@media \(max-width: 639px\)[\s\S]*\.meg-topbar-actions\s*\{[\s\S]*display:\s*contents/);
 assert.match(source, /responsiveViewports[\s\S]*1023[\s\S]*768[\s\S]*640[\s\S]*390/);
