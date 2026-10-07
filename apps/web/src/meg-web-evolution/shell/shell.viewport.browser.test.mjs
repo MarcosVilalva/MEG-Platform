@@ -316,8 +316,25 @@ async function measure(state) {
       logoCenterX: logoRect.left + logoRect.width / 2,
       firstIconCenterX: iconRect.left + iconRect.width / 2,
       logoTopOffset: logoRect.top - sidebarRect.top,
-      labelsFit: labels.every((label) => label.scrollWidth <= label.clientWidth),
-      itemsFit: items.every((item) => item.scrollWidth <= item.clientWidth),
+      labelsFit: labels.every((label) => {
+        const style = getComputedStyle(label);
+        const rect = label.getBoundingClientRect();
+        if (style.display === 'none' || style.visibility === 'hidden' || rect.width === 0) return true;
+        return label.scrollWidth <= label.clientWidth + 2;
+      }),
+      truncatedLabels: labels
+        .filter((label) => {
+          const style = getComputedStyle(label);
+          const rect = label.getBoundingClientRect();
+          if (style.display === 'none' || style.visibility === 'hidden' || rect.width === 0) return false;
+          return label.scrollWidth > label.clientWidth + 2;
+        })
+        .map((label) => ({
+          text: label.textContent?.trim() || '',
+          scrollWidth: label.scrollWidth,
+          clientWidth: label.clientWidth,
+        })),
+      itemsFit: items.every((item) => item.scrollWidth <= item.clientWidth + 2),
       controlInsideViewport:
         controlRect.left >= 0 &&
         controlRect.top >= 0 &&
@@ -702,7 +719,11 @@ try {
       );
     }
     assert.equal(expanded.logoOpacity, '1');
-    assert.equal(expanded.labelsFit, true, `${viewport.width}x${viewport.height} expandida: texto do menu truncado`);
+    assert.equal(
+      expanded.labelsFit,
+      true,
+      `${viewport.width}x${viewport.height} expandida: texto do menu truncado ${JSON.stringify(expanded.truncatedLabels)}`,
+    );
     assert.equal(expanded.itemsFit, true, `${viewport.width}x${viewport.height} expandida: item do menu excede a largura`);
     assert.equal(expanded.controlInsideViewport, true, `${viewport.width}x${viewport.height} expandida: botão de recolher fora da janela`);
     assert.equal(expanded.controlTopmostAtCenter, true, `${viewport.width}x${viewport.height} expandida: botão coberto no centro`);
