@@ -183,9 +183,16 @@ async function assertCompactOverlays(width, height, collapsed) {
           const lastRect=last.getBoundingClientRect();
           const controls=dialog.querySelector('.meg-datagrid-filter__controls');
           const controlsRect=controls?.getBoundingClientRect();
-          const rows=[...dialog.querySelectorAll('.meg-datagrid-filter__values .meg-datagrid-check')];
-          const firstVisibleRow=rows.find((row)=>{ const r=row.getBoundingClientRect(); return r.bottom > listRect.top && r.top < listRect.bottom; });
-          const firstVisibleRowRect=firstVisibleRow?.getBoundingClientRect();
+          const listStyle=getComputedStyle(list);
+          const probePoints=controlsRect ? [
+            [controlsRect.left + Math.min(12, controlsRect.width / 4), controlsRect.top + 8],
+            [controlsRect.left + controlsRect.width / 2, controlsRect.top + controlsRect.height / 2],
+            [controlsRect.right - Math.min(12, controlsRect.width / 4), controlsRect.bottom - 8],
+          ] : [];
+          const controlsOwnEveryProbe=probePoints.every(([x,y])=>{
+            const hit=document.elementFromPoint(x,y);
+            return Boolean(hit && controls && controls.contains(hit));
+          });
           const scrollables=[...dialog.querySelectorAll('*')].filter((element)=>{
             const style=getComputedStyle(element);
             return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
@@ -195,7 +202,9 @@ async function assertCompactOverlays(width, height, collapsed) {
             listCanScroll,
             lastVisible:lastRect.top >= listRect.top - 1 && lastRect.bottom <= listRect.bottom + 1,
             rendered:inputs.length,
-            noOverlap:Boolean(controlsRect && firstVisibleRowRect && firstVisibleRowRect.top >= controlsRect.bottom - 1),
+            listStartsBelowControls:Boolean(controlsRect && listRect.top >= controlsRect.bottom - 1),
+            controlsOwnEveryProbe,
+            listOverflowY:listStyle.overflowY,
             scrollableCount:scrollables.length,
           };
         })()`);
@@ -203,7 +212,9 @@ async function assertCompactOverlays(width, height, collapsed) {
         assert.equal(listBehavior.before, true, label + ': primeiro valor não recebeu foco');
         assert.equal(listBehavior.listCanScroll, true, label + ': lista longa deve rolar na região única de valores');
         assert.equal(listBehavior.lastVisible, true, label + ': lista não rola até o último item renderizado');
-        assert.equal(listBehavior.noOverlap, true, label + ': linhas não podem passar por trás de Busca/Selecionar tudo');
+        assert.equal(listBehavior.listStartsBelowControls, true, label + ': lista deve começar abaixo de Busca/Selecionar tudo');
+        assert.equal(listBehavior.controlsOwnEveryProbe, true, label + ': bloco fixo deve ficar acima da lista em elementFromPoint');
+        assert.ok(['auto', 'scroll', 'hidden', 'clip'].includes(listBehavior.listOverflowY), label + ': lista deve recortar conteúdo no próprio viewport');
         assert.equal(listBehavior.scrollableCount, 1, label + ': popover deve ter um único elemento rolável');
         assert.ok(listBehavior.rendered <= 200, label + ': lista longa ultrapassou limite de renderização');
 
@@ -361,6 +372,16 @@ async function assertCompactOverlays(width, height, collapsed) {
 }
 
 try {
+  const viewportFailures = [];
+  const collectViewportFailure = async (label, task) => {
+    try {
+      await task();
+    } catch (error) {
+      viewportFailures.push({ label, message: error instanceof Error ? error.message : String(error) });
+      console.error('FAIL ' + label + ': ' + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+
   for (const viewport of [
     { width: 1366, height: 768 },
     { width: 1366, height: 600 },
@@ -368,8 +389,8 @@ try {
     { width: 1093, height: 480 },
     { width: 910, height: 400 },
   ]) {
-    await assertCompactOverlays(viewport.width, viewport.height, false);
-    await assertCompactOverlays(viewport.width, viewport.height, true);
+    await collectViewportFailure(`overlay ${viewport.width}x${viewport.height} expandida`, () => assertCompactOverlays(viewport.width, viewport.height, false));
+    await collectViewportFailure(`overlay ${viewport.width}x${viewport.height} recolhida`, () => assertCompactOverlays(viewport.width, viewport.height, true));
   }
 
   for (const viewport of [
@@ -379,8 +400,8 @@ try {
     { width: 1024, height: 600 },
     { width: 1093, height: 480 },
   ]) {
-    await assertDesktopContainment(viewport.width, viewport.height, false);
-    await assertDesktopContainment(viewport.width, viewport.height, true);
+    await collectViewportFailure(`containment ${viewport.width}x${viewport.height} expandida`, () => assertDesktopContainment(viewport.width, viewport.height, false));
+    await collectViewportFailure(`containment ${viewport.width}x${viewport.height} recolhida`, () => assertDesktopContainment(viewport.width, viewport.height, true));
   }
   for (const viewport of viewports) {
     await browser.setViewport(viewport.width, viewport.height);
@@ -532,6 +553,14 @@ try {
   const isolatedKeys = await browser.evaluate("(() => ({ normal:localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'), filtered:localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness-filtered-empty') }))()");
   assert.ok(isolatedKeys.filtered, 'Persistência da instância filtrada não existe');
   assert.notEqual(isolatedKeys.normal, isolatedKeys.filtered, 'Chaves de persistência não podem colidir entre grids');
+
+  if (viewportFailures.length) {
+    console.error('MEG DataGrid aggregated viewport failures:', JSON.stringify(viewportFailures, null, 2));
+    throw new AggregateError(
+      viewportFailures.map((item) => new Error(item.label + ': ' + item.message)),
+      `${viewportFailures.length} falha(s) agregada(s) no contrato de viewport`,
+    );
+  }
 
   console.log('MEG Web Evolution DataGrid viewport contract: OK');
 } catch (error) {
