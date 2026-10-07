@@ -1,0 +1,1123 @@
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
+import {
+  aggregateRows,
+  applyFilters,
+  cycleSort,
+  flattenGroups,
+  getDistinctOptions,
+  getVirtualWindow,
+  groupRows,
+  isFilterActive,
+  paginateRows,
+  persistenceStorageKey,
+  pruneSelection,
+  reorderKeys,
+  resizeWidth,
+  sanitizePersistenceState,
+  sortRows,
+  toCsv,
+  toDateKey,
+  updateFilteredSelection,
+} from './core';
+import { FilterPanel, filterSummary } from './FilterPanel';
+import type {
+  DataGridAggregate,
+  DataGridColumn,
+  DataGridDisplayEntry,
+  DataGridFilter,
+  DataGridFilterState,
+  DataGridPersistenceState,
+  DataGridProps,
+  DataGridSort,
+  DistinctOption,
+} from './types';
+import './datagrid.css';
+
+type GridIconName =
+  | 'funnel'
+  | 'columns'
+  | 'download'
+  | 'x'
+  | 'chevronLeft'
+  | 'chevronRight'
+  | 'chevronDown'
+  | 'chevronUp'
+  | 'grip'
+  | 'filter'
+  | 'sort';
+
+function GridIcon({ name, size = 18 }: { name: GridIconName; size?: number }) {
+  const path: Record<GridIconName, ReactNode> = {
+    funnel: <><path d="M4 5h16l-6.2 7.1v5.2l-3.6 1.8v-7L4 5Z" /><circle cx="18.5" cy="5.5" r="1.5" fill="currentColor" stroke="none" /></>,
+    columns: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M9 5v14M15 5v14" /></>,
+    download: <><path d="M12 3v11" /><path d="m8 10 4 4 4-4" /><path d="M5 20h14" /></>,
+    x: <><path d="m6 6 12 12M18 6 6 18" /></>,
+    chevronLeft: <path d="m15 18-6-6 6-6" />,
+    chevronRight: <path d="m9 18 6-6-6-6" />,
+    chevronDown: <path d="m7 10 5 5 5-5" />,
+    chevronUp: <path d="m7 14 5-5 5 5" />,
+    grip: <><circle cx="9" cy="7" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="7" r=".8" fill="currentColor" stroke="none" /><circle cx="9" cy="12" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r=".8" fill="currentColor" stroke="none" /><circle cx="9" cy="17" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="17" r=".8" fill="currentColor" stroke="none" /></>,
+    filter: <><path d="M5 6h14M8 12h8M10.5 18h3" /></>,
+    sort: <><path d="m8 7 3-3 3 3M11 4v16" /><path d="m16 17 3 3 3-3M19 20V4" /></>,
+  };
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {path[name]}
+    </svg>
+  );
+}
+
+function useDesktopGrid() {
+  const [desktop, setDesktop] = useState(() =>
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setDesktop(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  return desktop;
+}
+
+function useDialogKeyboard(
+  open: boolean,
+  containerRef: React.RefObject<HTMLElement | null>,
+  trigger: HTMLElement | null,
+  onClose: () => void,
+) {
+  useEffect(() => {
+    if (!open) return;
+    const previous = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    const timer = window.setTimeout(() => {
+      const focusable = containerRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      focusable?.focus();
+    }, 0);
+
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        window.setTimeout(() => previous?.focus(), 0);
+        return;
+      }
+
+      if (event.key !== 'Tab' || !containerRef.current) return;
+      const focusable = [...containerRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter((element) => !element.hasAttribute('hidden') && element.getClientRects().length > 0);
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [containerRef, onClose, open, trigger]);
+}
+
+function FilterDialog<T extends Record<string, unknown>>({
+  column,
+  filter,
+  distinctOptions,
+  trigger,
+  onApply,
+  onClear,
+  onClose,
+}: {
+  column: DataGridColumn<T>;
+  filter?: DataGridFilter;
+  distinctOptions: DistinctOption[];
+  trigger: HTMLElement | null;
+  onApply: (filter: DataGridFilter | null) => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogKeyboard(true, ref, trigger, onClose);
+
+  const rect = trigger?.getBoundingClientRect();
+  const width = Math.min(390, Math.max(300, window.innerWidth - 24));
+  const left = rect ? Math.min(Math.max(12, rect.right - width), window.innerWidth - width - 12) : 12;
+  const top = rect ? Math.min(rect.bottom + 8, window.innerHeight - 120) : 80;
+
+  return createPortal(
+    <div
+      ref={ref}
+      className="meg-datagrid-filter-dialog"
+      role="dialog"
+      aria-modal="false"
+      aria-label={`Filtro: ${column.label}`}
+      style={{ left, top, width }}
+      data-datagrid-filter-dialog={column.key}
+    >
+      <header className="meg-datagrid-dialog-header">
+        <div>
+          <span className="meg-datagrid-dialog-kicker">Filtrar coluna</span>
+          <strong>{column.label}</strong>
+        </div>
+        <button type="button" aria-label="Fechar filtro" onClick={onClose}>
+          <GridIcon name="x" />
+        </button>
+      </header>
+      <FilterPanel
+        column={column}
+        filter={filter}
+        distinctOptions={distinctOptions}
+        onApply={(next) => {
+          onApply(next);
+          onClose();
+          window.setTimeout(() => trigger?.focus(), 0);
+        }}
+        onClear={() => {
+          onClear();
+          onClose();
+          window.setTimeout(() => trigger?.focus(), 0);
+        }}
+      />
+    </div>,
+    document.body,
+  );
+}
+
+function MobileFilterSheet<T extends Record<string, unknown>>({
+  columns,
+  filters,
+  getOptions,
+  trigger,
+  onChange,
+  onClose,
+  onClearAll,
+}: {
+  columns: DataGridColumn<T>[];
+  filters: DataGridFilterState;
+  getOptions: (column: DataGridColumn<T>) => DistinctOption[];
+  trigger: HTMLElement | null;
+  onChange: (key: string, filter: DataGridFilter | null) => void;
+  onClose: () => void;
+  onClearAll: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogKeyboard(true, ref, trigger, onClose);
+  const [expanded, setExpanded] = useState<string | null>(() => columns.find((column) => isFilterActive(filters[column.key]))?.key ?? null);
+
+  return createPortal(
+    <div className="meg-datagrid-sheet-layer">
+      <button className="meg-datagrid-sheet-scrim" type="button" aria-label="Fechar filtros" onClick={onClose} />
+      <section
+        ref={ref}
+        className="meg-datagrid-filter-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filtros do DataGrid"
+        data-datagrid-mobile-sheet
+      >
+        <header className="meg-datagrid-dialog-header">
+          <div>
+            <span className="meg-datagrid-dialog-kicker">DataGrid</span>
+            <strong>Filtros</strong>
+          </div>
+          <button type="button" aria-label="Fechar filtros" onClick={onClose}>
+            <GridIcon name="x" />
+          </button>
+        </header>
+
+        <div className="meg-datagrid-filter-accordions">
+          {columns.filter((column) => column.filterable !== false).map((column) => {
+            const active = isFilterActive(filters[column.key]);
+            const isOpen = expanded === column.key;
+            return (
+              <section className={`meg-datagrid-filter-accordion ${active ? 'is-active' : ''}`} key={column.key}>
+                <button
+                  type="button"
+                  className="meg-datagrid-filter-accordion__trigger"
+                  aria-expanded={isOpen}
+                  onClick={() => setExpanded(isOpen ? null : column.key)}
+                >
+                  <span>{column.label}</span>
+                  {active && <span className="meg-datagrid-active-dot">Ativo</span>}
+                  <GridIcon name={isOpen ? 'chevronUp' : 'chevronDown'} />
+                </button>
+                {isOpen && (
+                  <FilterPanel
+                    column={column}
+                    filter={filters[column.key]}
+                    distinctOptions={getOptions(column)}
+                    onApply={(next) => onChange(column.key, next)}
+                    onClear={() => onChange(column.key, null)}
+                  />
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        <footer className="meg-datagrid-sheet-footer">
+          <button type="button" className="meg-datagrid-secondary-action" onClick={onClearAll}>Limpar tudo</button>
+          <button type="button" className="meg-datagrid-primary-action" onClick={() => {
+            onClose();
+            window.setTimeout(() => trigger?.focus(), 0);
+          }}>Concluir</button>
+        </footer>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
+function formatCell<T extends Record<string, unknown>>(column: DataGridColumn<T>, row: T): ReactNode {
+  const value = row[column.key];
+  if (column.render) return column.render(value as T[keyof T], row);
+  if (value == null || value === '') return <span className="meg-datagrid-muted">—</span>;
+
+  switch (column.type) {
+    case 'currency': {
+      const number = typeof value === 'number' ? value : Number(value);
+      return Number.isFinite(number)
+        ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(number)
+        : String(value);
+    }
+    case 'number': {
+      const number = typeof value === 'number' ? value : Number(value);
+      return Number.isFinite(number) ? new Intl.NumberFormat('pt-BR').format(number) : String(value);
+    }
+    case 'date': {
+      const key = toDateKey(value);
+      if (!key) return String(value);
+      const [year, month, day] = key.split('-').map(Number);
+      return new Intl.DateTimeFormat('pt-BR').format(new Date(year, month - 1, day));
+    }
+    case 'boolean':
+      return <span className={`meg-datagrid-boolean-pill ${Boolean(value) ? 'is-yes' : 'is-no'}`}>{Boolean(value) ? 'Sim' : 'Não'}</span>;
+    case 'enum': {
+      const record = typeof value === 'object' ? value as Record<string, unknown> : null;
+      const key = String(record?.value ?? record?.id ?? value);
+      const visual = column.enumValues?.[key];
+      const label = visual?.label ?? String(record?.label ?? record?.name ?? value);
+      return (
+        <span className="meg-datagrid-enum-pill">
+          <span className="meg-datagrid-enum-dot" style={visual?.color ? { backgroundColor: visual.color } : undefined} aria-hidden="true" />
+          {visual?.icon}
+          {label}
+        </span>
+      );
+    }
+    default:
+      return String(value);
+  }
+}
+
+function aggregateForColumn<T extends Record<string, unknown>>(
+  column: DataGridColumn<T>,
+  config: DataGridProps<T>['footerAggregates'],
+): DataGridAggregate | undefined {
+  if (!config) return undefined;
+  if (config === true) return column.aggregate;
+  return config[column.key] ?? column.aggregate;
+}
+
+function formatAggregate<T extends Record<string, unknown>>(column: DataGridColumn<T>, value: number, mode: DataGridAggregate) {
+  if (mode === 'count') return new Intl.NumberFormat('pt-BR').format(value);
+  if (column.type === 'currency') return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: mode === 'avg' ? 2 : 6 }).format(value);
+}
+
+function ColumnManager<T extends Record<string, unknown>>({
+  columns,
+  order,
+  hidden,
+  onToggle,
+  onMove,
+  onClose,
+}: {
+  columns: DataGridColumn<T>[];
+  order: string[];
+  hidden: Set<string>;
+  onToggle: (key: string) => void;
+  onMove: (key: string, direction: -1 | 1) => void;
+  onClose: () => void;
+}) {
+  const ordered = order.map((key) => columns.find((column) => column.key === key)).filter(Boolean) as DataGridColumn<T>[];
+  const visibleCount = ordered.filter((column) => !hidden.has(column.key)).length;
+
+  return (
+    <div className="meg-datagrid-column-menu" role="dialog" aria-label="Colunas">
+      <header className="meg-datagrid-dialog-header">
+        <strong>Colunas</strong>
+        <button type="button" aria-label="Fechar colunas" onClick={onClose}><GridIcon name="x" /></button>
+      </header>
+      <div className="meg-datagrid-column-menu__list">
+        {ordered.map((column, index) => (
+          <div className="meg-datagrid-column-menu__item" key={column.key}>
+            <GridIcon name="grip" />
+            <label>
+              <input
+                type="checkbox"
+                checked={!hidden.has(column.key)}
+                disabled={!hidden.has(column.key) && visibleCount === 1}
+                onChange={() => onToggle(column.key)}
+              />
+              <span>{column.label}</span>
+            </label>
+            <span className="meg-datagrid-column-menu__moves">
+              <button type="button" aria-label={`Mover ${column.label} para cima`} disabled={index === 0} onClick={() => onMove(column.key, -1)}>
+                <GridIcon name="chevronUp" size={16} />
+              </button>
+              <button type="button" aria-label={`Mover ${column.label} para baixo`} disabled={index === ordered.length - 1} onClick={() => onMove(column.key, 1)}>
+                <GridIcon name="chevronDown" size={16} />
+              </button>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function DataGrid<T extends Record<string, unknown>>({
+  data,
+  columns,
+  pageSize = 12,
+  groupBy,
+  selectable = false,
+  footerAggregates = false,
+  onFilterChange,
+  persistenceKey,
+  rowKey,
+  loading = false,
+  ariaLabel = 'Grade de dados',
+}: DataGridProps<T>) {
+  const columnKeys = useMemo(() => columns.map((column) => column.key), [columns]);
+  const persisted = useMemo<DataGridPersistenceState>(() => {
+    if (!persistenceKey || typeof window === 'undefined') {
+      return sanitizePersistenceState(null, columnKeys, pageSize);
+    }
+    try {
+      return sanitizePersistenceState(
+        JSON.parse(window.localStorage.getItem(persistenceStorageKey(persistenceKey)) ?? 'null'),
+        columnKeys,
+        pageSize,
+      );
+    } catch {
+      return sanitizePersistenceState(null, columnKeys, pageSize);
+    }
+  // Initial state is intentionally read once per grid instance/persistence key.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [filters, setFilters] = useState<DataGridFilterState>(persisted.filters);
+  const [sort, setSort] = useState<DataGridSort[]>(persisted.sort);
+  const [columnOrder, setColumnOrder] = useState<string[]>(persisted.columnOrder);
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(() => new Set(persisted.hiddenColumns));
+  const [widths, setWidths] = useState<Record<string, number>>(persisted.widths);
+  const [currentPageSize, setCurrentPageSize] = useState(persisted.pageSize);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+  const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
+  const [columnMenuOpen, setColumnMenuOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(480);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const filterButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const isDesktop = useDesktopGrid();
+
+  const getRowKey = useCallback((row: T) => {
+    if (typeof rowKey === 'function') return String(rowKey(row));
+    const key = rowKey ?? ('id' as keyof T & string);
+    const value = row[key];
+    if (value == null || value === '') {
+      throw new Error(`DataGrid exige chave estável por linha. Informe rowKey ou um campo id. Coluna ausente: ${String(key)}`);
+    }
+    return String(value);
+  }, [rowKey]);
+
+  const orderedColumns = useMemo(() => {
+    const map = new Map(columns.map((column) => [column.key, column]));
+    return columnOrder.map((key) => map.get(key)).filter(Boolean) as DataGridColumn<T>[];
+  }, [columnOrder, columns]);
+
+  const visibleColumns = useMemo(
+    () => orderedColumns.filter((column) => !hiddenColumns.has(column.key)),
+    [hiddenColumns, orderedColumns],
+  );
+
+  useEffect(() => {
+    const sanitized = sanitizePersistenceState(
+      { filters, sort, columnOrder, hiddenColumns: [...hiddenColumns], widths, pageSize: currentPageSize },
+      columnKeys,
+      pageSize,
+    );
+    setColumnOrder((current) => current.length === sanitized.columnOrder.length && current.every((key, index) => key === sanitized.columnOrder[index])
+      ? current
+      : sanitized.columnOrder);
+  }, [columnKeys, columnOrder, currentPageSize, filters, hiddenColumns, pageSize, sort, widths]);
+
+  useEffect(() => {
+    if (!persistenceKey) return;
+    const state: DataGridPersistenceState = {
+      filters,
+      sort,
+      columnOrder,
+      hiddenColumns: [...hiddenColumns],
+      widths,
+      pageSize: currentPageSize,
+    };
+    window.localStorage.setItem(persistenceStorageKey(persistenceKey), JSON.stringify(state));
+  }, [columnOrder, currentPageSize, filters, hiddenColumns, persistenceKey, sort, widths]);
+
+  const filteredRows = useMemo(
+    () => applyFilters(data, columns, filters),
+    [columns, data, filters],
+  );
+
+  const sortedRows = useMemo(
+    () => sortRows(filteredRows, columns, sort),
+    [columns, filteredRows, sort],
+  );
+
+  useEffect(() => {
+    const available = data.map(getRowKey);
+    setSelected((current) => {
+      const next = pruneSelection(current, available);
+      return next.size === current.size && [...next].every((key) => current.has(key)) ? current : next;
+    });
+  }, [data, getRowKey]);
+
+  const activeFilterKeys = useMemo(
+    () => Object.keys(filters).filter((key) => isFilterActive(filters[key])),
+    [filters],
+  );
+
+  useEffect(() => {
+    onFilterChange?.({
+      filters,
+      activeKeys: activeFilterKeys,
+      filteredCount: filteredRows.length,
+    });
+  }, [activeFilterKeys, filteredRows.length, filters, onFilterChange]);
+
+  const page = useMemo(
+    () => paginateRows(sortedRows, pageIndex, currentPageSize),
+    [currentPageSize, pageIndex, sortedRows],
+  );
+
+  useEffect(() => {
+    if (pageIndex >= page.pages) setPageIndex(Math.max(0, page.pages - 1));
+  }, [page.pages, pageIndex]);
+
+  const displayEntries = useMemo<DataGridDisplayEntry<T>[]>(() => {
+    if (!groupBy) return page.rows.map((row) => ({ kind: 'row', row }));
+    return flattenGroups(groupRows(page.rows, groupBy), collapsedGroups);
+  }, [collapsedGroups, groupBy, page.rows]);
+
+  useEffect(() => {
+    const element = viewportRef.current;
+    if (!element) return;
+    const measure = () => setViewportHeight(element.clientHeight || 480);
+    measure();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    observer?.observe(element);
+    return () => observer?.disconnect();
+  }, []);
+
+  const virtual = useMemo(
+    () => getVirtualWindow(displayEntries.length, scrollTop, viewportHeight, isDesktop ? 48 : 112, 8),
+    [displayEntries.length, isDesktop, scrollTop, viewportHeight],
+  );
+  const renderedEntries = displayEntries.slice(virtual.start, virtual.end);
+  const virtualized = displayEntries.length > 500;
+
+  const resetViewport = () => {
+    setScrollTop(0);
+    if (viewportRef.current) viewportRef.current.scrollTop = 0;
+  };
+
+  const updateFilter = (key: string, filter: DataGridFilter | null) => {
+    setFilters((current) => {
+      const next = { ...current };
+      if (filter && isFilterActive(filter)) next[key] = filter;
+      else delete next[key];
+      return next;
+    });
+    setPageIndex(0);
+    resetViewport();
+  };
+
+  const clearAllFilters = () => {
+    setFilters({});
+    setPageIndex(0);
+    resetViewport();
+  };
+
+  const getCascadeOptions = useCallback((column: DataGridColumn<T>) => {
+    const cascaded = applyFilters(data, columns, filters, column.key);
+    return getDistinctOptions(cascaded, column);
+  }, [columns, data, filters]);
+
+  const toggleSort = (key: string, multi = false) => {
+    setSort((current) => cycleSort(current, key, multi));
+    setPageIndex(0);
+    resetViewport();
+  };
+
+  const moveColumn = (key: string, direction: -1 | 1) => {
+    setColumnOrder((current) => {
+      const index = current.indexOf(key);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.length) return current;
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const resizeColumn = (column: DataGridColumn<T>, delta: number) => {
+    const current = widths[column.key] ?? column.width ?? 160;
+    setWidths((state) => ({
+      ...state,
+      [column.key]: resizeWidth(current, delta, column.minWidth ?? 96),
+    }));
+  };
+
+  const beginResize = (event: ReactPointerEvent<HTMLButtonElement>, column: DataGridColumn<T>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = widths[column.key] ?? column.width ?? 160;
+    const minWidth = column.minWidth ?? 96;
+    const pointerId = event.pointerId;
+    event.currentTarget.setPointerCapture?.(pointerId);
+
+    const onMove = (moveEvent: PointerEvent) => {
+      setWidths((current) => ({
+        ...current,
+        [column.key]: resizeWidth(startWidth, moveEvent.clientX - startX, minWidth),
+      }));
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  };
+
+  const filteredKeys = useMemo(() => filteredRows.map(getRowKey), [filteredRows, getRowKey]);
+  const allFilteredSelected = selectable && filteredKeys.length > 0 && filteredKeys.every((key) => selected.has(key));
+  const someFilteredSelected = selectable && filteredKeys.some((key) => selected.has(key)) && !allFilteredSelected;
+
+  const toggleAllFiltered = (checked: boolean) => {
+    setSelected((current) => updateFilteredSelection(current, filteredKeys, checked));
+  };
+
+  const toggleRow = (key: string, checked: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      checked ? next.add(key) : next.delete(key);
+      return next;
+    });
+  };
+
+  const tableMinWidth = visibleColumns.reduce(
+    (total, column) => total + (widths[column.key] ?? column.width ?? 160),
+    selectable ? 52 : 0,
+  );
+
+  const aggregateCells = (rows: T[]) => visibleColumns.map((column) => {
+    const aggregate = aggregateForColumn(column, footerAggregates);
+    if (!aggregate) return null;
+    return {
+      key: column.key,
+      label: column.label,
+      mode: aggregate,
+      value: aggregateRows(rows, column, aggregate),
+      formatted: formatAggregate(column, aggregateRows(rows, column, aggregate), aggregate),
+    };
+  }).filter(Boolean) as Array<{ key: string; label: string; mode: DataGridAggregate; value: number; formatted: string }>;
+
+  const groupSummary = (rows: T[]) => aggregateCells(rows)
+    .map((item) => `${item.label}: ${item.formatted}`)
+    .join(' · ');
+
+  const exportCsv = () => {
+    const csv = toCsv(sortedRows, visibleColumns);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'meg-datagrid.csv';
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const pageSizes = [...new Set([pageSize, 12, 25, 50, 100, 250, 600])]
+    .filter((size) => size > 0)
+    .sort((a, b) => a - b);
+
+  const mobileSortValue = sort.length === 1 ? `${sort[0].key}:${sort[0].direction}` : '';
+
+  const renderGroupHeader = (entry: Extract<DataGridDisplayEntry<T>, { kind: 'group' }>, asCard = false) => {
+    const expanded = !collapsedGroups.has(entry.group.id);
+    const toggle = () => setCollapsedGroups((current) => {
+      const next = new Set(current);
+      expanded ? next.add(entry.group.id) : next.delete(entry.group.id);
+      return next;
+    });
+    const button = (
+      <button
+        type="button"
+        className="meg-datagrid-group-button"
+        aria-expanded={expanded}
+        onClick={toggle}
+      >
+        <GridIcon name={expanded ? 'chevronDown' : 'chevronRight'} />
+        <strong>{entry.group.label}</strong>
+        <span>{entry.group.rows.length} {entry.group.rows.length === 1 ? 'item' : 'itens'}</span>
+        {groupSummary(entry.group.rows) && <span className="meg-datagrid-group-subtotal">{groupSummary(entry.group.rows)}</span>}
+      </button>
+    );
+    return asCard ? <div className="meg-datagrid-card-group" data-grid-group>{button}</div> : (
+      <tr className="meg-datagrid-group-row" data-grid-group>
+        <td colSpan={visibleColumns.length + (selectable ? 1 : 0)}>{button}</td>
+      </tr>
+    );
+  };
+
+  if (loading) {
+    return (
+      <section className="meg-datagrid" aria-label={ariaLabel} aria-busy="true">
+        <div className="meg-datagrid-skeleton" role="status" aria-label="Carregando dados">
+          <div className="meg-datagrid-skeleton__toolbar" />
+          {Array.from({ length: 8 }, (_, index) => <div className="meg-datagrid-skeleton__row" key={index} />)}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      className="meg-datagrid"
+      aria-label={ariaLabel}
+      data-datagrid
+      data-virtualized={virtualized ? 'true' : 'false'}
+    >
+      <div className="meg-datagrid-toolbar">
+        <div className="meg-datagrid-toolbar__primary">
+          <button
+            ref={mobileFilterButtonRef}
+            type="button"
+            className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterKeys.length ? 'is-active' : ''}`}
+            aria-expanded={mobileFiltersOpen}
+            onClick={() => setMobileFiltersOpen(true)}
+          >
+            <GridIcon name="filter" />
+            Filtros
+            {activeFilterKeys.length > 0 && <span className="meg-datagrid-tool-count">{activeFilterKeys.length}</span>}
+          </button>
+
+          <label className="meg-datagrid-mobile-sort">
+            <span>Ordenar por</span>
+            <select
+              aria-label="Ordenar por"
+              value={mobileSortValue}
+              onChange={(event) => {
+                if (!event.target.value) setSort([]);
+                else {
+                  const [key, direction] = event.target.value.split(':');
+                  setSort([{ key, direction: direction as 'asc' | 'desc' }]);
+                }
+                setPageIndex(0);
+                resetViewport();
+              }}
+            >
+              <option value="">Sem ordenação</option>
+              {orderedColumns.filter((column) => column.sortable !== false).flatMap((column) => [
+                <option key={`${column.key}:asc`} value={`${column.key}:asc`}>{column.label} · crescente</option>,
+                <option key={`${column.key}:desc`} value={`${column.key}:desc`}>{column.label} · decrescente</option>,
+              ])}
+            </select>
+          </label>
+        </div>
+
+        <div className="meg-datagrid-toolbar__actions">
+          <div className="meg-datagrid-column-menu-wrap">
+            <button
+              type="button"
+              className="meg-datagrid-tool"
+              aria-expanded={columnMenuOpen}
+              onClick={() => setColumnMenuOpen((open) => !open)}
+            >
+              <GridIcon name="columns" />
+              Colunas
+            </button>
+            {columnMenuOpen && (
+              <ColumnManager
+                columns={columns}
+                order={columnOrder}
+                hidden={hiddenColumns}
+                onToggle={(key) => setHiddenColumns((current) => {
+                  const next = new Set(current);
+                  next.has(key) ? next.delete(key) : next.add(key);
+                  return next;
+                })}
+                onMove={moveColumn}
+                onClose={() => setColumnMenuOpen(false)}
+              />
+            )}
+          </div>
+          <button type="button" className="meg-datagrid-tool" onClick={exportCsv}>
+            <GridIcon name="download" />
+            CSV
+          </button>
+        </div>
+      </div>
+
+      {activeFilterKeys.length > 0 && (
+        <div className="meg-datagrid-active-filters" aria-label="Filtros ativos">
+          <span className="meg-datagrid-active-filters__label">Filtros ativos</span>
+          {activeFilterKeys.map((key) => {
+            const column = columns.find((item) => item.key === key);
+            if (!column) return null;
+            return (
+              <button
+                type="button"
+                className="meg-datagrid-filter-chip"
+                key={key}
+                onClick={() => updateFilter(key, null)}
+                aria-label={`Remover filtro ${column.label}`}
+              >
+                <span><strong>{column.label}</strong> · {filterSummary(filters[key])}</span>
+                <GridIcon name="x" size={14} />
+              </button>
+            );
+          })}
+          <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>
+        </div>
+      )}
+
+      {!data.length ? (
+        <div className="meg-datagrid-empty" role="status">
+          <strong>Nenhum dado disponível</strong>
+          <span>Esta grade ainda não recebeu registros.</span>
+        </div>
+      ) : !filteredRows.length ? (
+        <div className="meg-datagrid-empty" role="status">
+          <strong>Nenhum resultado com os filtros atuais</strong>
+          <button type="button" className="meg-datagrid-primary-action" onClick={clearAllFilters}>Limpar filtros</button>
+        </div>
+      ) : (
+        <>
+          <div
+            ref={viewportRef}
+            className="meg-datagrid__viewport"
+            onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+            tabIndex={0}
+            aria-label="Área rolável da grade"
+          >
+            <table
+              className="meg-datagrid-table"
+              aria-label={ariaLabel}
+              style={{ minWidth: `${tableMinWidth}px` }}
+            >
+              <colgroup>
+                {selectable && <col style={{ width: 52 }} />}
+                {visibleColumns.map((column) => (
+                  <col key={column.key} style={{ width: widths[column.key] ?? column.width ?? 160 }} />
+                ))}
+              </colgroup>
+              <thead>
+                <tr>
+                  {selectable && (
+                    <th className="meg-datagrid-select-column">
+                      <input
+                        type="checkbox"
+                        aria-label="Selecionar todos os itens filtrados"
+                        checked={allFilteredSelected}
+                        ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
+                        onChange={(event) => toggleAllFiltered(event.target.checked)}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.map((column) => {
+                    const sortIndex = sort.findIndex((item) => item.key === column.key);
+                    const sortState = sortIndex >= 0 ? sort[sortIndex] : null;
+                    const activeFilter = isFilterActive(filters[column.key]);
+                    return (
+                      <th
+                        key={column.key}
+                        aria-sort={sortState ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                        draggable
+                        onDragStart={() => setDraggedColumn(column.key)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={() => {
+                          if (draggedColumn) setColumnOrder((current) => reorderKeys(current, draggedColumn, column.key));
+                          setDraggedColumn(null);
+                        }}
+                      >
+                        <div className="meg-datagrid-th">
+                          {column.sortable === false ? (
+                            <span className="meg-datagrid-th__label">{column.label}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="meg-datagrid-sort-button"
+                              onClick={(event) => toggleSort(column.key, event.shiftKey)}
+                              aria-label={`Ordenar por ${column.label}`}
+                            >
+                              <span>{column.label}</span>
+                              {sortState ? (
+                                <span className="meg-datagrid-sort-indicator" aria-hidden="true">
+                                  <GridIcon name={sortState.direction === 'asc' ? 'chevronUp' : 'chevronDown'} size={14} />
+                                  {sort.length > 1 && <small>{sortIndex + 1}</small>}
+                                </span>
+                              ) : <GridIcon name="sort" size={14} />}
+                            </button>
+                          )}
+
+                          {column.filterable !== false && (
+                            <button
+                              ref={(element) => {
+                                if (element) filterButtonRefs.current.set(column.key, element);
+                                else filterButtonRefs.current.delete(column.key);
+                              }}
+                              type="button"
+                              className={`meg-datagrid-filter-button ${activeFilter ? 'is-active' : ''}`}
+                              aria-label={`Filtrar ${column.label}`}
+                              aria-expanded={openFilterKey === column.key}
+                              onClick={() => setOpenFilterKey((current) => current === column.key ? null : column.key)}
+                            >
+                              <GridIcon name="funnel" size={16} />
+                              {activeFilter && <span className="sr-only">Filtro ativo</span>}
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className="meg-datagrid-resizer"
+                            role="separator"
+                            aria-orientation="vertical"
+                            aria-label={`Redimensionar coluna ${column.label}`}
+                            onPointerDown={(event) => beginResize(event, column)}
+                            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+                              if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                              event.preventDefault();
+                              resizeColumn(column, event.key === 'ArrowRight' ? 8 : -8);
+                            }}
+                          />
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {virtual.before > 0 && (
+                  <tr aria-hidden="true" className="meg-datagrid-spacer">
+                    <td colSpan={visibleColumns.length + (selectable ? 1 : 0)} style={{ height: virtual.before }} />
+                  </tr>
+                )}
+                {renderedEntries.map((entry, index) => {
+                  if (entry.kind === 'group') return <Fragment key={entry.group.id}>{renderGroupHeader(entry)}</Fragment>;
+                  const key = getRowKey(entry.row);
+                  const selectedRow = selected.has(key);
+                  return (
+                    <tr
+                      key={key}
+                      className={selectedRow ? 'is-selected' : ''}
+                      data-grid-row
+                      data-row-key={key}
+                    >
+                      {selectable && (
+                        <td className="meg-datagrid-select-column">
+                          <input
+                            type="checkbox"
+                            aria-label={`Selecionar linha ${key}`}
+                            checked={selectedRow}
+                            onChange={(event) => toggleRow(key, event.target.checked)}
+                          />
+                        </td>
+                      )}
+                      {visibleColumns.map((column) => (
+                        <td key={column.key} data-column={column.key}>{formatCell(column, entry.row)}</td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                {virtual.after > 0 && (
+                  <tr aria-hidden="true" className="meg-datagrid-spacer">
+                    <td colSpan={visibleColumns.length + (selectable ? 1 : 0)} style={{ height: virtual.after }} />
+                  </tr>
+                )}
+              </tbody>
+              {footerAggregates && (
+                <tfoot>
+                  <tr>
+                    {selectable && <td />}
+                    {visibleColumns.map((column) => {
+                      const mode = aggregateForColumn(column, footerAggregates);
+                      return (
+                        <td key={column.key}>
+                          {mode ? (
+                            <span className="meg-datagrid-aggregate">
+                              <small>{mode === 'sum' ? 'Soma' : mode === 'avg' ? 'Média' : 'Contagem'}</small>
+                              <strong>{formatAggregate(column, aggregateRows(filteredRows, column, mode), mode)}</strong>
+                            </span>
+                          ) : null}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+
+            <div className="meg-datagrid-cards" aria-label={ariaLabel}>
+              {virtual.before > 0 && <div aria-hidden="true" style={{ height: virtual.before }} />}
+              {renderedEntries.map((entry) => {
+                if (entry.kind === 'group') return <Fragment key={entry.group.id}>{renderGroupHeader(entry, true)}</Fragment>;
+                const key = getRowKey(entry.row);
+                const selectedRow = selected.has(key);
+                return (
+                  <article
+                    className={`meg-datagrid-card-row ${selectedRow ? 'is-selected' : ''}`}
+                    key={key}
+                    data-grid-row
+                    data-row-key={key}
+                  >
+                    {selectable && (
+                      <label className="meg-datagrid-card-select">
+                        <input type="checkbox" checked={selectedRow} onChange={(event) => toggleRow(key, event.target.checked)} />
+                        <span>Selecionar</span>
+                      </label>
+                    )}
+                    <dl>
+                      {visibleColumns.map((column) => (
+                        <div key={column.key}>
+                          <dt>{column.label}</dt>
+                          <dd>{formatCell(column, entry.row)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </article>
+                );
+              })}
+              {virtual.after > 0 && <div aria-hidden="true" style={{ height: virtual.after }} />}
+            </div>
+          </div>
+
+          <footer className="meg-datagrid-footer">
+            <label className="meg-datagrid-page-size">
+              <span>Mostrar</span>
+              <select
+                value={currentPageSize}
+                onChange={(event) => {
+                  setCurrentPageSize(Number(event.target.value));
+                  setPageIndex(0);
+                  resetViewport();
+                }}
+              >
+                {pageSizes.map((size) => <option key={size} value={size}>{size}</option>)}
+              </select>
+              <span>por página</span>
+            </label>
+
+            <span className="meg-datagrid-page-range" aria-live="polite">{page.start}–{page.end} de {sortedRows.length}</span>
+
+            <div className="meg-datagrid-pagination" aria-label="Paginação">
+              <button
+                type="button"
+                aria-label="Página anterior"
+                disabled={pageIndex === 0}
+                onClick={() => { setPageIndex((value) => Math.max(0, value - 1)); resetViewport(); }}
+              >
+                <GridIcon name="chevronLeft" />
+              </button>
+              <span>{Math.min(pageIndex + 1, page.pages)} / {page.pages}</span>
+              <button
+                type="button"
+                aria-label="Próxima página"
+                disabled={pageIndex >= page.pages - 1}
+                onClick={() => { setPageIndex((value) => Math.min(page.pages - 1, value + 1)); resetViewport(); }}
+              >
+                <GridIcon name="chevronRight" />
+              </button>
+            </div>
+          </footer>
+        </>
+      )}
+
+      {openFilterKey && (() => {
+        const column = columns.find((item) => item.key === openFilterKey);
+        if (!column) return null;
+        return (
+          <FilterDialog
+            column={column}
+            filter={filters[column.key]}
+            distinctOptions={getCascadeOptions(column)}
+            trigger={filterButtonRefs.current.get(column.key) ?? null}
+            onApply={(next) => updateFilter(column.key, next)}
+            onClear={() => updateFilter(column.key, null)}
+            onClose={() => setOpenFilterKey(null)}
+          />
+        );
+      })()}
+
+      {mobileFiltersOpen && (
+        <MobileFilterSheet
+          columns={orderedColumns}
+          filters={filters}
+          getOptions={getCascadeOptions}
+          trigger={mobileFilterButtonRef.current}
+          onChange={updateFilter}
+          onClose={() => setMobileFiltersOpen(false)}
+          onClearAll={clearAllFilters}
+        />
+      )}
+    </section>
+  );
+}
