@@ -99,11 +99,7 @@ async function measure(state) {
     const items = [...document.querySelectorAll('.meg-nav-item')];
     const labels = [...document.querySelectorAll('.meg-nav-item span')];
     const logo = document.querySelector('.meg-brand-logo--${state}');
-    const control = document.querySelector(
-      state === 'expanded'
-        ? '.meg-sidebar-switcher-button[aria-label="Recolher menu"]'
-        : '.meg-sidebar-switcher-button[aria-label="Expandir menu"]'
-    );
+    const control = document.querySelector('.meg-sidebar-toggle-topbar');
     const firstIcon = firstItem.querySelector('svg');
     const nav = document.querySelector('.meg-nav');
     const sidebar = document.querySelector('.meg-sidebar');
@@ -214,7 +210,7 @@ try {
     assert.equal(expanded.controlHasTitle, false, `${viewport.width}x${viewport.height} expandida: atributo title não deve existir`);
     assert.equal(expanded.controlClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.controlClippingAncestor}`);
 
-    await evaluate(`document.querySelector('.meg-sidebar-switcher-button[aria-label="Recolher menu"]')?.click()`);
+    await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
     await sleep(250);
 
     const collapsed = await measure('collapsed');
@@ -251,7 +247,7 @@ try {
         assert.equal(icon.fullyInsideNav, true, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} cortado pelo nav`);
         assert.equal(icon.visibleAtCenter, true, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} coberto no centro`);
       });
-      assert.equal(collapsed.controlBorderWidth, '0px', `${viewport.width}x${viewport.height} recolhida: botão ativo da topbar não deve ter borda própria`);
+      assert.equal(collapsed.controlBorderWidth, '1px', `${viewport.width}x${viewport.height} recolhida: controle da topbar deve manter borda de 1px`);
       assert.equal(collapsed.controlOpacity, '1', `${viewport.width}x${viewport.height} recolhida: controle não pode desaparecer por opacity`);
       assert.equal(collapsed.controlVisibility, 'visible', `${viewport.width}x${viewport.height} recolhida: controle não pode desaparecer por visibility`);
       assert.equal(collapsed.collapsedArtDisplay, 'none', `${viewport.width}x${viewport.height} recolhida: marca d'água deve ficar oculta`);
