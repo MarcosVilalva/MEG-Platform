@@ -567,7 +567,6 @@ async function assertSidebarState(viewport, collapsed) {
 }
 
 async function assertReducedTopbarLaunchers(viewport) {
-  if (viewport.width < 640) return;
   const launchers = await evaluate(`(() => {
     const wrap = document.querySelector('.meg-topbar-launchers');
     const toggle = document.querySelector('.meg-sidebar-toggle-topbar');
@@ -578,12 +577,32 @@ async function assertReducedTopbarLaunchers(viewport) {
       const rect = element.getBoundingClientRect();
       return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
     };
-    return { wrap: visible(wrap), toggle: visible(toggle), add: visible(add) };
+    return {
+      wrap: visible(wrap),
+      toggle: visible(toggle),
+      add: visible(add),
+      shellCollapsed: document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed') || false,
+      toggleTabIndex: toggle.tabIndex,
+      toggleAriaHidden: toggle.getAttribute('aria-hidden'),
+    };
   })()`);
+
   assert.ok(launchers, `${viewport.width}x${viewport.height}: controles rápidos ausentes`);
-  assert.equal(launchers.wrap, true, `${viewport.width}x${viewport.height}: grupo de ações rápidas sumiu`);
-  assert.equal(launchers.toggle, true, `${viewport.width}x${viewport.height}: recolher/expandir sumiu`);
   assert.equal(launchers.add, true, `${viewport.width}x${viewport.height}: Novo sumiu`);
+
+  if (viewport.width >= 1024) {
+    assert.equal(launchers.wrap, true, `${viewport.width}x${viewport.height}: grupo de ações rápidas sumiu`);
+    assert.equal(launchers.toggle, true, `${viewport.width}x${viewport.height}: recolher/expandir deveria estar visível no desktop`);
+    assert.equal(launchers.toggleTabIndex, 0, `${viewport.width}x${viewport.height}: toggle desktop deveria aceitar foco`);
+  } else if (viewport.width >= 640) {
+    assert.equal(launchers.wrap, true, `${viewport.width}x${viewport.height}: grupo de ações rápidas sumiu`);
+    assert.equal(launchers.toggle, false, `${viewport.width}x${viewport.height}: toggle não pode aparecer na sidebar compacta`);
+    assert.equal(launchers.shellCollapsed, true, `${viewport.width}x${viewport.height}: sidebar compacta deve permanecer recolhida`);
+    assert.equal(launchers.toggleTabIndex, -1, `${viewport.width}x${viewport.height}: toggle oculto não pode entrar no foco`);
+    assert.equal(launchers.toggleAriaHidden, 'true', `${viewport.width}x${viewport.height}: toggle oculto precisa aria-hidden=true`);
+  } else {
+    assert.equal(launchers.toggle, false, `${viewport.width}x${viewport.height}: toggle desktop não pode aparecer no mobile`);
+  }
 }
 
 try {
@@ -815,12 +834,59 @@ try {
       mobile: viewport.width < 640,
     });
 
+    await navigate(`${appUrl}?sidebar-lock-contract=${viewport.width}x${viewport.height}`);
+    await sleep(250);
     await assertReducedTopbarLaunchers(viewport);
-    await assertSidebarState(viewport, false);
-    await assertSidebarState(viewport, true);
+
+    if (viewport.width >= 1024) {
+      await assertSidebarState(viewport, false);
+      await assertSidebarState(viewport, true);
+    } else if (viewport.width >= 640) {
+      await assertSidebarState(viewport, true);
+      const compactLock = await evaluate(`(() => {
+        const shell = document.querySelector('.meg-shell');
+        const toggle = document.querySelector('.meg-sidebar-toggle-topbar');
+        toggle?.click();
+        return {
+          collapsed: shell?.classList.contains('is-sidebar-collapsed') || false,
+          toggleDisplay: toggle ? getComputedStyle(toggle).display : 'missing',
+        };
+      })()`);
+      assert.equal(compactLock.collapsed, true, `${viewport.width}x${viewport.height}: sidebar compacta foi expandida indevidamente`);
+      assert.equal(compactLock.toggleDisplay, 'none', `${viewport.width}x${viewport.height}: controle de expandir deveria estar oculto`);
+    } else {
+      await assertSidebarState(viewport, true);
+    }
 
     console.log(`OK sidebar responsive ${viewport.width}x${viewport.height}`);
   }
+
+  await command('Emulation.setDeviceMetricsOverride', {
+    width: 900,
+    height: 700,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await navigate(`${appUrl}?sidebar-restore-contract=compact`);
+  await sleep(220);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    true,
+    '900x700: sidebar deve iniciar recolhida',
+  );
+
+  await command('Emulation.setDeviceMetricsOverride', {
+    width: 1366,
+    height: 768,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await sleep(260);
+  assert.equal(
+    await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`),
+    false,
+    '1366x768 após ampliar: sidebar deve voltar expandida automaticamente',
+  );
 
   console.log('MEG Web Evolution responsive sidebar contract: OK');
 
