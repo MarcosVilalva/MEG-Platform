@@ -697,6 +697,14 @@ try {
     await navigate(`${appUrl}?viewport-contract=${viewport.width}x${viewport.height}`);
     await sleep(250);
 
+    const startsCollapsed = await evaluate(
+      `document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed') || false`,
+    );
+    if (startsCollapsed) {
+      await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
+      await sleep(220);
+    }
+
     const expanded = await measure('expanded');
     assert.ok(
       expanded.scrollHeight <= expanded.innerHeight,
