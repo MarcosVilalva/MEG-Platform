@@ -291,6 +291,93 @@ async function measure(state) {
   })()`);
 }
 
+const responsiveViewports = [
+  { width: 1023, height: 768 },
+  { width: 768, height: 600 },
+  { width: 640, height: 600 },
+  { width: 390, height: 844 },
+];
+
+async function measureResponsiveTopbar() {
+  return evaluate(`(() => {
+    const selectors = {
+      menu: '.meg-menu-button',
+      search: '.meg-search',
+      period: '.meg-period',
+      notification: '.meg-notification',
+      profile: '.meg-profile',
+    };
+
+    const elements = Object.fromEntries(
+      Object.entries(selectors).map(([key, selector]) => [key, document.querySelector(selector)])
+    );
+
+    const rects = Object.fromEntries(
+      Object.entries(elements).map(([key, element]) => {
+        if (!element) return [key, null];
+        const style = getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden') return [key, null];
+        const rect = element.getBoundingClientRect();
+        return [key, {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        }];
+      })
+    );
+
+    const visibleRects = Object.entries(rects).filter(([, rect]) => rect && rect.width > 0 && rect.height > 0);
+    const overlaps = [];
+    for (let i = 0; i < visibleRects.length; i += 1) {
+      for (let j = i + 1; j < visibleRects.length; j += 1) {
+        const [aName, a] = visibleRects[i];
+        const [bName, b] = visibleRects[j];
+        const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (overlapX > 1 && overlapY > 1) overlaps.push(`${aName}x${bName}`);
+      }
+    }
+
+    const period = elements.period;
+    const periodLabel = period?.querySelector('span');
+    const root = document.documentElement;
+    const topbar = document.querySelector('.meg-topbar');
+    const topbarRect = topbar?.getBoundingClientRect();
+
+    return {
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      scrollWidth: root.scrollWidth,
+      scrollHeight: root.scrollHeight,
+      overlaps,
+      allInsideViewport: visibleRects.every(([, rect]) =>
+        rect.left >= 0 &&
+        rect.top >= 0 &&
+        rect.right <= window.innerWidth &&
+        rect.bottom <= window.innerHeight
+      ),
+      allInsideTopbar: topbarRect
+        ? visibleRects.every(([, rect]) =>
+            rect.left >= topbarRect.left - 1 &&
+            rect.top >= topbarRect.top - 1 &&
+            rect.right <= topbarRect.right + 1 &&
+            rect.bottom <= topbarRect.bottom + 1
+          )
+        : false,
+      periodOneLine: periodLabel
+        ? periodLabel.getClientRects().length === 1 &&
+          periodLabel.scrollWidth <= periodLabel.clientWidth
+        : false,
+      searchWidth: rects.search?.width || 0,
+      periodWidth: rects.period?.width || 0,
+      topbarHeight: topbarRect?.height || 0,
+    };
+  })()`);
+}
+
 try {
   await command('Page.enable');
   await command('Runtime.enable');
@@ -428,6 +515,60 @@ try {
       `OK ${viewport.width}x${viewport.height}: expandida ${expanded.scrollHeight}/${expanded.innerHeight}, recolhida ${collapsed.scrollHeight}/${collapsed.innerHeight}`,
     );
   }
+
+  for (const viewport of responsiveViewports) {
+    await command('Emulation.setDeviceMetricsOverride', {
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: 1,
+      mobile: viewport.width < 640,
+    });
+
+    await navigate(`${appUrl}?responsive-contract=${viewport.width}x${viewport.height}`);
+    await sleep(250);
+
+    const responsive = await measureResponsiveTopbar();
+    assert.equal(
+      responsive.scrollWidth <= responsive.innerWidth,
+      true,
+      `${viewport.width}x${viewport.height}: documento criou rolagem horizontal (${responsive.scrollWidth}/${responsive.innerWidth})`,
+    );
+    assert.equal(
+      responsive.scrollHeight <= responsive.innerHeight,
+      true,
+      `${viewport.width}x${viewport.height}: documento criou rolagem vertical externa (${responsive.scrollHeight}/${responsive.innerHeight})`,
+    );
+    assert.deepEqual(
+      responsive.overlaps,
+      [],
+      `${viewport.width}x${viewport.height}: controles da topbar se sobrepõem: ${responsive.overlaps.join(', ')}`,
+    );
+    assert.equal(
+      responsive.allInsideViewport,
+      true,
+      `${viewport.width}x${viewport.height}: controle da topbar saiu da janela`,
+    );
+    assert.equal(
+      responsive.allInsideTopbar,
+      true,
+      `${viewport.width}x${viewport.height}: controle da topbar saiu dos limites do cabeçalho`,
+    );
+    assert.equal(
+      responsive.periodOneLine,
+      true,
+      `${viewport.width}x${viewport.height}: descrição do período quebrou/cortou`,
+    );
+    assert.ok(
+      responsive.searchWidth > 0 && responsive.periodWidth > 0,
+      `${viewport.width}x${viewport.height}: busca ou período sem largura útil`,
+    );
+
+    console.log(
+      `OK responsive ${viewport.width}x${viewport.height}: topbar=${responsive.topbarHeight}px, busca=${responsive.searchWidth}px, período=${responsive.periodWidth}px`,
+    );
+  }
+
+  console.log('MEG Web Evolution responsive topbar contract: OK');
 
   console.log('MEG Web Evolution viewport contract: OK');
 } finally {
