@@ -565,7 +565,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, []);
 
   const virtual = useMemo(
-    () => getVirtualWindow(displayEntries.length, scrollTop, viewportHeight, isDesktop ? 48 : 112, 8),
+    () => getVirtualWindow(displayEntries.length, scrollTop, viewportHeight, isDesktop ? 48 : 248, 8),
     [displayEntries.length, isDesktop, scrollTop, viewportHeight],
   );
   const renderedEntries = displayEntries.slice(virtual.start, virtual.end);
@@ -759,6 +759,19 @@ export function DataGrid<T extends Record<string, unknown>>({
             Filtros
             {activeFilterKeys.length > 0 && <span className="meg-datagrid-tool-count">{activeFilterKeys.length}</span>}
           </button>
+
+          {selectable && (
+            <label className="meg-datagrid-mobile-select-all">
+              <input
+                type="checkbox"
+                aria-label="Selecionar todos os itens filtrados"
+                checked={allFilteredSelected}
+                ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
+                onChange={(event) => toggleAllFiltered(event.target.checked)}
+              />
+              <span>Selecionar filtrados</span>
+            </label>
+          )}
 
           <label className="meg-datagrid-mobile-sort">
             <span>Ordenar por</span>
@@ -1049,6 +1062,17 @@ export function DataGrid<T extends Record<string, unknown>>({
               {virtual.after > 0 && <div aria-hidden="true" style={{ height: virtual.after }} />}
             </div>
           </div>
+
+          {footerAggregates && (
+            <div className="meg-datagrid-mobile-aggregates" aria-label="Agregados do conjunto filtrado">
+              {aggregateCells(filteredRows).map((item) => (
+                <span key={item.key}>
+                  <small>{item.label}</small>
+                  <strong>{item.formatted}</strong>
+                </span>
+              ))}
+            </div>
+          )}
 
           <footer className="meg-datagrid-footer">
             <label className="meg-datagrid-page-size">
