@@ -629,6 +629,12 @@ try {
       expanded.firstItemTop >= expanded.logoBottom,
       `${viewport.width}x${viewport.height} expandida: Início (${expanded.firstItemTop}) sobrepõe logo (${expanded.logoBottom})`,
     );
+    if (viewport.width >= 1024) {
+      assert.ok(
+        expanded.logoWidth >= (viewport.height < 520 ? 104 : 112),
+        `${viewport.width}x${viewport.height} expandida: logo desktop perdeu escala (${expanded.logoWidth}px)`,
+      );
+    }
     if (viewport.height < 768) {
       assert.ok(
         expanded.firstItemTop - expanded.logoBottom >= 6,
