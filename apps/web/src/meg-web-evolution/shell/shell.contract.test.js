@@ -46,16 +46,20 @@ assert.match(source, /\.meg-nav\s*\{[\s\S]*margin-top:\s*0/);
 
 assert.match(source, /logo-meg-financas\.svg/);
 assert.match(source, /simbolo-meg-financas\.svg/);
-assert.match(source, /transition:\s*opacity\s+200ms\s+ease/);
+assert.match(source, /transition:\s*opacity\s+150ms\s+ease/);
 assert.match(source, /\.meg-brand\s*\{[\s\S]*position:\s*relative[\s\S]*overflow:\s*visible/);
 assert.match(source, /\.meg-brand-stack\s*\{[\s\S]*position:\s*relative[\s\S]*overflow:\s*visible/);
 assert.match(source, /\.meg-brand-logo--expanded\s*\{[\s\S]*position:\s*relative[\s\S]*width:\s*112px/);
-assert.match(source, /\.meg-brand-logo--collapsed\s*\{[\s\S]*position:\s*absolute[\s\S]*width:\s*36px/);
+assert.match(source, /\.meg-brand-logo--collapsed\s*\{[\s\S]*position:\s*absolute/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*56px;[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*12px\s+0;[\s\S]*overflow:\s*visible/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*28px;[\s\S]*max-width:\s*40%;[\s\S]*height:\s*auto;[\s\S]*object-fit:\s*contain/);
 assert.match(source, /padding:\s*16px\s+\.75rem\s+0/);
 assert.match(source, /margin-bottom:\s*16px/);
 assert.match(source, /padding:\s*16px\s+0/);
 assert.match(source, /width:\s*96px/);
 assert.match(source, /width:\s*80px/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*48px/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*24px/);
 assert.match(source, /min-height:\s*40px/);
 assert.match(source, /min-height:\s*36px/);
 
@@ -93,3 +97,5 @@ assert.equal(source.includes('.meg-sidebar::before'), false);
 assert.equal(source.includes('.meg-sidebar::after'), false);
 
 console.log('MEG Web Evolution shell foundation contract: OK');
+
+assert.equal(source.includes('.meg-sidebar-toggle'), false, 'floating sidebar toggle must remain removed');
