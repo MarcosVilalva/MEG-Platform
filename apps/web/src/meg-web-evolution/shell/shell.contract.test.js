@@ -194,3 +194,5 @@ assert.match(source, /window\.localStorage\.setItem\(SIDEBAR_PREFERENCE_KEY, Str
 assert.match(source, /window\.addEventListener\('pageshow'/);
 assert.match(source, /window\.addEventListener\('focus'/);
 assert.match(source, /document\.addEventListener\('visibilitychange'/);
+
+assert.match(source, /\.meg-nav-item\s*\{[\s\S]*padding:\s*\.7rem\s+\.875rem/);
