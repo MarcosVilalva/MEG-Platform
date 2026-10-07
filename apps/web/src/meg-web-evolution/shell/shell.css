@@ -122,7 +122,14 @@
   text-align: left;
   cursor: pointer;
 }
-.meg-nav-item svg { flex: 0 0 auto; width: 1.32rem; height: 1.32rem; }
+.meg-nav-item svg {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  overflow: visible;
+}
 .meg-nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; font-weight: 650; }
 .meg-nav-item:hover { background: rgba(20,227,200,.055); }
 
@@ -398,20 +405,31 @@
     opacity: 0;
   }
 
+  .meg-shell.is-sidebar-collapsed {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar-wrap,
   .meg-shell.is-sidebar-collapsed .meg-sidebar {
-    padding-inline: .55rem;
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-sidebar {
+    padding-inline: 8px;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-brand {
     position: relative;
-    flex: 0 0 auto;
+    flex: 0 0 64px;
     width: 100%;
-    height: 56px;
-    min-height: 56px;
+    height: 64px;
+    min-height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 0;
+    padding: 14px 0;
     margin-bottom: 0;
     overflow: visible;
   }
@@ -426,8 +444,10 @@
   .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
     position: relative;
     inset: auto;
-    width: 28px;
-    max-width: 40%;
+    flex: 0 0 auto;
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
     height: auto;
     object-fit: contain;
     opacity: 1;
@@ -435,8 +455,10 @@
   }
 
   .meg-shell.is-sidebar-collapsed .meg-nav-item {
+    width: 100%;
     justify-content: center;
     padding-inline: 0;
+    overflow: visible;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-nav-item svg {
@@ -459,6 +481,9 @@
     justify-content: center;
     padding-inline: 0;
     overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-sidebar-control svg {
@@ -493,14 +518,7 @@
   }
 
   .meg-shell.is-sidebar-collapsed .sidebar__art {
-    width: calc(100% + 1.1rem);
-    margin-inline: -.55rem;
-    opacity: .5;
-  }
-
-  .meg-shell.is-sidebar-collapsed .sidebar__art svg {
-    width: 13rem;
-    min-width: 13rem;
+    display: none;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-new-button {
@@ -556,14 +574,16 @@
   }
 
   .meg-shell.is-sidebar-collapsed .meg-brand {
-    height: 48px;
-    min-height: 48px;
-    padding-block: 12px;
+    flex-basis: 52px;
+    height: 52px;
+    min-height: 52px;
+    padding-block: 14px;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
-    width: 24px;
-    max-width: 40%;
+    width: 30px;
+    min-width: 30px;
+    max-width: 30px;
   }
 
   .meg-nav {
