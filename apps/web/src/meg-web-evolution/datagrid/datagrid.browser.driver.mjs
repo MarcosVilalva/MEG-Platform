@@ -172,9 +172,17 @@ export async function createDataGridBrowser() {
   }
 
   async function pressKey(key, code = key) {
-    await command('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, code });
-    await command('Input.dispatchKeyEvent', { type: 'keyUp', key, code });
-    await sleep(80);
+    const keyCodes = { Enter: 13, Escape: 27, ' ': 32, Space: 32, Tab: 9 };
+    const virtualKeyCode = keyCodes[key] ?? 0;
+    const params = {
+      key,
+      code,
+      windowsVirtualKeyCode: virtualKeyCode,
+      nativeVirtualKeyCode: virtualKeyCode,
+    };
+    await command('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
+    await command('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
+    await sleep(100);
   }
 
   async function close() {
