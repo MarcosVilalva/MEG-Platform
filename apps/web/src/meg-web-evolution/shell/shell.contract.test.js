@@ -140,3 +140,12 @@ assert.match(source, /\.meg-global-tooltip\.is-right/);
 assert.match(source, /\.meg-global-tooltip\.is-bottom/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-nav-item:hover,[\s\S]*0 0 12px rgba\(20, 227, 200, \.10\)/);
 assert.match(source, /border-radius:\s*12px/);
+
+assert.equal(/title\s*=/.test(source), false, 'icon-only tooltip targets must not use native title attributes');
+assert.match(source, /assertTooltipMatches/);
+assert.match(source, /assertHoverAndFocusTooltip/);
+assert.match(source, /assertHoverAndFocusNoTooltip/);
+assert.match(source, /tooltip\.count, 1/);
+assert.match(source, /tooltip\.text, result\.target\.ariaLabel/);
+assert.match(source, /tooltip\.parentIsBody, true/);
+assert.match(source, /tooltip\.insideSidebar, false/);
