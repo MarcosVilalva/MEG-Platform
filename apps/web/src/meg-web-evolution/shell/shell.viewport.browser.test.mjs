@@ -79,6 +79,7 @@ const ciChromeArgs = [
   '--no-first-run',
   '--no-default-browser-check',
   '--remote-debugging-port=0',
+  '--remote-allow-origins=*',
   `--user-data-dir=${chromeUserDataDir}`,
   '--force-device-scale-factor=1',
   '--window-size=1366,768',
