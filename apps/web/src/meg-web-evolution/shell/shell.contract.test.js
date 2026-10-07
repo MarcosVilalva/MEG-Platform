@@ -120,3 +120,7 @@ assert.match(source, /\.meg-search\s*\{[\s\S]*min-width:\s*0;[\s\S]*width:\s*min
 assert.match(source, /\.meg-topbar-actions\s*\{[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period\s*\{[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*white-space:\s*nowrap/);
+
+assert.match(source, /Outubro&nbsp;de&nbsp;2026/);
+assert.match(source, /\.meg-period\s*\{[\s\S]*width:\s*max-content;[\s\S]*min-width:\s*11\.75rem;[\s\S]*white-space:\s*nowrap/);
+assert.match(source, /\.meg-period span\s*\{[\s\S]*display:\s*inline-block;[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
