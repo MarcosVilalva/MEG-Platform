@@ -90,18 +90,33 @@ async function assertPopoverGeometry(label, selector, height, requireFilterActio
     const rect=dialog.getBoundingClientRect();
     const clear=[...dialog.querySelectorAll('button')].find((button)=>button.textContent.trim()==='Limpar');
     const apply=[...dialog.querySelectorAll('button')].find((button)=>button.textContent.trim()==='Aplicar');
+    const header=dialog.querySelector('.meg-datagrid-dialog-header');
+    const controls=dialog.querySelector('.meg-datagrid-filter__controls');
+    const operator=dialog.querySelector('.meg-datagrid-field select');
     const clickable=(button)=>{
       if(!button) return false;
       const buttonRect=button.getBoundingClientRect();
       const hit=document.elementFromPoint(buttonRect.left + buttonRect.width / 2, buttonRect.top + buttonRect.height / 2);
       return !button.disabled && buttonRect.top >= -1 && buttonRect.bottom <= window.innerHeight + 1 && Boolean(hit && button.contains(hit));
     };
+    const headerRect=header?.getBoundingClientRect();
+    const operatorRect=operator?.getBoundingClientRect();
+    const controlsBackground=controls ? getComputedStyle(controls).backgroundColor : null;
+    const scrollables=[...dialog.querySelectorAll('*')].filter((element)=>{
+      const style=getComputedStyle(element);
+      return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
+    });
     return {
       top:rect.top,
       bottom:rect.bottom,
       left:rect.left,
       right:rect.right,
       width:rect.width,
+      headerHeight:headerRect?.height ?? 0,
+      controlsBackground,
+      operatorHeight:operatorRect?.height ?? 0,
+      operatorText:operator?.selectedOptions?.[0]?.textContent ?? '',
+      scrollableCount:scrollables.length,
       clearClickable:clickable(clear),
       applyClickable:clickable(apply),
       hasSheetLayer:Boolean(dialog.closest('.meg-datagrid-sheet-layer')),
@@ -111,6 +126,14 @@ async function assertPopoverGeometry(label, selector, height, requireFilterActio
   assert.equal(geometry.hasSheetLayer, false, label + ': popover não pode virar bottom sheet');
   assert.ok(geometry.top >= -1 && geometry.bottom <= height + 1, label + ': popover ultrapassou a altura da viewport');
   assert.ok(geometry.left >= -1 && geometry.right <= (await browser.evaluate('window.innerWidth')) + 1, label + ': popover ultrapassou a largura da viewport');
+  assert.ok(geometry.headerHeight <= 48, label + ': cabeçalho do popover passou de 48px');
+  if (geometry.controlsBackground != null) {
+    assert.notEqual(geometry.controlsBackground, 'rgba(0, 0, 0, 0)', label + ': bloco Busca/Selecionar tudo não pode ser transparente');
+    assert.notEqual(geometry.controlsBackground, 'transparent', label + ': bloco Busca/Selecionar tudo não pode ser transparente');
+  }
+  if (geometry.operatorText) {
+    assert.ok(geometry.operatorHeight >= 34 && geometry.operatorHeight <= 38, label + ': select Operador deve ter cerca de 36px');
+  }
   if (requireFilterActions) {
     assert.equal(geometry.clearClickable, true, label + ': Limpar precisa ficar visível e clicável');
     assert.equal(geometry.applyClickable, true, label + ': Aplicar precisa ficar visível e clicável');
@@ -147,37 +170,85 @@ async function assertCompactOverlays(width, height, collapsed) {
         const listBehavior = await browser.evaluate(`(() => {
           const dialog=document.querySelector('[data-datagrid-filter-dialog="description"]');
           const body=dialog?.querySelector('.meg-datagrid-filter-panel__body');
+          const list=dialog?.querySelector('.meg-datagrid-filter__values');
           const inputs=[...dialog?.querySelectorAll('.meg-datagrid-filter__values input[type="checkbox"]') || []];
-          if(!body || inputs.length < 2) return null;
+          if(!body || !list || inputs.length < 2) return null;
           inputs[0].focus();
           const before=document.activeElement===inputs[0];
-          const bodyCanScroll=body.scrollHeight > body.clientHeight;
-          body.scrollTop=body.scrollHeight;
+          const listCanScroll=list.scrollHeight > list.clientHeight;
+          list.scrollTop=list.scrollHeight;
           const last=inputs[inputs.length - 1];
           last.scrollIntoView({block:'nearest'});
-          const bodyRect=body.getBoundingClientRect();
+          const listRect=list.getBoundingClientRect();
           const lastRect=last.getBoundingClientRect();
+          const controls=dialog.querySelector('.meg-datagrid-filter__controls');
+          const controlsRect=controls?.getBoundingClientRect();
+          const rows=[...dialog.querySelectorAll('.meg-datagrid-filter__values .meg-datagrid-check')];
+          const firstVisibleRow=rows.find((row)=>{ const r=row.getBoundingClientRect(); return r.bottom > listRect.top && r.top < listRect.bottom; });
+          const firstVisibleRowRect=firstVisibleRow?.getBoundingClientRect();
+          const scrollables=[...dialog.querySelectorAll('*')].filter((element)=>{
+            const style=getComputedStyle(element);
+            return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
+          });
           return {
             before,
-            bodyCanScroll,
-            lastVisible:lastRect.top >= bodyRect.top - 1 && lastRect.bottom <= bodyRect.bottom + 1,
+            listCanScroll,
+            lastVisible:lastRect.top >= listRect.top - 1 && lastRect.bottom <= listRect.bottom + 1,
             rendered:inputs.length,
+            noOverlap:Boolean(controlsRect && firstVisibleRowRect && firstVisibleRowRect.top >= controlsRect.bottom - 1),
+            scrollableCount:scrollables.length,
           };
         })()`);
         assert.ok(listBehavior, label + ': lista longa de texto não disponível');
         assert.equal(listBehavior.before, true, label + ': primeiro valor não recebeu foco');
-        assert.equal(listBehavior.bodyCanScroll, true, label + ': lista longa deve rolar no corpo único');
+        assert.equal(listBehavior.listCanScroll, true, label + ': lista longa deve rolar na região única de valores');
         assert.equal(listBehavior.lastVisible, true, label + ': lista não rola até o último item renderizado');
+        assert.equal(listBehavior.noOverlap, true, label + ': linhas não podem passar por trás de Busca/Selecionar tudo');
+        assert.equal(listBehavior.scrollableCount, 1, label + ': popover deve ter um único elemento rolável');
         assert.ok(listBehavior.rendered <= 200, label + ': lista longa ultrapassou limite de renderização');
 
-        await browser.evaluate("document.querySelector('[data-datagrid-filter-dialog="description"] .meg-datagrid-filter__values input[type="checkbox"]')?.focus()");
+        await browser.evaluate(`document.querySelector('[data-datagrid-filter-dialog="description"] .meg-datagrid-filter__values input[type="checkbox"]')?.focus()`);
         await browser.pressKey('ArrowDown', 'ArrowDown');
-        const arrowMoved = await browser.evaluate("(() => { const inputs=[...document.querySelectorAll('[data-datagrid-filter-dialog="description"] .meg-datagrid-filter__values input[type="checkbox"]')]; return inputs.length > 1 && document.activeElement===inputs[1]; })()");
+        const arrowMoved = await browser.evaluate(`(() => { const inputs=[...document.querySelectorAll('[data-datagrid-filter-dialog="description"] .meg-datagrid-filter__values input[type="checkbox"]')]; return inputs.length > 1 && document.activeElement===inputs[1]; })()`);
         assert.equal(arrowMoved, true, label + ': ArrowDown não moveu foco entre valores');
+
+        const filteredSelectAll = await browser.evaluate(`(() => {
+          const dialog=document.querySelector('[data-datagrid-filter-dialog="description"]');
+          const search=dialog?.querySelector('.meg-datagrid-filter__search input');
+          if(!search) return null;
+          const descriptor=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+          descriptor?.set?.call(search,'Lançamento técnico 1');
+          search.dispatchEvent(new Event('input',{bubbles:true}));
+          return true;
+        })()`);
+        assert.equal(filteredSelectAll, true, label + ': busca de valores não encontrada');
+        await browser.sleep(40);
+        const selectOnlyFiltered = await browser.evaluate(`(() => {
+          const dialog=document.querySelector('[data-datagrid-filter-dialog="description"]');
+          const all=dialog?.querySelector('.meg-datagrid-check--all input[type="checkbox"]');
+          const visible=[...dialog?.querySelectorAll('.meg-datagrid-filter__values input[type="checkbox"]') || []];
+          const countText=dialog?.querySelector('.meg-datagrid-check--all')?.textContent || '';
+          all?.click();
+          return { visible:visible.length, checked:visible.filter((input)=>input.checked).length, countText };
+        })()`);
+        assert.ok(selectOnlyFiltered.visible > 0, label + ': busca filtrada não retornou valores');
+        assert.equal(selectOnlyFiltered.checked, selectOnlyFiltered.visible, label + ': Selecionar tudo deve marcar apenas itens filtrados visíveis');
+        assert.ok(selectOnlyFiltered.countText.includes('(' + selectOnlyFiltered.visible + ')'), label + ': Selecionar tudo deve exibir contagem filtrada');
       }
 
       if (columnLabel === 'Data' && width === 1366 && height === 600 && !collapsed) {
         await captureEvidence('data-1366x600-expanded');
+      }
+      if (columnLabel === 'Segmento' && width === 1366 && height === 600 && !collapsed) {
+        await captureEvidence('segmento-1366x600-expanded');
+      }
+      if (columnLabel === 'Valor técnico' && width === 1366 && height === 600 && !collapsed) {
+        await browser.evaluate(`(() => { const list=document.querySelector('[data-datagrid-filter-dialog="amount"] .meg-datagrid-filter__values'); if(list) list.scrollTop=list.scrollHeight; return true; })()`);
+        await browser.sleep(30);
+        await captureEvidence('valor-tecnico-1366x600-scrolled');
+      }
+      if (columnLabel === 'Descrição técnica' && width === 1093 && height === 480 && !collapsed) {
+        await captureEvidence('descricao-1093x480-expanded');
       }
 
       const triggerFocusedAfterOutside = await browser.evaluate(`(() => {
@@ -209,12 +280,59 @@ async function assertCompactOverlays(width, height, collapsed) {
     const opened = await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-mobile-filter'); if(!button) return false; button.focus(); button.click(); return true; })()");
     assert.equal(opened, true, label + ': botão Filtros ausente');
     await browser.sleep(50);
-    await assertPopoverGeometry(label + ' Filtros', '[data-datagrid-mobile-sheet]', height, false);
 
-    if (width === 910 && height === 400 && !collapsed) {
-      await browser.evaluate("(() => { const trigger=[...document.querySelectorAll('.meg-datagrid-filter-accordion__trigger')].find((item)=>item.textContent.includes('Segmento')); if(trigger?.getAttribute('aria-expanded')!=='true') trigger?.click(); trigger?.scrollIntoView({block:'start'}); return true; })()");
-      await browser.sleep(50);
-      await captureEvidence('segmento-910x400-expanded');
+    for (const [key, columnLabel] of [
+      ['date', 'Data'],
+      ['description', 'Descrição técnica'],
+      ['quantity', 'Quantidade'],
+      ['amount', 'Valor técnico'],
+      ['segment', 'Segmento'],
+      ['active', 'Ativo'],
+    ]) {
+      const selected = await browser.evaluate(`(() => {
+        const select=document.querySelector('[data-datagrid-mobile-column]');
+        if(!select) return false;
+        select.value=${JSON.stringify(key)};
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+        return true;
+      })()`);
+      assert.equal(selected, true, label + ': seletor móvel de coluna ausente');
+      await browser.sleep(35);
+      await assertPopoverGeometry(label + ' ' + columnLabel, '[data-datagrid-mobile-sheet]', height, true);
+
+      if (key === 'date' && width === 910 && height === 400 && !collapsed) {
+        await captureEvidence('data-910x400-expanded');
+      }
+
+      if (key === 'segment' && width === 910 && height === 400 && !collapsed) {
+        const lowList = await browser.evaluate(`(() => {
+          const dialog=document.querySelector('[data-datagrid-mobile-sheet]');
+          const list=dialog?.querySelector('.meg-datagrid-filter__values');
+          const rows=[...dialog?.querySelectorAll('.meg-datagrid-filter__values .meg-datagrid-check') || []];
+          if(!list) return null;
+          const rect=list.getBoundingClientRect();
+          const visibleRows=rows.filter((row)=>{ const r=row.getBoundingClientRect(); return r.bottom > rect.top && r.top < rect.bottom; }).length;
+          list.scrollTop=list.scrollHeight;
+          const last=rows[rows.length - 1]?.getBoundingClientRect();
+          const after=list.getBoundingClientRect();
+          const scrollables=[...dialog.querySelectorAll('*')].filter((element)=>{
+            const style=getComputedStyle(element);
+            return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
+          });
+          return {
+            visibleRows,
+            canScroll:list.scrollHeight > list.clientHeight + 1,
+            lastVisible:Boolean(last && last.bottom <= after.bottom + 1),
+            scrollableCount:scrollables.length,
+          };
+        })()`);
+        assert.ok(lowList, label + ': lista Segmento ausente');
+        assert.ok(lowList.visibleRows >= 3, label + ': lista Segmento precisa mostrar pelo menos 3 linhas');
+        assert.equal(lowList.canScroll, true, label + ': lista Segmento deve rolar em 910x400');
+        assert.equal(lowList.lastVisible, true, label + ': lista Segmento deve rolar até o último item');
+        assert.equal(lowList.scrollableCount, 1, label + ': popover móvel deve ter um único elemento rolável');
+        await captureEvidence('segmento-910x400-expanded');
+      }
     }
 
     await browser.evaluate("(() => { const dialog=document.querySelector('[data-datagrid-mobile-sheet]'); const rect=dialog.getBoundingClientRect(); const target=document.elementFromPoint(Math.max(2, rect.left - 4), Math.max(2, rect.top - 4)); target?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1})); return true; })()");
@@ -298,6 +416,9 @@ try {
       assert.ok(aggregateFooter, label + ': rodapé de agregados ausente');
       assert.equal(aggregateFooter.footerAlpha, 1, label + ': fundo do rodapé de agregados não é opaco');
       assert.equal(aggregateFooter.cellAlpha, 1, label + ': células do rodapé de agregados não são opacas');
+      const theadBackground = await browser.evaluate("getComputedStyle(document.querySelector('.meg-datagrid-table thead')).backgroundColor");
+      assert.notEqual(theadBackground, 'rgba(0, 0, 0, 0)', label + ': thead sticky não pode ser transparente');
+      assert.notEqual(theadBackground, 'transparent', label + ': thead sticky não pode ser transparente');
 
       await browser.evaluate("(() => { const button=document.querySelector('.meg-datagrid-sort-button'); button.focus(); button.click(); return true; })()");
       await browser.sleep(80);

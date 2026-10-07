@@ -130,33 +130,40 @@ function DistinctList<T extends Record<string, unknown>>({
 
   return (
     <div className="meg-datagrid-filter__distinct">
-      <label className="meg-datagrid-filter__search">
-        <span>Buscar valores</span>
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar..."
-        />
-      </label>
+      <div className="meg-datagrid-filter__controls">
+        <label className="meg-datagrid-filter__search">
+          <span>Buscar valores</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar..."
+          />
+        </label>
 
-      <label className="meg-datagrid-check meg-datagrid-check--all">
-        <input
-          type="checkbox"
-          checked={allVisibleSelected}
-          onChange={() => {
-            if (allVisibleSelected) {
-              const visibleKeys = new Set(visible.map((option) => option.key));
-              onSelected(selected.filter((key) => !visibleKeys.has(key)));
-            } else {
-              onSelected([...new Set([...selected, ...visible.map((option) => option.key)])]);
-            }
-          }}
-        />
-        <span>Selecionar tudo</span>
-      </label>
+        <label className="meg-datagrid-check meg-datagrid-check--all">
+          <input
+            type="checkbox"
+            checked={allVisibleSelected}
+            onChange={() => {
+              if (allVisibleSelected) {
+                const visibleKeys = new Set(visible.map((option) => option.key));
+                onSelected(selected.filter((key) => !visibleKeys.has(key)));
+              } else {
+                onSelected([...new Set([...selected, ...visible.map((option) => option.key)])]);
+              }
+            }}
+          />
+          <span>Selecionar tudo ({visible.length})</span>
+        </label>
+      </div>
 
-      <div className="meg-datagrid-filter__values" role="group" aria-label={`Valores de ${column.label}`}>
+      <div
+        className="meg-datagrid-filter__values"
+        role="group"
+        aria-label={`Valores de ${column.label}`}
+        data-filter-scroll-region="values"
+      >
         {rendered.map((option) => {
           const record = option.value && typeof option.value === 'object'
             ? option.value as Record<string, unknown>
@@ -233,7 +240,7 @@ function DateTree({
   };
 
   return (
-    <div className="meg-datagrid-date-tree" aria-label="Árvore de datas">
+    <div className="meg-datagrid-date-tree" aria-label="Árvore de datas" data-filter-scroll-region="dates">
       {[...tree.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([year, months]) => {
         const yearKeys = [...months.values()].flat().map((day) => day.key);
         const yearChecked = yearKeys.length > 0 && yearKeys.every((key) => selected.includes(key));
@@ -326,24 +333,26 @@ export function FilterPanel<T extends Record<string, unknown>>({
       <div className="meg-datagrid-filter-panel__body">
         {column.type === 'text' && (
           <>
-            <label className="meg-datagrid-field">
-              <span>Operador</span>
-              <select
-                value={String(draft.operator ?? 'contains')}
-                onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
-              >
-                {textOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-            </label>
-            {draft.operator !== 'empty' && (
+            <div className="meg-datagrid-filter__criteria">
               <label className="meg-datagrid-field">
-                <span>Texto</span>
-                <input
-                  value={String(draft.value ?? '')}
-                  onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
-                />
+                <span>Operador</span>
+                <select
+                  value={String(draft.operator ?? 'contains')}
+                  onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
+                >
+                  {textOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
               </label>
-            )}
+              {draft.operator !== 'empty' && (
+                <label className="meg-datagrid-field">
+                  <span>Texto</span>
+                  <input
+                    value={String(draft.value ?? '')}
+                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                  />
+                </label>
+              )}
+            </div>
             <DistinctList column={column} options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
           </>
         )}

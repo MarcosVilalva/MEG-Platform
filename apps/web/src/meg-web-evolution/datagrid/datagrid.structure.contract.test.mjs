@@ -88,6 +88,9 @@ assert.ok(dataGridSource.includes("window.addEventListener('resize'"), 'Popover 
 assert.ok(dataGridSource.includes("window.addEventListener('scroll'"), 'Popover deve reposicionar em scroll.');
 assert.ok(filterSource.includes("visible.slice(0, 200)"), 'Listas grandes devem limitar renderização.');
 assert.ok(filterSource.includes("'1 selecionado'"), 'Resumo singular de seleção ausente.');
+assert.ok(filterSource.includes('Selecionar tudo ({visible.length})'), 'Selecionar tudo deve exibir a contagem filtrada.');
+assert.ok(filterSource.includes('data-filter-scroll-region="values"'), 'Lista de valores deve expor a região rolável única.');
+assert.ok(css.includes('background: #031c1f;'), 'thead sticky precisa de fundo opaco.');
 
 const minWidthBreakpoints = [...css.matchAll(/@media\s*\(min-width:\s*(\d+)px\)/g)].map((match) => Number(match[1]));
 assert.deepEqual([...new Set(minWidthBreakpoints)].sort((a, b) => a - b), [640, 1024]);
