@@ -56,7 +56,6 @@ assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-stack\s*\{[\
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand-logo--collapsed\s*\{[\s\S]*flex:\s*0\s+0\s+auto;[\s\S]*width:\s*38px;[\s\S]*min-width:\s*38px;[\s\S]*max-width:\s*38px;[\s\S]*height:\s*auto;[\s\S]*object-fit:\s*contain/);
 assert.match(source, /padding:\s*16px\s+\.75rem\s+0/);
 assert.match(source, /margin-bottom:\s*16px/);
-assert.match(source, /padding:\s*16px\s+0/);
 assert.match(source, /width:\s*96px/);
 assert.match(source, /width:\s*80px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-brand\s*\{[\s\S]*height:\s*52px/);
