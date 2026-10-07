@@ -386,6 +386,7 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Abaixo de `1024px`, o estado efetivo continua forçadamente recolhido; acima de `1024px`, a preferência persistida é restaurada. Nenhuma alteração visual foi feita nesta correção.
 - Contrato de navegador acrescentado para simular recarregamento/restauração de aba tanto com preferência recolhida quanto expandida.
 - Também foi removida uma asserção estática obsoleta de glow (`0 0 10px ... .08`) que já não representava o visual validado e estava bloqueando os gates sem indicar regressão real.
+- Limpeza técnica para fechamento: removido o seletor obsoleto `.meg-new-button` que ainda restava no CSS da sidebar e fazia o contrato acusar falsamente que `Novo` existia fora da topbar. Nenhuma alteração visual/funcional.
 - Status visual: VALIDADO EXPLICITAMENTE PELO USUÁRIO em 07/10/2026. A Etapa 03 pode ser encerrada somente após gates técnicos verdes e merge da PR #605.
 
 ### Etapa 02 — encerrada
