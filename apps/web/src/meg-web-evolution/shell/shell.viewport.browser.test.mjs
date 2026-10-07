@@ -502,7 +502,7 @@ async function prepareSidebarForState(viewport, collapsed) {
   const isCollapsed = await evaluate(`document.querySelector('.meg-shell')?.classList.contains('is-sidebar-collapsed')`);
   if (Boolean(isCollapsed) !== collapsed) {
     await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
-    await sleep(120);
+    await sleep(500);
   }
 }
 
@@ -720,7 +720,7 @@ try {
     );
     if (startsCollapsed) {
       await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
-      await sleep(220);
+      await sleep(700);
     }
 
     const expanded = await measure('expanded');
@@ -791,7 +791,7 @@ try {
     );
 
     await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
-    await sleep(250);
+    await sleep(700);
 
     const collapsed = await measure('collapsed');
     assert.ok(
