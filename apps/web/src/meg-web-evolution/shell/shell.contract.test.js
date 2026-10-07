@@ -80,7 +80,8 @@ assert.match(source, /<span>Sair<\/span>/);
 assert.match(source, /\.meg-topbar-launchers\s*\{[\s\S]*display:\s*inline-flex[\s\S]*gap:\s*8px/);
 assert.match(source, /\.meg-topbar-launcher\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px[\s\S]*border-radius:\s*12px/);
 assert.match(source, /\.meg-topbar-new\s*\{[\s\S]*border-color:\s*rgba\(20, 227, 200, \.62\)/);
-assert.match(source, /\.meg-sidebar-footer\s*\{[\s\S]*flex:\s*0\s+0\s+auto[\s\S]*border-top:\s*1px/);
+assert.match(source, /\.meg-sidebar-footer\s*\{[\s\S]*flex:\s*0\s+0\s+auto[\s\S]*border-top:\s*0/);
+assert.match(source, /\.meg-sidebar-footer::before\s*\{[\s\S]*height:\s*1px;[\s\S]*rgba\(65, 242, 220, \.56\)/);
 assert.match(source, /\.meg-logout-button\s*\{[\s\S]*min-height:\s*44px[\s\S]*background:\s*transparent/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed\s*\{[\s\S]*grid-template-columns:\s*72px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-wrap,[\s\S]*width:\s*72px;[\s\S]*min-width:\s*72px;[\s\S]*max-width:\s*72px/);
@@ -148,3 +149,5 @@ assert.match(source, /tooltip\.count, 1/);
 assert.match(source, /tooltip\.text, result\.target\.ariaLabel/);
 assert.match(source, /tooltip\.parentIsBody, true/);
 assert.match(source, /tooltip\.insideSidebar, false/);
+
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-nav\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;[\s\S]*justify-content:\s*space-evenly;[\s\S]*overflow-y:\s*auto/);
