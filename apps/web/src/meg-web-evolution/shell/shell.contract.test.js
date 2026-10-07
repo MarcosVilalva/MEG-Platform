@@ -67,16 +67,18 @@ assert.match(source, /chevronsLeft:[\s\S]*m11 17-5-5 5-5[\s\S]*m18 17-5-5 5-5/);
 assert.match(source, /chevronsRight:[\s\S]*m13 17 5-5-5-5[\s\S]*m6 17 5-5-5-5/);
 assert.match(source, /logOut:[\s\S]*M10 17l5-5-5-5/);
 assert.match(source, /strokeWidth=\{1\.75\}/);
-assert.match(source, /className="meg-sidebar-switcher"/);
-assert.match(source, /aria-label="Recolher menu"/);
-assert.match(source, /aria-label="Expandir menu"/);
-assert.match(source, /disabled=\{sidebarCollapsed\}/);
-assert.match(source, /disabled=\{!sidebarCollapsed\}/);
+assert.match(source, /className="meg-topbar-launchers"/);
+assert.match(source, /className="meg-topbar-launcher meg-sidebar-toggle-topbar"/);
+assert.match(source, /aria-label=\{sidebarCollapsed \? 'Expandir menu' : 'Recolher menu'\}/);
+assert.match(source, /aria-expanded=\{!sidebarCollapsed\}/);
+assert.match(source, /className="meg-topbar-launcher meg-topbar-new"/);
+assert.match(source, /aria-label="Novo lançamento"/);
 assert.match(source, /className="meg-nav-item meg-logout-button"/);
 assert.match(source, /aria-label="Sair"/);
 assert.match(source, /<span>Sair<\/span>/);
-assert.match(source, /\.meg-sidebar-switcher\s*\{[\s\S]*display:\s*inline-flex[\s\S]*border-radius:\s*11px/);
-assert.match(source, /\.meg-sidebar-switcher-button\s*\{[\s\S]*width:\s*34px;[\s\S]*height:\s*34px/);
+assert.match(source, /\.meg-topbar-launchers\s*\{[\s\S]*display:\s*inline-flex[\s\S]*gap:\s*8px/);
+assert.match(source, /\.meg-topbar-launcher\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px[\s\S]*border-radius:\s*12px/);
+assert.match(source, /\.meg-topbar-new\s*\{[\s\S]*border-color:\s*rgba\(20, 227, 200, \.62\)/);
 assert.match(source, /\.meg-sidebar-footer\s*\{[\s\S]*flex:\s*0\s+0\s+auto[\s\S]*border-top:\s*1px/);
 assert.match(source, /\.meg-logout-button\s*\{[\s\S]*min-height:\s*44px[\s\S]*background:\s*transparent/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed\s*\{[\s\S]*grid-template-columns:\s*72px/);
@@ -109,3 +111,6 @@ assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*700px\)
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.sidebar__art\s*\{[\s\S]*display:\s*none/);
 
 assert.match(source, /0 0 10px rgba\(20, 227, 200, \.08\)/);
+
+assert.equal(source.includes('meg-new-button'), false, 'Novo must live in the topbar, not sidebar');
+assert.equal(source.includes('PrimaryButton'), false, 'sidebar Novo PrimaryButton must be removed from shell');
