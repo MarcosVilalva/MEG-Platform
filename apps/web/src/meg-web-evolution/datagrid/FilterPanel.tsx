@@ -309,7 +309,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                     inputMode="decimal"
                     value={String(draft.value ?? '')}
                     onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
-                    onBlur={() => setDraft((current) => ({ ...current, value: formatNumericDraft(current.value, column.type) }))}
+                    onBlur={() => setDraft((current) => ({ ...current, value: formatNumericDraft(current.value, column.type as 'number' | 'currency') }))}
                     placeholder={column.type === 'currency' ? '0,00' : '0'}
                   />
                 </label>
@@ -320,7 +320,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                       inputMode="decimal"
                       value={String(draft.value2 ?? '')}
                       onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value }))}
-                      onBlur={() => setDraft((current) => ({ ...current, value2: formatNumericDraft(current.value2, column.type) }))}
+                      onBlur={() => setDraft((current) => ({ ...current, value2: formatNumericDraft(current.value2, column.type as 'number' | 'currency') }))}
                       placeholder={column.type === 'currency' ? '0,00' : '0'}
                     />
                   </label>
