@@ -245,7 +245,23 @@ export function getDistinctOptions<T extends Record<string, unknown>>(
     else options.set(key, { key, value, label: displayValue(value), count: 1 });
   }
 
-  return [...options.values()].sort((a, b) => collator.compare(a.label, b.label));
+  const distinct = [...options.values()];
+  return distinct.sort((a, b) => {
+    if (column.type === 'number' || column.type === 'currency') {
+      const left = parsePtBrNumber(a.value);
+      const right = parsePtBrNumber(b.value);
+      if (left == null && right == null) return collator.compare(a.label, b.label);
+      if (left == null) return -1;
+      if (right == null) return 1;
+      return left - right || collator.compare(a.label, b.label);
+    }
+    if (column.type === 'date') {
+      const left = toDateKey(a.value) ?? '';
+      const right = toDateKey(b.value) ?? '';
+      return left.localeCompare(right);
+    }
+    return collator.compare(a.label, b.label);
+  });
 }
 
 function comparableValue(value: unknown, type: DataGridColumn<TypedRow>['type']): string | number | boolean {

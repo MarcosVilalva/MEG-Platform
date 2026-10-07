@@ -1423,3 +1423,15 @@
 .meg-datagrid-filter-popover > .meg-datagrid-filter-panel > .meg-datagrid-filter-panel__body {
   overflow: hidden;
 }
+
+.meg-datagrid-dialog-header button:focus:not(:focus-visible) {
+  outline: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.meg-datagrid-dialog-header button:focus-visible {
+  outline: .125rem solid rgba(20, 227, 200, .72);
+  outline-offset: .125rem;
+  border-color: transparent;
+}

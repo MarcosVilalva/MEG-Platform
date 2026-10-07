@@ -129,6 +129,31 @@ assert.deepEqual(
   [['alpha', 1], ['gamma', 1]],
 );
 
+// Valores distintos: ordenação estável por semântica do tipo.
+const distinctOrderingRows: TestRow[] = [
+  { id: 'o1', description: 'Item 10', quantity: 10, amount: 32.8, date: '2026-10-15', segment: 'beta', active: true },
+  { id: 'o2', description: 'Item 2', quantity: 2, amount: 31.69, date: '2026-10-01', segment: 'alpha', active: true },
+  { id: 'o3', description: 'Item 1', quantity: 1, amount: 32.77, date: '2026-10-07', segment: 'gamma', active: true },
+  { id: 'o4', description: 'Item 11', quantity: 11, amount: 32.78, date: '2026-09-30', segment: 'beta', active: false },
+  { id: 'o5', description: 'Item 3', quantity: 3, amount: 32.79, date: '2026-10-08', segment: 'alpha', active: false },
+];
+assert.deepEqual(
+  getDistinctOptions(distinctOrderingRows, columns.find((column) => column.key === 'amount')!).map((item) => item.value),
+  [31.69, 32.77, 32.78, 32.79, 32.8],
+);
+assert.deepEqual(
+  getDistinctOptions(distinctOrderingRows, columns.find((column) => column.key === 'quantity')!).map((item) => item.value),
+  [1, 2, 3, 10, 11],
+);
+assert.deepEqual(
+  getDistinctOptions(distinctOrderingRows, columns.find((column) => column.key === 'date')!).map((item) => item.value),
+  ['2026-09-30', '2026-10-01', '2026-10-07', '2026-10-08', '2026-10-15'],
+);
+assert.deepEqual(
+  getDistinctOptions(distinctOrderingRows, columns.find((column) => column.key === 'description')!).map((item) => item.value),
+  ['Item 1', 'Item 2', 'Item 3', 'Item 10', 'Item 11'],
+);
+
 // Limpar filtro e limpar tudo equivalem à ausência de estado ativo.
 assert.equal(isFilterActive({ type: 'text', operator: 'contains', value: '' }), false);
 assert.equal(isFilterActive({ type: 'enum', selected: [] }), false);

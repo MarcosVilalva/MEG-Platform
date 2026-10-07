@@ -223,10 +223,14 @@ function useDialogKeyboard(
     if (!open) return;
     const previous = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     const timer = window.setTimeout(() => {
-      const focusable = containerRef.current?.querySelector<HTMLElement>(
+      const container = containerRef.current;
+      const preferred = container?.querySelector<HTMLElement>(
+        'input:not([disabled]), select:not([disabled]), [data-dialog-initial-focus]',
+      );
+      const fallback = container?.querySelector<HTMLElement>(
         'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
-      focusable?.focus();
+      (preferred ?? fallback)?.focus();
     }, 0);
 
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
