@@ -714,6 +714,11 @@ export function DataGrid<T extends Record<string, unknown>>({
         className="meg-datagrid-group-button"
         aria-expanded={expanded}
         onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          toggle();
+        }}
       >
         <GridIcon name={expanded ? 'chevronDown' : 'chevronRight'} />
         <strong>{entry.group.label}</strong>
