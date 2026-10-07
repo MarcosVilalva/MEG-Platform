@@ -720,7 +720,7 @@ async function measureSidebarResponsive() {
       const hit = document.elementFromPoint(centerX, centerY);
       return {
         index: index + 1,
-        label: item.getAttribute('aria-label') || item.textContent?.trim() || `item-${index + 1}`,
+        label: item.getAttribute('aria-label') || item.textContent?.trim() || ('item-' + (index + 1)),
         width: rect.width,
         height: rect.height,
         top: rect.top,
