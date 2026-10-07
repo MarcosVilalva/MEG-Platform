@@ -101,14 +101,30 @@ async function measure(state) {
     const logo = document.querySelector('.meg-brand-logo--${state}');
     const control = document.querySelector('.meg-sidebar-control');
     const firstIcon = firstItem.querySelector('svg');
+    const nav = document.querySelector('.meg-nav');
     const sidebar = document.querySelector('.meg-sidebar');
-    if (!firstItem || !logo || !control || !firstIcon || !sidebar) throw new Error('Elementos do contrato do Shell não encontrados.');
+    if (!firstItem || !logo || !control || !firstIcon || !nav || !sidebar) throw new Error('Elementos do contrato do Shell não encontrados.');
 
     const logoRect = logo.getBoundingClientRect();
     const itemRect = firstItem.getBoundingClientRect();
     const iconRect = firstIcon.getBoundingClientRect();
     const sidebarRect = sidebar.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
     const controlRect = control.getBoundingClientRect();
+    const navIcons = [...document.querySelectorAll('.meg-nav .meg-nav-item svg')].map((icon) => {
+      const rect = icon.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return {
+        width: rect.width,
+        height: rect.height,
+        fullyInsideNav:
+          rect.left >= navRect.left &&
+          rect.top >= navRect.top &&
+          rect.right <= navRect.right &&
+          rect.bottom <= navRect.bottom,
+        visibleAtCenter: Boolean(hit && (hit === icon || icon.contains(hit) || icon.parentElement?.contains(hit))),
+      };
+    });
 
     const clippingAncestor = (() => {
       let node = control.parentElement;
@@ -133,6 +149,7 @@ async function measure(state) {
       firstItemTop: itemRect.top,
       logoOpacity: getComputedStyle(logo).opacity,
       logoPosition: getComputedStyle(logo).position,
+      logoWidth: logoRect.width,
       logoCenterX: logoRect.left + logoRect.width / 2,
       firstIconCenterX: iconRect.left + iconRect.width / 2,
       logoTopOffset: logoRect.top - sidebarRect.top,
@@ -151,6 +168,9 @@ async function measure(state) {
           controlRect.top + controlRect.height / 2,
         ) === control,
       controlHasTitle: control.hasAttribute('title'),
+      controlBorderWidth: getComputedStyle(control).borderTopWidth,
+      navIcons,
+      collapsedArtDisplay: getComputedStyle(document.querySelector('.sidebar__art')).display,
       controlClippingAncestor: clippingAncestor,
     };
   })()`);
@@ -214,6 +234,19 @@ try {
         collapsed.logoTopOffset >= 12,
         `${viewport.width}x${viewport.height} recolhida: símbolo com menos de 12px de respiro superior (${collapsed.logoTopOffset})`,
       );
+      assert.ok(
+        collapsed.logoCenterX > 0,
+        `${viewport.width}x${viewport.height} recolhida: centro do símbolo inválido`,
+      );
+      assert.ok(collapsed.logoWidth >= 30, `${viewport.width}x${viewport.height} recolhida: símbolo menor que 30px (${collapsed.logoWidth})`);
+      assert.equal(collapsed.navIcons.length, 7, `${viewport.width}x${viewport.height} recolhida: esperado 7 ícones de menu`);
+      collapsed.navIcons.forEach((icon, index) => {
+        assert.ok(icon.width > 0 && icon.height > 0, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} sem dimensão`);
+        assert.equal(icon.fullyInsideNav, true, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} cortado pelo nav`);
+        assert.equal(icon.visibleAtCenter, true, `${viewport.width}x${viewport.height} recolhida: ícone ${index + 1} coberto no centro`);
+      });
+      assert.equal(collapsed.controlBorderWidth, '0px', `${viewport.width}x${viewport.height} recolhida: botão expandir não pode ter borda em repouso`);
+      assert.equal(collapsed.collapsedArtDisplay, 'none', `${viewport.width}x${viewport.height} recolhida: marca d'água deve ficar oculta`);
     }
 
     console.log(
