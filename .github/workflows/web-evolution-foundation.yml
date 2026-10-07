@@ -76,6 +76,10 @@ jobs:
       - name: Validate Web Evolution shell foundation
         run: npm run test:web-evolution-shell
 
+      - name: Report Chrome binary
+        shell: bash
+        run: which google-chrome && google-chrome --version
+
       - name: Validate Web Evolution viewport contract
         shell: bash
         run: |
@@ -90,6 +94,11 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
           node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
+
+      - name: Print Vite log tail
+        if: always()
+        shell: bash
+        run: tail -n 40 /tmp/meg-web-evolution-vite.log 2>/dev/null || true
 
       - name: Build API
         run: npm run build:api
