@@ -75,8 +75,8 @@ assert.match(source, /className="meg-sidebar-control-label">Recolher menu<\/span
 assert.match(source, /width=\{20\}/);
 assert.match(source, /height=\{20\}/);
 assert.match(source, /\.meg-sidebar-control-wrap\s*\{[\s\S]*flex:\s*0\s+0\s+auto[\s\S]*border-top:\s*1px/);
-assert.match(source, /\.meg-sidebar-control\s*\{[\s\S]*width:\s*100%;[\s\S]*border:\s*0;[\s\S]*box-shadow:\s*none/);
-assert.match(source, /\.meg-sidebar-control-icon\s*\{[\s\S]*width:\s*30px;[\s\S]*height:\s*30px;[\s\S]*border-radius:\s*9px/);
+assert.match(source, /\.meg-sidebar-control\s*\{[\s\S]*min-height:\s*46px;[\s\S]*border:\s*1px solid rgba\(20, 227, 200, \.24\)[\s\S]*box-shadow:/);
+assert.match(source, /\.meg-sidebar-control-icon\s*\{[\s\S]*width:\s*32px;[\s\S]*height:\s*32px;[\s\S]*border-radius:\s*10px[\s\S]*0 0 16px rgba\(20, 227, 200, \.24\)/);
 assert.match(source, /\.meg-sidebar-control-icon svg\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px;[\s\S]*pointer-events:\s*none/);
 assert.match(source, /\.meg-sidebar-control:hover\s*\{[\s\S]*color:\s*var\(--meg-accent\)/);
 assert.match(source, /\.meg-sidebar-control:focus-visible\s*\{[\s\S]*outline:\s*2px solid var\(--meg-accent\)/);
@@ -84,7 +84,7 @@ assert.match(source, /\.meg-shell\.is-sidebar-collapsed\s*\{[\s\S]*grid-template
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-wrap,[\s\S]*width:\s*72px;[\s\S]*min-width:\s*72px;[\s\S]*max-width:\s*72px/);
 assert.match(source, /\.meg-nav-item svg\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.sidebar__art\s*\{[\s\S]*display:\s*none/);
-assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-control\s*\{[\s\S]*border:\s*0;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none/);
+assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-control\s*\{[\s\S]*width:\s*44px;[\s\S]*min-height:\s*44px;[\s\S]*border:\s*1px solid rgba\(20, 227, 200, \.34\)[\s\S]*opacity:\s*1;[\s\S]*visibility:\s*visible/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-control::after/);
 assert.equal(source.includes('.meg-sidebar-toggle'), false, 'floating sidebar toggle must not exist');
 
@@ -108,3 +108,5 @@ console.log('MEG Web Evolution shell foundation contract: OK');
 assert.equal(source.includes('.meg-sidebar-toggle'), false, 'floating sidebar toggle must remain removed');
 
 assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*700px\)[\s\S]*\.sidebar__art\s*\{\s*display:\s*none/);
+
+assert.match(source, /0 0 20px rgba\(20, 227, 200, \.24\)/);
