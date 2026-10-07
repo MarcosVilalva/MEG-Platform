@@ -654,6 +654,25 @@ Nenhum outro conflito com a Seção 18 foi identificado nas decisões registrada
 
 ---
 
+### 19.10. Validação explícita do usuário
+
+Em **06/10/2026**, o usuário validou explicitamente esta parte do checkpoint, abrangendo:
+
+- o aviso operacional entre chats;
+- a organização oficial em 15 chats;
+- o estado atual registrado para a Etapa 03;
+- o contrato estrutural da Home registrado nesta seção;
+- as classes estruturais oficiais da Home;
+- a regra do grafismo inferior da sidebar;
+- a regra de datas e textos relativos calculados com `new Date()`;
+- o recorte das Regras Consolidadas aplicável à nova Web;
+- a manutenção da decisão de que Crediário está fora do escopo.
+
+Esta validação **não equivale à validação visual da Etapa 03** e não encerra Shell, tokens e componentes base. A Etapa 03 permanece em execução até validação visual explícita do Shell e dos componentes correspondentes.
+
+
+---
+
 ## 20. Encerramento formal da Etapa 1
 
 **Status:** ENCERRADA  
