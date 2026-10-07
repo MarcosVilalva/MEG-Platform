@@ -198,3 +198,7 @@ assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-brand-logo--col
 assert.match(source, /@media \(max-width:\s*1023px\) and \(max-height:\s*599px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px/);
 assert.match(source, /sidebar compacta foi expandida indevidamente/);
 assert.match(source, /sidebar deve voltar expandida automaticamente/);
+
+assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)[\s\S]*\.meg-brand\s*\{[\s\S]*flex:\s*0\s+0\s+92px;[\s\S]*height:\s*92px/);
+assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*767px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*112px;[\s\S]*max-height:\s*none/);
+assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*519px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*104px/);
