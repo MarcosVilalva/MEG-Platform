@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type FocusEvent, type MouseEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '../components/Icon';
 import { IconButton } from '../components/primitives';
 import './shell.css';
@@ -13,9 +14,29 @@ const navigation = [
   ['settings', 'Configurações'],
 ] as const;
 
+type TooltipPlacement = 'right' | 'bottom';
+type TooltipState = { label: string; x: number; y: number; placement: TooltipPlacement } | null;
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [tooltip, setTooltip] = useState<TooltipState>(null);
+
+  const showTooltip = (
+    event: MouseEvent<HTMLButtonElement> | FocusEvent<HTMLButtonElement>,
+    label: string,
+    placement: TooltipPlacement,
+  ) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltip({
+      label,
+      placement,
+      x: placement === 'right' ? rect.right + 10 : rect.left + rect.width / 2,
+      y: placement === 'right' ? rect.top + rect.height / 2 : rect.bottom + 8,
+    });
+  };
+
+  const hideTooltip = () => setTooltip(null);
 
   return (
     <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
@@ -44,6 +65,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               aria-label={label}
               data-tooltip={label}
+              onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, label, 'right')}
+              onMouseLeave={hideTooltip}
+              onFocus={(event) => sidebarCollapsed && showTooltip(event, label, 'right')}
+              onBlur={hideTooltip}
             >
               <Icon name={icon} />
               <span>{label}</span>
@@ -126,6 +151,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="meg-nav-item meg-logout-button"
             aria-label="Sair"
             data-tooltip="Sair"
+            onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
+            onMouseLeave={hideTooltip}
+            onFocus={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
+            onBlur={hideTooltip}
           >
             <Icon name="logOut" width={20} height={20} strokeWidth={1.75} />
             <span>Sair</span>
@@ -150,7 +179,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
               aria-expanded={!sidebarCollapsed}
               data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-              onClick={() => setSidebarCollapsed((value) => !value)}
+              onMouseEnter={(event) => showTooltip(event, sidebarCollapsed ? 'Expandir menu' : 'Recolher menu', 'bottom')}
+              onMouseLeave={hideTooltip}
+              onFocus={(event) => showTooltip(event, sidebarCollapsed ? 'Expandir menu' : 'Recolher menu', 'bottom')}
+              onBlur={hideTooltip}
+              onClick={() => {
+                hideTooltip();
+                setSidebarCollapsed((value) => !value);
+              }}
             >
               <Icon
                 name={sidebarCollapsed ? 'chevronsRight' : 'chevronsLeft'}
@@ -165,6 +201,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="meg-topbar-launcher meg-topbar-new"
               aria-label="Novo lançamento"
               data-tooltip="Novo lançamento"
+              onMouseEnter={(event) => showTooltip(event, 'Novo lançamento', 'bottom')}
+              onMouseLeave={hideTooltip}
+              onFocus={(event) => showTooltip(event, 'Novo lançamento', 'bottom')}
+              onBlur={hideTooltip}
             >
               <Icon name="plus" width={22} height={22} strokeWidth={1.85} />
             </button>
@@ -183,7 +223,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Icon name="chevronDown" />
             </button>
 
-            <IconButton label="Notificações" className="meg-notification" data-tooltip="Notificações">
+            <IconButton
+              label="Notificações"
+              className="meg-notification"
+              data-tooltip="Notificações"
+              onMouseEnter={(event) => showTooltip(event, 'Notificações', 'bottom')}
+              onMouseLeave={hideTooltip}
+              onFocus={(event) => showTooltip(event, 'Notificações', 'bottom')}
+              onBlur={hideTooltip}
+            >
               <Icon name="bell" />
               <span className="meg-notification-dot" aria-hidden="true" />
             </IconButton>
@@ -198,6 +246,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="meg-main">{children}</main>
       </div>
+
+      {tooltip && createPortal(
+        <div
+          className={`meg-global-tooltip is-${tooltip.placement}`}
+          role="tooltip"
+          style={{ left: tooltip.x, top: tooltip.y }}
+        >
+          {tooltip.label}
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
