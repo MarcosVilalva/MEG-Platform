@@ -81,14 +81,14 @@ assert.match(source, /\.meg-topbar-launchers\s*\{[\s\S]*display:\s*inline-flex[\
 assert.match(source, /\.meg-topbar-launcher\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px[\s\S]*border-radius:\s*12px/);
 assert.match(source, /\.meg-topbar-new\s*\{[\s\S]*border-color:\s*rgba\(20, 227, 200, \.62\)/);
 assert.match(source, /\.meg-sidebar-footer\s*\{[\s\S]*flex:\s*0\s+0\s+auto[\s\S]*border-top:\s*0/);
-assert.match(source, /\.meg-sidebar-footer::before\s*\{[\s\S]*height:\s*1px;[\s\S]*rgba\(65, 242, 220, \.56\)/);
+assert.match(source, /\.meg-sidebar-footer::before\s*\{[\s\S]*height:\s*1px;[\s\S]*background:\s*rgba\(255, 255, 255, \.08\);[\s\S]*box-shadow:\s*none/);
 assert.match(source, /\.meg-logout-button\s*\{[\s\S]*min-height:\s*44px[\s\S]*background:\s*transparent/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed\s*\{[\s\S]*grid-template-columns:\s*72px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.meg-sidebar-wrap,[\s\S]*width:\s*72px;[\s\S]*min-width:\s*72px;[\s\S]*max-width:\s*72px/);
 assert.match(source, /\.meg-nav-item svg\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.sidebar__art\s*\{[\s\S]*display:\s*none/);
 assert.equal(source.includes('.meg-sidebar-control'), false, 'old sidebar footer collapse control must be removed');
-assert.equal(source.includes('.meg-sidebar-toggle'), false, 'floating sidebar toggle must not exist');
+assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar toggle must not exist');
 
 assert.match(source, /aria-label="Navegação principal"/);
 assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
@@ -107,9 +107,9 @@ assert.equal(source.includes('.meg-sidebar::after'), false);
 
 console.log('MEG Web Evolution shell foundation contract: OK');
 
-assert.equal(source.includes('.meg-sidebar-toggle'), false, 'floating sidebar toggle must remain removed');
+assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar toggle must remain removed');
 
-assert.match(source, /@media \(min-width:\s*1024px\) and \(max-height:\s*700px\)[\s\S]*\.sidebar__art\s*\{[\s\S]*display:\s*block;[\s\S]*height:\s*8\.5rem/);
+assert.match(source, /@media \(max-height:\s*699px\)[\s\S]*\.sidebar__art,[\s\S]*display:\s*none/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.sidebar__art\s*\{[\s\S]*display:\s*none/);
 
 assert.match(source, /0 0 10px rgba\(20, 227, 200, \.08\)/);
@@ -168,3 +168,16 @@ assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*grid-template-columns
 assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*39rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
 assert.match(source, /aria-label="Buscar"/);
+
+assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav,[\s\S]*flex:\s*1\s+1\s+auto;[\s\S]*min-height:\s*0;[\s\S]*justify-content:\s*space-evenly;[\s\S]*gap:\s*clamp\(2px, \.8vh, 6px\)/);
+assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav-item,[\s\S]*height:\s*clamp\(34px, 6\.2vh, 42px\)/);
+assert.match(source, /@media \(max-height:\s*599px\)[\s\S]*flex-basis:\s*52px;[\s\S]*height:\s*52px/);
+assert.match(source, /@media \(max-height:\s*519px\)[\s\S]*mask-image:\s*linear-gradient\(to bottom, #000 0, #000 calc\(100% - 16px\), transparent 100%\)/);
+assert.match(source, /\.meg-sidebar-footer\s*\{[\s\S]*margin-block:\s*8px;[\s\S]*padding-top:\s*8px/);
+assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-topbar-launchers\s*\{\s*display:\s*inline-flex/);
+assert.match(source, /@media \(max-width:\s*639px\)[\s\S]*\.meg-topbar-launchers\s*\{[\s\S]*display:\s*inline-flex[\s\S]*\.meg-sidebar-toggle-topbar\s*\{\s*display:\s*none/);
+assert.match(source, /sidebarResponsiveViewports[\s\S]*1366[\s\S]*1024[\s\S]*900[\s\S]*690[\s\S]*768[\s\S]*480/);
+assert.match(source, /result\.gapToFooter <= result\.maxItemHeight \+ 1/);
+assert.match(source, /result\.dividerNeutral/);
+assert.match(source, /result\.needsScroll/);
+assert.match(source, /assertReducedTopbarLaunchers/);
