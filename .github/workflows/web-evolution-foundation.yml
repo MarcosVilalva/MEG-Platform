@@ -79,7 +79,7 @@ jobs:
       - name: Validate Web Evolution viewport contract
         shell: bash
         run: |
-          npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-web-evolution-vite.log 2>&1 &
+          VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-web-evolution-vite.log 2>&1 &
           VITE_PID=$!
           trap 'kill $VITE_PID 2>/dev/null || true' EXIT
           for attempt in {1..30}; do
