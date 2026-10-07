@@ -103,17 +103,32 @@ async function evaluate(expression) {
     returnByValue: true,
     awaitPromise: true,
   });
+
+  if (result.exceptionDetails) {
+    const message =
+      result.exceptionDetails.exception?.description ||
+      result.exceptionDetails.text ||
+      'Erro desconhecido no Runtime.evaluate';
+    throw new Error(`Erro no navegador: ${message}`);
+  }
+
   return result.result.value;
 }
 
 async function navigate(url) {
   await command('Page.navigate', { url });
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const ready = await evaluate('document.readyState');
-    if (ready === 'complete') return;
+
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const ready = await evaluate(`(() => ({
+      readyState: document.readyState,
+      shellReady: Boolean(document.querySelector('.meg-shell')),
+    }))()`);
+
+    if (ready?.readyState === 'complete' && ready.shellReady) return;
     await sleep(100);
   }
-  throw new Error('A página do Shell não concluiu o carregamento.');
+
+  throw new Error('A página do Shell não concluiu o carregamento/renderização.');
 }
 
 async function tooltipSnapshot() {
