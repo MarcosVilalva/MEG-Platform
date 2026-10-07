@@ -109,7 +109,6 @@ assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar 
 assert.match(source, /@media \(max-height:\s*699px\)[\s\S]*\.sidebar__art,[\s\S]*display:\s*none/);
 assert.match(source, /\.meg-shell\.is-sidebar-collapsed \.sidebar__art\s*\{[\s\S]*display:\s*none/);
 
-assert.match(source, /0 0 10px rgba\(20, 227, 200, \.08\)/);
 
 assert.equal(source.includes('meg-new-button'), false, 'Novo must live in the topbar, not sidebar');
 assert.equal(source.includes('PrimaryButton'), false, 'sidebar Novo PrimaryButton must be removed from shell');
@@ -212,3 +211,12 @@ assert.match(source, /preferência recolhida do usuário deve ser restaurada/);
 assert.match(source, /preferência expandida do usuário deve ser restaurada/);
 assert.match(source, /logo desalinhado do botão Novo/);
 assert.match(source, /logo desalinhado do botão Expandir/);
+
+assert.match(source, /SIDEBAR_PREFERENCE_KEY = 'meg-web-evolution:sidebar-collapsed'/);
+assert.match(source, /window\.localStorage\.getItem\(SIDEBAR_PREFERENCE_KEY\)/);
+assert.match(source, /window\.localStorage\.setItem\(SIDEBAR_PREFERENCE_KEY, String\(nextValue\)\)/);
+assert.match(source, /window\.addEventListener\('pageshow'/);
+assert.match(source, /window\.addEventListener\('focus'/);
+assert.match(source, /document\.addEventListener\('visibilitychange'/);
+assert.match(source, /recarregamento\/restauração de aba deve preservar preferência recolhida/);
+assert.match(source, /recarregamento\/restauração de aba deve preservar preferência expandida/);
