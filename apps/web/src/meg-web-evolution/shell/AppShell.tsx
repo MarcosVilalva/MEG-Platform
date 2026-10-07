@@ -19,7 +19,7 @@ type TooltipState = { label: string; x: number; y: number; placement: TooltipPla
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(false);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
   );
@@ -30,7 +30,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     const syncSidebarToViewport = (matches: boolean) => {
       setIsDesktopWide(matches);
-      setSidebarCollapsed(!matches);
       setTooltip(null);
     };
 
@@ -56,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const hideTooltip = () => setTooltip(null);
+  const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
 
   return (
     <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
@@ -207,7 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => {
                 if (!isDesktopWide) return;
                 hideTooltip();
-                setSidebarCollapsed((value) => !value);
+                setSidebarPreferenceCollapsed((value) => !value);
               }}
             >
               <Icon
