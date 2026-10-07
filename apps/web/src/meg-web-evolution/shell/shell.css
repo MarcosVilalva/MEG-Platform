@@ -1135,3 +1135,20 @@
   }
 }
 
+
+/* Final optical alignment: brand center follows the topbar launcher axis. */
+@media (min-width: 1024px) {
+  .meg-brand-stack {
+    transform: translateY(4px);
+  }
+
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
+    transform: translateY(4px);
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 640px) {
+  .meg-brand-stack {
+    transform: translateY(4px);
+  }
+}
