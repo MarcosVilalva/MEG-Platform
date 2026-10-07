@@ -429,7 +429,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 14px 0;
+    padding: 8px 0;
     margin-bottom: 0;
     overflow: visible;
   }
@@ -445,9 +445,9 @@
     position: relative;
     inset: auto;
     flex: 0 0 auto;
-    width: 36px;
-    min-width: 36px;
-    max-width: 36px;
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
     height: auto;
     object-fit: contain;
     opacity: 1;
@@ -558,8 +558,7 @@
   }
 
   .sidebar__art {
-    height: 12rem;
-    min-height: 8rem;
+    display: none;
   }
 
 }
@@ -577,13 +576,13 @@
     flex-basis: 52px;
     height: 52px;
     min-height: 52px;
-    padding-block: 14px;
+    padding-block: 6px;
   }
 
   .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
-    width: 30px;
-    min-width: 30px;
-    max-width: 30px;
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
   }
 
   .meg-nav {
@@ -600,8 +599,7 @@
   }
 
   .sidebar__art {
-    height: 9rem;
-    min-height: 6rem;
+    display: none;
   }
 
 }
