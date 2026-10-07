@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <span className="meg-sidebar-control-icon" aria-hidden="true">
               <Icon
-                name={sidebarCollapsed ? 'panelLeftOpen' : 'panelLeftClose'}
+                name={sidebarCollapsed ? 'chevronsRight' : 'chevronsLeft'}
                 width={20}
                 height={20}
                 strokeWidth={1.75}
