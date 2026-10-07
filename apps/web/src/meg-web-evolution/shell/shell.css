@@ -1316,14 +1316,6 @@
     padding-block: clamp(6px, .8vh, 11px);
   }
 
-  .meg-shell.is-sidebar-collapsed .sidebar__art {
-    display: block;
-    flex: 0 1 min(12rem, 18dvh);
-    height: min(12rem, 18dvh);
-    min-height: 0;
-    margin-top: 0;
-  }
-
   .meg-shell.is-sidebar-collapsed .meg-sidebar-footer {
     flex: 0 0 auto;
     flex-shrink: 0;
