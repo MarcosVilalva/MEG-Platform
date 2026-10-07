@@ -103,7 +103,9 @@ async function measure(state) {
     const firstIcon = firstItem.querySelector('svg');
     const nav = document.querySelector('.meg-nav');
     const sidebar = document.querySelector('.meg-sidebar');
-    if (!firstItem || !logo || !control || !firstIcon || !nav || !sidebar) throw new Error('Elementos do contrato do Shell não encontrados.');
+    const period = document.querySelector('.meg-period');
+    const periodLabel = period?.querySelector('span');
+    if (!firstItem || !logo || !control || !firstIcon || !nav || !sidebar || !period || !periodLabel) throw new Error('Elementos do contrato do Shell não encontrados.');
 
     const logoRect = logo.getBoundingClientRect();
     const itemRect = firstItem.getBoundingClientRect();
@@ -111,6 +113,8 @@ async function measure(state) {
     const sidebarRect = sidebar.getBoundingClientRect();
     const navRect = nav.getBoundingClientRect();
     const controlRect = control.getBoundingClientRect();
+    const periodRect = period.getBoundingClientRect();
+    const periodLabelRect = periodLabel.getBoundingClientRect();
     const navIcons = [...document.querySelectorAll('.meg-nav .meg-nav-item svg')].map((icon) => {
       const rect = icon.getBoundingClientRect();
       const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
@@ -173,6 +177,9 @@ async function measure(state) {
       controlVisibility: getComputedStyle(control).visibility,
       navIcons,
       collapsedArtDisplay: getComputedStyle(document.querySelector('.sidebar__art')).display,
+      periodOneLine: periodLabelRect.height <= parseFloat(getComputedStyle(periodLabel).lineHeight || periodLabelRect.height) + 1,
+      periodFits: period.scrollWidth <= period.clientWidth && periodLabel.scrollWidth <= periodLabel.clientWidth,
+      periodInsideViewport: periodRect.right <= window.innerWidth && periodRect.left >= 0,
       controlClippingAncestor: clippingAncestor,
     };
   })()`);
@@ -209,6 +216,9 @@ try {
     assert.equal(expanded.controlTopmostAtCenter, true, `${viewport.width}x${viewport.height} expandida: botão coberto no centro`);
     assert.equal(expanded.controlHasTitle, false, `${viewport.width}x${viewport.height} expandida: atributo title não deve existir`);
     assert.equal(expanded.controlClippingAncestor, null, `${viewport.width}x${viewport.height} expandida: botão sujeito a clipping por ancestral ${expanded.controlClippingAncestor}`);
+    assert.equal(expanded.periodOneLine, true, `${viewport.width}x${viewport.height}: período quebrou em mais de uma linha`);
+    assert.equal(expanded.periodFits, true, `${viewport.width}x${viewport.height}: período foi espremido/cortado`);
+    assert.equal(expanded.periodInsideViewport, true, `${viewport.width}x${viewport.height}: período saiu da janela`);
 
     await evaluate(`document.querySelector('.meg-sidebar-toggle-topbar')?.click()`);
     await sleep(250);
