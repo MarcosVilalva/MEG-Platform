@@ -45,6 +45,7 @@
 }
 
 .meg-brand {
+  flex: 0 0 auto;
   width: 100%;
   min-height: 5.75rem;
   display: grid;
@@ -109,7 +110,12 @@
   background: rgba(5, 48, 50, .98);
 }
 
-.meg-nav { display: grid; gap: .38rem; }
+.meg-nav {
+  flex: 0 0 auto;
+  display: grid;
+  gap: .38rem;
+  margin-top: 0;
+}
 
 .meg-nav-item {
   min-width: 0;
@@ -348,6 +354,7 @@
 
   .meg-brand {
     position: relative;
+    flex: 0 0 auto;
     min-height: 0;
     display: block;
     padding: 20px .75rem 0;
@@ -428,6 +435,7 @@
 
   .meg-shell.is-sidebar-collapsed .meg-brand {
     position: relative;
+    flex: 0 0 auto;
     min-height: 0;
     padding: 16px 0;
     margin-bottom: 0;
