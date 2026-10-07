@@ -198,3 +198,5 @@ assert.match(source, /document\.addEventListener\('visibilitychange'/);
 assert.match(source, /\.meg-nav-item\s*\{[\s\S]*padding:\s*\.7rem\s+\.875rem/);
 
 assert.match(source, /@media \(max-width:\s*639px\)[\s\S]*\.meg-topbar-launchers\s*\{[\s\S]*grid-area:\s*launchers;[\s\S]*margin-left:\s*0/);
+
+assert.match(source, /@media \(max-width:\s*639px\)[\s\S]*\.meg-sidebar-wrap\s*\{[\s\S]*position:\s*fixed;[\s\S]*width:\s*0;[\s\S]*height:\s*0/);
