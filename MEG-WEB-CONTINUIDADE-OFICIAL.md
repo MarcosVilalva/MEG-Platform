@@ -381,7 +381,7 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Alinhamento da marca recolhida foi estruturalizado: em desktop recolhido, o container da marca usa a mesma banda vertical de `5.35rem` da topbar; em `640–1023px`, usa `72px`, centralizado. Foram removidos offsets ópticos do estado recolhido.
 - Contrato de navegador agora exige tolerância máxima de `2px` entre o centro vertical da marca recolhida e o botão `Novo`; em desktop `>=1024px`, também entre a marca e o botão `Expandir`. O contrato testa ainda os dois cenários de restauração da preferência do usuário.
 - Gates da rodada acusaram uma asserção estática obsoleta (`min-height:40px/36px`) herdada da sidebar antiga. Ela foi removida sem alterar layout; o contrato vigente já exige a regra responsiva `clamp(34px, 6.2vh, 42px)`.
-- Status visual: ainda não validado pelo usuário; não declarar Etapa 03 validada até aprovação explícita.
+- Status visual: VALIDADO EXPLICITAMENTE PELO USUÁRIO em 07/10/2026. A Etapa 03 pode ser encerrada somente após gates técnicos verdes e merge da PR #605.
 
 ### Etapa 02 — encerrada
 - Fonte única criada em `apps/web/src/evolution/data/data.js`.
@@ -394,6 +394,11 @@ A Etapa 1 foi encerrada após caracterização, consolidação das autoridades f
 - Nenhum Shell, DataGrid ou tela foi iniciado na Etapa 02.
 
 ---
+
+- Validação visual explícita recebida em 07/10/2026 para a Etapa 03 — Shell, Tokens e Componentes Base.
+- A validação abrange o shell final apresentado no preview, incluindo sidebar expandida/recolhida, responsividade por largura/altura, topbar, tooltips, busca adaptativa, período sem quebra, ações rápidas, logo e restauração da preferência da sidebar.
+- A validação visual NÃO substitui gates técnicos. A PR #605 permanece aguardando execução verde antes de sair de Draft/ser mesclada.
+- Foi removida uma asserção estática obsoleta que ainda procurava o texto simples `Outubro de 2026`; o contrato válido já exige `Outubro&nbsp;de&nbsp;2026` para impedir quebra.
 
 ## 11. Achados iniciais da auditoria
 
