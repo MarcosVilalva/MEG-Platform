@@ -58,6 +58,14 @@ function emptyFilter(type: DataGridFilter['type']): DataGridFilter {
   return { type, selected: [] };
 }
 
+function formatNumericDraft(value: unknown, type: 'number' | 'currency') {
+  const parsed = parsePtBrNumber(value);
+  if (parsed == null) return String(value ?? '');
+  return new Intl.NumberFormat('pt-BR', type === 'currency'
+    ? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+    : { maximumFractionDigits: 6 }).format(parsed);
+}
+
 function formatDistinct(option: DistinctOption, type: DataGridFilter['type']) {
   if (type === 'currency') {
     const number = parsePtBrNumber(option.value);
@@ -301,6 +309,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                     inputMode="decimal"
                     value={String(draft.value ?? '')}
                     onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                    onBlur={() => setDraft((current) => ({ ...current, value: formatNumericDraft(current.value, column.type) }))}
                     placeholder={column.type === 'currency' ? '0,00' : '0'}
                   />
                 </label>
@@ -311,6 +320,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                       inputMode="decimal"
                       value={String(draft.value2 ?? '')}
                       onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value }))}
+                      onBlur={() => setDraft((current) => ({ ...current, value2: formatNumericDraft(current.value2, column.type) }))}
                       placeholder={column.type === 'currency' ? '0,00' : '0'}
                     />
                   </label>
