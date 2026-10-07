@@ -953,7 +953,7 @@
 }
 
 /* Height-responsive sidebar contract: must win after width-specific desktop/tablet rules. */
-@media (max-height: 767px) {
+@media (max-height: 768px) {
   .meg-sidebar {
     gap: 0;
   }
@@ -1064,7 +1064,7 @@
 }
 
 
-@media (max-height: 767px) and (min-width: 640px) {
+@media (max-height: 768px) and (min-width: 640px) {
   .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
     max-height: none;
   }
@@ -1092,7 +1092,7 @@
 }
 
 /* Wide desktop keeps the approved expanded brand scale even when browser chrome reduces viewport height. */
-@media (min-width: 1024px) and (max-height: 767px) {
+@media (min-width: 1024px) and (max-height: 768px) {
   .meg-brand {
     flex: 0 0 96px;
     height: 96px;
