@@ -98,7 +98,7 @@
   align-content: start;
   gap: .38rem;
   margin-top: 0;
-  overflow-x: visible;
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
 }
