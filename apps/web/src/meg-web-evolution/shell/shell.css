@@ -569,7 +569,7 @@
   }
 }
 
-@container meg-shell-body (max-width: 39rem) {
+@container meg-shell-body (max-width: 40rem) {
   .meg-search {
     width: 46px;
     min-width: 46px;
