@@ -186,3 +186,15 @@ assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-brand,[\s\S]*fl
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*88px;[\s\S]*max-height:\s*54px/);
 assert.match(source, /@media \(max-height:\s*599px\)[\s\S]*flex-basis:\s*60px;[\s\S]*\.meg-brand-logo--expanded\s*\{[\s\S]*width:\s*76px;[\s\S]*max-height:\s*46px/);
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav,[\s\S]*padding-top:\s*8px/);
+
+assert.match(source, /useEffect/);
+assert.match(source, /window\.matchMedia\('\(min-width: 1024px\)'\)/);
+assert.match(source, /setSidebarCollapsed\(!matches\)/);
+assert.match(source, /aria-hidden=\{!isDesktopWide\}/);
+assert.match(source, /tabIndex=\{isDesktopWide \? 0 : -1\}/);
+assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-sidebar-toggle-topbar\s*\{\s*display:\s*none/);
+assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*width:\s*52px;[\s\S]*height:\s*52px/);
+assert.match(source, /@media \(max-width:\s*1023px\)[\s\S]*\.meg-brand-logo--collapsed\s*\{[\s\S]*width:\s*42px;[\s\S]*min-width:\s*42px/);
+assert.match(source, /@media \(max-width:\s*1023px\) and \(max-height:\s*599px\)[\s\S]*\.meg-brand-stack\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px/);
+assert.match(source, /sidebar compacta foi expandida indevidamente/);
+assert.match(source, /sidebar deve voltar expandida automaticamente/);
