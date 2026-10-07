@@ -64,9 +64,11 @@ assert.match(source, /panelLeftOpen:[\s\S]*m14 9 3 3-3 3/);
 assert.match(source, /strokeWidth=\{1\.75\}/);
 assert.match(source, /aria-label=\{sidebarCollapsed \? 'Expandir menu' : 'Recolher menu'\}/);
 assert.match(source, /aria-expanded=\{!sidebarCollapsed\}/);
-assert.match(source, /title=\{sidebarCollapsed \? 'Expandir menu' : 'Recolher menu'\}/);
-assert.match(source, /\.meg-sidebar-toggle\s*\{[\s\S]*top:\s*50%;[\s\S]*right:\s*-16px;[\s\S]*width:\s*32px;[\s\S]*height:\s*32px;[\s\S]*border-radius:\s*10px/);
-assert.match(source, /\.meg-sidebar-toggle svg\s*\{[\s\S]*width:\s*18px;[\s\S]*height:\s*18px/);
+assert.equal(/title=\{sidebarCollapsed/.test(source), false, 'native title tooltip must not exist');
+assert.match(source, /width=\{18\}/);
+assert.match(source, /height=\{18\}/);
+assert.match(source, /\.meg-sidebar-toggle\s*\{[\s\S]*position:\s*absolute;[\s\S]*z-index:\s*50;[\s\S]*top:\s*50%;[\s\S]*right:\s*-16px;[\s\S]*width:\s*32px;[\s\S]*height:\s*32px;[\s\S]*border-radius:\s*10px[\s\S]*background:\s*#02181c/);
+assert.match(source, /\.meg-sidebar-toggle svg\s*\{[\s\S]*width:\s*18px;[\s\S]*height:\s*18px;[\s\S]*pointer-events:\s*none/);
 assert.match(source, /transition:[^;]*150ms/);
 assert.match(source, /box-shadow:\s*0\s+0\s+12px\s+rgba\(20,\s*227,\s*200,\s*\.30\)/);
 
