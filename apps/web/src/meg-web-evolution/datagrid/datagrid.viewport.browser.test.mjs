@@ -71,6 +71,134 @@ async function captureEvidence(name) {
   writeFileSync(resolve(dir, name + '.png'), Buffer.from(result.data, 'base64'));
 }
 
+async function waitForSelectorCount(selector, minimum = 1, label = selector) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const count = await browser.evaluate(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
+    if (count >= minimum) return count;
+    await browser.sleep(50);
+  }
+  throw new Error(label + ': conteúdo não renderizou a tempo');
+}
+async function waitForMissing(selector, label = selector) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const exists = await browser.evaluate(`Boolean(document.querySelector(${JSON.stringify(selector)}))`);
+    if (!exists) return;
+    await browser.sleep(50);
+  }
+  throw new Error(label + ': elemento continuou presente');
+}
+async function assertDateYearDisclosure(selector, evidencePrefix = null) {
+  const yearSelector = selector + ' .meg-datagrid-date-year__toggle';
+  await waitForSelectorCount(yearSelector, 1, 'grupo de ano');
+  const read = () => browser.evaluate(`(() => { const b=document.querySelector(${JSON.stringify(yearSelector)}); return { expanded:b?.getAttribute('aria-expanded'), indicator:b?.querySelector('.meg-datagrid-date-year__indicator')?.textContent }; })()`);
+  let state = await read();
+  assert.equal(state.expanded, 'false', 'Ano deve iniciar recolhido');
+  assert.equal(state.indicator, '+', 'Ano recolhido deve mostrar +');
+  if (evidencePrefix) await captureEvidence(evidencePrefix + '-year-collapsed');
+  await browser.evaluate(`document.querySelector(${JSON.stringify(yearSelector)})?.click()`);
+  await waitForSelectorCount(selector + ' .meg-datagrid-date-year__content', 1, 'ano expandido');
+  state = await read();
+  assert.equal(state.expanded, 'true', 'Clique/teclado deve expandir ano');
+  assert.equal(state.indicator, '−', 'Ano expandido deve mostrar −');
+  if (evidencePrefix) await captureEvidence(evidencePrefix + '-year-expanded');
+  await browser.evaluate(`document.querySelector(${JSON.stringify(yearSelector)})?.click()`);
+  await browser.evaluate(`document.querySelector(${JSON.stringify(yearSelector)})?.focus()`);
+  await browser.pressKey('Enter', 'Enter');
+  state = await read();
+  assert.equal(state.expanded, 'true', 'Enter deve expandir ano');
+  assert.equal(state.indicator, '−', 'Enter expandido deve mostrar −');
+  await browser.pressKey(' ', 'Space');
+  state = await read();
+  assert.equal(state.expanded, 'false', 'Espaço deve recolher ano');
+  assert.equal(state.indicator, '+', 'Espaço recolhido deve mostrar +');
+}
+async function applyTodayDateFilter(width, height, collapsed, evidenceName = null) {
+  const label = width + 'x' + height + (collapsed ? ' recolhida' : ' expandida');
+  await browser.setViewport(width, height);
+  await browser.navigate(appUrl);
+  await browser.evaluate(`(() => { localStorage.removeItem('meg-web-evolution:datagrid:stage-04-harness'); localStorage.setItem('meg-web-evolution:sidebar-collapsed','${collapsed ? 'true' : 'false'}'); return true; })()`);
+  await browser.navigate(appUrl);
+  const baseline = await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent || ''");
+
+  const openDateFilter = async () => {
+    if (width >= 1024) {
+      await waitForSelectorCount('.meg-datagrid-table .meg-datagrid-filter-button', 1, label + ' funis');
+      assert.equal(await openDesktopFilter('Data'), true, label + ': funil Data não abriu');
+      await waitForSelectorCount('[data-datagrid-filter-dialog="date"] .meg-datagrid-shortcuts button', 1, label + ' atalhos Data');
+      return '[data-datagrid-filter-dialog="date"]';
+    }
+
+    await waitForSelectorCount('.meg-datagrid-mobile-filter', 1, label + ' botão Filtros');
+    await browser.evaluate("document.querySelector('.meg-datagrid-mobile-filter')?.click()");
+    await waitForSelectorCount('[data-datagrid-mobile-column]', 1, label + ' seletor Coluna');
+    await browser.evaluate(`(() => { const s=document.querySelector('[data-datagrid-mobile-column]'); s.value='date'; s.dispatchEvent(new Event('change',{bubbles:true})); return true; })()`);
+    await waitForSelectorCount('[data-datagrid-mobile-sheet] .meg-datagrid-shortcuts button', 1, label + ' atalhos Data móvel');
+    return '[data-datagrid-mobile-sheet]';
+  };
+
+  const activateTodayAndApply = async () => {
+    const dialogSelector = await openDateFilter();
+    const shortcutSelector = dialogSelector + ' .meg-datagrid-shortcuts button';
+    await browser.evaluate(`(() => {
+      const d=document.querySelector(${JSON.stringify(dialogSelector)});
+      const today=[...d.querySelectorAll('.meg-datagrid-shortcuts button')].find(b=>b.textContent.trim()==='Hoje');
+      today?.click();
+      return Boolean(today);
+    })()`);
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const active = await browser.evaluate(`Boolean([...document.querySelectorAll(${JSON.stringify(shortcutSelector)})].find(b=>b.textContent.trim()==='Hoje' && b.classList.contains('is-active')))`);
+      if (active) break;
+      await browser.sleep(25);
+      if (attempt === 39) throw new Error(label + ': atalho Hoje não atualizou o draft');
+    }
+    await browser.evaluate(`(() => {
+      const d=document.querySelector(${JSON.stringify(dialogSelector)});
+      const apply=[...d.querySelectorAll('button')].find(b=>b.textContent.trim()==='Aplicar');
+      apply?.click();
+      return Boolean(apply);
+    })()`);
+    await waitForSelectorCount('.meg-datagrid-active-filters .meg-datagrid-filter-chip', 1, label + ' chip ativo');
+  };
+
+  await activateTodayAndApply();
+
+  const active=await browser.evaluate(`(() => {
+    const bar=document.querySelector('.meg-datagrid-active-filters');
+    const chip=bar?.querySelector('.meg-datagrid-filter-chip');
+    const vp=document.querySelector('.meg-datagrid__viewport');
+    const th=document.querySelector('.meg-datagrid-table thead');
+    if(!bar||!chip||!vp)return null;
+    const b=bar.getBoundingClientRect(),c=chip.getBoundingClientRect(),v=vp.getBoundingClientRect();
+    const table=th?.closest('table');
+    const headerVisible=Boolean(th && table && getComputedStyle(table).display !== 'none' && th.getClientRects().length);
+    const h=headerVisible ? th.getBoundingClientRect() : null;
+    const hit=document.elementFromPoint(c.left+c.width/2,c.top+c.height/2);
+    return {
+      barBottom:b.bottom,
+      viewportTop:v.top,
+      headerTop:h?.top??null,
+      chipHit:Boolean(hit&&chip.contains(hit)),
+      range:document.querySelector('.meg-datagrid-page-range')?.textContent||''
+    };
+  })()`);
+  assert.ok(active, label + ': barra ativa não encontrada');
+  assert.ok(active.barBottom <= active.viewportTop + 1, label + ': barra invade viewport');
+  if(active.headerTop!=null) assert.ok(active.barBottom <= active.headerTop + 1, label + ': thead cobre barra');
+  assert.equal(active.chipHit,true,label + ': chip coberto');
+  assert.notEqual(active.range,baseline,label + ': filtro não alterou registros');
+  if(evidenceName) await captureEvidence(evidenceName);
+
+  await browser.evaluate("document.querySelector('.meg-datagrid-filter-chip')?.click()");
+  await waitForMissing('.meg-datagrid-active-filters',label + ' remoção por chip');
+  assert.equal(await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent||''"),baseline,label + ': chip não restaurou registros');
+
+  await activateTodayAndApply();
+  await waitForSelectorCount('.meg-datagrid-clear-all', 1, label + ' Limpar tudo');
+  await browser.evaluate("document.querySelector('.meg-datagrid-clear-all')?.click()");
+  await waitForMissing('.meg-datagrid-active-filters', label + ' Limpar tudo');
+  assert.equal(await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent||''"),baseline,label + ': Limpar tudo não restaurou registros');
+}
+
 async function openDesktopFilter(columnLabel) {
   const opened = await browser.evaluate(`(() => {
     const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)}));
@@ -247,11 +375,13 @@ async function assertCompactOverlays(width, height, collapsed) {
         assert.ok(selectOnlyFiltered.countText.includes('(' + selectOnlyFiltered.visible + ')'), label + ': Selecionar tudo deve exibir contagem filtrada');
       }
 
-      if (columnLabel === 'Data' && width === 1366 && height === 600 && !collapsed) {
-        await captureEvidence('data-1366x600-expanded');
+      if (columnLabel === 'Data') {
+        await waitForSelectorCount('[data-datagrid-filter-dialog="date"] .meg-datagrid-date-year__toggle',1,label + ' anos');
+        await assertDateYearDisclosure('[data-datagrid-filter-dialog="date"]', width===1366 && height===600 && !collapsed ? 'data-1366x600-expanded-sidebar' : null);
       }
       if (columnLabel === 'Segmento' && width === 1366 && height === 600 && !collapsed) {
-        await captureEvidence('segmento-1366x600-expanded');
+        await waitForSelectorCount('[data-datagrid-filter-dialog="segment"] .meg-datagrid-filter__values .meg-datagrid-check',1,'segmento 1366x600');
+        await captureEvidence('segmento-1366x600-expanded-sidebar');
       }
       if (columnLabel === 'Valor técnico' && width === 1366 && height === 600 && !collapsed) {
         await browser.evaluate(`(() => { const list=document.querySelector('[data-datagrid-filter-dialog="amount"] .meg-datagrid-filter__values'); if(list) list.scrollTop=list.scrollHeight; return true; })()`);
@@ -311,8 +441,17 @@ async function assertCompactOverlays(width, height, collapsed) {
       await browser.sleep(35);
       await assertPopoverGeometry(label + ' ' + columnLabel, '[data-datagrid-mobile-sheet]', height, true);
 
-      if (key === 'date' && width === 910 && height === 400 && !collapsed) {
-        await captureEvidence('data-910x400-expanded');
+      if (key === 'date') {
+        await waitForSelectorCount('[data-datagrid-mobile-sheet] .meg-datagrid-date-year__toggle',1,label + ' anos móveis');
+        if(width===910 && height===400 && !collapsed) {
+          const themed=await browser.evaluate(`(() => { const c=document.querySelector('[data-datagrid-mobile-column]'),o=document.querySelector('[data-datagrid-mobile-sheet] .meg-datagrid-field select'); if(!c||!o)return null; const cs=getComputedStyle(c),os=getComputedStyle(o); return {cb:cs.backgroundColor,ob:os.backgroundColor,cc:cs.color,oc:os.color,h:c.getBoundingClientRect().height}; })()`);
+          assert.ok(themed);
+          assert.equal(themed.cb,themed.ob,label + ': fundo Coluna != Operador');
+          assert.equal(themed.cc,themed.oc,label + ': cor Coluna != Operador');
+          assert.ok(themed.h>=34&&themed.h<=38,label + ': altura Coluna');
+          await captureEvidence('column-data-910x400-expanded-sidebar');
+        }
+        await assertDateYearDisclosure('[data-datagrid-mobile-sheet]', width===910 && height===400 && !collapsed ? 'data-910x400-expanded-sidebar' : null);
       }
 
       if (key === 'segment' && width === 910 && height === 400 && !collapsed) {
@@ -342,7 +481,7 @@ async function assertCompactOverlays(width, height, collapsed) {
         assert.equal(lowList.canScroll, true, label + ': lista Segmento deve rolar em 910x400');
         assert.equal(lowList.lastVisible, true, label + ': lista Segmento deve rolar até o último item');
         assert.equal(lowList.scrollableCount, 1, label + ': popover móvel deve ter um único elemento rolável');
-        await captureEvidence('segmento-910x400-expanded');
+        await captureEvidence('column-segmento-910x400-expanded-sidebar');
       }
     }
 
@@ -391,6 +530,17 @@ try {
   ]) {
     await collectViewportFailure(`overlay ${viewport.width}x${viewport.height} expandida`, () => assertCompactOverlays(viewport.width, viewport.height, false));
     await collectViewportFailure(`overlay ${viewport.width}x${viewport.height} recolhida`, () => assertCompactOverlays(viewport.width, viewport.height, true));
+  }
+
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1366, height: 600 },
+    { width: 1024, height: 600 },
+    { width: 1093, height: 480 },
+    { width: 910, height: 400 },
+  ]) {
+    await collectViewportFailure(`active ${viewport.width}x${viewport.height} expandida`, () => applyTodayDateFilter(viewport.width, viewport.height, false, viewport.width===1366&&viewport.height===600 ? 'data-active-1366x600-expanded-sidebar' : viewport.width===910&&viewport.height===400 ? 'data-active-910x400-expanded-sidebar' : null));
+    await collectViewportFailure(`active ${viewport.width}x${viewport.height} recolhida`, () => applyTodayDateFilter(viewport.width, viewport.height, true));
   }
 
   for (const viewport of [

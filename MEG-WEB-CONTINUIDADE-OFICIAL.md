@@ -803,3 +803,5 @@ Validação visual explícita da Etapa 03 foi recebida antes do merge. CI não s
 **Próxima etapa oficial:** `04 - DataGrid`.
 
 - Exceção autorizada para um único push corretivo após o SHA ffeb8eb4: corrigir a sintaxe do browser test e ajustar visualmente apenas DataGrid/popovers; PR #606 permanece Draft, sem merge, e a validação visual continua pendente.
+
+- Ajustes finais autorizados da Etapa 04/PR #606: barra de filtros ativos, tema do select Coluna, grupos de ano acessíveis e screenshots estáveis. PR permanece Draft, sem merge.

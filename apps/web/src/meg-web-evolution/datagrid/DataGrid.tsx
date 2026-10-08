@@ -404,8 +404,14 @@ function MobileFilterSheet<T extends Record<string, unknown>>({
           column={activeColumn}
           filter={filters[activeColumn.key]}
           distinctOptions={getOptions(activeColumn)}
-          onApply={(next) => onChange(activeColumn.key, next)}
-          onClear={() => onChange(activeColumn.key, null)}
+          onApply={(next) => {
+            onChange(activeColumn.key, next);
+            closeAndRestore();
+          }}
+          onClear={() => {
+            onChange(activeColumn.key, null);
+            closeAndRestore();
+          }}
         />
       )}
     </section>,
