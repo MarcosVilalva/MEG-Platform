@@ -263,6 +263,7 @@ async function assertActiveFilterToolbarScenario(width,height,count) {
   })()`);
   assert.equal(snapshot.chips, Math.min(2,count), label+': quantidade de chips inline');
   assert.equal(snapshot.moreText, count>2 ? '+'+(count-2)+' filtros' : null, label+': +N filtros');
+  assert.ok(snapshot.activeTop == null || snapshot.toolbarTop == null || Math.abs(snapshot.activeTop - snapshot.toolbarTop) <= snapshot.toolbarHeight, label+': filtros ativos precisam permanecer na mesma linha da toolbar');
   if(width===910) {
     assert.ok(snapshot.toolbarHeight <= 58,label+': toolbar deve permanecer em uma linha');
     assert.ok(snapshot.filterButtonText?.includes('Filtros ('+count+')'),label+': contador no botão Filtros');
@@ -274,6 +275,8 @@ async function assertActiveFilterToolbarScenario(width,height,count) {
   if(count===1) {
     assert.ok(/Data\s*·\s*\d{2}\/\d{2}\/\d{4}/.test(snapshot.dateChip),label+': chip Data não está em dd/mm/aaaa');
     assert.equal(snapshot.dateChip.includes(' a '),false,label+': data igual não deve repetir intervalo');
+  } else {
+    assert.ok(/Data\s*·\s*\d{2}\/\d{2}\/\d{4}\s+a\s+\d{2}\/\d{2}\/\d{4}/.test(snapshot.dateChip),label+': intervalo Data não está em dd/mm/aaaa a dd/mm/aaaa');
   }
 
   await captureEvidence(`active-${count}-filters-${width}x${height}`);

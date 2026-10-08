@@ -179,7 +179,7 @@
 }
 
 .meg-datagrid-active-filters {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -189,7 +189,7 @@
 
 .meg-datagrid-filter-chip {
   min-height: 2.35rem;
-  max-width: 17rem;
+  max-width: 13rem;
   flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
@@ -1153,6 +1153,10 @@
 }
 
 @media (min-width: 640px) {
+  .meg-datagrid-filter-chip {
+    max-width: 13rem;
+  }
+
   .meg-datagrid-toolbar__primary {
     flex: 1 1 20rem;
   }
@@ -1166,6 +1170,14 @@
 }
 
 @media (min-width: 1024px) {
+  .meg-datagrid-active-filters {
+    flex: 1 1 auto;
+  }
+
+  .meg-datagrid-filter-chip {
+    max-width: 17rem;
+  }
+
   .meg-datagrid {
     gap: 0;
   }
@@ -1556,24 +1568,29 @@
     min-height: 3.25rem;
     padding-block: .35rem;
   }
-}
 
-@media (max-width: 1023px) {
-  .meg-datagrid-toolbar {
-    flex-wrap: nowrap;
+  .meg-datagrid-mobile-select-all {
+    min-height: 2.4rem;
+    flex-basis: 8.5rem;
+    padding-block: .3rem;
   }
 
-  .meg-datagrid-active-filters {
-    flex: 0 1 auto;
+  .meg-datagrid-mobile-sort {
+    flex-basis: 8.75rem;
   }
 
-  .meg-datagrid-filter-chip {
-    max-width: 13rem;
+  .meg-datagrid-mobile-sort > span {
+    display: none;
   }
-}
 
-@media (max-width: 639px) {
-  .meg-datagrid-filter-chip {
-    max-width: 10.5rem;
+  .meg-datagrid-mobile-sort select {
+    min-height: 2.4rem;
+    height: 2.4rem;
+    padding-block: .3rem;
+  }
+
+  .meg-datagrid-filter-chip,
+  .meg-datagrid-more-filters {
+    min-height: 2.3rem;
   }
 }
