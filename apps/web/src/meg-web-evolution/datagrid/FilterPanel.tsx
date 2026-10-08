@@ -228,6 +228,16 @@ function DateTree({
     return years;
   }, [options]);
 
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(() => new Set());
+
+  const toggleYear = (year: string) => {
+    setExpandedYears((current) => {
+      const next = new Set(current);
+      next.has(year) ? next.delete(year) : next.add(year);
+      return next;
+    });
+  };
+
   const toggle = (key: string) => {
     onSelected(selected.includes(key) ? selected.filter((item) => item !== key) : [...selected, key]);
   };
@@ -244,22 +254,67 @@ function DateTree({
       {[...tree.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([year, months]) => {
         const yearKeys = [...months.values()].flat().map((day) => day.key);
         const yearChecked = yearKeys.length > 0 && yearKeys.every((key) => selected.includes(key));
+        const expanded = expandedYears.has(year);
         return (
-          <details key={year}>
-            <summary>{year}</summary>
-            <label className="meg-datagrid-check meg-datagrid-date-tree__level">
-              <input
-                type="checkbox"
-                checked={yearChecked}
-                onChange={() => toggleMany(yearKeys)}
-                aria-label={`Selecionar ano ${year}`}
-              />
-              <span>Todos de {year}</span>
-            </label>
-            {[...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, days]) => {
-              const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
-                new Date(Number(year), Number(month) - 1, 1),
-              );
+          <section className="meg-datagrid-date-year" key={year}>
+            <button
+              type="button"
+              className="meg-datagrid-date-year__toggle"
+              aria-expanded={expanded}
+              aria-controls={`meg-datagrid-year-${year}`}
+              onClick={() => toggleYear(year)}
+            >
+              <span className="meg-datagrid-date-year__indicator" aria-hidden="true">{expanded ? '−' : '+'}</span>
+              <span>{year}</span>
+            </button>
+            {expanded && (
+              <div className="meg-datagrid-date-year__content" id={`meg-datagrid-year-${year}`}>
+                <label className="meg-datagrid-check meg-datagrid-date-tree__level">
+                  <input
+                    type="checkbox"
+                    checked={yearChecked}
+                    onChange={() => toggleMany(yearKeys)}
+                    aria-label={`Selecionar ano ${year}`}
+                  />
+                  <span>Todos de {year}</span>
+                </label>
+                {[...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, days]) => {
+                  const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
+                    new Date(Number(year), Number(month) - 1, 1),
+                  );
+                  const sortedDays = [...days].sort((a, b) => a.key.localeCompare(b.key));
+                  const monthKeys = sortedDays.map((day) => day.key);
+                  const monthChecked = monthKeys.length > 0 && monthKeys.every((key) => selected.includes(key));
+                  return (
+                    <details key={month}>
+                      <summary>{monthLabel}</summary>
+                      <label className="meg-datagrid-check meg-datagrid-date-tree__level">
+                        <input
+                          type="checkbox"
+                          checked={monthChecked}
+                          onChange={() => toggleMany(monthKeys)}
+                          aria-label={`Selecionar mês ${monthLabel} de ${year}`}
+                        />
+                        <span>Todo o mês</span>
+                      </label>
+                      {sortedDays.map((day) => (
+                        <label className="meg-datagrid-check" key={day.key}>
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(day.key)}
+                            onChange={() => toggle(day.key)}
+                          />
+                          <span>{day.key.slice(-2)}</span>
+                          <span className="meg-datagrid-count">{day.count}</span>
+                        </label>
+                      ))}
+                    </details>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        );
               const sortedDays = [...days].sort((a, b) => a.key.localeCompare(b.key));
               const monthKeys = sortedDays.map((day) => day.key);
               const monthChecked = monthKeys.length > 0 && monthKeys.every((key) => selected.includes(key));

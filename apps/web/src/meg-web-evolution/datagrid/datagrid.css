@@ -173,12 +173,19 @@
 }
 
 .meg-datagrid-active-filters {
+  position: relative;
+  z-index: 16;
+  flex: 0 0 auto;
+  min-height: 3rem;
   display: flex;
   align-items: center;
   gap: .45rem;
   min-width: 0;
-  padding: 0 .75rem;
+  padding: .3rem .75rem;
   overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: .0625rem solid rgba(20, 227, 200, .14);
+  background: #031c1f;
   scrollbar-width: thin;
   scrollbar-color: rgba(20, 227, 200, .36) transparent;
 }
@@ -223,7 +230,7 @@
 
 .meg-datagrid__viewport {
   position: relative;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   min-height: 0;
   max-width: 100%;
@@ -780,6 +787,42 @@
   border: .0625rem solid rgba(20, 227, 200, .12);
   border-radius: .65rem;
 }
+
+.meg-datagrid-date-year {
+  border-bottom: .0625rem solid rgba(20, 227, 200, .07);
+}
+
+.meg-datagrid-date-year__toggle {
+  width: 100%;
+  min-height: 2.125rem;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .3rem .45rem;
+  border: 0;
+  border-radius: .45rem;
+  background: transparent;
+  color: var(--meg-text);
+  cursor: pointer;
+  text-align: left;
+  font-weight: 750;
+}
+
+.meg-datagrid-date-year__toggle:hover { background: rgba(20, 227, 200, .055); }
+.meg-datagrid-date-year__toggle:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+.meg-datagrid-date-year__toggle:focus-visible {
+  outline: .125rem solid rgba(20, 227, 200, .72);
+  outline-offset: .0625rem;
+}
+.meg-datagrid-date-year__indicator {
+  width: 1rem;
+  flex: 0 0 1rem;
+  color: var(--meg-accent);
+  text-align: center;
+  font-size: .92rem;
+  line-height: 1;
+}
+.meg-datagrid-date-year__content { padding-left: .35rem; }
 
 .meg-datagrid-date-tree details {
   padding-left: .4rem;
@@ -1408,10 +1451,22 @@
 }
 
 .meg-datagrid-mobile-filter-column select {
+  min-width: 0;
+  width: 100%;
   min-height: 2.25rem;
   height: 2.25rem;
   line-height: 1.2;
-  padding: .35rem .55rem;
+  padding: .35rem .75rem;
+  border: .0625rem solid rgba(20, 227, 200, .22);
+  border-radius: var(--meg-radius-field);
+  background: rgba(2, 24, 27, .94);
+  color: var(--meg-text);
+  color-scheme: dark;
+}
+
+.meg-datagrid-mobile-filter-column select option {
+  background: #02181b;
+  color: var(--meg-text);
 }
 
 .meg-datagrid-filter-popover > .meg-datagrid-filter-panel {
@@ -1434,4 +1489,8 @@
   outline: .125rem solid rgba(20, 227, 200, .72);
   outline-offset: .125rem;
   border-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meg-datagrid-date-year__toggle { transition: none; }
 }

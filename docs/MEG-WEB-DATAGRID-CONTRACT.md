@@ -152,3 +152,10 @@ A validação técnica não substitui a validação visual explícita.
 - Listas de valores preservam pelo menos três linhas úteis em viewports baixos quando houver itens.
 - O cabeçalho sticky da tabela usa fundo totalmente opaco para impedir conteúdo fantasma.
 - Em altura até 640px, toolbar e espaçamentos verticais são compactados sem alterar altura das linhas ou paginação.
+
+
+### Ajustes finais — filtros ativos e DATE
+- “Filtros ativos” permanece em faixa própria acima da área rolável.
+- Select móvel “Coluna” segue o mesmo tema escuro de “Operador”.
+- Anos do filtro DATE iniciam recolhidos, usam aria-expanded e indicador +/−.
+- Evidências aguardam conteúdo real antes da captura.

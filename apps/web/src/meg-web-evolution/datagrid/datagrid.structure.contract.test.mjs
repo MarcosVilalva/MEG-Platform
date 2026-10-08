@@ -135,3 +135,9 @@ for (const forbiddenName of [
 }
 
 console.log('MEG Web Evolution DataGrid structural contract: OK');
+
+assert.ok(filterSource.includes('meg-datagrid-date-year__toggle'));
+assert.ok(filterSource.includes('aria-expanded={expanded}'));
+assert.ok(filterSource.includes("{expanded ? '−' : '+'}"));
+assert.ok(css.includes('.meg-datagrid-mobile-filter-column select option'));
+assert.ok(css.includes('color-scheme: dark'));
