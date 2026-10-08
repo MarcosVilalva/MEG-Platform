@@ -113,18 +113,27 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
   await browser.evaluate("localStorage.setItem('meg-web-evolution:sidebar-collapsed','false')");
   await setActiveFilterCount(count);
   await browser.navigate(appUrl);
-  await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip', Math.min(count,2), label + ' chips');
+  await waitForSelectorCount('.meg-datagrid-mobile-filter', 1, label + ' botão Filtros');
+
+  if (count > 0) {
+    await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip', Math.min(count,2), label + ' chips');
+  }
 
   const snapshot = await browser.evaluate(`(() => {
     const toolbar=document.querySelector('.meg-datagrid-toolbar');
     const filters=document.querySelector('.meg-datagrid-toolbar__filters');
     const chips=[...document.querySelectorAll('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip')];
     const more=document.querySelector('.meg-datagrid-more-filters');
-    const mobile=document.querySelector('.meg-datagrid-mobile-filter');
+    const filterButton=document.querySelector('.meg-datagrid-mobile-filter');
     const thead=document.querySelector('.meg-datagrid-table thead');
+    const footer=document.querySelector('.meg-datagrid-table tfoot');
     const rows=[...document.querySelectorAll('.meg-datagrid-table tbody tr[data-grid-row]')].filter((row)=>{
       const r=row.getBoundingClientRect();
-      return r.bottom>0 && r.top<window.innerHeight && getComputedStyle(row).display!=='none';
+      const h=thead?.getBoundingClientRect();
+      const f=footer?.getBoundingClientRect();
+      const topLimit=h?.bottom ?? 0;
+      const bottomLimit=Math.min(window.innerHeight, f?.top ?? window.innerHeight);
+      return r.top >= topLimit - 1 && r.bottom <= bottomLimit + 1 && getComputedStyle(row).display!=='none';
     });
     const tr=toolbar?.getBoundingClientRect(), fr=filters?.getBoundingClientRect(), hr=thead?.getBoundingClientRect();
     return {
@@ -134,7 +143,8 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
       toolbarBottom:tr?.bottom??null,
       chips:chips.length,
       moreText:more?.textContent?.trim()??'',
-      mobileText:mobile && getComputedStyle(mobile).display!=='none' ? mobile.textContent.trim() : null,
+      filterText:filterButton?.textContent?.replace(/\s+/g,' ').trim()??'',
+      filterVisible:Boolean(filterButton && getComputedStyle(filterButton).display!=='none' && filterButton.getClientRects().length),
       headerHeight:hr?.height??0,
       headerTop:hr?.top??null,
       headerBottom:hr?.bottom??null,
@@ -143,17 +153,17 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
     };
   })()`);
 
+  assert.equal(snapshot.filterVisible, true, label + ': botão Filtros (N) não está visível');
+  assert.ok(snapshot.filterText.includes('Filtros ('+count+')'), label + ': botão Filtros (N) incorreto');
   assert.equal(snapshot.chips, Math.min(count,2), label + ': deve mostrar no máximo dois chips');
   if(count>2) assert.equal(snapshot.moreText, '+'+(count-2)+' filtros', label + ': contador +N incorreto');
-  if(width<1024) assert.ok(snapshot.mobileText?.includes('Filtros ('+count+')'), label + ': botão Filtros (N) incorreto');
+  if(count===0) assert.equal(snapshot.filterTop, null, label + ': faixa de filtros vazia não deve existir');
   assert.ok(snapshot.toolbarHeight <= (height<=400 ? 58 : 72), label + ': toolbar ganhou segunda linha');
   assert.ok(snapshot.filterTop == null || (snapshot.filterTop >= snapshot.toolbarTop-1 && snapshot.filterTop < snapshot.toolbarBottom+1), label + ': chips saíram da toolbar');
   if(count>=1) assert.equal(snapshot.dateChip.includes('08/10/2026'), true, label + ': chip Data não está em dd/mm/aaaa');
-  if(width===910 && height===400 && count===1) {
-    assert.ok(snapshot.headerHeight >= 47, label + ': cabeçalho sticky ficou cortado');
-    assert.ok(snapshot.headerTop != null && snapshot.headerBottom <= height+1, label + ': cabeçalho não está inteiro');
-    assert.ok(snapshot.visibleRows >= 2, label + ': menos de duas linhas visíveis');
-  }
+  assert.ok(snapshot.headerHeight >= 40, label + ': cabeçalho sticky ficou cortado');
+  assert.ok(snapshot.headerTop != null && snapshot.headerBottom <= height+1, label + ': cabeçalho não está inteiro');
+  assert.ok(snapshot.visibleRows >= 2, label + ': menos de duas linhas de dados totalmente visíveis');
 
   if(evidenceName) await captureEvidence(evidenceName);
 
@@ -170,7 +180,7 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
     assert.equal(Object.keys(persisted.filters).length,count-1,label + ': remover pelo × não atualizou filtros');
     await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all',1,label + ' Limpar tudo na toolbar');
     await browser.evaluate("document.querySelector('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all')?.click()");
-  } else {
+  } else if(count>0) {
     await browser.evaluate("document.querySelector('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip')?.click()");
     await browser.sleep(40);
     await setActiveFilterCount(count);
@@ -178,10 +188,49 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
     await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all',1,label + ' Limpar tudo');
     await browser.evaluate("document.querySelector('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all')?.click()");
   }
-  await waitForMissing('.meg-datagrid-toolbar__filters',label + ' limpar filtros');
-  const persistedAfterClear=await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
-  assert.equal(Object.keys(persistedAfterClear.filters).length,0,label + ': Limpar tudo não zerou filtros');
+  if(count>0) {
+    await waitForMissing('.meg-datagrid-toolbar__filters',label + ' limpar filtros');
+    const persistedAfterClear=await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
+    assert.equal(Object.keys(persistedAfterClear.filters).length,0,label + ': Limpar tudo não zerou filtros');
+  }
 }
+
+async function assertFilteredEmptyLayout(width, height, evidenceName) {
+  const label = width + 'x' + height + ' vazio por filtros';
+  await browser.setViewport(width, height);
+  await browser.navigate(appUrl);
+  await browser.evaluate(`(() => {
+    localStorage.setItem('meg-web-evolution:sidebar-collapsed','false');
+    localStorage.setItem('meg-web-evolution:datagrid:stage-04-harness-filtered-empty', JSON.stringify({
+      filters:{ description:{ type:'text', operator:'equals', value:'__sem_resultado__' } },
+      sort:[], columnOrder:[], hiddenColumns:[], widths:{}, pageSize:600
+    }));
+    return true;
+  })()`);
+  await browser.navigate(appUrl + '?state=filtered-empty');
+  await waitForSelectorCount('.meg-datagrid-filtered-empty .meg-datagrid-table thead',1,label + ' cabeçalho');
+  const snapshot=await browser.evaluate(`(() => {
+    const head=document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-table thead');
+    const funnels=[...document.querySelectorAll('.meg-datagrid-filtered-empty .meg-datagrid-filter-button')];
+    const empty=document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-empty');
+    const filter=document.querySelector('.meg-datagrid-mobile-filter');
+    const hr=head?.getBoundingClientRect(), er=empty?.getBoundingClientRect();
+    return {
+      headVisible:Boolean(hr && hr.height>=40 && hr.top>=0 && hr.bottom<=window.innerHeight+1),
+      funnels:funnels.length,
+      emptyBelow:Boolean(hr && er && er.top>=hr.bottom-1),
+      filterText:filter?.textContent?.replace(/\s+/g,' ').trim()??'',
+      filterVisible:Boolean(filter && getComputedStyle(filter).display!=='none' && filter.getClientRects().length)
+    };
+  })()`);
+  assert.equal(snapshot.headVisible,true,label + ': cabeçalho não ficou visível');
+  assert.ok(snapshot.funnels>0,label + ': funis desapareceram no estado vazio filtrado');
+  assert.equal(snapshot.emptyBelow,true,label + ': mensagem vazia não ficou abaixo do cabeçalho');
+  assert.equal(snapshot.filterVisible,true,label + ': botão Filtros (N) ausente');
+  assert.ok(snapshot.filterText.includes('Filtros (1)'),label + ': contador Filtros (N) incorreto no vazio');
+  await captureEvidence(evidenceName);
+}
+
 async function assertDateYearDisclosure(selector, evidencePrefix = null) {
   const yearSelector = selector + ' .meg-datagrid-date-year__toggle';
   await waitForSelectorCount(yearSelector, 1, 'grupo de ano');
@@ -631,7 +680,7 @@ try {
     { width: 1366, height: 600 },
     { width: 910, height: 400 },
   ]) {
-    for (const count of [1, 3, 5]) {
+    for (const count of [0, 1, 3, 5]) {
       await collectViewportFailure(
         `toolbar ${viewport.width}x${viewport.height} ${count} filtros`,
         () => assertToolbarFilters(
@@ -642,6 +691,20 @@ try {
         ),
       );
     }
+  }
+
+  for (const viewport of [
+    { width: 1366, height: 600 },
+    { width: 910, height: 400 },
+  ]) {
+    await collectViewportFailure(
+      `filtered-empty ${viewport.width}x${viewport.height}`,
+      () => assertFilteredEmptyLayout(
+        viewport.width,
+        viewport.height,
+        `filtered-empty-${viewport.width}x${viewport.height}`,
+      ),
+    );
   }
 
   for (const viewport of [
@@ -689,7 +752,7 @@ try {
     if (viewport.width >= 1024) {
       assert.equal(snapshot.tableDisplay, 'table', label + ': desktop deve usar tabela');
       assert.equal(snapshot.cardsDisplay, 'none', label + ': cards devem ficar ocultos no desktop');
-      assert.equal(snapshot.mobileFilterDisplay, 'none', label + ': botão móvel de filtros deve ficar oculto no desktop');
+      assert.notEqual(snapshot.mobileFilterDisplay, 'none', label + ': botão Filtros (N) deve permanecer visível no desktop');
       assert.equal(snapshot.mobileSelectAllDisplay, 'none', label + ': seleção móvel deve ficar oculta no desktop');
       assert.equal(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados móveis devem ficar ocultos no desktop');
       assert.equal(snapshot.viewportOverflowX, 'auto', label + ': rolagem horizontal desktop deve ficar confinada ao componente');

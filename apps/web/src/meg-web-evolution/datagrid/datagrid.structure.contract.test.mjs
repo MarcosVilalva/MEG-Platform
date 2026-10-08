@@ -148,3 +148,8 @@ assert.ok(dataGridSource.includes('meg-datagrid-more-filters'), 'Overflow de fil
 assert.ok(dataGridSource.includes('data-datagrid-active-filters-popover'), 'Popover de todos os filtros ativos ausente.');
 assert.ok(filterSource.includes('formatDateSummaryValue'), 'Resumo de data deve usar dd/mm/aaaa.');
 assert.ok(css.includes('min-height: 3rem') && css.includes('.meg-datagrid-table thead'), 'Cabeçalho sticky precisa de altura mínima.');
+
+assert.ok(dataGridSource.includes('meg-datagrid-filtered-empty'), 'Estado vazio filtrado deve preservar a tabela/cabeçalho.');
+assert.ok(dataGridSource.includes('Filtros ({activeFilterKeys.length})'), 'Botão Filtros (N) deve exibir contagem inclusive zero.');
+assert.ok(css.includes('.meg-datagrid-filtered-empty .meg-datagrid-table'), 'Tabela do estado vazio filtrado deve permanecer visível.');
+assert.ok(css.includes('@media (max-height: 640px)') && css.includes('.meg-datagrid-footer'), 'Baixa altura deve compactar o rodapé.');

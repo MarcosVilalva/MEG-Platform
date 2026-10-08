@@ -167,3 +167,11 @@ A validação técnica não substitui a validação visual explícita.
 - O botão móvel mostra “Filtros (N)”.
 - Resumo de filtro DATE usa dd/mm/aaaa; intervalos iguais mostram uma única data.
 - Em 910x400, a grade usa tabela compacta em paisagem baixa para preservar cabeçalho sticky inteiro e pelo menos duas linhas visíveis.
+
+
+### Complemento 2 — alturas baixas e vazio filtrado
+- Em 1366x600 e 910x400, shell/harness, toolbar, grupos, agregados e paginação usam compactação vertical para preservar cabeçalho e pelo menos duas linhas de dados visíveis.
+- A área da tabela mantém rolagem interna.
+- “Filtros (N)” permanece visível em todas as larguras, inclusive com N=0.
+- O estado vazio causado por filtros mantém a tabela e o cabeçalho com funis acima da mensagem.
+- O contrato browser cobre 0, 1, 3 e 5 filtros nas duas viewports e o estado vazio filtrado.

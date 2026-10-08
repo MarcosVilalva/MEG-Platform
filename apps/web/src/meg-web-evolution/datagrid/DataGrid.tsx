@@ -963,6 +963,100 @@ export function DataGrid<T extends Record<string, unknown>>({
     );
   };
 
+  const renderTableHead = () => (
+<thead>
+                <tr>
+                  {selectable && (
+                    <th className="meg-datagrid-select-column">
+                      <input
+                        type="checkbox"
+                        aria-label="Selecionar todos os itens filtrados"
+                        checked={allFilteredSelected}
+                        ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
+                        onChange={(event) => toggleAllFiltered(event.target.checked)}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.map((column) => {
+                    const sortIndex = sort.findIndex((item) => item.key === column.key);
+                    const sortState = sortIndex >= 0 ? sort[sortIndex] : null;
+                    const activeFilter = isFilterActive(filters[column.key]);
+                    return (
+                      <th
+                        key={column.key}
+                        aria-sort={sortState ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                        draggable
+                        onDragStart={() => setDraggedColumn(column.key)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={() => {
+                          if (draggedColumn) setColumnOrder((current) => reorderKeys(current, draggedColumn, column.key));
+                          setDraggedColumn(null);
+                        }}
+                      >
+                        <div className="meg-datagrid-th">
+                          {column.sortable === false ? (
+                            <span className="meg-datagrid-th__label">{column.label}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="meg-datagrid-sort-button"
+                              onClick={(event) => toggleSort(column.key, event.shiftKey)}
+                              aria-label={`Ordenar por ${column.label}`}
+                            >
+                              <span>{column.label}</span>
+                              {sortState ? (
+                                <span className="meg-datagrid-sort-indicator" aria-hidden="true">
+                                  <GridIcon name={sortState.direction === 'asc' ? 'chevronUp' : 'chevronDown'} size={14} />
+                                  {sort.length > 1 && <small>{sortIndex + 1}</small>}
+                                </span>
+                              ) : <GridIcon name="sort" size={14} />}
+                            </button>
+                          )}
+
+                          {column.filterable !== false && (
+                            <button
+                              ref={(element) => {
+                                if (element) filterButtonRefs.current.set(column.key, element);
+                                else filterButtonRefs.current.delete(column.key);
+                              }}
+                              type="button"
+                              className={`meg-datagrid-filter-button ${activeFilter ? 'is-active' : ''}`}
+                              aria-label={`Filtrar ${column.label}`}
+                              aria-expanded={openFilterKey === column.key}
+                              aria-haspopup="dialog"
+                              onClick={() => {
+                                setColumnMenuOpen(false);
+                                setMobileFiltersOpen(false);
+                                setActiveFiltersOpen(false);
+                                setOpenFilterKey((current) => current === column.key ? null : column.key);
+                              }}
+                            >
+                              <GridIcon name="funnel" size={16} />
+                              {activeFilter && <span className="sr-only">Filtro ativo</span>}
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className="meg-datagrid-resizer"
+                            role="separator"
+                            aria-orientation="vertical"
+                            aria-label={`Redimensionar coluna ${column.label}`}
+                            onPointerDown={(event) => beginResize(event, column)}
+                            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+                              if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                              event.preventDefault();
+                              resizeColumn(column, event.key === 'ArrowRight' ? 8 : -8);
+                            }}
+                          />
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+  );
+
   if (loading) {
     return (
       <section className="meg-datagrid" aria-label={ariaLabel} aria-busy="true" data-datagrid data-state="loading">
@@ -1129,9 +1223,30 @@ export function DataGrid<T extends Record<string, unknown>>({
           <span>Esta grade ainda não recebeu registros.</span>
         </div>
       ) : !filteredRows.length ? (
-        <div className="meg-datagrid-empty" role="status">
-          <strong>Nenhum resultado com os filtros atuais</strong>
-          <span>Use “Limpar tudo” na barra de filtros ativos para restaurar os resultados.</span>
+        <div className="meg-datagrid__viewport meg-datagrid-filtered-empty" aria-label="Área rolável da grade sem resultados">
+          <table
+            className="meg-datagrid-table"
+            aria-label={ariaLabel}
+            style={{ minWidth: `${tableMinWidth}px` }}
+          >
+            <colgroup>
+              {selectable && <col style={{ width: 52 }} />}
+              {visibleColumns.map((column) => (
+                <col key={column.key} style={{ width: widths[column.key] ?? column.width ?? 160 }} />
+              ))}
+            </colgroup>
+            {renderTableHead()}
+            <tbody>
+              <tr>
+                <td colSpan={visibleColumns.length + (selectable ? 1 : 0)} className="meg-datagrid-empty-cell">
+                  <div className="meg-datagrid-empty" role="status">
+                    <strong>Nenhum resultado com os filtros atuais</strong>
+                    <span>Use “Limpar tudo” na toolbar para restaurar os resultados.</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       ) : (
         <>
@@ -1153,97 +1268,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   <col key={column.key} style={{ width: widths[column.key] ?? column.width ?? 160 }} />
                 ))}
               </colgroup>
-              <thead>
-                <tr>
-                  {selectable && (
-                    <th className="meg-datagrid-select-column">
-                      <input
-                        type="checkbox"
-                        aria-label="Selecionar todos os itens filtrados"
-                        checked={allFilteredSelected}
-                        ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
-                        onChange={(event) => toggleAllFiltered(event.target.checked)}
-                      />
-                    </th>
-                  )}
-                  {visibleColumns.map((column) => {
-                    const sortIndex = sort.findIndex((item) => item.key === column.key);
-                    const sortState = sortIndex >= 0 ? sort[sortIndex] : null;
-                    const activeFilter = isFilterActive(filters[column.key]);
-                    return (
-                      <th
-                        key={column.key}
-                        aria-sort={sortState ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-                        draggable
-                        onDragStart={() => setDraggedColumn(column.key)}
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={() => {
-                          if (draggedColumn) setColumnOrder((current) => reorderKeys(current, draggedColumn, column.key));
-                          setDraggedColumn(null);
-                        }}
-                      >
-                        <div className="meg-datagrid-th">
-                          {column.sortable === false ? (
-                            <span className="meg-datagrid-th__label">{column.label}</span>
-                          ) : (
-                            <button
-                              type="button"
-                              className="meg-datagrid-sort-button"
-                              onClick={(event) => toggleSort(column.key, event.shiftKey)}
-                              aria-label={`Ordenar por ${column.label}`}
-                            >
-                              <span>{column.label}</span>
-                              {sortState ? (
-                                <span className="meg-datagrid-sort-indicator" aria-hidden="true">
-                                  <GridIcon name={sortState.direction === 'asc' ? 'chevronUp' : 'chevronDown'} size={14} />
-                                  {sort.length > 1 && <small>{sortIndex + 1}</small>}
-                                </span>
-                              ) : <GridIcon name="sort" size={14} />}
-                            </button>
-                          )}
-
-                          {column.filterable !== false && (
-                            <button
-                              ref={(element) => {
-                                if (element) filterButtonRefs.current.set(column.key, element);
-                                else filterButtonRefs.current.delete(column.key);
-                              }}
-                              type="button"
-                              className={`meg-datagrid-filter-button ${activeFilter ? 'is-active' : ''}`}
-                              aria-label={`Filtrar ${column.label}`}
-                              aria-expanded={openFilterKey === column.key}
-                              aria-haspopup="dialog"
-                              onClick={() => {
-                                setColumnMenuOpen(false);
-                                setMobileFiltersOpen(false);
-                                setActiveFiltersOpen(false);
-                                setOpenFilterKey((current) => current === column.key ? null : column.key);
-                              }}
-                            >
-                              <GridIcon name="funnel" size={16} />
-                              {activeFilter && <span className="sr-only">Filtro ativo</span>}
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            className="meg-datagrid-resizer"
-                            role="separator"
-                            aria-orientation="vertical"
-                            aria-label={`Redimensionar coluna ${column.label}`}
-                            onPointerDown={(event) => beginResize(event, column)}
-                            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
-                              if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-                              event.preventDefault();
-                              resizeColumn(column, event.key === 'ArrowRight' ? 8 : -8);
-                            }}
-                          />
-                        </div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
+              {renderTableHead()}
               <tbody>
                 {virtual.before > 0 && (
                   <tr aria-hidden="true" className="meg-datagrid-spacer">
