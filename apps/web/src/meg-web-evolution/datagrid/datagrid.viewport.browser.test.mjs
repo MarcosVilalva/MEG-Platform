@@ -143,13 +143,13 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
       toolbarBottom:tr?.bottom??null,
       chips:chips.length,
       moreText:more?.textContent?.trim()??'',
-      filterText:filterButton?.querySelector('.meg-datagrid-filter-count-label')?.textContent?.replace(/\s+/g,' ').trim()??'',
+      filterText:filterButton?.querySelector('.meg-datagrid-filter-count-label')?.textContent?.trim()??'',
       filterVisible:Boolean(filterButton && getComputedStyle(filterButton).display!=='none' && filterButton.getClientRects().length),
       headerHeight:hr?.height??0,
       headerTop:hr?.top??null,
       headerBottom:hr?.bottom??null,
       visibleRows:rows.length,
-      dateChip:chips[0]?.textContent?.replace(/\s+/g,' ').trim()??''
+      dateChip:chips[0]?.textContent?.trim()??''
     };
   })()`);
 
@@ -219,7 +219,7 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
       headVisible:Boolean(hr && hr.height>=40 && hr.top>=0 && hr.bottom<=window.innerHeight+1),
       funnels:funnels.length,
       emptyBelow:Boolean(hr && er && er.top>=hr.bottom-1),
-      filterText:filter?.querySelector('.meg-datagrid-filter-count-label')?.textContent?.replace(/\s+/g,' ').trim()??'',
+      filterText:filter?.querySelector('.meg-datagrid-filter-count-label')?.textContent?.trim()??'',
       filterVisible:Boolean(filter && getComputedStyle(filter).display!=='none' && filter.getClientRects().length)
     };
   })()`);
