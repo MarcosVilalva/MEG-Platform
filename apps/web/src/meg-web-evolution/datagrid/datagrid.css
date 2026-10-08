@@ -1577,7 +1577,7 @@
 
 /* Requisito explícito da Etapa 04: em paisagem baixa entre 640 e 1024,
    preservar cabeçalho da grade e linhas úteis sem criar rolagem horizontal da página. */
-@media (min-width: 640px) and (max-width: 1023px) and (max-height: 500px) {
+@media (min-width: 640px) and (width < 1024px) and (max-height: 500px) {
   .meg-datagrid-toolbar {
     flex-wrap: nowrap;
     overflow-x: auto;
