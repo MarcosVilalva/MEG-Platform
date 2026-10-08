@@ -1169,7 +1169,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 640px) {
   .meg-datagrid-active-filters {
     flex: 1 1 auto;
   }
@@ -1180,26 +1180,6 @@
 
   .meg-datagrid {
     gap: 0;
-  }
-
-  .meg-datagrid-mobile-filter,
-  .meg-datagrid-mobile-select-all,
-  .meg-datagrid-mobile-sort,
-  .meg-datagrid-mobile-aggregates {
-    display: none;
-  }
-
-  .meg-datagrid-toolbar__primary {
-    display: none;
-  }
-
-  .meg-datagrid-toolbar {
-    flex-wrap: nowrap;
-    justify-content: flex-end;
-  }
-
-  .meg-datagrid-toolbar__actions {
-    flex: 0 0 auto;
   }
 
   .meg-datagrid__viewport {
@@ -1441,6 +1421,28 @@
 
   .meg-datagrid-footer {
     flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 1024px) {
+  .meg-datagrid-mobile-filter,
+  .meg-datagrid-mobile-select-all,
+  .meg-datagrid-mobile-sort,
+  .meg-datagrid-mobile-aggregates {
+    display: none;
+  }
+
+  .meg-datagrid-toolbar__primary {
+    display: none;
+  }
+
+  .meg-datagrid-toolbar {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+
+  .meg-datagrid-toolbar__actions {
+    flex: 0 0 auto;
   }
 }
 

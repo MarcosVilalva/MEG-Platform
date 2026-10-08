@@ -749,9 +749,12 @@ export function DataGrid<T extends Record<string, unknown>>({
     [filters],
   );
 
+  const inlineActiveFilterLimit = isDesktop ? 2 : 1;
+  const overflowActiveFilterCount = Math.max(0, activeFilterKeys.length - inlineActiveFilterLimit);
+
   useEffect(() => {
-    if (activeFilterKeys.length <= 2) setActiveFiltersPopoverOpen(false);
-  }, [activeFilterKeys.length]);
+    if (overflowActiveFilterCount <= 0) setActiveFiltersPopoverOpen(false);
+  }, [overflowActiveFilterCount]);
 
   useEffect(() => {
     onFilterChange?.({
@@ -1042,7 +1045,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 
         {activeFilterKeys.length > 0 && (
           <div className="meg-datagrid-active-filters" aria-label="Filtros ativos">
-            {activeFilterKeys.slice(0, 2).map((key) => {
+            {activeFilterKeys.slice(0, inlineActiveFilterLimit).map((key) => {
               const column = columns.find((item) => item.key === key);
               if (!column) return null;
               return (
@@ -1058,7 +1061,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 </button>
               );
             })}
-            {activeFilterKeys.length > 2 && (
+            {overflowActiveFilterCount > 0 && (
               <button
                 ref={activeFiltersMoreButtonRef}
                 type="button"
@@ -1072,11 +1075,11 @@ export function DataGrid<T extends Record<string, unknown>>({
                   setActiveFiltersPopoverOpen((open) => !open);
                 }}
               >
-                +{activeFilterKeys.length - 2} filtros
+                +{overflowActiveFilterCount} filtros
               </button>
             )}
             <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>
-            {activeFiltersPopoverOpen && activeFilterKeys.length > 2 && (
+            {activeFiltersPopoverOpen && overflowActiveFilterCount > 0 && (
               <ActiveFiltersPopover
                 columns={columns}
                 filters={filters}

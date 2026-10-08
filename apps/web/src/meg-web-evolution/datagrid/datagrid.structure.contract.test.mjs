@@ -96,6 +96,7 @@ const minWidthBreakpoints = [...css.matchAll(/@media\s*\(min-width:\s*(\d+)px\)/
 assert.deepEqual([...new Set(minWidthBreakpoints)].sort((a, b) => a - b), [640, 1024]);
 assert.equal(/@media\s*\(max-width:/.test(css), false, 'DataGrid não deve criar breakpoints max-width paralelos.');
 assert.ok(css.includes('.meg-datagrid-table {\n  display: none;'));
+assert.ok(css.includes('@media (min-width: 640px)'));
 assert.ok(css.includes('@media (min-width: 1024px)'));
 assert.ok(css.includes('.meg-datagrid-table {\n    width: 100%;\n    display: table;'));
 assert.ok(css.includes('.meg-datagrid-cards {\n    display: none;'));
@@ -142,9 +143,9 @@ assert.ok(filterSource.includes("{expanded ? '−' : '+'}"));
 assert.ok(css.includes('.meg-datagrid-mobile-filter-column select option'));
 assert.ok(css.includes('color-scheme: dark'));
 
-assert.ok(dataGridSource.includes('activeFilterKeys.slice(0, 2)'), 'Toolbar deve limitar chips visíveis a dois.');
+assert.ok(dataGridSource.includes('activeFilterKeys.slice(0, inlineActiveFilterLimit)'), 'Toolbar deve limitar chips visíveis conforme viewport.');
 assert.ok(dataGridSource.includes("data-datagrid-active-popover"), 'Overflow de filtros ativos deve abrir popover.');
-assert.ok(dataGridSource.includes("+{activeFilterKeys.length - 2} filtros"), 'Toolbar deve exibir +N filtros.');
+assert.ok(dataGridSource.includes("+{overflowActiveFilterCount} filtros"), 'Toolbar deve exibir +N filtros.');
 assert.ok(dataGridSource.includes("Filtros ({activeFilterKeys.length})"), 'Botão Filtros deve exibir total ativo.');
 assert.ok(filterSource.includes('formatSummaryDate'), 'Resumo DATE deve usar formato pt-BR.');
 assert.ok(filterSource.includes("from === to ? from"), 'Intervalo DATE igual deve mostrar uma data só.');

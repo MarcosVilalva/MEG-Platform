@@ -243,9 +243,16 @@ async function assertActiveFilterToolbarScenario(width,height,count) {
     const more=document.querySelector('.meg-datagrid-more-filters');
     const table=document.querySelector('.meg-datagrid-table');
     const thead=table && getComputedStyle(table).display!=='none' ? table.querySelector('thead') : null;
-    const rows=table && getComputedStyle(table).display!=='none'
-      ? [...table.querySelectorAll('tbody tr[data-grid-row]')].filter(r=>r.getClientRects().length)
-      : [...document.querySelectorAll('.meg-datagrid-card-row')].filter(r=>r.getClientRects().length);
+    const viewport=document.querySelector('.meg-datagrid__viewport');
+    const vr=viewport?.getBoundingClientRect();
+    const candidateRows=table && getComputedStyle(table).display!=='none'
+      ? [...table.querySelectorAll('tbody tr[data-grid-row]')]
+      : [...document.querySelectorAll('.meg-datagrid-card-row')];
+    const rows=candidateRows.filter((row)=>{
+      if(!row.getClientRects().length || !vr) return false;
+      const r=row.getBoundingClientRect();
+      return r.bottom > vr.top && r.top < vr.bottom;
+    });
     const tr=toolbar?.getBoundingClientRect(), ar=active?.getBoundingClientRect(), hr=thead?.getBoundingClientRect();
     const toolbarRows=toolbar ? Math.round(toolbar.scrollHeight / Math.max(1, toolbar.clientHeight)) : 0;
     return {
@@ -261,8 +268,9 @@ async function assertActiveFilterToolbarScenario(width,height,count) {
       dateChip:chips[0]?.textContent?.replace(/\\s+/g,' ').trim()??''
     };
   })()`);
-  assert.equal(snapshot.chips, Math.min(2,count), label+': quantidade de chips inline');
-  assert.equal(snapshot.moreText, count>2 ? '+'+(count-2)+' filtros' : null, label+': +N filtros');
+  const inlineLimit = width >= 1024 ? 2 : 1;
+  assert.equal(snapshot.chips, Math.min(inlineLimit,count), label+': quantidade de chips inline');
+  assert.equal(snapshot.moreText, count>inlineLimit ? '+'+(count-inlineLimit)+' filtros' : null, label+': +N filtros');
   assert.ok(snapshot.activeTop == null || snapshot.toolbarTop == null || Math.abs(snapshot.activeTop - snapshot.toolbarTop) <= snapshot.toolbarHeight, label+': filtros ativos precisam permanecer na mesma linha da toolbar');
   if(width===910) {
     assert.ok(snapshot.toolbarHeight <= 58,label+': toolbar deve permanecer em uma linha');
@@ -295,7 +303,7 @@ async function assertActiveFilterToolbarScenario(width,height,count) {
     assert.equal(pop.clear,true,label+': Limpar tudo ausente no popover');
     await browser.evaluate("document.querySelector('[data-datagrid-active-popover] .meg-datagrid-filter-chip')?.click()");
     await browser.sleep(50);
-    assert.equal(await browser.evaluate("document.querySelectorAll('.meg-datagrid-active-filters .meg-datagrid-filter-chip').length"),Math.min(2,count-1),label+': remover × não atualizou chips');
+    assert.equal(await browser.evaluate("document.querySelectorAll('.meg-datagrid-active-filters .meg-datagrid-filter-chip').length"),Math.min(inlineLimit,count-1),label+': remover × não atualizou chips');
   } else {
     await browser.evaluate("document.querySelector('.meg-datagrid-active-filters .meg-datagrid-filter-chip')?.click()");
     await waitForMissing('.meg-datagrid-active-filters',label+' remover único filtro');
@@ -699,13 +707,19 @@ try {
     assert.ok(snapshot.renderedRows > 0 && snapshot.renderedRows < 120, label + ': virtualização renderizou linhas demais ou nenhuma');
     assert.ok(snapshot.groupCount > 0, label + ': agrupamento não foi renderizado');
 
-    if (viewport.width >= 1024) {
-      assert.equal(snapshot.tableDisplay, 'table', label + ': desktop deve usar tabela');
-      assert.equal(snapshot.cardsDisplay, 'none', label + ': cards devem ficar ocultos no desktop');
-      assert.equal(snapshot.mobileFilterDisplay, 'none', label + ': botão móvel de filtros deve ficar oculto no desktop');
-      assert.equal(snapshot.mobileSelectAllDisplay, 'none', label + ': seleção móvel deve ficar oculta no desktop');
-      assert.equal(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados móveis devem ficar ocultos no desktop');
-      assert.equal(snapshot.viewportOverflowX, 'auto', label + ': rolagem horizontal desktop deve ficar confinada ao componente');
+    if (viewport.width >= 640) {
+      assert.equal(snapshot.tableDisplay, 'table', label + ': a partir de 640px deve usar tabela adaptável');
+      assert.equal(snapshot.cardsDisplay, 'none', label + ': cards devem ficar ocultos a partir de 640px');
+      if (viewport.width >= 1024) {
+        assert.equal(snapshot.mobileFilterDisplay, 'none', label + ': botão móvel de filtros deve ficar oculto no desktop');
+        assert.equal(snapshot.mobileSelectAllDisplay, 'none', label + ': seleção móvel deve ficar oculta no desktop');
+        assert.equal(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados móveis devem ficar ocultos no desktop');
+      } else {
+        assert.notEqual(snapshot.mobileFilterDisplay, 'none', label + ': botão Filtros deve permanecer disponível abaixo de 1024px');
+        assert.notEqual(snapshot.mobileSelectAllDisplay, 'none', label + ': seleção móvel deve permanecer abaixo de 1024px');
+        assert.notEqual(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados móveis devem permanecer abaixo de 1024px');
+      }
+      assert.equal(snapshot.viewportOverflowX, 'auto', label + ': rolagem horizontal da tabela deve ficar confinada ao componente');
       assert.ok(snapshot.viewportScrollWidth >= snapshot.viewportClientWidth, label + ': viewport interno inválido');
 
       const aggregateFooter = await browser.evaluate("(() => { const footer=document.querySelector('.meg-datagrid-table tfoot'); const cell=footer?.querySelector('td'); if(!footer || !cell) return null; const alpha=(value)=>{ const match=value.match(/rgba?\\(([^)]+)\\)/); if(!match) return 0; const parts=match[1].split(',').map((part)=>part.trim()); return parts.length < 4 ? 1 : Number(parts[3]); }; return { footerBackground:getComputedStyle(footer).backgroundColor, cellBackground:getComputedStyle(cell).backgroundColor, footerAlpha:alpha(getComputedStyle(footer).backgroundColor), cellAlpha:alpha(getComputedStyle(cell).backgroundColor) }; })()");
@@ -774,8 +788,8 @@ try {
         assert.ok(persistedReload.widths.date >= 140, label + ': largura persistida não sobreviveu ao reload');
       }
     } else {
-      assert.equal(snapshot.tableDisplay, 'none', label + ': abaixo de 1024 a tabela deve ficar oculta');
-      assert.notEqual(snapshot.cardsDisplay, 'none', label + ': abaixo de 1024 as linhas devem virar cards');
+      assert.equal(snapshot.tableDisplay, 'none', label + ': abaixo de 640px a tabela deve ficar oculta');
+      assert.notEqual(snapshot.cardsDisplay, 'none', label + ': abaixo de 640px as linhas devem virar cards');
       assert.notEqual(snapshot.mobileFilterDisplay, 'none', label + ': botão Filtros deve ficar disponível');
       assert.notEqual(snapshot.mobileSelectAllDisplay, 'none', label + ': selecionar filtrados não pode desaparecer nos cards');
       assert.notEqual(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados não podem desaparecer nos cards');
