@@ -168,7 +168,10 @@ async function applyTodayDateFilter(width, height, collapsed, evidenceName = nul
     const vp=document.querySelector('.meg-datagrid__viewport');
     const th=document.querySelector('.meg-datagrid-table thead');
     if(!bar||!chip||!vp)return null;
-    const b=bar.getBoundingClientRect(),c=chip.getBoundingClientRect(),v=vp.getBoundingClientRect(),h=th?.getBoundingClientRect();
+    const b=bar.getBoundingClientRect(),c=chip.getBoundingClientRect(),v=vp.getBoundingClientRect();
+    const table=th?.closest('table');
+    const headerVisible=Boolean(th && table && getComputedStyle(table).display !== 'none' && th.getClientRects().length);
+    const h=headerVisible ? th.getBoundingClientRect() : null;
     const hit=document.elementFromPoint(c.left+c.width/2,c.top+c.height/2);
     return {
       barBottom:b.bottom,
