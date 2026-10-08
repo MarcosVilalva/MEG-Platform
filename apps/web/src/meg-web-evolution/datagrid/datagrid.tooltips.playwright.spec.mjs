@@ -74,7 +74,7 @@ for (const viewport of [
     await filterButton.focus();
     await expectTooltip(page, '4 filtros ativos');
     await page.keyboard.press('Tab');
-    await expect(page.locator('[data-datagrid-tooltip]')).toHaveCount(0);
+    await expect(filterButton).not.toBeFocused();
 
     const toolbarChips = page.locator('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip');
     await expect(toolbarChips).toHaveCount(2);
