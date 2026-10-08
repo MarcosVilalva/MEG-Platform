@@ -163,13 +163,13 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
     const allChips=await browser.evaluate("document.querySelectorAll('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip').length");
     assert.equal(allChips,count,label + ': popover não listou todos os filtros');
     if(evidenceName) await captureEvidence(evidenceName+'-popover');
+    await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-clear-all',1,label + ' Limpar tudo no popover');
     await browser.evaluate("document.querySelector('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip')?.click()");
     await browser.sleep(50);
     const persisted=await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
     assert.equal(Object.keys(persisted.filters).length,count-1,label + ': remover pelo × não atualizou filtros');
-    await browser.evaluate("document.querySelector('.meg-datagrid-more-filters')?.click()");
-    await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-clear-all',1,label + ' Limpar tudo');
-    await browser.evaluate("document.querySelector('[data-datagrid-active-filters-popover] .meg-datagrid-clear-all')?.click()");
+    await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all',1,label + ' Limpar tudo na toolbar');
+    await browser.evaluate("document.querySelector('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all')?.click()");
   } else {
     await browser.evaluate("document.querySelector('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip')?.click()");
     await browser.sleep(40);
