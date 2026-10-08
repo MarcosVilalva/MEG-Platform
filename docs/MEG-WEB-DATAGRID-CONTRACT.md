@@ -159,3 +159,11 @@ A validação técnica não substitui a validação visual explícita.
 - Select móvel “Coluna” segue o mesmo tema escuro de “Operador”.
 - Anos do filtro DATE iniciam recolhidos, usam aria-expanded e indicador +/−.
 - Evidências aguardam conteúdo real antes da captura.
+
+
+### Complemento final — filtros ativos na toolbar
+- Filtros ativos ficam na mesma linha da toolbar, sem faixa estrutural adicional.
+- A toolbar mostra no máximo dois chips e usa “+N filtros” para abrir um popover com todos os chips e “Limpar tudo”.
+- O botão móvel mostra “Filtros (N)”.
+- Resumo de filtro DATE usa dd/mm/aaaa; intervalos iguais mostram uma única data.
+- Em 910x400, a grade usa tabela compacta em paisagem baixa para preservar cabeçalho sticky inteiro e pelo menos duas linhas visíveis.

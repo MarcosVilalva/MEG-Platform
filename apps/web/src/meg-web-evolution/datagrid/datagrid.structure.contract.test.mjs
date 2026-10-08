@@ -141,3 +141,10 @@ assert.ok(filterSource.includes('aria-expanded={expanded}'));
 assert.ok(filterSource.includes("{expanded ? '−' : '+'}"));
 assert.ok(css.includes('.meg-datagrid-mobile-filter-column select option'));
 assert.ok(css.includes('color-scheme: dark'));
+
+assert.ok(gridSource.includes('meg-datagrid-toolbar__filters'), 'Filtros ativos devem ficar dentro da toolbar.');
+assert.ok(gridSource.includes('activeFilterItems.slice(0, 2)'), 'Toolbar deve limitar chips visíveis a dois.');
+assert.ok(gridSource.includes('meg-datagrid-more-filters'), 'Overflow de filtros deve usar botão +N filtros.');
+assert.ok(gridSource.includes('data-datagrid-active-filters-popover'), 'Popover de todos os filtros ativos ausente.');
+assert.ok(filterSource.includes('formatDateSummaryValue'), 'Resumo de data deve usar dd/mm/aaaa.');
+assert.ok(css.includes('min-height: 3rem') && css.includes('.meg-datagrid-table thead'), 'Cabeçalho sticky precisa de altura mínima.');

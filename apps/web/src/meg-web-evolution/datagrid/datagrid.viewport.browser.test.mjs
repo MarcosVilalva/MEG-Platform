@@ -87,6 +87,101 @@ async function waitForMissing(selector, label = selector) {
   }
   throw new Error(label + ': elemento continuou presente');
 }
+
+async function setActiveFilterCount(count) {
+  await browser.evaluate(`(() => {
+    const filters = {
+      date:{ type:'date', operator:'between', value:'2026-10-08', value2:'2026-10-08' },
+      description:{ type:'text', operator:'contains', value:'Registro' },
+      segment:{ type:'enum', selected:['alpha','beta','gamma','delta'] },
+      quantity:{ type:'number', operator:'gte', value:1 },
+      amount:{ type:'currency', operator:'gte', value:0 }
+    };
+    const keys=['date','description','segment','quantity','amount'];
+    localStorage.setItem('meg-web-evolution:datagrid:stage-04-harness', JSON.stringify({
+      filters:Object.fromEntries(keys.slice(0,${count}).map((key)=>[key,filters[key]])),
+      sort:[], columnOrder:[], hiddenColumns:[], widths:{}, pageSize:600
+    }));
+    return true;
+  })()`);
+}
+
+async function assertToolbarFilters(width, height, count, evidenceName = null) {
+  const label = width + 'x' + height + ' · ' + count + ' filtros';
+  await browser.setViewport(width, height);
+  await browser.navigate(appUrl);
+  await browser.evaluate("localStorage.setItem('meg-web-evolution:sidebar-collapsed','false')");
+  await setActiveFilterCount(count);
+  await browser.navigate(appUrl);
+  await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip', Math.min(count,2), label + ' chips');
+
+  const snapshot = await browser.evaluate(`(() => {
+    const toolbar=document.querySelector('.meg-datagrid-toolbar');
+    const filters=document.querySelector('.meg-datagrid-toolbar__filters');
+    const chips=[...document.querySelectorAll('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip')];
+    const more=document.querySelector('.meg-datagrid-more-filters');
+    const mobile=document.querySelector('.meg-datagrid-mobile-filter');
+    const thead=document.querySelector('.meg-datagrid-table thead');
+    const rows=[...document.querySelectorAll('.meg-datagrid-table tbody tr[data-grid-row]')].filter((row)=>{
+      const r=row.getBoundingClientRect();
+      return r.bottom>0 && r.top<window.innerHeight && getComputedStyle(row).display!=='none';
+    });
+    const tr=toolbar?.getBoundingClientRect(), fr=filters?.getBoundingClientRect(), hr=thead?.getBoundingClientRect();
+    return {
+      toolbarHeight:tr?.height??0,
+      filterTop:fr?.top??null,
+      toolbarTop:tr?.top??null,
+      toolbarBottom:tr?.bottom??null,
+      chips:chips.length,
+      moreText:more?.textContent?.trim()??'',
+      mobileText:mobile && getComputedStyle(mobile).display!=='none' ? mobile.textContent.trim() : null,
+      headerHeight:hr?.height??0,
+      headerTop:hr?.top??null,
+      headerBottom:hr?.bottom??null,
+      visibleRows:rows.length,
+      dateChip:chips[0]?.textContent?.replace(/\s+/g,' ').trim()??''
+    };
+  })()`);
+
+  assert.equal(snapshot.chips, Math.min(count,2), label + ': deve mostrar no máximo dois chips');
+  if(count>2) assert.equal(snapshot.moreText, '+'+(count-2)+' filtros', label + ': contador +N incorreto');
+  if(width<1024) assert.ok(snapshot.mobileText?.includes('Filtros ('+count+')'), label + ': botão Filtros (N) incorreto');
+  assert.ok(snapshot.toolbarHeight <= (height<=400 ? 58 : 72), label + ': toolbar ganhou segunda linha');
+  assert.ok(snapshot.filterTop == null || (snapshot.filterTop >= snapshot.toolbarTop-1 && snapshot.filterTop < snapshot.toolbarBottom+1), label + ': chips saíram da toolbar');
+  if(count>=1) assert.equal(snapshot.dateChip.includes('08/10/2026'), true, label + ': chip Data não está em dd/mm/aaaa');
+  if(width===910 && height===400 && count===1) {
+    assert.ok(snapshot.headerHeight >= 47, label + ': cabeçalho sticky ficou cortado');
+    assert.ok(snapshot.headerTop != null && snapshot.headerBottom <= height+1, label + ': cabeçalho não está inteiro');
+    assert.ok(snapshot.visibleRows >= 2, label + ': menos de duas linhas visíveis');
+  }
+
+  if(evidenceName) await captureEvidence(evidenceName);
+
+  if(count>2) {
+    await browser.evaluate("document.querySelector('.meg-datagrid-more-filters')?.click()");
+    await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip', count, label + ' popover completo');
+    const allChips=await browser.evaluate("document.querySelectorAll('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip').length");
+    assert.equal(allChips,count,label + ': popover não listou todos os filtros');
+    if(evidenceName) await captureEvidence(evidenceName+'-popover');
+    await browser.evaluate("document.querySelector('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip')?.click()");
+    await browser.sleep(50);
+    const persisted=await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
+    assert.equal(Object.keys(persisted.filters).length,count-1,label + ': remover pelo × não atualizou filtros');
+    await browser.evaluate("document.querySelector('.meg-datagrid-more-filters')?.click()");
+    await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-clear-all',1,label + ' Limpar tudo');
+    await browser.evaluate("document.querySelector('[data-datagrid-active-filters-popover] .meg-datagrid-clear-all')?.click()");
+  } else {
+    await browser.evaluate("document.querySelector('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip')?.click()");
+    await browser.sleep(40);
+    await setActiveFilterCount(count);
+    await browser.navigate(appUrl);
+    await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all',1,label + ' Limpar tudo');
+    await browser.evaluate("document.querySelector('.meg-datagrid-toolbar__filters .meg-datagrid-clear-all')?.click()");
+  }
+  await waitForMissing('.meg-datagrid-toolbar__filters',label + ' limpar filtros');
+  const persistedAfterClear=await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
+  assert.equal(Object.keys(persistedAfterClear.filters).length,0,label + ': Limpar tudo não zerou filtros');
+}
 async function assertDateYearDisclosure(selector, evidencePrefix = null) {
   const yearSelector = selector + ' .meg-datagrid-date-year__toggle';
   await waitForSelectorCount(yearSelector, 1, 'grupo de ano');
@@ -157,13 +252,13 @@ async function applyTodayDateFilter(width, height, collapsed, evidenceName = nul
       apply?.click();
       return Boolean(apply);
     })()`);
-    await waitForSelectorCount('.meg-datagrid-active-filters .meg-datagrid-filter-chip', 1, label + ' chip ativo');
+    await waitForSelectorCount('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip', 1, label + ' chip ativo');
   };
 
   await activateTodayAndApply();
 
   const active=await browser.evaluate(`(() => {
-    const bar=document.querySelector('.meg-datagrid-active-filters');
+    const bar=document.querySelector('.meg-datagrid-toolbar__filters');
     const chip=bar?.querySelector('.meg-datagrid-filter-chip');
     const vp=document.querySelector('.meg-datagrid__viewport');
     const th=document.querySelector('.meg-datagrid-table thead');
@@ -189,13 +284,13 @@ async function applyTodayDateFilter(width, height, collapsed, evidenceName = nul
   if(evidenceName) await captureEvidence(evidenceName);
 
   await browser.evaluate("document.querySelector('.meg-datagrid-filter-chip')?.click()");
-  await waitForMissing('.meg-datagrid-active-filters',label + ' remoção por chip');
+  await waitForMissing('.meg-datagrid-toolbar__filters',label + ' remoção por chip');
   assert.equal(await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent||''"),baseline,label + ': chip não restaurou registros');
 
   await activateTodayAndApply();
   await waitForSelectorCount('.meg-datagrid-clear-all', 1, label + ' Limpar tudo');
   await browser.evaluate("document.querySelector('.meg-datagrid-clear-all')?.click()");
-  await waitForMissing('.meg-datagrid-active-filters', label + ' Limpar tudo');
+  await waitForMissing('.meg-datagrid-toolbar__filters', label + ' Limpar tudo');
   assert.equal(await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent||''"),baseline,label + ': Limpar tudo não restaurou registros');
 }
 
@@ -530,6 +625,23 @@ try {
   ]) {
     await collectViewportFailure(`overlay ${viewport.width}x${viewport.height} expandida`, () => assertCompactOverlays(viewport.width, viewport.height, false));
     await collectViewportFailure(`overlay ${viewport.width}x${viewport.height} recolhida`, () => assertCompactOverlays(viewport.width, viewport.height, true));
+  }
+
+  for (const viewport of [
+    { width: 1366, height: 600 },
+    { width: 910, height: 400 },
+  ]) {
+    for (const count of [1, 3, 5]) {
+      await collectViewportFailure(
+        `toolbar ${viewport.width}x${viewport.height} ${count} filtros`,
+        () => assertToolbarFilters(
+          viewport.width,
+          viewport.height,
+          count,
+          `filters-${count}-${viewport.width}x${viewport.height}`,
+        ),
+      );
+    }
   }
 
   for (const viewport of [
