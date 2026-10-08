@@ -150,7 +150,7 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
       headerBottom:hr?.bottom??null,
       visibleRows:rows.length,
       dateChip:chips[0]?.textContent?.trim()??'',
-      dateChipTitle:chips[0]?.getAttribute('title')??''
+      dateChipAria:chips[0]?.getAttribute('aria-label')??''
     };
   })()`);
 
@@ -163,7 +163,7 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
   assert.ok(snapshot.filterTop == null || (snapshot.filterTop >= snapshot.toolbarTop-1 && snapshot.filterTop < snapshot.toolbarBottom+1), label + ': chips saíram da toolbar');
   if(count>=1) {
     assert.equal(snapshot.dateChip.includes('Está entre 08/10/2026'), true, label + ': chip Data não mostra operador + data');
-    assert.equal(snapshot.dateChipTitle.includes('Data · Está entre 08/10/2026'), true, label + ': tooltip do chip Data não contém o texto completo');
+    assert.equal(snapshot.dateChipAria.includes('Remover filtro Data: Está entre 08/10/2026'), true, label + ': resumo acessível do chip Data não contém operador + valor');
   }
   assert.ok(snapshot.headerHeight >= 40, label + ': cabeçalho sticky ficou cortado');
   assert.ok(snapshot.headerTop != null && snapshot.headerBottom <= height+1, label + ': cabeçalho não está inteiro');

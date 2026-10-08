@@ -159,5 +159,29 @@ for (const viewport of [
       expect(metric.summaryTextOverflow).not.toBe('ellipsis');
       expect(metric.removeCenterDelta).toBeLessThanOrEqual(1.5);
     }
+
+    const sixDates = [-60, -59, -58, -57, -56, -55].map(isoDayOffset);
+    await page.evaluate(({ key, selected }) => {
+      localStorage.setItem(key, JSON.stringify({
+        filters: {
+          date: { type: 'date', operator: 'between', value: '', value2: '', selected },
+        },
+        sort: [],
+        columnOrder: [],
+        hiddenColumns: [],
+        widths: {},
+        pageSize: 600,
+      }));
+    }, { key: storageKey, selected: sixDates });
+    await page.reload();
+
+    const dateChipWithOverflow = page.locator('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip').first();
+    await dateChipWithOverflow.focus();
+    const firstFiveDates = sixDates.slice(0, 5).map(ptBrDate);
+    const sixthDate = ptBrDate(sixDates[5]);
+    const overflowTooltip = page.locator('[data-datagrid-tooltip]');
+    await expect(overflowTooltip).toBeVisible();
+    await expect(overflowTooltip).toContainText(`Data · ${firstFiveDates.join(', ')}, +1`);
+    await expect(overflowTooltip).not.toContainText(sixthDate);
   });
 }
