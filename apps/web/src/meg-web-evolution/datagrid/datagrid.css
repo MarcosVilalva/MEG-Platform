@@ -1944,3 +1944,22 @@
     height: 2rem;
   }
 }
+
+@media (max-height: 640px) {
+  .meg-datagrid__viewport {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 640px) {
+  .meg-datagrid__viewport {
+    overflow: auto;
+  }
+}
+
+@media (min-width: 640px) and (width < 1024px) and (max-height: 500px) {
+  .meg-datagrid__viewport {
+    overflow: auto;
+  }
+}
