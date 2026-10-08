@@ -149,9 +149,15 @@ assert.ok(dataGridSource.includes('data-datagrid-active-filters-popover'), 'Popo
 assert.ok(filterSource.includes('formatDateSummaryValue'), 'Resumo de data deve usar dd/mm/aaaa.');
 assert.ok(filterSource.includes('filterOperatorLabel'), 'Resumo de filtro deve preservar o operador.');
 assert.ok(filterSource.includes('operatorLabel ? \`${operatorLabel} ${value}\` : value'), 'Filtros por operador devem exibir operador + valor.');
-assert.ok(dataGridSource.includes('title={\`${item.label} · ${item.summary}\`}'), 'Chips ativos devem manter tooltip com texto completo.');
-assert.ok(css.includes('.meg-datagrid-filter-chip--popover > span'), 'Popover de filtros ativos deve liberar o texto completo.');
-assert.ok(css.includes('white-space: normal;') && css.includes('overflow-wrap: anywhere;'), 'Chip do popover não pode truncar o resumo.');
+assert.ok(dataGridSource.includes('filterTooltipSummary'), 'Tooltip deve expandir valores selecionados.');
+assert.ok(dataGridSource.includes('values.slice(0, 5)'), 'Tooltip deve limitar valores selecionados aos cinco primeiros.');
+assert.ok(dataGridSource.includes('hiddenFiltersTooltip'), 'Botão +N filtros deve listar filtros ocultos no tooltip.');
+assert.ok(dataGridSource.includes('onFocus={(event) => showTooltip'), 'Tooltips devem abrir por foco de teclado.');
+assert.ok(dataGridSource.includes('data-datagrid-tooltip'), 'Tooltip acessível do DataGrid ausente.');
+assert.ok(dataGridSource.includes('meg-datagrid-active-filter-row__summary'), 'Popover de filtros ativos deve usar linhas de lista.');
+assert.equal(dataGridSource.includes('meg-datagrid-filter-chip--popover'), false, 'Popover não pode voltar ao formato pílula.');
+assert.ok(css.includes('.meg-datagrid-active-filter-row') && css.includes('border-radius: .5rem;'), 'Linha do popover deve usar raio de 8px.');
+assert.ok(css.includes('.meg-datagrid-active-filter-row__summary') && css.includes('white-space: normal;'), 'Resumo do popover não pode truncar.');
 assert.ok(css.includes('min-height: 3rem') && css.includes('.meg-datagrid-table thead'), 'Cabeçalho sticky precisa de altura mínima.');
 
 assert.ok(dataGridSource.includes('meg-datagrid-filtered-empty'), 'Estado vazio filtrado deve preservar a tabela/cabeçalho.');
