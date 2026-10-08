@@ -805,3 +805,6 @@ Validação visual explícita da Etapa 03 foi recebida antes do merge. CI não s
 - Exceção autorizada para um único push corretivo após o SHA ffeb8eb4: corrigir a sintaxe do browser test e ajustar visualmente apenas DataGrid/popovers; PR #606 permanece Draft, sem merge, e a validação visual continua pendente.
 
 - Ajustes finais autorizados da Etapa 04/PR #606: barra de filtros ativos, tema do select Coluna, grupos de ano acessíveis e screenshots estáveis. PR permanece Draft, sem merge.
+
+
+- Complemento final autorizado da Etapa 04/PR #606: compactar filtros ativos na toolbar, corrigir altura do cabeçalho e resumo DATE pt-BR; validar 1/3/5 filtros em 1366x600 e 910x400. PR permanece Draft, sem merge.

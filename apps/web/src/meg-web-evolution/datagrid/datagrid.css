@@ -55,8 +55,14 @@
 
 .meg-datagrid-toolbar {
   position: relative;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  min-height: 4.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
   border-bottom: .0625rem solid rgba(20, 227, 200, .12);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 227, 200, .28) transparent;
 }
 
 .meg-datagrid-toolbar__primary,
@@ -68,13 +74,13 @@
 }
 
 .meg-datagrid-toolbar__primary {
-  flex: 1 1 100%;
-  flex-wrap: wrap;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
 }
 
 .meg-datagrid-toolbar__actions {
-  flex: 1 1 auto;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   max-width: 100%;
 }
@@ -173,33 +179,18 @@
 }
 
 .meg-datagrid-active-filters {
-  position: relative;
-  z-index: 16;
-  flex: 0 0 auto;
-  min-height: 3rem;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: .45rem;
-  min-width: 0;
-  padding: .3rem .75rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  border-bottom: .0625rem solid rgba(20, 227, 200, .14);
-  background: #031c1f;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(20, 227, 200, .36) transparent;
-}
-
-.meg-datagrid-active-filters__label {
-  flex: 0 0 auto;
-  color: var(--meg-muted);
-  font-size: .76rem;
-  font-weight: 700;
+  gap: .4rem;
+  overflow: hidden;
 }
 
 .meg-datagrid-filter-chip {
-  min-height: 2.45rem;
-  flex: 0 0 auto;
+  min-height: 2.35rem;
+  max-width: 17rem;
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   gap: .35rem;
@@ -212,9 +203,71 @@
   font-size: .76rem;
 }
 
+.meg-datagrid-filter-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .meg-datagrid-filter-chip strong {
   color: var(--meg-accent);
   font-weight: 750;
+}
+
+.meg-datagrid-more-filters {
+  min-height: 2.35rem;
+  flex: 0 0 auto;
+  padding: .35rem .6rem;
+  border: .0625rem solid rgba(20, 227, 200, .24);
+  border-radius: var(--meg-radius-pill);
+  background: rgba(20, 227, 200, .08);
+  color: var(--meg-accent);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: .74rem;
+  font-weight: 750;
+}
+
+.meg-datagrid-active-popover {
+  position: fixed;
+  z-index: 180;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: clamp(280px, 24vw, 360px);
+  max-width: calc(100vw - 16px);
+  max-height: min(560px, calc(100dvh - 16px));
+  border: .0625rem solid rgba(20, 227, 200, .26);
+  border-radius: .9rem;
+  background: #02171a;
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, .42);
+}
+
+.meg-datagrid-active-popover__list {
+  min-height: 0;
+  display: grid;
+  gap: .4rem;
+  padding: .55rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 227, 200, .34) transparent;
+}
+
+.meg-datagrid-filter-chip--popover {
+  width: 100%;
+  max-width: none;
+  justify-content: space-between;
+}
+
+.meg-datagrid-active-popover__footer {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  padding: .5rem .55rem;
+  border-top: .0625rem solid rgba(20, 227, 200, .14);
+  background: #02171a;
 }
 
 .meg-datagrid-clear-all {
@@ -1161,12 +1214,15 @@
     position: sticky;
     z-index: 12;
     top: 0;
+    height: 3rem;
+    min-height: 3rem;
     background: #031c1f;
   }
 
   .meg-datagrid-table th {
     position: relative;
     height: 3rem;
+    min-height: 3rem;
     padding: 0;
     border-right: .0625rem solid rgba(20, 227, 200, .08);
     border-bottom: .0625rem solid rgba(20, 227, 200, .24);
@@ -1493,4 +1549,31 @@
 
 @media (prefers-reduced-motion: reduce) {
   .meg-datagrid-date-year__toggle { transition: none; }
+}
+
+@media (max-height: 640px) {
+  .meg-datagrid-toolbar {
+    min-height: 3.25rem;
+    padding-block: .35rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  .meg-datagrid-toolbar {
+    flex-wrap: nowrap;
+  }
+
+  .meg-datagrid-active-filters {
+    flex: 0 1 auto;
+  }
+
+  .meg-datagrid-filter-chip {
+    max-width: 13rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .meg-datagrid-filter-chip {
+    max-width: 10.5rem;
+  }
 }

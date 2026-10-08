@@ -141,3 +141,10 @@ assert.ok(filterSource.includes('aria-expanded={expanded}'));
 assert.ok(filterSource.includes("{expanded ? '−' : '+'}"));
 assert.ok(css.includes('.meg-datagrid-mobile-filter-column select option'));
 assert.ok(css.includes('color-scheme: dark'));
+
+assert.ok(gridSource.includes('activeFilterKeys.slice(0, 2)'), 'Toolbar deve limitar chips visíveis a dois.');
+assert.ok(gridSource.includes("data-datagrid-active-popover"), 'Overflow de filtros ativos deve abrir popover.');
+assert.ok(gridSource.includes("+{activeFilterKeys.length - 2} filtros"), 'Toolbar deve exibir +N filtros.');
+assert.ok(gridSource.includes("Filtros ({activeFilterKeys.length})"), 'Botão Filtros deve exibir total ativo.');
+assert.ok(filterSource.includes('formatSummaryDate'), 'Resumo DATE deve usar formato pt-BR.');
+assert.ok(filterSource.includes("from === to ? from"), 'Intervalo DATE igual deve mostrar uma data só.');

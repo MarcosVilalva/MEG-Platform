@@ -523,11 +523,24 @@ export function FilterPanel<T extends Record<string, unknown>>({
   );
 }
 
+function formatSummaryDate(value: unknown): string {
+  const key = toDateKey(value);
+  if (!key) return displayValue(value);
+  const [year, month, day] = key.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 export function filterSummary(filter: DataGridFilter | undefined): string {
   if (!filter || !isFilterActive(filter)) return '';
   if (filter.type === 'boolean') return filter.booleanValue ? 'Sim' : 'Não';
   if (filter.selected?.length) return filter.selected.length === 1 ? '1 selecionado' : `${filter.selected.length} selecionados`;
   if (filter.operator === 'empty') return 'Está vazio';
+  if (filter.type === 'date') {
+    const from = formatSummaryDate(filter.value);
+    const to = formatSummaryDate(filter.value2);
+    if (filter.operator === 'between') return !to || from === to ? from : `${from} a ${to}`;
+    return from;
+  }
   if (filter.operator === 'between') return `${displayValue(filter.value)} a ${displayValue(filter.value2)}`;
   return displayValue(filter.value);
 }

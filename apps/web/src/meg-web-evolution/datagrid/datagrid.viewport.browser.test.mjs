@@ -199,6 +199,116 @@ async function applyTodayDateFilter(width, height, collapsed, evidenceName = nul
   assert.equal(await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent||''"),baseline,label + ': Limpar tudo não restaurou registros');
 }
 
+function filterStateForCount(count) {
+  const now = new Date();
+  const iso = (date) => {
+    const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+d;
+  };
+  const from=new Date(now); from.setDate(from.getDate()-60);
+  const to=new Date(now); to.setDate(to.getDate()+59);
+  const entries = [
+    ['date',{type:'date',operator:'between',value: count === 1 ? iso(now) : iso(from),value2: count === 1 ? iso(now) : iso(to)}],
+    ['description',{type:'text',operator:'contains',value:'Registro'}],
+    ['quantity',{type:'number',operator:'gte',value:1}],
+    ['amount',{type:'currency',operator:'gte',value:0}],
+    ['segment',{type:'enum',selected:['alpha','beta','gamma','delta']}],
+  ];
+  return Object.fromEntries(entries.slice(0,count));
+}
+
+async function prepareActiveFilters(width, height, count) {
+  await browser.setViewport(width,height);
+  await browser.navigate(appUrl);
+  const filters=filterStateForCount(count);
+  await browser.evaluate(`(() => {
+    localStorage.setItem('meg-web-evolution:sidebar-collapsed','false');
+    localStorage.setItem('meg-web-evolution:datagrid:stage-04-harness', JSON.stringify({
+      filters:${JSON.stringify(filters)}, sort:[], columnOrder:[], hiddenColumns:[], widths:{}, pageSize:600
+    }));
+    return true;
+  })()`);
+  await browser.navigate(appUrl);
+  await waitForSelectorCount('.meg-datagrid-active-filters .meg-datagrid-filter-chip', Math.min(2,count), width+'x'+height+' filtros '+count);
+  return filters;
+}
+
+async function assertActiveFilterToolbarScenario(width,height,count) {
+  const label=width+'x'+height+' '+count+' filtros';
+  const filters=await prepareActiveFilters(width,height,count);
+  const snapshot=await browser.evaluate(`(() => {
+    const toolbar=document.querySelector('.meg-datagrid-toolbar');
+    const active=document.querySelector('.meg-datagrid-active-filters');
+    const chips=[...document.querySelectorAll('.meg-datagrid-active-filters .meg-datagrid-filter-chip')];
+    const more=document.querySelector('.meg-datagrid-more-filters');
+    const table=document.querySelector('.meg-datagrid-table');
+    const thead=table && getComputedStyle(table).display!=='none' ? table.querySelector('thead') : null;
+    const rows=table && getComputedStyle(table).display!=='none'
+      ? [...table.querySelectorAll('tbody tr[data-grid-row]')].filter(r=>r.getClientRects().length)
+      : [...document.querySelectorAll('.meg-datagrid-card-row')].filter(r=>r.getClientRects().length);
+    const tr=toolbar?.getBoundingClientRect(), ar=active?.getBoundingClientRect(), hr=thead?.getBoundingClientRect();
+    const toolbarRows=toolbar ? Math.round(toolbar.scrollHeight / Math.max(1, toolbar.clientHeight)) : 0;
+    return {
+      toolbarHeight:tr?.height??0,
+      toolbarRows,
+      activeTop:ar?.top??null,
+      toolbarTop:tr?.top??null,
+      chips:chips.length,
+      moreText:more?.textContent?.trim()??null,
+      headerHeight:hr?.height??null,
+      visibleRows:rows.length,
+      filterButtonText:document.querySelector('.meg-datagrid-mobile-filter')?.textContent?.replace(/\s+/g,' ').trim()??null,
+      dateChip:chips[0]?.textContent?.replace(/\s+/g,' ').trim()??''
+    };
+  })()`);
+  assert.equal(snapshot.chips, Math.min(2,count), label+': quantidade de chips inline');
+  assert.equal(snapshot.moreText, count>2 ? '+'+(count-2)+' filtros' : null, label+': +N filtros');
+  if(width===910) {
+    assert.ok(snapshot.toolbarHeight <= 58,label+': toolbar deve permanecer em uma linha');
+    assert.ok(snapshot.filterButtonText?.includes('Filtros ('+count+')'),label+': contador no botão Filtros');
+  }
+  if(snapshot.headerHeight!=null) {
+    assert.ok(snapshot.headerHeight>=47,label+': cabeçalho sticky cortado');
+    if(count===1) assert.ok(snapshot.visibleRows>=2,label+': menos de duas linhas visíveis');
+  }
+  if(count===1) {
+    assert.ok(/Data\s*·\s*\d{2}\/\d{2}\/\d{4}/.test(snapshot.dateChip),label+': chip Data não está em dd/mm/aaaa');
+    assert.equal(snapshot.dateChip.includes(' a '),false,label+': data igual não deve repetir intervalo');
+  }
+
+  await captureEvidence(`active-${count}-filters-${width}x${height}`);
+
+  if(count>2) {
+    await browser.evaluate("document.querySelector('.meg-datagrid-more-filters')?.click()");
+    await waitForSelectorCount('[data-datagrid-active-popover] .meg-datagrid-filter-chip',count,label+' popover');
+    const pop=await browser.evaluate(`(() => {
+      const p=document.querySelector('[data-datagrid-active-popover]');
+      return {
+        chips:p?.querySelectorAll('.meg-datagrid-filter-chip').length??0,
+        clear:Boolean([...p?.querySelectorAll('button')||[]].find(b=>b.textContent.trim()==='Limpar tudo'))
+      };
+    })()`);
+    assert.equal(pop.chips,count,label+': popover deve listar todos os filtros');
+    assert.equal(pop.clear,true,label+': Limpar tudo ausente no popover');
+    await browser.evaluate("document.querySelector('[data-datagrid-active-popover] .meg-datagrid-filter-chip')?.click()");
+    await browser.sleep(50);
+    assert.equal(await browser.evaluate("document.querySelectorAll('.meg-datagrid-active-filters .meg-datagrid-filter-chip').length"),Math.min(2,count-1),label+': remover × não atualizou chips');
+  } else {
+    await browser.evaluate("document.querySelector('.meg-datagrid-active-filters .meg-datagrid-filter-chip')?.click()");
+    await waitForMissing('.meg-datagrid-active-filters',label+' remover único filtro');
+  }
+
+  await prepareActiveFilters(width,height,count);
+  if(count>2) {
+    await browser.evaluate("document.querySelector('.meg-datagrid-more-filters')?.click()");
+    await waitForSelectorCount('[data-datagrid-active-popover] .meg-datagrid-clear-all',1,label+' limpar tudo');
+    await browser.evaluate("document.querySelector('[data-datagrid-active-popover] .meg-datagrid-clear-all')?.click()");
+  } else {
+    await browser.evaluate("document.querySelector('.meg-datagrid-active-filters .meg-datagrid-filter-chip')?.click()");
+  }
+  await waitForMissing('.meg-datagrid-active-filters',label+' filtros limpos');
+}
+
 async function openDesktopFilter(columnLabel) {
   const opened = await browser.evaluate(`(() => {
     const th=[...document.querySelectorAll('.meg-datagrid-table thead th')].find((item)=>item.textContent.includes(${JSON.stringify(columnLabel)}));
@@ -520,6 +630,18 @@ try {
       console.error('FAIL ' + label + ': ' + (error instanceof Error ? error.message : String(error)));
     }
   };
+
+  for (const viewport of [
+    { width:1366, height:600 },
+    { width:910, height:400 },
+  ]) {
+    for (const count of [1,3,5]) {
+      await collectViewportFailure(
+        `active-toolbar ${viewport.width}x${viewport.height} ${count}`,
+        () => assertActiveFilterToolbarScenario(viewport.width,viewport.height,count),
+      );
+    }
+  }
 
   for (const viewport of [
     { width: 1366, height: 768 },
