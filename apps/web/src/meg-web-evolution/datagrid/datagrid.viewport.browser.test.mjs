@@ -257,8 +257,8 @@ async function assertActiveFilterToolbarScenario(width,height,count) {
       moreText:more?.textContent?.trim()??null,
       headerHeight:hr?.height??null,
       visibleRows:rows.length,
-      filterButtonText:document.querySelector('.meg-datagrid-mobile-filter')?.textContent?.replace(/\s+/g,' ').trim()??null,
-      dateChip:chips[0]?.textContent?.replace(/\s+/g,' ').trim()??''
+      filterButtonText:document.querySelector('.meg-datagrid-mobile-filter')?.textContent?.replace(/\\s+/g,' ').trim()??null,
+      dateChip:chips[0]?.textContent?.replace(/\\s+/g,' ').trim()??''
     };
   })()`);
   assert.equal(snapshot.chips, Math.min(2,count), label+': quantidade de chips inline');

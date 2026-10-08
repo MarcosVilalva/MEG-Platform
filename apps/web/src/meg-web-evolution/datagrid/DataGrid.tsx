@@ -1075,6 +1075,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 +{activeFilterKeys.length - 2} filtros
               </button>
             )}
+            <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>
             {activeFiltersPopoverOpen && activeFilterKeys.length > 2 && (
               <ActiveFiltersPopover
                 columns={columns}
