@@ -315,37 +315,6 @@ function DateTree({
             )}
           </section>
         );
-              const sortedDays = [...days].sort((a, b) => a.key.localeCompare(b.key));
-              const monthKeys = sortedDays.map((day) => day.key);
-              const monthChecked = monthKeys.length > 0 && monthKeys.every((key) => selected.includes(key));
-              return (
-                <details key={month}>
-                  <summary>{monthLabel}</summary>
-                  <label className="meg-datagrid-check meg-datagrid-date-tree__level">
-                    <input
-                      type="checkbox"
-                      checked={monthChecked}
-                      onChange={() => toggleMany(monthKeys)}
-                      aria-label={`Selecionar mês ${monthLabel} de ${year}`}
-                    />
-                    <span>Todo o mês</span>
-                  </label>
-                  {sortedDays.map((day) => (
-                    <label className="meg-datagrid-check" key={day.key}>
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(day.key)}
-                        onChange={() => toggle(day.key)}
-                      />
-                      <span>{day.key.slice(-2)}</span>
-                      <span className="meg-datagrid-count">{day.count}</span>
-                    </label>
-                  ))}
-                </details>
-              );
-            })}
-          </details>
-        );
       })}
     </div>
   );
