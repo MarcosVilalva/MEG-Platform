@@ -259,7 +259,16 @@
 .meg-datagrid-filter-chip--popover {
   width: 100%;
   max-width: none;
+  align-items: flex-start;
   justify-content: space-between;
+}
+
+.meg-datagrid-filter-chip--popover > span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .meg-datagrid-active-filters-popover__footer {

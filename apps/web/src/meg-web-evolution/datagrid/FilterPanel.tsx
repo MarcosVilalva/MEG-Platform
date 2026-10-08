@@ -530,19 +530,41 @@ function formatDateSummaryValue(value: unknown) {
   return `${day}/${month}/${year}`;
 }
 
+function filterOperatorLabel(filter: DataGridFilter): string {
+  const operators: ReadonlyArray<readonly [string, string]> =
+    filter.type === 'date'
+      ? dateOperators
+      : filter.type === 'number' || filter.type === 'currency'
+        ? numberOperators
+        : filter.type === 'text'
+          ? textOperators
+          : [];
+  return operators.find(([value]) => value === filter.operator)?.[1] ?? '';
+}
+
 export function filterSummary(filter: DataGridFilter | undefined): string {
   if (!filter || !isFilterActive(filter)) return '';
   if (filter.type === 'boolean') return filter.booleanValue ? 'Sim' : 'Não';
   if (filter.selected?.length) return filter.selected.length === 1 ? '1 selecionado' : `${filter.selected.length} selecionados`;
   if (filter.operator === 'empty') return 'Está vazio';
+
+  const operatorLabel = filterOperatorLabel(filter);
+
   if (filter.type === 'date') {
     const from = formatDateSummaryValue(filter.value);
     if (filter.operator === 'between') {
       const to = formatDateSummaryValue(filter.value2);
-      return from === to ? from : `${from} a ${to}`;
+      const range = from === to ? from : `${from} e ${to}`;
+      return operatorLabel ? `${operatorLabel} ${range}` : range;
     }
-    return from;
+    return operatorLabel ? `${operatorLabel} ${from}` : from;
   }
-  if (filter.operator === 'between') return `${displayValue(filter.value)} a ${displayValue(filter.value2)}`;
-  return displayValue(filter.value);
+
+  if (filter.operator === 'between') {
+    const range = `${displayValue(filter.value)} e ${displayValue(filter.value2)}`;
+    return operatorLabel ? `${operatorLabel} ${range}` : range;
+  }
+
+  const value = displayValue(filter.value);
+  return operatorLabel ? `${operatorLabel} ${value}` : value;
 }

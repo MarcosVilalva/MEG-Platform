@@ -147,6 +147,11 @@ assert.ok(dataGridSource.includes('activeFilterItems.slice(0, 2)'), 'Toolbar dev
 assert.ok(dataGridSource.includes('meg-datagrid-more-filters'), 'Overflow de filtros deve usar botão +N filtros.');
 assert.ok(dataGridSource.includes('data-datagrid-active-filters-popover'), 'Popover de todos os filtros ativos ausente.');
 assert.ok(filterSource.includes('formatDateSummaryValue'), 'Resumo de data deve usar dd/mm/aaaa.');
+assert.ok(filterSource.includes('filterOperatorLabel'), 'Resumo de filtro deve preservar o operador.');
+assert.ok(filterSource.includes('operatorLabel ? \`${operatorLabel} ${value}\` : value'), 'Filtros por operador devem exibir operador + valor.');
+assert.ok(dataGridSource.includes('title={\`${item.label} · ${item.summary}\`}'), 'Chips ativos devem manter tooltip com texto completo.');
+assert.ok(css.includes('.meg-datagrid-filter-chip--popover > span'), 'Popover de filtros ativos deve liberar o texto completo.');
+assert.ok(css.includes('white-space: normal;') && css.includes('overflow-wrap: anywhere;'), 'Chip do popover não pode truncar o resumo.');
 assert.ok(css.includes('min-height: 3rem') && css.includes('.meg-datagrid-table thead'), 'Cabeçalho sticky precisa de altura mínima.');
 
 assert.ok(dataGridSource.includes('meg-datagrid-filtered-empty'), 'Estado vazio filtrado deve preservar a tabela/cabeçalho.');

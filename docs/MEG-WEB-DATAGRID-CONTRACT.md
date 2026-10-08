@@ -175,3 +175,12 @@ A validação técnica não substitui a validação visual explícita.
 - “Filtros (N)” permanece visível em todas as larguras, inclusive com N=0.
 - O estado vazio causado por filtros mantém a tabela e o cabeçalho com funis acima da mensagem.
 - O contrato browser cobre 0, 1, 3 e 5 filtros nas duas viewports e o estado vazio filtrado.
+
+
+### Correção passo 7 — operador nos chips de filtros ativos
+- Chips de filtros baseados em operador exibem o operador junto do valor, tanto na toolbar quanto no popover de “Filtros ativos”.
+- NUMBER/CURRENCY usam os símbolos =, ≠, >, ≥, < e ≤; “Entre” mantém o rótulo explícito.
+- DATE exibe o operador por extenso (“Está entre”, “É igual a”, “Antes de”, “Depois de”) e mantém datas em dd/mm/aaaa.
+- TEXT também preserva o operador (“Contém”, “Não contém”, “Começa com”, “Termina com”, “É igual a”).
+- Chips compactos da toolbar podem truncar visualmente com reticências para preservar a linha única; o atributo title mantém o texto completo.
+- Chips dentro do popover “Filtros ativos” não truncam: mostram o texto inteiro com quebra de linha quando necessário, mantendo também title com o texto completo.

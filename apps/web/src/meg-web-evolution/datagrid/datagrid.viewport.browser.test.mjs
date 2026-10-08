@@ -149,7 +149,8 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
       headerTop:hr?.top??null,
       headerBottom:hr?.bottom??null,
       visibleRows:rows.length,
-      dateChip:chips[0]?.textContent?.trim()??''
+      dateChip:chips[0]?.textContent?.trim()??'',
+      dateChipTitle:chips[0]?.getAttribute('title')??''
     };
   })()`);
 
@@ -160,7 +161,10 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
   if(count===0) assert.equal(snapshot.filterTop, null, label + ': faixa de filtros vazia não deve existir');
   assert.ok(snapshot.toolbarHeight <= (height<=400 ? 58 : 72), label + ': toolbar ganhou segunda linha');
   assert.ok(snapshot.filterTop == null || (snapshot.filterTop >= snapshot.toolbarTop-1 && snapshot.filterTop < snapshot.toolbarBottom+1), label + ': chips saíram da toolbar');
-  if(count>=1) assert.equal(snapshot.dateChip.includes('08/10/2026'), true, label + ': chip Data não está em dd/mm/aaaa');
+  if(count>=1) {
+    assert.equal(snapshot.dateChip.includes('Está entre 08/10/2026'), true, label + ': chip Data não mostra operador + data');
+    assert.equal(snapshot.dateChipTitle.includes('Data · Está entre 08/10/2026'), true, label + ': tooltip do chip Data não contém o texto completo');
+  }
   assert.ok(snapshot.headerHeight >= 40, label + ': cabeçalho sticky ficou cortado');
   assert.ok(snapshot.headerTop != null && snapshot.headerBottom <= height+1, label + ': cabeçalho não está inteiro');
   assert.ok(snapshot.visibleRows >= 2, label + ': menos de duas linhas de dados totalmente visíveis');
@@ -170,8 +174,16 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
   if(count>2) {
     await browser.evaluate("document.querySelector('.meg-datagrid-more-filters')?.click()");
     await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip', count, label + ' popover completo');
-    const allChips=await browser.evaluate("document.querySelectorAll('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip').length");
-    assert.equal(allChips,count,label + ': popover não listou todos os filtros');
+    const popoverChips=await browser.evaluate(`[...document.querySelectorAll('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip')].map((chip)=>({ text:chip.textContent?.trim()??'', title:chip.getAttribute('title')??'', whiteSpace:getComputedStyle(chip.querySelector('span')).whiteSpace }))`);
+    assert.equal(popoverChips.length,count,label + ': popover não listou todos os filtros');
+    const quantityChip=popoverChips.find((chip)=>chip.text.includes('Quantidade'));
+    const amountChip=popoverChips.find((chip)=>chip.text.includes('Valor técnico'));
+    if(count>=4) assert.ok(quantityChip?.text.includes('≥ 1'), label + ': Quantidade não mostra operador ≥');
+    if(count>=5) {
+      assert.ok(amountChip?.text.includes('≥ 0'), label + ': Valor técnico não mostra operador ≥');
+      assert.ok(amountChip?.title.includes('Valor técnico · ≥ 0'), label + ': tooltip de Valor técnico não contém texto completo');
+    }
+    assert.ok(popoverChips.every((chip)=>chip.whiteSpace === 'normal'), label + ': chips do popover devem mostrar o texto inteiro, com quebra');
     if(evidenceName) await captureEvidence(evidenceName+'-popover');
     await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-clear-all',1,label + ' Limpar tudo no popover');
     await browser.evaluate("document.querySelector('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip')?.click()");

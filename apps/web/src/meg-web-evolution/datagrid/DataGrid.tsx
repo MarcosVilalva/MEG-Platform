@@ -596,7 +596,8 @@ function ActiveFiltersPopover({
             className="meg-datagrid-filter-chip meg-datagrid-filter-chip--popover"
             key={item.key}
             onClick={() => onRemove(item.key)}
-            aria-label={`Remover filtro ${item.label}`}
+            aria-label={`Remover filtro ${item.label}: ${item.summary}`}
+            title={`${item.label} · ${item.summary}`}
           >
             <span><strong>{item.label}</strong> · {item.summary}</span>
             <GridIcon name="x" size={14} />
@@ -1139,7 +1140,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 className="meg-datagrid-filter-chip"
                 key={item.key}
                 onClick={() => updateFilter(item.key, null)}
-                aria-label={`Remover filtro ${item.label}`}
+                aria-label={`Remover filtro ${item.label}: ${item.summary}`}
                 title={`${item.label} · ${item.summary}`}
               >
                 <span><strong>{item.label}</strong> · {item.summary}</span>
