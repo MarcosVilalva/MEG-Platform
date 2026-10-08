@@ -173,20 +173,20 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
 
   if(count>2) {
     await browser.evaluate("document.querySelector('.meg-datagrid-more-filters')?.click()");
-    await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip', count, label + ' popover completo');
-    const popoverChips=await browser.evaluate(`[...document.querySelectorAll('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip')].map((chip)=>({ text:chip.textContent?.trim()??'', title:chip.getAttribute('title')??'', whiteSpace:getComputedStyle(chip.querySelector('span')).whiteSpace }))`);
-    assert.equal(popoverChips.length,count,label + ': popover não listou todos os filtros');
-    const quantityChip=popoverChips.find((chip)=>chip.text.includes('Quantidade'));
-    const amountChip=popoverChips.find((chip)=>chip.text.includes('Valor técnico'));
-    if(count>=4) assert.ok(quantityChip?.text.includes('≥ 1'), label + ': Quantidade não mostra operador ≥');
+    await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-active-filter-row', count, label + ' popover completo');
+    const popoverRows=await browser.evaluate(`[...document.querySelectorAll('[data-datagrid-active-filters-popover] .meg-datagrid-active-filter-row')].map((row)=>({ text:row.textContent?.trim()??'', summaryWhiteSpace:getComputedStyle(row.querySelector('.meg-datagrid-active-filter-row__summary')).whiteSpace, radius:getComputedStyle(row).borderRadius, removeLabel:row.querySelector('.meg-datagrid-active-filter-row__remove')?.getAttribute('aria-label')??'' }))`);
+    assert.equal(popoverRows.length,count,label + ': popover não listou todos os filtros');
+    const quantityRow=popoverRows.find((row)=>row.text.includes('Quantidade'));
+    const amountRow=popoverRows.find((row)=>row.text.includes('Valor técnico'));
+    if(count>=4) assert.ok(quantityRow?.text.includes('≥ 1'), label + ': Quantidade não mostra operador ≥');
     if(count>=5) {
-      assert.ok(amountChip?.text.includes('≥ 0'), label + ': Valor técnico não mostra operador ≥');
-      assert.ok(amountChip?.title.includes('Valor técnico · ≥ 0'), label + ': tooltip de Valor técnico não contém texto completo');
+      assert.ok(amountRow?.text.includes('≥ 0'), label + ': Valor técnico não mostra operador ≥');
+      assert.ok(amountRow?.removeLabel.includes('Valor técnico: ≥ 0'), label + ': aria-label de remoção não contém resumo completo');
     }
-    assert.ok(popoverChips.every((chip)=>chip.whiteSpace === 'normal'), label + ': chips do popover devem mostrar o texto inteiro, com quebra');
+    assert.ok(popoverRows.every((row)=>row.summaryWhiteSpace === 'normal' && row.radius === '8px'), label + ': linhas do popover devem usar texto integral e raio de 8px');
     if(evidenceName) await captureEvidence(evidenceName+'-popover');
     await waitForSelectorCount('[data-datagrid-active-filters-popover] .meg-datagrid-clear-all',1,label + ' Limpar tudo no popover');
-    await browser.evaluate("document.querySelector('[data-datagrid-active-filters-popover] .meg-datagrid-filter-chip')?.click()");
+    await browser.evaluate("document.querySelector('[data-datagrid-active-filters-popover] .meg-datagrid-active-filter-row__remove')?.click()");
     await browser.sleep(50);
     const persisted=await browser.evaluate("JSON.parse(localStorage.getItem('meg-web-evolution:datagrid:stage-04-harness'))");
     assert.equal(Object.keys(persisted.filters).length,count-1,label + ': remover pelo × não atualizou filtros');

@@ -21,6 +21,7 @@ import {
   groupRows,
   isFilterActive,
   paginateRows,
+  parsePtBrNumber,
   persistenceStorageKey,
   pruneSelection,
   reorderKeys,
@@ -548,6 +549,91 @@ function ColumnManager<T extends Record<string, unknown>>({
   );
 }
 
+type ActiveFilterItem = {
+  key: string;
+  label: string;
+  summary: string;
+  tooltipSummary: string;
+};
+
+function formatTooltipDate(value: unknown): string {
+  const key = toDateKey(value);
+  if (!key) return String(value ?? '');
+  const [year, month, day] = key.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function formatSelectedTooltipValue<T extends Record<string, unknown>>(
+  column: DataGridColumn<T>,
+  option: DistinctOption | undefined,
+  key: string,
+): string {
+  if (key === '__EMPTY__') return '(vazio)';
+  if (column.type === 'date') return formatTooltipDate(option?.value ?? key);
+  if (column.type === 'enum') return column.enumValues?.[key]?.label ?? option?.label ?? key;
+  if (column.type === 'number' || column.type === 'currency') {
+    const parsed = parsePtBrNumber(option?.value ?? key);
+    if (parsed != null) {
+      return new Intl.NumberFormat('pt-BR', column.type === 'currency'
+        ? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+        : { maximumFractionDigits: 6 }).format(parsed);
+    }
+  }
+  return option?.label ?? key;
+}
+
+function filterTooltipSummary<T extends Record<string, unknown>>(
+  filter: DataGridFilter | undefined,
+  column: DataGridColumn<T>,
+  rows: T[],
+): string {
+  if (!filter?.selected?.length) return filterSummary(filter);
+  const optionMap = new Map(getDistinctOptions(rows, column).map((option) => [option.key, option]));
+  const values = filter.selected.map((key) => formatSelectedTooltipValue(column, optionMap.get(key), key));
+  const firstFive = values.slice(0, 5);
+  const remaining = values.length - firstFive.length;
+  return `${firstFive.join(', ')}${remaining > 0 ? `, +${remaining}` : ''}`;
+}
+
+function DataGridTooltip({ anchor, text }: { anchor: HTMLElement; text: string }) {
+  const [style, setStyle] = useState<CSSProperties>({});
+
+  useEffect(() => {
+    const update = () => {
+      const rect = anchor.getBoundingClientRect();
+      const maxWidth = Math.min(384, Math.max(240, window.innerWidth - 16));
+      const left = Math.min(
+        Math.max(8, rect.left + rect.width / 2 - maxWidth / 2),
+        Math.max(8, window.innerWidth - maxWidth - 8),
+      );
+      const below = rect.bottom + 8;
+      const top = below <= window.innerHeight - 48 ? below : Math.max(8, rect.top - 56);
+      setStyle({ left, top, maxWidth });
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [anchor]);
+
+  return createPortal(
+    <div
+      id="meg-datagrid-tooltip"
+      className="meg-datagrid-tooltip"
+      role="tooltip"
+      style={style}
+      data-datagrid-tooltip
+    >
+      {text}
+    </div>,
+    document.body,
+  );
+}
+
 function ActiveFiltersPopover({
   items,
   trigger,
@@ -555,7 +641,7 @@ function ActiveFiltersPopover({
   onClearAll,
   onClose,
 }: {
-  items: Array<{ key: string; label: string; summary: string }>;
+  items: ActiveFilterItem[];
   trigger: HTMLElement | null;
   onRemove: (key: string) => void;
   onClearAll: () => void;
@@ -591,17 +677,20 @@ function ActiveFiltersPopover({
       </header>
       <div className="meg-datagrid-active-filters-popover__list">
         {items.map((item) => (
-          <button
-            type="button"
-            className="meg-datagrid-filter-chip meg-datagrid-filter-chip--popover"
-            key={item.key}
-            onClick={() => onRemove(item.key)}
-            aria-label={`Remover filtro ${item.label}: ${item.summary}`}
-            title={`${item.label} · ${item.summary}`}
-          >
-            <span><strong>{item.label}</strong> · {item.summary}</span>
-            <GridIcon name="x" size={14} />
-          </button>
+          <div className="meg-datagrid-active-filter-row" key={item.key} data-active-filter-row={item.key}>
+            <div className="meg-datagrid-active-filter-row__copy">
+              <span className="meg-datagrid-active-filter-row__label">{item.label}</span>
+              <span className="meg-datagrid-active-filter-row__summary">{item.tooltipSummary}</span>
+            </div>
+            <button
+              type="button"
+              className="meg-datagrid-active-filter-row__remove"
+              onClick={() => onRemove(item.key)}
+              aria-label={`Remover filtro ${item.label}: ${item.tooltipSummary}`}
+            >
+              <GridIcon name="x" size={15} />
+            </button>
+          </div>
         ))}
       </div>
       <footer className="meg-datagrid-active-filters-popover__footer">
@@ -665,6 +754,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [activeFiltersOpen, setActiveFiltersOpen] = useState(false);
+  const [tooltipState, setTooltipState] = useState<{ anchor: HTMLElement; text: string } | null>(null);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(480);
@@ -745,10 +835,30 @@ export function DataGrid<T extends Record<string, unknown>>({
   const activeFilterItems = useMemo(
     () => activeFilterKeys.map((key) => {
       const column = columns.find((item) => item.key === key);
-      return column ? { key, label: column.label, summary: filterSummary(filters[key]) } : null;
-    }).filter(Boolean) as Array<{ key: string; label: string; summary: string }>,
-    [activeFilterKeys, columns, filters],
+      if (!column) return null;
+      const filter = filters[key];
+      return {
+        key,
+        label: column.label,
+        summary: filterSummary(filter),
+        tooltipSummary: filterTooltipSummary(filter, column, data),
+      };
+    }).filter(Boolean) as ActiveFilterItem[],
+    [activeFilterKeys, columns, data, filters],
   );
+
+  const hiddenFiltersTooltip = useMemo(
+    () => activeFilterItems.slice(2).map((item) => `${item.label} · ${item.tooltipSummary}`).join('\n'),
+    [activeFilterItems],
+  );
+
+  const showTooltip = useCallback((anchor: HTMLElement, text: string) => {
+    setTooltipState({ anchor, text });
+  }, []);
+
+  const hideTooltip = useCallback((anchor: HTMLElement) => {
+    setTooltipState((current) => current?.anchor === anchor ? null : current);
+  }, []);
 
   useEffect(() => {
     onFilterChange?.({
@@ -1084,7 +1194,13 @@ export function DataGrid<T extends Record<string, unknown>>({
             className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterKeys.length ? 'is-active' : ''}`}
             aria-expanded={mobileFiltersOpen}
             aria-haspopup="dialog"
+            aria-label={`Filtros (${activeFilterKeys.length}). ${activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`}`}
+            onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`)}
+            onMouseLeave={(event) => hideTooltip(event.currentTarget)}
+            onFocus={(event) => showTooltip(event.currentTarget, activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`)}
+            onBlur={(event) => hideTooltip(event.currentTarget)}
             onClick={() => {
+              setTooltipState(null);
               setOpenFilterKey(null);
               setColumnMenuOpen(false);
               setActiveFiltersOpen(false);
@@ -1134,19 +1250,29 @@ export function DataGrid<T extends Record<string, unknown>>({
 
         {activeFilterItems.length > 0 && (
           <div className="meg-datagrid-toolbar__filters" aria-label="Filtros ativos">
-            {activeFilterItems.slice(0, 2).map((item) => (
-              <button
-                type="button"
-                className="meg-datagrid-filter-chip"
-                key={item.key}
-                onClick={() => updateFilter(item.key, null)}
-                aria-label={`Remover filtro ${item.label}: ${item.summary}`}
-                title={`${item.label} · ${item.summary}`}
-              >
-                <span><strong>{item.label}</strong> · {item.summary}</span>
-                <GridIcon name="x" size={14} />
-              </button>
-            ))}
+            {activeFilterItems.slice(0, 2).map((item) => {
+              const tooltipText = `${item.label} · ${item.tooltipSummary}`;
+              return (
+                <button
+                  type="button"
+                  className="meg-datagrid-filter-chip"
+                  key={item.key}
+                  onClick={(event) => {
+                    setTooltipState(null);
+                    updateFilter(item.key, null);
+                    event.currentTarget.blur();
+                  }}
+                  onMouseEnter={(event) => showTooltip(event.currentTarget, tooltipText)}
+                  onMouseLeave={(event) => hideTooltip(event.currentTarget)}
+                  onFocus={(event) => showTooltip(event.currentTarget, tooltipText)}
+                  onBlur={(event) => hideTooltip(event.currentTarget)}
+                  aria-label={`Remover filtro ${item.label}: ${item.tooltipSummary}`}
+                >
+                  <span><strong>{item.label}</strong> · {item.summary}</span>
+                  <GridIcon name="x" size={14} />
+                </button>
+              );
+            })}
             {activeFilterItems.length > 2 && (
               <button
                 ref={activeFiltersButtonRef}
@@ -1154,7 +1280,13 @@ export function DataGrid<T extends Record<string, unknown>>({
                 className="meg-datagrid-more-filters"
                 aria-haspopup="dialog"
                 aria-expanded={activeFiltersOpen}
+                aria-label={`Mostrar ${activeFilterItems.length - 2} filtros ocultos: ${hiddenFiltersTooltip.replace(/\n/g, '; ')}`}
+                onMouseEnter={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
+                onMouseLeave={(event) => hideTooltip(event.currentTarget)}
+                onFocus={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
+                onBlur={(event) => hideTooltip(event.currentTarget)}
                 onClick={() => {
+                  setTooltipState(null);
                   setOpenFilterKey(null);
                   setColumnMenuOpen(false);
                   setMobileFiltersOpen(false);
@@ -1444,6 +1576,8 @@ export function DataGrid<T extends Record<string, unknown>>({
           onClearAll={clearAllFilters}
         />
       )}
+
+      {tooltipState && <DataGridTooltip anchor={tooltipState.anchor} text={tooltipState.text} />}
     </section>
   );
 }

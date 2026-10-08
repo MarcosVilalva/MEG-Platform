@@ -36,7 +36,8 @@
 .meg-datagrid button,
 .meg-datagrid-filter-dialog button,
 .meg-datagrid-filter-popover button,
-.meg-datagrid-filter-sheet button {
+.meg-datagrid-filter-sheet button,
+.meg-datagrid-active-filters-popover button {
   color: inherit;
 }
 
@@ -256,19 +257,82 @@
   scrollbar-color: rgba(20, 227, 200, .34) transparent;
 }
 
-.meg-datagrid-filter-chip--popover {
+.meg-datagrid-active-filter-row {
   width: 100%;
-  max-width: none;
-  align-items: flex-start;
-  justify-content: space-between;
+  min-height: 3.75rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: .7rem;
+  padding: .65rem .7rem;
+  box-sizing: border-box;
+  border: .0625rem solid rgba(20, 227, 200, .16);
+  border-radius: .5rem;
+  background: rgba(5, 31, 34, .72);
 }
 
-.meg-datagrid-filter-chip--popover > span {
+.meg-datagrid-active-filter-row__copy {
+  min-width: 0;
+  display: grid;
+  gap: .2rem;
+}
+
+.meg-datagrid-active-filter-row__label {
+  color: var(--meg-accent);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .025em;
+}
+
+.meg-datagrid-active-filter-row__summary {
+  min-width: 0;
   overflow: visible;
+  color: var(--meg-text);
+  font-size: .8rem;
+  line-height: 1.35;
   text-overflow: clip;
   white-space: normal;
   overflow-wrap: anywhere;
-  text-align: left;
+}
+
+.meg-datagrid-active-filter-row__remove {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  padding: 0;
+  border: 0;
+  border-radius: .5rem;
+  background: transparent;
+  color: var(--meg-muted);
+  cursor: pointer;
+}
+
+.meg-datagrid-active-filter-row__remove:hover,
+.meg-datagrid-active-filter-row__remove:focus-visible {
+  background: rgba(20, 227, 200, .1);
+  color: var(--meg-accent);
+}
+
+.meg-datagrid-tooltip {
+  position: fixed;
+  z-index: 260;
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 1rem));
+  padding: .5rem .65rem;
+  border: .0625rem solid rgba(20, 227, 200, .24);
+  border-radius: .5rem;
+  background: #011316;
+  color: var(--meg-text);
+  box-shadow: 0 .75rem 1.8rem rgba(0, 0, 0, .42);
+  pointer-events: none;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: .74rem;
+  line-height: 1.35;
 }
 
 .meg-datagrid-active-filters-popover__footer {

@@ -184,3 +184,13 @@ A validação técnica não substitui a validação visual explícita.
 - TEXT também preserva o operador (“Contém”, “Não contém”, “Começa com”, “Termina com”, “É igual a”).
 - Chips compactos da toolbar podem truncar visualmente com reticências para preservar a linha única; o atributo title mantém o texto completo.
 - Chips dentro do popover “Filtros ativos” não truncam: mostram o texto inteiro com quebra de linha quando necessário, mantendo também title com o texto completo.
+
+
+### Passo 7 — refinamento do popover e tooltips
+- O popover “Filtros ativos” usa linhas de lista em largura total, com raio de 8px, nome da coluna em destaque, resumo integral abaixo e botão de remoção em coluna própria.
+- O popover não usa pílulas e não aplica ellipsis ao resumo.
+- “Filtros (N)” possui tooltip com a quantidade de filtros ativos.
+- “+N filtros” possui tooltip com todos os filtros ocultos, incluindo coluna e resumo completo do operador/valor.
+- Chips compactos da toolbar mantêm resumo visual curto, mas o tooltip expande valores selecionados; até cinco valores são mostrados e excedentes usam “+N”.
+- Tooltips abrem tanto em hover quanto em foco por teclado.
+- Cobertura Playwright dedicada valida tooltips e geometria das linhas em 1366x600 e 910x400 usando Chrome do runner, sem nova dependência persistida no projeto.
