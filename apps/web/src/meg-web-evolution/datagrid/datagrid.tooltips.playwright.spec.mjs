@@ -85,6 +85,8 @@ for (const viewport of [
     await page.mouse.move(2, 2);
     await expect(page.locator('[data-datagrid-tooltip]')).toHaveCount(0);
 
+    await filterButton.focus();
+    await expectTooltip(page, '4 filtros ativos');
     await toolbarChips.nth(0).focus();
     await expectTooltip(page, expectedDateTooltip);
     await expect(toolbarChips.nth(0)).toHaveAttribute('aria-label', `Remover filtro Data: ${dates.firstDate}, ${dates.secondDate}`);
