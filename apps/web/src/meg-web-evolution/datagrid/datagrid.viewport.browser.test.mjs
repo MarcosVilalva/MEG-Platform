@@ -119,30 +119,81 @@ async function applyTodayDateFilter(width, height, collapsed, evidenceName = nul
   await browser.evaluate(`(() => { localStorage.removeItem('meg-web-evolution:datagrid:stage-04-harness'); localStorage.setItem('meg-web-evolution:sidebar-collapsed','${collapsed ? 'true' : 'false'}'); return true; })()`);
   await browser.navigate(appUrl);
   const baseline = await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent || ''");
-  if (width >= 1024) {
-    await waitForSelectorCount('.meg-datagrid-table .meg-datagrid-filter-button',1,label + ' funis');
-    assert.equal(await openDesktopFilter('Data'), true, label + ': funil Data não abriu');
-    await waitForSelectorCount('[data-datagrid-filter-dialog="date"] .meg-datagrid-shortcuts button',1,label + ' atalhos Data');
-    await browser.evaluate(`(() => { const d=document.querySelector('[data-datagrid-filter-dialog="date"]'); [...d.querySelectorAll('.meg-datagrid-shortcuts button')].find(b=>b.textContent.trim()==='Hoje')?.click(); [...d.querySelectorAll('button')].find(b=>b.textContent.trim()==='Aplicar')?.click(); return true; })()`);
-  } else {
-    await waitForSelectorCount('.meg-datagrid-mobile-filter',1,label + ' botão Filtros');
+
+  const openDateFilter = async () => {
+    if (width >= 1024) {
+      await waitForSelectorCount('.meg-datagrid-table .meg-datagrid-filter-button', 1, label + ' funis');
+      assert.equal(await openDesktopFilter('Data'), true, label + ': funil Data não abriu');
+      await waitForSelectorCount('[data-datagrid-filter-dialog="date"] .meg-datagrid-shortcuts button', 1, label + ' atalhos Data');
+      return '[data-datagrid-filter-dialog="date"]';
+    }
+
+    await waitForSelectorCount('.meg-datagrid-mobile-filter', 1, label + ' botão Filtros');
     await browser.evaluate("document.querySelector('.meg-datagrid-mobile-filter')?.click()");
-    await waitForSelectorCount('[data-datagrid-mobile-column]',1,label + ' seletor Coluna');
+    await waitForSelectorCount('[data-datagrid-mobile-column]', 1, label + ' seletor Coluna');
     await browser.evaluate(`(() => { const s=document.querySelector('[data-datagrid-mobile-column]'); s.value='date'; s.dispatchEvent(new Event('change',{bubbles:true})); return true; })()`);
-    await waitForSelectorCount('[data-datagrid-mobile-sheet] .meg-datagrid-shortcuts button',1,label);
-    await browser.evaluate(`(() => { const d=document.querySelector('[data-datagrid-mobile-sheet]'); [...d.querySelectorAll('.meg-datagrid-shortcuts button')].find(b=>b.textContent.trim()==='Hoje')?.click(); [...d.querySelectorAll('button')].find(b=>b.textContent.trim()==='Aplicar')?.click(); return true; })()`);
-  }
-  await waitForSelectorCount('.meg-datagrid-active-filters .meg-datagrid-filter-chip',1,label);
-  const active=await browser.evaluate(`(() => { const bar=document.querySelector('.meg-datagrid-active-filters'), chip=bar?.querySelector('.meg-datagrid-filter-chip'), vp=document.querySelector('.meg-datagrid__viewport'), th=document.querySelector('.meg-datagrid-table thead'); if(!bar||!chip||!vp)return null; const b=bar.getBoundingClientRect(),c=chip.getBoundingClientRect(),v=vp.getBoundingClientRect(),h=th?.getBoundingClientRect(),hit=document.elementFromPoint(c.left+c.width/2,c.top+c.height/2); return {barBottom:b.bottom,viewportTop:v.top,headerTop:h?.top??null,chipHit:Boolean(hit&&chip.contains(hit)),range:document.querySelector('.meg-datagrid-page-range')?.textContent||''}; })()`);
-  assert.ok(active);
+    await waitForSelectorCount('[data-datagrid-mobile-sheet] .meg-datagrid-shortcuts button', 1, label + ' atalhos Data móvel');
+    return '[data-datagrid-mobile-sheet]';
+  };
+
+  const activateTodayAndApply = async () => {
+    const dialogSelector = await openDateFilter();
+    const shortcutSelector = dialogSelector + ' .meg-datagrid-shortcuts button';
+    await browser.evaluate(`(() => {
+      const d=document.querySelector(${JSON.stringify(dialogSelector)});
+      const today=[...d.querySelectorAll('.meg-datagrid-shortcuts button')].find(b=>b.textContent.trim()==='Hoje');
+      today?.click();
+      return Boolean(today);
+    })()`);
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const active = await browser.evaluate(`Boolean([...document.querySelectorAll(${JSON.stringify(shortcutSelector)})].find(b=>b.textContent.trim()==='Hoje' && b.classList.contains('is-active')))`);
+      if (active) break;
+      await browser.sleep(25);
+      if (attempt === 39) throw new Error(label + ': atalho Hoje não atualizou o draft');
+    }
+    await browser.evaluate(`(() => {
+      const d=document.querySelector(${JSON.stringify(dialogSelector)});
+      const apply=[...d.querySelectorAll('button')].find(b=>b.textContent.trim()==='Aplicar');
+      apply?.click();
+      return Boolean(apply);
+    })()`);
+    await waitForSelectorCount('.meg-datagrid-active-filters .meg-datagrid-filter-chip', 1, label + ' chip ativo');
+  };
+
+  await activateTodayAndApply();
+
+  const active=await browser.evaluate(`(() => {
+    const bar=document.querySelector('.meg-datagrid-active-filters');
+    const chip=bar?.querySelector('.meg-datagrid-filter-chip');
+    const vp=document.querySelector('.meg-datagrid__viewport');
+    const th=document.querySelector('.meg-datagrid-table thead');
+    if(!bar||!chip||!vp)return null;
+    const b=bar.getBoundingClientRect(),c=chip.getBoundingClientRect(),v=vp.getBoundingClientRect(),h=th?.getBoundingClientRect();
+    const hit=document.elementFromPoint(c.left+c.width/2,c.top+c.height/2);
+    return {
+      barBottom:b.bottom,
+      viewportTop:v.top,
+      headerTop:h?.top??null,
+      chipHit:Boolean(hit&&chip.contains(hit)),
+      range:document.querySelector('.meg-datagrid-page-range')?.textContent||''
+    };
+  })()`);
+  assert.ok(active, label + ': barra ativa não encontrada');
   assert.ok(active.barBottom <= active.viewportTop + 1, label + ': barra invade viewport');
   if(active.headerTop!=null) assert.ok(active.barBottom <= active.headerTop + 1, label + ': thead cobre barra');
   assert.equal(active.chipHit,true,label + ': chip coberto');
   assert.notEqual(active.range,baseline,label + ': filtro não alterou registros');
   if(evidenceName) await captureEvidence(evidenceName);
+
   await browser.evaluate("document.querySelector('.meg-datagrid-filter-chip')?.click()");
-  await waitForMissing('.meg-datagrid-active-filters',label);
+  await waitForMissing('.meg-datagrid-active-filters',label + ' remoção por chip');
   assert.equal(await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent||''"),baseline,label + ': chip não restaurou registros');
+
+  await activateTodayAndApply();
+  await waitForSelectorCount('.meg-datagrid-clear-all', 1, label + ' Limpar tudo');
+  await browser.evaluate("document.querySelector('.meg-datagrid-clear-all')?.click()");
+  await waitForMissing('.meg-datagrid-active-filters', label + ' Limpar tudo');
+  assert.equal(await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent||''"),baseline,label + ': Limpar tudo não restaurou registros');
 }
 
 async function openDesktopFilter(columnLabel) {
