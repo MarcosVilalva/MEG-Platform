@@ -548,6 +548,78 @@ function ColumnManager<T extends Record<string, unknown>>({
   );
 }
 
+function ActiveFiltersPopover({
+  items,
+  trigger,
+  onRemove,
+  onClearAll,
+  onClose,
+}: {
+  items: Array<{ key: string; label: string; summary: string }>;
+  trigger: HTMLElement | null;
+  onRemove: (key: string) => void;
+  onClearAll: () => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const closeAndRestore = useCallback(() => {
+    onClose();
+    window.setTimeout(() => trigger?.focus(), 0);
+  }, [onClose, trigger]);
+  const style = useAnchoredOverlay(trigger, ref, 360, closeAndRestore);
+  useDialogKeyboard(true, ref, trigger, closeAndRestore);
+  useOutsideDismiss(ref, trigger, closeAndRestore);
+
+  return createPortal(
+    <div
+      ref={ref}
+      className="meg-datagrid-active-filters-popover"
+      role="dialog"
+      aria-modal="false"
+      aria-label="Todos os filtros ativos"
+      style={style}
+      data-datagrid-active-filters-popover
+    >
+      <header className="meg-datagrid-dialog-header">
+        <div>
+          <span className="meg-datagrid-dialog-kicker">Filtros ativos</span>
+          <strong>{items.length} {items.length === 1 ? 'filtro' : 'filtros'}</strong>
+        </div>
+        <button type="button" aria-label="Fechar filtros ativos" onClick={closeAndRestore}>
+          <GridIcon name="x" />
+        </button>
+      </header>
+      <div className="meg-datagrid-active-filters-popover__list">
+        {items.map((item) => (
+          <button
+            type="button"
+            className="meg-datagrid-filter-chip meg-datagrid-filter-chip--popover"
+            key={item.key}
+            onClick={() => onRemove(item.key)}
+            aria-label={`Remover filtro ${item.label}`}
+          >
+            <span><strong>{item.label}</strong> · {item.summary}</span>
+            <GridIcon name="x" size={14} />
+          </button>
+        ))}
+      </div>
+      <footer className="meg-datagrid-active-filters-popover__footer">
+        <button
+          type="button"
+          className="meg-datagrid-clear-all"
+          onClick={() => {
+            onClearAll();
+            closeAndRestore();
+          }}
+        >
+          Limpar tudo
+        </button>
+      </footer>
+    </div>,
+    document.body,
+  );
+}
+
 export function DataGrid<T extends Record<string, unknown>>({
   data,
   columns,
@@ -591,11 +663,13 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [activeFiltersOpen, setActiveFiltersOpen] = useState(false);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(480);
   const viewportRef = useRef<HTMLDivElement>(null);
   const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const activeFiltersButtonRef = useRef<HTMLButtonElement>(null);
   const columnMenuButtonRef = useRef<HTMLButtonElement>(null);
   const filterButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const isDesktop = useDesktopGrid();
@@ -667,6 +741,14 @@ export function DataGrid<T extends Record<string, unknown>>({
     [filters],
   );
 
+  const activeFilterItems = useMemo(
+    () => activeFilterKeys.map((key) => {
+      const column = columns.find((item) => item.key === key);
+      return column ? { key, label: column.label, summary: filterSummary(filters[key]) } : null;
+    }).filter(Boolean) as Array<{ key: string; label: string; summary: string }>,
+    [activeFilterKeys, columns, filters],
+  );
+
   useEffect(() => {
     onFilterChange?.({
       filters,
@@ -729,6 +811,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   const clearAllFilters = () => {
     setFilters({});
+    setActiveFiltersOpen(false);
     setPageIndex(0);
     resetViewport();
   };
@@ -909,12 +992,12 @@ export function DataGrid<T extends Record<string, unknown>>({
             onClick={() => {
               setOpenFilterKey(null);
               setColumnMenuOpen(false);
+              setActiveFiltersOpen(false);
               setMobileFiltersOpen((open) => !open);
             }}
           >
             <GridIcon name="filter" />
-            Filtros
-            {activeFilterKeys.length > 0 && <span className="meg-datagrid-tool-count">{activeFilterKeys.length}</span>}
+            Filtros ({activeFilterKeys.length})
           </button>
 
           {selectable && (
@@ -954,6 +1037,51 @@ export function DataGrid<T extends Record<string, unknown>>({
           </label>
         </div>
 
+        {activeFilterItems.length > 0 && (
+          <div className="meg-datagrid-toolbar__filters" aria-label="Filtros ativos">
+            {activeFilterItems.slice(0, 2).map((item) => (
+              <button
+                type="button"
+                className="meg-datagrid-filter-chip"
+                key={item.key}
+                onClick={() => updateFilter(item.key, null)}
+                aria-label={`Remover filtro ${item.label}`}
+                title={`${item.label} · ${item.summary}`}
+              >
+                <span><strong>{item.label}</strong> · {item.summary}</span>
+                <GridIcon name="x" size={14} />
+              </button>
+            ))}
+            {activeFilterItems.length > 2 && (
+              <button
+                ref={activeFiltersButtonRef}
+                type="button"
+                className="meg-datagrid-more-filters"
+                aria-haspopup="dialog"
+                aria-expanded={activeFiltersOpen}
+                onClick={() => {
+                  setOpenFilterKey(null);
+                  setColumnMenuOpen(false);
+                  setMobileFiltersOpen(false);
+                  setActiveFiltersOpen((open) => !open);
+                }}
+              >
+                +{activeFilterItems.length - 2} filtros
+              </button>
+            )}
+            <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>
+            {activeFiltersOpen && activeFilterItems.length > 2 && (
+              <ActiveFiltersPopover
+                items={activeFilterItems}
+                trigger={activeFiltersButtonRef.current}
+                onRemove={(key) => updateFilter(key, null)}
+                onClearAll={clearAllFilters}
+                onClose={() => setActiveFiltersOpen(false)}
+              />
+            )}
+          </div>
+        )}
+
         <div className="meg-datagrid-toolbar__actions">
           <div className="meg-datagrid-column-menu-wrap">
             <button
@@ -965,6 +1093,7 @@ export function DataGrid<T extends Record<string, unknown>>({
               onClick={() => {
                 setOpenFilterKey(null);
                 setMobileFiltersOpen(false);
+                setActiveFiltersOpen(false);
                 setColumnMenuOpen((open) => !open);
               }}
             >
@@ -993,29 +1122,6 @@ export function DataGrid<T extends Record<string, unknown>>({
           </button>
         </div>
       </div>
-
-      {activeFilterKeys.length > 0 && (
-        <div className="meg-datagrid-active-filters" aria-label="Filtros ativos">
-          <span className="meg-datagrid-active-filters__label">Filtros ativos</span>
-          {activeFilterKeys.map((key) => {
-            const column = columns.find((item) => item.key === key);
-            if (!column) return null;
-            return (
-              <button
-                type="button"
-                className="meg-datagrid-filter-chip"
-                key={key}
-                onClick={() => updateFilter(key, null)}
-                aria-label={`Remover filtro ${column.label}`}
-              >
-                <span><strong>{column.label}</strong> · {filterSummary(filters[key])}</span>
-                <GridIcon name="x" size={14} />
-              </button>
-            );
-          })}
-          <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>
-        </div>
-      )}
 
       {!data.length ? (
         <div className="meg-datagrid-empty" role="status">
@@ -1110,6 +1216,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                               onClick={() => {
                                 setColumnMenuOpen(false);
                                 setMobileFiltersOpen(false);
+                                setActiveFiltersOpen(false);
                                 setOpenFilterKey((current) => current === column.key ? null : column.key);
                               }}
                             >
