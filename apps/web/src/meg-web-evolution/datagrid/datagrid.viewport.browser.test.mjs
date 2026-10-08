@@ -251,7 +251,7 @@ async function assertActiveFilterToolbarScenario(width,height,count) {
     const rows=candidateRows.filter((row)=>{
       if(!row.getClientRects().length || !vr) return false;
       const r=row.getBoundingClientRect();
-      return r.bottom > vr.top && r.top < vr.bottom;
+      return r.top >= vr.top - 1 && r.bottom <= vr.bottom + 1;
     });
     const tr=toolbar?.getBoundingClientRect(), ar=active?.getBoundingClientRect(), hr=thead?.getBoundingClientRect();
     const toolbarRows=toolbar ? Math.round(toolbar.scrollHeight / Math.max(1, toolbar.clientHeight)) : 0;
