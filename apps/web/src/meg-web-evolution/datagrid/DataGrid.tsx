@@ -107,6 +107,22 @@ function useDesktopGrid() {
   return desktop;
 }
 
+function useTabularGrid() {
+  const [tabular, setTabular] = useState(() =>
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 640px)').matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 640px)');
+    const sync = () => setTabular(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  return tabular;
+}
+
 function getAnchoredOverlayStyle(trigger: HTMLElement | null, preferredWidth: number, measuredHeight = 560): CSSProperties {
   const margin = 8;
   const gap = 8;
@@ -681,6 +697,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   const columnMenuButtonRef = useRef<HTMLButtonElement>(null);
   const filterButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const isDesktop = useDesktopGrid();
+  const isTabular = useTabularGrid();
 
   const getRowKey = useCallback((row: T) => {
     if (typeof rowKey === 'function') return String(rowKey(row));
@@ -794,8 +811,8 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, []);
 
   const virtual = useMemo(
-    () => getVirtualWindow(displayEntries.length, scrollTop, viewportHeight, isDesktop ? 48 : 248, 8),
-    [displayEntries.length, isDesktop, scrollTop, viewportHeight],
+    () => getVirtualWindow(displayEntries.length, scrollTop, viewportHeight, isTabular ? 48 : 248, 8),
+    [displayEntries.length, isTabular, scrollTop, viewportHeight],
   );
   const renderedEntries = displayEntries.slice(virtual.start, virtual.end);
   const virtualized = displayEntries.length > 500;

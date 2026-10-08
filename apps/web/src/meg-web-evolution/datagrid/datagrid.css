@@ -1170,6 +1170,14 @@
 }
 
 @media (min-width: 640px) {
+  .meg-datagrid-mobile-aggregates {
+    display: none;
+  }
+
+  .meg-datagrid-table tfoot {
+    display: none;
+  }
+
   .meg-datagrid-active-filters {
     flex: 1 1 auto;
   }
@@ -1425,6 +1433,10 @@
 }
 
 @media (min-width: 1024px) {
+  .meg-datagrid-table tfoot {
+    display: table-footer-group;
+  }
+
   .meg-datagrid-mobile-filter,
   .meg-datagrid-mobile-select-all,
   .meg-datagrid-mobile-sort,
@@ -1493,6 +1505,25 @@
 }
 
 @media (max-height: 500px) {
+  .meg-datagrid-footer {
+    min-height: 2.75rem;
+    padding: .2rem .5rem;
+  }
+
+  .meg-datagrid-page-size > span {
+    display: none;
+  }
+
+  .meg-datagrid-page-size select,
+  .meg-datagrid-pagination button {
+    min-height: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .meg-datagrid-pagination button {
+    min-width: 2.25rem;
+  }
+
   .meg-datagrid-filter__criteria {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

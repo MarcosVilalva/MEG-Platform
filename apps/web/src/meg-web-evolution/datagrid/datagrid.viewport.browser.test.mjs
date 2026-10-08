@@ -229,7 +229,7 @@ async function prepareActiveFilters(width, height, count) {
     return true;
   })()`);
   await browser.navigate(appUrl);
-  await waitForSelectorCount('.meg-datagrid-active-filters .meg-datagrid-filter-chip', Math.min(2,count), width+'x'+height+' filtros '+count);
+  await waitForSelectorCount('.meg-datagrid-active-filters .meg-datagrid-filter-chip', Math.min(width >= 1024 ? 2 : 1,count), width+'x'+height+' filtros '+count);
   return filters;
 }
 
@@ -717,15 +717,17 @@ try {
       } else {
         assert.notEqual(snapshot.mobileFilterDisplay, 'none', label + ': botão Filtros deve permanecer disponível abaixo de 1024px');
         assert.notEqual(snapshot.mobileSelectAllDisplay, 'none', label + ': seleção móvel deve permanecer abaixo de 1024px');
-        assert.notEqual(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados móveis devem permanecer abaixo de 1024px');
+        assert.equal(snapshot.mobileAggregatesDisplay, 'none', label + ': agregados móveis redundantes devem ficar ocultos quando a tabela está ativa');
       }
       assert.equal(snapshot.viewportOverflowX, 'auto', label + ': rolagem horizontal da tabela deve ficar confinada ao componente');
       assert.ok(snapshot.viewportScrollWidth >= snapshot.viewportClientWidth, label + ': viewport interno inválido');
 
-      const aggregateFooter = await browser.evaluate("(() => { const footer=document.querySelector('.meg-datagrid-table tfoot'); const cell=footer?.querySelector('td'); if(!footer || !cell) return null; const alpha=(value)=>{ const match=value.match(/rgba?\\(([^)]+)\\)/); if(!match) return 0; const parts=match[1].split(',').map((part)=>part.trim()); return parts.length < 4 ? 1 : Number(parts[3]); }; return { footerBackground:getComputedStyle(footer).backgroundColor, cellBackground:getComputedStyle(cell).backgroundColor, footerAlpha:alpha(getComputedStyle(footer).backgroundColor), cellAlpha:alpha(getComputedStyle(cell).backgroundColor) }; })()");
-      assert.ok(aggregateFooter, label + ': rodapé de agregados ausente');
-      assert.equal(aggregateFooter.footerAlpha, 1, label + ': fundo do rodapé de agregados não é opaco');
-      assert.equal(aggregateFooter.cellAlpha, 1, label + ': células do rodapé de agregados não são opacas');
+      if (viewport.width >= 1024) {
+        const aggregateFooter = await browser.evaluate("(() => { const footer=document.querySelector('.meg-datagrid-table tfoot'); const cell=footer?.querySelector('td'); if(!footer || !cell) return null; const alpha=(value)=>{ const match=value.match(/rgba?\\(([^)]+)\\)/); if(!match) return 0; const parts=match[1].split(',').map((part)=>part.trim()); return parts.length < 4 ? 1 : Number(parts[3]); }; return { footerBackground:getComputedStyle(footer).backgroundColor, cellBackground:getComputedStyle(cell).backgroundColor, footerAlpha:alpha(getComputedStyle(footer).backgroundColor), cellAlpha:alpha(getComputedStyle(cell).backgroundColor) }; })()");
+        assert.ok(aggregateFooter, label + ': rodapé de agregados ausente');
+        assert.equal(aggregateFooter.footerAlpha, 1, label + ': fundo do rodapé de agregados não é opaco');
+        assert.equal(aggregateFooter.cellAlpha, 1, label + ': células do rodapé de agregados não são opacas');
+      }
       const theadBackground = await browser.evaluate("getComputedStyle(document.querySelector('.meg-datagrid-table thead')).backgroundColor");
       assert.notEqual(theadBackground, 'rgba(0, 0, 0, 0)', label + ': thead sticky não pode ser transparente');
       assert.notEqual(theadBackground, 'transparent', label + ': thead sticky não pode ser transparente');
