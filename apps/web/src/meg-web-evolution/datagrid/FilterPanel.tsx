@@ -263,6 +263,11 @@ function DateTree({
               aria-expanded={expanded}
               aria-controls={`meg-datagrid-year-${year}`}
               onClick={() => toggleYear(year)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                toggleYear(year);
+              }}
             >
               <span className="meg-datagrid-date-year__indicator" aria-hidden="true">{expanded ? '−' : '+'}</span>
               <span>{year}</span>

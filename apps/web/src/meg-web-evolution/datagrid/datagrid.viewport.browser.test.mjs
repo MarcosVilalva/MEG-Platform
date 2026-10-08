@@ -92,25 +92,25 @@ async function assertDateYearDisclosure(selector, evidencePrefix = null) {
   await waitForSelectorCount(yearSelector, 1, 'grupo de ano');
   const read = () => browser.evaluate(`(() => { const b=document.querySelector(${JSON.stringify(yearSelector)}); return { expanded:b?.getAttribute('aria-expanded'), indicator:b?.querySelector('.meg-datagrid-date-year__indicator')?.textContent }; })()`);
   let state = await read();
-  assert.equal(state.expanded, 'false');
-  assert.equal(state.indicator, '+');
+  assert.equal(state.expanded, 'false', 'Ano deve iniciar recolhido');
+  assert.equal(state.indicator, '+', 'Ano recolhido deve mostrar +');
   if (evidencePrefix) await captureEvidence(evidencePrefix + '-year-collapsed');
   await browser.evaluate(`document.querySelector(${JSON.stringify(yearSelector)})?.click()`);
   await waitForSelectorCount(selector + ' .meg-datagrid-date-year__content', 1, 'ano expandido');
   state = await read();
-  assert.equal(state.expanded, 'true');
-  assert.equal(state.indicator, '−');
+  assert.equal(state.expanded, 'true', 'Clique/teclado deve expandir ano');
+  assert.equal(state.indicator, '−', 'Ano expandido deve mostrar −');
   if (evidencePrefix) await captureEvidence(evidencePrefix + '-year-expanded');
   await browser.evaluate(`document.querySelector(${JSON.stringify(yearSelector)})?.click()`);
   await browser.evaluate(`document.querySelector(${JSON.stringify(yearSelector)})?.focus()`);
   await browser.pressKey('Enter', 'Enter');
   state = await read();
-  assert.equal(state.expanded, 'true');
-  assert.equal(state.indicator, '−');
+  assert.equal(state.expanded, 'true', 'Enter deve expandir ano');
+  assert.equal(state.indicator, '−', 'Enter expandido deve mostrar −');
   await browser.pressKey(' ', 'Space');
   state = await read();
-  assert.equal(state.expanded, 'false');
-  assert.equal(state.indicator, '+');
+  assert.equal(state.expanded, 'false', 'Espaço deve recolher ano');
+  assert.equal(state.indicator, '+', 'Espaço recolhido deve mostrar +');
 }
 async function applyTodayDateFilter(width, height, collapsed, evidenceName = null) {
   const label = width + 'x' + height + (collapsed ? ' recolhida' : ' expandida');
@@ -120,12 +120,14 @@ async function applyTodayDateFilter(width, height, collapsed, evidenceName = nul
   await browser.navigate(appUrl);
   const baseline = await browser.evaluate("document.querySelector('.meg-datagrid-page-range')?.textContent || ''");
   if (width >= 1024) {
-    await openDesktopFilter('Data');
-    await waitForSelectorCount('[data-datagrid-filter-dialog="date"] .meg-datagrid-shortcuts button',1,label);
+    await waitForSelectorCount('.meg-datagrid-table .meg-datagrid-filter-button',1,label + ' funis');
+    assert.equal(await openDesktopFilter('Data'), true, label + ': funil Data não abriu');
+    await waitForSelectorCount('[data-datagrid-filter-dialog="date"] .meg-datagrid-shortcuts button',1,label + ' atalhos Data');
     await browser.evaluate(`(() => { const d=document.querySelector('[data-datagrid-filter-dialog="date"]'); [...d.querySelectorAll('.meg-datagrid-shortcuts button')].find(b=>b.textContent.trim()==='Hoje')?.click(); [...d.querySelectorAll('button')].find(b=>b.textContent.trim()==='Aplicar')?.click(); return true; })()`);
   } else {
+    await waitForSelectorCount('.meg-datagrid-mobile-filter',1,label + ' botão Filtros');
     await browser.evaluate("document.querySelector('.meg-datagrid-mobile-filter')?.click()");
-    await waitForSelectorCount('[data-datagrid-mobile-column]',1,label);
+    await waitForSelectorCount('[data-datagrid-mobile-column]',1,label + ' seletor Coluna');
     await browser.evaluate(`(() => { const s=document.querySelector('[data-datagrid-mobile-column]'); s.value='date'; s.dispatchEvent(new Event('change',{bubbles:true})); return true; })()`);
     await waitForSelectorCount('[data-datagrid-mobile-sheet] .meg-datagrid-shortcuts button',1,label);
     await browser.evaluate(`(() => { const d=document.querySelector('[data-datagrid-mobile-sheet]'); [...d.querySelectorAll('.meg-datagrid-shortcuts button')].find(b=>b.textContent.trim()==='Hoje')?.click(); [...d.querySelectorAll('button')].find(b=>b.textContent.trim()==='Aplicar')?.click(); return true; })()`);
