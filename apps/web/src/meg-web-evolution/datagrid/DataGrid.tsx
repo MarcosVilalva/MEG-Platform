@@ -1133,6 +1133,10 @@ export function DataGrid<T extends Record<string, unknown>>({
                     const sortIndex = sort.findIndex((item) => item.key === column.key);
                     const sortState = sortIndex >= 0 ? sort[sortIndex] : null;
                     const activeFilter = isFilterActive(filters[column.key]);
+                    const currentWidth = widths[column.key] ?? column.width ?? 160;
+                    const minimumWidth = column.minWidth ?? 96;
+                    const currentWidthPercent = Math.max(0, Math.min(100, Math.round((currentWidth / Math.max(1, tableMinWidth)) * 100)));
+                    const minimumWidthPercent = Math.max(0, Math.min(currentWidthPercent, Math.round((minimumWidth / Math.max(1, tableMinWidth)) * 100)));
                     return (
                       <th
                         key={column.key}
@@ -1194,6 +1198,10 @@ export function DataGrid<T extends Record<string, unknown>>({
                             role="separator"
                             aria-orientation="vertical"
                             aria-label={`Redimensionar coluna ${column.label}`}
+                            aria-valuemin={minimumWidthPercent}
+                            aria-valuemax={100}
+                            aria-valuenow={currentWidthPercent}
+                            aria-valuetext={`${Math.round(currentWidth)} pixels`}
                             onPointerDown={(event) => beginResize(event, column)}
                             onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
                               if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;

@@ -159,7 +159,7 @@ for (const viewport of approvedViewports) {
     const devtoolsIssues = [];
     page.on('console', (message) => {
       if (message.type() === 'warning' || message.type() === 'error') {
-        consoleMessages.push({ type: message.type(), text: message.text() });
+        consoleMessages.push({ type: message.type(), text: message.text(), url: message.location().url || '' });
       }
     });
     page.on('pageerror', (error) => pageErrors.push(error.message));
