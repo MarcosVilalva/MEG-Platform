@@ -502,22 +502,29 @@
   align-items: flex-start;
 }
 
-.meg-datagrid-card-group .meg-datagrid-group-button > span {
-  flex: 1 0 100%;
-  width: 100%;
-  min-width: 0;
-  margin-left: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 .meg-datagrid-card-group .meg-datagrid-group-subtotal {
-  max-width: 100%;
+  flex: 1 0 100%;
+  margin-left: 1.75rem;
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
   overflow-wrap: anywhere;
   line-height: 1.25;
+}
+
+@media (width < 640px) {
+  .meg-datagrid-card-group .meg-datagrid-group-button > span {
+    flex: 1 0 100%;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .meg-datagrid-card-group .meg-datagrid-group-subtotal {
+    max-width: 100%;
+  }
 }
 
 .meg-datagrid-mobile-aggregates {
