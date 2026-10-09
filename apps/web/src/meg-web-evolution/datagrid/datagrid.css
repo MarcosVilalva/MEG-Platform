@@ -1886,7 +1886,7 @@
 
 .meg-datagrid-filtered-empty {
   flex: 1 1 0;
-  min-height: 0;
+  min-height: 7.5rem;
   max-height: none;
   overflow: auto;
 }
