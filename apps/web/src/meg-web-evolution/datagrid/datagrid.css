@@ -1321,17 +1321,6 @@
   }
 }
 
-@media (min-width: 640px) and (width < 660px) {
-  .meg-datagrid-toolbar__primary {
-    grid-template-columns: max-content minmax(5.5rem, 1fr) minmax(7rem, 1fr);
-  }
-
-  .meg-datagrid-mobile-filter {
-    width: max-content;
-    min-width: max-content;
-  }
-}
-
 @media (min-width: 640px) and (width < 900px) {
   .meg-datagrid-toolbar {
     flex: 0 0 auto;
@@ -1372,6 +1361,30 @@
     min-width: 0;
     width: 100%;
     flex: none;
+  }
+}
+
+@media (min-width: 640px) and (width < 660px) {
+  .meg-datagrid-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "primary"
+      "actions"
+      "filters";
+  }
+
+  .meg-datagrid-toolbar__primary {
+    grid-template-columns: max-content minmax(7rem, 1fr) minmax(9rem, 1.15fr);
+  }
+
+  .meg-datagrid-toolbar__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .meg-datagrid-mobile-filter {
+    width: max-content;
+    min-width: max-content;
   }
 }
 
