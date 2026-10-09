@@ -282,6 +282,19 @@ for (const viewport of approvedViewports) {
         message: `${viewport.width}x${viewport.height}: esperado ao menos 1 card visível antes do screenshot`,
         timeout: 5000,
       }).toBeGreaterThan(0);
+
+      if (viewport.width === 390 && viewport.height === 844) {
+        const groupHeader = page.locator('.meg-datagrid-card-group .meg-datagrid-group-button').first();
+        await expect(groupHeader).toBeVisible();
+        const groupHeaderWidth = await groupHeader.evaluate((element) => ({
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+        }));
+        expect(
+          groupHeaderWidth.scrollWidth,
+          '390x844: cabeçalho do grupo não pode ter overflow horizontal',
+        ).toBeLessThanOrEqual(groupHeaderWidth.clientWidth);
+      }
     }
 
     await expect(grid).toHaveScreenshot(`datagrid-${viewport.width}x${viewport.height}.png`, {
