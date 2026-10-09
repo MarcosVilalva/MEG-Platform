@@ -1321,6 +1321,12 @@
   }
 }
 
+@media (min-width: 640px) and (width < 660px) {
+  .meg-datagrid-toolbar__primary {
+    grid-template-columns: max-content minmax(6.25rem, 1fr) minmax(7.75rem, 1fr);
+  }
+}
+
 @media (min-width: 640px) and (width < 900px) {
   .meg-datagrid-toolbar {
     flex: 0 0 auto;
