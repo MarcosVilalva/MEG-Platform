@@ -1192,6 +1192,7 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
+  box-sizing: border-box;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: .8rem;
