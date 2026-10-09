@@ -308,3 +308,74 @@ for (const viewport of [
     expect(metrics.viewportScrollHeight).toBeLessThanOrEqual(metrics.viewportClientHeight + 1);
   });
 }
+
+
+test('diagnóstico responsivo 680x600 e campos sem id/name em 910x400', async ({ page }) => {
+  await page.setViewportSize({ width: 680, height: 600 });
+  await page.goto(appUrl);
+  await page.evaluate(({ key }) => {
+    localStorage.setItem(key, JSON.stringify({
+      filters: {
+        amount: { type: 'currency', operator: 'gte', value: '999999', value2: '', selected: [] },
+      },
+      sort: [],
+      columnOrder: [],
+      hiddenColumns: [],
+      widths: {},
+      pageSize: 600,
+    }));
+  }, { key: storageKey });
+  await page.reload();
+  await expect(page.getByText('Nenhum resultado com os filtros atuais')).toBeVisible();
+
+  const responsiveDiagnostic = await page.evaluate(() => {
+    const table = document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-table');
+    const cards = document.querySelector('.meg-datagrid-cards');
+    const matches = [];
+    const visit = (rules, media = null) => {
+      for (const rule of [...rules]) {
+        if (rule instanceof CSSMediaRule) {
+          if (matchMedia(rule.conditionText).matches) visit(rule.cssRules, rule.conditionText);
+          continue;
+        }
+        if (!(rule instanceof CSSStyleRule)) continue;
+        if (!rule.style?.display || rule.style.display !== 'table') continue;
+        try {
+          if (table && table.matches(rule.selectorText)) {
+            matches.push({ selector: rule.selectorText, media, display: rule.style.display });
+          }
+        } catch {}
+      }
+    };
+    for (const sheet of [...document.styleSheets]) {
+      try { visit(sheet.cssRules); } catch {}
+    }
+    return {
+      width: innerWidth,
+      height: innerHeight,
+      tableDisplay: table ? getComputedStyle(table).display : null,
+      cardsDisplay: cards ? getComputedStyle(cards).display : null,
+      filteredEmpty: Boolean(document.querySelector('.meg-datagrid-filtered-empty')),
+      matchingDisplayTableRules: matches,
+    };
+  });
+  console.log('DIAGNOSTIC_680', JSON.stringify(responsiveDiagnostic));
+
+  await page.setViewportSize({ width: 910, height: 400 });
+  await page.goto(appUrl);
+  const missing = await page.evaluate(() => [...document.querySelectorAll('input, select, textarea')]
+    .filter((el) => !el.id && !el.getAttribute('name'))
+    .map((el) => ({
+      tag: el.tagName.toLowerCase(),
+      type: el.getAttribute('type'),
+      className: el.className,
+      ariaLabel: el.getAttribute('aria-label'),
+      placeholder: el.getAttribute('placeholder'),
+      visible: Boolean(el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'),
+      context: el.closest('.meg-datagrid, .meg-topbar, .meg-sidebar, .meg-datagrid-filter-dialog, .meg-datagrid-filter-popover')?.className ?? '',
+    })));
+  console.log('DIAGNOSTIC_910_MISSING_ID_NAME', JSON.stringify(missing));
+
+  expect(responsiveDiagnostic.tableDisplay).toBe('table');
+  expect(responsiveDiagnostic.matchingDisplayTableRules.some((item) => item.selector.includes('.meg-datagrid-filtered-empty .meg-datagrid-table'))).toBe(true);
+});
