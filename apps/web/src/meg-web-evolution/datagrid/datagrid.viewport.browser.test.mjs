@@ -259,6 +259,7 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
       tableRect:tr ? {left:tr.left,right:tr.right} : null
     };
   })()`);
+  console.log('FILTERED_EMPTY_SNAPSHOT ' + label + ' ' + JSON.stringify(snapshot));
   assert.equal(snapshot.tableVisible,tableMode,label + ': modo tabela/cards incorreto no vazio');
   if(tableMode) {
     assert.equal(snapshot.headVisible,true,label + ': cabeçalho não ficou visível no modo tabela');
