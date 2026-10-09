@@ -186,13 +186,58 @@ for (const viewport of approvedViewports) {
     expect(consoleMessages).toEqual([]);
     expect(pageErrors).toEqual([]);
 
+    const resolvedIssueNodes = [];
+    for (const issue of devtoolsIssues) {
+      const backendNodeId = issue.details?.genericIssueDetails?.violatingNodeId;
+      if (!backendNodeId) continue;
+      try {
+        const outer = await cdp.send('DOM.getOuterHTML', { backendNodeId });
+        const resolved = await cdp.send('DOM.resolveNode', { backendNodeId });
+        const selectorResult = await cdp.send('Runtime.callFunctionOn', {
+          objectId: resolved.object.objectId,
+          returnByValue: true,
+          functionDeclaration: `function () {
+            const element = this;
+            const escape = (value) => CSS.escape(String(value));
+            if (!(element instanceof Element)) return '<non-element>';
+            if (element.id) return '#' + escape(element.id);
+            const name = element.getAttribute('name');
+            if (name) return element.tagName.toLowerCase() + '[name="' + CSS.escape(name) + '"]';
+            const aria = element.getAttribute('aria-label');
+            if (aria) return element.tagName.toLowerCase() + '[aria-label="' + CSS.escape(aria) + '"]';
+            const parts = [];
+            let current = element;
+            while (current && current.nodeType === 1 && parts.length < 5) {
+              let part = current.tagName.toLowerCase();
+              if (current.classList.length) part += '.' + [...current.classList].map(escape).join('.');
+              parts.unshift(part);
+              current = current.parentElement;
+            }
+            return parts.join(' > ');
+          }`,
+        });
+        const detail = {
+          viewport: `${viewport.width}x${viewport.height}`,
+          code: issue.code,
+          errorType: issue.details?.genericIssueDetails?.errorType ?? null,
+          backendNodeId,
+          selector: selectorResult.result.value ?? null,
+          outerHTML: outer.outerHTML ?? null,
+        };
+        resolvedIssueNodes.push(detail);
+        console.log('DEVTOOLS_ISSUE_NODE', JSON.stringify(detail));
+      } catch (error) {
+        console.log('DEVTOOLS_ISSUE_NODE_RESOLVE_ERROR', String(error));
+      }
+    }
+
     const knownShellIssues = devtoolsIssues.filter((issue) =>
       issue.code === 'GenericIssue'
       && issue.details?.genericIssueDetails?.errorType === 'FormLabelForNameError'
     );
     const unexpectedIssues = devtoolsIssues.filter((issue) => !knownShellIssues.includes(issue));
 
-    // A busca da topbar pertence ao Shell da Etapa 03 e permanece apenas registrada.
+    // Diagnóstico temporário: resolve o nó real antes de alterar qualquer whitelist.
     expect(knownShellIssues.length).toBeLessThanOrEqual(1);
     expect(unexpectedIssues).toEqual([]);
   });
