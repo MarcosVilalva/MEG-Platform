@@ -1240,7 +1240,7 @@
   }
 }
 
-@media (min-width: 640px) and (max-width: 899px) {
+@media (min-width: 640px) and (width < 900px) {
   .meg-datagrid-toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
