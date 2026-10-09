@@ -1201,8 +1201,9 @@
 }
 
 .meg-datagrid-harness > .meg-datagrid {
-  height: 100%;
+  height: auto;
   min-height: 0;
+  align-self: stretch;
 }
 
 .meg-datagrid-harness > .meg-datagrid .meg-datagrid__viewport {

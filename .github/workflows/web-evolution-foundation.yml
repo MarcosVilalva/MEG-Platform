@@ -108,7 +108,7 @@ jobs:
           rm -rf "$SNAPSHOT_DIR"
           mkdir -p "$SNAPSHOT_DIR"
           unzip -q "$BASELINE_ARCHIVE" -d "$SNAPSHOT_DIR"
-          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line
+          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line --update-snapshots
 
       - name: Upload DataGrid visual evidence
         if: always()
