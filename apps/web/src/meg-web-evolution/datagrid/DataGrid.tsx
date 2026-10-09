@@ -2,6 +2,7 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -596,32 +597,69 @@ function filterTooltipSummary<T extends Record<string, unknown>>(
 }
 
 function DataGridTooltip({ anchor, text }: { anchor: HTMLElement; text: string }) {
-  const [style, setStyle] = useState<CSSProperties>({});
+  const ref = useRef<HTMLDivElement>(null);
+  const [style, setStyle] = useState<CSSProperties>({
+    left: 8,
+    top: 8,
+    visibility: 'hidden',
+  });
 
-  useEffect(() => {
-    const update = () => {
-      const rect = anchor.getBoundingClientRect();
-      const maxWidth = Math.min(384, Math.max(240, window.innerWidth - 16));
-      const left = Math.min(
-        Math.max(8, rect.left + rect.width / 2 - maxWidth / 2),
-        Math.max(8, window.innerWidth - maxWidth - 8),
-      );
-      const below = rect.bottom + 8;
-      const top = below <= window.innerHeight - 48 ? below : Math.max(8, rect.top - 56);
-      setStyle({ left, top, maxWidth });
-    };
+  const updatePosition = useCallback(() => {
+    const tooltip = ref.current;
+    if (!tooltip) return;
 
-    update();
-    window.addEventListener('resize', update);
-    window.addEventListener('scroll', update, true);
-    return () => {
-      window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update, true);
-    };
+    const margin = 8;
+    const gap = 8;
+    const triggerRect = anchor.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const tooltipWidth = tooltipRect.width;
+    const tooltipHeight = tooltipRect.height;
+    const triggerCenter = triggerRect.left + triggerRect.width / 2;
+
+    const idealLeft = triggerCenter - tooltipWidth / 2;
+    const maxLeft = Math.max(margin, window.innerWidth - tooltipWidth - margin);
+    const left = Math.min(Math.max(margin, idealLeft), maxLeft);
+
+    const below = triggerRect.bottom + gap;
+    const above = triggerRect.top - gap - tooltipHeight;
+    const fitsBelow = below + tooltipHeight <= window.innerHeight - margin;
+    const fitsAbove = above >= margin;
+    const fallbackTop = Math.min(
+      Math.max(margin, below),
+      Math.max(margin, window.innerHeight - tooltipHeight - margin),
+    );
+    const top = fitsBelow ? below : fitsAbove ? above : fallbackTop;
+
+    setStyle({ left, top, visibility: 'visible' });
   }, [anchor]);
+
+  useLayoutEffect(() => {
+    let frame = 0;
+    const schedule = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(updatePosition);
+    };
+
+    updatePosition();
+    window.addEventListener('resize', schedule);
+    window.addEventListener('scroll', schedule, true);
+
+    const observer = typeof ResizeObserver !== 'undefined' && ref.current
+      ? new ResizeObserver(schedule)
+      : null;
+    if (ref.current) observer?.observe(ref.current);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', schedule);
+      window.removeEventListener('scroll', schedule, true);
+      observer?.disconnect();
+    };
+  }, [text, updatePosition]);
 
   return createPortal(
     <div
+      ref={ref}
       id="meg-datagrid-tooltip"
       className="meg-datagrid-tooltip"
       role="tooltip"

@@ -154,6 +154,10 @@ assert.ok(dataGridSource.includes('values.slice(0, 5)'), 'Tooltip deve limitar v
 assert.ok(dataGridSource.includes('hiddenFiltersTooltip'), 'Botão +N filtros deve listar filtros ocultos no tooltip.');
 assert.ok(dataGridSource.includes('onFocus={(event) => showTooltip'), 'Tooltips devem abrir por foco de teclado.');
 assert.ok(dataGridSource.includes('data-datagrid-tooltip'), 'Tooltip acessível do DataGrid ausente.');
+assert.ok(dataGridSource.includes('useLayoutEffect'), 'Tooltip deve medir a largura real antes do posicionamento.');
+assert.ok(dataGridSource.includes('tooltip.getBoundingClientRect()'), 'Tooltip deve usar sua geometria real para centralização.');
+assert.ok(dataGridSource.includes('triggerCenter - tooltipWidth / 2'), 'Tooltip deve centralizar pela largura renderizada.');
+assert.ok(dataGridSource.includes('window.innerWidth - tooltipWidth - margin'), 'Tooltip deve ser limitado à viewport.');
 assert.ok(dataGridSource.includes('meg-datagrid-active-filter-row__summary'), 'Popover de filtros ativos deve usar linhas de lista.');
 assert.equal(dataGridSource.includes('meg-datagrid-filter-chip--popover'), false, 'Popover não pode voltar ao formato pílula.');
 assert.ok(css.includes('.meg-datagrid-active-filter-row') && css.includes('border-radius: .5rem;'), 'Linha do popover deve usar raio de 8px.');

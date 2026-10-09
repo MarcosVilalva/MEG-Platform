@@ -62,6 +62,54 @@ async function expectTooltip(page, expected) {
   await expect(tooltip).toContainText(expected);
 }
 
+async function expectTooltipPosition(page, trigger, expected, activation) {
+  if (activation === 'hover') {
+    await trigger.hover();
+  } else {
+    await page.mouse.move(2, 2);
+    await trigger.focus();
+  }
+
+  await expectTooltip(page, expected);
+
+  const triggerBox = await trigger.boundingBox();
+  const tooltipBox = await page.locator('[data-datagrid-tooltip]').boundingBox();
+  const viewport = page.viewportSize();
+  expect(triggerBox).not.toBeNull();
+  expect(tooltipBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+
+  const margin = 8;
+  const gap = 8;
+  const tolerance = 2;
+  const triggerCenter = triggerBox.x + triggerBox.width / 2;
+  const tooltipCenter = tooltipBox.x + tooltipBox.width / 2;
+  const idealLeft = triggerCenter - tooltipBox.width / 2;
+  const clampLeft = idealLeft < margin;
+  const clampRight = idealLeft + tooltipBox.width > viewport.width - margin;
+
+  expect(tooltipBox.x).toBeGreaterThanOrEqual(margin - tolerance);
+  expect(tooltipBox.x + tooltipBox.width).toBeLessThanOrEqual(viewport.width - margin + tolerance);
+  expect(tooltipBox.y).toBeGreaterThanOrEqual(margin - tolerance);
+  expect(tooltipBox.y + tooltipBox.height).toBeLessThanOrEqual(viewport.height - margin + tolerance);
+
+  if (!clampLeft && !clampRight) {
+    expect(Math.abs(tooltipCenter - triggerCenter)).toBeLessThanOrEqual(8);
+  } else if (clampLeft) {
+    expect(Math.abs(tooltipBox.x - margin)).toBeLessThanOrEqual(tolerance);
+  } else {
+    expect(Math.abs((tooltipBox.x + tooltipBox.width) - (viewport.width - margin))).toBeLessThanOrEqual(tolerance);
+  }
+
+  const below = triggerBox.y + triggerBox.height + gap;
+  const above = triggerBox.y - gap - tooltipBox.height;
+  if (below + tooltipBox.height <= viewport.height - margin) {
+    expect(Math.abs(tooltipBox.y - below)).toBeLessThanOrEqual(tolerance);
+  } else if (above >= margin) {
+    expect(Math.abs(tooltipBox.y - above)).toBeLessThanOrEqual(tolerance);
+  }
+}
+
 for (const viewport of [
   { width: 1366, height: 600 },
   { width: 910, height: 400 },
@@ -71,33 +119,25 @@ for (const viewport of [
     const dates = await seedFilters(page);
 
     const filterButton = page.locator('.meg-datagrid-mobile-filter');
-    await filterButton.focus();
-    await expectTooltip(page, '4 filtros ativos');
-    await page.keyboard.press('Tab');
-    await expect(filterButton).not.toBeFocused();
+    await expectTooltipPosition(page, filterButton, '4 filtros ativos', 'hover');
+    await expectTooltipPosition(page, filterButton, '4 filtros ativos', 'focus');
 
     const toolbarChips = page.locator('.meg-datagrid-toolbar__filters .meg-datagrid-filter-chip');
     await expect(toolbarChips).toHaveCount(2);
 
     const expectedDateTooltip = `Data · ${dates.firstDate}, ${dates.secondDate}`;
-    await toolbarChips.nth(0).hover();
-    await expectTooltip(page, expectedDateTooltip);
-    await page.mouse.move(2, 2);
-    await expect(page.locator('[data-datagrid-tooltip]')).toHaveCount(0);
-
-    await filterButton.focus();
-    await expectTooltip(page, '4 filtros ativos');
-    await toolbarChips.nth(0).focus();
-    await expectTooltip(page, expectedDateTooltip);
+    await expectTooltipPosition(page, toolbarChips.nth(0), expectedDateTooltip, 'hover');
+    await expectTooltipPosition(page, toolbarChips.nth(0), expectedDateTooltip, 'focus');
     await expect(toolbarChips.nth(0)).toHaveAttribute('aria-label', `Remover filtro Data: ${dates.firstDate}, ${dates.secondDate}`);
 
-    await toolbarChips.nth(1).focus();
-    await expectTooltip(page, 'Segmento · Grupo Gamma');
+    await expectTooltipPosition(page, toolbarChips.nth(1), 'Segmento · Grupo Gamma', 'hover');
+    await expectTooltipPosition(page, toolbarChips.nth(1), 'Segmento · Grupo Gamma', 'focus');
     await expect(toolbarChips.nth(1)).toHaveAttribute('aria-label', 'Remover filtro Segmento: Grupo Gamma');
 
     const moreButton = page.locator('.meg-datagrid-more-filters');
-    await moreButton.focus();
-    await expectTooltip(page, 'Quantidade · ≥ 23');
+    await expectTooltipPosition(page, moreButton, 'Quantidade · ≥ 23', 'hover');
+    await expectTooltip(page, 'Valor técnico · ≥ 23,00');
+    await expectTooltipPosition(page, moreButton, 'Quantidade · ≥ 23', 'focus');
     await expectTooltip(page, 'Valor técnico · ≥ 23,00');
 
     await moreButton.press('Enter');

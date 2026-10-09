@@ -194,3 +194,11 @@ A validação técnica não substitui a validação visual explícita.
 - Chips compactos da toolbar mantêm resumo visual curto, mas o tooltip expande valores selecionados; até cinco valores são mostrados e excedentes usam “+N”.
 - Tooltips abrem tanto em hover quanto em foco por teclado.
 - Cobertura Playwright dedicada valida tooltips e geometria das linhas em 1366x600 e 910x400 usando Chrome do runner, sem nova dependência persistida no projeto.
+
+
+### Passo 7 — posicionamento dos tooltips da toolbar
+- Tooltips de `Filtros (N)`, `+N filtros` e chips da toolbar são centralizados pelo centro real do gatilho usando a largura renderizada do próprio tooltip.
+- A geometria é medida antes da exibição para eliminar o deslocamento causado por largura shrink-to-fit.
+- O tooltip respeita margem mínima de 8px da viewport; quando o centro ideal ultrapassa a viewport, somente o clamp necessário é aplicado.
+- A preferência vertical é abaixo do gatilho com gap de 8px; quando não houver espaço, abre acima; fallback permanece inteiramente dentro da viewport.
+- Playwright valida hover e foco por teclado em 1366x600 e 910x400, exigindo diferença de centros <= 8px quando não houver clamp e confinamento integral à viewport.
