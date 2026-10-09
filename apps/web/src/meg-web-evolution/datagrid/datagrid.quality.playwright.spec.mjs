@@ -200,6 +200,9 @@ for (const viewport of approvedViewports) {
             const element = this;
             const escape = (value) => CSS.escape(String(value));
             if (!(element instanceof Element)) return '<non-element>';
+            if (element.matches('.meg-topbar input[aria-label="Buscar"]')) {
+              return '.meg-topbar input[aria-label="Buscar"]';
+            }
             if (element.id) return '#' + escape(element.id);
             const name = element.getAttribute('name');
             if (name) return element.tagName.toLowerCase() + '[name="' + CSS.escape(name) + '"]';
@@ -231,13 +234,21 @@ for (const viewport of approvedViewports) {
       }
     }
 
-    const knownShellIssues = devtoolsIssues.filter((issue) =>
-      issue.code === 'GenericIssue'
-      && issue.details?.genericIssueDetails?.errorType === 'FormLabelForNameError'
-    );
+    const knownShellIssues = devtoolsIssues.filter((issue) => {
+      if (
+        issue.code !== 'GenericIssue'
+        || issue.details?.genericIssueDetails?.errorType !== 'FormEmptyIdAndNameAttributesForInputError'
+      ) return false;
+      const backendNodeId = issue.details?.genericIssueDetails?.violatingNodeId;
+      const resolved = resolvedIssueNodes.find((item) => item.backendNodeId === backendNodeId);
+      return (
+        resolved?.selector === '.meg-topbar input[aria-label="Buscar"]'
+        && resolved?.outerHTML === '<input aria-label="Buscar" placeholder="Buscar movimentações, contas, cartões, relatórios...">'
+      );
+    });
     const unexpectedIssues = devtoolsIssues.filter((issue) => !knownShellIssues.includes(issue));
 
-    // Diagnóstico temporário: resolve o nó real antes de alterar qualquer whitelist.
+    // Exceção estrita da Etapa 04: somente o campo visual de busca da topbar do Shell.
     expect(knownShellIssues.length).toBeLessThanOrEqual(1);
     expect(unexpectedIssues).toEqual([]);
   });
