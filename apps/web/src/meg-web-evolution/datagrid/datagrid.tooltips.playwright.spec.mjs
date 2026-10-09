@@ -227,3 +227,84 @@ for (const viewport of [
     await expect(overflowTooltip).not.toContainText(sixthDate);
   });
 }
+
+
+for (const viewport of [
+  { width: 1366, height: 600 },
+  { width: 910, height: 400 },
+]) {
+  test(`rodapé permanece visível no vazio filtrado em ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto(appUrl);
+    await page.evaluate(({ key }) => {
+      localStorage.setItem(key, JSON.stringify({
+        filters: {
+          amount: { type: 'currency', operator: 'gte', value: '999999', value2: '', selected: [] },
+        },
+        sort: [],
+        columnOrder: [],
+        hiddenColumns: [],
+        widths: {},
+        pageSize: 600,
+      }));
+    }, { key: storageKey });
+    await page.reload();
+
+    const emptyMessage = page.getByText('Nenhum resultado com os filtros atuais');
+    const footer = page.locator('.meg-datagrid-footer');
+    const range = page.locator('.meg-datagrid-page-range');
+    const pageSize = page.locator('.meg-datagrid-page-size select');
+    const previous = page.getByRole('button', { name: 'Página anterior' });
+    const next = page.getByRole('button', { name: 'Próxima página' });
+    const paginationIndicator = page.locator('.meg-datagrid-pagination > span');
+
+    await expect(emptyMessage).toBeVisible();
+    await expect(footer).toBeVisible();
+    await expect(range).toHaveText('0–0 de 0');
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeDisabled();
+    await expect(paginationIndicator).toHaveText('1 / 1');
+
+    await pageSize.selectOption('100');
+    await expect(pageSize).toHaveValue('100');
+    await expect(range).toHaveText('0–0 de 0');
+    await expect(paginationIndicator).toHaveText('1 / 1');
+
+    const metrics = await page.evaluate(() => {
+      const footer = document.querySelector('.meg-datagrid-footer');
+      const empty = document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-empty');
+      const viewport = document.querySelector('.meg-datagrid-filtered-empty');
+      const footerRect = footer?.getBoundingClientRect();
+      const emptyRect = empty?.getBoundingClientRect();
+      const viewportRect = viewport?.getBoundingClientRect();
+      return {
+        innerHeight: window.innerHeight,
+        documentScrollHeight: document.documentElement.scrollHeight,
+        bodyScrollHeight: document.body.scrollHeight,
+        footerTop: footerRect?.top ?? null,
+        footerBottom: footerRect?.bottom ?? null,
+        emptyTop: emptyRect?.top ?? null,
+        emptyBottom: emptyRect?.bottom ?? null,
+        viewportTop: viewportRect?.top ?? null,
+        viewportBottom: viewportRect?.bottom ?? null,
+        viewportScrollHeight: viewport?.scrollHeight ?? null,
+        viewportClientHeight: viewport?.clientHeight ?? null,
+      };
+    });
+
+    expect(metrics.footerTop).not.toBeNull();
+    expect(metrics.footerBottom).not.toBeNull();
+    expect(metrics.footerTop).toBeGreaterThanOrEqual(0);
+    expect(metrics.footerBottom).toBeLessThanOrEqual(viewport.height + 1);
+    expect(metrics.documentScrollHeight).toBeLessThanOrEqual(viewport.height + 1);
+    expect(metrics.bodyScrollHeight).toBeLessThanOrEqual(viewport.height + 1);
+
+    expect(metrics.emptyTop).not.toBeNull();
+    expect(metrics.emptyBottom).not.toBeNull();
+    expect(metrics.viewportTop).not.toBeNull();
+    expect(metrics.viewportBottom).not.toBeNull();
+    expect(metrics.emptyTop).toBeGreaterThanOrEqual(metrics.viewportTop - 1);
+    expect(metrics.emptyBottom).toBeLessThanOrEqual(metrics.viewportBottom + 1);
+    expect(metrics.viewportScrollHeight).toBeLessThanOrEqual(metrics.viewportClientHeight + 1);
+  });
+}

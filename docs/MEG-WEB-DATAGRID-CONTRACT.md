@@ -202,3 +202,11 @@ A validação técnica não substitui a validação visual explícita.
 - O tooltip respeita margem mínima de 8px da viewport; quando o centro ideal ultrapassa a viewport, somente o clamp necessário é aplicado.
 - A preferência vertical é abaixo do gatilho com gap de 8px; quando não houver espaço, abre acima; fallback permanece inteiramente dentro da viewport.
 - Playwright valida hover e foco por teclado em 1366x600 e 910x400, exigindo diferença de centros <= 8px quando não houver clamp e confinamento integral à viewport.
+
+
+### Passo 7 — rodapé no estado vazio filtrado
+- Quando filtros zeram o conjunto, o corpo mantém cabeçalho e mensagem “Nenhum resultado com os filtros atuais”, mas o rodapé de paginação permanece renderizado como irmão fixo da área rolável.
+- O estado vazio usa intervalo `0–0 de 0`, indicador `1 / 1` e botões anterior/próxima desabilitados.
+- O seletor “Mostrar” continua funcional mesmo com zero resultados.
+- A mensagem vazia fica contida no corpo flexível e não cria rolagem da página nem overflow interno desnecessário.
+- Playwright valida o estado com `Valor técnico ≥ 999999` em 1366x600 e 910x400.

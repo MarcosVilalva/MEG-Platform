@@ -165,6 +165,9 @@ assert.ok(css.includes('.meg-datagrid-active-filter-row__summary') && css.includ
 assert.ok(css.includes('min-height: 3rem') && css.includes('.meg-datagrid-table thead'), 'Cabeçalho sticky precisa de altura mínima.');
 
 assert.ok(dataGridSource.includes('meg-datagrid-filtered-empty'), 'Estado vazio filtrado deve preservar a tabela/cabeçalho.');
+assert.ok(dataGridSource.includes('renderPaginationFooter'), 'Rodapé de paginação deve ser reutilizado também no vazio filtrado.');
+assert.ok(dataGridSource.includes('{renderPaginationFooter()}'), 'Estado vazio filtrado deve renderizar o rodapé.');
+assert.ok(css.includes('.meg-datagrid-footer {\n  flex: 0 0 auto;'), 'Rodapé deve permanecer fora da área flexível do corpo.');
 assert.ok(dataGridSource.includes('Filtros ({activeFilterKeys.length})'), 'Botão Filtros (N) deve exibir contagem inclusive zero.');
 assert.ok(css.includes('.meg-datagrid-filtered-empty .meg-datagrid-table'), 'Tabela do estado vazio filtrado deve permanecer visível.');
 assert.ok(css.includes('@media (max-height: 640px)') && css.includes('.meg-datagrid-footer'), 'Baixa altura deve compactar o rodapé.');

@@ -1206,6 +1206,47 @@ export function DataGrid<T extends Record<string, unknown>>({
               </thead>
   );
 
+  const renderPaginationFooter = () => (
+    <footer className="meg-datagrid-footer">
+      <label className="meg-datagrid-page-size">
+        <span>Mostrar</span>
+        <select
+          value={currentPageSize}
+          onChange={(event) => {
+            setCurrentPageSize(Number(event.target.value));
+            setPageIndex(0);
+            resetViewport();
+          }}
+        >
+          {pageSizes.map((size) => <option key={size} value={size}>{size}</option>)}
+        </select>
+        <span>por página</span>
+      </label>
+
+      <span className="meg-datagrid-page-range" aria-live="polite">{page.start}–{page.end} de {sortedRows.length}</span>
+
+      <div className="meg-datagrid-pagination" aria-label="Paginação">
+        <button
+          type="button"
+          aria-label="Página anterior"
+          disabled={pageIndex === 0}
+          onClick={() => { setPageIndex((value) => Math.max(0, value - 1)); resetViewport(); }}
+        >
+          <GridIcon name="chevronLeft" />
+        </button>
+        <span>{Math.min(pageIndex + 1, page.pages)} / {page.pages}</span>
+        <button
+          type="button"
+          aria-label="Próxima página"
+          disabled={pageIndex >= page.pages - 1}
+          onClick={() => { setPageIndex((value) => Math.min(page.pages - 1, value + 1)); resetViewport(); }}
+        >
+          <GridIcon name="chevronRight" />
+        </button>
+      </div>
+    </footer>
+  );
+
   if (loading) {
     return (
       <section className="meg-datagrid" aria-label={ariaLabel} aria-busy="true" data-datagrid data-state="loading">
@@ -1394,31 +1435,34 @@ export function DataGrid<T extends Record<string, unknown>>({
           <span>Esta grade ainda não recebeu registros.</span>
         </div>
       ) : !filteredRows.length ? (
-        <div className="meg-datagrid__viewport meg-datagrid-filtered-empty" aria-label="Área rolável da grade sem resultados">
-          <table
-            className="meg-datagrid-table"
-            aria-label={ariaLabel}
-            style={{ minWidth: `${tableMinWidth}px` }}
-          >
-            <colgroup>
-              {selectable && <col style={{ width: 52 }} />}
-              {visibleColumns.map((column) => (
-                <col key={column.key} style={{ width: widths[column.key] ?? column.width ?? 160 }} />
-              ))}
-            </colgroup>
-            {renderTableHead()}
-            <tbody>
-              <tr>
-                <td colSpan={visibleColumns.length + (selectable ? 1 : 0)} className="meg-datagrid-empty-cell">
-                  <div className="meg-datagrid-empty" role="status">
-                    <strong>Nenhum resultado com os filtros atuais</strong>
-                    <span>Use “Limpar tudo” na toolbar para restaurar os resultados.</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="meg-datagrid__viewport meg-datagrid-filtered-empty" aria-label="Área rolável da grade sem resultados">
+            <table
+              className="meg-datagrid-table"
+              aria-label={ariaLabel}
+              style={{ minWidth: `${tableMinWidth}px` }}
+            >
+              <colgroup>
+                {selectable && <col style={{ width: 52 }} />}
+                {visibleColumns.map((column) => (
+                  <col key={column.key} style={{ width: widths[column.key] ?? column.width ?? 160 }} />
+                ))}
+              </colgroup>
+              {renderTableHead()}
+              <tbody>
+                <tr>
+                  <td colSpan={visibleColumns.length + (selectable ? 1 : 0)} className="meg-datagrid-empty-cell">
+                    <div className="meg-datagrid-empty" role="status">
+                      <strong>Nenhum resultado com os filtros atuais</strong>
+                      <span>Use “Limpar tudo” na toolbar para restaurar os resultados.</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {renderPaginationFooter()}
+        </>
       ) : (
         <>
           <div
@@ -1546,44 +1590,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             </div>
           )}
 
-          <footer className="meg-datagrid-footer">
-            <label className="meg-datagrid-page-size">
-              <span>Mostrar</span>
-              <select
-                value={currentPageSize}
-                onChange={(event) => {
-                  setCurrentPageSize(Number(event.target.value));
-                  setPageIndex(0);
-                  resetViewport();
-                }}
-              >
-                {pageSizes.map((size) => <option key={size} value={size}>{size}</option>)}
-              </select>
-              <span>por página</span>
-            </label>
-
-            <span className="meg-datagrid-page-range" aria-live="polite">{page.start}–{page.end} de {sortedRows.length}</span>
-
-            <div className="meg-datagrid-pagination" aria-label="Paginação">
-              <button
-                type="button"
-                aria-label="Página anterior"
-                disabled={pageIndex === 0}
-                onClick={() => { setPageIndex((value) => Math.max(0, value - 1)); resetViewport(); }}
-              >
-                <GridIcon name="chevronLeft" />
-              </button>
-              <span>{Math.min(pageIndex + 1, page.pages)} / {page.pages}</span>
-              <button
-                type="button"
-                aria-label="Próxima página"
-                disabled={pageIndex >= page.pages - 1}
-                onClick={() => { setPageIndex((value) => Math.min(page.pages - 1, value + 1)); resetViewport(); }}
-              >
-                <GridIcon name="chevronRight" />
-              </button>
-            </div>
-          </footer>
+          {renderPaginationFooter()}
         </>
       )}
 

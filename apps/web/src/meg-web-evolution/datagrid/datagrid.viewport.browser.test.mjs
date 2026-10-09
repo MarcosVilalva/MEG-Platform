@@ -226,13 +226,25 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
     const funnels=[...document.querySelectorAll('.meg-datagrid-filtered-empty .meg-datagrid-filter-button')];
     const empty=document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-empty');
     const filter=document.querySelector('.meg-datagrid-mobile-filter');
-    const hr=head?.getBoundingClientRect(), er=empty?.getBoundingClientRect();
+    const footer=document.querySelector('.meg-datagrid-footer');
+    const range=document.querySelector('.meg-datagrid-page-range');
+    const pagination=document.querySelector('.meg-datagrid-pagination');
+    const buttons=[...document.querySelectorAll('.meg-datagrid-pagination button')];
+    const viewport=document.querySelector('.meg-datagrid-filtered-empty');
+    const hr=head?.getBoundingClientRect(), er=empty?.getBoundingClientRect(), fr=footer?.getBoundingClientRect(), vr=viewport?.getBoundingClientRect();
     return {
       headVisible:Boolean(hr && hr.height>=40 && hr.top>=0 && hr.bottom<=window.innerHeight+1),
       funnels:funnels.length,
       emptyBelow:Boolean(hr && er && er.top>=hr.bottom-1),
+      emptyContained:Boolean(er && vr && er.top>=vr.top-1 && er.bottom<=vr.bottom+1),
       filterText:filter?.querySelector('.meg-datagrid-filter-count-label')?.textContent?.trim()??'',
-      filterVisible:Boolean(filter && getComputedStyle(filter).display!=='none' && filter.getClientRects().length)
+      filterVisible:Boolean(filter && getComputedStyle(filter).display!=='none' && filter.getClientRects().length),
+      footerVisible:Boolean(fr && fr.top>=0 && fr.bottom<=window.innerHeight+1),
+      rangeText:range?.textContent?.trim()??'',
+      pageText:pagination?.querySelector('span')?.textContent?.trim()??'',
+      buttonsDisabled:buttons.length===2 && buttons.every((button)=>button.disabled),
+      noDocumentOverflow:document.documentElement.scrollHeight<=window.innerHeight+1,
+      noEmptyOverflow:Boolean(viewport && viewport.scrollHeight<=viewport.clientHeight+1)
     };
   })()`);
   assert.equal(snapshot.headVisible,true,label + ': cabeçalho não ficou visível');
@@ -240,6 +252,13 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
   assert.equal(snapshot.emptyBelow,true,label + ': mensagem vazia não ficou abaixo do cabeçalho');
   assert.equal(snapshot.filterVisible,true,label + ': botão Filtros (N) ausente');
   assert.ok(snapshot.filterText.includes('Filtros (1)'),label + ': contador Filtros (N) incorreto no vazio');
+  assert.equal(snapshot.footerVisible,true,label + ': rodapé não ficou visível');
+  assert.equal(snapshot.rangeText,'0–0 de 0',label + ': intervalo vazio incorreto');
+  assert.equal(snapshot.pageText,'1 / 1',label + ': indicador de página vazio incorreto');
+  assert.equal(snapshot.buttonsDisabled,true,label + ': paginação vazia deve ficar desabilitada');
+  assert.equal(snapshot.emptyContained,true,label + ': mensagem vazia saiu da área do corpo');
+  assert.equal(snapshot.noDocumentOverflow,true,label + ': estado vazio gerou overflow da página');
+  assert.equal(snapshot.noEmptyOverflow,true,label + ': mensagem vazia gerou overflow interno');
   await captureEvidence(evidenceName);
 }
 

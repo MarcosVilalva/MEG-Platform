@@ -526,6 +526,7 @@
 }
 
 .meg-datagrid-footer {
+  flex: 0 0 auto;
   flex-wrap: wrap;
   border-top: .0625rem solid rgba(20, 227, 200, .12);
   background: #031c1f;
@@ -1864,7 +1865,7 @@
 }
 
 .meg-datagrid-filtered-empty .meg-datagrid-empty {
-  min-height: 7rem;
+  min-height: 0;
   padding: 1rem;
 }
 
