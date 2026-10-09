@@ -108,7 +108,11 @@ jobs:
           BASELINE_ARCHIVE="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.baselines.zip"
           rm -rf "$SNAPSHOT_DIR"
           mkdir -p "$SNAPSHOT_DIR"
-          unzip -q "$BASELINE_ARCHIVE" -d "$SNAPSHOT_DIR"
+          if unzip -tq "$BASELINE_ARCHIVE" >/dev/null 2>&1; then
+            unzip -q "$BASELINE_ARCHIVE" -d "$SNAPSHOT_DIR"
+          else
+            echo "::warning::Baseline visual inválido/corrompido: $BASELINE_ARCHIVE. A suíte de qualidade continuará para expor os resultados de todos os testes."
+          fi
           QUALITY_STATUS=0
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line || QUALITY_STATUS=$?
           if [ "$TOOLTIP_STATUS" -ne 0 ] || [ "$QUALITY_STATUS" -ne 0 ]; then
