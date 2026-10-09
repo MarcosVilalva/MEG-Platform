@@ -9,10 +9,16 @@ const viewports = [
   { width: 1366, height: 768 },
   { width: 1366, height: 600 },
   { width: 1024, height: 768 },
+  { width: 910, height: 400 },
   { width: 900, height: 700 },
+  { width: 680, height: 600 },
+  { width: 680, height: 400 },
   { width: 640, height: 600 },
   { width: 390, height: 844 },
 ];
+
+const usesCompactTable = (width, height) =>
+  width >= 1024 || (width >= 900 && width < 1024 && height <= 500);
 
 const browser = await createDataGridBrowser();
 
@@ -209,6 +215,7 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
 
 async function assertFilteredEmptyLayout(width, height, evidenceName) {
   const label = width + 'x' + height + ' vazio por filtros';
+  const tableMode = usesCompactTable(width, height);
   await browser.setViewport(width, height);
   await browser.navigate(appUrl);
   await browser.evaluate(`(() => {
@@ -220,9 +227,10 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
     return true;
   })()`);
   await browser.navigate(appUrl + '?state=filtered-empty');
-  await waitForSelectorCount('.meg-datagrid-filtered-empty .meg-datagrid-table thead',1,label + ' cabeçalho');
+  await waitForSelectorCount('.meg-datagrid-filtered-empty .meg-datagrid-empty',1,label + ' mensagem vazia');
   const snapshot=await browser.evaluate(`(() => {
-    const head=document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-table thead');
+    const table=document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-table');
+    const head=table?.querySelector('thead');
     const funnels=[...document.querySelectorAll('.meg-datagrid-filtered-empty .meg-datagrid-filter-button')];
     const empty=document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-empty');
     const filter=document.querySelector('.meg-datagrid-mobile-filter');
@@ -231,11 +239,14 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
     const pagination=document.querySelector('.meg-datagrid-pagination');
     const buttons=[...document.querySelectorAll('.meg-datagrid-pagination button')];
     const viewport=document.querySelector('.meg-datagrid-filtered-empty');
-    const hr=head?.getBoundingClientRect(), er=empty?.getBoundingClientRect(), fr=footer?.getBoundingClientRect(), vr=viewport?.getBoundingClientRect();
+    const tr=table?.getBoundingClientRect(), hr=head?.getBoundingClientRect(), er=empty?.getBoundingClientRect(), fr=footer?.getBoundingClientRect(), vr=viewport?.getBoundingClientRect();
+    const tableVisible=Boolean(table && getComputedStyle(table).display!=='none' && table.getClientRects().length);
     return {
-      headVisible:Boolean(hr && hr.height>=40 && hr.top>=0 && hr.bottom<=window.innerHeight+1),
-      funnels:funnels.length,
-      emptyBelow:Boolean(hr && er && er.top>=hr.bottom-1),
+      tableDisplay:table ? getComputedStyle(table).display : null,
+      tableVisible,
+      headVisible:Boolean(tableVisible && hr && hr.height>=40 && hr.top>=0 && hr.bottom<=window.innerHeight+1),
+      funnels:funnels.filter((item)=>item.getClientRects().length && getComputedStyle(item).display!=='none').length,
+      emptyBelow:Boolean(!tableVisible || (hr && er && er.top>=hr.bottom-1)),
       emptyContained:Boolean(er && vr && er.top>=vr.top-1 && er.bottom<=vr.bottom+1),
       filterText:filter?.querySelector('.meg-datagrid-filter-count-label')?.textContent?.trim()??'',
       filterVisible:Boolean(filter && getComputedStyle(filter).display!=='none' && filter.getClientRects().length),
@@ -243,13 +254,20 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
       rangeText:range?.textContent?.trim()??'',
       pageText:pagination?.querySelector('span')?.textContent?.trim()??'',
       buttonsDisabled:buttons.length===2 && buttons.every((button)=>button.disabled),
-      noDocumentOverflow:document.documentElement.scrollHeight<=window.innerHeight+1,
-      noEmptyOverflow:Boolean(viewport && viewport.scrollHeight<=viewport.clientHeight+1)
+      noDocumentOverflow:document.documentElement.scrollWidth<=window.innerWidth+1 && document.documentElement.scrollHeight<=window.innerHeight+1,
+      noEmptyHorizontalOverflow:Boolean(viewport && viewport.scrollWidth<=viewport.clientWidth+1),
+      tableRect:tr ? {left:tr.left,right:tr.right} : null
     };
   })()`);
-  assert.equal(snapshot.headVisible,true,label + ': cabeçalho não ficou visível');
-  assert.ok(snapshot.funnels>0,label + ': funis desapareceram no estado vazio filtrado');
-  assert.equal(snapshot.emptyBelow,true,label + ': mensagem vazia não ficou abaixo do cabeçalho');
+  assert.equal(snapshot.tableVisible,tableMode,label + ': modo tabela/cards incorreto no vazio');
+  if(tableMode) {
+    assert.equal(snapshot.headVisible,true,label + ': cabeçalho não ficou visível no modo tabela');
+    assert.ok(snapshot.funnels>0,label + ': funis desapareceram no modo tabela vazio');
+  } else {
+    assert.equal(snapshot.tableDisplay,'none',label + ': cards não podem exibir tabela no vazio');
+    assert.equal(snapshot.funnels,0,label + ': funis de cabeçalho não devem aparecer em cards vazios');
+  }
+  assert.equal(snapshot.emptyBelow,true,label + ': mensagem vazia ficou sobre o cabeçalho');
   assert.equal(snapshot.filterVisible,true,label + ': botão Filtros (N) ausente');
   assert.ok(snapshot.filterText.includes('Filtros (1)'),label + ': contador Filtros (N) incorreto no vazio');
   assert.equal(snapshot.footerVisible,true,label + ': rodapé não ficou visível');
@@ -258,8 +276,21 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
   assert.equal(snapshot.buttonsDisabled,true,label + ': paginação vazia deve ficar desabilitada');
   assert.equal(snapshot.emptyContained,true,label + ': mensagem vazia saiu da área do corpo');
   assert.equal(snapshot.noDocumentOverflow,true,label + ': estado vazio gerou overflow da página');
-  assert.equal(snapshot.noEmptyOverflow,true,label + ': mensagem vazia gerou overflow interno');
+  if(!tableMode) assert.equal(snapshot.noEmptyHorizontalOverflow,true,label + ': cards vazios geraram overflow horizontal');
   await captureEvidence(evidenceName);
+}
+
+async function assertApprovedResponsiveMatrix() {
+  for (const viewport of [
+    { width: 1366, height: 600, name: 'responsive-1366x600' },
+    { width: 910, height: 400, name: 'responsive-910x400' },
+    { width: 680, height: 600, name: 'responsive-680x600' },
+    { width: 680, height: 400, name: 'responsive-680x400' },
+    { width: 640, height: 600, name: 'responsive-640x600' },
+    { width: 390, height: 844, name: 'responsive-390x844' },
+  ]) {
+    await assertFilteredEmptyLayout(viewport.width, viewport.height, viewport.name + '-empty');
+  }
 }
 
 async function assertDateYearDisclosure(selector, evidencePrefix = null) {
@@ -686,6 +717,7 @@ async function assertCompactOverlays(width, height, collapsed) {
 }
 
 try {
+  await assertApprovedResponsiveMatrix();
   const viewportFailures = [];
   const collectViewportFailure = async (label, task) => {
     try {
@@ -780,7 +812,7 @@ try {
     assert.ok(snapshot.renderedRows > 0 && snapshot.renderedRows < 120, label + ': virtualização renderizou linhas demais ou nenhuma');
     assert.ok(snapshot.groupCount > 0, label + ': agrupamento não foi renderizado');
 
-    if (viewport.width >= 1024) {
+    if (usesCompactTable(viewport.width, viewport.height)) {
       assert.equal(snapshot.tableDisplay, 'table', label + ': desktop deve usar tabela');
       assert.equal(snapshot.cardsDisplay, 'none', label + ': cards devem ficar ocultos no desktop');
       assert.notEqual(snapshot.mobileFilterDisplay, 'none', label + ': botão Filtros (N) deve permanecer visível no desktop');

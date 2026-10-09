@@ -390,6 +390,7 @@ function MobileFilterSheet<T extends Record<string, unknown>>({
       <label className="meg-datagrid-mobile-filter-column">
         <span>Coluna</span>
         <select
+          name="meg-datagrid-filter-column"
           data-datagrid-mobile-column
           value={activeColumn?.key ?? ''}
           onChange={(event) => setActiveKey(event.target.value)}
@@ -528,6 +529,7 @@ function ColumnManager<T extends Record<string, unknown>>({
             <label>
               <input
                 type="checkbox"
+                name={`meg-datagrid-column-${column.key}`}
                 checked={!hidden.has(column.key)}
                 disabled={!hidden.has(column.key) && visibleCount === 1}
                 onChange={() => onToggle(column.key)}
@@ -1119,6 +1121,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                     <th className="meg-datagrid-select-column">
                       <input
                         type="checkbox"
+                        name="meg-datagrid-select-all-table"
                         aria-label="Selecionar todos os itens filtrados"
                         checked={allFilteredSelected}
                         ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
@@ -1211,6 +1214,7 @@ export function DataGrid<T extends Record<string, unknown>>({
       <label className="meg-datagrid-page-size">
         <span>Mostrar</span>
         <select
+          name="meg-datagrid-page-size"
           value={currentPageSize}
           onChange={(event) => {
             setCurrentPageSize(Number(event.target.value));
@@ -1294,6 +1298,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             <label className="meg-datagrid-mobile-select-all">
               <input
                 type="checkbox"
+                name="meg-datagrid-select-all-mobile"
                 aria-label="Selecionar todos os itens filtrados"
                 checked={allFilteredSelected}
                 ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
@@ -1306,6 +1311,7 @@ export function DataGrid<T extends Record<string, unknown>>({
           <label className="meg-datagrid-mobile-sort">
             <span>Ordenar por</span>
             <select
+              name="meg-datagrid-mobile-sort"
               aria-label="Ordenar por"
               value={mobileSortValue}
               onChange={(event) => {
@@ -1449,17 +1455,12 @@ export function DataGrid<T extends Record<string, unknown>>({
                 ))}
               </colgroup>
               {renderTableHead()}
-              <tbody>
-                <tr>
-                  <td colSpan={visibleColumns.length + (selectable ? 1 : 0)} className="meg-datagrid-empty-cell">
-                    <div className="meg-datagrid-empty" role="status">
-                      <strong>Nenhum resultado com os filtros atuais</strong>
-                      <span>Use “Limpar tudo” na toolbar para restaurar os resultados.</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
+              <tbody />
             </table>
+            <div className="meg-datagrid-empty" role="status">
+              <strong>Nenhum resultado com os filtros atuais</strong>
+              <span>Use “Limpar tudo” na toolbar para restaurar os resultados.</span>
+            </div>
           </div>
           {renderPaginationFooter()}
         </>
@@ -1505,6 +1506,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                         <td className="meg-datagrid-select-column">
                           <input
                             type="checkbox"
+                            name={`meg-datagrid-table-row-${key}`}
                             aria-label={`Selecionar linha ${key}`}
                             checked={selectedRow}
                             onChange={(event) => toggleRow(key, event.target.checked)}
@@ -1560,7 +1562,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   >
                     {selectable && (
                       <label className="meg-datagrid-card-select">
-                        <input type="checkbox" checked={selectedRow} onChange={(event) => toggleRow(key, event.target.checked)} />
+                        <input name={`meg-datagrid-card-row-${key}`} type="checkbox" checked={selectedRow} onChange={(event) => toggleRow(key, event.target.checked)} />
                         <span>Selecionar</span>
                       </label>
                     )}

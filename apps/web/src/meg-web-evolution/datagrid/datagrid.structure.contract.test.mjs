@@ -164,7 +164,12 @@ assert.ok(css.includes('.meg-datagrid-active-filter-row') && css.includes('borde
 assert.ok(css.includes('.meg-datagrid-active-filter-row__summary') && css.includes('white-space: normal;'), 'Resumo do popover não pode truncar.');
 assert.ok(css.includes('min-height: 3rem') && css.includes('.meg-datagrid-table thead'), 'Cabeçalho sticky precisa de altura mínima.');
 
-assert.ok(dataGridSource.includes('meg-datagrid-filtered-empty'), 'Estado vazio filtrado deve preservar a tabela/cabeçalho.');
+assert.ok(dataGridSource.includes('meg-datagrid-filtered-empty'), 'Estado vazio filtrado deve preservar o corpo responsivo.');
+assert.ok(css.includes('@media (min-width: 900px) and (width < 1024px) and (max-height: 500px)'), 'Exceção de tabela compacta deve iniciar em 900px.');
+assert.equal(css.includes('@media (min-width: 640px) and (width < 1024px) and (max-height: 500px)'), false, 'Tabela compacta não pode ser ativada em 640–899px.');
+assert.ok(css.includes('@media (min-width: 640px) and (max-width: 899px)'), 'Toolbar responsiva de cards 640–899px ausente.');
+assert.ok(dataGridSource.includes('name="meg-datagrid-page-size"'), 'Seletor Mostrar deve possuir name.');
+assert.ok(dataGridSource.includes('name="meg-datagrid-select-all-table"'), 'Checkbox de seleção da tabela deve possuir name.');
 assert.ok(dataGridSource.includes('renderPaginationFooter'), 'Rodapé de paginação deve ser reutilizado também no vazio filtrado.');
 assert.ok(dataGridSource.includes('{renderPaginationFooter()}'), 'Estado vazio filtrado deve renderizar o rodapé.');
 assert.ok(css.includes('.meg-datagrid-footer {\n  flex: 0 0 auto;'), 'Rodapé deve permanecer fora da área flexível do corpo.');
