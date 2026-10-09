@@ -104,12 +104,11 @@ jobs:
           node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.tooltips.playwright.spec.mjs --workers=1 --reporter=line
           SNAPSHOT_DIR="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots"
-          if find "$SNAPSHOT_DIR" -maxdepth 1 -type f -name '*.png' -print -quit 2>/dev/null | grep -q .; then
-            PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line
-          else
-            echo "Baselines ainda ausentes: gerando somente nesta validação temporária."
-            PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line --update-snapshots
-          fi
+          BASELINE_ARCHIVE="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.baselines.zip"
+          rm -rf "$SNAPSHOT_DIR"
+          mkdir -p "$SNAPSHOT_DIR"
+          unzip -q "$BASELINE_ARCHIVE" -d "$SNAPSHOT_DIR"
+          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line
 
       - name: Upload DataGrid visual evidence
         if: always()

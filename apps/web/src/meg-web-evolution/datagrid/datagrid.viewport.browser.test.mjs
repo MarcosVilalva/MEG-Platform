@@ -228,6 +228,16 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
   })()`);
   await browser.navigate(appUrl + '?state=filtered-empty');
   await waitForSelectorCount('.meg-datagrid-filtered-empty .meg-datagrid-empty',1,label + ' mensagem vazia');
+  await waitForSelectorCount('.meg-datagrid-footer',1,label + ' rodapé');
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const settled = await browser.evaluate(`(() => {
+      const footer=document.querySelector('.meg-datagrid-footer');
+      const rect=footer?.getBoundingClientRect();
+      return Boolean(rect && rect.top>=0 && rect.bottom<=window.innerHeight+1);
+    })()`);
+    if (settled) break;
+    await browser.sleep(50);
+  }
   const snapshot=await browser.evaluate(`(() => {
     const table=document.querySelector('.meg-datagrid-filtered-empty .meg-datagrid-table');
     const head=table?.querySelector('thead');
@@ -261,6 +271,7 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
       viewportRect:vr ? {top:vr.top,bottom:vr.bottom,height:vr.height} : null
     };
   })()`);
+  console.log('FILTERED_EMPTY_SNAPSHOT', label, JSON.stringify(snapshot));
   await captureEvidence(evidenceName);
   assert.equal(snapshot.tableVisible,tableMode,label + ': modo tabela/cards incorreto no vazio');
   if(tableMode) {
