@@ -249,7 +249,11 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
     const pagination=document.querySelector('.meg-datagrid-pagination');
     const buttons=[...document.querySelectorAll('.meg-datagrid-pagination button')];
     const viewport=document.querySelector('.meg-datagrid-filtered-empty');
-    const tr=table?.getBoundingClientRect(), hr=head?.getBoundingClientRect(), er=empty?.getBoundingClientRect(), fr=footer?.getBoundingClientRect(), vr=viewport?.getBoundingClientRect();
+    const grid=document.querySelector('.meg-datagrid');
+    const toolbar=document.querySelector('.meg-datagrid-toolbar');
+    const harness=document.querySelector('.meg-datagrid-harness');
+    const main=document.querySelector('.meg-main');
+    const tr=table?.getBoundingClientRect(), hr=head?.getBoundingClientRect(), er=empty?.getBoundingClientRect(), fr=footer?.getBoundingClientRect(), vr=viewport?.getBoundingClientRect(), gr=grid?.getBoundingClientRect(), tbr=toolbar?.getBoundingClientRect(), har=harness?.getBoundingClientRect(), mr=main?.getBoundingClientRect();
     const tableVisible=Boolean(table && getComputedStyle(table).display!=='none' && table.getClientRects().length);
     return {
       tableDisplay:table ? getComputedStyle(table).display : null,
@@ -268,7 +272,14 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
       noEmptyHorizontalOverflow:Boolean(viewport && viewport.scrollWidth<=viewport.clientWidth+1),
       tableRect:tr ? {left:tr.left,right:tr.right} : null,
       emptyRect:er ? {top:er.top,bottom:er.bottom,height:er.height} : null,
-      viewportRect:vr ? {top:vr.top,bottom:vr.bottom,height:vr.height} : null
+      viewportRect:vr ? {top:vr.top,bottom:vr.bottom,height:vr.height} : null,
+      footerRect:fr ? {top:fr.top,bottom:fr.bottom,height:fr.height} : null,
+      gridRect:gr ? {top:gr.top,bottom:gr.bottom,height:gr.height} : null,
+      toolbarRect:tbr ? {top:tbr.top,bottom:tbr.bottom,height:tbr.height} : null,
+      harnessRect:har ? {top:har.top,bottom:har.bottom,height:har.height} : null,
+      mainRect:mr ? {top:mr.top,bottom:mr.bottom,height:mr.height,scrollHeight:main?.scrollHeight,clientHeight:main?.clientHeight} : null,
+      gridStyle:grid ? {display:getComputedStyle(grid).display,height:getComputedStyle(grid).height,maxHeight:getComputedStyle(grid).maxHeight} : null,
+      harnessStyle:harness ? {position:getComputedStyle(harness).position,height:getComputedStyle(harness).height} : null
     };
   })()`);
   console.log('FILTERED_EMPTY_SNAPSHOT', label, JSON.stringify(snapshot));
