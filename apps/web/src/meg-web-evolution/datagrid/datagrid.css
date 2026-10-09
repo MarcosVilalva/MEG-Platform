@@ -56,7 +56,6 @@
 
 .meg-datagrid-toolbar {
   position: relative;
-  flex: 0 0 auto;
   flex-wrap: nowrap;
   min-height: 3.5rem;
   border-bottom: .0625rem solid rgba(20, 227, 200, .12);
@@ -1290,6 +1289,7 @@
 
 @media (min-width: 640px) and (width < 900px) {
   .meg-datagrid-toolbar {
+    flex: 0 0 auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
