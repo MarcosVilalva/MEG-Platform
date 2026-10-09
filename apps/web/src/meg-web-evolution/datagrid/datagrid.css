@@ -2137,6 +2137,12 @@
   }
 }
 
+@media (min-width: 640px) and (width < 900px) and (max-height: 640px) {
+  .meg-datagrid-harness:has(.meg-datagrid-filtered-empty) {
+    height: calc(100% - 1rem);
+  }
+}
+
 @media (min-width: 900px) and (width < 1024px) and (max-height: 500px) {
   .meg-datagrid-harness:has(.meg-datagrid-filtered-empty) {
     height: calc(100% - 1rem);
