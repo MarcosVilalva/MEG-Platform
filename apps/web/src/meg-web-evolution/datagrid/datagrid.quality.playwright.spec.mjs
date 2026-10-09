@@ -260,6 +260,30 @@ for (const viewport of approvedViewports) {
     await page.goto(visualUrl);
     const grid = page.locator('.meg-datagrid');
     await expect(grid).toBeVisible();
+
+    if (viewport.width < 900) {
+      await expect.poll(async () => page.evaluate(() => {
+        const viewportElement = document.querySelector('.meg-datagrid__viewport');
+        if (!viewportElement) return 0;
+        const viewportRect = viewportElement.getBoundingClientRect();
+        return [...document.querySelectorAll('.meg-datagrid-card-row')].filter((card) => {
+          const rect = card.getBoundingClientRect();
+          const style = getComputedStyle(card);
+          return (
+            rect.width > 0
+            && rect.height > 0
+            && style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && rect.bottom > viewportRect.top
+            && rect.top < viewportRect.bottom
+          );
+        }).length;
+      }), {
+        message: `${viewport.width}x${viewport.height}: esperado ao menos 1 card visível antes do screenshot`,
+        timeout: 5000,
+      }).toBeGreaterThan(0);
+    }
+
     await expect(grid).toHaveScreenshot(`datagrid-${viewport.width}x${viewport.height}.png`, {
       animations: 'disabled',
       caret: 'hide',

@@ -1104,7 +1104,11 @@ export function DataGrid<T extends Record<string, unknown>>({
         <GridIcon name={expanded ? 'chevronDown' : 'chevronRight'} />
         <strong>{entry.group.label}</strong>
         <span>{countLabel}</span>
-        {subtotal && <span className="meg-datagrid-group-subtotal">{subtotal}</span>}
+        {subtotal && (
+          <span className="meg-datagrid-group-subtotal" title={subtotal} aria-label={subtotal}>
+            {subtotal}
+          </span>
+        )}
       </button>
     );
     return asCard ? <div className="meg-datagrid-card-group" data-grid-group>{button}</div> : (
