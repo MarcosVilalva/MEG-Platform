@@ -1944,6 +1944,11 @@
   }
 }
 
+.meg-datagrid:has(> .meg-datagrid-filtered-empty) {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
 .meg-datagrid-filtered-empty {
   flex: 1 1 0;
   min-height: 0;
