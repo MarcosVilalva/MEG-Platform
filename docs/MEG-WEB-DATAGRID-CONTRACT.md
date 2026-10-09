@@ -142,7 +142,7 @@ O workflow `MEG Web Evolution Foundation` mantém todos os contratos da Etapa 03
 
 1. contrato puro do DataGrid;
 2. contrato estrutural/clean-room;
-3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 900x700, 640x600 e 390x844, com cobertura adicional dos popovers em 1024x600, 1093x480 e 910x400, sidebar expandida e recolhida, clique fora, Esc, foco, contenção, ações e evidências visuais.
+3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 910x400, 900x700, 680x600, 680x400, 640x600 e 390x844, com cobertura adicional dos popovers em 1024x600 e 1093x480, sidebar expandida e recolhida, clique fora, Esc, foco, contenção, ações e evidências visuais.
 
 A validação técnica não substitui a validação visual explícita.
 

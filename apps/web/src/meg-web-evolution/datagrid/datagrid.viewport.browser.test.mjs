@@ -261,7 +261,6 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
       viewportRect:vr ? {top:vr.top,bottom:vr.bottom,height:vr.height} : null
     };
   })()`);
-  console.log('FILTERED_EMPTY_SNAPSHOT ' + label + ' ' + JSON.stringify(snapshot));
   await captureEvidence(evidenceName);
   assert.equal(snapshot.tableVisible,tableMode,label + ': modo tabela/cards incorreto no vazio');
   if(tableMode) {

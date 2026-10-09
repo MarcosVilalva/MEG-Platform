@@ -360,7 +360,6 @@ for (const viewport of responsiveMatrix) {
       };
     });
 
-    console.log('RESPONSIVE_TOOLBAR_METRICS', viewport.width + 'x' + viewport.height, JSON.stringify(metrics));
     expect(metrics.documentOverflow).toBe(false);
     expect(metrics.groupOverlaps).toEqual([]);
     expect(metrics.clipped).toEqual([]);
