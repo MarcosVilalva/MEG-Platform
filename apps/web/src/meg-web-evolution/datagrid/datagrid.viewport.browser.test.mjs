@@ -256,10 +256,13 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
       buttonsDisabled:buttons.length===2 && buttons.every((button)=>button.disabled),
       noDocumentOverflow:document.documentElement.scrollWidth<=window.innerWidth+1 && document.documentElement.scrollHeight<=window.innerHeight+1,
       noEmptyHorizontalOverflow:Boolean(viewport && viewport.scrollWidth<=viewport.clientWidth+1),
-      tableRect:tr ? {left:tr.left,right:tr.right} : null
+      tableRect:tr ? {left:tr.left,right:tr.right} : null,
+      emptyRect:er ? {top:er.top,bottom:er.bottom,height:er.height} : null,
+      viewportRect:vr ? {top:vr.top,bottom:vr.bottom,height:vr.height} : null
     };
   })()`);
   console.log('FILTERED_EMPTY_SNAPSHOT ' + label + ' ' + JSON.stringify(snapshot));
+  await captureEvidence(evidenceName);
   assert.equal(snapshot.tableVisible,tableMode,label + ': modo tabela/cards incorreto no vazio');
   if(tableMode) {
     assert.equal(snapshot.headVisible,true,label + ': cabeçalho não ficou visível no modo tabela');
@@ -278,7 +281,6 @@ async function assertFilteredEmptyLayout(width, height, evidenceName) {
   assert.equal(snapshot.emptyContained,true,label + ': mensagem vazia saiu da área do corpo');
   assert.equal(snapshot.noDocumentOverflow,true,label + ': estado vazio gerou overflow da página');
   if(!tableMode) assert.equal(snapshot.noEmptyHorizontalOverflow,true,label + ': cards vazios geraram overflow horizontal');
-  await captureEvidence(evidenceName);
 }
 
 async function assertApprovedResponsiveMatrix() {
