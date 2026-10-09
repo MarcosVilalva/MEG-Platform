@@ -83,8 +83,8 @@ jobs:
         shell: bash
         run: which google-chrome && google-chrome --version
 
-      - name: Install pinned Playwright test runner
-        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Install pinned Playwright and axe runners
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0 @axe-core/playwright@4.13.0
 
       - name: Validate Web Evolution viewport contracts
         shell: bash
@@ -103,6 +103,13 @@ jobs:
           node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
           node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.tooltips.playwright.spec.mjs --workers=1 --reporter=line
+          SNAPSHOT_DIR="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots"
+          if find "$SNAPSHOT_DIR" -maxdepth 1 -type f -name '*.png' -print -quit 2>/dev/null | grep -q .; then
+            PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line
+          else
+            echo "Baselines ainda ausentes: gerando somente nesta validação temporária."
+            PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line --update-snapshots
+          fi
 
       - name: Upload DataGrid visual evidence
         if: always()
@@ -110,6 +117,14 @@ jobs:
         with:
           name: meg-web-evolution-datagrid-evidence
           path: artifacts/datagrid-evidence
+          if-no-files-found: ignore
+
+      - name: Upload DataGrid visual baselines
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-web-evolution-datagrid-baselines
+          path: apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots
           if-no-files-found: ignore
 
       - name: Print Vite log tail

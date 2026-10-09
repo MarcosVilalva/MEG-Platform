@@ -221,3 +221,13 @@ A validação técnica não substitui a validação visual explícita.
 - Em `640–899px`, a toolbar de cards usa composição própria para evitar sobreposição entre “Filtros (N)”, seleção, ordenação, filtros ativos e ações.
 - Matriz obrigatória desta correção: `1366x600`, `910x400`, `680x600`, `680x400`, `640x600` e `390x844`.
 - Auditoria em `910x400` antes da correção encontrou três campos visíveis sem `id/name`: busca do Shell, checkbox “Selecionar todos os itens filtrados” da tabela e seletor “Mostrar” do DataGrid. O Shell não é alterado nesta rodada. Os controles do DataGrid recebem `name`; os equivalentes móveis/linhas também recebem `name` para evitar o mesmo aviso em outros estados.
+
+
+### Fechamento técnico da Etapa 04 — qualidade responsiva e regressão
+- O breakpoint excepcional de tabela compacta continua restrito a `min-width: 900px`, `max-width: 1023px` e `max-height: 500px`. Em 680x600 e 680x400 o modo obrigatório é cards.
+- A cobertura Playwright mantém 680x400 como critério de aceite da toolbar: chips, `+N filtros` e `Limpar tudo` precisam permanecer integralmente dentro da toolbar.
+- `Limpar tudo` limpa somente os filtros. A ordenação vigente é preservada, tanto em tabela quanto em cards; página volta para zero e viewport é resetado.
+- Campos pertencentes ao DataGrid e ao `FilterPanel` devem possuir `id` ou `name`. A busca da topbar pertence ao Shell da Etapa 03 e não é alterada nesta etapa.
+- O gate de navegador passa a verificar console warnings/errors, page errors e DevTools Issues próprios do DataGrid. O único `FormLabelForNameError` conhecido do campo de busca do Shell é registrado, não atribuído ao DataGrid.
+- Acessibilidade automatizada usa `@axe-core/playwright@4.13.0` na matriz aprovada: 1366x600, 910x400, 680x600, 680x400, 640x600 e 390x844.
+- Regressão visual usa `toHaveScreenshot` com fixture determinística e baseline versionado para a mesma matriz. Evidência avulsa de screenshot não substitui essa comparação.
