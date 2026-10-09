@@ -119,9 +119,12 @@ São persistidos filtros, sort, ordem, visibilidade, larguras e pageSize. A sani
 
 Somente os breakpoints estruturais aprovados:
 
-- abaixo de 640px: cards e bottom sheet de filtros em tela cheia;
-- 640px a 1023px: cards e bottom sheet acessível;
+- abaixo de 640px: cards e filtro móvel acessível;
+- 640px a 899px: cards em qualquer altura;
+- 900px a 1023px: cards por padrão; exceção explícita apenas quando a altura for <=500px, usando tabela compacta;
 - a partir de 1024px: tabela completa, header sticky, popovers e rolagem interna.
+
+A exceção numérica de paisagem baixa é, portanto, `min-width: 900px` + `max-width: 1023px` + `max-height: 500px`. Assim, `910x400` permanece tabela; `680x400` e `680x600` permanecem cards.
 
 Não existe nova opção na sidebar. O Shell da Etapa 03 permanece intacto.
 
@@ -139,7 +142,7 @@ O workflow `MEG Web Evolution Foundation` mantém todos os contratos da Etapa 03
 
 1. contrato puro do DataGrid;
 2. contrato estrutural/clean-room;
-3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 900x700, 640x600 e 390x844, com cobertura adicional dos popovers em 1024x600, 1093x480 e 910x400, sidebar expandida e recolhida, clique fora, Esc, foco, contenção, ações e evidências visuais.
+3. contrato de navegador para 1920x1080, 1366x768, 1366x600, 1024x768, 910x400, 900x700, 680x600, 680x400, 640x600 e 390x844, com cobertura adicional dos popovers em 1024x600 e 1093x480, sidebar expandida e recolhida, clique fora, Esc, foco, contenção, ações e evidências visuais.
 
 A validação técnica não substitui a validação visual explícita.
 
@@ -166,14 +169,14 @@ A validação técnica não substitui a validação visual explícita.
 - A toolbar mostra no máximo dois chips e usa “+N filtros” para abrir um popover com todos os chips e “Limpar tudo”.
 - O botão móvel mostra “Filtros (N)”.
 - Resumo de filtro DATE usa dd/mm/aaaa; intervalos iguais mostram uma única data.
-- Em 910x400, a grade usa tabela compacta em paisagem baixa para preservar cabeçalho sticky inteiro e pelo menos duas linhas visíveis.
+- Em 910x400, a grade usa a exceção de tabela compacta de paisagem baixa (`>=900px` e `<=500px` de altura) para preservar cabeçalho sticky inteiro e pelo menos duas linhas visíveis.
 
 
 ### Complemento 2 — alturas baixas e vazio filtrado
 - Em 1366x600 e 910x400, shell/harness, toolbar, grupos, agregados e paginação usam compactação vertical para preservar cabeçalho e pelo menos duas linhas de dados visíveis.
 - A área da tabela mantém rolagem interna.
 - “Filtros (N)” permanece visível em todas as larguras, inclusive com N=0.
-- O estado vazio causado por filtros mantém a tabela e o cabeçalho com funis acima da mensagem.
+- O estado vazio causado por filtros preserva o modo responsivo vigente: tabela + cabeçalho/funis nos modos tabela; mensagem no corpo em modo cards, sem forçar tabela.
 - O contrato browser cobre 0, 1, 3 e 5 filtros nas duas viewports e o estado vazio filtrado.
 
 
@@ -210,3 +213,21 @@ A validação técnica não substitui a validação visual explícita.
 - O seletor “Mostrar” continua funcional mesmo com zero resultados.
 - A mensagem vazia fica contida no corpo flexível e não cria rolagem da página nem overflow interno desnecessário.
 - Playwright valida o estado com `Valor técnico ≥ 999999` em 1366x600 e 910x400.
+
+
+### Passo 7 — correção responsiva 680px e diagnóstico de contrato
+- Foi confirmada uma inconsistência histórica do contrato: a regra geral dizia `640–1023px = cards`, enquanto o complemento posterior exigia `910x400 = tabela`. A resolução adotada mantém cards como regra e torna `910x400` uma exceção numérica estreita: `900–1023px` com altura `<=500px`.
+- Diagnóstico anterior à correção em `680x600` com resultado filtrado vazio confirmou `tableDisplay: table`. A regra responsável era global, fora de media query: `.meg-datagrid-filtered-empty .meg-datagrid-table { display: table; }`. Essa regra ignorava o breakpoint responsivo e foi removida; o display passa a ser decidido exclusivamente pelos modos tabela autorizados.
+- Em `640–899px`, a toolbar de cards usa composição própria para evitar sobreposição entre “Filtros (N)”, seleção, ordenação, filtros ativos e ações.
+- Matriz obrigatória desta correção: `1366x600`, `910x400`, `680x600`, `680x400`, `640x600` e `390x844`.
+- Auditoria em `910x400` antes da correção encontrou três campos visíveis sem `id/name`: busca do Shell, checkbox “Selecionar todos os itens filtrados” da tabela e seletor “Mostrar” do DataGrid. O Shell não é alterado nesta rodada. Os controles do DataGrid recebem `name`; os equivalentes móveis/linhas também recebem `name` para evitar o mesmo aviso em outros estados.
+
+
+### Fechamento técnico da Etapa 04 — qualidade responsiva e regressão
+- O breakpoint excepcional de tabela compacta continua restrito a `min-width: 900px`, `max-width: 1023px` e `max-height: 500px`. Em 680x600 e 680x400 o modo obrigatório é cards.
+- A cobertura Playwright mantém 680x400 como critério de aceite da toolbar: chips, `+N filtros` e `Limpar tudo` precisam permanecer integralmente dentro da toolbar.
+- `Limpar tudo` limpa somente os filtros. A ordenação vigente é preservada, tanto em tabela quanto em cards; página volta para zero e viewport é resetado.
+- Campos pertencentes ao DataGrid e ao `FilterPanel` devem possuir `id` ou `name`. A busca da topbar pertence ao Shell da Etapa 03 e não é alterada nesta etapa.
+- O gate de navegador passa a verificar console warnings/errors, page errors e DevTools Issues próprios do DataGrid. O único `FormLabelForNameError` conhecido do campo de busca do Shell é registrado, não atribuído ao DataGrid.
+- Acessibilidade automatizada usa `@axe-core/playwright@4.13.0` na matriz aprovada: 1366x600, 910x400, 680x600, 680x400, 640x600 e 390x844.
+- Regressão visual usa `toHaveScreenshot` com fixture determinística e baseline versionado para a mesma matriz. Evidência avulsa de screenshot não substitui essa comparação.

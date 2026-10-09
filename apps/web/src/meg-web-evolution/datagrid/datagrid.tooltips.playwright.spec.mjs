@@ -308,3 +308,83 @@ for (const viewport of [
     expect(metrics.viewportScrollHeight).toBeLessThanOrEqual(metrics.viewportClientHeight + 1);
   });
 }
+
+
+
+const responsiveMatrix = [
+  { width: 1366, height: 600, table: true },
+  { width: 910, height: 400, table: true },
+  { width: 680, height: 600, table: false },
+  { width: 680, height: 400, table: false },
+  { width: 640, height: 600, table: false },
+  { width: 390, height: 844, table: false },
+];
+
+for (const viewport of responsiveMatrix) {
+  test(`modo responsivo e toolbar em ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await seedFilters(page);
+
+    const metrics = await page.evaluate(() => {
+      const visible = (el) => Boolean(el && el.getClientRects().length && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden');
+      const rect = (el) => {
+        const r = el.getBoundingClientRect();
+        return { left:r.left, right:r.right, top:r.top, bottom:r.bottom, width:r.width, height:r.height };
+      };
+      const overlap = (a, b) => Math.min(a.right,b.right)-Math.max(a.left,b.left) > 1 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top) > 1;
+      const toolbar=document.querySelector('.meg-datagrid-toolbar');
+      const table=document.querySelector('.meg-datagrid-table');
+      const cards=document.querySelector('.meg-datagrid-cards');
+      const primary=document.querySelector('.meg-datagrid-toolbar__primary');
+      const filters=document.querySelector('.meg-datagrid-toolbar__filters');
+      const actions=document.querySelector('.meg-datagrid-toolbar__actions');
+      const toolbarRect=rect(toolbar);
+      const groups=[primary,filters,actions].filter(visible).map((el)=>({className:el.className,rect:rect(el)}));
+      const groupOverlaps=[];
+      for(let i=0;i<groups.length;i++) for(let j=i+1;j<groups.length;j++) if(overlap(groups[i].rect,groups[j].rect)) groupOverlaps.push([groups[i].className,groups[j].className]);
+      const controls=[...toolbar.querySelectorAll('button, select, input')].filter(visible).map((el)=>({label:el.getAttribute('aria-label')||el.textContent?.trim()||el.tagName,rect:rect(el)}));
+      const clipped=controls.filter(({rect:r})=>r.left<toolbarRect.left-1||r.right>toolbarRect.right+1||r.top<toolbarRect.top-1||r.bottom>toolbarRect.bottom+1);
+      const chips=[...toolbar.querySelectorAll('.meg-datagrid-filter-chip')].filter(visible).map((chip)=> {
+        const span=chip.querySelector('span');
+        const r=rect(chip);
+        const sr=span ? rect(span) : {width:0};
+        return {width:r.width,textWidth:sr.width,text:span?.textContent?.trim()??''};
+      });
+      return {
+        tableDisplay:table?getComputedStyle(table).display:null,
+        cardsDisplay:cards?getComputedStyle(cards).display:null,
+        documentOverflow:document.documentElement.scrollWidth>innerWidth+1,
+        groupOverlaps,
+        clipped:clipped.map((item)=>item.label),
+        chips,
+      };
+    });
+
+    expect(metrics.documentOverflow).toBe(false);
+    expect(metrics.groupOverlaps).toEqual([]);
+    expect(metrics.clipped).toEqual([]);
+    expect(metrics.chips.every((chip) => chip.width >= 40 && chip.textWidth >= 24 && chip.text.length > 0)).toBe(true);
+    if (viewport.table) {
+      expect(metrics.tableDisplay).toBe('table');
+      expect(metrics.cardsDisplay).toBe('none');
+    } else {
+      expect(metrics.tableDisplay).toBe('none');
+      expect(metrics.cardsDisplay).not.toBe('none');
+    }
+  });
+}
+
+test('campos do DataGrid possuem name; aviso remanescente pertence ao Shell', async ({ page }) => {
+  await page.setViewportSize({ width: 910, height: 400 });
+  await page.goto(appUrl);
+  const audit = await page.evaluate(() => ({
+    datagridMissing:[...document.querySelectorAll('.meg-datagrid input, .meg-datagrid select, .meg-datagrid textarea')]
+      .filter((el)=>!el.id&&!el.getAttribute('name'))
+      .map((el)=>({tag:el.tagName.toLowerCase(),type:el.getAttribute('type'),ariaLabel:el.getAttribute('aria-label')})),
+    shellMissing:[...document.querySelectorAll('.meg-topbar input, .meg-topbar select, .meg-topbar textarea')]
+      .filter((el)=>!el.id&&!el.getAttribute('name'))
+      .map((el)=>({tag:el.tagName.toLowerCase(),type:el.getAttribute('type'),ariaLabel:el.getAttribute('aria-label')})),
+  }));
+  expect(audit.datagridMissing).toEqual([]);
+  expect(audit.shellMissing).toEqual([{ tag:'input', type:null, ariaLabel:'Buscar' }]);
+});

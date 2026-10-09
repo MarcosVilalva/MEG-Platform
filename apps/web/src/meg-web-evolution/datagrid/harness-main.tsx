@@ -8,8 +8,11 @@ import { createDataGridHarnessRows, dataGridHarnessColumns } from './harness-fix
 import './datagrid.css';
 
 function DataGridHarness() {
-  const rows = useMemo(() => createDataGridHarnessRows(640, new Date()), []);
   const stateMode = new URLSearchParams(window.location.search).get('state') ?? 'default';
+  const rows = useMemo(
+    () => createDataGridHarnessRows(640, stateMode === 'visual' ? new Date('2026-10-08T12:00:00') : new Date()),
+    [stateMode],
+  );
   const sourceRows = stateMode === 'empty' ? [] : rows;
   const [filteredCount, setFilteredCount] = useState(sourceRows.length);
 

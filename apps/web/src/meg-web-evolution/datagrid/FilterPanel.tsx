@@ -135,6 +135,7 @@ function DistinctList<T extends Record<string, unknown>>({
           <span>Buscar valores</span>
           <input
             type="search"
+            name={`filter-${column.key}-distinct-search`}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar..."
@@ -144,6 +145,7 @@ function DistinctList<T extends Record<string, unknown>>({
         <label className="meg-datagrid-check meg-datagrid-check--all">
           <input
             type="checkbox"
+            name={`filter-${column.key}-select-visible`}
             checked={allVisibleSelected}
             onChange={() => {
               if (allVisibleSelected) {
@@ -176,6 +178,7 @@ function DistinctList<T extends Record<string, unknown>>({
             <label className="meg-datagrid-check" key={option.key}>
               <input
                 type="checkbox"
+                name={`filter-${column.key}-distinct-value`}
                 checked={selected.includes(option.key)}
                 onChange={() => toggle(option.key)}
                 onKeyDown={moveOptionFocus}
@@ -205,10 +208,12 @@ function DistinctList<T extends Record<string, unknown>>({
 }
 
 function DateTree({
+  columnKey,
   options,
   selected,
   onSelected,
 }: {
+  columnKey: string;
   options: DistinctOption[];
   selected: string[];
   onSelected: (next: string[]) => void;
@@ -277,6 +282,7 @@ function DateTree({
                 <label className="meg-datagrid-check meg-datagrid-date-tree__level">
                   <input
                     type="checkbox"
+                    name={`filter-${columnKey}-year`}
                     checked={yearChecked}
                     onChange={() => toggleMany(yearKeys)}
                     aria-label={`Selecionar ano ${year}`}
@@ -296,6 +302,7 @@ function DateTree({
                       <label className="meg-datagrid-check meg-datagrid-date-tree__level">
                         <input
                           type="checkbox"
+                          name={`filter-${columnKey}-month`}
                           checked={monthChecked}
                           onChange={() => toggleMany(monthKeys)}
                           aria-label={`Selecionar mês ${monthLabel} de ${year}`}
@@ -306,6 +313,7 @@ function DateTree({
                         <label className="meg-datagrid-check" key={day.key}>
                           <input
                             type="checkbox"
+                            name={`filter-${columnKey}-day`}
                             checked={selected.includes(day.key)}
                             onChange={() => toggle(day.key)}
                           />
@@ -366,6 +374,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
               <label className="meg-datagrid-field">
                 <span>Operador</span>
                 <select
+                  name={`filter-${column.key}-operator`}
                   value={String(draft.operator ?? 'contains')}
                   onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
                 >
@@ -376,6 +385,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                 <label className="meg-datagrid-field">
                   <span>Texto</span>
                   <input
+                    name={`filter-${column.key}-text`}
                     value={String(draft.value ?? '')}
                     onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
                   />
@@ -391,6 +401,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
             <label className="meg-datagrid-field">
               <span>Operador</span>
               <select
+                name={`filter-${column.key}-operator`}
                 value={String(draft.operator ?? 'eq')}
                 onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
               >
@@ -402,6 +413,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                 <label className="meg-datagrid-field">
                   <span>{draft.operator === 'between' ? 'De' : 'Valor'}</span>
                   <input
+                    name={`filter-${column.key}-value`}
                     inputMode="decimal"
                     value={String(draft.value ?? '')}
                     onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
@@ -413,6 +425,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                   <label className="meg-datagrid-field">
                     <span>Até</span>
                     <input
+                      name={`filter-${column.key}-value2`}
                       inputMode="decimal"
                       value={String(draft.value2 ?? '')}
                       onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value }))}
@@ -432,6 +445,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
             <label className="meg-datagrid-field">
               <span>Operador</span>
               <select
+                name={`filter-${column.key}-operator`}
                 value={String(draft.operator ?? 'between')}
                 onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'], shortcut: null }))}
               >
@@ -443,6 +457,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                 <span>{draft.operator === 'between' ? 'De' : 'Data'}</span>
                 <input
                   type="date"
+                  name={`filter-${column.key}-date-from`}
                   value={String(draft.value ?? '')}
                   onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value, shortcut: null }))}
                 />
@@ -452,6 +467,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                   <span>Até</span>
                   <input
                     type="date"
+                    name={`filter-${column.key}-date-to`}
                     value={String(draft.value2 ?? '')}
                     onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value, shortcut: null }))}
                   />
@@ -470,7 +486,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                 </button>
               ))}
             </div>
-            <DateTree options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
+            <DateTree columnKey={column.key} options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
           </>
         )}
 
@@ -489,7 +505,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
               <label key={label as string}>
                 <input
                   type="radio"
-                  name={`boolean-${column.key}`}
+                  name={`filter-${column.key}-boolean`}
                   checked={draft.booleanValue === value}
                   onChange={() => setDraft((current) => ({ ...current, booleanValue: value as boolean | null }))}
                 />
