@@ -5,7 +5,7 @@
 ## Checkpoint
 
 - Data: 2026-10-05
-- `main` de partida do bloco atual: `831f158d72cf1e8dc249d422ef6e15b5e90c8810`
+- `main` de partida do bloco atual: `87e04b989568d95c182927c6f493061be26440db`
 - Fase: **Estrutura + fidelidade + UX do MEG Web**
 - Reconstrução principal: concluída
 - Security Hardening inicial: concluído e mantido como gate permanente
@@ -72,26 +72,27 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Relatórios — revisão estrutural e anti-regressão — branch `feat/evolution-reports-structure` em validação.**
+**Reconstrução visual real — Shell + Home v2 — branch `feat/evolution-shell-home-visual-v2` em validação.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596. Cartões consolidado pela PR #597. Benefícios consolidado pela PR #598. Fluxo de Caixa consolidado pela PR #599, com CI e Visual Preflight verdes.
+O vídeo operacional enviado em 2026-10-05 demonstrou que as PRs #594 a #600 consolidaram principalmente contratos e anti-regressão sobre a interface existente, sem produzir a evolução visual perceptível esperada. Esses testes permanecem úteis como proteção funcional, mas deixam de ser tratados como prova de reconstrução visual.
 
-Objetivos imediatos de Relatórios:
+Objetivos imediatos:
 
-- preservar análise baseada apenas em movimentos realizados, sem transferências e benefício;
-- manter abas Despesas/Receitas/Fluxo de caixa/Categorias;
-- preservar dimensões Categoria/Conta/Forma/Status/Tipo/Competência;
-- manter métricas Valor total/Quantidade/Média e busca por grupo;
-- preservar exportação Excel do recorte corrente;
-- manter KPIs com contagens em formato inteiro;
-- preservar tabela dinâmica e gráfico por dimensão;
-- manter o Financial Copilot estritamente analítico, sem executar movimentações;
-- preservar recomposição responsiva em 430 px;
-- reforçar contrato anti-regressão no CI.
+- usar o vídeo enviado como referência oficial de **antes**;
+- alterar composição, hierarquia, proporção, tipografia, profundidade e densidade de Shell + Home;
+- preservar integralmente dados reais, navegação e regras financeiras;
+- manter Home desktop sem scroll global;
+- criar hero assimétrico com saldo em destaque e leitura mensal própria;
+- reorganizar compromissos em faixa operacional;
+- dar maior profundidade ao carrossel de cartões, benefício e atalhos;
+- validar 1920×1080 e 430 px com screenshots reais do navegador;
+- não considerar o bloco concluído apenas por CI/Visual Preflight verdes;
+- não fazer merge antes da revisão visual humana do screenshot;
+- manter Android e `apps/web/src/mobile` intocados.
 
 ## Próximo bloco
 
-Após Relatórios: **Histórico**, seguindo então a ordem fixa acima.
+Após validação visual humana de Shell + Home v2: **Lançamentos**, seguindo a reconstrução visual real tela por tela.
 
 ## Bloqueios que exigem Marcos
 
