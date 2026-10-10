@@ -70,6 +70,15 @@ assert.deepEqual(ids(applyFilters(rows, columns, {
   description: { type: 'text', operator: 'empty' },
 })), ['r4']);
 
+// Regressão #606: selecionar distintos sem texto digitado não busca "(vazio)".
+assert.deepEqual(ids(applyFilters(rows, columns, {
+  description: { type: 'text', operator: 'contains', value: '', selected: ['Café São Paulo', 'Mercado Central'] },
+})), ['r1', 'r2']);
+const allHarness = createDataGridHarnessRows(640);
+assert.equal(applyFilters(allHarness, dataGridHarnessColumns, {
+  description: { type: 'text', operator: 'contains', value: '', selected: getDistinctOptions(allHarness, dataGridHarnessColumns[1]).map((option) => option.key) },
+}).length, 640);
+
 // NUMBER/CURRENCY: comparação, entre, vazio e entrada pt-BR.
 assert.deepEqual(ids(applyFilters(rows, columns, {
   quantity: { type: 'number', operator: 'gte', value: '20' },
