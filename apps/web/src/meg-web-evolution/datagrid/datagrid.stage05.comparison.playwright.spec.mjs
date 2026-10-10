@@ -20,28 +20,59 @@ const snapshots = [
 
 async function metrics(page) {
   return page.evaluate(() => {
-    const rect = (selector) => {
-      const element = document.querySelector(selector);
-      if (!element || !element.getClientRects().length || getComputedStyle(element).display === 'none') return null;
-      const box = element.getBoundingClientRect();
-      return { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width, height: box.height };
+    const toolbar = document.querySelector('.meg-datagrid-toolbar');
+    const rect = (el) => {
+      if (!el || !el.getClientRects().length || getComputedStyle(el).display === 'none') return null;
+      const b = el.getBoundingClientRect();
+      return { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height };
     };
-    const a = rect('.meg-datagrid-mobile-filter');
-    const b = rect('.meg-datagrid-mobile-sort');
-    const intersect = (p, q) => Boolean(p && q && p.left < q.right && q.left < p.right && p.top < q.bottom && q.top < p.bottom);
+    const get = (selector) => rect(document.querySelector(selector));
+    const intersect = (a, b) =>
+      Boolean(a && b && Math.min(a.right, b.right)-Math.max(a.left,b.left)>1 &&
+        Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1);
+    const boundary = rect(toolbar);
+    const controls = [...toolbar.querySelectorAll('button,select,input[type="checkbox"],input[type="search"]')]
+      .filter(el => { const c=getComputedStyle(el); const r=rect(el);
+        return r && c.display !== 'none' && c.visibility !== 'hidden' &&
+          r.width >= 4 && r.height >= 4 &&
+          !(c.clipPath === 'inset(50%)');
+      }).map(el => ({ name: el.getAttribute('aria-label') || el.textContent?.trim() || el.tagName,
+        box: rect(el), tag: el.tagName, cls: el.className }));
+    const overlaps = [];
+    for (let i=0;i<controls.length;i++) for(let j=i+1;j<controls.length;j++)
+      if(intersect(controls[i].box,controls[j].box))
+        overlaps.push([controls[i].name,controls[j].name]);
+    const clipped = controls.filter(c=> c.box.left < boundary.left-1 ||
+      c.box.right > boundary.right+1 || c.box.top < boundary.top-1 ||
+      c.box.bottom > boundary.bottom+1).map(c=>c.name);
+    const chips = controls.filter(c=>String(c.cls).includes('filter-chip'));
     return {
-      viewport: { width: innerWidth, height: innerHeight },
-      document: { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight },
-      search: rect('.meg-datagrid-quick-search'),
-      primary: rect('.meg-datagrid-toolbar__primary'),
-      actions: rect('.meg-datagrid-toolbar__actions'),
-      chips: rect('.meg-datagrid-toolbar__filters'),
-      filterButton: a,
-      sortControl: b,
-      footer: rect('.meg-datagrid-footer'),
-      filterSortOverlap: intersect(a, b),
+      viewport: { width:innerWidth,height:innerHeight },
+      document: {width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight},
+      toolbar:boundary,controls,overlaps,clipped,
+      search:get('.meg-datagrid-quick-search'),
+      primary:get('.meg-datagrid-toolbar__primary'),
+      actions:get('.meg-datagrid-toolbar__actions'),
+      chips:get('.meg-datagrid-toolbar__filters'),
+      filterButton:get('.meg-datagrid-mobile-filter'),
+      sortControl:get('.meg-datagrid-mobile-sort'),
+      footer:get('.meg-datagrid-footer'),
+      filterSortOverlap:intersect(get('.meg-datagrid-mobile-filter'),get('.meg-datagrid-mobile-sort')),
+      chipCount:chips.length,
+      overflowButton:get('.meg-datagrid-more-filters'),
+      pdf:get('.meg-datagrid-pdf-action'),
     };
   });
+}
+async function checkGeometry(geom, size) {
+  expect(geom.document.width,'Sem scroll horizontal da página').toBeLessThanOrEqual(size.width + 1);
+  expect(geom.overlaps,'Nenhum par de controles sobrepostos').toEqual([]);
+  expect(geom.clipped,'Nenhum controle deve ser cortado pela toolbar').toEqual([]);
+  expect(geom.filterSortOverlap).toBe(false);
+  if(size.width===390) {
+    expect(geom.footer?.bottom,'Rodapé dentro da tela de 390').toBeLessThanOrEqual(size.height+1);
+    expect(geom.pdf?.right,'PDF com respiro da borda da toolbar').toBeLessThanOrEqual(geom.toolbar.right-4);
+  }
 }
 
 async function pairedImage(page, before, after, dest) {
@@ -86,8 +117,7 @@ for (const size of snapshots) {
     await pairedImage(page, before, after, path.join(root, name + '-COMPARATIVO.png'));
     const geometry = await metrics(page);
     await fs.writeFile(path.join(root, name + '-geometria.json'), JSON.stringify(geometry, null, 2));
-    expect(geometry.filterSortOverlap, 'Filtros nao pode interceptar Ordenar por').toBe(false);
-    expect(geometry.document.width).toBeLessThanOrEqual(size.width + 1);
+    await checkGeometry(geometry, size);
     if (size.width === 390) {
       expect(geometry.footer?.bottom, 'Rodape deve caber em 390x844').toBeLessThanOrEqual(size.height + 1);
     }
@@ -106,12 +136,17 @@ for (const size of [{ width: 1366, height: 600 }, { width: 910, height: 400 }]) 
     const input = page.getByRole('searchbox', { name: 'Buscar em todas as colunas visíveis' });
     await expect(input).toBeFocused();
     await input.fill('tecnico 003');
+    await input.press('Enter');
     await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('1 de 640 registros');
     await fs.mkdir(root, { recursive: true });
     await page.screenshot({ path: path.join(root, 'toolbar-chips-busca-' + size.width + 'x' + size.height + '.png'), animations: 'disabled' });
     const geom = await metrics(page);
     await fs.writeFile(path.join(root, 'toolbar-chips-busca-' + size.width + 'x' + size.height + '.json'), JSON.stringify(geom, null, 2));
-    expect(geom.filterSortOverlap).toBe(false);
-    expect(geom.document.width).toBeLessThanOrEqual(size.width + 1);
+    await checkGeometry(geom, size);
+    if (size.width===910) {
+      expect(geom.search.width).toBeLessThanOrEqual(42);
+      expect(geom.chipCount).toBeLessThanOrEqual(2);
+      expect(geom.overflowButton,'+N filtros visível').not.toBeNull();
+    }
   });
 }

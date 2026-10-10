@@ -59,6 +59,7 @@ type GridIconName =
   | 'chevronUp'
   | 'grip'
   | 'filter'
+  | 'search'
   | 'sort';
 
 function GridIcon({ name, size = 18 }: { name: GridIconName; size?: number }) {
@@ -73,6 +74,7 @@ function GridIcon({ name, size = 18 }: { name: GridIconName; size?: number }) {
     chevronUp: <path d="m7 14 5-5 5 5" />,
     grip: <><circle cx="9" cy="7" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="7" r=".8" fill="currentColor" stroke="none" /><circle cx="9" cy="12" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r=".8" fill="currentColor" stroke="none" /><circle cx="9" cy="17" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="17" r=".8" fill="currentColor" stroke="none" /></>,
     filter: <><path d="M5 6h14M8 12h8M10.5 18h3" /></>,
+    search: <><circle cx="10.8" cy="10.8" r="6.6" /><path d="m16 16 4.4 4.4" /></>,
     sort: <><path d="m8 7 3-3 3 3M11 4v16" /><path d="m16 17 3 3 3-3M19 20V4" /></>,
   };
 
@@ -1500,9 +1502,8 @@ export function DataGrid<T extends Record<string, unknown>>({
           <button type="button" className="meg-datagrid-quick-search__toggle" aria-label="Abrir busca rápida" onClick={() => {
             setSearchExpanded(true);
             window.requestAnimationFrame(() => searchInputRef.current?.focus());
-          }}><GridIcon name="filter" size={17} /></button>
-          <input ref={searchInputRef} type="search" name="meg-datagrid-quick-search" aria-label="Buscar em todas as colunas visíveis" placeholder="Buscar registros" value={searchInput} onChange={(event) => { setSearchInput(event.target.value); setPageIndex(0); resetViewport(); }} />
-          {searchInput && <button type="button" className="meg-datagrid-quick-search__clear" aria-label="Limpar busca rápida" onClick={() => { setSearchInput(''); setSearchText(''); setPageIndex(0); resetViewport(); searchInputRef.current?.focus(); }}>×</button>}
+          }}><GridIcon name="search" size={17} /></button>
+          <input ref={searchInputRef} type="search" name="meg-datagrid-quick-search" aria-label="Buscar em todas as colunas visíveis" placeholder="Buscar registros" value={searchInput} onChange={(event) => { setSearchInput(event.target.value); setPageIndex(0); resetViewport(); }} onKeyDown={(event) => { if (event.key === "Enter") { setSearchText(searchInput.trim()); setSearchExpanded(false); event.currentTarget.blur(); } else if (event.key === "Escape") { setSearchExpanded(false); event.currentTarget.blur(); } }} />
           <span className="meg-datagrid-quick-search__count" role="status" aria-live="polite">{filteredRows.length} de {data.length} registros</span>
         </div>
           <div className="meg-datagrid-column-menu-wrap">
