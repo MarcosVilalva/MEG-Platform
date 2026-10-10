@@ -1,0 +1,74 @@
+import { test, expect } from '@playwright/test';
+import fs from 'node:fs/promises';
+
+test.use({browserName:'chromium',launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROME_PATH || '/usr/bin/google-chrome',args:['--no-sandbox']}});
+const base=process.env.MEG_DATAGRID_URL || 'http://127.0.0.1:4173/datagrid-harness.html';
+const state='stage-04-harness-toolbar7b';
+async function prepare(page,width,filter=true){
+  await page.setViewportSize({width,height:844});
+  await page.goto(base+'?state=toolbar7b');
+  await page.evaluate(({key,filter})=>{
+    localStorage.setItem('meg-web-evolution:datagrid:'+key,JSON.stringify({
+      filters:filter?{description:{type:'text',operator:'contains',value:'3',selected:[]}}:{},
+      sort:[{key:'description',direction:'desc'}],columnOrder:[],hiddenColumns:[],widths:{},pageSize:600
+    }));
+  },{key:state,filter});
+  await page.reload();
+  await expect(page.locator('.meg-datagrid-mobile-sort select')).toHaveValue('description:desc');
+}
+for (const width of [600,660,720,760]) {
+  test('toolbar legivel e sem sobreposicao a '+width+'px',async({page})=>{
+    await prepare(page,width);
+    const report=await page.locator('.meg-datagrid-toolbar').evaluate(t=>{
+      const nodes=[t.querySelector('.meg-datagrid-mobile-filter'),t.querySelector('.meg-datagrid-mobile-select-all'),t.querySelector('.meg-datagrid-toolbar__actions'),t.querySelector('.meg-datagrid-mobile-sort'),t.querySelector('.meg-datagrid-toolbar__filters')].filter(e=>e&&getComputedStyle(e).display!=='none');
+      const rects=nodes.map(e=>({name:e.className,r:e.getBoundingClientRect()}));
+      const rowCount=new Set(rects.map(x=>Math.round(x.r.top/3))).size;
+      const overlap=rects.flatMap((a,i)=>rects.slice(i+1).filter(b=>Math.min(a.r.right,b.r.right)-Math.max(a.r.left,b.r.left)>2&&Math.min(a.r.bottom,b.r.bottom)-Math.max(a.r.top,b.r.top)>2).map(b=>[a.name,b.name]));
+      const label=t.querySelector('.meg-datagrid-mobile-select-all > span');
+      const select=t.querySelector('.meg-datagrid-mobile-sort select');
+      const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');
+      ctx.font=getComputedStyle(select).font;
+      const option=select.selectedOptions[0]?.textContent||'';
+      const textWidth=ctx.measureText(option).width;
+      return {rowCount,overlap,selectionVisible:label.scrollWidth<=label.clientWidth,selectionText:label.textContent,
+        selectionWidth:label.scrollWidth,selectionClient:label.clientWidth,
+        selectWidth:select.clientWidth,textWidth,
+        pageWidth:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
+        toolbar:t.getBoundingClientRect().height};
+    });
+    expect(report.rowCount).toBeLessThanOrEqual(2);
+    expect(report.overlap).toEqual([]);
+    expect(report.selectionText).toBe('Selecionar filtrados');
+    expect(report.selectionVisible).toBe(true);
+    expect(report.selectWidth).toBeGreaterThanOrEqual(200);
+    expect(report.textWidth+32).toBeLessThanOrEqual(report.selectWidth);
+    expect(report.pageWidth).toBeLessThanOrEqual(report.viewport);
+    if(width===660){
+      await fs.mkdir('artifacts/datagrid-evidence',{recursive:true});
+      await page.locator('.meg-datagrid-toolbar').screenshot({path:'artifacts/datagrid-evidence/toolbar-660x844.png'});
+    }
+  });
+}
+for (const width of [390,660]) {
+  test('chip de filtro removivel por clique no X a '+width+'px',async({page})=>{
+    await prepare(page,width);
+    const chip=page.locator('.meg-datagrid-filter-chip').first();
+    await expect(chip).toBeVisible();
+    const svg=chip.locator('svg').last();
+    if(width===660){
+      const size=await svg.boundingBox();
+      expect(size.width).toBeGreaterThanOrEqual(32);
+      expect(size.height).toBeGreaterThanOrEqual(32);
+    }
+    await svg.click();
+    await expect(chip).toHaveCount(0);
+  });
+}
+for(const width of [390,800]){
+  test('regressao estrutural viewport '+width+'px',async({page})=>{
+    await prepare(page,width);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth);
+    expect(overflow).toBe(false);
+    await expect(page.locator('.meg-datagrid__viewport')).toBeVisible();
+  });
+}
