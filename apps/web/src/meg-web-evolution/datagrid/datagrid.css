@@ -2520,3 +2520,89 @@
     white-space: nowrap;
   }
 }
+
+/* Etapa 05: busca e PDF, mantendo os tokens e estados visuais da Etapa 04. */
+.meg-datagrid-quick-search {
+  flex: 0 1 13rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .22rem;
+  min-width: 0;
+  min-height: 2.4rem;
+  padding: .1rem .35rem;
+  border: .0625rem solid rgba(20, 227, 200, .2);
+  border-radius: .7rem;
+  background: rgba(3, 31, 34, .84);
+}
+.meg-datagrid-quick-search:focus-within { border-color: rgba(20, 227, 200, .5); }
+.meg-datagrid-quick-search input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--meg-text);
+  font-size: .77rem;
+}
+.meg-datagrid-quick-search input:focus-visible { outline: .125rem solid var(--meg-accent); outline-offset: .1rem; }
+.meg-datagrid-quick-search input::placeholder { color: var(--meg-muted); }
+.meg-datagrid-quick-search__toggle,
+.meg-datagrid-quick-search__clear {
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--meg-muted);
+  cursor: pointer;
+}
+.meg-datagrid-quick-search__clear { display: inline-flex; }
+.meg-datagrid-quick-search__count {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.meg-datagrid-export-error { margin: .2rem .8rem; color: #ffb8af; font-size: .75rem; }
+.meg-datagrid-pdf-action:disabled { opacity: .65; cursor: progress; }
+@media (max-width: 1023px) {
+  .meg-datagrid-quick-search {
+    flex: 0 0 auto;
+    width: 2.65rem;
+    min-width: 2.65rem;
+    max-width: 100%;
+    grid-area: search;
+  }
+  .meg-datagrid-quick-search:not(.is-expanded) { padding: 0; }
+  .meg-datagrid-quick-search:not(.is-expanded) input,
+  .meg-datagrid-quick-search:not(.is-expanded) .meg-datagrid-quick-search__clear { display: none; }
+  .meg-datagrid-quick-search__toggle { display: inline-flex; }
+  .meg-datagrid-quick-search.is-expanded { width: clamp(9rem, 24vw, 13rem); }
+}
+@media (max-width: 639px) {
+  .meg-datagrid-toolbar { grid-template-areas: "search" "primary" "filters" "actions"; }
+  .meg-datagrid-quick-search.is-expanded { width: 100%; }
+}
+@media (min-width: 640px) and (max-width: 899px) {
+  .meg-datagrid-toolbar { grid-template-areas: "search actions" "primary primary" "filters filters"; }
+}
+@media (min-width: 900px) and (max-width: 1023px) and (max-height: 500px) {
+  .meg-datagrid-quick-search { flex-shrink: 0; }
+  .meg-datagrid-toolbar__primary { flex-shrink: 1; min-width: 0; }
+  .meg-datagrid-toolbar__filters { min-width: 0; }
+  .meg-datagrid-filter-chip { max-width: 7rem; }
+}
+@media (min-width: 1024px) {
+  .meg-datagrid-quick-search { margin-right: auto; }
+  .meg-datagrid-toolbar__filters { margin-right: 0; }
+}
