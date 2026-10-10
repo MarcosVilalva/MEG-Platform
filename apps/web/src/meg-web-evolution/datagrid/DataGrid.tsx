@@ -917,8 +917,8 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, [data, getRowKey]);
 
   const activeFilterKeys = useMemo(
-    () => Object.keys(filters).filter((key) => isFilterActive(filters[key])),
-    [filters],
+    () => [...Object.keys(filters).filter((key) => isFilterActive(filters[key])), ...(searchText ? ['__quickSearch'] : [])],
+    [filters, searchText],
   );
 
   const activeFilterItems = useMemo(
@@ -952,7 +952,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   useEffect(() => {
     onFilterChange?.({
       filters,
-      activeKeys: searchText ? [...activeFilterKeys, '__quickSearch'] : activeFilterKeys,
+      activeKeys: activeFilterKeys,
       filteredCount: filteredRows.length,
     });
   }, [activeFilterKeys, filteredRows.length, filters, onFilterChange, searchText]);
@@ -1373,7 +1373,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterItems.length ? 'is-active' : ''}`}
             aria-expanded={mobileFiltersOpen}
             aria-haspopup="dialog"
-            aria-label={`Filtros (${activeFilterItems.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
+            aria-label={`Filtros (${activeFilterKeys.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
             onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
             onMouseLeave={(event) => hideTooltip(event.currentTarget)}
             onFocus={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
