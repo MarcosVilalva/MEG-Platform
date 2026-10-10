@@ -2308,7 +2308,9 @@
   .meg-datagrid-mobile-sort select {
     flex: 1 1 200px;
     min-width: 200px;
-    width: 100%;
+    width: 0;
+    max-width: calc(100% - 5rem);
+    box-sizing: border-box;
     text-overflow: clip;
   }
   .meg-datagrid-toolbar__filters {
@@ -2319,10 +2321,13 @@
     overflow: hidden;
   }
   .meg-datagrid-filter-chip {
-    min-width: 4.5rem;
+    min-width: 5.1rem;
     flex: 1 1 0;
     max-width: 100%;
+    padding-inline: .2rem;
+    gap: .1rem;
   }
+  .meg-datagrid-filter-chip > span { min-width: 24px; flex: 1 1 auto; }
   .meg-datagrid-more-filters { min-width: 0; padding-inline: .25rem; font-size: .68rem; }
   .meg-datagrid-clear-all { flex: 0 0 auto; font-size: .68rem; padding-inline: .15rem; }
   .meg-datagrid-toolbar__filters { gap: .18rem; }
