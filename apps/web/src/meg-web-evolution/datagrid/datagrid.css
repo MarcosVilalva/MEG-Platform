@@ -2263,7 +2263,7 @@
     grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-template-areas:
       "filter filter filter selection selection selection selection actions actions actions actions actions"
-      "sort sort sort sort sort sort sort chips chips chips chips chips";
+      "sort sort sort sort sort sort chips chips chips chips chips chips";
     column-gap: 0;
     grid-template-rows: auto auto;
     align-items: center;
@@ -2320,7 +2320,8 @@
   }
   .meg-datagrid-filter-chip {
     min-width: 4.5rem;
-    flex: 1 1 auto;
+    flex: 1 1 0;
+    max-width: 100%;
   }
   .meg-datagrid-more-filters { min-width: 0; padding-inline: .25rem; font-size: .68rem; }
   .meg-datagrid-clear-all { flex: 0 0 auto; font-size: .68rem; padding-inline: .15rem; }
