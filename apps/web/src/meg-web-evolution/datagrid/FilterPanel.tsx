@@ -355,11 +355,16 @@ export function FilterPanel<T extends Record<string, unknown>>({
 
   // A escolha explícita de valores substitui o critério digitado, em vez de
   // aplicar uma interseção silenciosa entre ambos.
-  const setSelected = (selected: string[]) => setDraft((current) => ({
-    ...current,
-    selected,
-    ...(current.type === 'text' ? { value: '', operator: 'contains' as const } : {}),
-  }));
+  const setSelected = (selected: string[]) => setDraft((current) => {
+    const hasTextCriteria = current.type === 'text' && Boolean(String(current.value ?? '').trim());
+    const previous = new Set(checkedValues);
+    const added = selected.filter((key) => !previous.has(key));
+    return {
+      ...current,
+      selected: hasTextCriteria && added.length === 1 ? added : selected,
+      ...(current.type === 'text' ? { value: '', operator: 'contains' as const } : {}),
+    };
+  });
 
   // Sem lista explícita, os checkboxes refletem o operador textual ativo.
   const checkedValues = useMemo(() => {
