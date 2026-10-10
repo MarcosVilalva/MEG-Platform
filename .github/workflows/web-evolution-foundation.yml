@@ -77,6 +77,8 @@ jobs:
         run: npm run test:web-evolution-shell
 
       - name: Validate Web Evolution DataGrid contract
+        id: datagrid_contract
+        continue-on-error: true
         run: npm run test:web-evolution-datagrid
 
       - name: Report Chrome binary
@@ -109,8 +111,9 @@ jobs:
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.tooltips.playwright.spec.mjs --workers=1 --reporter=line || TOOLTIP_STATUS=$?
           SNAPSHOT_DIR="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots"
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line || QUALITY_STATUS=$?
-          if [ "$SHELL_STATUS" -ne 0 ] || [ "$DATAGRID_STATUS" -ne 0 ] || [ "$TOOLTIP_STATUS" -ne 0 ] || [ "$QUALITY_STATUS" -ne 0 ]; then
-            echo "Web Evolution failures: shell=$SHELL_STATUS datagrid=$DATAGRID_STATUS tooltips=$TOOLTIP_STATUS quality=$QUALITY_STATUS"
+          DATAGRID_CONTRACT_OUTCOME="${{ steps.datagrid_contract.outcome }}"
+          if [ "$DATAGRID_CONTRACT_OUTCOME" != "success" ] || [ "$SHELL_STATUS" -ne 0 ] || [ "$DATAGRID_STATUS" -ne 0 ] || [ "$TOOLTIP_STATUS" -ne 0 ] || [ "$QUALITY_STATUS" -ne 0 ]; then
+            echo "Web Evolution failures: datagrid_contract=$DATAGRID_CONTRACT_OUTCOME shell=$SHELL_STATUS datagrid=$DATAGRID_STATUS tooltips=$TOOLTIP_STATUS quality=$QUALITY_STATUS"
             exit 1
           fi
 
