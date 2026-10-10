@@ -2304,12 +2304,13 @@
     gap: .5rem;
     overflow: visible;
   }
-  .meg-datagrid-mobile-sort > span { flex: 0 0 auto; white-space: nowrap; }
+  .meg-datagrid-mobile-sort > span { flex: 0 0 auto; white-space: nowrap; font-size: .67rem; }
+  .meg-datagrid-mobile-sort { gap: .2rem; }
   .meg-datagrid-mobile-sort select {
-    flex: 1 1 200px;
+    flex: 0 0 200px;
     min-width: 200px;
-    width: 0;
-    max-width: calc(100% - 5rem);
+    width: 200px;
+    max-width: 200px;
     box-sizing: border-box;
     text-overflow: clip;
   }
@@ -2329,7 +2330,7 @@
   }
   .meg-datagrid-filter-chip > span { min-width: 24px; flex: 1 1 auto; }
   .meg-datagrid-more-filters { min-width: 0; padding-inline: .25rem; font-size: .68rem; }
-  .meg-datagrid-clear-all { flex: 0 0 auto; font-size: .68rem; padding-inline: .15rem; }
+  .meg-datagrid-clear-all { flex: 0 0 auto; min-width: max-content; white-space: nowrap; font-size: .68rem; padding-inline: .35rem; }
   .meg-datagrid-toolbar__filters { gap: .18rem; }
   .meg-datagrid-filter-chip > svg {
     box-sizing: content-box;
