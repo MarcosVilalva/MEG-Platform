@@ -2255,3 +2255,79 @@
   border-radius: .6rem;
   cursor: pointer;
 }
+
+/* Passo 7b: toolbar em duas linhas na faixa problemática, preservando 390 e >=800. */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "filter selection selection actions"
+      "sort sort chips chips";
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: .4rem;
+    min-width: 0;
+    height: auto;
+    overflow: visible;
+  }
+  .meg-datagrid-toolbar__primary { display: contents; }
+  .meg-datagrid-mobile-filter { grid-area: filter; width: max-content; min-width: 0; }
+  .meg-datagrid-mobile-select-all {
+    grid-area: selection;
+    width: max-content;
+    min-width: 0;
+    justify-self: start;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  .meg-datagrid-mobile-select-all > span {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .meg-datagrid-toolbar__actions {
+    grid-area: actions;
+    width: max-content;
+    min-width: 0;
+    justify-self: end;
+    flex-wrap: nowrap;
+    gap: .25rem;
+  }
+  .meg-datagrid-mobile-sort {
+    grid-area: sort;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    gap: .5rem;
+    overflow: visible;
+  }
+  .meg-datagrid-mobile-sort > span { flex: 0 0 auto; white-space: nowrap; }
+  .meg-datagrid-mobile-sort select {
+    flex: 1 1 200px;
+    min-width: 200px;
+    width: 100%;
+    text-overflow: clip;
+  }
+  .meg-datagrid-toolbar__filters {
+    grid-area: chips;
+    min-width: 0;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .meg-datagrid-filter-chip {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .meg-datagrid-filter-chip > svg {
+    box-sizing: content-box;
+    width: 1rem;
+    height: 1rem;
+    padding: .5rem;
+    flex: 0 0 2rem;
+    pointer-events: none;
+  }
+  .meg-datagrid__viewport { min-height: 0; flex: 1 1 0; }
+}
