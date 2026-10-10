@@ -36,7 +36,7 @@ for (const width of [600,660,720,760]) {
       ctx.font=getComputedStyle(select).font;
       const option=select.selectedOptions[0]?.textContent||'';
       const textWidth=ctx.measureText(option).width;
-      return {rowCount,overlap,selectChipOverlap,selectionVisible:label.scrollWidth<=label.clientWidth,selectionText:label.textContent,
+      return {rowCount,overlap,selectChipOverlap,clippedControls,selectionVisible:label.scrollWidth<=label.clientWidth,selectionText:label.textContent,
         selectionWidth:label.scrollWidth,selectionClient:label.clientWidth,
         selectWidth:select.getBoundingClientRect().width,selectOverflow:select.scrollWidth>select.clientWidth,textWidth,
         pageWidth:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
