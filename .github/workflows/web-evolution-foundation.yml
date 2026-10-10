@@ -107,8 +107,10 @@ jobs:
           SNAPSHOT_DIR="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots"
           QUALITY_STATUS=0
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line || QUALITY_STATUS=$?
-          if [ "$TOOLTIP_STATUS" -ne 0 ] || [ "$QUALITY_STATUS" -ne 0 ]; then
-            echo "Playwright failures: tooltips=$TOOLTIP_STATUS quality=$QUALITY_STATUS"
+          STEP7A_STATUS=0
+          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.step7a.playwright.spec.mjs --workers=1 --reporter=line || STEP7A_STATUS=$?
+          if [ "$TOOLTIP_STATUS" -ne 0 ] || [ "$QUALITY_STATUS" -ne 0 ] || [ "$STEP7A_STATUS" -ne 0 ]; then
+            echo "Playwright failures: tooltips=$TOOLTIP_STATUS quality=$QUALITY_STATUS step7a=$STEP7A_STATUS"
             exit 1
           fi
 
