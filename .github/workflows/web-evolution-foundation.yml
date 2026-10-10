@@ -159,6 +159,7 @@ jobs:
             sleep 1
           done
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line --update-snapshots
+          git restore -- package-lock.json
           git diff --name-only > /tmp/changed-snapshots.txt
           cat /tmp/changed-snapshots.txt
           if grep -vE '^apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots/datagrid-(640x600|680x400|680x600)-linux.png$' /tmp/changed-snapshots.txt | grep .; then
