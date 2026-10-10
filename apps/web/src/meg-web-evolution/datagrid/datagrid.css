@@ -2260,10 +2260,11 @@
 @media (600px <= width < 761px) {
   .meg-datagrid-toolbar {
     display: grid;
-    grid-template-columns: max-content minmax(13.75rem, 1fr) minmax(0, 1fr) max-content;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-template-areas:
-      "filter selection selection actions"
-      "sort sort chips chips";
+      "filter filter filter selection selection selection selection actions actions actions actions actions"
+      "sort sort sort sort sort sort sort chips chips chips chips chips";
+    column-gap: 0;
     grid-template-rows: auto auto;
     align-items: center;
     gap: .4rem;
