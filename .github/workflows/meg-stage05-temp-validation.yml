@@ -1,0 +1,83 @@
+name: MEG Stage05 Temporary Full Validation
+on:
+  push:
+    branches:
+      - 'meg-web-evolution/tmp-stage05-busca-pdf-validate-20261010'
+permissions:
+  contents: write
+jobs:
+  complete-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate registry resolution and install only authorized versions
+        run: |
+          node --version
+          npm install --audit=false
+          npm ls jspdf jspdf-autotable pdfjs-dist
+      - name: Install pinned existing browser test runners
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0 @axe-core/playwright@4.13.0
+      - name: Run full non-short-circuit stage05 validation
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+          NODE_ENV: test
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        shell: bash
+        run: |
+          mkdir -p artifacts/datagrid-stage05
+          FAILED=0
+          run_group() {
+            local name="$1"
+            shift
+            echo "::group::$name"
+            "$@" || { rc=$?; echo "FAIL $name exit=$rc"; FAILED=1; }
+            echo "::endgroup::"
+          }
+          run_group db-generate npm run db:generate
+          run_group financial npm --workspace apps/api run test:finance
+          run_group financial-core npm run test:core
+          run_group legacy npm run test:legacy-finance
+          run_group status-policy npm run test:transaction-status-policy
+          run_group data npm run test:evolution-data
+          run_group shell npm run test:web-evolution-shell
+          run_group datagrid npm run test:web-evolution-datagrid
+          run_group typecheck npx tsc -b apps/web
+          run_group build-web npm run build:web
+          run_group build-api npm run build:api
+          run_group PDF-chunks node scripts/meg-stage05-bundle-measurement.mjs
+          VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-stage05-vite.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/datagrid-harness.html >/dev/null; then break; fi
+            sleep 1
+          done
+          run_group browser-shell node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
+          run_group browser-grid node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs
+          for spec in datagrid.tooltips.playwright.spec.mjs datagrid.quality.playwright.spec.mjs datagrid.step7a.playwright.spec.mjs datagrid.toolbar7b.playwright.spec.mjs datagrid.stage05.playwright.spec.mjs; do
+            run_group "$spec" npx playwright test "apps/web/src/meg-web-evolution/datagrid/$spec" --workers=1 --reporter=line
+          done
+          run_group security-audit npm audit --audit-level=high
+          echo "VALIDATION_FAILURE=$FAILED" > artifacts/datagrid-stage05/validation-summary.txt
+          exit "$FAILED"
+      - name: Commit dependency lock in temporary branch only, after green suite
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(web): pin stage05 authorized PDF lock [skip render]"
+            git push origin HEAD:meg-web-evolution/tmp-stage05-busca-pdf-validate-20261010
+          fi
+      - name: Upload complete-suite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage05-complete-temporary-evidence
+          path: artifacts/datagrid-stage05
+          if-no-files-found: warn
