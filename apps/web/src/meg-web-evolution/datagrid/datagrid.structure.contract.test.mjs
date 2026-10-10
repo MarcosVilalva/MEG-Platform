@@ -146,7 +146,8 @@ assert.ok(css.includes('.meg-datagrid-mobile-filter-column select option'));
 assert.ok(css.includes('color-scheme: dark'));
 
 assert.ok(dataGridSource.includes('meg-datagrid-toolbar__filters'), 'Filtros ativos devem ficar dentro da toolbar.');
-assert.ok(dataGridSource.includes('activeFilterItems.slice(0, 2)'), 'Toolbar deve limitar chips visíveis a dois.');
+assert.ok(dataGridSource.includes('activeFilterItems.slice(0, visibleChipLimit)'), 'Toolbar deve limitar chips pelo espaço responsivo.');
+assert.ok(dataGridSource.includes('const visibleChipLimit = compactToolbar ? 1 : 2;'), 'Desktop conserva dois chips; faixa 600-760 usa um.');
 assert.ok(dataGridSource.includes('meg-datagrid-more-filters'), 'Overflow de filtros deve usar botão +N filtros.');
 assert.ok(dataGridSource.includes('data-datagrid-active-filters-popover'), 'Popover de todos os filtros ativos ausente.');
 assert.ok(filterSource.includes('formatDateSummaryValue'), 'Resumo de data deve usar dd/mm/aaaa.');
