@@ -62,6 +62,7 @@ jobs:
           for spec in datagrid.tooltips.playwright.spec.mjs datagrid.quality.playwright.spec.mjs datagrid.step7a.playwright.spec.mjs datagrid.toolbar7b.playwright.spec.mjs datagrid.stage05.playwright.spec.mjs; do
             run_group "$spec" npx playwright test "apps/web/src/meg-web-evolution/datagrid/$spec" --workers=1 --reporter=line
           done
+          run_group stage05-visual-comparisons npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.comparison.playwright.spec.mjs --workers=1 --reporter=line
           run_group security-audit npm audit --audit-level=high
           echo "VALIDATION_FAILURE=$FAILED" > artifacts/datagrid-stage05/validation-summary.txt
           exit "$FAILED"
