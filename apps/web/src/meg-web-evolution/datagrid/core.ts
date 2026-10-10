@@ -476,3 +476,20 @@ export function sanitizePersistenceState(
 
   return { filters, sort, columnOrder: order, hiddenColumns: hidden, widths, pageSize };
 }
+
+/** Etapa 05: busca somente nas colunas visíveis, sem derivação de regras financeiras. */
+export function searchVisibleRows<T extends Record<string, unknown>>(
+  rows: T[],
+  visibleColumns: DataGridColumn<T>[],
+  query: string,
+): T[] {
+  const normalized = query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  if (!normalized) return rows;
+  return rows.filter((row) => visibleColumns.some((column) => {
+    const value = row[column.key];
+    const enumLabel = column.enumValues?.[String(value)]?.label;
+    const text = [displayValue(value), enumLabel ?? ''].join(' ')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+    return text.includes(normalized);
+  }));
+}
