@@ -32,7 +32,7 @@ for (const width of [600,660,720,760]) {
       const textWidth=ctx.measureText(option).width;
       return {rowCount,overlap,selectionVisible:label.scrollWidth<=label.clientWidth,selectionText:label.textContent,
         selectionWidth:label.scrollWidth,selectionClient:label.clientWidth,
-        selectWidth:select.clientWidth,textWidth,
+        selectWidth:select.clientWidth,selectOverflow:select.scrollWidth>select.clientWidth,textWidth,
         pageWidth:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
         toolbar:t.getBoundingClientRect().height};
     });
@@ -41,6 +41,7 @@ for (const width of [600,660,720,760]) {
     expect(report.selectionText).toBe('Selecionar filtrados');
     expect(report.selectionVisible).toBe(true);
     expect(report.selectWidth).toBeGreaterThanOrEqual(200);
+    expect(report.selectOverflow).toBe(false);
     expect(report.textWidth+32).toBeLessThanOrEqual(report.selectWidth);
     expect(report.pageWidth).toBeLessThanOrEqual(report.viewport);
     if(width===660){
