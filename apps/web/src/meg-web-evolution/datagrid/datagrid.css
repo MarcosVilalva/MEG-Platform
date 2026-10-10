@@ -2260,7 +2260,7 @@
 @media (600px <= width < 761px) {
   .meg-datagrid-toolbar {
     display: grid;
-    grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr) max-content;
+    grid-template-columns: max-content minmax(5.2rem, 1fr) minmax(5.2rem, 1fr) minmax(11rem, auto);
     grid-template-areas:
       "filter selection selection actions"
       "sort sort chips chips";
