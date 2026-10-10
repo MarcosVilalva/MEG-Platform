@@ -2584,3 +2584,15 @@
   .meg-datagrid-toolbar__filters { margin-right: auto; flex: 1 1 auto; min-width: 0; }
   .meg-datagrid-toolbar__actions { flex: 0 0 auto; }
 }
+
+/* Etapa 05: redistribuicao estrita do espaco existente entre 600 e 760px, sem sobrepor o sort e sem nova linha. */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar { grid-template-areas:
+    "filter filter selection selection selection selection actions actions actions actions actions actions"
+    "sort sort sort sort sort sort sort chips chips chips chips chips"; }
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) { grid-template-areas:
+    "filter filter filter filter filter selection selection selection selection selection selection selection actions actions actions actions actions actions actions actions actions actions actions actions"
+    "sort sort sort sort sort sort sort sort sort sort sort chips chips chips chips chips chips chips chips chips chips chips chips chips"; }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool { padding-inline: .32rem; gap: .22rem; font-size: .73rem; }
+  .meg-datagrid-toolbar__actions { max-width: 100%; gap: .18rem; }
+}
