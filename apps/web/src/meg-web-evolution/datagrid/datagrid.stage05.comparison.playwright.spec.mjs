@@ -150,3 +150,34 @@ for (const size of [{ width: 1366, height: 600 }, { width: 910, height: 400 }]) 
     }
   });
 }
+
+
+/* Geometria integral em viewports desktop/tablet/mobile, ambos os estados. */
+for (const size of [
+  {width:1366,height:768},{width:1366,height:600},
+  {width:1093,height:480},{width:1024,height:600},
+  {width:910,height:400},{width:760,height:600},
+  {width:680,height:600},{width:680,height:400},
+  {width:660,height:844},{width:640,height:600},
+  {width:600,height:844},{width:390,height:844},
+]) {
+  test('Geometria completa com filtros: '+size.width+'x'+size.height, async ({page}) => {
+    await page.setViewportSize(size);
+    await page.goto(url+'?state=visual');
+    await page.evaluate(() => {
+      localStorage.setItem('meg-web-evolution:datagrid:stage-04-harness-visual',
+        JSON.stringify({ filters:{segment:{type:'enum',selected:['gamma']}, active:{type:'boolean',booleanValue:true}},
+          sort:[],columnOrder:[],hiddenColumns:[],widths:{},pageSize:600 }));
+    });
+    await page.reload();
+    if(size.width<1024) await page.getByRole('button',{name:'Abrir busca rápida'}).click();
+    const input=page.getByRole('searchbox',{name:'Buscar em todas as colunas visíveis'});
+    await input.fill('tecnico 003');
+    await input.press('Enter');
+    await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('1 de 640 registros');
+    const geom=await metrics(page);
+    await checkGeometry(geom,size);
+    expect(geom.chipCount,'Máximo de 2 chips visíveis').toBeLessThanOrEqual(2);
+    if(size.width===910) expect(geom.overflowButton,'+N filtros obrigatório').not.toBeNull();
+  });
+}

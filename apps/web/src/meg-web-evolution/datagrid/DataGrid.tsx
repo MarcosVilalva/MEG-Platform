@@ -836,17 +836,14 @@ export function DataGrid<T extends Record<string, unknown>>({
       if (event.key === '/' && target?.closest('input,textarea,select,[contenteditable="true"]')) return;
       event.preventDefault();
       event.stopImmediatePropagation();
+      searchInputRef.current?.focus({ preventScroll: true });
       setSearchExpanded(true);
       window.requestAnimationFrame(() => searchInputRef.current?.focus());
       window.setTimeout(() => searchInputRef.current?.focus(), 0);
       window.setTimeout(() => searchInputRef.current?.focus(), 50);
     };
     window.addEventListener('keydown', onShortcut, true);
-    window.addEventListener('keyup', onShortcut, true);
-    return () => {
-      window.removeEventListener('keydown', onShortcut, true);
-      window.removeEventListener('keyup', onShortcut, true);
-    };
+    return () => window.removeEventListener('keydown', onShortcut, true);
   }, []);
 
   const [compactMobileChips, setCompactMobileChips] = useState(

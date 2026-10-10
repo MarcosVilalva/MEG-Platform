@@ -2622,3 +2622,53 @@
   .meg-datagrid-toolbar__filters { margin-right: auto; flex: 1 1 auto; min-width: 0; }
   .meg-datagrid-toolbar__actions { flex: 0 0 auto; }
 }
+
+
+/* Passo de restauração: mantém Colunas/CSV na primeira linha original;
+   adiciona PDF à linha de ordenação e chips, sem terceira linha. */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters),
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)) {
+    display: grid; grid-template-columns: repeat(24,minmax(0,1fr));
+    grid-template-areas: "filter filter filter filter filter filter selection selection selection selection selection selection selection columns columns columns columns columns csv csv csv csv search search" "sort sort sort sort sort sort sort sort sort sort chips chips chips chips chips chips chips chips chips chips chips pdf pdf pdf";
+    grid-template-rows: max-content max-content; align-items: center;
+    gap: .4rem; overflow: visible;
+  }
+  .meg-datagrid-toolbar__primary,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__primary { display: contents; }
+  .meg-datagrid-toolbar__actions,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions { display: contents; }
+  .meg-datagrid-mobile-filter,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-filter { grid-area:filter; justify-self:start; }
+  .meg-datagrid-mobile-select-all,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-select-all {
+    grid-area:selection; justify-self:stretch; width:100%; min-width:0;
+    padding-inline:.25rem; box-sizing:border-box;
+  }
+  .meg-datagrid-mobile-select-all > span { min-width:0; overflow:visible; text-overflow:clip; white-space:nowrap; }
+  .meg-datagrid-mobile-sort,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort { grid-area:sort; min-width:0; width:100%; }
+  .meg-datagrid-mobile-sort select { min-width:200px; width:200px; max-width:200px; }
+  .meg-datagrid-toolbar__filters,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__filters { grid-area:chips; justify-self:stretch; width:100%; min-width:0; }
+  .meg-datagrid-toolbar__actions .meg-datagrid-column-menu-wrap { grid-area:columns; justify-self:end; min-width:0; }
+  .meg-datagrid-toolbar__actions > .meg-datagrid-tool:not(.meg-datagrid-pdf-action) { grid-area:csv; justify-self:end; }
+  .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action { grid-area:pdf; justify-self:end; padding-inline:.3rem; }
+  .meg-datagrid-toolbar__actions > .meg-datagrid-quick-search {
+    grid-area:search; justify-self:center; margin:0;
+    width:2.5rem; min-width:2.5rem; overflow:hidden;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions .meg-datagrid-tool {
+    font-size:inherit; min-width:0; padding-inline:.6rem; flex:none;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-pdf-action { padding-inline:.3rem; }
+}
+@media (900px <= width < 1024px) {
+  .meg-datagrid-toolbar__filters { gap:.15rem; }
+  .meg-datagrid-filter-chip { min-width:6.1rem; padding-inline:.25rem; }
+  .meg-datagrid-clear-all { min-width:0; flex:0 0 auto; padding-inline:.35rem; font-size:.72rem; }
+  .meg-datagrid-toolbar__actions { gap:.2rem; }
+  .meg-datagrid-pdf-action { padding-inline:.32rem; }
+}
