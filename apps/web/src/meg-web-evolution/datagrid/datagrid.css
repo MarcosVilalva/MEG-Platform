@@ -2479,3 +2479,44 @@
     text-overflow: ellipsis;
   }
 }
+
+/* Chip mobile: preservar texto truncado, X clicável e Limpar tudo na mesma linha.
+   Isolado abaixo de 600px e somente quando existem filtros ativos. */
+@media (width < 600px) {
+  .meg-datagrid-toolbar__filters {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    gap: .3rem;
+  }
+
+  .meg-datagrid-toolbar__filters .meg-datagrid-filter-chip {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: .25rem .3rem .25rem .55rem;
+  }
+
+  .meg-datagrid-toolbar__filters .meg-datagrid-filter-chip > span {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .meg-datagrid-toolbar__filters .meg-datagrid-filter-chip > svg {
+    box-sizing: content-box;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    padding: 8px;
+    pointer-events: none;
+  }
+
+  .meg-datagrid-toolbar__filters .meg-datagrid-clear-all {
+    flex: 0 0 auto;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+}

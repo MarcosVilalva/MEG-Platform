@@ -109,3 +109,69 @@ for (const width of [600,660,720,760]) {
     await expect(page.locator('[data-datagrid-active-filters-popover]')).toBeVisible();
   });
 }
+
+for (const width of [360, 390]) {
+  test('chip mobile: remover com X legível, tooltip integral e Limpar tudo em ' + width + 'px', async ({page}) => {
+    await prepare(page, width);
+    await expect(page.locator('.meg-datagrid-mobile-filter')).toContainText('Filtros (1)');
+    const filterGroup = page.locator('.meg-datagrid-toolbar__filters');
+    const chip = filterGroup.locator('.meg-datagrid-filter-chip');
+    const closeIcon = chip.locator('svg').last();
+    const clearAll = filterGroup.locator('.meg-datagrid-clear-all');
+    await expect(chip).toHaveCount(1);
+    await expect(chip).toHaveAttribute('aria-label', /Remover filtro Descrição técnica:/);
+    await expect(closeIcon).toBeVisible();
+    await expect(clearAll).toHaveText('Limpar tudo');
+
+    const geometry = await filterGroup.evaluate((group) => {
+      const chip = group.querySelector('.meg-datagrid-filter-chip');
+      const icon = chip.querySelector('svg');
+      const text = chip.querySelector('span');
+      const clear = group.querySelector('.meg-datagrid-clear-all');
+      const g = group.getBoundingClientRect(), c = chip.getBoundingClientRect();
+      const x = icon.getBoundingClientRect(), t = text.getBoundingClientRect();
+      const a = clear.getBoundingClientRect();
+      const points = [
+        [x.left + 2, x.top + 2],
+        [x.right - 2, x.top + 2],
+        [x.left + 2, x.bottom - 2],
+        [x.right - 2, x.bottom - 2],
+      ];
+      return {
+        iconWidth: x.width,
+        iconHeight: x.height,
+        iconShrink: getComputedStyle(icon).flexShrink,
+        iconInside: x.left >= c.left && x.right <= c.right && x.top >= c.top && x.bottom <= c.bottom,
+        iconHit: points.every(([px,py]) => document.elementFromPoint(px,py)?.closest('.meg-datagrid-filter-chip') === chip),
+        textEllipsis: getComputedStyle(text).textOverflow === 'ellipsis',
+        textClipped: text.scrollWidth > text.clientWidth + 1,
+        chipInside: c.left >= g.left - 1 && c.right <= g.right + 1,
+        clearInside: a.left >= g.left - 1 && a.right <= g.right + 1 && clear.scrollWidth <= clear.clientWidth + 1,
+        clearSameLine: Math.abs((c.top+c.bottom)/2-(a.top+a.bottom)/2) <= 3,
+        noOverlap: c.right <= a.left + 1,
+        noPageOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        textWidth: t.width,
+      };
+    });
+    expect(geometry.iconWidth).toBeGreaterThanOrEqual(32);
+    expect(geometry.iconHeight).toBeGreaterThanOrEqual(32);
+    expect(geometry.iconShrink).toBe('0');
+    expect(geometry.iconInside).toBe(true);
+    expect(geometry.iconHit).toBe(true);
+    expect(geometry.textEllipsis).toBe(true);
+    expect(geometry.textClipped).toBe(true);
+    expect(geometry.chipInside).toBe(true);
+    expect(geometry.clearInside).toBe(true);
+    expect(geometry.clearSameLine).toBe(true);
+    expect(geometry.noOverlap).toBe(true);
+    expect(geometry.noPageOverflow).toBe(true);
+
+    await chip.hover();
+    await expect(page.locator('[data-datagrid-tooltip]')).toContainText('Descrição técnica ·');
+    await chip.focus();
+    await expect(page.locator('[data-datagrid-tooltip]')).toContainText('Contém 3');
+    await closeIcon.click();
+    await expect(chip).toHaveCount(0);
+    await expect(filterGroup).toHaveCount(0);
+  });
+}
