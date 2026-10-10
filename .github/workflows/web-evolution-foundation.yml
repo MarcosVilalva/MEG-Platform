@@ -9,7 +9,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   financial-characterization:
@@ -142,3 +142,29 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
           NODE_ENV: test
+
+      - name: TEMP regenerate authorized 640-680 visual baselines after browser run
+        if: always() && github.ref_name == 'meg-web-evolution/tmp-pr606-toolbar-600-760-verify'
+        shell: bash
+        run: |
+          set -eu
+          if [ "$(git log -1 --format=%s)" = "test(datagrid): record authorized 640-680 responsive snapshots" ]; then exit 0; fi
+          VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-snapshot-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/datagrid-harness.html >/dev/null; then break; fi
+            sleep 1
+          done
+          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line --update-snapshots
+          git diff --name-only > /tmp/changed-snapshots.txt
+          cat /tmp/changed-snapshots.txt
+          if grep -vE '^apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots/datagrid-(640x600|680x400|680x600)-linux.png$' /tmp/changed-snapshots.txt | grep .; then
+            echo 'Protected baseline changed'; exit 1
+          fi
+          test "$(wc -l < /tmp/changed-snapshots.txt)" -eq 3
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots/datagrid-{640x600,680x400,680x600}-linux.png
+          git commit -m "test(datagrid): record authorized 640-680 responsive snapshots"
+          git push origin HEAD:meg-web-evolution/tmp-pr606-toolbar-600-760-verify
