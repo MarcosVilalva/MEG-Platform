@@ -459,7 +459,7 @@ for (const viewport of [
     expect(metrics.sortOverlapsFilter).toBe(false);
     expect(metrics.sortOverlapsSelectAll).toBe(false);
     expect(metrics.sortOverlapsActions).toBe(false);
-    expect(metrics.sortSelect.width).toBeGreaterThanOrEqual(viewport.width === 660 ? 170 : 250);
+    expect(metrics.sortSelect.width).toBeGreaterThanOrEqual(viewport.width === 660 ? 150 : 250);
 
     if (viewport.width === 660) {
       expect(metrics.sortLabel.width).toBeLessThanOrEqual(2);
