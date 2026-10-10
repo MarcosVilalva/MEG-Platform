@@ -2318,9 +2318,10 @@
     overflow: hidden;
   }
   .meg-datagrid-filter-chip {
-    min-width: 0;
-    flex: 0 1 auto;
+    min-width: 4.5rem;
+    flex: 1 1 auto;
   }
+  .meg-datagrid-clear-all { flex: 0 0 auto; font-size: .7rem; padding-inline: .25rem; }
   .meg-datagrid-filter-chip > svg {
     box-sizing: content-box;
     width: 1rem;
