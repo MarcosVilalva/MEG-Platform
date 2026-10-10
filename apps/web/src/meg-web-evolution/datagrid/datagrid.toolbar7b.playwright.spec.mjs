@@ -44,6 +44,7 @@ for (const width of [600,660,720,760]) {
     });
     expect(report.rowCount).toBeLessThanOrEqual(2);
     expect(report.overlap).toEqual([]);
+    expect(report.clippedControls).toEqual([]);
     expect(report.selectChipOverlap).toBe(false);
     expect(report.selectionText).toBe('Selecionar filtrados');
     expect(report.selectionVisible).toBe(true);
