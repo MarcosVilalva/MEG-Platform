@@ -833,11 +833,13 @@ export function DataGrid<T extends Record<string, unknown>>({
       const target = event.target as HTMLElement | null;
       if (event.key === '/' && target?.closest('input,textarea,select,[contenteditable="true"]')) return;
       event.preventDefault();
+      event.stopImmediatePropagation();
       setSearchExpanded(true);
       window.requestAnimationFrame(() => searchInputRef.current?.focus());
+      window.setTimeout(() => searchInputRef.current?.focus(), 0);
     };
-    window.addEventListener('keydown', onShortcut);
-    return () => window.removeEventListener('keydown', onShortcut);
+    window.addEventListener('keydown', onShortcut, true);
+    return () => window.removeEventListener('keydown', onShortcut, true);
   }, []);
 
   const [compactMobileChips, setCompactMobileChips] = useState(
@@ -1364,15 +1366,6 @@ export function DataGrid<T extends Record<string, unknown>>({
       data-virtualized={virtualized ? 'true' : 'false'}
     >
       <div className="meg-datagrid-toolbar">
-        <div className={`meg-datagrid-quick-search ${searchExpanded ? 'is-expanded' : ''}`} role="search" aria-label="Busca rápida nos registros">
-          <button type="button" className="meg-datagrid-quick-search__toggle" aria-label="Abrir busca rápida" onClick={() => {
-            setSearchExpanded(true);
-            window.requestAnimationFrame(() => searchInputRef.current?.focus());
-          }}><GridIcon name="filter" size={17} /></button>
-          <input ref={searchInputRef} type="search" name="meg-datagrid-quick-search" aria-label="Buscar em todas as colunas visíveis" placeholder="Buscar registros" value={searchInput} onChange={(event) => { setSearchInput(event.target.value); setPageIndex(0); resetViewport(); }} />
-          {searchInput && <button type="button" className="meg-datagrid-quick-search__clear" aria-label="Limpar busca rápida" onClick={() => { setSearchInput(''); setSearchText(''); setPageIndex(0); resetViewport(); searchInputRef.current?.focus(); }}>×</button>}
-          <span className="meg-datagrid-quick-search__count" role="status" aria-live="polite">{filteredRows.length} de {data.length} registros</span>
-        </div>
         <div className="meg-datagrid-toolbar__primary">
           <button
             ref={mobileFilterButtonRef}
@@ -1498,6 +1491,15 @@ export function DataGrid<T extends Record<string, unknown>>({
         )}
 
         <div className="meg-datagrid-toolbar__actions">
+        <div className={`meg-datagrid-quick-search ${searchExpanded ? 'is-expanded' : ''}`} role="search" aria-label="Busca rápida nos registros">
+          <button type="button" className="meg-datagrid-quick-search__toggle" aria-label="Abrir busca rápida" onClick={() => {
+            setSearchExpanded(true);
+            window.requestAnimationFrame(() => searchInputRef.current?.focus());
+          }}><GridIcon name="filter" size={17} /></button>
+          <input ref={searchInputRef} type="search" name="meg-datagrid-quick-search" aria-label="Buscar em todas as colunas visíveis" placeholder="Buscar registros" value={searchInput} onChange={(event) => { setSearchInput(event.target.value); setPageIndex(0); resetViewport(); }} />
+          {searchInput && <button type="button" className="meg-datagrid-quick-search__clear" aria-label="Limpar busca rápida" onClick={() => { setSearchInput(''); setSearchText(''); setPageIndex(0); resetViewport(); searchInputRef.current?.focus(); }}>×</button>}
+          <span className="meg-datagrid-quick-search__count" role="status" aria-live="polite">{filteredRows.length} de {data.length} registros</span>
+        </div>
           <div className="meg-datagrid-column-menu-wrap">
             <button
               ref={columnMenuButtonRef}

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 test.use({
@@ -16,14 +17,16 @@ const key = 'meg-web-evolution:datagrid:stage-04-harness-visual';
 const evidence = 'artifacts/datagrid-stage05';
 
 async function pdfText(buffer) {
-  const pdf = await getDocument({ data: new Uint8Array(buffer), disableFontFace: true }).promise;
+  const standardFontDataUrl = pathToFileURL(path.resolve('node_modules/pdfjs-dist/standard_fonts') + path.sep).href;
+  const task = getDocument({ data: new Uint8Array(buffer), disableFontFace: true, standardFontDataUrl });
+  const pdf = await task.promise;
   const pages = [];
   for (let p = 1; p <= pdf.numPages; p++) {
     const page = await pdf.getPage(p);
     const words = await page.getTextContent();
     pages.push(words.items.map((item) => item.str || '').join(' '));
   }
-  await pdf.destroy();
+  await task.destroy();
   return pages;
 }
 
@@ -98,6 +101,8 @@ test('PDF sem filtros baixa A4 paisagem com cabeçalho, totais e acentos Helveti
     expect(full).toContain(value);
   }
   expect(pages[1]).toContain('Descrição técnica');
+  expect(full).toContain('Não');
+  expect(full).toContain('Relatório');
   const buffer = await fs.readFile(file);
   expect(buffer.toString('latin1', 0, 8)).toMatch(/^%PDF-/);
 });
