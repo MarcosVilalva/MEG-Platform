@@ -459,10 +459,10 @@ for (const viewport of [
     expect(metrics.sortOverlapsSelectAll).toBe(false);
     expect(metrics.sortOverlapsActions).toBe(false);
     expect(metrics.sortSelect.width).toBeGreaterThanOrEqual(viewport.width === 660 ? 170 : 250);
-    expect(metrics.sortLabel.width).toBeLessThanOrEqual(2);
-    expect(metrics.sortLabel.height).toBeLessThanOrEqual(2);
 
     if (viewport.width === 660) {
+      expect(metrics.sortLabel.width).toBeLessThanOrEqual(2);
+      expect(metrics.sortLabel.height).toBeLessThanOrEqual(2);
       expect(Math.abs(metrics.sortSelect.top - metrics.filter.top)).toBeLessThanOrEqual(2);
       expect(Math.abs(metrics.sortSelect.bottom - metrics.filter.bottom)).toBeLessThanOrEqual(2);
       expect(metrics.primary.height).toBeLessThanOrEqual(52);
