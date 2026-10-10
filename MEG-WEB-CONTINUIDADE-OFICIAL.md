@@ -207,7 +207,7 @@ Não avançar prematuramente para telas futuras.
 ## 10. Estado atual
 
 ### Etapa atual
-**Etapa 04 - DataGrid: READY FOR REVIEW AUTORIZADO (PR #606 aberta, sem merge; Etapas 05/06 bloqueadas)**
+**Etapa 04 - DataGrid: MERGEADA na main pela PR #606; Etapas 05 e 06 NÃO AUTORIZADAS**
 
 ### Situação
 - Prompt Master definido.
@@ -965,3 +965,51 @@ Esses itens **não estão autorizados a entrar na PR #606** e não podem ser con
 7. **Playwright exclusivo:** avaliar as **101 linhas da branch A** e **166 linhas da branch B** por conteúdo e utilidade, sem cherry-pick automático, atualização de baseline ou relaxamento de asserts.
 
 A compactação de altura baixa de `shell.css` permanece **MANTIDA**, com exceção documentada e aprovada. Lint real continua dívida técnica para **PR separada**. A **Etapa 04 não está encerrada formalmente**; **Etapas 05 e 06 continuam bloqueadas**. A PR #606 está Ready for review, **não mesclada**.
+
+
+## Etapa 04 - encerramento por merge autorizado da PR #606 (10/10/2026)
+
+**Status operacional: ETAPA 04 MERGEADA**, sem iniciar qualquer etapa subsequente. A execução do merge não equivale à aprovação visual de telas futuras nem à autorização de iniciar as Etapas 05 e 06.
+
+- Repositório: `MarcosVilalva/MEG-Platform`; PR oficial: **#606**.
+- Branch de origem: `meg-web-evolution/04-datagrid`, **preservada após o merge**.
+- Branch base: `main`; antes do merge, HEAD da base: `6307387efd5a1b5322b0ff89ca6656be799aeb72`.
+- HEAD da PR autorizado e verificado: `129496cd8315f864f553b9fa133958bfa476a145`.
+- PR em estado Ready for review, `mergeable=true` e sem conflitos antes do merge.
+- Gates sobre o HEAD pré-merge: **MEG Platform CI #5198 SUCCESS** e **MEG Web Evolution Foundation #1062 SUCCESS**.
+- **Método do merge: squash**, conforme padrão das PRs #604 e #605.
+- **Commit de merge/squash na main:** `1768cdb5c5d72baa30996933550c16715f6a3dd2`.
+- **Título exato:** `feat(meg-web): Etapa 04 - DataGrid (#606)`.
+- GitHub confirmou a PR #606 **merged=true**, **closed**, SHA do merge igual ao acima; a main apontava para este commit após o merge.
+- Checks do commit de merge devem ser consultados pelo SHA correspondente; **não inferir SUCCESS a partir dos gates anteriores à integração**. Após o merge houve disparo automático dos workflows de push (inclusive Pages e smoke), sem execução manual de deploy nesta rodada.
+- A atualização deste checkpoint é documental, na `main`, feita com mensagem `[skip render]`. Não iniciar deploy manual.
+
+### Limitações da validação manual que permanecem registradas
+
+**O teste manual não cobriu:**
+1. **Clique fora do popover**, para verificar o fechamento por `pointerdown` fora da área do componente.
+2. **Remoção de filtro pelo botão `×` do chip na toolbar**, com verificação manual da atualização visual e dos resultados.
+
+Isso não deve ser reclassificado como funcionalidade aprovada manualmente. Mesmo com cobertura automatizada, o limite do teste manual deve continuar explícito.
+
+### Branches preservadas e backlog pós-#606
+
+**Não apagar, fechar, mesclar ou fazer cherry-pick:**
+- `meg-web-evolution/tmp-datagrid-manual-regression-fix`
+- `meg-web-evolution/tmp-datagrid-pr606-manual-fixes`
+
+Ambas contêm diferenças por conteúdo ainda não integralmente presentes na #606 e continuam preservadas para uma **PR própria de reforço pós-#606**, com autorização de implementação separada.
+
+Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
+1. Playwright: seleção de exatamente **11 valores distintos**, alcance/busca/seleção de **640 valores**, incluindo limites de renderização e estado persistido;
+2. Playwright: geometria da ordenação ativa em **390×844 e 660×600**, sem cortes ou sobreposições;
+3. robustez no fechamento do processo e limpeza do perfil **Chrome/CDP** em `datagrid.browser.driver.mjs`;
+4. `title` com texto completo de ordenação no seletor `Ordenar por`, preservando acessibilidade;
+5. revisão de **`core.ts`** para critérios TEXT vazios/brancos e coerência com `FilterPanel.tsx` / seleção;
+6. revisão de **`continue-on-error`** no workflow Foundation para diagnóstico completo **sem suprimir falha final do gate**;
+7. avaliação e consolidação dos testes Playwright exclusivos de **101 linhas** (branch A) e **166 linhas** (branch B) sem cherry-pick automático ou enfraquecimento de testes;
+8. complementar a validação manual de **clique fora do popover** e **remoção pelo × no chip**.
+
+**Decisões preservadas:** media queries de altura baixa em `shell.css` mantidas como exceção aprovada; lint real é dívida técnica para PR separada. Android e autoridades financeiras permanecem preservados.
+
+**Bloqueio formal:** **NÃO INICIAR ETAPAS 05 E 06** sem nova autorização expressa do usuário.
