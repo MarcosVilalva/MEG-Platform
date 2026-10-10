@@ -56,6 +56,8 @@
 
 .meg-datagrid-toolbar {
   position: relative;
+  container-type: inline-size;
+  container-name: datagrid-toolbar;
   flex-wrap: nowrap;
   min-height: 3.5rem;
   border-bottom: .0625rem solid rgba(20, 227, 200, .12);
@@ -1336,6 +1338,32 @@
   }
 }
 
+@media (min-width: 640px) {
+  @container datagrid-toolbar (max-width: 36rem) {
+    .meg-datagrid-toolbar__primary {
+      grid-template-columns: max-content minmax(7rem, 1fr) minmax(9.5rem, 1.15fr);
+    }
+
+    .meg-datagrid-mobile-sort {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .meg-datagrid-mobile-sort > span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+}
+
 @media (min-width: 640px) and (width < 900px) {
   .meg-datagrid-toolbar {
     flex: 0 0 auto;
@@ -1400,6 +1428,23 @@
   .meg-datagrid-mobile-filter {
     width: max-content;
     min-width: max-content;
+  }
+
+  .meg-datagrid-mobile-sort {
+    position: static;
+    display: grid;
+    gap: .3rem;
+  }
+
+  .meg-datagrid-mobile-sort > span {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
   }
 }
 
