@@ -2256,10 +2256,98 @@
   cursor: pointer;
 }
 
+/* Passo 7b: toolbar em duas linhas na faixa problemática, preservando 390 e >=800. */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-areas:
+      "filter filter filter selection selection selection selection actions actions actions actions actions"
+      "sort sort sort sort sort sort chips chips chips chips chips chips";
+    column-gap: 0;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: .4rem;
+    min-width: 0;
+    height: auto;
+    overflow: visible;
+  }
+  .meg-datagrid-toolbar__primary { display: contents; }
+  .meg-datagrid-mobile-filter { grid-area: filter; width: max-content; min-width: 0; }
+  .meg-datagrid-mobile-select-all {
+    grid-area: selection;
+    width: max-content;
+    min-width: 0;
+    justify-self: start;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  .meg-datagrid-mobile-select-all > span {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .meg-datagrid-toolbar__actions {
+    grid-area: actions;
+    width: max-content;
+    min-width: 0;
+    justify-self: end;
+    flex-wrap: nowrap;
+    gap: .25rem;
+  }
+  .meg-datagrid-mobile-sort {
+    grid-area: sort;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    gap: .5rem;
+    overflow: visible;
+  }
+  .meg-datagrid-mobile-sort > span { flex: 0 0 auto; white-space: nowrap; font-size: .67rem; }
+  .meg-datagrid-mobile-sort { gap: .2rem; }
+  .meg-datagrid-mobile-sort select {
+    flex: 0 0 200px;
+    min-width: 200px;
+    width: 200px;
+    max-width: 200px;
+    box-sizing: border-box;
+    text-overflow: clip;
+  }
+  .meg-datagrid-toolbar__filters {
+    grid-area: chips;
+    min-width: 0;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .meg-datagrid-filter-chip {
+    min-width: 5.1rem;
+    flex: 1 1 0;
+    max-width: 100%;
+    padding-inline: .2rem;
+    gap: .1rem;
+  }
+  .meg-datagrid-filter-chip > span { min-width: 24px; flex: 1 1 auto; }
+  .meg-datagrid-more-filters { min-width: 0; padding-inline: .25rem; font-size: .68rem; }
+  .meg-datagrid-clear-all { flex: 0 0 auto; min-width: max-content; white-space: nowrap; font-size: .68rem; padding-inline: .35rem; }
+  .meg-datagrid-toolbar__filters { gap: .18rem; }
+  .meg-datagrid-filter-chip > svg {
+    box-sizing: content-box;
+    width: 1rem;
+    height: 1rem;
+    padding: .5rem;
+    flex: 0 0 2rem;
+    pointer-events: none;
+  }
+  .meg-datagrid__viewport { min-height: 0; flex: 1 1 0; }
+}
+
+/* Correção com filtros ativos: sem afetar screenshots do estado sem filtros. */
 /* Passo 7b: duas linhas reais de 600 a 760px, sem sobreposição ou corte.
    O rótulo da ordenação continua disponível no aria-label nativo do select. */
 @media (600px <= width < 761px) {
-  .meg-datagrid-toolbar {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters){
     display: grid;
     grid-template-columns: repeat(24, minmax(0, 1fr));
     grid-template-areas:
@@ -2273,15 +2361,15 @@
     height: auto;
     overflow: hidden;
   }
-  .meg-datagrid-toolbar__primary { display: contents; }
-  .meg-datagrid-mobile-filter {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__primary{ display: contents; }
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-filter{
     grid-area: filter;
     width: max-content;
     min-width: 0;
     max-width: 100%;
     padding-inline: .5rem;
   }
-  .meg-datagrid-mobile-select-all {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-select-all{
     grid-area: selection;
     min-width: 0;
     width: max-content;
@@ -2290,12 +2378,12 @@
     white-space: nowrap;
     overflow: hidden;
   }
-  .meg-datagrid-mobile-select-all > span {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-select-all > span{
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
   }
-  .meg-datagrid-toolbar__actions {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions{
     grid-area: actions;
     width: max-content;
     min-width: 0;
@@ -2304,11 +2392,11 @@
     flex-wrap: nowrap;
     gap: .25rem;
   }
-  .meg-datagrid-toolbar__actions .meg-datagrid-tool {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions .meg-datagrid-tool{
     min-width: 0;
     padding-inline: .5rem;
   }
-  .meg-datagrid-mobile-sort {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort{
     grid-area: sort;
     display: flex;
     align-items: center;
@@ -2316,10 +2404,10 @@
     width: 100%;
     overflow: hidden;
   }
-  .meg-datagrid-mobile-sort > span {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort > span{
     display: none;
   }
-  .meg-datagrid-mobile-sort select {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort select{
     flex: 1 1 auto;
     min-width: 200px;
     width: 100%;
@@ -2327,7 +2415,7 @@
     box-sizing: border-box;
     text-overflow: clip;
   }
-  .meg-datagrid-toolbar__filters {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__filters{
     grid-area: chips;
     min-width: 0;
     width: 100%;
@@ -2336,31 +2424,31 @@
     flex-wrap: nowrap;
     overflow: hidden;
   }
-  .meg-datagrid-filter-chip {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-filter-chip{
     min-width: 0;
     flex: 1 1 auto;
     max-width: 100%;
     padding-inline: .2rem;
     gap: .1rem;
   }
-  .meg-datagrid-filter-chip > span {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-filter-chip > span{
     min-width: 24px;
     flex: 1 1 auto;
   }
-  .meg-datagrid-more-filters {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-more-filters{
     min-width: 0;
     flex: 0 0 auto;
     padding-inline: .2rem;
     font-size: .68rem;
   }
-  .meg-datagrid-clear-all {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-clear-all{
     min-width: 0;
     flex: 0 0 auto;
     white-space: nowrap;
     font-size: .68rem;
     padding-inline: .3rem;
   }
-  .meg-datagrid-filter-chip > svg {
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-filter-chip > svg{
     box-sizing: content-box;
     width: 1rem;
     height: 1rem;
@@ -2368,5 +2456,4 @@
     flex: 0 0 2rem;
     pointer-events: none;
   }
-  .meg-datagrid__viewport { min-height: 0; flex: 1 1 0; }
 }
