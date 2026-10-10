@@ -81,3 +81,31 @@ for(const width of [390,800]){
     await expect(page.locator('.meg-datagrid__viewport')).toBeVisible();
   });
 }
+
+for (const width of [600,660,720,760]) {
+  test('quatro filtros mantem overflow e Limpar tudo visiveis em '+width+'px', async({page})=>{
+    await prepare(page,width);
+    await page.evaluate(()=> {
+      const key='meg-web-evolution:datagrid:stage-04-harness-toolbar7b';
+      const state=JSON.parse(localStorage.getItem(key));
+      state.filters={
+        description:{type:'text',operator:'contains',value:'3',selected:[]},
+        segment:{type:'enum',selected:['alpha']},
+        quantity:{type:'number',operator:'gte',value:'23',selected:[]},
+        amount:{type:'currency',operator:'gte',value:'23',selected:[]},
+      };
+      localStorage.setItem(key,JSON.stringify(state));
+    });
+    await page.reload();
+    await expect(page.locator('.meg-datagrid-more-filters')).toContainText('+3 filtros');
+    await expect(page.locator('.meg-datagrid-filter-chip')).toHaveCount(1);
+    const result=await page.locator('.meg-datagrid-toolbar').evaluate(t=>{
+      const r=t.getBoundingClientRect();
+      const elements=[...t.querySelectorAll('.meg-datagrid-more-filters,.meg-datagrid-clear-all,.meg-datagrid-filter-chip')];
+      return elements.filter(e=>{const b=e.getBoundingClientRect();return b.right>r.right+1||b.left<r.left-1||e.scrollWidth>e.clientWidth+1;}).map(e=>e.textContent.trim());
+    });
+    expect(result).toEqual([]);
+    await page.locator('.meg-datagrid-more-filters').click();
+    await expect(page.locator('[data-datagrid-active-filters-popover]')).toBeVisible();
+  });
+}
