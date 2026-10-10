@@ -50,7 +50,7 @@ test('Contem 3 deixa apenas os valores correspondentes marcados no popover', asy
   await sheet.locator('input[name="filter-description-text"]').fill('3');
   const rows = sheet.locator('.meg-datagrid-filter__values .meg-datagrid-check:not(.meg-datagrid-check--all)');
   await expect(rows.first()).toBeVisible();
-  for (let i = 0; i < 5; i++) {
+  for (const i of [0, 1, 3, 4]) {
     await expect(rows.nth(i).locator('input[type="checkbox"]')).not.toBeChecked();
   }
   await expect(rows.filter({ hasText: 'Registro técnico 003' }).first().locator('input[type="checkbox"]')).toBeChecked();
