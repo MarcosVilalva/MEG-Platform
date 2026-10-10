@@ -304,3 +304,168 @@ for (const viewport of approvedViewports) {
     });
   });
 }
+
+
+async function resetVisualState(page, state = {}) {
+  await page.goto(visualUrl);
+  await page.evaluate(({ key, state: next }) => {
+    localStorage.setItem(key, JSON.stringify({
+      filters: {},
+      sort: [],
+      columnOrder: [],
+      hiddenColumns: [],
+      widths: {},
+      pageSize: 600,
+      ...next,
+    }));
+  }, { key: storageKey, state });
+  await page.reload();
+  await expect(page.locator('.meg-datagrid-toolbar')).toBeVisible();
+}
+
+async function openDescriptionFilter(page) {
+  const button = page.getByRole('button', { name: 'Filtrar Descrição técnica' });
+  await button.click();
+  const dialog = page.locator('[data-datagrid-filter-dialog="description"]');
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+function distinctCheckbox(dialog, label) {
+  return dialog.locator('.meg-datagrid-check')
+    .filter({ hasText: label })
+    .locator('input[type="checkbox"]');
+}
+
+test('Descrição técnica: 11 checkboxes selecionados retornam exatamente 11 registros', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 600 });
+  await resetVisualState(page);
+  const dialog = await openDescriptionFilter(page);
+
+  const selectedLabels = Array.from({ length: 11 }, (_, index) =>
+    `Registro técnico ${String(190 + index).padStart(3, '0')}`
+  );
+
+  for (const label of selectedLabels) {
+    const checkbox = distinctCheckbox(dialog, label);
+    await expect(checkbox).toHaveCount(1);
+    await checkbox.check();
+  }
+
+  await dialog.getByRole('button', { name: 'Aplicar' }).click();
+  await expect(page.locator('.meg-datagrid-harness__head p')).toContainText('11 de 640 registros técnicos');
+
+  const persisted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), storageKey);
+  expect(persisted.filters.description.selected).toHaveLength(11);
+});
+
+test('Descrição técnica: todos os 640 valores são alcançáveis e Selecionar tudo marca os 640', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 600 });
+  await resetVisualState(page);
+  const dialog = await openDescriptionFilter(page);
+
+  await expect(dialog.getByText('Selecionar tudo (640)', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('Mostrando 200 de 640.', { exact: false })).toBeVisible();
+
+  const search = dialog.locator('input[name="filter-description-distinct-search"]');
+  await search.fill('Registro técnico 640');
+  await expect(dialog.getByText('Registro técnico 640', { exact: true })).toBeVisible();
+  await search.fill('');
+
+  const selectAll = dialog.locator('input[name="filter-description-select-visible"]');
+  await selectAll.check();
+  await dialog.getByRole('button', { name: 'Aplicar' }).click();
+
+  await expect(page.locator('.meg-datagrid-harness__head p')).toContainText('640 de 640 registros técnicos');
+  const persisted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), storageKey);
+  expect(persisted.filters.description.selected).toHaveLength(640);
+  expect(new Set(persisted.filters.description.selected).size).toBe(640);
+});
+
+test('Descrição técnica: Contém 3 limpa seleção discreta e popover reflete somente o critério ativo', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 600 });
+  await resetVisualState(page);
+  const dialog = await openDescriptionFilter(page);
+
+  for (let sequence = 1; sequence <= 5; sequence += 1) {
+    const label = `Registro técnico ${String(sequence).padStart(3, '0')}`;
+    await distinctCheckbox(dialog, label).check();
+  }
+
+  const criteria = dialog.locator('input[name="filter-description-text"]');
+  await criteria.fill('3');
+
+  const checked = dialog.locator('input[name="filter-description-distinct-value"]:checked');
+  await expect(checked).toHaveCount(0);
+
+  await dialog.getByRole('button', { name: 'Aplicar' }).click();
+  await expect(page.locator('.meg-datagrid-harness__head p')).toContainText('208 de 640 registros técnicos');
+  await expect(page.locator('.meg-datagrid-filter-chip').filter({ hasText: 'Descrição técnica' })).toContainText('Contém 3');
+
+  const reopened = await openDescriptionFilter(page);
+  await expect(reopened.locator('input[name="filter-description-text"]')).toHaveValue('3');
+  await expect(reopened.locator('input[name="filter-description-distinct-value"]:checked')).toHaveCount(0);
+});
+
+for (const viewport of [
+  { width: 660, height: 600 },
+  { width: 390, height: 844 },
+]) {
+  test(`Ordenar por não corta nem sobrepõe em ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await resetVisualState(page, {
+      sort: [{ key: 'amount', direction: 'asc' }],
+    });
+
+    const sort = page.locator('.meg-datagrid-mobile-sort');
+    const select = sort.locator('select');
+    const label = sort.locator(':scope > span');
+    await expect(sort).toBeVisible();
+    await expect(select).toHaveValue('amount:asc');
+    await expect(select).toHaveAttribute('title', 'Valor técnico · crescente');
+
+    const metrics = await page.evaluate(() => {
+      const rect = (selector) => {
+        const el = document.querySelector(selector);
+        const r = el?.getBoundingClientRect();
+        return r ? { left:r.left, right:r.right, top:r.top, bottom:r.bottom, width:r.width, height:r.height } : null;
+      };
+      const overlaps = (a, b) => Boolean(a && b
+        && Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1
+        && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1);
+      const toolbar = rect('.meg-datagrid-toolbar');
+      const primary = rect('.meg-datagrid-toolbar__primary');
+      const filter = rect('.meg-datagrid-mobile-filter');
+      const selectAll = rect('.meg-datagrid-mobile-select-all');
+      const sortWrap = rect('.meg-datagrid-mobile-sort');
+      const sortSelect = rect('.meg-datagrid-mobile-sort select');
+      const sortLabel = rect('.meg-datagrid-mobile-sort > span');
+      const actions = rect('.meg-datagrid-toolbar__actions');
+      return {
+        toolbar, primary, filter, selectAll, sortWrap, sortSelect, sortLabel, actions,
+        documentOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+        sortClipped: Boolean(toolbar && sortSelect && (
+          sortSelect.left < toolbar.left - 1 || sortSelect.right > toolbar.right + 1
+        )),
+        sortOverlapsFilter: overlaps(sortSelect, filter),
+        sortOverlapsSelectAll: overlaps(sortSelect, selectAll),
+        sortOverlapsActions: overlaps(sortSelect, actions),
+      };
+    });
+
+    expect(metrics.documentOverflow).toBe(false);
+    expect(metrics.sortClipped).toBe(false);
+    expect(metrics.sortOverlapsFilter).toBe(false);
+    expect(metrics.sortOverlapsSelectAll).toBe(false);
+    expect(metrics.sortOverlapsActions).toBe(false);
+    expect(metrics.sortSelect.width).toBeGreaterThanOrEqual(viewport.width === 660 ? 170 : 250);
+    expect(metrics.sortLabel.width).toBeLessThanOrEqual(2);
+    expect(metrics.sortLabel.height).toBeLessThanOrEqual(2);
+
+    if (viewport.width === 660) {
+      expect(Math.abs(metrics.sortSelect.top - metrics.filter.top)).toBeLessThanOrEqual(2);
+      expect(Math.abs(metrics.sortSelect.bottom - metrics.filter.bottom)).toBeLessThanOrEqual(2);
+      expect(metrics.primary.height).toBeLessThanOrEqual(52);
+    }
+  });
+}
