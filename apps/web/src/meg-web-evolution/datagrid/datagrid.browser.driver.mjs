@@ -188,8 +188,26 @@ export async function createDataGridBrowser() {
   async function close() {
     try { socket.close(); } catch {}
     if (!chrome.killed) chrome.kill('SIGTERM');
-    await sleep(80);
-    rmSync(userDataDir, { recursive: true, force: true });
+
+    if (chrome.exitCode == null && chrome.signalCode == null) {
+      await Promise.race([
+        new Promise((resolve) => chrome.once('exit', resolve)),
+        sleep(1500),
+      ]);
+    }
+
+    let cleanupError = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+        cleanupError = null;
+        break;
+      } catch (error) {
+        cleanupError = error;
+        await sleep(120 * (attempt + 1));
+      }
+    }
+    if (cleanupError) throw cleanupError;
   }
 
   return {
