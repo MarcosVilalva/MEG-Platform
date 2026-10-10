@@ -98,6 +98,7 @@ function DistinctList<T extends Record<string, unknown>>({
   onSelected: (next: string[]) => void;
 }) {
   const [search, setSearch] = useState('');
+  const [visibleLimit, setVisibleLimit] = useState(200);
   const visible = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase('pt-BR');
     if (!needle) return options;
@@ -107,7 +108,7 @@ function DistinctList<T extends Record<string, unknown>>({
   }, [column.type, options, search]);
 
   const allVisibleSelected = visible.length > 0 && visible.every((option) => selected.includes(option.key));
-  const rendered = visible.slice(0, 200);
+  const rendered = visible.slice(0, visibleLimit);
 
   const toggle = (key: string) => {
     onSelected(selected.includes(key) ? selected.filter((item) => item !== key) : [...selected, key]);
@@ -137,7 +138,7 @@ function DistinctList<T extends Record<string, unknown>>({
             type="search"
             name={`filter-${column.key}-distinct-search`}
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => { setSearch(event.target.value); setVisibleLimit(200); }}
             placeholder="Buscar..."
           />
         </label>
@@ -200,7 +201,7 @@ function DistinctList<T extends Record<string, unknown>>({
         })}
         {!visible.length && <p className="meg-datagrid-filter__no-values">Nenhum valor encontrado.</p>}
         {visible.length > rendered.length && (
-          <p className="meg-datagrid-filter__limit-note">Mostrando {rendered.length} de {visible.length}. Refine a busca para localizar outros valores.</p>
+          <button type="button" className="meg-datagrid-filter__load-more" onClick={() => setVisibleLimit((current) => current + 200)}>Mostrar mais ({rendered.length} de {visible.length})</button>
         )}
       </div>
     </div>
@@ -352,7 +353,29 @@ export function FilterPanel<T extends Record<string, unknown>>({
     setDraft(filter ?? emptyFilter(column.type));
   }, [column.type, filter]);
 
-  const setSelected = (selected: string[]) => setDraft((current) => ({ ...current, selected }));
+  // A escolha explícita de valores substitui o critério digitado, em vez de
+  // aplicar uma interseção silenciosa entre ambos.
+  const setSelected = (selected: string[]) => setDraft((current) => ({
+    ...current,
+    selected,
+    ...(current.type === 'text' ? { value: '', operator: 'contains' as const } : {}),
+  }));
+
+  // Sem lista explícita, os checkboxes refletem o operador textual ativo.
+  const checkedValues = useMemo(() => {
+    if (draft.type !== 'text' || draft.selected?.length || !String(draft.value ?? '').trim()) return draft.selected ?? [];
+    const term = String(draft.value).toLocaleLowerCase('pt-BR');
+    return distinctOptions.filter((option) => {
+      const value = String(option.value ?? '').toLocaleLowerCase('pt-BR');
+      switch (draft.operator) {
+        case 'notContains': return !value.includes(term);
+        case 'startsWith': return value.startsWith(term);
+        case 'endsWith': return value.endsWith(term);
+        case 'equals': return value === term;
+        default: return value.includes(term);
+      }
+    }).map((option) => option.key);
+  }, [distinctOptions, draft]);
 
   const applyShortcut = (shortcut: DateShortcut) => {
     const { from, to } = dateRangeForShortcut(shortcut, new Date());
@@ -376,7 +399,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                 <select
                   name={`filter-${column.key}-operator`}
                   value={String(draft.operator ?? 'contains')}
-                  onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
+                  onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'], selected: [] }))}
                 >
                   {textOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
@@ -387,12 +410,12 @@ export function FilterPanel<T extends Record<string, unknown>>({
                   <input
                     name={`filter-${column.key}-text`}
                     value={String(draft.value ?? '')}
-                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value, selected: [] }))}
                   />
                 </label>
               )}
             </div>
-            <DistinctList column={column} options={distinctOptions} selected={draft.selected ?? []} onSelected={setSelected} />
+            <DistinctList column={column} options={distinctOptions} selected={checkedValues} onSelected={setSelected} />
           </>
         )}
 
