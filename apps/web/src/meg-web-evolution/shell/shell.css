@@ -1340,3 +1340,59 @@
   }
 }
 
+
+@media (max-height: 640px) {
+  .meg-topbar {
+    min-height: 3.7rem;
+    gap: .55rem;
+    padding: .4rem .8rem;
+  }
+
+  .meg-topbar-launcher {
+    width: 38px;
+    height: 38px;
+  }
+
+  .meg-search,
+  .meg-period,
+  .meg-profile {
+    min-height: 2.45rem;
+  }
+
+  .meg-avatar {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .meg-sidebar {
+    gap: .45rem;
+    padding-block: .55rem;
+  }
+
+  .meg-brand {
+    min-height: 4rem;
+  }
+
+  .meg-sidebar-footer {
+    margin-block: 3px;
+    padding-top: 3px;
+  }
+}
+
+@media (max-height: 500px) {
+  .meg-topbar {
+    min-height: 3.35rem;
+    padding-block: .3rem;
+  }
+
+  .meg-topbar-launcher {
+    width: 36px;
+    height: 36px;
+  }
+
+  .meg-search,
+  .meg-period,
+  .meg-profile {
+    min-height: 2.25rem;
+  }
+}
