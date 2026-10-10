@@ -135,7 +135,7 @@ function matchesSelected(value: unknown, selected?: string[]): boolean {
 function matchesText(value: unknown, filter: DataGridFilter): boolean {
   if (filter.operator === 'empty') return value == null || String(value).trim() === '';
   const haystack = normalizeText(value);
-  const needle = normalizeText(filter.value ?? '');
+  const needle = filter.value == null || String(filter.value) === '' ? '' : normalizeText(filter.value);
   let operatorMatch = true;
 
   if (needle || filter.operator) {

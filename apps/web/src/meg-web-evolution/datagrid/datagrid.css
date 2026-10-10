@@ -2213,3 +2213,45 @@
     overflow: auto;
   }
 }
+
+/* Etapa 04, passo 7a: manter o seletor e o rótulo na mesma linha no tablet. */
+@media (650px <= width < 671px) {
+  .meg-datagrid-toolbar__primary {
+    grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1.25fr);
+    align-items: center;
+  }
+  .meg-datagrid-mobile-sort {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    overflow: hidden;
+  }
+  .meg-datagrid-mobile-sort > span {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .meg-datagrid-mobile-sort select {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 0;
+    text-overflow: ellipsis;
+  }
+  .meg-datagrid-mobile-select-all {
+    overflow: hidden;
+  }
+  .meg-datagrid-mobile-select-all > span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+.meg-datagrid-filter__load-more {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  background: rgba(3, 31, 34, .84);
+  color: var(--meg-accent);
+  border: .0625rem solid rgba(20, 227, 200, .2);
+  border-radius: .6rem;
+  cursor: pointer;
+}
