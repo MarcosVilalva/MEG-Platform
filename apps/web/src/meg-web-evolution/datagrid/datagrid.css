@@ -2215,7 +2215,7 @@
 }
 
 /* Etapa 04, passo 7a: manter o seletor e o rótulo na mesma linha no tablet. */
-@media (min-width: 650px) and (max-width: 670px) {
+@media (650px <= width < 671px) {
   .meg-datagrid-toolbar__primary {
     grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1.25fr);
     align-items: center;
