@@ -200,7 +200,7 @@ function DistinctList<T extends Record<string, unknown>>({
         })}
         {!visible.length && <p className="meg-datagrid-filter__no-values">Nenhum valor encontrado.</p>}
         {visible.length > rendered.length && (
-          <p className="meg-datagrid-filter__limit-note">Mostrando {rendered.length} de {visible.length}. Refine a busca para localizar outros valores.</p>
+          <p className="meg-datagrid-filter__limit-note">Mostrando {rendered.length} de {visible.length}. Use a busca para localizar os demais valores.</p>
         )}
       </div>
     </div>
@@ -352,7 +352,11 @@ export function FilterPanel<T extends Record<string, unknown>>({
     setDraft(filter ?? emptyFilter(column.type));
   }, [column.type, filter]);
 
-  const setSelected = (selected: string[]) => setDraft((current) => ({ ...current, selected }));
+  const setSelected = (selected: string[]) => setDraft((current) => (
+    column.type === 'text' && selected.length > 0
+      ? { ...current, value: '', value2: '', selected }
+      : { ...current, selected }
+  ));
 
   const applyShortcut = (shortcut: DateShortcut) => {
     const { from, to } = dateRangeForShortcut(shortcut, new Date());
@@ -376,7 +380,11 @@ export function FilterPanel<T extends Record<string, unknown>>({
                 <select
                   name={`filter-${column.key}-operator`}
                   value={String(draft.operator ?? 'contains')}
-                  onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
+                  onChange={(event) => setDraft((current) => ({
+                    ...current,
+                    operator: event.target.value as DataGridFilter['operator'],
+                    selected: [],
+                  }))}
                 >
                   {textOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
@@ -387,7 +395,11 @@ export function FilterPanel<T extends Record<string, unknown>>({
                   <input
                     name={`filter-${column.key}-text`}
                     value={String(draft.value ?? '')}
-                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                    onChange={(event) => setDraft((current) => ({
+                      ...current,
+                      value: event.target.value,
+                      selected: [],
+                    }))}
                   />
                 </label>
               )}
