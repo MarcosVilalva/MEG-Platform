@@ -22,6 +22,9 @@ for (const width of [600,660,720,760]) {
     const report=await page.locator('.meg-datagrid-toolbar').evaluate(t=>{
       const nodes=[t.querySelector('.meg-datagrid-mobile-filter'),t.querySelector('.meg-datagrid-mobile-select-all'),t.querySelector('.meg-datagrid-toolbar__actions'),t.querySelector('.meg-datagrid-mobile-sort'),t.querySelector('.meg-datagrid-toolbar__filters')].filter(e=>e&&getComputedStyle(e).display!=='none');
       const rects=nodes.map(e=>({name:e.className,r:e.getBoundingClientRect()}));
+      const toolbarRect=t.getBoundingClientRect();
+      const allControls=[...t.querySelectorAll('.meg-datagrid-toolbar__actions button, .meg-datagrid-clear-all')].filter(e=>getComputedStyle(e).display!=='none');
+      const clippedControls=allControls.filter(e=>e.getBoundingClientRect().right>toolbarRect.right+1||e.scrollWidth>e.clientWidth+1).map(e=>e.textContent.trim());
       const rowCount=new Set(rects.map(x=>Math.round(x.r.top/3))).size;
       const overlap=rects.flatMap((a,i)=>rects.slice(i+1).filter(b=>Math.min(a.r.right,b.r.right)-Math.max(a.r.left,b.r.left)>2&&Math.min(a.r.bottom,b.r.bottom)-Math.max(a.r.top,b.r.top)>2).map(b=>[a.name,b.name]));
       const selectRect=t.querySelector('.meg-datagrid-mobile-sort select').getBoundingClientRect();
