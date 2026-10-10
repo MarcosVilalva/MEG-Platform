@@ -2256,31 +2256,39 @@
   cursor: pointer;
 }
 
-/* Passo 7b: toolbar em duas linhas na faixa problemática, preservando 390 e >=800. */
+/* Passo 7b: duas linhas reais de 600 a 760px, sem sobreposição ou corte.
+   O rótulo da ordenação continua disponível no aria-label nativo do select. */
 @media (600px <= width < 761px) {
   .meg-datagrid-toolbar {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(24, minmax(0, 1fr));
     grid-template-areas:
-      "filter filter filter selection selection selection selection actions actions actions actions actions"
-      "sort sort sort sort sort sort chips chips chips chips chips chips";
-    column-gap: 0;
-    grid-template-rows: auto auto;
+      "filter filter filter filter filter filter selection selection selection selection selection selection selection selection actions actions actions actions actions actions actions actions actions actions"
+      "sort sort sort sort sort sort sort sort sort sort sort chips chips chips chips chips chips chips chips chips chips chips chips chips";
+    grid-template-rows: max-content max-content;
     align-items: center;
-    gap: .4rem;
+    column-gap: 0;
+    row-gap: .4rem;
     min-width: 0;
     height: auto;
-    overflow: visible;
+    overflow: hidden;
   }
   .meg-datagrid-toolbar__primary { display: contents; }
-  .meg-datagrid-mobile-filter { grid-area: filter; width: max-content; min-width: 0; }
-  .meg-datagrid-mobile-select-all {
-    grid-area: selection;
+  .meg-datagrid-mobile-filter {
+    grid-area: filter;
     width: max-content;
     min-width: 0;
+    max-width: 100%;
+    padding-inline: .5rem;
+  }
+  .meg-datagrid-mobile-select-all {
+    grid-area: selection;
+    min-width: 0;
+    width: max-content;
+    max-width: 100%;
     justify-self: start;
     white-space: nowrap;
-    overflow: visible;
+    overflow: hidden;
   }
   .meg-datagrid-mobile-select-all > span {
     white-space: nowrap;
@@ -2291,26 +2299,31 @@
     grid-area: actions;
     width: max-content;
     min-width: 0;
+    max-width: 100%;
     justify-self: end;
     flex-wrap: nowrap;
     gap: .25rem;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool {
+    min-width: 0;
+    padding-inline: .5rem;
   }
   .meg-datagrid-mobile-sort {
     grid-area: sort;
     display: flex;
     align-items: center;
-    width: 100%;
     min-width: 0;
-    gap: .5rem;
-    overflow: visible;
+    width: 100%;
+    overflow: hidden;
   }
-  .meg-datagrid-mobile-sort > span { flex: 0 0 auto; white-space: nowrap; font-size: .67rem; }
-  .meg-datagrid-mobile-sort { gap: .2rem; }
+  .meg-datagrid-mobile-sort > span {
+    display: none;
+  }
   .meg-datagrid-mobile-sort select {
-    flex: 0 0 200px;
+    flex: 1 1 auto;
     min-width: 200px;
-    width: 200px;
-    max-width: 200px;
+    width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
     text-overflow: clip;
   }
@@ -2318,20 +2331,35 @@
     grid-area: chips;
     min-width: 0;
     width: 100%;
+    justify-content: flex-end;
+    gap: .16rem;
     flex-wrap: nowrap;
     overflow: hidden;
   }
   .meg-datagrid-filter-chip {
-    min-width: 5.1rem;
-    flex: 1 1 0;
+    min-width: 0;
+    flex: 1 1 auto;
     max-width: 100%;
     padding-inline: .2rem;
     gap: .1rem;
   }
-  .meg-datagrid-filter-chip > span { min-width: 24px; flex: 1 1 auto; }
-  .meg-datagrid-more-filters { min-width: 0; padding-inline: .25rem; font-size: .68rem; }
-  .meg-datagrid-clear-all { flex: 0 0 auto; min-width: max-content; white-space: nowrap; font-size: .68rem; padding-inline: .35rem; }
-  .meg-datagrid-toolbar__filters { gap: .18rem; }
+  .meg-datagrid-filter-chip > span {
+    min-width: 24px;
+    flex: 1 1 auto;
+  }
+  .meg-datagrid-more-filters {
+    min-width: 0;
+    flex: 0 0 auto;
+    padding-inline: .2rem;
+    font-size: .68rem;
+  }
+  .meg-datagrid-clear-all {
+    min-width: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: .68rem;
+    padding-inline: .3rem;
+  }
   .meg-datagrid-filter-chip > svg {
     box-sizing: content-box;
     width: 1rem;
