@@ -1074,6 +1074,9 @@ export function DataGrid<T extends Record<string, unknown>>({
     .sort((a, b) => a - b);
 
   const mobileSortValue = sort.length === 1 ? `${sort[0].key}:${sort[0].direction}` : '';
+  const mobileSortLabel = sort.length === 1
+    ? `${orderedColumns.find((column) => column.key === sort[0].key)?.label ?? sort[0].key} · ${sort[0].direction === 'asc' ? 'crescente' : 'decrescente'}`
+    : 'Sem ordenação';
 
   const renderGroupHeader = (entry: Extract<DataGridDisplayEntry<T>, { kind: 'group' }>, asCard = false) => {
     const expanded = !collapsedGroups.has(entry.group.id);
@@ -1325,6 +1328,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             <select
               name="meg-datagrid-mobile-sort"
               aria-label="Ordenar por"
+              title={mobileSortLabel}
               value={mobileSortValue}
               onChange={(event) => {
                 if (!event.target.value) setSort([]);
