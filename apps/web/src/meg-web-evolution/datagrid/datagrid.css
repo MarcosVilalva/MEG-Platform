@@ -1377,28 +1377,24 @@
     width: 100%;
     flex: none;
   }
-}
 
-@media (min-width: 641px) and (width < 680px) {
-  .meg-datagrid-toolbar__primary {
-    grid-template-columns: max-content minmax(6.5rem, .8fr) minmax(11rem, 1.4fr);
+  .meg-datagrid-toolbar__primary:has(.meg-datagrid-mobile-sort option:not([value=""]):checked) {
+    grid-template-columns: auto minmax(6rem, .75fr) minmax(11rem, 1.4fr);
   }
 
-  .meg-datagrid-mobile-sort {
-    position: relative;
-    display: block;
+  .meg-datagrid-mobile-sort:has(option:not([value=""]):checked) {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
   }
 
-  .meg-datagrid-mobile-sort > span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+  .meg-datagrid-mobile-sort:has(option:not([value=""]):checked) > span {
+    flex: 0 0 auto;
+  }
+
+  .meg-datagrid-mobile-sort:has(option:not([value=""]):checked) select {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }
 
