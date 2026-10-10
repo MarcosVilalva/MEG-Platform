@@ -79,6 +79,11 @@ export type DataGridProps<T extends Record<string, unknown>> = {
   rowKey?: keyof T & string | ((row: T) => string);
   loading?: boolean;
   ariaLabel?: string;
+  /** Nome fornecido pela sessão atual do consumidor; não derivar de mock. */
+  exportUserName?: string;
+  /** Período canônico de referência, quando disponível. */
+  exportPeriod?: string;
+  pdfMaxRows?: number;
 };
 
 export type DistinctOption = {
