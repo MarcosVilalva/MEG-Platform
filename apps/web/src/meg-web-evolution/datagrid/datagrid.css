@@ -2322,7 +2322,9 @@
     min-width: 4.5rem;
     flex: 1 1 auto;
   }
-  .meg-datagrid-clear-all { flex: 0 0 auto; font-size: .7rem; padding-inline: .25rem; }
+  .meg-datagrid-more-filters { min-width: 0; padding-inline: .25rem; font-size: .68rem; }
+  .meg-datagrid-clear-all { flex: 0 0 auto; font-size: .68rem; padding-inline: .15rem; }
+  .meg-datagrid-toolbar__filters { gap: .18rem; }
   .meg-datagrid-filter-chip > svg {
     box-sizing: content-box;
     width: 1rem;
