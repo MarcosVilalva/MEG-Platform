@@ -32,7 +32,7 @@ for (const width of [600,660,720,760]) {
       const textWidth=ctx.measureText(option).width;
       return {rowCount,overlap,selectionVisible:label.scrollWidth<=label.clientWidth,selectionText:label.textContent,
         selectionWidth:label.scrollWidth,selectionClient:label.clientWidth,
-        selectWidth:select.clientWidth,selectOverflow:select.scrollWidth>select.clientWidth,textWidth,
+        selectWidth:select.getBoundingClientRect().width,selectOverflow:select.scrollWidth>select.clientWidth,textWidth,
         pageWidth:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
         toolbar:t.getBoundingClientRect().height};
     });
