@@ -1115,6 +1115,29 @@ export function DataGrid<T extends Record<string, unknown>>({
     .map((item) => `${item.label}: ${item.formatted}`)
     .join(' · ');
 
+  const exportPdf = async () => {
+    if (pdfBusy) return;
+    setPdfBusy(true);
+    setPdfError(null);
+    try {
+      const [{ jsPDF }, { autoTable }, { saveDataGridPdf }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+        import('./datagrid-pdf'),
+      ]);
+      await saveDataGridPdf({
+        jsPDF, autoTable, rows: sortedRows, totalCount: data.length,
+        columns: visibleColumns, filters: activeFilterItems.map(({ label, summary }) => ({ label, summary })),
+        aggregates: aggregateCells(filteredRows), userName: exportUserName,
+        period: exportPeriod, maxRows: pdfMaxRows,
+      });
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : 'Não foi possível exportar o PDF');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   const exportCsv = () => {
     const csv = toCsv(sortedRows, visibleColumns);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -1341,17 +1364,26 @@ export function DataGrid<T extends Record<string, unknown>>({
       data-virtualized={virtualized ? 'true' : 'false'}
     >
       <div className="meg-datagrid-toolbar">
+        <div className={`meg-datagrid-quick-search ${searchExpanded ? 'is-expanded' : ''}`} role="search" aria-label="Busca rápida nos registros">
+          <button type="button" className="meg-datagrid-quick-search__toggle" aria-label="Abrir busca rápida" onClick={() => {
+            setSearchExpanded(true);
+            window.requestAnimationFrame(() => searchInputRef.current?.focus());
+          }}><GridIcon name="filter" size={17} /></button>
+          <input ref={searchInputRef} type="search" name="meg-datagrid-quick-search" aria-label="Buscar em todas as colunas visíveis" placeholder="Buscar registros" value={searchInput} onChange={(event) => { setSearchInput(event.target.value); setPageIndex(0); resetViewport(); }} />
+          {searchInput && <button type="button" className="meg-datagrid-quick-search__clear" aria-label="Limpar busca rápida" onClick={() => { setSearchInput(''); setSearchText(''); setPageIndex(0); resetViewport(); searchInputRef.current?.focus(); }}>×</button>}
+          <span className="meg-datagrid-quick-search__count" role="status" aria-live="polite">{filteredRows.length} de {data.length} registros</span>
+        </div>
         <div className="meg-datagrid-toolbar__primary">
           <button
             ref={mobileFilterButtonRef}
             type="button"
-            className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterKeys.length ? 'is-active' : ''}`}
+            className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterItems.length ? 'is-active' : ''}`}
             aria-expanded={mobileFiltersOpen}
             aria-haspopup="dialog"
-            aria-label={`Filtros (${activeFilterKeys.length}). ${activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`}`}
-            onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`)}
+            aria-label={`Filtros (${activeFilterItems.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
+            onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
             onMouseLeave={(event) => hideTooltip(event.currentTarget)}
-            onFocus={(event) => showTooltip(event.currentTarget, activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`)}
+            onFocus={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
             onBlur={(event) => hideTooltip(event.currentTarget)}
             onClick={() => {
               setTooltipState(null);
@@ -1362,7 +1394,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             }}
           >
             <GridIcon name="filter" />
-            <span className="meg-datagrid-filter-count-label">Filtros ({activeFilterKeys.length})</span>
+            <span className="meg-datagrid-filter-count-label">Filtros ({activeFilterItems.length})</span>
           </button>
 
           {selectable && (
@@ -1415,7 +1447,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   key={item.key}
                   onClick={(event) => {
                     setTooltipState(null);
-                    updateFilter(item.key, null);
+                    removeActiveFilter(item.key);
                     event.currentTarget.blur();
                   }}
                   onMouseEnter={(event) => showTooltip(event.currentTarget, tooltipText)}
@@ -1457,7 +1489,7 @@ export function DataGrid<T extends Record<string, unknown>>({
               <ActiveFiltersPopover
                 items={activeFilterItems}
                 trigger={activeFiltersButtonRef.current}
-                onRemove={(key) => updateFilter(key, null)}
+                onRemove={removeActiveFilter}
                 onClearAll={clearAllFilters}
                 onClose={() => setActiveFiltersOpen(false)}
               />
@@ -1503,8 +1535,13 @@ export function DataGrid<T extends Record<string, unknown>>({
             <GridIcon name="download" />
             CSV
           </button>
+          <button type="button" className="meg-datagrid-tool meg-datagrid-pdf-action" onClick={exportPdf} disabled={pdfBusy} aria-busy={pdfBusy}>
+            <GridIcon name="download" />
+            {pdfBusy ? 'Gerando…' : 'PDF'}
+          </button>
         </div>
       </div>
+      {pdfError && <p className="meg-datagrid-export-error" role="alert">{pdfError}</p>}
 
       {!data.length ? (
         <div className="meg-datagrid-empty" role="status">
