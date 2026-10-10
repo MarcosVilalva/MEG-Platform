@@ -352,7 +352,12 @@ export function FilterPanel<T extends Record<string, unknown>>({
     setDraft(filter ?? emptyFilter(column.type));
   }, [column.type, filter]);
 
-  const setSelected = (selected: string[]) => setDraft((current) => ({ ...current, selected }));
+  const setSelected = (selected: string[]) => setDraft((current) => {
+    if (current.type === 'text') return { ...current, value: '', selected };
+    if (current.type === 'number' || current.type === 'currency') return { ...current, value: '', value2: '', selected };
+    if (current.type === 'date') return { ...current, value: '', value2: '', shortcut: null, selected };
+    return { ...current, selected };
+  });
 
   const applyShortcut = (shortcut: DateShortcut) => {
     const { from, to } = dateRangeForShortcut(shortcut, new Date());
@@ -362,6 +367,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
       value: from,
       value2: to,
       shortcut,
+      selected: [],
     }));
   };
 
@@ -376,7 +382,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                 <select
                   name={`filter-${column.key}-operator`}
                   value={String(draft.operator ?? 'contains')}
-                  onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'] }))}
+                  onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'], selected: [] }))}
                 >
                   {textOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
@@ -387,7 +393,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                   <input
                     name={`filter-${column.key}-text`}
                     value={String(draft.value ?? '')}
-                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value, selected: [] }))}
                   />
                 </label>
               )}
@@ -416,7 +422,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                     name={`filter-${column.key}-value`}
                     inputMode="decimal"
                     value={String(draft.value ?? '')}
-                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value }))}
+                    onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value, selected: [] }))}
                     onBlur={() => setDraft((current) => ({ ...current, value: formatNumericDraft(current.value, column.type as 'number' | 'currency') }))}
                     placeholder={column.type === 'currency' ? '0,00' : '0'}
                   />
@@ -428,7 +434,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                       name={`filter-${column.key}-value2`}
                       inputMode="decimal"
                       value={String(draft.value2 ?? '')}
-                      onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value }))}
+                      onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value, selected: [] }))}
                       onBlur={() => setDraft((current) => ({ ...current, value2: formatNumericDraft(current.value2, column.type as 'number' | 'currency') }))}
                       placeholder={column.type === 'currency' ? '0,00' : '0'}
                     />
@@ -447,7 +453,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
               <select
                 name={`filter-${column.key}-operator`}
                 value={String(draft.operator ?? 'between')}
-                onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'], shortcut: null }))}
+                onChange={(event) => setDraft((current) => ({ ...current, operator: event.target.value as DataGridFilter['operator'], shortcut: null, selected: [] }))}
               >
                 {dateOperators.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
@@ -459,7 +465,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                   type="date"
                   name={`filter-${column.key}-date-from`}
                   value={String(draft.value ?? '')}
-                  onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value, shortcut: null }))}
+                  onChange={(event) => setDraft((current) => ({ ...current, value: event.target.value, shortcut: null, selected: [] }))}
                 />
               </label>
               {draft.operator === 'between' && (
@@ -469,7 +475,7 @@ export function FilterPanel<T extends Record<string, unknown>>({
                     type="date"
                     name={`filter-${column.key}-date-to`}
                     value={String(draft.value2 ?? '')}
-                    onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value, shortcut: null }))}
+                    onChange={(event) => setDraft((current) => ({ ...current, value2: event.target.value, shortcut: null, selected: [] }))}
                   />
                 </label>
               )}

@@ -175,10 +175,10 @@ test('checkbox: 11 valores marcados retornam 11 registros mesmo após critério 
 
   dialog = await openDescriptionFilter(page, 'manual-checkbox-11');
   const labels = [
-    'Registro técnico 194', 'Registro técnico 195', 'Registro técnico 196',
-    'Registro técnico 197', 'Registro técnico 198', 'Registro técnico 199',
-    'Registro técnico 204', 'Registro técnico 205', 'Registro técnico 206',
-    'Registro técnico 207', 'Registro técnico 208',
+    'Registro técnico 189', 'Registro técnico 190', 'Registro técnico 191',
+    'Registro técnico 192', 'Registro técnico 193', 'Registro técnico 194',
+    'Registro técnico 195', 'Registro técnico 196', 'Registro técnico 197',
+    'Registro técnico 198', 'Registro técnico 199',
   ];
   for (const label of labels) {
     const checkbox = await descriptionValueCheckbox(dialog, label);

@@ -135,10 +135,11 @@ function matchesSelected(value: unknown, selected?: string[]): boolean {
 function matchesText(value: unknown, filter: DataGridFilter): boolean {
   if (filter.operator === 'empty') return value == null || String(value).trim() === '';
   const haystack = normalizeText(value);
-  const needle = normalizeText(filter.value ?? '');
+  const rawNeedle = filter.value == null ? '' : String(filter.value);
+  const needle = rawNeedle.trim() === '' ? '' : normalizeText(filter.value);
   let operatorMatch = true;
 
-  if (needle || filter.operator) {
+  if (needle) {
     switch (filter.operator ?? 'contains') {
       case 'contains': operatorMatch = haystack.includes(needle); break;
       case 'notContains': operatorMatch = !haystack.includes(needle); break;

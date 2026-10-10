@@ -1379,6 +1379,29 @@
   }
 }
 
+@media (min-width: 641px) and (width < 680px) {
+  .meg-datagrid-toolbar__primary {
+    grid-template-columns: max-content minmax(6.5rem, .8fr) minmax(11rem, 1.4fr);
+  }
+
+  .meg-datagrid-mobile-sort {
+    position: relative;
+    display: block;
+  }
+
+  .meg-datagrid-mobile-sort > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
 @media (min-width: 640px) and (width < 660px) {
   .meg-datagrid-toolbar {
     grid-template-columns: minmax(0, 1fr);
