@@ -2457,3 +2457,25 @@
     pointer-events: none;
   }
 }
+
+/* Paisagem baixa sem filtros: conserva o campo de ordenação integral do baseline. */
+@media (600px <= width < 761px) and (max-height: 500px) {
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)) {
+    grid-template-areas:
+      "filter filter filter selection selection selection selection actions actions actions actions actions"
+      "sort sort sort sort sort sort sort chips chips chips chips chips";
+  }
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)) .meg-datagrid-mobile-sort {
+    gap: .5rem;
+  }
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)) .meg-datagrid-mobile-sort > span {
+    font-size: .74rem;
+  }
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)) .meg-datagrid-mobile-sort select {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    text-overflow: ellipsis;
+  }
+}
