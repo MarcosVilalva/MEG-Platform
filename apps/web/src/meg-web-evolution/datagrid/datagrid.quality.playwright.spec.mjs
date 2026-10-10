@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import fs from 'node:fs/promises';
 
 test.use({
   browserName: 'chromium',
@@ -295,6 +296,15 @@ for (const viewport of approvedViewports) {
           '390x844: cabeçalho do grupo não pode ter overflow horizontal',
         ).toBeLessThanOrEqual(groupHeaderWidth.clientWidth);
       }
+    }
+
+    if (viewport.width === 680 && viewport.height === 400) {
+      await fs.mkdir('artifacts/datagrid-evidence', { recursive: true });
+      await grid.screenshot({
+        path: 'artifacts/datagrid-evidence/quality-680x400-actual.png',
+        animations: 'disabled',
+        caret: 'hide',
+      });
     }
 
     await expect(grid).toHaveScreenshot(`datagrid-${viewport.width}x${viewport.height}.png`, {
