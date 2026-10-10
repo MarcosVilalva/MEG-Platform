@@ -100,15 +100,17 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
           curl -fsS http://127.0.0.1:4173/datagrid-harness.html >/dev/null
-          node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
-          node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs
+          SHELL_STATUS=0
+          DATAGRID_STATUS=0
           TOOLTIP_STATUS=0
+          QUALITY_STATUS=0
+          node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs || SHELL_STATUS=$?
+          node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs || DATAGRID_STATUS=$?
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.tooltips.playwright.spec.mjs --workers=1 --reporter=line || TOOLTIP_STATUS=$?
           SNAPSHOT_DIR="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots"
-          QUALITY_STATUS=0
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs --workers=1 --reporter=line || QUALITY_STATUS=$?
-          if [ "$TOOLTIP_STATUS" -ne 0 ] || [ "$QUALITY_STATUS" -ne 0 ]; then
-            echo "Playwright failures: tooltips=$TOOLTIP_STATUS quality=$QUALITY_STATUS"
+          if [ "$SHELL_STATUS" -ne 0 ] || [ "$DATAGRID_STATUS" -ne 0 ] || [ "$TOOLTIP_STATUS" -ne 0 ] || [ "$QUALITY_STATUS" -ne 0 ]; then
+            echo "Web Evolution failures: shell=$SHELL_STATUS datagrid=$DATAGRID_STATUS tooltips=$TOOLTIP_STATUS quality=$QUALITY_STATUS"
             exit 1
           fi
 
