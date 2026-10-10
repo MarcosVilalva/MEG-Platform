@@ -24,13 +24,16 @@ for (const width of [600,660,720,760]) {
       const rects=nodes.map(e=>({name:e.className,r:e.getBoundingClientRect()}));
       const rowCount=new Set(rects.map(x=>Math.round(x.r.top/3))).size;
       const overlap=rects.flatMap((a,i)=>rects.slice(i+1).filter(b=>Math.min(a.r.right,b.r.right)-Math.max(a.r.left,b.r.left)>2&&Math.min(a.r.bottom,b.r.bottom)-Math.max(a.r.top,b.r.top)>2).map(b=>[a.name,b.name]));
+      const selectRect=t.querySelector('.meg-datagrid-mobile-sort select').getBoundingClientRect();
+      const chips=[...t.querySelectorAll('.meg-datagrid-filter-chip,.meg-datagrid-clear-all')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.getBoundingClientRect());
+      const selectChipOverlap=chips.some(r=>Math.min(r.right,selectRect.right)-Math.max(r.left,selectRect.left)>1&&Math.min(r.bottom,selectRect.bottom)-Math.max(r.top,selectRect.top)>1);
       const label=t.querySelector('.meg-datagrid-mobile-select-all > span');
       const select=t.querySelector('.meg-datagrid-mobile-sort select');
       const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');
       ctx.font=getComputedStyle(select).font;
       const option=select.selectedOptions[0]?.textContent||'';
       const textWidth=ctx.measureText(option).width;
-      return {rowCount,overlap,selectionVisible:label.scrollWidth<=label.clientWidth,selectionText:label.textContent,
+      return {rowCount,overlap,selectChipOverlap,selectionVisible:label.scrollWidth<=label.clientWidth,selectionText:label.textContent,
         selectionWidth:label.scrollWidth,selectionClient:label.clientWidth,
         selectWidth:select.getBoundingClientRect().width,selectOverflow:select.scrollWidth>select.clientWidth,textWidth,
         pageWidth:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
@@ -38,6 +41,7 @@ for (const width of [600,660,720,760]) {
     });
     expect(report.rowCount).toBeLessThanOrEqual(2);
     expect(report.overlap).toEqual([]);
+    expect(report.selectChipOverlap).toBe(false);
     expect(report.selectionText).toBe('Selecionar filtrados');
     expect(report.selectionVisible).toBe(true);
     expect(report.selectWidth).toBeGreaterThanOrEqual(200);
