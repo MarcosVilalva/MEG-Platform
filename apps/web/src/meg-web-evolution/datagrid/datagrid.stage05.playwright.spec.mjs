@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 test.use({
@@ -17,7 +16,7 @@ const key = 'meg-web-evolution:datagrid:stage-04-harness-visual';
 const evidence = 'artifacts/datagrid-stage05';
 
 async function pdfText(buffer) {
-  const standardFontDataUrl = pathToFileURL(path.resolve('node_modules/pdfjs-dist/standard_fonts') + path.sep).href;
+  const standardFontDataUrl = path.resolve('node_modules/pdfjs-dist/standard_fonts') + path.sep;
   const task = getDocument({ data: new Uint8Array(buffer), disableFontFace: true, standardFontDataUrl });
   const pdf = await task.promise;
   const pages = [];
