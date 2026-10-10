@@ -453,6 +453,7 @@ for (const viewport of [
       };
     });
 
+    console.log('MOBILE_SORT_METRICS', `${viewport.width}x${viewport.height}`, JSON.stringify(metrics));
     expect(metrics.documentOverflow).toBe(false);
     expect(metrics.sortClipped).toBe(false);
     expect(metrics.sortOverlapsFilter).toBe(false);
