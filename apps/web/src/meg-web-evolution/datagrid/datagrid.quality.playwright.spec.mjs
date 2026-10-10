@@ -150,6 +150,107 @@ test('FilterPanel e controles do DataGrid possuem id ou name', async ({ page }) 
   expect(missing).toEqual([]);
 });
 
+
+async function openDescriptionFilter(page, state, viewport = { width: 1366, height: 600 }) {
+  await page.setViewportSize(viewport);
+  await page.goto(`${baseUrl}?state=${state}`);
+  const trigger = page.getByRole('button', { name: 'Filtrar Descrição técnica' });
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  const dialog = page.locator('[data-datagrid-filter-dialog="description"]');
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+async function descriptionValueCheckbox(dialog, label) {
+  const row = dialog.locator('label.meg-datagrid-check').filter({ hasText: label });
+  await expect(row).toBeVisible();
+  return row.locator('input[type="checkbox"]');
+}
+
+test('checkbox: 11 valores marcados retornam 11 registros mesmo após critério textual anterior', async ({ page }) => {
+  let dialog = await openDescriptionFilter(page, 'manual-checkbox-11');
+  await dialog.locator('input[name="filter-description-text"]').fill('3');
+  await dialog.getByRole('button', { name: 'Aplicar' }).click();
+
+  dialog = await openDescriptionFilter(page, 'manual-checkbox-11');
+  const labels = [
+    'Registro técnico 194', 'Registro técnico 195', 'Registro técnico 196',
+    'Registro técnico 197', 'Registro técnico 198', 'Registro técnico 199',
+    'Registro técnico 204', 'Registro técnico 205', 'Registro técnico 206',
+    'Registro técnico 207', 'Registro técnico 208',
+  ];
+  for (const label of labels) {
+    const checkbox = await descriptionValueCheckbox(dialog, label);
+    await checkbox.check();
+  }
+  await dialog.getByRole('button', { name: 'Aplicar' }).click();
+  await expect(page.locator('.meg-datagrid-harness__head p')).toContainText('11 de 640 registros técnicos');
+});
+
+test('Selecionar tudo usa os 640 valores e busca alcança valor além dos 200 renderizados', async ({ page }) => {
+  let dialog = await openDescriptionFilter(page, 'manual-select-all');
+  await expect(dialog.locator('.meg-datagrid-filter__limit-note')).toContainText('Mostrando 200 de 640');
+  const selectAll = dialog.locator('input[name="filter-description-select-visible"]');
+  await expect(selectAll.locator('xpath=..')).toContainText('Selecionar tudo (640)');
+  await selectAll.check();
+  await dialog.getByRole('button', { name: 'Aplicar' }).click();
+  await expect(page.locator('.meg-datagrid-harness__head p')).toContainText('640 de 640 registros técnicos');
+
+  dialog = await openDescriptionFilter(page, 'manual-select-all');
+  await dialog.locator('input[name="filter-description-distinct-search"]').fill('Registro técnico 640');
+  const beyond200 = await descriptionValueCheckbox(dialog, 'Registro técnico 640');
+  await expect(beyond200).toBeChecked();
+});
+
+test('Contém 3 limpa seleção distinta antiga e popover reflete somente o critério ativo', async ({ page }) => {
+  let dialog = await openDescriptionFilter(page, 'manual-contains-state');
+  for (const label of ['Registro técnico 001','Registro técnico 002','Registro técnico 003','Registro técnico 004','Registro técnico 005']) {
+    const checkbox = await descriptionValueCheckbox(dialog, label);
+    await checkbox.check();
+  }
+  await dialog.locator('input[name="filter-description-text"]').fill('3');
+  await dialog.getByRole('button', { name: 'Aplicar' }).click();
+
+  dialog = await openDescriptionFilter(page, 'manual-contains-state');
+  await expect(dialog.locator('input[name="filter-description-text"]')).toHaveValue('3');
+  const checked = dialog.locator('input[name="filter-description-distinct-value"]:checked');
+  await expect(checked).toHaveCount(0);
+});
+
+for (const viewport of [{ width: 660, height: 600 }, { width: 390, height: 844 }]) {
+  test(`Ordenar por sem corte ou sobreposição em ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto(`${baseUrl}?state=manual-sort-${viewport.width}`);
+    const sort = page.locator('.meg-datagrid-mobile-sort');
+    const select = sort.locator('select');
+    await expect(sort).toBeVisible();
+    await select.selectOption('amount:asc');
+    await expect(select).toHaveValue('amount:asc');
+
+    const geometry = await sort.evaluate((element) => {
+      const selectEl = element.querySelector('select');
+      const toolbar = element.closest('.meg-datagrid-toolbar');
+      const rect = element.getBoundingClientRect();
+      const selectRect = selectEl?.getBoundingClientRect();
+      const toolbarRect = toolbar?.getBoundingClientRect();
+      return {
+        sortLeft: rect.left,
+        sortRight: rect.right,
+        sortWidth: rect.width,
+        selectWidth: selectRect?.width ?? 0,
+        toolbarLeft: toolbarRect?.left ?? 0,
+        toolbarRight: toolbarRect?.right ?? 0,
+        selectedText: selectEl?.selectedOptions?.[0]?.textContent ?? '',
+      };
+    });
+    expect(geometry.selectedText).toBe('Valor técnico · crescente');
+    expect(geometry.selectWidth).toBeGreaterThanOrEqual(175);
+    expect(geometry.sortLeft).toBeGreaterThanOrEqual(geometry.toolbarLeft);
+    expect(geometry.sortRight).toBeLessThanOrEqual(geometry.toolbarRight);
+  });
+}
+
 for (const viewport of approvedViewports) {
   test(`axe e console DataGrid ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
