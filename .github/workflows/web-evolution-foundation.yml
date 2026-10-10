@@ -144,10 +144,12 @@ jobs:
           NODE_ENV: test
 
       - name: TEMP regenerate authorized 640-680 visual baselines after browser run
-        if: always() && github.ref_name == 'meg-web-evolution/tmp-pr606-toolbar-600-760-verify'
+        if: always() && startsWith(github.head_ref || github.ref_name, 'meg-web-evolution/tmp-pr606-toolbar-600-760-verify')
         shell: bash
         run: |
           set -eu
+          git fetch origin meg-web-evolution/tmp-pr606-toolbar-600-760-verify
+          git checkout -B meg-web-evolution/tmp-pr606-toolbar-600-760-verify origin/meg-web-evolution/tmp-pr606-toolbar-600-760-verify
           if [ "$(git log -1 --format=%s)" = "test(datagrid): record authorized 640-680 responsive snapshots" ]; then exit 0; fi
           VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-snapshot-vite.log 2>&1 &
           VITE_PID=$!
