@@ -28,6 +28,7 @@ import {
   reorderKeys,
   resizeWidth,
   sanitizePersistenceState,
+  searchVisibleRows,
   sortRows,
   toCsv,
   toDateKey,
@@ -762,6 +763,9 @@ export function DataGrid<T extends Record<string, unknown>>({
   rowKey,
   loading = false,
   ariaLabel = 'Grade de dados',
+  exportUserName,
+  exportPeriod,
+  pdfMaxRows = 5000,
 }: DataGridProps<T>) {
   const columnKeys = useMemo(() => columns.map((column) => column.key), [columns]);
   const persisted = useMemo<DataGridPersistenceState>(() => {
@@ -788,6 +792,12 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [widths, setWidths] = useState<Record<string, number>>(persisted.widths);
   const [currentPageSize, setCurrentPageSize] = useState(persisted.pageSize);
   const [pageIndex, setPageIndex] = useState(0);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
@@ -812,6 +822,24 @@ export function DataGrid<T extends Record<string, unknown>>({
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSearchText(searchInput.trim()), 200);
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
+
+  useEffect(() => {
+    const onShortcut = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== '/' && !(event.ctrlKey && event.key.toLowerCase() === 'k')) return;
+      const target = event.target as HTMLElement | null;
+      if (event.key === '/' && target?.closest('input,textarea,select,[contenteditable="true"]')) return;
+      event.preventDefault();
+      setSearchExpanded(true);
+      window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    };
+    window.addEventListener('keydown', onShortcut);
+    return () => window.removeEventListener('keydown', onShortcut);
+  }, []);
+
   const [compactMobileChips, setCompactMobileChips] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(max-width: 599px)').matches,
   );
@@ -869,8 +897,8 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, [columnOrder, currentPageSize, filters, hiddenColumns, persistenceKey, sort, widths]);
 
   const filteredRows = useMemo(
-    () => applyFilters(data, columns, filters),
-    [columns, data, filters],
+    () => searchVisibleRows(applyFilters(data, columns, filters), visibleColumns, searchText),
+    [columns, data, filters, searchText, visibleColumns],
   );
 
   const sortedRows = useMemo(
@@ -892,7 +920,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   );
 
   const activeFilterItems = useMemo(
-    () => activeFilterKeys.map((key) => {
+    () => [...activeFilterKeys.map((key) => {
       const column = columns.find((item) => item.key === key);
       if (!column) return null;
       const filter = filters[key];
@@ -902,8 +930,8 @@ export function DataGrid<T extends Record<string, unknown>>({
         summary: filterSummary(filter),
         tooltipSummary: filterTooltipSummary(filter, column, data),
       };
-    }).filter(Boolean) as ActiveFilterItem[],
-    [activeFilterKeys, columns, data, filters],
+    }).filter(Boolean) as ActiveFilterItem[], ...(searchText ? [{ key: '__quickSearch', label: 'Busca', summary: searchText, tooltipSummary: searchText }] : [])],
+    [activeFilterKeys, columns, data, filters, searchText],
   );
 
   const hiddenFiltersTooltip = useMemo(
@@ -922,10 +950,10 @@ export function DataGrid<T extends Record<string, unknown>>({
   useEffect(() => {
     onFilterChange?.({
       filters,
-      activeKeys: activeFilterKeys,
+      activeKeys: searchText ? [...activeFilterKeys, '__quickSearch'] : activeFilterKeys,
       filteredCount: filteredRows.length,
     });
-  }, [activeFilterKeys, filteredRows.length, filters, onFilterChange]);
+  }, [activeFilterKeys, filteredRows.length, filters, onFilterChange, searchText]);
 
   const filteredGroups = useMemo(() => {
     if (!groupBy) return new Map<string, T[]>();
@@ -981,15 +1009,27 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   const clearAllFilters = () => {
     setFilters({});
+    setSearchInput('');
+    setSearchText('');
     setActiveFiltersOpen(false);
     setPageIndex(0);
     resetViewport();
   };
 
+  const removeActiveFilter = (key: string) => {
+    if (key === '__quickSearch') {
+      setSearchInput('');
+      setSearchText('');
+      setSearchExpanded(false);
+      setPageIndex(0);
+      resetViewport();
+    } else updateFilter(key, null);
+  };
+
   const getCascadeOptions = useCallback((column: DataGridColumn<T>) => {
-    const cascaded = applyFilters(data, columns, filters, column.key);
+    const cascaded = searchVisibleRows(applyFilters(data, columns, filters, column.key), visibleColumns, searchText);
     return getDistinctOptions(cascaded, column);
-  }, [columns, data, filters]);
+  }, [columns, data, filters, searchText, visibleColumns]);
 
   const toggleSort = (key: string, multi = false) => {
     setSort((current) => cycleSort(current, key, multi));
