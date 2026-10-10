@@ -51,9 +51,12 @@ Em toda PR funcional:
 - aprovação visual explícita do usuário antes de promover uma etapa que a exige;
 - branch e checkpoint atualizados, rollback definido e merge somente após os gates previstos.
 
-## 7. Estado inicial deste registro
+## 7. Verificação de documentação com Context7
+Em 10/10/2026, o conector Context7 resolveu a biblioteca oficial `/microsoft/playwright` e recuperou documentação de `expect(page).toHaveScreenshot()` e `--update-snapshots`. A documentação confirma que diferenças em screenshots devem falhar na execução normal; atualização de baseline é uma ação intencional, não parte do CI de comparação. Fontes: https://github.com/microsoft/playwright/blob/main/docs/src/api/class-pageassertions.md e https://github.com/microsoft/playwright/blob/main/docs/src/aria-snapshots.md. A execução real dos testes do MEG nesta branch documental **não** foi feita.
+
+## 8. Estado inicial deste registro
 - Playwright: **já implementado na PR #606**, ainda não presente na `main` enquanto a PR permanecer sem merge.
-- Context7: **disponível para conexão**; uso efetivo depende de instalação/autorização no cliente ChatGPT ou no agente de desenvolvimento.
+- Context7: **conectado no ChatGPT nesta sessão e testado**; o agente de desenvolvimento precisa de conexão própria quando executar fora do ChatGPT.
 - Strix: **não habilitado neste trabalho**.
 - Supabase: **nenhuma mudança**.
 - UI, Android, dados, mocks, dependências e CI: **sem alteração nesta PR documental**.
