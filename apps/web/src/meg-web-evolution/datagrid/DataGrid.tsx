@@ -812,7 +812,17 @@ export function DataGrid<T extends Record<string, unknown>>({
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
-  const visibleChipLimit = compactToolbar ? 1 : 2;
+  const [compactMobileChips, setCompactMobileChips] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 599px)').matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 599px)');
+    const update = () => setCompactMobileChips(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  const visibleChipLimit = compactToolbar || compactMobileChips ? 1 : 2;
 
   const getRowKey = useCallback((row: T) => {
     if (typeof rowKey === 'function') return String(rowKey(row));
