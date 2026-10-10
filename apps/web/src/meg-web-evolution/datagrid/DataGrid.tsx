@@ -804,6 +804,15 @@ export function DataGrid<T extends Record<string, unknown>>({
   const columnMenuButtonRef = useRef<HTMLButtonElement>(null);
   const filterButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const isDesktop = useDesktopGrid();
+  const [compactToolbar, setCompactToolbar] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 600px) and (max-width: 760px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 600px) and (max-width: 760px)');
+    const update = () => setCompactToolbar(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  const visibleChipLimit = compactToolbar ? 1 : 2;
 
   const getRowKey = useCallback((row: T) => {
     if (typeof rowKey === 'function') return String(rowKey(row));
@@ -888,8 +897,8 @@ export function DataGrid<T extends Record<string, unknown>>({
   );
 
   const hiddenFiltersTooltip = useMemo(
-    () => activeFilterItems.slice(2).map((item) => `${item.label} · ${item.tooltipSummary}`).join('\n'),
-    [activeFilterItems],
+    () => activeFilterItems.slice(visibleChipLimit).map((item) => `${item.label} · ${item.tooltipSummary}`).join('\n'),
+    [activeFilterItems, visibleChipLimit],
   );
 
   const showTooltip = useCallback((anchor: HTMLElement, text: string) => {
@@ -1347,7 +1356,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 
         {activeFilterItems.length > 0 && (
           <div className="meg-datagrid-toolbar__filters" aria-label="Filtros ativos">
-            {activeFilterItems.slice(0, 2).map((item) => {
+            {activeFilterItems.slice(0, visibleChipLimit).map((item) => {
               const tooltipText = `${item.label} · ${item.tooltipSummary}`;
               return (
                 <button
@@ -1370,14 +1379,14 @@ export function DataGrid<T extends Record<string, unknown>>({
                 </button>
               );
             })}
-            {activeFilterItems.length > 2 && (
+            {activeFilterItems.length > visibleChipLimit && (
               <button
                 ref={activeFiltersButtonRef}
                 type="button"
                 className="meg-datagrid-more-filters"
                 aria-haspopup="dialog"
                 aria-expanded={activeFiltersOpen}
-                aria-label={`Mostrar ${activeFilterItems.length - 2} filtros ocultos: ${hiddenFiltersTooltip.replace(/\n/g, '; ')}`}
+                aria-label={`Mostrar ${activeFilterItems.length - visibleChipLimit} filtros ocultos: ${hiddenFiltersTooltip.replace(/\n/g, '; ')}`}
                 onMouseEnter={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
                 onMouseLeave={(event) => hideTooltip(event.currentTarget)}
                 onFocus={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
@@ -1390,11 +1399,11 @@ export function DataGrid<T extends Record<string, unknown>>({
                   setActiveFiltersOpen((open) => !open);
                 }}
               >
-                +{activeFilterItems.length - 2} filtros
+                +{activeFilterItems.length - visibleChipLimit} filtros
               </button>
             )}
             <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>
-            {activeFiltersOpen && activeFilterItems.length > 2 && (
+            {activeFiltersOpen && activeFilterItems.length > visibleChipLimit && (
               <ActiveFiltersPopover
                 items={activeFilterItems}
                 trigger={activeFiltersButtonRef.current}
