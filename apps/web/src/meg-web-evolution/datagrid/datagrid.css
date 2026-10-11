@@ -56,6 +56,7 @@
 
 .meg-datagrid-toolbar {
   position: relative;
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   min-height: 3.5rem;
   border-bottom: .0625rem solid rgba(20, 227, 200, .12);
@@ -2307,9 +2308,9 @@
   .meg-datagrid-mobile-sort > span { flex: 0 0 auto; white-space: nowrap; font-size: .67rem; }
   .meg-datagrid-mobile-sort { gap: .2rem; }
   .meg-datagrid-mobile-sort select {
-    flex: 0 0 200px;
-    min-width: 200px;
-    width: 200px;
+    flex: 0 1 200px;
+    min-width: 0;
+    width: 100%;
     max-width: 200px;
     box-sizing: border-box;
     text-overflow: clip;
@@ -2409,9 +2410,9 @@
   }
   .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort select{
     flex: 1 1 auto;
-    min-width: 200px;
+    min-width: 0;
     width: 100%;
-    max-width: 100%;
+    max-width: 200px;
     box-sizing: border-box;
     text-overflow: clip;
   }
@@ -2525,14 +2526,14 @@
 /* Etapa 05 - camada aditiva isolada: preservar o layout de duas linhas da Etapa 04. */
 .meg-datagrid-quick-search {
   display:inline-flex; align-items:center; flex:0 1 11rem;
-  min-width:0; width:clamp(7rem,13vw,11rem); min-height:2.35rem;
-  gap:.15rem; padding:.12rem .35rem; box-sizing:border-box;
+  min-width:0; width:clamp(7rem,13vw,11rem); min-height:2.15rem; height:2.15rem;
+  gap:.15rem; padding:0 .35rem; box-sizing:border-box;
   border:.0625rem solid rgba(20,227,200,.22); border-radius:.7rem;
   background:rgba(3,31,34,.84);
 }
 .meg-datagrid-quick-search:focus-within { border-color:rgba(20,227,200,.55); }
 .meg-datagrid-quick-search input {
-  min-width:0;width:100%;min-height:2rem;flex:1 1 auto;
+  min-width:0;width:100%;min-height:0;height:100%;flex:1 1 auto;
   border:0;outline:none;padding:0 .15rem;background:transparent;
   color:var(--meg-text);font-size:.76rem;
 }
@@ -2541,7 +2542,7 @@
 .meg-datagrid-quick-search input::-webkit-search-cancel-button {display:none;}
 .meg-datagrid-quick-search__toggle {
   flex:0 0 2rem;display:none;align-items:center;justify-content:center;
-  width:2rem;height:2rem;min-width:2rem;min-height:2rem;
+  width:2.15rem;height:2.15rem;min-width:2.15rem;min-height:2.15rem;
   border:0;padding:0;background:transparent;color:var(--meg-muted);cursor:pointer;
 }
 .meg-datagrid-quick-search__count {
@@ -2594,7 +2595,7 @@
   .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort{
     grid-area:sort;width:100%;min-width:0;justify-self:stretch;
   }
-  .meg-datagrid-mobile-sort select{width:200px;min-width:200px;max-width:200px;flex:0 0 200px;}
+  .meg-datagrid-mobile-sort select{width:100%;min-width:0;max-width:200px;flex:0 1 200px;text-overflow:ellipsis;}
   .meg-datagrid-toolbar__filters,
   .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__filters{
     grid-area:chips;min-width:0;width:100%;justify-self:stretch;
@@ -2613,17 +2614,17 @@
   }
   .meg-datagrid-toolbar__actions .meg-datagrid-quick-search,
   .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action{
-    position:absolute;top:calc(100% + 1rem);
+    position:static;
     width:2.15rem;height:2.15rem;min-width:2.15rem;
     min-height:2.15rem;max-height:2.15rem;
     padding:0;margin:0;display:flex;justify-content:center;
   }
   .meg-datagrid-toolbar__actions .meg-datagrid-quick-search{
-    right:2.35rem;flex:0 0 2.15rem;
+    flex:0 0 2.15rem;
   }
   .meg-datagrid-quick-search__toggle {width:2rem;min-width:2rem;}
   .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action{
-    right:0;font-size:0;gap:0;padding:0;
+    font-size:0;gap:0;padding:0;
   }
   .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action svg{
     display:block;width:18px;height:18px;flex:0 0 18px;
@@ -2665,7 +2666,7 @@
   /* O grid ocupa o espaço disponível após o cabeçalho real do Shell;
      em tela de 390x844 limita o corpo, preservando viewport rolável e estado vazio. */
   .meg-datagrid-harness:has(.meg-datagrid-toolbar__filters) > .meg-datagrid{
-    height:calc(100dvh - 17rem);max-height:calc(100dvh - 17rem);
+    height:calc(100dvh - 18rem);max-height:calc(100dvh - 18rem);
     min-height:0;display:flex;flex-direction:column;
   }
   .meg-datagrid-harness:has(.meg-datagrid-toolbar__filters) .meg-datagrid__viewport{

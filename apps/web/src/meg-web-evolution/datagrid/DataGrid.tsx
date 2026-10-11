@@ -933,7 +933,9 @@ export function DataGrid<T extends Record<string, unknown>>({
       return {
         key,
         label: column.label,
-        summary: filterSummary(filter),
+        summary: filter?.selected?.length === 1 && column.type === 'enum'
+          ? formatSelectedTooltipValue(column, getDistinctOptions(data, column).find((option) => option.key === filter.selected?.[0]), filter.selected[0]).replace(/^Grupo\s+/i, '')
+          : filterSummary(filter),
         tooltipSummary: filterTooltipSummary(filter, column, data),
       };
     }).filter(Boolean) as ActiveFilterItem[], ...(searchText ? [{ key: '__quickSearch', label: 'Busca', summary: searchText, tooltipSummary: searchText }] : [])],
@@ -1452,6 +1454,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   onFocus={(event) => showTooltip(event.currentTarget, tooltipText)}
                   onBlur={(event) => hideTooltip(event.currentTarget)}
                   aria-label={`Remover filtro ${item.label}: ${item.tooltipSummary}`}
+                  title={tooltipText}
                 >
                   <span><strong>{item.label}</strong> · {item.summary}</span>
                   <GridIcon name="x" size={14} />
@@ -1465,7 +1468,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 className="meg-datagrid-more-filters"
                 aria-haspopup="dialog"
                 aria-expanded={activeFiltersOpen}
-                aria-label={`Mostrar ${activeFilterItems.length - visibleChipLimit} filtros ocultos: ${hiddenFiltersTooltip.replace(/\n/g, '; ')}`}
+                aria-label={`Mostrar ${activeFilterItems.length - visibleChipLimit} ${activeFilterItems.length - visibleChipLimit === 1 ? 'filtro oculto' : 'filtros ocultos'}: ${hiddenFiltersTooltip.replace(/\n/g, '; ')}`}
                 onMouseEnter={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
                 onMouseLeave={(event) => hideTooltip(event.currentTarget)}
                 onFocus={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
@@ -1478,7 +1481,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   setActiveFiltersOpen((open) => !open);
                 }}
               >
-                +{activeFilterItems.length - visibleChipLimit} filtros
+                +{activeFilterItems.length - visibleChipLimit} {activeFilterItems.length - visibleChipLimit === 1 ? 'filtro' : 'filtros'}
               </button>
             )}
             <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>

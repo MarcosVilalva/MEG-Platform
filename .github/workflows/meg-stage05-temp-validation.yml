@@ -99,12 +99,15 @@ jobs:
           rm -rf test-results
           npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.round2.measure.playwright.spec.mjs --workers=1 --reporter=line --trace=on || true
           cp -r test-results artifacts/datagrid-stage05/diagnostico-rodada2/trace-medicoes || true
+          npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.round3.measure.playwright.spec.mjs --workers=1 --reporter=line || true
       - name: Upload Rodada 2 diagnostic evidence
         if: always() && github.ref_name == 'tmp/stage05-fix-verify'
         uses: actions/upload-artifact@v4
         with:
           name: meg-stage05-round2-diagnostic
-          path: artifacts/datagrid-stage05/diagnostico-rodada2
+          path: |
+            artifacts/datagrid-stage05/diagnostico-rodada2
+            artifacts/datagrid-stage05/rodada3
           if-no-files-found: warn
       - name: Commit dependency lock in temporary branch only, after green suite
         if: github.ref_name != 'tmp/stage05-fix-verify'
