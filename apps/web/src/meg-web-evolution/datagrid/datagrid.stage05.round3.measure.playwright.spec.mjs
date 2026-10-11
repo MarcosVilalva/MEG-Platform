@@ -124,3 +124,64 @@ test('Medicao clique central lupa em 600x844',async({page})=>{
   });
   await capture(page,'rodada4-lupa-600x844',{hit:await page.locator('body').getAttribute('data-lupa-hit'),cover:await page.locator('body').getAttribute('data-lupa-top')});
 });
+
+/* Rodada 5: instrumentacao observacional; nao altera contratos existentes. */
+for (const width of [360,390,600,640,660,680,720,760,910,1024,1093]) {
+  test('Rodada5 diagnostico estruturado '+width,async({page})=>{
+    await page.setViewportSize({width,height:width===910?400:width===1024?600:width===1093?480:844});
+    await page.goto(url+'?state=visual');
+    await capture(page,'rodada5-'+width+'-sem-filtros');
+    await page.evaluate(key=>localStorage.setItem(key,JSON.stringify({
+      filters:{segment:{type:'enum',selected:['gamma']},active:{type:'boolean',booleanValue:true}},
+      sort:[],columnOrder:[],hiddenColumns:[],widths:{},pageSize:600,
+    })),storage);
+    await page.reload();
+    await capture(page,'rodada5-'+width+'-com-filtros');
+    if(width===360||width===390){
+      const toggle=page.getByRole('button',{name:'Abrir busca rápida'});
+      if(await toggle.isVisible())await toggle.click({timeout:2500}).catch(()=>{});
+      const input=page.getByRole('searchbox',{name:'Buscar em todas as colunas visíveis'});
+      if(await input.isVisible())await input.fill('resultado-impossivel-rodada5');
+      await capture(page,'rodada5-'+width+'-vazio-filtrado');
+    }
+    const details=await page.evaluate(()=>{
+      const box=el=>{if(!el)return null;const r=el.getBoundingClientRect(),s=getComputedStyle(el);return {
+        cls:el.className?.baseVal||el.className,tag:el.tagName,
+        left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,
+        scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,padding:s.padding,gap:s.gap,display:s.display,
+        visibility:s.visibility,position:s.position,overflow:s.overflow};
+      };
+      const ancestors=el=>{const a=[];while(el){a.push(box(el));el=el.parentElement}return a};
+      const btn=document.querySelector('.meg-datagrid-quick-search__toggle'),r=btn?.getBoundingClientRect();
+      const top=r?document.elementFromPoint(r.left+r.width/2,r.top+r.height/2):null;
+      const pdf=document.querySelector('.meg-datagrid-pdf-action'),search=document.querySelector('input[name="meg-datagrid-quick-search"]');
+      return {lupa:box(btn),lupaIntercept:ancestors(top),pdf:box(pdf),pdfSvg:box(pdf?.querySelector('svg')),
+        pdfText:pdf?.textContent,search:box(search),searchParents:ancestors(search),
+        footerParents:ancestors(document.querySelector('.meg-datagrid-footer'))};
+    });
+    await fs.writeFile(path.join(output,'rodada5-'+width+'-dom.json'),JSON.stringify(details,null,2));
+  });
+}
+
+test('Rodada5 foco CtrlK em mesmo contexto x5',async({page})=>{
+  await page.setViewportSize({width:910,height:400});
+  await page.goto(url+'?state=visual');
+  const observations=[];
+  for(let i=0;i<5;i++){
+    await page.reload();
+    const before=await page.evaluate(()=>({active:document.activeElement?.outerHTML,
+      input:document.querySelector('input[name="meg-datagrid-quick-search"]')?.outerHTML}));
+    await page.keyboard.press('Control+k');
+    const after=await page.evaluate(()=>{const el=document.querySelector('input[name="meg-datagrid-quick-search"]');
+      const c=el?getComputedStyle(el):null,r=el?.getBoundingClientRect();return {
+        active:document.activeElement?.outerHTML,input:el?.outerHTML,focused:document.activeElement===el,
+        display:c?.display,visibility:c?.visibility,width:r?.width,height:r?.height,
+        parent:el?.parentElement?.className};
+    });
+    await page.waitForTimeout(250);
+    const delayed=await page.evaluate(()=>document.activeElement?.getAttribute('name'));
+    observations.push({i,before,after,delayed});
+  }
+  await fs.mkdir(output,{recursive:true});
+  await fs.writeFile(path.join(output,'rodada5-ctrlk-x5.json'),JSON.stringify(observations,null,2));
+});

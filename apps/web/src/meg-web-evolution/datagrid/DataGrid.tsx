@@ -1406,7 +1406,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
                 onChange={(event) => toggleAllFiltered(event.target.checked)}
               />
-              <span>Selecionar filtrados</span>
+              <span title="Selecionar filtrados">Selecionar filtrados</span>
             </label>
           )}
 
