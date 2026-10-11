@@ -1,7 +1,7 @@
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { resolveWorkspaceContext } from '../workspaces/service';
-import { getPhoenixPreviewSnapshot } from '../finance/phoenix-preview-snapshot';
+import { loadCanonicalNotificationOverview } from './canonical-source';
 import { alexaFinancialPanorama, notificationDigest, sendSystemEmail, sendSystemWhatsApp } from './service';
 
 const money = (value: number) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -235,17 +235,15 @@ type DailySummaryOptions = {
 export async function deliverDailyFinancialSummary(userId: string, options: DailySummaryOptions = {}) {
   const referenceDate = options.referenceDate || new Date();
   const local = localParts(referenceDate);
-  const currentMonth = local.iso.slice(0, 7);
-  const [digest, snapshot] = await Promise.all([
+  const [digest, overview] = await Promise.all([
     notificationDigest(userId, referenceDate, 'upcoming'),
-    getPhoenixPreviewSnapshot(userId, currentMonth).catch(() => null),
+    loadCanonicalNotificationOverview(userId, referenceDate),
   ]);
-  const financialStatus: DailyFinancialStatus = snapshot
-    ? {
-        currentMonetaryBalance: Number(snapshot.summary.availableBalance || 0) + Number(snapshot.summary.realizedResult || 0),
-        benefitBalance: Number(snapshot.summary.benefitBalance || 0),
-      }
-    : { currentMonetaryBalance: null, benefitBalance: null };
+  // Nunca enviar valores defasados: sem leitura canônica, o ciclo falha.
+  const financialStatus: DailyFinancialStatus = {
+    currentMonetaryBalance: overview.monetaryAvailable,
+    benefitBalance: overview.benefitBalance,
+  };
   const context = await resolveWorkspaceContext(userId);
   const notificationConfig = await prisma.workspaceNotificationConfig.findUnique({ where: { workspaceId: context.workspaceId } });
   const [phones, emails, owner] = await Promise.all([
