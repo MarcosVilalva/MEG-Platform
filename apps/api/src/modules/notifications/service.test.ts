@@ -273,16 +273,16 @@ assert.equal(canonicalOctober.data.monetaryPaidExpense, 1521.75);
 assert.equal(canonicalOctober.data.monetaryPendingExpense, 5837.55);
 assert.equal(canonicalOctober.data.monetaryAvailable, 6500);
 assert.equal(canonicalOctober.data.benefitBalance, 888.72);
-assert.match(canonicalOctober.speech, /10\\.569,21/);
-assert.match(canonicalOctober.speech, /1\\.521,75/);
-assert.match(canonicalOctober.speech, /5\\.837,55/);
+assert.match(canonicalOctober.speech, /10\.569,21/);
+assert.match(canonicalOctober.speech, /1\.521,75/);
+assert.match(canonicalOctober.speech, /5\.837,55/);
 assert.match(canonicalOctober.speech, /888,72/);
 
-assert.doesNotMatch(notificationServiceSource, /prisma\\.appState\\.findUnique/,
+assert.doesNotMatch(notificationServiceSource, /prisma\.appState\.findUnique/,
   'Alexa e notificações devem ler os eventos canônicos, não o estado legado');
 const canonicalSourceFile = readFileSync(new URL('./canonical-source.ts', import.meta.url), 'utf8');
 assert.match(canonicalSourceFile, /getCanonicalFinancialSummary/);
 assert.match(canonicalSourceFile, /monetaryBalanceAt/);
 assert.match(canonicalSourceFile, /benefitBalanceAt/);
-assert.doesNotMatch(canonicalSourceFile, /\\.create\\(|\\.update\\(|\\.delete\\(/,
+assert.doesNotMatch(canonicalSourceFile, /\.create\(|\.update\(|\.delete\(/,
   'fonte de notificações deve permanecer estritamente de leitura');
