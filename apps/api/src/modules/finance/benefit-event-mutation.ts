@@ -73,7 +73,7 @@ function nextDayExclusive(day: string) {
   return parsed;
 }
 
-async function benefitBalanceAt(tx: Tx, userId: string, effectiveAt: string, excludeEventId?: string) {
+export async function benefitBalanceAt(tx: Tx, userId: string, effectiveAt: string, excludeEventId?: string) {
   const cutoff = nextDayExclusive(effectiveAt);
   const [openingBalance, events] = await Promise.all([
     legacyOpeningBalanceFallbackTotal(tx, userId, ['benefit']),

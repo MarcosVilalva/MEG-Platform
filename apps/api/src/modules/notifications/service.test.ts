@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildAlexaFinancialPanorama, buildNotificationDigest, buildNotificationEmailHtml, buildNotificationWhatsAppText } from './service';
 import { buildDailyWhatsappText } from './daily-summary';
+import { toNotificationTransaction } from './canonical-source';
 
 const transactions = [
   { type: 'expense', date: '2026-06-30', description: 'CONTA ARRASTADA', expenseAmount: 75, status: 'PENDING', paymentMethod: 'BOLETO' },
@@ -232,3 +233,56 @@ assert.match(notificationRoutesSource, /\['sent', 'already-sent'\]\.includes/,
   'Teste de canais não pode declarar Alexa enviada apenas porque a Promise foi resolvida.');
 assert.match(notificationRoutesSource, /=== 'skipped' \? 'not-sent'/,
   'Teste manual deve distinguir anúncio Alexa ignorado de anúncio realmente aceito.');
+
+const canonicalPending = toNotificationTransaction({
+  date: new Date('2026-10-15T00:00:00Z'), description: 'CONTAS DE OUTUBRO',
+  type: 'expense', status: 'planned', amount: 125.50,
+  account: { type: 'checking' }, paymentMethod: { name: 'PIX', type: 'pix' },
+});
+assert.equal(canonicalPending.status, 'pending');
+assert.equal(canonicalPending.date, '2026-10-15');
+assert.equal(canonicalPending.expenseAmount, 125.50);
+assert.equal(canonicalPending.financialScope, 'monetary');
+
+const canonicalPaid = toNotificationTransaction({
+  date: new Date('2026-10-08T00:00:00Z'), description: 'CONTA LIQUIDADA',
+  type: 'expense', status: 'reconciled', amount: 50,
+  account: { type: 'checking' }, paymentMethod: { name: 'PIX', type: 'pix' },
+});
+assert.equal(canonicalPaid.status, 'paid');
+assert.equal(buildNotificationDigest([canonicalPending, canonicalPaid],
+  new Date('2026-10-11T15:00:00Z')).openAmount, 125.50,
+  'eventos já realizados não entram como obrigações em aberto');
+
+const canonicalBenefit = toNotificationTransaction({
+  date: new Date('2026-10-08T00:00:00Z'), description: 'VEROCARD',
+  type: 'income', status: 'paid', amount: 2000,
+  account: { type: 'benefit' }, paymentMethod: { name: 'VEROCARD', type: null },
+});
+assert.equal(canonicalBenefit.financialScope, 'benefit');
+assert.equal(canonicalBenefit.incomeAmount, 2000);
+
+const canonicalOctober = buildAlexaFinancialPanorama([], new Date('2026-10-11T15:00:00Z'), 'overview', {}, {
+  monetaryOpening: 0, monetaryIncome: 10569.21, monetaryPaidExpense: 1521.75,
+  monetaryPendingExpense: 5837.55, monetaryAvailable: 6500,
+  projectedClosing: 662.45, benefitBalance: 888.72, benefitIncome: 2000,
+  benefitExpense: 1111.28,
+});
+assert.equal(canonicalOctober.data.monetaryIncome, 10569.21);
+assert.equal(canonicalOctober.data.monetaryPaidExpense, 1521.75);
+assert.equal(canonicalOctober.data.monetaryPendingExpense, 5837.55);
+assert.equal(canonicalOctober.data.monetaryAvailable, 6500);
+assert.equal(canonicalOctober.data.benefitBalance, 888.72);
+assert.match(canonicalOctober.speech, /10\.569,21/);
+assert.match(canonicalOctober.speech, /1\.521,75/);
+assert.match(canonicalOctober.speech, /5\.837,55/);
+assert.match(canonicalOctober.speech, /888,72/);
+
+assert.doesNotMatch(notificationServiceSource, /prisma\.appState\.findUnique/,
+  'Alexa e notificações devem ler os eventos canônicos, não o estado legado');
+const canonicalSourceFile = readFileSync(new URL('./canonical-source.ts', import.meta.url), 'utf8');
+assert.match(canonicalSourceFile, /getCanonicalFinancialSummary/);
+assert.match(canonicalSourceFile, /monetaryBalanceAt/);
+assert.match(canonicalSourceFile, /benefitBalanceAt/);
+assert.doesNotMatch(canonicalSourceFile, /\.create\(|\.update\(|\.delete\(/,
+  'fonte de notificações deve permanecer estritamente de leitura');

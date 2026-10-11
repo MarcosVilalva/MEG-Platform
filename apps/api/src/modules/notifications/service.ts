@@ -1,6 +1,7 @@
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { loadCanonicalNotificationTransactions, loadCanonicalNotificationOverview, type CanonicalNotificationOverview } from './canonical-source';
 import {
   DEFAULT_NOTIFICATION_SCHEDULE,
   alexaScheduleLabel,
@@ -291,10 +292,8 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
 }
 
 export async function notificationDigest(userId: string, referenceDate = new Date(), mode: NotificationMode = 'upcoming') {
-  const context = await resolveWorkspaceContext(userId);
-  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
-  const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
-  return buildNotificationDigest(state?.transactions || [], referenceDate, mode);
+  const transactions = await loadCanonicalNotificationTransactions(userId);
+  return buildNotificationDigest(transactions, referenceDate, mode);
 }
 
 type EmailBranding = { senderName?: string | null; replyToEmail?: string | null };
@@ -645,7 +644,8 @@ export function buildAlexaFinancialPanorama(
   transactions: LegacyTransaction[],
   referenceDate = new Date(),
   intent: AlexaSkillIntent = 'overview',
-  query: AlexaSkillQuery = {}
+  query: AlexaSkillQuery = {},
+  canonical?: CanonicalNotificationOverview
 ): AlexaFinancialResponse {
   if (['due-in-days', 'due-next-days', 'due-on-date', 'overdue'].includes(intent)) {
     return buildAlexaDetailedBills(
@@ -688,9 +688,19 @@ export function buildAlexaFinancialPanorama(
     }
   }
 
-  const monetaryAvailable = monetaryOpening + monetaryIncome - monetaryPaidExpense;
-  const projectedClosing = monetaryAvailable - monetaryPendingExpense;
-  const benefitBalance = benefitOpening + benefitIncome - benefitExpense;
+  // Em produção, o núcleo financeiro é a autoridade para saldo, receitas e baixas.
+  // O cálculo legado permanece apenas para os testes puros de compatibilidade.
+  if (canonical) {
+    monetaryOpening = canonical.monetaryOpening;
+    monetaryIncome = canonical.monetaryIncome;
+    monetaryPaidExpense = canonical.monetaryPaidExpense;
+    monetaryPendingExpense = canonical.monetaryPendingExpense;
+    benefitIncome = canonical.benefitIncome;
+    benefitExpense = canonical.benefitExpense;
+  }
+  const monetaryAvailable = canonical?.monetaryAvailable ?? (monetaryOpening + monetaryIncome - monetaryPaidExpense);
+  const projectedClosing = canonical?.projectedClosing ?? (monetaryAvailable - monetaryPendingExpense);
+  const benefitBalance = canonical?.benefitBalance ?? (benefitOpening + benefitIncome - benefitExpense);
   const grouped = groupItems(transactions, bounds.date, bounds.month).filter((item) => !isBenefitTransaction(item));
   const openThroughMonth = grouped.filter((item) => monthKey(item.dueDate) <= bounds.month);
   const overdue = openThroughMonth.filter((item) => item.daysUntilDue < 0);
@@ -766,10 +776,10 @@ export async function alexaFinancialPanorama(referenceDate = new Date(), intent:
     select: { id: true, email: true, isActive: true, status: true }
   });
   if (!owner?.isActive || owner.status !== 'ACTIVE') throw new Error('ALEXA_OWNER_NOT_ACTIVE');
-  const context = await resolveWorkspaceContext(owner.id);
-  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
-  const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
-  return { owner: owner.email, ...buildAlexaFinancialPanorama(state?.transactions || [], referenceDate, intent, query) };
+  const transactions = await loadCanonicalNotificationTransactions(owner.id);
+  const openAmount = buildNotificationDigest(transactions, referenceDate, 'open-summary').openAmount;
+  const canonical = await loadCanonicalNotificationOverview(owner.id, referenceDate, openAmount);
+  return { owner: owner.email, ...buildAlexaFinancialPanorama(transactions, referenceDate, intent, query, canonical) };
 }
 
 export function buildAlexaAnnouncement(transactions: LegacyTransaction[], referenceDate = new Date(), includeTomorrow = true) {
@@ -809,10 +819,8 @@ async function invokeAlexaWebhook(text: string) {
 }
 
 export async function deliverAlexaAnnouncement(userId: string, referenceDate = new Date(), slot = 'manual', includeTomorrow = true, force = false) {
-  const context = await resolveWorkspaceContext(userId);
-  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
-  const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
-  const announcement = buildAlexaAnnouncement(state?.transactions || [], referenceDate, includeTomorrow);
+  const transactions = await loadCanonicalNotificationTransactions(userId);
+  const announcement = buildAlexaAnnouncement(transactions, referenceDate, includeTomorrow);
   if (!announcement) return { status: 'skipped', reason: 'Nenhum vencimento para anunciar.' };
   const local = saoPauloParts(referenceDate);
   const reference = `${local.iso}:${slot}:alexa`;
@@ -829,10 +837,7 @@ export async function deliverAlexaAnnouncement(userId: string, referenceDate = n
 }
 
 export async function deliverAlexaNextDuePreview(userId: string, referenceDate = new Date(), force = false) {
-  const context = await resolveWorkspaceContext(userId);
-  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
-  const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
-  const panorama = buildAlexaFinancialPanorama(state?.transactions || [], referenceDate, 'next-due');
+  const panorama = await alexaFinancialPanorama(referenceDate, 'next-due');
   if (!panorama.data.nextDueDate) {
     return { status: 'skipped', reason: 'Nenhum próximo vencimento cadastrado.' };
   }

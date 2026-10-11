@@ -38,3 +38,11 @@ Checkpoint técnico da Etapa 1. Este arquivo define quais módulos podem ser tra
 ## Regra para a nova Web
 
 Nenhuma tela, modal, KPI, gráfico ou DataGrid pode recriar regra financeira localmente. A camada Web deve consumir exclusivamente as autoridades acima.
+
+## Notificações e Alexa (11/10/2026)
+
+- A fonte dos compromissos para Alexa, WhatsApp e e-mail é `FinancialEvent`, filtrada pela autoridade de escopo/status em `financial-policy.ts`, sem depender de `AppState.state.transactions`.
+- Saldo monetário: `monetaryBalanceAt`; resumo mensal: `getCanonicalFinancialSummary`; benefício: `benefitBalanceAt`.
+- A camada `apps/api/src/modules/notifications/canonical-source.ts` é adaptadora de leitura e não executa mutações financeiras.
+- Se a leitura canônica falhar, a notificação deve falhar em vez de divulgar um saldo legado potencialmente incorreto.
+- O Android permanece congelado. O deploy só ocorre após a integração de PR com CI aprovada.
