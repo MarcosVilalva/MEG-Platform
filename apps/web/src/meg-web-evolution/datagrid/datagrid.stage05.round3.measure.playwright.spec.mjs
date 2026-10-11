@@ -93,3 +93,34 @@ for (const size of scenarios) {
     }
   });
 }
+
+/* Rodada 4: capturar explicitamente a geometria do cenário do contrato 7B,
+   antes de qualquer asserção de regressão. */
+for (const width of [600,660,720,760]) {
+  test('Medicao exata Toolbar 7B ' + width, async ({page})=>{
+    await page.setViewportSize({width,height:844});
+    await page.goto(url+'?state=toolbar7b');
+    await page.evaluate(()=>{
+      localStorage.setItem('meg-web-evolution:datagrid:stage-04-harness-toolbar7b',JSON.stringify({
+        filters:{description:{type:'text',operator:'contains',value:'3',selected:[]}},
+        sort:[{key:'description',direction:'desc'}],
+        columnOrder:[],hiddenColumns:[],widths:{},pageSize:600,
+      }));
+    });
+    await page.reload();
+    await capture(page,'rodada4-toolbar7b-'+width+'-estado-exato',{scenario:'toolbar7b',width});
+  });
+}
+test('Medicao clique central lupa em 600x844',async({page})=>{
+  await page.setViewportSize({width:600,height:844});
+  await page.goto(url+'?state=visual');
+  await page.evaluate(()=>{
+    const btn=document.querySelector('.meg-datagrid-quick-search__toggle');
+    if(!btn) return;
+    const r=btn.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+    const top=document.elementFromPoint(x,y);
+    document.body.dataset.lupaHit=String(top===btn||btn.contains(top));
+    document.body.dataset.lupaTop=top?.className?.baseVal||top?.className||top?.tagName||'';
+  });
+  await capture(page,'rodada4-lupa-600x844',{hit:await page.locator('body').getAttribute('data-lupa-hit'),cover:await page.locator('body').getAttribute('data-lupa-top')});
+});
