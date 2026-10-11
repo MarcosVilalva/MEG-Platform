@@ -730,7 +730,6 @@ function ActiveFiltersPopover({
               className="meg-datagrid-active-filter-row__remove"
               onClick={() => onRemove(item.key)}
               aria-label={`Remover filtro ${item.label}: ${item.tooltipSummary}`}
-                   title={tooltipText}
             >
               <GridIcon name="x" size={15} />
             </button>
@@ -1457,6 +1456,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   onFocus={(event) => showTooltip(event.currentTarget, tooltipText)}
                   onBlur={(event) => hideTooltip(event.currentTarget)}
                   aria-label={`Remover filtro ${item.label}: ${item.tooltipSummary}`}
+                   title={tooltipText}
                 >
                   <span><strong>{item.label}</strong> · {item.summary}</span>
                   <GridIcon name="x" size={14} />

@@ -2574,7 +2574,7 @@
     grid-template-rows:max-content max-content;
     align-items:center;gap:.4rem;min-width:0;overflow:visible;
   }
-  .meg-datagrid-toolbar__primary,.meg-datagrid-toolbar__actions{display:contents;}
+  .meg-datagrid-toolbar__primary,.meg-datagrid-toolbar__actions, .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions {display:contents;}
   .meg-datagrid-mobile-filter{grid-area:filter;justify-self:start;width:max-content;max-width:100%;min-width:0;}
   .meg-datagrid-mobile-select-all{
     grid-area:selection;min-width:0;width:100%;box-sizing:border-box;
