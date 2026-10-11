@@ -19,7 +19,16 @@ jobs:
       - name: Validate registry resolution and install only authorized versions
         run: |
           node --version
+          if [ "${GITHUB_REF_NAME}" = "tmp/stage05-fix-verify" ]; then
+            mkdir -p artifacts/datagrid-stage05/diagnostico-rodada2
+            sha256sum package-lock.json | tee artifacts/datagrid-stage05/diagnostico-rodada2/lockfile-before.sha256
+          fi
           npm install --audit=false
+          if [ "${GITHUB_REF_NAME}" = "tmp/stage05-fix-verify" ]; then
+            sha256sum package-lock.json | tee artifacts/datagrid-stage05/diagnostico-rodada2/lockfile-after.sha256
+            git status --short | tee artifacts/datagrid-stage05/diagnostico-rodada2/git-status.txt
+            git diff --exit-code -- package-lock.json > artifacts/datagrid-stage05/diagnostico-rodada2/package-lock.diff || echo "LOCKFILE_DIFF_DETECTED"
+          fi
           npm ls jspdf jspdf-autotable pdfjs-dist
       - name: Install pinned existing browser test runners
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0 @axe-core/playwright@4.13.0
@@ -67,6 +76,36 @@ jobs:
           run_group security-audit npm audit --audit-level=high
           echo "VALIDATION_FAILURE=$FAILED" > artifacts/datagrid-stage05/validation-summary.txt
           exit "$FAILED"
+      - name: Rodada 2 - diagnostic traces and geometry only
+        if: always() && github.ref_name == 'tmp/stage05-fix-verify'
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        shell: bash
+        run: |
+          mkdir -p artifacts/datagrid-stage05/diagnostico-rodada2
+          VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-stage05-diagnostic-vite.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/datagrid-harness.html >/dev/null; then break; fi
+            sleep 1
+          done
+          npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.comparison.playwright.spec.mjs --grep 'Geometria completa com filtros: 600x844' --workers=1 --reporter=line --trace=on || true
+          cp -r test-results artifacts/datagrid-stage05/diagnostico-rodada2/trace-600x844 || true
+          rm -rf test-results
+          npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.playwright.spec.mjs --grep 'Atalho e busca compacta' --repeat-each=5 --workers=1 --reporter=line --trace=on || true
+          cp -r test-results artifacts/datagrid-stage05/diagnostico-rodada2/trace-ctrl-k || true
+          rm -rf test-results
+          npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.round2.measure.playwright.spec.mjs --workers=1 --reporter=line --trace=on || true
+          cp -r test-results artifacts/datagrid-stage05/diagnostico-rodada2/trace-medicoes || true
+      - name: Upload Rodada 2 diagnostic evidence
+        if: always() && github.ref_name == 'tmp/stage05-fix-verify'
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage05-round2-diagnostic
+          path: artifacts/datagrid-stage05/diagnostico-rodada2
+          if-no-files-found: warn
       - name: Commit dependency lock in temporary branch only, after green suite
         if: github.ref_name != 'tmp/stage05-fix-verify'
         run: |
