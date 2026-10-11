@@ -2630,6 +2630,10 @@
   .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action svg{
     display:block;width:18px;height:18px;flex:0 0 18px;
   }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-pdf-action,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-pdf-action{
+    font-size:0;gap:0;padding:0;
+  }
   .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-filter-chip{
     flex:1 1 auto;min-width:2.75rem;max-width:7rem;
     padding-inline:.2rem;gap:.1rem;
@@ -2728,5 +2732,21 @@
   .meg-datagrid-mobile-select-all,
   .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-select-all {
     overflow: hidden;
+  }
+}
+
+/* Stage05: toolbar 600-660px sem label cortado e com select >= 200px */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar { column-gap: .25rem !important; }
+  .meg-datagrid-toolbar__actions { gap: .15rem !important; }
+  .meg-datagrid-toolbar__actions > :not(:last-child) button,
+  .meg-datagrid-toolbar__actions > button:not(:last-child) {
+    padding-inline: .25rem !important;
+    font-size: .7rem !important;
+  }
+  .meg-datagrid-mobile-select-all {
+    gap: .2rem !important;
+    padding: 0 !important;
+    font-size: .68rem !important;
   }
 }
