@@ -63,6 +63,7 @@ jobs:
             run_group "$spec" npx playwright test "apps/web/src/meg-web-evolution/datagrid/$spec" --workers=1 --reporter=line
           done
           run_group stage05-visual-comparisons npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.comparison.playwright.spec.mjs --workers=1 --reporter=line
+          run_group trace-matrix npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.stage05.trace-matrix.playwright.spec.mjs --workers=1 --reporter=line
           run_group security-audit npm audit --audit-level=high
           echo "VALIDATION_FAILURE=$FAILED" > artifacts/datagrid-stage05/validation-summary.txt
           exit "$FAILED"
@@ -80,5 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: meg-stage05-complete-temporary-evidence
-          path: artifacts/datagrid-stage05
+          path: |
+            artifacts/datagrid-stage05
+            test-results
           if-no-files-found: warn
