@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - 'meg-web-evolution/tmp-stage05-busca-pdf-validate-20261010'
+      - 'tmp/stage05-fix-verify'
 permissions:
   contents: write
 jobs:
@@ -67,6 +68,7 @@ jobs:
           echo "VALIDATION_FAILURE=$FAILED" > artifacts/datagrid-stage05/validation-summary.txt
           exit "$FAILED"
       - name: Commit dependency lock in temporary branch only, after green suite
+        if: github.ref_name != 'tmp/stage05-fix-verify'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
