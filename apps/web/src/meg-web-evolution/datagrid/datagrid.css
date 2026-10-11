@@ -2678,7 +2678,7 @@
     flex:1 1 0;min-height:0;overflow-y:auto;
   }
   .meg-datagrid-harness .meg-datagrid-filtered-empty{
-    min-height:0;flex:1 1 0;
+    min-height:7.5rem;flex:1 1 auto;
   }
 }
 
@@ -2706,5 +2706,27 @@
 @media (width < 640px) {
   .meg-datagrid-toolbar__actions .meg-datagrid-quick-search {
     overflow:hidden;
+  }
+}
+
+/* Stage05: ações não podem cobrir filtro/seleção entre 600 e 760px */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters),
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)) {
+    grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "filter selection selection actions"
+      "sort sort chips chips";
+  }
+  .meg-datagrid-toolbar__actions,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions {
+    width: max-content;
+    justify-self: end;
+    justify-content: flex-start;
+  }
+  .meg-datagrid-mobile-select-all,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-select-all {
+    overflow: hidden;
   }
 }
