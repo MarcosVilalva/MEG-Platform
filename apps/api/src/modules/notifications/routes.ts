@@ -175,6 +175,17 @@ export async function notificationRoutes(app: FastifyInstance) {
     };
   });
 
+  app.get('/version', { preHandler: externalRateLimiters.automation }, async (request, reply) => {
+    const providedCron = Array.isArray(request.headers['x-cron-secret'])
+      ? request.headers['x-cron-secret'][0]
+      : request.headers['x-cron-secret'];
+    if (!alexaSecretsMatch(providedCron, config.notificationCronSecret)) {
+      return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
+    }
+    reply.header('Cache-Control', 'no-store');
+    return { commit: process.env.RENDER_GIT_COMMIT ?? process.env.GIT_COMMIT ?? null };
+  });
+
   app.post('/cron', { preHandler: externalRateLimiters.automation }, async (request, reply) => {
     const providedCron = Array.isArray(request.headers['x-cron-secret'])
       ? request.headers['x-cron-secret'][0]
