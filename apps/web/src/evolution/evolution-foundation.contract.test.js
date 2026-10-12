@@ -244,8 +244,8 @@ assert.match(smartGrid,/Pesquisar valores[\s\S]*Selecionar tudo/,'Filtro múltip
 assert.match(smartGrid,/Menor → maior[\s\S]*Maior → menor/,'Valores devem possuir ordenação numérica.');
 assert.match(smartGrid,/Mais antiga → recente[\s\S]*Mais recente → antiga/,'Datas devem possuir ordenação cronológica.');
 assert.match(smartGridCss,/evo-smart-filter-popover[\s\S]*border-radius:20px/,'Popover do Smart Grid deve preservar o acabamento premium arredondado.');
-assert.match(system,/meg-home-status[\s\S]*meg-home-metrics[\s\S]*meg-home-bottom/,'Home final deve preservar as três faixas do layout aprovado.');
-assert.match(system,/Cartões[\s\S]*Benefício Alimentação[\s\S]*Ações rápidas/,'Faixa inferior da Home deve preservar Cartões, Benefício e Ações rápidas.');
+assert.match(system,/meg-home-heading-v2[\s\S]*meg-home-hero-v2[\s\S]*meg-home-kpi-rail-v2[\s\S]*meg-home-bottom-v2/,'Home v2 deve preservar cabeçalho, hero, faixa operacional e composição inferior.');
+assert.match(system,/Seus cartões[\s\S]*BENEFÍCIO ALIMENTAÇÃO[\s\S]*Atalhos/,'Faixa inferior da Home v2 deve preservar Cartões, Benefício e Atalhos.');
 assert.match(system,/meg-pending-toolbar/,'Pendentes deve manter filtros e seleção no próprio grid.');
 assert.match(system,/meg-cards-showcase[\s\S]*Fatura atual[\s\S]*Próximas faturas/,'Cartões deve preservar carrossel, fatura atual e futuras.');
 assert.match(finalFidelityCss,/meg-home-grid\.meg-home-final/);
