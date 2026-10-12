@@ -2796,3 +2796,148 @@
     font-size: .68rem !important;
   }
 }
+
+.meg-datagrid-toolbar__actions .meg-datagrid-file-icon,
+.meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action .meg-datagrid-file-icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Ícones de exportação maiores */
+.meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-excel-action,
+.meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-pdf-action {
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.meg-datagrid-toolbar__actions .meg-datagrid-tool > svg.meg-datagrid-file-icon,
+.meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action svg.meg-datagrid-file-icon {
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px;
+}
+
+.meg-datagrid-column-menu__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.meg-datagrid-column-menu__toggle span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.meg-datagrid-column-menu__toggle:hover:not(:disabled) { background: rgba(11, 94, 94, 0.08); }
+.meg-datagrid-column-menu__toggle:focus-visible { outline: 2px solid #0b5e5e; outline-offset: 1px; }
+.meg-datagrid-column-menu__toggle[data-hidden] { opacity: 0.55; }
+.meg-datagrid-column-menu__toggle:disabled { cursor: not-allowed; }
+
+/* Botão de colunas: mesmo tamanho dos botões XLS/PDF */
+.meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-columns-action {
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-columns-action > svg {
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px;
+}
+
+/* Busca rápida recolhida: mesmo tamanho dos botões XLS/PDF */
+.meg-datagrid-toolbar__actions .meg-datagrid-quick-search:not(.is-expanded) {
+  flex: 0 0 52px !important;
+  width: 52px !important;
+  min-width: 52px !important;
+  height: 52px !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.meg-datagrid-toolbar__actions .meg-datagrid-quick-search:not(.is-expanded) .meg-datagrid-quick-search__toggle {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.meg-datagrid-toolbar__actions .meg-datagrid-quick-search:not(.is-expanded) .meg-datagrid-quick-search__toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Ordenar por: rótulo ao lado do select, altura igual aos botões da toolbar */
+.meg-datagrid-mobile-sort {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: .6rem;
+  height: 52px;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+.meg-datagrid-mobile-sort > span {
+  font-size: .8rem;
+  line-height: 1;
+  margin: 0 !important;
+}
+.meg-datagrid-mobile-sort select {
+  height: 52px !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+/* Busca recolhida: esconde o campo, mostra só a lupa */
+.meg-datagrid-toolbar__actions .meg-datagrid-quick-search:not(.is-expanded) > :not(.meg-datagrid-quick-search__toggle) {
+  display: none !important;
+}
+
+/* Foco da busca: brilho seguindo o formato arredondado, sem contorno quadrado */
+.meg-datagrid-quick-search input,
+.meg-datagrid-quick-search input:focus,
+.meg-datagrid-quick-search input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.meg-datagrid-quick-search {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.meg-datagrid-quick-search:focus-within {
+  border-color: rgba(45, 212, 191, .7) !important;
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, .35), 0 0 14px rgba(45, 212, 191, .35) !important;
+}
+
+/* Foco da busca: brilho seguindo o formato arredondado, sem contorno quadrado */
+.meg-datagrid-quick-search input,
+.meg-datagrid-quick-search input:focus,
+.meg-datagrid-quick-search input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.meg-datagrid-quick-search {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.meg-datagrid-quick-search:focus-within {
+  border-color: rgba(45, 212, 191, .7) !important;
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, .35), 0 0 14px rgba(45, 212, 191, .35) !important;
+}

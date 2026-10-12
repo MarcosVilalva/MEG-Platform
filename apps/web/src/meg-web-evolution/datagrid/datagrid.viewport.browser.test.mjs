@@ -715,18 +715,18 @@ async function assertCompactOverlays(width, height, collapsed) {
     assert.equal(await browser.evaluate("document.activeElement===document.querySelector('.meg-datagrid-mobile-filter')"), true, label + ': Esc não devolveu foco ao botão Filtros');
   }
 
-  const openedColumns = await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); if(!button) return false; button.focus(); button.click(); return true; })()");
+  const openedColumns = await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.getAttribute('aria-label')==='Seletor de colunas'); if(!button) return false; button.focus(); button.click(); return true; })()");
   assert.equal(openedColumns, true, label + ': seletor de colunas ausente');
   await browser.sleep(50);
   await assertPopoverGeometry(label + ' Colunas', '[data-datagrid-column-dialog]', height, false);
   await browser.evaluate("(() => { const dialog=document.querySelector('[data-datagrid-column-dialog]'); const rect=dialog.getBoundingClientRect(); const target=document.elementFromPoint(Math.max(2, rect.left - 4), Math.max(2, rect.top - 4)); target?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1})); return true; })()");
   await browser.sleep(30);
   assert.equal(await browser.evaluate("Boolean(document.querySelector('[data-datagrid-column-dialog]'))"), false, label + ': clique fora não fechou Colunas');
-  await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); button?.click(); return true; })()");
+  await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.getAttribute('aria-label')==='Seletor de colunas'); button?.click(); return true; })()");
   await browser.sleep(30);
   await browser.pressKey('Escape', 'Escape');
   assert.equal(await browser.evaluate("Boolean(document.querySelector('[data-datagrid-column-dialog]'))"), false, label + ': Esc não fechou seletor de colunas');
-  assert.equal(await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); return document.activeElement===button; })()"), true, label + ': Esc não devolveu foco ao seletor de colunas');
+  assert.equal(await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.getAttribute('aria-label')==='Seletor de colunas'); return document.activeElement===button; })()"), true, label + ': Esc não devolveu foco ao seletor de colunas');
 }
 
 try {
@@ -863,7 +863,7 @@ try {
       assert.notEqual(groupAfter, groupBefore, label + ': Enter não alternou grupo recolhível');
 
       if (viewport.width === 1920) {
-        await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.textContent.includes('Colunas')); button.click(); return true; })()");
+        await browser.evaluate("(() => { const button=[...document.querySelectorAll('.meg-datagrid-tool')].find((item)=>item.getAttribute('aria-label')==='Seletor de colunas'); button.click(); return true; })()");
         await browser.sleep(80);
         assert.equal(await browser.evaluate("Boolean(document.querySelector('.meg-datagrid-column-menu'))"), true, label + ': menu Colunas não abriu');
 

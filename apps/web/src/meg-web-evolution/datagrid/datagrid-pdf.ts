@@ -1,3 +1,4 @@
+import { exportFilterLabels, exportPeriodLabel, officialLogo, timeInSaoPaulo } from './datagrid-export-header';
 import type { DataGridColumn } from './types';
 
 type Aggregate = { key: string; label: string; mode: 'sum' | 'avg' | 'count'; value: number; formatted: string };
@@ -30,43 +31,6 @@ function formatValue<T extends Record<string, unknown>>(value: unknown, column: 
   return String(value);
 }
 
-function timeInSaoPaulo(now: Date) {
-  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit',
-    day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).formatToParts(now).map((item) => [item.type, item.value]));
-  return {
-    label: parts.day + '/' + parts.month + '/' + parts.year + ' ' + parts.hour + ':' + parts.minute,
-    file: parts.year + '-' + parts.month + '-' + parts.day + '_' + parts.hour + parts.minute,
-  };
-}
-
-/** A fonte da logo é exclusivamente o SVG oficial do repositório. */
-async function officialLogo(): Promise<{ url: string; aspect: number } | null> {
-  try {
-    const url = new URL(import.meta.env.BASE_URL + 'brand/logo-meg-financas.svg', window.location.origin);
-    const result = await fetch(url);
-    if (!result.ok) return null;
-    const objectUrl = URL.createObjectURL(new Blob([await result.text()], { type: 'image/svg+xml;charset=utf-8' }));
-    try {
-      const image = new Image();
-      await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve();
-        image.onerror = () => reject(new Error('Logo indisponível'));
-        image.src = objectUrl;
-      });
-      const aspect = image.naturalWidth / image.naturalHeight || 3;
-      const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = Math.max(1, Math.round(1200 / aspect));
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      return { url: canvas.toDataURL('image/png'), aspect };
-    } finally { URL.revokeObjectURL(objectUrl); }
-  } catch { return null; }
-}
-
 export async function saveDataGridPdf<T extends Record<string, unknown>>({
   jsPDF, autoTable, rows, totalCount, columns, filters, aggregates,
   userName, period, maxRows,
@@ -78,7 +42,7 @@ export async function saveDataGridPdf<T extends Record<string, unknown>>({
   pdf.setFont('helvetica');
   const timestamp = timeInSaoPaulo(new Date());
   const user = userName?.trim() || 'Usuário não identificado';
-  const reference = period?.trim() || 'Período não informado';
+  const reference = exportPeriodLabel(period);
   const extractionId = crypto.randomUUID().slice(0, 8).toUpperCase();
   const logo = await officialLogo();
   const sum = aggregates.find((item) => item.mode === 'sum');
@@ -89,8 +53,7 @@ export async function saveDataGridPdf<T extends Record<string, unknown>>({
     ['Soma', sum?.formatted ?? 'Não configurada'],
     ['Média', avg?.formatted ?? 'Não configurada'],
   ];
-  const filterLabels = filters.length
-    ? filters.map((item) => item.label + ': ' + item.summary) : ['Nenhum filtro aplicado'];
+  const filterLabels = exportFilterLabels(filters);
   const filterLines = pdf.splitTextToSize(filterLabels.join(' | '), 269) as string[];
   const firstTableY = Math.max(76, 66 + filterLines.length * 4.1);
 

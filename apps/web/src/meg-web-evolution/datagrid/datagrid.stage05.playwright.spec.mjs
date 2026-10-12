@@ -88,7 +88,7 @@ test('PDF sem filtros baixa A4 paisagem com cabeçalho, totais e acentos Helveti
   await page.setViewportSize({ width: 1366, height: 600 });
   await page.goto(url + '?state=visual');
   const promise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'PDF' }).click();
+  await page.getByRole('button', { name: 'Exportar PDF' }).click();
   const download = await promise;
   expect(download.suggestedFilename()).toMatch(/^datagrid-tecnico_\d{4}-\d{2}-\d{2}_\d{4}\.pdf$/);
   await fs.mkdir(evidence, { recursive: true });
@@ -115,7 +115,7 @@ test('PDF com filtros e busca lista critérios e valores do conjunto combinado',
   await input.fill('tecnico 003');
   await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('1 de 640 registros');
   const promise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'PDF' }).click();
+  await page.getByRole('button', { name: 'Exportar PDF' }).click();
   const download = await promise;
   await fs.mkdir(evidence, { recursive: true });
   const file = path.join(evidence, 'datagrid-com-filtros.pdf');

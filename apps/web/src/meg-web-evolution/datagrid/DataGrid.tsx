@@ -1,3 +1,5 @@
+import { ColumnsIcon, EyeIcon, EyeOffIcon } from './ColumnIcons';
+import { PdfIcon, XlsxIcon } from './FileDownloadIcons';
 import {
   Fragment,
   useCallback,
@@ -52,6 +54,8 @@ type GridIconName =
   | 'funnel'
   | 'columns'
   | 'download'
+  | 'excel'
+  | 'pdf'
   | 'x'
   | 'chevronLeft'
   | 'chevronRight'
@@ -67,6 +71,8 @@ function GridIcon({ name, size = 18 }: { name: GridIconName; size?: number }) {
     funnel: <><path d="M4 5h16l-6.2 7.1v5.2l-3.6 1.8v-7L4 5Z" /><circle cx="18.5" cy="5.5" r="1.5" fill="currentColor" stroke="none" /></>,
     columns: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M9 5v14M15 5v14" /></>,
     download: <><path d="M12 3v11" /><path d="m8 10 4 4 4-4" /><path d="M5 20h14" /></>,
+    excel: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 9h8M8 15h8M9 4v16" /><path d="m14 9 2 6M16 9l-2 6" /></>,
+    pdf: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 9.5h4.5a2.5 2.5 0 0 1 0 5H8v-5Z" /><path d="M8 9.5V18" /><path d="M14.5 9.5H16v8.5" /></>,
     x: <><path d="m6 6 12 12M18 6 6 18" /></>,
     chevronLeft: <path d="m15 18-6-6 6-6" />,
     chevronRight: <path d="m9 18 6-6-6-6" />,
@@ -529,16 +535,18 @@ function ColumnManager<T extends Record<string, unknown>>({
         {ordered.map((column, index) => (
           <div className="meg-datagrid-column-menu__item" key={column.key}>
             <GridIcon name="grip" />
-            <label>
-              <input
-                type="checkbox"
-                name={`meg-datagrid-column-${column.key}`}
-                checked={!hidden.has(column.key)}
-                disabled={!hidden.has(column.key) && visibleCount === 1}
-                onChange={() => onToggle(column.key)}
-              />
+            <button
+              type="button"
+              className="meg-datagrid-column-menu__toggle"
+              aria-pressed={!hidden.has(column.key)}
+              aria-label={`Exibir coluna ${column.label}`}
+              data-hidden={hidden.has(column.key) || undefined}
+              disabled={!hidden.has(column.key) && visibleCount === 1}
+              onClick={() => onToggle(column.key)}
+            >
+              {hidden.has(column.key) ? <EyeOffIcon /> : <EyeIcon />}
               <span title={column.label}>{column.label}</span>
-            </label>
+            </button>
             <span className="meg-datagrid-column-menu__moves">
               <button type="button" aria-label={`Mover ${column.label} para cima`} disabled={index === 0} onClick={() => onMove(column.key, -1)}>
                 <GridIcon name="chevronUp" size={16} />
@@ -797,6 +805,17 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [searchInput, setSearchInput] = useState('');
   const [searchText, setSearchText] = useState('');
   const [searchExpanded, setSearchExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!searchExpanded) return;
+    const handleOutside = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest(".meg-datagrid-quick-search")) setSearchExpanded(false);
+    };
+    document.addEventListener("pointerdown", handleOutside);
+    return () => document.removeEventListener("pointerdown", handleOutside);
+  }, [searchExpanded]);
+  const [xlsxBusy, setXlsxBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1143,6 +1162,33 @@ export function DataGrid<T extends Record<string, unknown>>({
       setPdfError(error instanceof Error ? error.message : 'Não foi possível exportar o PDF');
     } finally {
       setPdfBusy(false);
+    }
+  };
+
+  const exportXlsx = async () => {
+    if (xlsxBusy || pdfBusy) return;
+    setXlsxBusy(true);
+    setPdfError(null);
+    try {
+      const workbookModule = await import('exceljs') as { Workbook?: unknown; default?: { Workbook?: unknown } };
+      const Workbook = workbookModule.Workbook ?? workbookModule.default?.Workbook;
+      if (!Workbook) throw new Error('ExcelJS indisponível');
+      const { saveDataGridXlsx } = await import('./datagrid-xlsx');
+      await saveDataGridXlsx({
+        Workbook: Workbook as new () => any,
+        rows: sortedRows,
+        columns: visibleColumns,
+        filters: activeFilterItems.map(({ label, summary }) => ({ label, summary })),
+        aggregates: aggregateCells(filteredRows),
+        userName: exportUserName,
+        period: exportPeriod,
+        totalCount: data.length,
+        now: new Date(),
+      });
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : 'Não foi possível exportar o Excel');
+    } finally {
+      setXlsxBusy(false);
     }
   };
 
@@ -1499,7 +1545,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 
         <div className="meg-datagrid-toolbar__actions">
         <div className={`meg-datagrid-quick-search ${searchExpanded ? 'is-expanded' : ''}`} role="search" aria-label="Busca rápida nos registros">
-          <button type="button" className="meg-datagrid-quick-search__toggle" aria-label="Abrir busca rápida" onClick={() => {
+          <button type="button" className="meg-datagrid-quick-search__toggle" aria-label="Abrir busca rápida" title="Busca rápida" onClick={() => {
             setSearchExpanded(true);
             window.requestAnimationFrame(() => searchInputRef.current?.focus());
           }}><GridIcon name="search" size={17} /></button>
@@ -1510,8 +1556,10 @@ export function DataGrid<T extends Record<string, unknown>>({
             <button
               ref={columnMenuButtonRef}
               type="button"
-              className="meg-datagrid-tool"
+              className="meg-datagrid-tool meg-datagrid-columns-action"
               aria-expanded={columnMenuOpen}
+              title="Seletor de colunas"
+              aria-label="Seletor de colunas"
               aria-haspopup="dialog"
               onClick={() => {
                 setOpenFilterKey(null);
@@ -1520,8 +1568,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 setColumnMenuOpen((open) => !open);
               }}
             >
-              <GridIcon name="columns" />
-              Colunas
+              <ColumnsIcon />
             </button>
             {columnMenuOpen && (
               <ColumnManager
@@ -1539,13 +1586,27 @@ export function DataGrid<T extends Record<string, unknown>>({
               />
             )}
           </div>
-          <button type="button" className="meg-datagrid-tool" onClick={exportCsv}>
-            <GridIcon name="download" />
-            CSV
+          <button
+            type="button"
+            className="meg-datagrid-tool meg-datagrid-excel-action"
+            onClick={exportXlsx}
+            disabled={xlsxBusy || pdfBusy}
+            aria-busy={xlsxBusy}
+            aria-label={xlsxBusy ? 'Gerando ...' : 'Exportar Excel'}
+            title="Exportar Excel"
+          >
+            <XlsxIcon />
           </button>
-          <button type="button" className="meg-datagrid-tool meg-datagrid-pdf-action" onClick={exportPdf} disabled={pdfBusy} aria-busy={pdfBusy}>
-            <GridIcon name="download" />
-            {pdfBusy ? 'Gerando…' : 'PDF'}
+          <button
+            type="button"
+            className="meg-datagrid-tool meg-datagrid-pdf-action"
+            onClick={exportPdf}
+            disabled={pdfBusy || xlsxBusy}
+            aria-busy={pdfBusy}
+            aria-label={pdfBusy ? 'Gerando ...' : 'Exportar PDF'}
+            title="Exportar PDF"
+          >
+            <PdfIcon />
           </button>
         </div>
       </div>

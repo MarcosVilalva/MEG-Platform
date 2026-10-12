@@ -1396,3 +1396,18 @@
     min-height: 2.25rem;
   }
 }
+
+/* Busca do topo: foco com brilho arredondado, sem contorno quadrado */
+.meg-search input,
+.meg-search input:focus,
+.meg-search input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.meg-search {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.meg-search:focus-within {
+  border-color: rgba(45, 212, 191, .7) !important;
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, .35), 0 0 14px rgba(45, 212, 191, .35) !important;
+}

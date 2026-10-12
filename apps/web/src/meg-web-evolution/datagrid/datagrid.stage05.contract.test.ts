@@ -1,3 +1,4 @@
+import './datagrid-xlsx.contract.test.ts';
 import assert from 'node:assert/strict';
 import { searchVisibleRows } from './core';
 import type { DataGridColumn } from './types';
