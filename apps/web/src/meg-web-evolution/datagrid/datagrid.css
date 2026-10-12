@@ -2941,3 +2941,46 @@
   border-color: rgba(45, 212, 191, .7) !important;
   box-shadow: 0 0 0 1px rgba(45, 212, 191, .35), 0 0 14px rgba(45, 212, 191, .35) !important;
 }
+
+/* Telas baixas (paisagem): sort compacto para a toolbar caber em uma linha */
+@media (max-height: 500px) {
+  .meg-datagrid-mobile-sort {
+    height: 2.15rem !important;
+  }
+  .meg-datagrid-mobile-sort select {
+    height: 2.15rem !important;
+    min-height: 2.15rem !important;
+  }
+}
+
+/* Telas baixas: botões da toolbar compactos (mesma altura do sort) */
+@media (max-height: 500px) {
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-excel-action,
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-pdf-action,
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-columns-action {
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    min-width: 2.15rem !important;
+    min-height: 0 !important;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-quick-search:not(.is-expanded) {
+    flex: 0 0 2.15rem !important;
+    width: 2.15rem !important;
+    min-width: 2.15rem !important;
+    height: 2.15rem !important;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool > svg.meg-datagrid-file-icon,
+  .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action svg.meg-datagrid-file-icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-columns-action > svg {
+    width: 20px !important;
+    height: 20px !important;
+    flex-basis: 20px;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-quick-search:not(.is-expanded) .meg-datagrid-quick-search__toggle svg {
+    width: 20px;
+    height: 20px;
+  }
+}
