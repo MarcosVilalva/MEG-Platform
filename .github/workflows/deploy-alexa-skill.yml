@@ -177,7 +177,8 @@ jobs:
 
           for attempt in {1..40}; do
             HEALTH_CODE=$(curl --silent --show-error --max-time 30 \
-              -o /tmp/meg-health.json -w '%{http_code}' "$MEG_API_URL/health" || true)
+              -H "x-cron-secret: $NOTIFICATION_CRON_SECRET" \
+              -o /tmp/meg-health.json -w '%{http_code}' "$MEG_API_URL/notifications/version" || true)
             DEPLOYED_COMMIT=$(jq -r '.commit // empty' /tmp/meg-health.json 2>/dev/null || true)
 
             if [ "$HEALTH_CODE" != "200" ] || [ -z "$DEPLOYED_COMMIT" ]; then
