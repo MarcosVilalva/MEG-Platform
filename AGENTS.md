@@ -87,3 +87,8 @@ Regras permanentes:
 - não criar policies permissivas apenas para silenciar advisor;
 - após upgrade da Evolution API ou mudança de persistência, revalidar método de conexão e Security Advisor antes de alterar RLS/grants;
 - rollback existe em `docs/security/evolution-supabase-hardening-rollback-20261005.sql` e só deve ser usado diante de falha comprovadamente causada pelo hardening.
+
+
+## Qualidade Web Evolution: Playwright e Context7
+
+Antes de introduzir ferramentas de testes ou documentação na nova Web, ler `docs/MEG-WEB-QUALITY-TOOLS.md`. O Playwright já é utilizado na PR #606 do DataGrid; preservar os testes e o bloqueio de merge até validação visual explícita. Quando Context7 estiver disponível no agente, consultar as APIs e versões atuais antes de gerar código, sem substituir os contratos financeiros, os prints oficiais ou os gates técnicos. Strix e mudanças de Supabase exigem avaliação de escopo separada. Nenhum servidor MCP é ativado apenas por esta instrução.
