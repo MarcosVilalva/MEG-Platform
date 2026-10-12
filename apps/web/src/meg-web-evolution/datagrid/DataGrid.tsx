@@ -28,6 +28,7 @@ import {
   reorderKeys,
   resizeWidth,
   sanitizePersistenceState,
+  searchVisibleRows,
   sortRows,
   toCsv,
   toDateKey,
@@ -58,6 +59,7 @@ type GridIconName =
   | 'chevronUp'
   | 'grip'
   | 'filter'
+  | 'search'
   | 'sort';
 
 function GridIcon({ name, size = 18 }: { name: GridIconName; size?: number }) {
@@ -72,6 +74,7 @@ function GridIcon({ name, size = 18 }: { name: GridIconName; size?: number }) {
     chevronUp: <path d="m7 14 5-5 5 5" />,
     grip: <><circle cx="9" cy="7" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="7" r=".8" fill="currentColor" stroke="none" /><circle cx="9" cy="12" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r=".8" fill="currentColor" stroke="none" /><circle cx="9" cy="17" r=".8" fill="currentColor" stroke="none" /><circle cx="15" cy="17" r=".8" fill="currentColor" stroke="none" /></>,
     filter: <><path d="M5 6h14M8 12h8M10.5 18h3" /></>,
+    search: <><circle cx="10.8" cy="10.8" r="6.6" /><path d="m16 16 4.4 4.4" /></>,
     sort: <><path d="m8 7 3-3 3 3M11 4v16" /><path d="m16 17 3 3 3-3M19 20V4" /></>,
   };
 
@@ -762,6 +765,9 @@ export function DataGrid<T extends Record<string, unknown>>({
   rowKey,
   loading = false,
   ariaLabel = 'Grade de dados',
+  exportUserName,
+  exportPeriod,
+  pdfMaxRows = 5000,
 }: DataGridProps<T>) {
   const columnKeys = useMemo(() => columns.map((column) => column.key), [columns]);
   const persisted = useMemo<DataGridPersistenceState>(() => {
@@ -788,6 +794,12 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [widths, setWidths] = useState<Record<string, number>>(persisted.widths);
   const [currentPageSize, setCurrentPageSize] = useState(persisted.pageSize);
   const [pageIndex, setPageIndex] = useState(0);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
@@ -812,6 +824,28 @@ export function DataGrid<T extends Record<string, unknown>>({
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSearchText(searchInput.trim()), 200);
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
+
+  useLayoutEffect(() => {
+    const onShortcut = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== '/' && !(event.ctrlKey && event.key.toLowerCase() === 'k')) return;
+      const target = event.target as HTMLElement | null;
+      if (event.key === '/' && target?.closest('input,textarea,select,[contenteditable="true"]')) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      searchInputRef.current?.focus({ preventScroll: true });
+      setSearchExpanded(true);
+      window.requestAnimationFrame(() => searchInputRef.current?.focus());
+      window.setTimeout(() => searchInputRef.current?.focus(), 0);
+      window.setTimeout(() => searchInputRef.current?.focus(), 50);
+    };
+    window.addEventListener('keydown', onShortcut, true);
+    return () => window.removeEventListener('keydown', onShortcut, true);
+  }, []);
+
   const [compactMobileChips, setCompactMobileChips] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(max-width: 599px)').matches,
   );
@@ -869,8 +903,8 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, [columnOrder, currentPageSize, filters, hiddenColumns, persistenceKey, sort, widths]);
 
   const filteredRows = useMemo(
-    () => applyFilters(data, columns, filters),
-    [columns, data, filters],
+    () => searchVisibleRows(applyFilters(data, columns, filters), visibleColumns, searchText),
+    [columns, data, filters, searchText, visibleColumns],
   );
 
   const sortedRows = useMemo(
@@ -887,23 +921,25 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, [data, getRowKey]);
 
   const activeFilterKeys = useMemo(
-    () => Object.keys(filters).filter((key) => isFilterActive(filters[key])),
-    [filters],
+    () => [...Object.keys(filters).filter((key) => isFilterActive(filters[key])), ...(searchText ? ['__quickSearch'] : [])],
+    [filters, searchText],
   );
 
   const activeFilterItems = useMemo(
-    () => activeFilterKeys.map((key) => {
+    () => [...activeFilterKeys.map((key) => {
       const column = columns.find((item) => item.key === key);
       if (!column) return null;
       const filter = filters[key];
       return {
         key,
         label: column.label,
-        summary: filterSummary(filter),
+        summary: filter?.selected?.length === 1 && column.type === 'enum'
+          ? formatSelectedTooltipValue(column, getDistinctOptions(data, column).find((option) => option.key === filter.selected?.[0]), filter.selected[0]).replace(/^Grupo\s+/i, '')
+          : filterSummary(filter),
         tooltipSummary: filterTooltipSummary(filter, column, data),
       };
-    }).filter(Boolean) as ActiveFilterItem[],
-    [activeFilterKeys, columns, data, filters],
+    }).filter(Boolean) as ActiveFilterItem[], ...(searchText ? [{ key: '__quickSearch', label: 'Busca', summary: searchText, tooltipSummary: searchText }] : [])],
+    [activeFilterKeys, columns, data, filters, searchText],
   );
 
   const hiddenFiltersTooltip = useMemo(
@@ -925,7 +961,7 @@ export function DataGrid<T extends Record<string, unknown>>({
       activeKeys: activeFilterKeys,
       filteredCount: filteredRows.length,
     });
-  }, [activeFilterKeys, filteredRows.length, filters, onFilterChange]);
+  }, [activeFilterKeys, filteredRows.length, filters, onFilterChange, searchText]);
 
   const filteredGroups = useMemo(() => {
     if (!groupBy) return new Map<string, T[]>();
@@ -981,15 +1017,27 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   const clearAllFilters = () => {
     setFilters({});
+    setSearchInput('');
+    setSearchText('');
     setActiveFiltersOpen(false);
     setPageIndex(0);
     resetViewport();
   };
 
+  const removeActiveFilter = (key: string) => {
+    if (key === '__quickSearch') {
+      setSearchInput('');
+      setSearchText('');
+      setSearchExpanded(false);
+      setPageIndex(0);
+      resetViewport();
+    } else updateFilter(key, null);
+  };
+
   const getCascadeOptions = useCallback((column: DataGridColumn<T>) => {
-    const cascaded = applyFilters(data, columns, filters, column.key);
+    const cascaded = searchVisibleRows(applyFilters(data, columns, filters, column.key), visibleColumns, searchText);
     return getDistinctOptions(cascaded, column);
-  }, [columns, data, filters]);
+  }, [columns, data, filters, searchText, visibleColumns]);
 
   const toggleSort = (key: string, multi = false) => {
     setSort((current) => cycleSort(current, key, multi));
@@ -1074,6 +1122,29 @@ export function DataGrid<T extends Record<string, unknown>>({
   const groupSummary = (rows: T[]) => aggregateCells(rows)
     .map((item) => `${item.label}: ${item.formatted}`)
     .join(' · ');
+
+  const exportPdf = async () => {
+    if (pdfBusy) return;
+    setPdfBusy(true);
+    setPdfError(null);
+    try {
+      const [{ jsPDF }, { autoTable }, { saveDataGridPdf }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+        import('./datagrid-pdf'),
+      ]);
+      await saveDataGridPdf({
+        jsPDF, autoTable, rows: sortedRows, totalCount: data.length,
+        columns: visibleColumns, filters: activeFilterItems.map(({ label, summary }) => ({ label, summary })),
+        aggregates: aggregateCells(filteredRows), userName: exportUserName,
+        period: exportPeriod, maxRows: pdfMaxRows,
+      });
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : 'Não foi possível exportar o PDF');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   const exportCsv = () => {
     const csv = toCsv(sortedRows, visibleColumns);
@@ -1305,13 +1376,13 @@ export function DataGrid<T extends Record<string, unknown>>({
           <button
             ref={mobileFilterButtonRef}
             type="button"
-            className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterKeys.length ? 'is-active' : ''}`}
+            className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterItems.length ? 'is-active' : ''}`}
             aria-expanded={mobileFiltersOpen}
             aria-haspopup="dialog"
-            aria-label={`Filtros (${activeFilterKeys.length}). ${activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`}`}
-            onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`)}
+            aria-label={`Filtros (${activeFilterKeys.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
+            onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
             onMouseLeave={(event) => hideTooltip(event.currentTarget)}
-            onFocus={(event) => showTooltip(event.currentTarget, activeFilterKeys.length === 1 ? '1 filtro ativo' : `${activeFilterKeys.length} filtros ativos`)}
+            onFocus={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
             onBlur={(event) => hideTooltip(event.currentTarget)}
             onClick={() => {
               setTooltipState(null);
@@ -1335,7 +1406,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 ref={(element) => { if (element) element.indeterminate = Boolean(someFilteredSelected); }}
                 onChange={(event) => toggleAllFiltered(event.target.checked)}
               />
-              <span>Selecionar filtrados</span>
+              <span title="Selecionar filtrados">Selecionar filtrados</span>
             </label>
           )}
 
@@ -1375,7 +1446,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   key={item.key}
                   onClick={(event) => {
                     setTooltipState(null);
-                    updateFilter(item.key, null);
+                    removeActiveFilter(item.key);
                     event.currentTarget.blur();
                   }}
                   onMouseEnter={(event) => showTooltip(event.currentTarget, tooltipText)}
@@ -1383,6 +1454,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   onFocus={(event) => showTooltip(event.currentTarget, tooltipText)}
                   onBlur={(event) => hideTooltip(event.currentTarget)}
                   aria-label={`Remover filtro ${item.label}: ${item.tooltipSummary}`}
+                  title={tooltipText}
                 >
                   <span><strong>{item.label}</strong> · {item.summary}</span>
                   <GridIcon name="x" size={14} />
@@ -1396,7 +1468,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 className="meg-datagrid-more-filters"
                 aria-haspopup="dialog"
                 aria-expanded={activeFiltersOpen}
-                aria-label={`Mostrar ${activeFilterItems.length - visibleChipLimit} filtros ocultos: ${hiddenFiltersTooltip.replace(/\n/g, '; ')}`}
+                aria-label={`Mostrar ${activeFilterItems.length - visibleChipLimit} ${activeFilterItems.length - visibleChipLimit === 1 ? 'filtro oculto' : 'filtros ocultos'}: ${hiddenFiltersTooltip.replace(/\n/g, '; ')}`}
                 onMouseEnter={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
                 onMouseLeave={(event) => hideTooltip(event.currentTarget)}
                 onFocus={(event) => showTooltip(event.currentTarget, hiddenFiltersTooltip)}
@@ -1409,7 +1481,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                   setActiveFiltersOpen((open) => !open);
                 }}
               >
-                +{activeFilterItems.length - visibleChipLimit} filtros
+                +{activeFilterItems.length - visibleChipLimit} {activeFilterItems.length - visibleChipLimit === 1 ? 'filtro' : 'filtros'}
               </button>
             )}
             <button type="button" className="meg-datagrid-clear-all" onClick={clearAllFilters}>Limpar tudo</button>
@@ -1417,7 +1489,7 @@ export function DataGrid<T extends Record<string, unknown>>({
               <ActiveFiltersPopover
                 items={activeFilterItems}
                 trigger={activeFiltersButtonRef.current}
-                onRemove={(key) => updateFilter(key, null)}
+                onRemove={removeActiveFilter}
                 onClearAll={clearAllFilters}
                 onClose={() => setActiveFiltersOpen(false)}
               />
@@ -1426,6 +1498,14 @@ export function DataGrid<T extends Record<string, unknown>>({
         )}
 
         <div className="meg-datagrid-toolbar__actions">
+        <div className={`meg-datagrid-quick-search ${searchExpanded ? 'is-expanded' : ''}`} role="search" aria-label="Busca rápida nos registros">
+          <button type="button" className="meg-datagrid-quick-search__toggle" aria-label="Abrir busca rápida" onClick={() => {
+            setSearchExpanded(true);
+            window.requestAnimationFrame(() => searchInputRef.current?.focus());
+          }}><GridIcon name="search" size={17} /></button>
+          <input ref={searchInputRef} type="search" name="meg-datagrid-quick-search" aria-label="Buscar em todas as colunas visíveis" placeholder="Buscar registros" value={searchInput} onChange={(event) => { setSearchInput(event.target.value); setPageIndex(0); resetViewport(); }} onKeyDown={(event) => { if (event.key === "Enter") { setSearchText(searchInput.trim()); setSearchExpanded(false); event.currentTarget.blur(); } else if (event.key === "Escape") { setSearchExpanded(false); event.currentTarget.blur(); } }} />
+          <span className="meg-datagrid-quick-search__count" role="status" aria-live="polite">{filteredRows.length} de {data.length} registros</span>
+        </div>
           <div className="meg-datagrid-column-menu-wrap">
             <button
               ref={columnMenuButtonRef}
@@ -1463,8 +1543,13 @@ export function DataGrid<T extends Record<string, unknown>>({
             <GridIcon name="download" />
             CSV
           </button>
+          <button type="button" className="meg-datagrid-tool meg-datagrid-pdf-action" onClick={exportPdf} disabled={pdfBusy} aria-busy={pdfBusy}>
+            <GridIcon name="download" />
+            {pdfBusy ? 'Gerando…' : 'PDF'}
+          </button>
         </div>
       </div>
+      {pdfError && <p className="meg-datagrid-export-error" role="alert">{pdfError}</p>}
 
       {!data.length ? (
         <div className="meg-datagrid-empty" role="status">

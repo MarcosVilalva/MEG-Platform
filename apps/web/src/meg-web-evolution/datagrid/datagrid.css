@@ -56,6 +56,7 @@
 
 .meg-datagrid-toolbar {
   position: relative;
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   min-height: 3.5rem;
   border-bottom: .0625rem solid rgba(20, 227, 200, .12);
@@ -1323,6 +1324,71 @@
   }
 }
 
+@media (width < 600px) {
+  .meg-shell-body:has(.meg-datagrid-harness) { height: 100%; min-height: 0; }
+  .meg-main:has(> .meg-datagrid-harness) {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .meg-datagrid-harness {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    padding: .5rem;
+    gap: .4rem;
+    overflow: hidden;
+  }
+
+  .meg-datagrid-harness > .meg-datagrid {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    gap: .35rem;
+  }
+
+  .meg-datagrid__viewport {
+    min-height: 0;
+    flex: 1 1 0;
+  }
+
+  .meg-datagrid-harness__head p { font-size: .65rem; }
+  .meg-datagrid-toolbar { padding: .4rem .75rem; gap: .3rem; }
+  .meg-datagrid-mobile-sort { display: flex; align-items: center; gap: .35rem; }
+  .meg-datagrid-mobile-sort > span { flex: 0 0 auto; }
+  .meg-datagrid-mobile-sort select { flex: 1; min-width: 0; min-height: 2rem; height: 2rem; padding-block: .2rem; }
+  .meg-datagrid-toolbar .meg-datagrid-tool { min-height: 2.15rem; padding-block: .25rem; }
+  .meg-datagrid-mobile-select-all { min-height: 2.15rem; }
+  .meg-datagrid-card-select { min-height: 2rem; padding: .3rem .6rem; }
+  .meg-datagrid-card-row dl { padding: .15rem .6rem .3rem; }
+  .meg-datagrid-card-row dl > div { padding: .1rem 0; gap: .4rem; }
+  .meg-datagrid-card-group .meg-datagrid-group-button { min-height: 0; padding: .3rem .6rem; gap: .2rem .5rem; }
+  .meg-datagrid-card-group .meg-datagrid-group-button > span { flex: 0 1 auto; width: auto; }
+  .meg-datagrid-card-group .meg-datagrid-group-subtotal { flex: 1 0 100%; margin-left: 0; font-size: .7rem; }
+  .meg-datagrid-mobile-aggregates { padding: .3rem .75rem; }
+  .meg-datagrid-mobile-aggregates > span { padding: .25rem .4rem; }
+  .meg-datagrid-harness .meg-datagrid-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "size pager" "range range";
+    align-items: center;
+    padding: .35rem .75rem;
+    gap: .15rem .5rem;
+  }
+  .meg-datagrid-harness .meg-datagrid-page-size { grid-area: size; min-width: 0; }
+  .meg-datagrid-harness .meg-datagrid-pagination { grid-area: pager; }
+  .meg-datagrid-harness .meg-datagrid-page-range { grid-area: range; }
+  .meg-datagrid-harness .meg-datagrid-page-size select,
+  .meg-datagrid-harness .meg-datagrid-pagination button { min-height: 2rem; height: 2rem; padding-block: .2rem; }
+  .meg-datagrid-harness .meg-datagrid-pagination button { min-width: 2rem; }
+  .meg-datagrid-harness .meg-datagrid-page-size > span:last-child {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .meg-datagrid-harness .meg-datagrid-filtered-empty { min-height: 7.5rem; flex: 1 1 auto; }
+
+}
+
 @media (min-width: 640px) {
   .meg-datagrid-toolbar__primary {
     flex: 1 1 20rem;
@@ -2307,9 +2373,9 @@
   .meg-datagrid-mobile-sort > span { flex: 0 0 auto; white-space: nowrap; font-size: .67rem; }
   .meg-datagrid-mobile-sort { gap: .2rem; }
   .meg-datagrid-mobile-sort select {
-    flex: 0 0 200px;
-    min-width: 200px;
-    width: 200px;
+    flex: 0 1 200px;
+    min-width: 0;
+    width: 100%;
     max-width: 200px;
     box-sizing: border-box;
     text-overflow: clip;
@@ -2409,9 +2475,9 @@
   }
   .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort select{
     flex: 1 1 auto;
-    min-width: 200px;
+    min-width: 0;
     width: 100%;
-    max-width: 100%;
+    max-width: 200px;
     box-sizing: border-box;
     text-overflow: clip;
   }
@@ -2518,5 +2584,215 @@
     flex: 0 0 auto;
     min-width: max-content;
     white-space: nowrap;
+  }
+}
+
+
+/* Etapa 05 - camada aditiva isolada: preservar o layout de duas linhas da Etapa 04. */
+.meg-datagrid-quick-search {
+  display:inline-flex; align-items:center; flex:0 1 11rem;
+  min-width:0; width:clamp(7rem,13vw,11rem); min-height:2.15rem; height:2.15rem;
+  gap:.15rem; padding:0 .35rem; box-sizing:border-box;
+  border:.0625rem solid rgba(20,227,200,.22); border-radius:.7rem;
+  background:rgba(3,31,34,.84);
+}
+.meg-datagrid-quick-search:focus-within { border-color:rgba(20,227,200,.55); }
+.meg-datagrid-quick-search input {
+  min-width:0;width:100%;min-height:0;height:100%;flex:1 1 auto;
+  border:0;outline:none;padding:0 .15rem;background:transparent;
+  color:var(--meg-text);font-size:.76rem;
+}
+.meg-datagrid-quick-search input:focus-visible { outline:.125rem solid var(--meg-accent);outline-offset:1px; }
+.meg-datagrid-quick-search input::placeholder { color:var(--meg-muted); }
+.meg-datagrid-quick-search input::-webkit-search-cancel-button {display:none;}
+.meg-datagrid-quick-search__toggle {
+  flex:0 0 2rem;display:none;align-items:center;justify-content:center;
+  width:2.15rem;height:2.15rem;min-width:2.15rem;min-height:2.15rem;
+  border:0;padding:0;background:transparent;color:var(--meg-muted);cursor:pointer;
+}
+.meg-datagrid-quick-search__count {
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap;
+}
+.meg-datagrid-export-error { margin:.2rem .8rem;color:#ffb8af;font-size:.75rem; }
+.meg-datagrid-pdf-action:disabled {opacity:.65;cursor:progress;}
+.meg-datagrid-toolbar__actions .meg-datagrid-tool > svg {
+  display:block;flex:0 0 18px;min-width:18px;min-height:18px;
+}
+@media(width < 1024px){
+  .meg-datagrid-quick-search {
+    flex:0 0 2.4rem;width:2.4rem;min-width:2.4rem;
+    padding:0 .15rem;overflow:hidden;
+  }
+  .meg-datagrid-quick-search__toggle {display:inline-flex;}
+  .meg-datagrid-quick-search:not(.is-expanded) input {
+    position:absolute;width:1px;height:1px;min-width:0;min-height:0;
+    flex:0 0 1px;padding:0;clip-path:inset(50%);
+  }
+  .meg-datagrid-quick-search.is-expanded {flex:0 1 10rem;width:clamp(7.5rem,19vw,10rem);}
+  .meg-datagrid-quick-search.is-expanded input {position:static;clip-path:none;}
+}
+@media(600px <= width < 761px){
+  .meg-datagrid-toolbar,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters),
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)){
+    display:grid;grid-template-columns:repeat(24,minmax(0,1fr));
+    grid-template-areas:"filter filter filter filter filter selection selection selection selection selection selection selection selection selection actions actions actions actions actions actions actions actions actions actions actions" "sort sort sort sort sort sort sort sort sort sort chips chips chips chips chips chips chips chips chips chips extras extras extras extras";
+    grid-template-rows:max-content max-content;
+    align-items:center;gap:.4rem;overflow:visible;
+  }
+  .meg-datagrid-toolbar__primary,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__primary{
+    display:contents;
+  }
+  .meg-datagrid-mobile-filter,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-filter{
+    grid-area:filter;justify-self:start;max-width:100%;padding-inline:.35rem;
+  }
+  .meg-datagrid-mobile-select-all,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-select-all{
+    grid-area:selection;min-width:0;width:100%;justify-self:stretch;
+    padding:0 .15rem;box-sizing:border-box;white-space:nowrap;
+  }
+  .meg-datagrid-mobile-select-all > span {
+    min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .meg-datagrid-mobile-sort,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-sort{
+    grid-area:sort;width:100%;min-width:0;justify-self:stretch;
+  }
+  .meg-datagrid-mobile-sort select{width:100%;min-width:0;max-width:200px;flex:0 1 200px;text-overflow:ellipsis;}
+  .meg-datagrid-toolbar__filters,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__filters{
+    grid-area:chips;min-width:0;width:100%;justify-self:stretch;
+    flex-wrap:nowrap;overflow:hidden;gap:.1rem;
+  }
+  .meg-datagrid-toolbar__actions,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions{
+    grid-area:actions;display:flex;position:relative;
+    width:100%;min-width:0;max-width:100%;
+    justify-content:flex-end;justify-self:stretch;
+    flex-wrap:nowrap;gap:.2rem;overflow:visible;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions .meg-datagrid-tool{
+    font-size:inherit;min-width:0;flex:none;padding-inline:.6rem;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-quick-search,
+  .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action{
+    position:static;box-sizing:border-box;
+    width:2.15rem;height:2.15rem;min-width:2.15rem;
+    min-height:2.15rem;max-height:2.15rem;
+    padding:0;margin:0;display:flex;justify-content:center;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-quick-search{
+    flex:0 0 2.15rem;
+  }
+  .meg-datagrid-quick-search__toggle {width:2rem;min-width:2rem;}
+  .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action{
+    font-size:0;gap:0;padding:0;overflow:hidden;
+  }
+  .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action svg{
+    display:block;width:18px;height:18px;flex:0 0 18px;
+  }
+  .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-pdf-action,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions .meg-datagrid-tool.meg-datagrid-pdf-action{
+    font-size:0;gap:0;padding:0;
+  }
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-filter-chip{
+    flex:1 1 auto;min-width:2.75rem;max-width:7rem;
+    padding-inline:.2rem;gap:.1rem;
+  }
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-filter-chip > span{
+    min-width:24px;flex:1 1 auto;
+  }
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-more-filters{
+    min-width:0;flex:0 0 auto;font-size:.66rem;padding-inline:.18rem;
+  }
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-clear-all{
+    min-width:0;flex:0 0 auto;font-size:.66rem;padding-inline:.18rem;
+  }
+}
+@media(width < 640px){
+  .meg-datagrid-toolbar__actions{padding-right:.45rem;box-sizing:border-box;}
+  .meg-datagrid-quick-search{margin-right:auto;}
+  .meg-datagrid-quick-search.is-expanded{width:clamp(7.2rem,34vw,10rem);}
+}
+/* Encontra espaço para duas pílulas, +N e limpar tudo antes da lupa. */
+@media(900px <= width < 1120px){
+  .meg-datagrid-toolbar__filters{flex:1 1 auto;min-width:0;gap:.15rem;}
+  .meg-datagrid-filter-chip{min-width:5.4rem;max-width:10rem;flex:1 1 auto;padding-inline:.25rem;}
+  .meg-datagrid-filter-chip > span{min-width:1.5rem;}
+  .meg-datagrid-more-filters{min-width:0;flex:0 0 auto;padding-inline:.35rem;}
+  .meg-datagrid-toolbar__filters .meg-datagrid-clear-all{
+    width:75px;min-width:75px;max-width:75px;flex:0 0 75px;
+    box-sizing:border-box;font-size:.69rem;padding-inline:.1rem;text-align:center;
+  }
+}
+@media(min-width:1024px){
+  .meg-datagrid-toolbar__filters{margin-right:auto;min-width:0;}
+}
+/* Etapa 05, rodada 4: preservar ações dentro de seu espaço de layout. */
+@media (900px <= width < 1120px) {
+  .meg-datagrid-toolbar__filters {
+    flex:1 1 0;min-width:0;
+  }
+  .meg-datagrid-toolbar__actions {
+    flex:0 0 auto;min-width:max-content;
+  }
+  .meg-datagrid-toolbar__filters .meg-datagrid-filter-chip {
+    flex:0 1 auto;min-width:0;
+  }
+}
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar__actions,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions {
+    overflow:visible;
+  }
+  .meg-datagrid-toolbar__actions > .meg-datagrid-pdf-action {
+    flex:0 0 2.15rem;
+  }
+}
+@media (width < 640px) {
+  .meg-datagrid-toolbar__actions .meg-datagrid-quick-search {
+    overflow:hidden;
+  }
+}
+
+/* Stage05: ações não podem cobrir filtro/seleção entre 600 e 760px */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters),
+  .meg-datagrid-toolbar:not(:has(.meg-datagrid-toolbar__filters)) {
+    grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "filter selection selection actions"
+      "sort sort chips chips";
+  }
+  .meg-datagrid-toolbar__actions,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-toolbar__actions {
+    width: max-content;
+    justify-self: end;
+    justify-content: flex-start;
+  }
+  .meg-datagrid-mobile-select-all,
+  .meg-datagrid-toolbar:has(.meg-datagrid-toolbar__filters) .meg-datagrid-mobile-select-all {
+    overflow: hidden;
+  }
+}
+
+/* Stage05: toolbar 600-660px sem label cortado e com select >= 200px */
+@media (600px <= width < 761px) {
+  .meg-datagrid-toolbar { column-gap: .25rem !important; }
+  .meg-datagrid-toolbar__actions { gap: .15rem !important; }
+  .meg-datagrid-toolbar__actions > :not(:last-child) button,
+  .meg-datagrid-toolbar__actions > button:not(:last-child) {
+    padding-inline: .25rem !important;
+    font-size: .7rem !important;
+  }
+  .meg-datagrid-mobile-select-all {
+    gap: .2rem !important;
+    padding: 0 !important;
+    font-size: .68rem !important;
   }
 }

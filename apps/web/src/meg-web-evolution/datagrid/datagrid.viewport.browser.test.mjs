@@ -163,7 +163,7 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
   assert.equal(snapshot.filterVisible, true, label + ': botão Filtros (N) não está visível');
   assert.ok(snapshot.filterText.includes('Filtros ('+count+')'), label + ': botão Filtros (N) incorreto');
   assert.equal(snapshot.chips, Math.min(count,2), label + ': deve mostrar no máximo dois chips');
-  if(count>2) assert.equal(snapshot.moreText, '+'+(count-2)+' filtros', label + ': contador +N incorreto');
+  if(count>2) assert.equal(snapshot.moreText, '+'+(count-2)+(count-2===1?' filtro':' filtros'), label + ': contador +N incorreto');
   if(count===0) assert.equal(snapshot.filterTop, null, label + ': faixa de filtros vazia não deve existir');
   assert.ok(snapshot.toolbarHeight <= (height<=400 ? 58 : 72), label + ': toolbar ganhou segunda linha');
   assert.ok(snapshot.filterTop == null || (snapshot.filterTop >= snapshot.toolbarTop-1 && snapshot.filterTop < snapshot.toolbarBottom+1), label + ': chips saíram da toolbar');
