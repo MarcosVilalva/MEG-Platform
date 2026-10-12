@@ -168,6 +168,8 @@ export async function createDataGridBrowser() {
       }
       await sleep(100);
     }
+    const dbg = await evaluate("(() => ({ url: location.href, body: document.body.innerText.slice(0,400), shell: !!document.querySelector('.meg-shell'), grid: !!document.querySelector('[data-datagrid]') }))()");
+    console.error('NAV-DEBUG', JSON.stringify(dbg));
     throw new Error('Harness do DataGrid não concluiu o carregamento.');
   }
 

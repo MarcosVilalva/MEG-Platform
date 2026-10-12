@@ -143,7 +143,7 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
     });
     const tr=toolbar?.getBoundingClientRect(), fr=filters?.getBoundingClientRect(), hr=thead?.getBoundingClientRect();
     return {
-      toolbarHeight:tr?.height??0,
+      toolbarHeight:tr?.height??0, toolbarDbg:JSON.stringify({ch:toolbar.clientHeight,oh:toolbar.offsetHeight,sh:toolbar.scrollHeight,kids:[...toolbar.children].map(c=>Math.round(c.getBoundingClientRect().height)),pad:getComputedStyle(toolbar).padding,ovx:getComputedStyle(toolbar).overflowX,big:[...toolbar.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().height>=40).map(e=>(e.className.baseVal??e.className).toString().slice(0,45)+':'+Math.round(e.getBoundingClientRect().height)+':'+getComputedStyle(e).minHeight)}),
       filterTop:fr?.top??null,
       toolbarTop:tr?.top??null,
       toolbarBottom:tr?.bottom??null,
@@ -165,7 +165,7 @@ async function assertToolbarFilters(width, height, count, evidenceName = null) {
   assert.equal(snapshot.chips, Math.min(count,2), label + ': deve mostrar no máximo dois chips');
   if(count>2) assert.equal(snapshot.moreText, '+'+(count-2)+(count-2===1?' filtro':' filtros'), label + ': contador +N incorreto');
   if(count===0) assert.equal(snapshot.filterTop, null, label + ': faixa de filtros vazia não deve existir');
-  assert.ok(snapshot.toolbarHeight <= (height<=400 ? 58 : 72), label + ': toolbar ganhou segunda linha');
+  assert.ok(snapshot.toolbarHeight <= (height<=400 ? 58 : 72), label + ': toolbar ganhou segunda linha (h=' + snapshot.toolbarHeight + ' ' + snapshot.toolbarDbg + ')');
   assert.ok(snapshot.filterTop == null || (snapshot.filterTop >= snapshot.toolbarTop-1 && snapshot.filterTop < snapshot.toolbarBottom+1), label + ': chips saíram da toolbar');
   if(count>=1) {
     assert.equal(snapshot.dateChip.includes('Está entre 08/10/2026'), true, label + ': chip Data não mostra operador + data');
@@ -868,13 +868,13 @@ try {
         assert.equal(await browser.evaluate("Boolean(document.querySelector('.meg-datagrid-column-menu'))"), true, label + ': menu Colunas não abriu');
 
         const beforeVisibility = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
-        await browser.evaluate("(() => { const item=[...document.querySelectorAll('.meg-datagrid-column-menu__item')].find((node)=>node.textContent.includes('Quantidade')); item.querySelector('input[type=checkbox]').click(); return true; })()");
+        await browser.evaluate("(() => { const item=[...document.querySelectorAll('.meg-datagrid-column-menu__item')].find((node)=>node.textContent.includes('Quantidade')); item.querySelector('button.meg-datagrid-column-menu__toggle').click(); return true; })()");
         await browser.sleep(80);
         const hiddenHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
         assert.ok(beforeVisibility.includes('Quantidade'), label + ': coluna Quantidade deveria começar visível');
         assert.equal(hiddenHeaders.includes('Quantidade'), false, label + ': ocultar coluna não removeu Quantidade');
 
-        await browser.evaluate("(() => { const item=[...document.querySelectorAll('.meg-datagrid-column-menu__item')].find((node)=>node.textContent.includes('Quantidade')); item.querySelector('input[type=checkbox]').click(); return true; })()");
+        await browser.evaluate("(() => { const item=[...document.querySelectorAll('.meg-datagrid-column-menu__item')].find((node)=>node.textContent.includes('Quantidade')); item.querySelector('button.meg-datagrid-column-menu__toggle').click(); return true; })()");
         await browser.sleep(80);
         const restoredHeaders = await browser.evaluate("[...document.querySelectorAll('.meg-datagrid-table thead th .meg-datagrid-sort-button > span:first-child')].map((item)=>item.textContent.trim())");
         assert.ok(restoredHeaders.includes('Quantidade'), label + ': mostrar coluna não restaurou Quantidade');
