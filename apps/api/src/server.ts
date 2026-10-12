@@ -94,6 +94,7 @@ app.get('/health', async (_request, reply) => {
   return {
     status: 'ok',
     financialReady: normalization.status === 'completed' && normalization.primary && normalization.reconciled,
+    commit: process.env.RENDER_GIT_COMMIT ?? process.env.GIT_COMMIT ?? null,
   };
 });
 
