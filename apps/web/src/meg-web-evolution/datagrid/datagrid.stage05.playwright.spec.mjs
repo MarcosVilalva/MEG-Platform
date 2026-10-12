@@ -64,6 +64,7 @@ test('Atalho e busca compacta com chips não podem causar rolagem horizontal da 
   ]) {
     await page.setViewportSize(size);
     await page.goto(url + '?state=visual');
+    await expect(page.locator('.meg-datagrid')).toBeVisible();
     await page.keyboard.press('Control+k');
     const input = page.getByRole('searchbox', { name: 'Buscar em todas as colunas visíveis' });
     await expect(input).toBeFocused();

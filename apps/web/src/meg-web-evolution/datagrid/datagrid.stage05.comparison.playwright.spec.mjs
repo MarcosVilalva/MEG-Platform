@@ -132,6 +132,7 @@ for (const size of [{ width: 1366, height: 600 }, { width: 910, height: 400 }]) 
       JSON.stringify({ filters: { segment: { type: 'enum', selected: ['gamma'] }, active: { type: 'boolean', booleanValue: true } },
         sort: [], columnOrder: [], hiddenColumns: [], widths: {}, pageSize: 600 })));
     await page.reload();
+    await expect(page.locator('.meg-datagrid')).toBeVisible();
     await page.keyboard.press('Control+k');
     const input = page.getByRole('searchbox', { name: 'Buscar em todas as colunas visíveis' });
     await expect(input).toBeFocused();
