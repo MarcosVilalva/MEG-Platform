@@ -20,7 +20,7 @@ jobs:
   build-apk:
     # Trava deliberada: mesmo workflow_dispatch manual não publica Android nesta fase.
     if: ${{ false }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       VITE_API_URL: https://meg-platform-api.onrender.com
       VITE_MOBILE_APP: 'true'

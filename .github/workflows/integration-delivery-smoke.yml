@@ -12,7 +12,7 @@ permissions:
 jobs:
   delivery-smoke:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test integrations]')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}

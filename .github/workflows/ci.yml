@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -160,7 +160,7 @@ jobs:
 
   financial-e2e:
     if: github.ref == 'refs/heads/phoenix/v15-clean-room' || github.ref == 'refs/heads/feature/phoenix-launch-dynamic-status' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/')))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     services:
       postgres:
@@ -205,7 +205,7 @@ jobs:
 
   android-rc1:
     if: github.ref == 'refs/heads/feature/phoenix-launch-dynamic-status' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/')))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       VITE_API_URL: https://meg-platform-api.onrender.com
