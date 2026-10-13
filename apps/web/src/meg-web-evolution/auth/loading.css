@@ -13,7 +13,7 @@
 @media (prefers-reduced-motion: reduce) { .meg-loading-screen *, .meg-loading-alt * { animation: none !important; transition: none !important; } }
 
 @media (max-width: 480px) {
-  .meg-loading-screen::after { content: ''; position: absolute; inset: auto 0 0; height: 35%; background: linear-gradient(transparent, rgba(1,14,18,.96) 24%, #010f12 100%); pointer-events: none; }
+  .meg-loading-screen::after { content: ''; position: absolute; inset: auto 0 0; height: 35%; background: linear-gradient(transparent 0%, #010f12 22%, #010f12 100%); pointer-events: none; }
   .meg-loading-mobile-copy { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; left: 1rem; right: 1rem; bottom: 2.5rem; gap: .65rem; }
   .meg-loading-mobile-track { width: 100%; height: 15px; overflow: hidden; border: 2px solid #22e9d6; border-radius: 99px; background: rgba(0,20,24,.9); }
   .meg-loading-mobile-track span { display: block; height: 100%; width: 68%; border-radius: inherit; background: linear-gradient(90deg, #09d8e1, #60f6bb); }
