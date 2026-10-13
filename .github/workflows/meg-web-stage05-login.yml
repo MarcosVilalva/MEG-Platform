@@ -1,0 +1,41 @@
+name: MEG Web Stage05 Login Evidence
+
+# Validação isolada, sem acionar a Foundation reservada do Stage05.
+on:
+  push:
+    branches:
+      - 'stage05-login/05-login'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  login-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --audit=false
+      - name: Instalar runner Playwright e axe já utilizados na Foundation
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0 @axe-core/playwright@4.13.0
+      - name: Reportar Chromium
+        run: which google-chrome && google-chrome --version
+      - name: Executar suíte sem interromper após primeiro erro
+        shell: bash
+        run: bash scripts/meg-stage05-login-verify.sh
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+          NODE_ENV: test
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+      - name: Anexar screenshots e resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-web-stage05-login-screenshots
+          path: artifacts/meg-web-stage05-login
+          if-no-files-found: warn
