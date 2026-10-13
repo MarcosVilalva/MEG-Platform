@@ -21,7 +21,7 @@ for (const [width,height] of [[360,844],[390,844],[768,1024],[1365,600],[1920,10
 }
 test('Loading visual usa imagem oficial, possui progresso acessível e não faz API calls',async({page})=>{
   const requests=[];
-  page.on('request',req=>{ if (req.url().includes('/auth/')||req.url().includes('/finance/')) requests.push(req.url()); });
+  page.on('request',req=>{ if (/^\/(auth|finance)\//.test(new URL(req.url()).pathname)) requests.push(req.url()); });
   await page.goto(ROOT);
   await expect(page.getByRole('progressbar',{name:'Carregamento de dados'})).toHaveCount(1);
   expect(requests).toEqual([]);
