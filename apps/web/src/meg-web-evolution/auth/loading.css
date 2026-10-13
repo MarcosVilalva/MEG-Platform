@@ -1,0 +1,12 @@
+/* Splash visual da referência oficial, sem reaproveitar Evolution antiga. */
+.meg-loading-screen { position: relative; width: 100%; height: 100dvh; overflow: hidden; background: #010c0d; color: #eafbf8; font-family: 'MEG Inter', Inter, system-ui, sans-serif; }
+.meg-loading-art { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: none; }
+.meg-loading-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.meg-loading-alt { justify-content: center; align-items: center; }
+.meg-loading-state { width: min(100%, 31rem); display: grid; gap: 1rem; padding: 2rem; text-align: center; max-height: 90dvh; overflow-y: auto; }
+.meg-loading-state img { display: block; margin: auto; object-fit: contain; filter: none; }
+.meg-loading-state h1 { margin: 0; font-size: clamp(1.4rem, 3vw, 2rem); }
+.meg-loading-state p { margin: 0; line-height: 1.5; color: #b6cccf; }
+.meg-loading-state button { min-height: 44px; }
+@media (max-width: 480px) { .meg-loading-screen { min-height: 100dvh; } .meg-loading-state { padding: 1.1rem; } }
+@media (prefers-reduced-motion: reduce) { .meg-loading-screen *, .meg-loading-alt * { animation: none !important; transition: none !important; } }
