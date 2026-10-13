@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 
 const ROOT = 'http://127.0.0.1:4173/web-evolution.html';
 const EVIDENCE = 'artifacts/meg-web-stage05-login';
@@ -40,6 +40,61 @@ for (const viewport of viewports) {
       await prepare(page);
       await page.evaluate(() => document.fonts.ready);
       await expect(page.getByText(/meg evolution/i)).toHaveCount(0);
+      const headingTitle = page.locator('.meg-login-hero h1');
+      await expect(headingTitle).toContainText(/com clareza para decidir\.$/);
+      const geometry = await headingTitle.evaluate(heading => {
+        const span = heading.querySelector('span');
+        const lastText = span.lastChild;
+        const label = span.textContent;
+        if (!lastText || lastText.nodeType !== Node.TEXT_NODE || !label.endsWith('.')) {
+          throw new Error('O último caractere do título precisa ser um ponto final.');
+        }
+        const glyph = document.createRange();
+        glyph.setStart(lastText, lastText.textContent.length - 1);
+        glyph.setEnd(lastText, lastText.textContent.length);
+        const last = glyph.getBoundingClientRect();
+        const b = span.getBoundingClientRect();
+        const h = heading.getBoundingClientRect();
+        const rect = element => { const r = element.getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height, right:r.right, bottom:r.bottom }; };
+        return { text: heading.textContent, lastGlyph: { x:last.x,y:last.y,width:last.width,height:last.height,right:last.right },
+          span: rect(span), heading:rect(heading), font:getComputedStyle(span).fontSize,
+          spanScrollWidth:span.scrollWidth, spanClientWidth:span.clientWidth,
+          paddingRight:getComputedStyle(span).paddingRight };
+      });
+      expect(geometry.text.trim().endsWith('.'), 'título termina com ponto final').toBe(true);
+      expect(geometry.lastGlyph.width, 'último glifo tem largura real').toBeGreaterThan(0);
+      expect(geometry.lastGlyph.right, 'ponto não sai da área de pintura do span').toBeLessThanOrEqual(geometry.span.right - 0.5);
+      expect(geometry.spanScrollWidth, 'span não pode ter overflow horizontal').toBeLessThanOrEqual(geometry.spanClientWidth + 1);
+      writeFileSync(`${EVIDENCE}/titulo-geometria-${viewport.width}x${viewport.height}.json`, JSON.stringify(geometry,null,2));
+      if (viewport.width === 2560) {
+        // Orb central medido no asset WebP 2048x1143: (1008, 542), raio luminoso ~20px.
+        // background-size:cover, background-position:center center, na div .meg-login.
+        const orb = await page.locator('.meg-login').evaluate(el => {
+          const view = el.getBoundingClientRect();
+          const original = { width:2048, height:1143, x:1008, y:542, radius:20 };
+          const scale = Math.max(view.width/original.width, view.height/original.height);
+          const imageWidth = original.width*scale, imageHeight = original.height*scale;
+          const left = view.left+(view.width-imageWidth)/2;
+          const top = view.top+(view.height-imageHeight)/2;
+          return { source:original, scale, renderedImageWidth:imageWidth, renderedImageHeight:imageHeight,
+            orbCenterX:left+original.x*scale, orbCenterY:top+original.y*scale, orbLeft:left+(original.x-original.radius)*scale };
+        });
+        const gap = orb.orbLeft - geometry.lastGlyph.right;
+        writeFileSync(`${EVIDENCE}/orb-titulo-2560x1440.json`,JSON.stringify({geometry,orb,gap},null,2));
+        console.log('ORBE_GAP_2560 '+JSON.stringify({right:geometry.lastGlyph.right,orbLeft:orb.orbLeft,gap,orbSource:orb.source}));
+        expect(gap,'distância entre último glifo e borda iluminada do orbe').toBeGreaterThanOrEqual(40);
+        await page.screenshot({path:`${EVIDENCE}/recorte-titulo-orbe-2560x1440.png`,animations:'disabled',
+          clip:{x:Math.max(0,geometry.heading.x-22),y:Math.max(0,geometry.heading.y-34),
+            width:Math.min(viewport.width-geometry.heading.x+22,orb.orbCenterX-geometry.heading.x+128),
+            height:Math.min(viewport.height-geometry.heading.y+34,orb.orbCenterY-geometry.heading.y+100)}});
+      }
+      if (viewport.width === 1920) {
+        await page.screenshot({path:`${EVIDENCE}/recorte-ponto-final-1920x1080.png`, animations:'disabled',
+          clip:{x:Math.max(0,geometry.lastGlyph.x-125), y:Math.max(0,geometry.lastGlyph.y-38),
+            width:Math.min(viewport.width-geometry.lastGlyph.x+125,175),
+            height:Math.min(viewport.height-geometry.lastGlyph.y+38,115)}});
+      }
+
       await expect(page).not.toHaveTitle(/evolution/i);
       if (viewport.width === 768 || viewport.width === 600 || viewport.width === 1023) {
         const logo = await page.locator('.meg-login-logo').boundingBox();

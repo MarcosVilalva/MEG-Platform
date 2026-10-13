@@ -65,6 +65,10 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  /* Evita recorte do ponto final com letter-spacing negativo e gradiente. */
+  padding-inline-end: .08em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .meg-login-intro {
   max-width: 36rem;
@@ -329,9 +333,15 @@ html:has(.meg-login), body:has(.meg-login), #meg-web-evolution-root:has(.meg-log
 /* Somente largura-alvo desktop: título longe do orbe sem recortar arte. */
 @media (min-width: 1600px) and (max-width: 2200px) {
   .meg-login-hero h1 {
-    max-width: calc(100% - 4rem);
+    /* O nowrap em 1920 precisava de ~522px, mas o span tinha só 512px. */
+    max-width: calc(100% - 2rem);
     font-size: clamp(2.2rem, 2.5vw, 3rem);
     text-wrap: balance;
   }
   .meg-login-hero h1 span { white-space: nowrap; }
+}
+
+/* 2560px: reduzir somente a largura do título, sem modificar fundo/orbe. */
+@media (min-width: 2201px) {
+  .meg-login-hero h1 { font-size: 3.5rem; }
 }
