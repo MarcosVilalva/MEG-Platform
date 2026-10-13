@@ -2,6 +2,9 @@ name: MEG Web Stage05 Login Evidence
 
 # Validação isolada, sem acionar a Foundation reservada do Stage05.
 on:
+  push:
+    branches:
+      - 'stage05-login/05-login'
   workflow_dispatch:
 
 permissions:

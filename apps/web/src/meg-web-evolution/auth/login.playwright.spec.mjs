@@ -11,6 +11,7 @@ const viewports = [
   { name: 'low-1365x600', width: 1365, height: 600, scale: 1 },
   { name: 'mobile-360x844', width: 360, height: 844, scale: 1 },
   { name: 'mobile-390x844', width: 390, height: 844, scale: 1 },
+  { name: 'tablet-768x1024', width: 768, height: 1024, scale: 1 },
   { name: 'hidpi-1366x768-2x', width: 1366, height: 768, scale: 2 },
 ];
 
@@ -25,6 +26,7 @@ for (const viewport of viewports) {
     const page = await context.newPage();
     try {
       await prepare(page);
+      await page.evaluate(() => document.fonts.ready);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       await expect(page.getByRole('button', { name: 'Entrar no MEG' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Mostrar senha' })).toBeVisible();
@@ -36,10 +38,27 @@ for (const viewport of viewports) {
           expect(rect.y + rect.height, 'Elemento não pode ficar cortado no desktop').toBeLessThanOrEqual(viewport.height + 1);
         }
       }
+      if (viewport.width <= 480) {
+        const panel = await page.locator('.meg-login-panel').boundingBox();
+        const logo = await page.locator('.meg-login-logo').boundingBox();
+        const copy = await page.locator('.meg-login-hero-copy').boundingBox();
+        expect(logo.y + logo.height).toBeLessThan(panel.y);
+        expect(panel.y + panel.height).toBeLessThan(copy.y);
+        for (const selector of ['.meg-login-password-toggle', '.meg-login-submit', '.meg-login-options a', '.meg-login-create a']) {
+          const bounds = await page.locator(selector).boundingBox();
+          expect(bounds.height, selector).toBeGreaterThanOrEqual(44);
+        }
+        const forgot = await page.locator('.meg-login-options a').boundingBox();
+        const remembered = await page.locator('.meg-login-remember').boundingBox();
+        expect(Math.abs(forgot.y - remembered.y)).toBeLessThanOrEqual(2);
+      }
       mkdirSync(EVIDENCE, { recursive: true });
       await page.screenshot({ path: `${EVIDENCE}/${viewport.name}.png`, fullPage: true, animations: 'disabled' });
       await page.getByRole('button', { name: 'Entrar no MEG' }).click();
       await expect(page.getByRole('alert')).toContainText('Digite um e-mail válido.');
+      const space = await page.evaluate(() => { const a = document.querySelector('.meg-login-message').getBoundingClientRect(); const b = document.querySelector('.meg-login-submit').getBoundingClientRect(); return b.top - a.bottom; });
+      expect(space).toBeGreaterThanOrEqual(7.5);
+      expect(space).toBeLessThanOrEqual(12.5);
       await page.screenshot({ path: `${EVIDENCE}/${viewport.name}-erro.png`, fullPage: true, animations: 'disabled' });
       await page.getByRole('textbox', { name: 'E-mail' }).focus();
       expect(await page.locator('input[name="email"]').evaluate(el => el.matches(':focus-visible'))).toBe(true);
