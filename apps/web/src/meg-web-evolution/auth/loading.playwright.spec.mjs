@@ -11,6 +11,9 @@ for (const [width,height] of [[360,844],[390,844],[768,1024],[1365,600],[1920,10
     await page.goto(ROOT);
     await expect(page.locator('[data-meg-loading="preview-only"]')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+    if (width === 1365 && height === 600) {
+      expect(await page.locator('.meg-loading-art').evaluate(el => getComputedStyle(el).objectFit)).toBe('contain');
+    }
     if (width <= 480) {
       const label = page.locator('.meg-loading-mobile-copy h1');
       await expect(label).toBeVisible();
