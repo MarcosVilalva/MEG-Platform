@@ -5,6 +5,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import { AppShell } from './shell/AppShell';
 import { LoginScreen } from './auth/LoginScreen';
+import { CreateAccountScreen } from './auth/CreateAccountScreen';
 
 type AuthDestination = 'login' | 'create-account' | 'recover-password';
 
@@ -57,6 +58,10 @@ function AuthGateway() {
       <section className="meg-shell-stage" aria-label="Área de conteúdo da nova Web" />
     </AppShell>
   );
+
+  if (destination === 'create-account') {
+    return <CreateAccountScreen onNavigateLogin={() => navigate('login')} onAuthenticated={() => setSession(readSession())} />;
+  }
 
   if (destination !== 'login') {
     return (
