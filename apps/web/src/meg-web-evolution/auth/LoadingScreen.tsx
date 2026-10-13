@@ -30,6 +30,11 @@ export function LoadingScreen({ onNavigateLogin }: Props) {
   return (
     <main className="meg-loading-screen" aria-label="Carregando seus dados" data-meg-loading="preview-only">
       <img className="meg-loading-art" src={`${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png`} alt="" aria-hidden="true" />
+      <div className="meg-loading-mobile-copy" aria-hidden="true">
+        <div className="meg-loading-mobile-track"><span /></div>
+        <h1>Carregando seus dados...</h1>
+        <p>Organizando suas finanças para o seu dia a dia.</p>
+      </div>
       <p className="meg-loading-a11y" role="status" aria-live="polite">Carregando seus dados. Organizando suas finanças para o seu dia a dia.</p>
       <div className="meg-loading-a11y" role="progressbar" aria-label="Carregamento de dados" aria-valuetext="Carregando" />
     </main>

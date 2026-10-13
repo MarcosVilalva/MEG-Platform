@@ -11,6 +11,13 @@ for (const [width,height] of [[360,844],[390,844],[768,1024],[1365,600],[1920,10
     await page.goto(ROOT);
     await expect(page.locator('[data-meg-loading="preview-only"]')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+    if (width <= 480) {
+      const label = page.locator('.meg-loading-mobile-copy h1');
+      await expect(label).toBeVisible();
+      const bounds = await label.boundingBox();
+      expect(bounds.x).toBeGreaterThanOrEqual(0);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(width + 1);
+    }
     mkdirSync(DIR,{recursive:true});
     await page.screenshot({path:`${DIR}/loading-${width}x${height}.png`,fullPage:true,animations:'disabled'});
     await page.goto(ROOT+'&state=error');
