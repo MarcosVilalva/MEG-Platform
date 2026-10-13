@@ -5,6 +5,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import { AppShell } from './shell/AppShell';
 import { LoginScreen } from './auth/LoginScreen';
+import { CreateAccountScreen } from './auth/CreateAccountScreen';
 
 type AuthDestination = 'login' | 'create-account' | 'recover-password';
 
@@ -58,12 +59,16 @@ function AuthGateway() {
     </AppShell>
   );
 
+  if (destination === 'create-account') {
+    return <CreateAccountScreen onNavigateLogin={() => navigate('login')} onAuthenticated={() => setSession(readSession())} />;
+  }
+
   if (destination !== 'login') {
     return (
       <main className="meg-login meg-login-unavailable" aria-label="Navegação de autenticação">
         <section className="meg-auth-pending" aria-live="polite">
           <img src={`${import.meta.env.BASE_URL}brand/logo-meg-financas.svg`} width="100" height="98" alt="MEG Finanças" />
-          <h1>{destination === 'create-account' ? 'Criar conta' : 'Recuperar senha'}</h1>
+          <h1>Recuperar senha</h1>
           <p>Esta tela será implementada após a validação visual do Login.</p>
           <button type="button" onClick={() => navigate('login')}>Voltar ao login</button>
         </section>
