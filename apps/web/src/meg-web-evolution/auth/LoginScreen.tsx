@@ -28,7 +28,7 @@ function getLoginError(error: unknown): string {
   }
 }
 
-function LoginIcon({ name }: { name: 'shield' | 'mail' | 'lock' | 'eye' | 'eye-off' | 'arrow' | 'bars' | 'target' | 'sliders' }) {
+export function LoginIcon({ name }: { name: 'shield' | 'mail' | 'lock' | 'eye' | 'eye-off' | 'arrow' | 'bars' | 'target' | 'sliders' }) {
   const paths: Record<typeof name, ReactNode> = {
     shield: <><path d="M12 2.5 20 6v5.5c0 5-3.3 8.3-8 10-4.7-1.7-8-5-8-10V6Z"/><rect x="10" y="10.8" width="4" height="5" rx=".7"/><path d="M11 10.8V9.5a1 1 0 0 1 2 0v1.3"/></>,
     mail: <><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></>,

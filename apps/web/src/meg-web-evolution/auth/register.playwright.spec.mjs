@@ -170,12 +170,15 @@ for (const [width, height] of FULL_VIEWPORTS) {
         check('Card cortado à esquerda/direita',panel.x>=0 && panel.right<=width+1);
       }
       if(width===1365&&height===600){
-        check('Card não usa rolagem interna',scrollState.scrollHeight>scrollState.clientHeight+1 && ['auto','scroll'].includes(scrollState.overflow));
-        // Em 1365x600 o botão pode começar abaixo do viewport interno. Deve ser alcançável sem corte.
-        await button.scrollIntoViewIfNeeded();
-        const scrolledButton=await getBox(button);
+        // Novo requisito aprovado: rolagem apenas dos campos, ações sempre visíveis.
+        const fields = await page.locator('.meg-auth-fields').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,overflow:getComputedStyle(el).overflowY}));
+        check('Somente campos devem rolar em 1365x600',fields.scrollHeight>fields.clientHeight+1 && ['auto','scroll'].includes(fields.overflow));
+        check('Card não deve rolar em 1365x600',scrollState.scrollHeight<=scrollState.clientHeight+1);
         const visiblePanel=await getBox(page.locator('.meg-auth-card'));
-        check('Botão não pode ser alcançado pela rolagem interna',scrolledButton.bottom<=visiblePanel.bottom+1 && scrolledButton.y>=visiblePanel.y-1);
+        const back=await getBox(page.getByRole('button',{name:'Voltar ao login'}).last());
+        check('Continuar sempre visível sem rolagem',before.y>=0 && before.bottom<=600);
+        check('Voltar ao login sempre visível sem rolagem',back.y>=0 && back.bottom<=600);
+        check('Rodapé sem corte',back.bottom<=visiblePanel.bottom-15);
         await page.screenshot({path:`${target}-card-bottom.png`,fullPage:true,animations:'disabled'});
       }
       if(width===1920) check('Distância título/parágrafo ao card inferior a 120px',panel.x-Math.max(title.glyph.right,title.paragraph.right)>=120);

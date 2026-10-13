@@ -40,7 +40,7 @@
   padding-top: .8rem;
 }
 .meg-login-logo { width: 9.5rem; height: 9.4rem; display: block; object-fit: contain; object-position: left center; filter: none; }
-.meg-login-hero-copy { margin-top: clamp(1.75rem, 3.7vw, 2.75rem); }
+.meg-login-hero-copy { margin-top: clamp(.55rem, 1.1vw, 1rem); }
 .meg-login-eyebrow, .meg-login-panel-label {
   margin: 0;
   color: #37f8e4;
@@ -49,7 +49,7 @@
   letter-spacing: .31em;
 }
 .meg-login-hero h1 {
-  margin: 1.45rem 0 1rem;
+  margin: .75rem 0 1rem;
   max-width: 100%;
   font-size: clamp(2.2rem, 3.65vw, 4rem);
   text-wrap: balance;
@@ -65,6 +65,10 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  /* Evita recorte do ponto final com letter-spacing negativo e gradiente. */
+  padding-inline-end: .08em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .meg-login-intro {
   max-width: 36rem;
@@ -166,8 +170,8 @@
 .meg-login a { color: #39f5e2; text-decoration: none; font-weight: 700; }
 .meg-login a:hover { text-decoration: underline; }
 .meg-login-options a { display: inline-flex; align-items: center; min-height: 2.75rem; font-size: .88rem; }
-.meg-login-message { margin: 0 0 calc(.625rem - var(--meg-login-gap)); min-height: 1.35rem; font-size: .83rem; color: #a2fbeb; line-height: 1.35; }
-.meg-login-message.is-error { color: #ff9b9e; }
+.meg-login-message { margin: 0 0 calc(.625rem - var(--meg-login-gap)); min-height: 1.35rem; font-size: .875rem; color: #a2fbeb; line-height: 1.4; font-weight: 500; }
+.meg-login-message.is-error { color: #ff9d9d; }
 .meg-login-submit {
   display: flex;
   align-items: center;
@@ -315,4 +319,29 @@ html:has(.meg-login), body:has(.meg-login), #meg-web-evolution-root:has(.meg-log
   .meg-login-create::before, .meg-login-create::after { display: none; }
   .meg-login-secure-note { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; margin-top: .7rem; font-size: .72rem; }
   .meg-login-secure-note span[aria-hidden="true"] { display: none; }
+}
+
+/* Login #626: ordem estrutural tablet sem duplicar elementos. */
+@media (min-width: 481px) and (max-width: 1023px) {
+  .meg-login-frame { display: flex; flex-direction: column; gap: 1.25rem; }
+  .meg-login-hero { display: contents; }
+  .meg-login-logo { order: 1; margin: 0 0 .5rem .4rem; }
+  .meg-login-panel { order: 2; }
+  .meg-login-hero-copy { order: 3; padding: 0 .4rem; margin-top: 0; }
+  .meg-login-features { order: 4; margin-top: 0; padding-top: .3rem; }
+}
+/* Somente largura-alvo desktop: título longe do orbe sem recortar arte. */
+@media (min-width: 1600px) and (max-width: 2200px) {
+  .meg-login-hero h1 {
+    /* O nowrap em 1920 precisava de ~522px, mas o span tinha só 512px. */
+    max-width: calc(100% - 2rem);
+    font-size: clamp(2.2rem, 2.5vw, 3rem);
+    text-wrap: balance;
+  }
+  .meg-login-hero h1 span { white-space: nowrap; }
+}
+
+/* 2560px: reduzir somente a largura do título, sem modificar fundo/orbe. */
+@media (min-width: 2201px) {
+  .meg-login-hero h1 { font-size: 3.5rem; }
 }

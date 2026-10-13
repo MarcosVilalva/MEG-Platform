@@ -74,7 +74,7 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
   }
 
   return (
-    <AuthScreenLayout title="Criar conta" description="Solicite acesso ou crie seu espaço MEG. O cadastro aguarda aprovação.">
+    <AuthScreenLayout variant="register" title="Criar conta" description="Solicite acesso ou crie seu espaço MEG. O cadastro aguarda aprovação.">
       {status === 'pending' || status === 'approved' ? (
         <div className="meg-auth-success" role="status" aria-live="polite">
           <h2>{status === 'pending' ? 'Aguardando aprovação' : 'Cadastro aprovado'}</h2>
@@ -83,6 +83,7 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
         </div>
       ) : (
         <form className="meg-auth-form" aria-label="Formulário de cadastro" onSubmit={submit} noValidate>
+          <div className="meg-auth-fields">
           <div className="meg-auth-mode" role="group" aria-label="Tipo de cadastro">
             <label><input type="radio" name={`${formId}-type`} checked={type === 'REQUEST_ACCESS'} onChange={() => setType('REQUEST_ACCESS')} disabled={status === 'submitting'} />Solicitar acesso</label>
             <label><input type="radio" name={`${formId}-type`} checked={type === 'CREATE_WORKSPACE'} onChange={() => setType('CREATE_WORKSPACE')} disabled={status === 'submitting'} />Criar meu espaço MEG</label>
@@ -94,6 +95,7 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
           <div className="meg-login-input-block"><label htmlFor={`${formId}-password`}>Senha</label><div className="meg-login-input-wrap"><input id={`${formId}-password`} type="password" name="password" ref={element => { fields.current.password = element; }} aria-invalid={errorField === 'password'} aria-describedby={errorField === 'password' ? errorId : undefined} autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" disabled={status === 'submitting'} required /></div></div>
           <div className="meg-login-input-block"><label htmlFor={`${formId}-confirm`}>Confirmar senha</label><div className="meg-login-input-wrap"><input id={`${formId}-confirm`} type="password" name="confirmPassword" ref={element => { fields.current.confirmPassword = element; }} aria-invalid={errorField === 'confirmPassword'} aria-describedby={errorField === 'confirmPassword' ? errorId : undefined} autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita sua senha" disabled={status === 'submitting'} required /></div></div>
           <p className="meg-auth-note">O acesso depende de aprovação. Nenhum dado financeiro é criado nesta tela.</p>
+          </div>
           <p id={errorId} className="meg-auth-error" role={error ? 'alert' : 'status'} aria-live="polite">{error}</p>
           <button type="submit" className="meg-login-submit meg-auth-submit" disabled={status === 'submitting'} aria-busy={status === 'submitting'}>{status === 'submitting' ? 'Enviando solicitação...' : 'Continuar'}</button>
         </form>
