@@ -7,6 +7,7 @@ const EVIDENCE = 'artifacts/meg-web-stage05-login';
 test.use({ launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROME_PATH || undefined } });
 const viewports = [
   { name: 'desktop-1920x1080', width: 1920, height: 1080, scale: 1 },
+  { name: 'desktop-2560x1440', width: 2560, height: 1440, scale: 1 },
   { name: 'desktop-1366x768', width: 1366, height: 768, scale: 1 },
   { name: 'low-1365x600', width: 1365, height: 600, scale: 1 },
   { name: 'mobile-360x844', width: 360, height: 844, scale: 1 },
@@ -25,8 +26,43 @@ for (const viewport of viewports) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: viewport.scale, reducedMotion: 'reduce' });
     const page = await context.newPage();
     try {
+      mkdirSync(EVIDENCE, { recursive: true });
+      if (['desktop-2560x1440', 'desktop-1366x768', 'low-1365x600'].includes(viewport.name)) {
+        try {
+          await page.goto('https://meg-web-stage05-login-pr626.onrender.com/web-evolution.html?v=2989767125838a0daad4f989e764606ebc183cff', { waitUntil: 'domcontentloaded', timeout: 15000 });
+          await expect(page.getByRole('heading', { name: 'Bem-vindo de volta.' })).toBeVisible({ timeout: 6000 });
+          await page.evaluate(() => document.fonts.ready);
+          await page.screenshot({ path: `${EVIDENCE}/antes-${viewport.name}.png`, fullPage: true, animations: 'disabled' });
+        } catch (error) {
+          console.warn('COMPARACAO_ANTES_INDISPONIVEL', viewport.name, String(error));
+        }
+      }
       await prepare(page);
       await page.evaluate(() => document.fonts.ready);
+      await expect(page.getByText(/meg evolution/i)).toHaveCount(0);
+      await expect(page).not.toHaveTitle(/evolution/i);
+      if (viewport.width === 768 || viewport.width === 600 || viewport.width === 1023) {
+        const logo = await page.locator('.meg-login-logo').boundingBox();
+        const panel = await page.locator('.meg-login-panel').boundingBox();
+        const copy = await page.locator('.meg-login-hero-copy').boundingBox();
+        const features = await page.locator('.meg-login-features').boundingBox();
+        expect(logo.y + logo.height).toBeLessThan(panel.y);
+        expect(panel.y + panel.height).toBeLessThan(copy.y);
+        expect(copy.y + copy.height).toBeLessThan(features.y);
+      }
+      if (viewport.width === 1920) {
+        const panel = await page.locator('.meg-login-panel').boundingBox();
+        const heading = await page.locator('.meg-login-hero h1').boundingBox();
+        const paragraph = await page.locator('.meg-login-intro').boundingBox();
+        const span = await page.locator('.meg-login-hero h1 span').boundingBox();
+        expect(panel.x - Math.max(span.x + span.width, paragraph.x + paragraph.width), 'respiro texto real-card').toBeGreaterThanOrEqual(120);
+        const lines = await page.locator('.meg-login-hero h1').evaluate(el=>el.getBoundingClientRect().height/parseFloat(getComputedStyle(el).lineHeight));
+        expect(lines,'título 1920 deve ocupar duas linhas').toBeLessThanOrEqual(2.1);
+        await page.screenshot({ path: `${EVIDENCE}/recorte-titulo-orbe-1920x1080.png`,
+          clip: {x: Math.max(0, heading.x - 24),y: Math.max(0, heading.y - 40),
+            width: Math.min(1920 - Math.max(0, heading.x - 24), panel.x - Math.max(0, heading.x - 24) + 95),
+            height: Math.min(1080 - Math.max(0, heading.y - 40), heading.height + 230) }, animations:'disabled' });
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       await expect(page.getByRole('button', { name: 'Entrar no MEG' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Mostrar senha' })).toBeVisible();
@@ -57,10 +93,27 @@ for (const viewport of viewports) {
         const remembered = await page.locator('.meg-login-remember').boundingBox();
         expect(Math.abs(forgot.y - remembered.y)).toBeLessThanOrEqual(2);
       }
-      mkdirSync(EVIDENCE, { recursive: true });
+      const positionBefore = await page.locator('.meg-login-submit').boundingBox();
       await page.screenshot({ path: `${EVIDENCE}/${viewport.name}.png`, fullPage: true, animations: 'disabled' });
       await page.getByRole('button', { name: 'Entrar no MEG' }).click();
       await expect(page.getByRole('alert')).toContainText('Digite um e-mail válido.');
+      const positionAfter = await page.locator('.meg-login-submit').boundingBox();
+      expect(Math.abs(positionAfter.y - positionBefore.y), 'botão não salta com erro').toBeLessThanOrEqual(1);
+      const appearance = await page.locator('.meg-login-message').evaluate(el => {
+        const st = getComputedStyle(el);
+        const channel = st.color.match(/[0-9.]+/g).slice(0,3).map(Number);
+        const lum = rgb => rgb.map(x => x / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4)
+          .reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);
+        const contrast = (lum(channel)+.05)/(lum([4,48,52])+.05);
+        return {fontSize:parseFloat(st.fontSize),fontWeight:parseInt(st.fontWeight),color:st.color,contrast};
+      });
+      expect(appearance.fontSize).toBeGreaterThanOrEqual(viewport.width <= 480 ? 14 : 13);
+      expect(appearance.fontWeight).toBeGreaterThanOrEqual(500);
+      expect(appearance.contrast, 'contraste contra painel conservador #043034').toBeGreaterThanOrEqual(4.5);
+      await expect(page.locator('input[name="email"]')).toHaveAttribute('aria-invalid','true');
+      const describedBy = await page.locator('input[name="email"]').getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      await expect(page.locator(`#${describedBy}`)).toContainText('Digite um e-mail válido.');
       const space = await page.evaluate(() => { const a = document.querySelector('.meg-login-message').getBoundingClientRect(); const b = document.querySelector('.meg-login-submit').getBoundingClientRect(); return b.top - a.bottom; });
       expect(space).toBeGreaterThanOrEqual(7.5);
       expect(space).toBeLessThanOrEqual(12.5);
@@ -140,4 +193,17 @@ test('Acessibilidade do Login, sem violações WCAG 2 A/AA', async ({ page }) =>
   await prepare(page);
   const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(result.violations).toEqual([]);
+});
+
+test('Faixa intermediária mantém logo acima do card (600 e 1023 px)', async ({ browser }) => {
+  for (const width of [600,1023]) {
+    const context=await browser.newContext({viewport:{width,height:1024},reducedMotion:'reduce'});
+    try {
+      const page=await context.newPage(); await prepare(page);
+      const logo=await page.locator('.meg-login-logo').boundingBox();
+      const panel=await page.locator('.meg-login-panel').boundingBox();
+      expect(logo.y+logo.height, `logo em ${width}px`).toBeLessThan(panel.y);
+      await expect(page.getByText(/meg evolution/i)).toHaveCount(0);
+    } finally { await context.close(); }
+  }
 });
