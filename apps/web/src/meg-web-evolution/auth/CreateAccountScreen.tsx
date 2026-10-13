@@ -1,9 +1,10 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useId, useRef, useState, type FormEvent } from 'react';
 import { register } from '../../app/auth-client';
 import { AuthScreenLayout } from './AuthScreenLayout';
 
 type AccountType = 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
 type Status = 'idle' | 'submitting' | 'pending' | 'approved';
+type FieldKey = 'name' | 'email' | 'phone' | 'password' | 'confirmPassword' | 'workspaceName';
 type Props = { onNavigateLogin: () => void; onAuthenticated: () => void };
 
 function formatPhone(raw: string) {
@@ -27,6 +28,9 @@ function messageForError(error: unknown) {
 
 export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props) {
   const formId = useId();
+  const errorId = useId();
+  const fields = useRef<Partial<Record<FieldKey, HTMLInputElement | null>>>({});
+  const [errorField, setErrorField] = useState<FieldKey | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -43,14 +47,21 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
     const normalizedEmail = email.trim().toLowerCase();
     const digits = phone.replace(/\D/g, '');
     let nextError = '';
-    if (name.trim().length < 2 || name.trim().length > 120) nextError = 'Informe seu nome com 2 a 120 caracteres.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) nextError = 'Digite um e-mail válido.';
-    else if (digits.length < 10 || digits.length > 15) nextError = 'Informe um telefone com 10 a 15 dígitos.';
-    else if (password.length < 8 || password.length > 128) nextError = 'A senha deve ter de 8 a 128 caracteres.';
-    else if (password !== confirmPassword) nextError = 'As senhas informadas não coincidem.';
-    else if (type === 'CREATE_WORKSPACE' && (workspaceName.trim().length < 2 || workspaceName.trim().length > 120)) nextError = 'Informe o nome do espaço com 2 a 120 caracteres.';
-    if (nextError) { setError(nextError); return; }
+    let nextField: FieldKey | null = null;
+    if (name.trim().length < 2 || name.trim().length > 120) { nextError = 'Informe seu nome com 2 a 120 caracteres.'; nextField = 'name'; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) { nextError = 'Digite um e-mail válido.'; nextField = 'email'; }
+    else if (digits.length < 10 || digits.length > 15) { nextError = 'Informe um telefone com 10 a 15 dígitos.'; nextField = 'phone'; }
+    else if (password.length < 8 || password.length > 128) { nextError = 'A senha deve ter de 8 a 128 caracteres.'; nextField = 'password'; }
+    else if (password !== confirmPassword) { nextError = 'As senhas informadas não coincidem.'; nextField = 'confirmPassword'; }
+    else if (type === 'CREATE_WORKSPACE' && (workspaceName.trim().length < 2 || workspaceName.trim().length > 120)) { nextError = 'Informe o nome do espaço com 2 a 120 caracteres.'; nextField = 'workspaceName'; }
+    if (nextError) {
+      setError(nextError);
+      setErrorField(nextField);
+      if (nextField) fields.current[nextField]?.focus();
+      return;
+    }
     setError('');
+    setErrorField(null);
     setStatus('submitting');
     try {
       const result = await register(name.trim(), normalizedEmail, digits, password, confirmPassword, type, type === 'CREATE_WORKSPACE' ? workspaceName.trim() : undefined);
@@ -76,14 +87,14 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
             <label><input type="radio" name={`${formId}-type`} checked={type === 'REQUEST_ACCESS'} onChange={() => setType('REQUEST_ACCESS')} disabled={status === 'submitting'} />Solicitar acesso</label>
             <label><input type="radio" name={`${formId}-type`} checked={type === 'CREATE_WORKSPACE'} onChange={() => setType('CREATE_WORKSPACE')} disabled={status === 'submitting'} />Criar meu espaço MEG</label>
           </div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-name`}>Nome completo</label><div className="meg-login-input-wrap"><input id={`${formId}-name`} name="name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" disabled={status === 'submitting'} required /></div></div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-email`}>E-mail</label><div className="meg-login-input-wrap"><input id={`${formId}-email`} name="email" type="email" inputMode="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" disabled={status === 'submitting'} required /></div></div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-phone`}>Telefone</label><div className="meg-login-input-wrap"><input id={`${formId}-phone`} name="phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" disabled={status === 'submitting'} required /></div></div>
-          {type === 'CREATE_WORKSPACE' && <div className="meg-login-input-block"><label htmlFor={`${formId}-workspace`}>Nome do espaço MEG</label><div className="meg-login-input-wrap"><input id={`${formId}-workspace`} name="workspaceName" value={workspaceName} onChange={e => setWorkspaceName(e.target.value)} placeholder="Meu espaço" disabled={status === 'submitting'} required /></div></div>}
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-password`}>Senha</label><div className="meg-login-input-wrap"><input id={`${formId}-password`} type="password" name="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" disabled={status === 'submitting'} required /></div></div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-confirm`}>Confirmar senha</label><div className="meg-login-input-wrap"><input id={`${formId}-confirm`} type="password" name="confirmPassword" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita sua senha" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-name`}>Nome completo</label><div className="meg-login-input-wrap"><input id={`${formId}-name`} name="name" ref={element => { fields.current.name = element; }} aria-invalid={errorField === 'name'} aria-describedby={errorField === 'name' ? errorId : undefined} autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-email`}>E-mail</label><div className="meg-login-input-wrap"><input id={`${formId}-email`} name="email" ref={element => { fields.current.email = element; }} aria-invalid={errorField === 'email'} aria-describedby={errorField === 'email' ? errorId : undefined} type="email" inputMode="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-phone`}>Telefone</label><div className="meg-login-input-wrap"><input id={`${formId}-phone`} name="phone" ref={element => { fields.current.phone = element; }} aria-invalid={errorField === 'phone'} aria-describedby={errorField === 'phone' ? errorId : undefined} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" disabled={status === 'submitting'} required /></div></div>
+          {type === 'CREATE_WORKSPACE' && <div className="meg-login-input-block"><label htmlFor={`${formId}-workspace`}>Nome do espaço MEG</label><div className="meg-login-input-wrap"><input id={`${formId}-workspace`} name="workspaceName" ref={element => { fields.current.workspaceName = element; }} aria-invalid={errorField === 'workspaceName'} aria-describedby={errorField === 'workspaceName' ? errorId : undefined} value={workspaceName} onChange={e => setWorkspaceName(e.target.value)} placeholder="Meu espaço" disabled={status === 'submitting'} required /></div></div>}
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-password`}>Senha</label><div className="meg-login-input-wrap"><input id={`${formId}-password`} type="password" name="password" ref={element => { fields.current.password = element; }} aria-invalid={errorField === 'password'} aria-describedby={errorField === 'password' ? errorId : undefined} autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-confirm`}>Confirmar senha</label><div className="meg-login-input-wrap"><input id={`${formId}-confirm`} type="password" name="confirmPassword" ref={element => { fields.current.confirmPassword = element; }} aria-invalid={errorField === 'confirmPassword'} aria-describedby={errorField === 'confirmPassword' ? errorId : undefined} autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita sua senha" disabled={status === 'submitting'} required /></div></div>
           <p className="meg-auth-note">O acesso depende de aprovação. Nenhum dado financeiro é criado nesta tela.</p>
-          <p className="meg-auth-error" role={error ? 'alert' : 'status'} aria-live="polite">{error}</p>
+          <p id={errorId} className="meg-auth-error" role={error ? 'alert' : 'status'} aria-live="polite">{error}</p>
           <button type="submit" className="meg-login-submit meg-auth-submit" disabled={status === 'submitting'} aria-busy={status === 'submitting'}>{status === 'submitting' ? 'Enviando solicitação...' : 'Continuar'}</button>
         </form>
       )}

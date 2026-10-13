@@ -93,7 +93,6 @@ export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
         <section className="meg-login-hero" aria-label="Conheça o MEG Finanças">
           <img className="meg-login-logo" src={`${import.meta.env.BASE_URL}brand/logo-meg-financas.svg`} alt="MEG Finanças" width="153" height="150" />
           <div className="meg-login-hero-copy">
-            <p className="meg-login-eyebrow">MEG EVOLUTION</p>
             <h1>Sua vida financeira,<span> com clareza para decidir.</span></h1>
             <p className="meg-login-intro">Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde está indo.</p>
           </div>
