@@ -136,7 +136,7 @@ export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
             </button>
           </form>
           <div className="meg-login-create"><span>Ainda não tem acesso?</span><a href="?auth=create-account" onClick={event => {event.preventDefault();onNavigate('create-account');}}>Criar conta</a></div>
-          <p className="meg-login-secure-note"><LoginIcon name="shield" />Sessão protegida <span aria-hidden="true">•</span> Conexão segura com o MEG</p>
+          <p className="meg-login-secure-note"><LoginIcon name="shield" /><span className="meg-login-note-text">Sessão protegida</span><span aria-hidden="true">•</span><span className="meg-login-note-text">Conexão segura com o MEG</span></p>
         </section>
       </div>
     </main>

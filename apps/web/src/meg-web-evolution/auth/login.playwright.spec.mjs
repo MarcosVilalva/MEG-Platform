@@ -48,6 +48,11 @@ for (const viewport of viewports) {
           const bounds = await page.locator(selector).boundingBox();
           expect(bounds.height, selector).toBeGreaterThanOrEqual(44);
         }
+        const secureParts = await page.locator('.meg-login-note-text').all();
+        expect(secureParts).toHaveLength(2);
+        const firstLine = await secureParts[0].boundingBox();
+        const secondLine = await secureParts[1].boundingBox();
+        expect(secondLine.y).toBeGreaterThan(firstLine.y);
         const forgot = await page.locator('.meg-login-options a').boundingBox();
         const remembered = await page.locator('.meg-login-remember').boundingBox();
         expect(Math.abs(forgot.y - remembered.y)).toBeLessThanOrEqual(2);

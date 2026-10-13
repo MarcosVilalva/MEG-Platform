@@ -313,6 +313,6 @@ html:has(.meg-login), body:has(.meg-login), #meg-web-evolution-root:has(.meg-log
   .meg-login-remember span { line-height: 1.2; }
   .meg-login-create { flex-direction: column; gap: .15rem; margin-top: .65rem; padding-top: .7rem; text-align: center; }
   .meg-login-create::before, .meg-login-create::after { display: none; }
-  .meg-login-secure-note { display: grid; grid-template-columns: 1fr; justify-items: center; gap: .2rem; margin-top: .7rem; font-size: .72rem; }
+  .meg-login-secure-note { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; margin-top: .7rem; font-size: .72rem; }
   .meg-login-secure-note span[aria-hidden="true"] { display: none; }
 }
