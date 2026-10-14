@@ -173,3 +173,121 @@
 @media (max-width: 375px) {
   .meg-auth-register .meg-auth-error { min-height: 3.75rem; }
 }
+
+/* PR #627 - sete correções pontuais: só no cadastro, Login inalterado. */
+.meg-auth-register .meg-auth-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+.meg-auth-register .meg-auth-form {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: .55rem; /* 8.8px entre campos/erro e erro/botão, sem deslocar o botão */
+}
+.meg-auth-register .meg-auth-fields {
+  width: 100%;
+  min-width: 0;
+}
+.meg-auth-register .meg-auth-error {
+  margin-inline: .25rem; /* mesmas margens internas de 4px dos campos */
+}
+.meg-auth-register .meg-auth-form > .meg-login-submit {
+  width: auto;
+  margin-inline: .25rem;
+}
+@media (max-width: 1023px) {
+  .meg-auth-register {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: visible;
+  }
+  .meg-auth-register .meg-auth-card {
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+    grid-template-rows: auto auto auto;
+  }
+  .meg-auth-register .meg-auth-form {
+    grid-template-rows: auto auto auto;
+    min-height: auto;
+  }
+  .meg-auth-register .meg-auth-fields {
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+    mask-image: none;
+  }
+}
+
+/* Até 480px: preservar alvos de 44px e reduzir apenas espaços não funcionais. */
+@media (max-width: 480px) {
+  /* Acrescenta 3px ao rodapé exclusivamente em mobile; alvo visual >=16px. */
+  .meg-auth-register .meg-auth-card { padding-block: .65rem; padding-bottom: calc(.65rem + 3px); }
+  .meg-auth-register .meg-auth-mode {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .35rem;
+  }
+  .meg-auth-register .meg-auth-mode label {
+    min-width: 0;
+    min-height: 44px;
+    padding: .25rem .4rem;
+    gap: .35rem;
+    line-height: 1.15;
+    font-size: .77rem;
+  }
+  .meg-auth-register .meg-auth-fields { gap: .15rem; }
+  .meg-auth-register .meg-auth-fields .meg-login-input-block { gap: .1rem; }
+  .meg-auth-register .meg-auth-header.meg-login-panel-top { gap: .5rem; }
+  .meg-auth-register .meg-auth-header h1 { font-size: 1.4rem; }
+  .meg-auth-register .meg-auth-footer { padding-top: .2rem; }
+}
+/*
+ * Etapa 05 - somente Cadastro em desktop baixo.
+ * A largura máxima adicional preserva integralmente 1366x768 e demais desktops.
+ * A media query externa é a solicitada; o filtro interno isola o 1365x600.
+ */
+@media (min-width: 1024px) and (max-height: 770px) {
+  @media (max-width: 1365px) {
+    html:has(.meg-auth-register),
+    body:has(.meg-auth-register) {
+      height: auto;
+      min-height: 100dvh;
+      overflow-y: auto;
+    }
+
+    .meg-auth-register {
+      height: auto;
+      min-height: 100dvh;
+      padding-block: 16px;
+      overflow-y: visible;
+      align-items: flex-start;
+    }
+
+    .meg-auth-register .meg-login-frame {
+      align-items: start;
+    }
+
+    .meg-auth-register .meg-login-hero {
+      position: static;
+    }
+
+    .meg-auth-register .meg-auth-card {
+      max-height: none;
+      min-height: 0;
+      overflow: visible;
+      align-self: start;
+      grid-template-rows: auto auto auto;
+    }
+
+    .meg-auth-register .meg-auth-form {
+      grid-template-rows: auto auto auto;
+    }
+
+    .meg-auth-register .meg-auth-fields {
+      max-height: none;
+      height: auto;
+      overflow: visible;
+      mask-image: none;
+    }
+  }
+}

@@ -170,15 +170,26 @@ for (const [width, height] of FULL_VIEWPORTS) {
         check('Card cortado à esquerda/direita',panel.x>=0 && panel.right<=width+1);
       }
       if(width===1365&&height===600){
-        // Novo requisito aprovado: rolagem apenas dos campos, ações sempre visíveis.
-        const fields = await page.locator('.meg-auth-fields').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,overflow:getComputedStyle(el).overflowY}));
-        check('Somente campos devem rolar em 1365x600',fields.scrollHeight>fields.clientHeight+1 && ['auto','scroll'].includes(fields.overflow));
-        check('Card não deve rolar em 1365x600',scrollState.scrollHeight<=scrollState.clientHeight+1);
-        const visiblePanel=await getBox(page.locator('.meg-auth-card'));
-        const back=await getBox(page.getByRole('button',{name:'Voltar ao login'}).last());
-        check('Continuar sempre visível sem rolagem',before.y>=0 && before.bottom<=600);
-        check('Voltar ao login sempre visível sem rolagem',back.y>=0 && back.bottom<=600);
-        check('Rodapé sem corte',back.bottom<=visiblePanel.bottom-15);
+        // Critério atualizado: página rola, nenhum campo é cortado, sem rolagem interna.
+        const fields = await page.locator('.meg-auth-fields').evaluate(el=>({
+          scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,overflow:getComputedStyle(el).overflowY
+        }));
+        const cardState=await page.locator('.meg-auth-card').evaluate(el=>({
+          scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,
+          overflow:getComputedStyle(el).overflowY,maxHeight:getComputedStyle(el).maxHeight
+        }));
+        const viewportState=await page.evaluate(()=>({height:innerHeight,scrollHeight:document.scrollingElement.scrollHeight}));
+        check('Campos inteiros sem rolagem interna',fields.scrollHeight<=fields.clientHeight+1 && !['auto','scroll'].includes(fields.overflow));
+        check('Card inteiro sem rolagem interna',cardState.scrollHeight<=cardState.clientHeight+1 && cardState.overflow==='visible' && cardState.maxHeight==='none');
+        check('Página verticalmente rolável',viewportState.scrollHeight>viewportState.height+1);
+        for(const [name,locator] of [
+          ['Continuar',page.getByRole('button',{name:'Continuar'})],
+          ['Voltar ao login',page.getByRole('button',{name:'Voltar ao login'}).last()]
+        ]){
+          await locator.scrollIntoViewIfNeeded();
+          const buttonBox=await getBox(locator);
+          check(name+' acessível pela rolagem da página',buttonBox.y>=0 && buttonBox.bottom<=600+1);
+        }
         await page.screenshot({path:`${target}-card-bottom.png`,fullPage:true,animations:'disabled'});
       }
       if(width===1920) check('Distância título/parágrafo ao card inferior a 120px',panel.x-Math.max(title.glyph.right,title.paragraph.right)>=120);

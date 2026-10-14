@@ -40,7 +40,17 @@ for(const [w,h] of SIZES){
     check('card sem rolagem interna',b.scroll.cardScroll<=b.scroll.cardHeight+1,b.scroll);
     check('voltar com 16px na borda',b.card.bottom-b.back.absolute.bottom>=15,{card:b.card,back:b.back});
    }
-   if(h===600)check('só campos rolam',b.scroll.fieldsScroll>b.scroll.fieldsHeight+1&&['auto','scroll'].includes(b.scroll.fieldsOverflow),b.scroll);
+   if(w===1365&&h===600) {
+     const pageScroll=await page.evaluate(()=>({
+       scrollHeight:document.scrollingElement.scrollHeight,viewportHeight:innerHeight,
+       htmlOverflow:getComputedStyle(document.documentElement).overflowY,
+       bodyOverflow:getComputedStyle(document.body).overflowY
+     }));
+     b.pageScroll=pageScroll;
+     check('campos inteiros, rolagem somente na página',b.scroll.fieldsScroll<=b.scroll.fieldsHeight+1&&
+       !['auto','scroll'].includes(b.scroll.fieldsOverflow)&&
+       pageScroll.scrollHeight>pageScroll.viewportHeight+1,{fields:b.scroll,page:pageScroll});
+   }
    if(w===1920)check('texto/card 120px',b.card.x-Math.max(b.title.right,b.intro.right)>=120,b.card.x-b.intro.right);
    if(w>=1024){
     const rects=[['titulo',b.title],['intro',b.intro],...b.features.map((f,i)=>['beneficio'+i,f])];
@@ -58,8 +68,28 @@ for(const [w,h] of SIZES){
    check('aria-invalid',await name.getAttribute('aria-invalid')==='true');
    check('aria-describedby',Boolean(await name.getAttribute('aria-describedby')));
    if(h===600||w<=390){const nr=await name.boundingBox(),sc=await page.locator('.meg-auth-fields').boundingBox();if(sc&&nr)check('foco 16px abaixo scroll',nr.y-sc.y>=16,{field:nr,scroll:sc});}
-   for(const [title,button] of [['Continuar',a.button],['Voltar',a.back]])
-    check(title+' dentro viewport',button.absolute.y>=0&&button.absolute.bottom<=h,{button,viewport:h});
+   if(w===1365&&h===600){
+     const targets=[['Continuar',page.getByRole('button',{name:'Continuar'})],
+       ['Voltar',page.getByRole('button',{name:'Voltar ao login'}).last()]];
+     for(const [title,locator] of targets){
+       await locator.scrollIntoViewIfNeeded();
+       const rect=await locator.boundingBox();
+       check(title+' acessível rolando a página',rect&&rect.y>=0&&rect.y+rect.height<=h+1,
+         {button:rect,viewport:h});
+     }
+     const afterScroll=await page.evaluate(()=>({
+       scrollY,scrollHeight:document.scrollingElement.scrollHeight,
+       cardOverflow:getComputedStyle(document.querySelector('.meg-auth-card')).overflowY,
+       cardMaxHeight:getComputedStyle(document.querySelector('.meg-auth-card')).maxHeight
+     }));
+     check('rolagem da página e card sem limite',afterScroll.scrollY>0&&
+       afterScroll.cardOverflow==='visible'&&afterScroll.cardMaxHeight==='none',afterScroll);
+     check('botão não salta no erro por offsetTop',b.button.offsetTop===a.button.offsetTop,
+       {before:b.button.offsetTop,after:a.button.offsetTop});
+   } else {
+     for(const [title,button] of [['Continuar',a.button],['Voltar',a.back]])
+       check(title+' dentro viewport',button.absolute.y>=0&&button.absolute.bottom<=h,{button,viewport:h});
+   }
    await page.screenshot({path:DIR+'/rigor-'+w+'x'+h+'-erro.png',fullPage:true,animations:'disabled'});
    writeFileSync(DIR+'/rigor-'+w+'x'+h+'.json',JSON.stringify({before:b,after:a,fail:fails},null,2));
    console.log('RESULT '+w+'x'+h+' '+JSON.stringify({fail:fails,orbDistances:b.orbDistances,card:b.scroll}));
