@@ -59,6 +59,7 @@ if [ -f apps/web/src/meg-web-evolution/auth/login.visual-diff.playwright.spec.mj
     done
     if [ "$FOUND" -eq 1 ]; then
       run login-pixel-diff npx playwright test apps/web/src/meg-web-evolution/auth/login.visual-diff.playwright.spec.mjs --workers=1 --reporter=line
+      run login-evidencias-playwright npx playwright test apps/web/src/meg-web-evolution/auth/login.evidence.playwright.spec.mjs --workers=1 --reporter=line
     else
       printf 'login-pixel-diff: 1 (baseline server indisponível)\n' | tee -a "$DIR/results.txt"
       STATUS=1
@@ -89,6 +90,67 @@ else
   printf 'register-pixel-diff: 1 (checkout baseline indisponível)\n' | tee -a "$DIR/results.txt"; STATUS=1
 fi
 run final-invariants-playwright npx playwright test apps/web/src/meg-web-evolution/auth/register.final-invariants.playwright.spec.mjs --workers=1 --reporter=line
+
+# A nomenclatura de todos os dados visuais informa a tela.
+for name in final registro-visual rigor; do
+ for f in "$DIR"/"$name"-*.json; do
+  [ -f "$f" ] || continue
+  mv "$f" "$DIR/criar-conta-$(basename "$f")"
+ done
+done
+for f in "$DIR"/registro-visual-*.png "$DIR"/rigor-*.png; do
+ [ -f "$f" ] || continue
+ mv "$f" "$DIR/criar-conta-$(basename "$f")"
+done
+AE="$DIR/login-ae-metricas.csv"
+printf 'viewport;estado;AE;status\n' > "$AE"
+for size in 360x844 390x844 768x1024 1365x600 1366x768 1920x1080 2560x1440; do
+ for state in normal erro; do
+  if [ "$state" = erro ] && [ "$size" != 1365x600 ] && [ "$size" != 1366x768 ]; then continue; fi
+  if [ "$state" = normal ]; then
+   before="$DIR/login-diff/login-aprovado-$size.png"
+   after="$DIR/login-diff/login-pr627-$size.png"
+   diff="$DIR/login-diff/login-magick-diff-$size.png"
+  else
+   before="$DIR/login-evidencias/login-aprovado-$size-erro.png"
+   after="$DIR/login-evidencias/login-pr627-$size-erro.png"
+   diff="$DIR/login-evidencias/login-diff-$size-erro.png"
+  fi
+  if [ ! -s "$before" ] || [ ! -s "$after" ]; then
+   printf '%s;%s;NA;ARQUIVO_AUSENTE\n' "$size" "$state" | tee -a "$AE"
+   STATUS=1
+   continue
+  fi
+  metric=$(magick compare -metric AE "$before" "$after" "$diff" 2>&1)
+  code=$?
+  value=$(printf '%s' "$metric" | awk '{print $1}')
+  if [ "$code" -eq 0 ] && [ "$value" = 0 ]; then
+   printf '%s;%s;0;PASS\n' "$size" "$state" | tee -a "$AE"
+  else
+   printf '%s;%s;%s;FAIL\n' "$size" "$state" "$metric" | tee -a "$AE"
+   STATUS=1
+  fi
+ done
+done
+{
+ printf '# Login comparacao numerica com ImageMagick AE\n\n'
+ printf 'Executado: magick compare -metric AE aprovado.png pr627.png diff.png\n\n'
+ printf '| Viewport | Estado | AE | Status |\n|---|---|---:|---|\n'
+ tail -n +2 "$AE" | while IFS=';' read -r size state ae result; do
+  printf '| %s | %s | %s | %s |\n' "$size" "$state" "$ae" "$result"
+ done
+} > "$DIR/login-ae-metricas.md"
+cat > "$DIR/README-evidencias.md" <<'EOF'
+# Evidencias de Login e Criar Conta na PR #627
+
+- Login: captura normal em 7 viewports, erro aprovado/PR627 em 1365x600 e 1366x768, imagens diff e medicao numerica AE.
+- Login: login-evidencias/login-metricas-<viewport>.json inclui card, campos, erro, botao, cards de beneficio e orbe.
+- Criar Conta: JSONs com prefixo criar-conta-final, criar-conta-registro-visual ou criar-conta-rigor.
+- Cadastro em 1365x600 rola a pagina, funcionalmente testado, mas nao aprovado visualmente pelo usuario.
+- Os beneficios do cadastro atual tem icone em cima; no Login aprovado, icone a esquerda.
+- Nao ha screenshot de Criar Conta com aprovacao visual explicita encontrado no conjunto auditado; nenhuma mudanca de layout nessa rodada.
+- Permaneceram intocados o beneficio Controle, a reserva de erro do Login e as distancias do orbe.
+EOF
 kill "$SERVER_PID" 2>/dev/null || true
 printf '\nGATE FINAL: %s\n' "$STATUS"
 exit "$STATUS"

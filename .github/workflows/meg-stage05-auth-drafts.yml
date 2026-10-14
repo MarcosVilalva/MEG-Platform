@@ -18,6 +18,9 @@ jobs:
           cache: npm
       - run: npm ci --audit=false
       - run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0 @axe-core/playwright@4.13.0
+      - uses: mfinelli/setup-imagemagick@v8
+        with:
+          install-libfuse2: true
       - name: Executar gates completos e Playwright
         shell: bash
         run: bash scripts/meg-stage05-auth-verify.sh
