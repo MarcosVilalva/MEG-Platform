@@ -2,7 +2,10 @@ import {test,expect} from '@playwright/test';
 import {mkdirSync,writeFileSync} from 'node:fs';
 test.use({launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROME_PATH||undefined}});
 const DIR='artifacts/meg-stage05-auth/register-baseline-1365';
-const sizes=[[360,844],[390,844],[768,1024],[1365,600],[1366,768],[1920,1080],[2560,1440]];
+const BASELINE_URL=process.env.REGISTER_BASELINE_URL||'http://127.0.0.1:4175';
+const sizes=[[360,844],[390,844],[768,1024],[1365,600],[1366,600],[1365,768],[1366,768],[1920,1080],[2560,1440]];
+const changedViewport=(width,height)=>
+ (height===600||(height===768&&(width===1365||width===1366))||(height===844&&width<=390));
 async function getGeometry(page){return page.evaluate(()=>{
  const b=e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};
  const card=document.querySelector('.meg-auth-card'),fields=document.querySelector('.meg-auth-fields'),button=document.querySelector('.meg-auth-form button[type=submit]'),back=document.querySelector('.meg-auth-footer button');
@@ -20,15 +23,17 @@ async function compare(page,a,b){return page.evaluate(async({a,b})=>{
 for(const[w,h]of sizes)test('Cadastro pixel-diff 1365 baseline '+w+'x'+h,async({browser})=>{
  const ctx=await browser.newContext({viewport:{width:w,height:h},reducedMotion:'reduce'}),old=await ctx.newPage(),now=await ctx.newPage(),data={viewport:[w,h],states:{}};
  try{mkdirSync(DIR,{recursive:true});
- await old.goto('http://127.0.0.1:4175/web-evolution.html?auth=create-account',{waitUntil:'networkidle'});
+ await old.goto(`${BASELINE_URL}/web-evolution.html?auth=create-account`,{waitUntil:'networkidle'});
  await now.goto('http://127.0.0.1:4173/web-evolution.html?auth=create-account',{waitUntil:'networkidle'});
  for(const p of[old,now])await p.evaluate(()=>document.fonts.ready);
  for(const state of['normal','erro']){
    if(state==='erro')for(const p of[old,now]){await p.getByRole('button',{name:'Continuar'}).click();await expect(p.getByRole('alert')).toContainText('Informe seu nome');}
    const a=await old.screenshot({fullPage:true,animations:'disabled'}),b=await now.screenshot({fullPage:true,animations:'disabled'}),diff=await compare(now,a,b);
    data.states[state]={diff,before:await getGeometry(old),after:await getGeometry(now)};
-   if(w===1365){writeFileSync(DIR+'/cadastro-1365x600-'+state+'-antes.png',a);writeFileSync(DIR+'/cadastro-1365x600-'+state+'-depois.png',b);}
-   else{expect(diff.sameDimensions).toBe(true);expect(diff.percent,'Mudança em viewport protegido '+w+'x'+h+' '+state).toBe(0);}
+   if(changedViewport(w,h)){
+    writeFileSync(DIR+'/cadastro-'+w+'x'+h+'-'+state+'-antes.png',a);
+    writeFileSync(DIR+'/cadastro-'+w+'x'+h+'-'+state+'-depois.png',b);
+   }else{expect(diff.sameDimensions).toBe(true);expect(diff.percent,'Mudança em viewport protegido '+w+'x'+h+' '+state).toBe(0);}
    console.log('CADASTRO_DIFF '+w+'x'+h+' '+state+' '+JSON.stringify(diff));
  }
  writeFileSync(DIR+'/cadastro-'+w+'x'+h+'.json',JSON.stringify(data,null,2));

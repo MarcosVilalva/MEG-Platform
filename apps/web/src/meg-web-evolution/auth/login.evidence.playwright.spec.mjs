@@ -32,7 +32,11 @@ for(const[width,height]of sizes){
      for(const field of after.fields)if(overlap(field,after.message)>0)errors.push({version:target.key,type:'error overlaps input'});
      if(overlap(after.message,after.button)>0)errors.push({version:target.key,type:'error overlaps button'});
      for(const[i,f]of after.benefits.entries())if(f.icon.right>f.content.x+1)errors.push({version:target.key,type:'benefit icon not left',index:i});
-     if(width===1365||width===1366)await page.screenshot({path:OUT+'/login-'+target.key+'-'+width+'x'+height+'-erro.png',fullPage:true,animations:'disabled'});
+     if(width===1365||width===1366){
+      await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}'});
+      await page.mouse.move(0,0);
+      await page.screenshot({path:OUT+'/login-'+target.key+'-'+width+'x'+height+'-erro.png',fullPage:true,animations:'disabled'});
+     }
     }finally{await page.close();}
    }
    data.failures=errors;
