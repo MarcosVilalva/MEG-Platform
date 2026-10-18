@@ -90,6 +90,8 @@ else
   printf 'register-pixel-diff: 1 (checkout baseline indisponível)\n' | tee -a "$DIR/results.txt"; STATUS=1
 fi
 run final-invariants-playwright npx playwright test apps/web/src/meg-web-evolution/auth/register.final-invariants.playwright.spec.mjs --workers=1 --reporter=line
+run viewport-regression-chromium npx playwright test apps/web/src/meg-web-evolution/auth/register.viewport.playwright.spec.mjs --workers=1 --reporter=line
+PLAYWRIGHT_CHROME_PATH=/usr/bin/google-chrome run viewport-regression-chrome npx playwright test apps/web/src/meg-web-evolution/auth/register.viewport.playwright.spec.mjs --workers=1 --reporter=line
 
 # A nomenclatura de todos os dados visuais informa a tela.
 for name in final registro-visual rigor; do
@@ -141,16 +143,26 @@ done
  done
 } > "$DIR/login-ae-metricas.md"
 cat > "$DIR/README-evidencias.md" <<'EOF'
-# Evidencias de Login e Criar Conta na PR #627
+# Evidências de Login e Criar Conta na PR #627
 
-- Login: captura normal em 7 viewports, erro aprovado/PR627 em 1365x600 e 1366x768, imagens diff e medicao numerica AE.
-- Login: login-evidencias/login-metricas-<viewport>.json inclui card, campos, erro, botao, cards de beneficio e orbe.
-- Criar Conta: JSONs com prefixo criar-conta-final, criar-conta-registro-visual ou criar-conta-rigor.
-- Cadastro em 1365x600 rola a pagina, funcionalmente testado, mas nao aprovado visualmente pelo usuario.
-- Os beneficios do cadastro atual tem icone em cima; no Login aprovado, icone a esquerda.
-- Nao ha screenshot de Criar Conta com aprovacao visual explicita encontrado no conjunto auditado; nenhuma mudanca de layout nessa rodada.
-- Permaneceram intocados o beneficio Controle, a reserva de erro do Login e as distancias do orbe.
+## Causa e correção da rolagem interna
+
+- O card de cadastro limitava sua altura a `calc(100dvh - 2.2rem)`, escondia o excedente e alocava a linha central da grade para os campos com `overflow-y: auto`.
+- A exceção que removia esses limites só era aplicada até 1365 CSS px. No Chrome instalado, 1365×600 não mostrava rolagem interna, mas 1366×600 reproduzia o defeito: área rolável de 263 px para 437 px de conteúdo. O antigo teste usava apenas viewport 1365×600; largura física da janela e largura CSS do viewport não são equivalentes, portanto um viewport real de 1366 px ficava fora da exceção.
+- O cadastro agora deixa card e campos crescerem com o conteúdo e usa a rolagem do documento. Os benefícios fluem no layout, mantêm ícone à esquerda do texto como no Login e têm respiro inferior mínimo de 24 px.
+
+## Cobertura
+
+- Cadastro nos modos “Solicitar acesso” e “Criar meu espaço MEG”; nenhum texto de produto foi alterado.
+- Viewports 1920×1080, 1365×768, 1365×600, 1366×600 (regressão do limite), 1280×600, 1024×682, 1024×600 e 390×844; DPR 1 e 2.
+- Chromium empacotado e Google Chrome instalado (`/usr/bin/google-chrome`).
+- Verificações: ausência de rolagem interna, campos ativos dentro do card e visíveis após rolagem da página, ações acessíveis, cards de benefício sem sobreposição e com respiro, Login/Recuperar Senha sem erros de execução.
+- Capturas DPR 2 dos dois modos nos tamanhos 1365×600, 1024×682 e 390×844 em `viewport/{chromium,chrome}`.
+- Os testes existentes de Login e a comparação visual com a baseline aprovada continuam executados separadamente; o CSS do Login permanece intocado.
+
+## Resultado completo dos gates
 EOF
+cat "$DIR/results.txt" >> "$DIR/README-evidencias.md"
 kill "$SERVER_PID" 2>/dev/null || true
 printf '\nGATE FINAL: %s\n' "$STATUS"
 exit "$STATUS"
