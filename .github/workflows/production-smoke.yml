@@ -9,6 +9,20 @@ jobs:
   smoke:
     runs-on: ubuntu-24.04
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pinned Playwright
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
       - name: Wait for deployments
         run: sleep 60
 
@@ -110,18 +124,17 @@ jobs:
           cat evolution-site.html || true
           exit 1
 
-      - name: Verify official Phoenix V15 web application
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 24); do
-            if curl --fail-with-body --silent --show-error --max-time 20 https://marcosvilalva.github.io/MEG-Platform/ -o site.html \
-              && grep -q 'data-meg-shell="phoenix-v15"' site.html \
-              && grep -q 'MEG Finanças' site.html; then
-              echo "Phoenix V15 publicada na tentativa $attempt."
-              exit 0
-            fi
-            echo "GitHub Pages ainda propagando (tentativa $attempt/24)."
-            sleep 10
-          done
-          echo "Phoenix V15 não ficou disponível no prazo."
-          exit 1
+      - name: Verify published Stage05 root with Playwright
+        env:
+          BUILD_SHA: ${{ github.sha }}
+          MEG_PRODUCTION_URL: https://marcosvilalva.github.io/MEG-Platform/
+        run: node scripts/production-root-smoke.mjs
+
+      - name: Upload published Stage05 root screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-evolution-production-root
+          path: artifacts/production-root-smoke/meg-evolution-root.png
+          if-no-files-found: warn
+          retention-days: 14

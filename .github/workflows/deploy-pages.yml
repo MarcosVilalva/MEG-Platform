@@ -36,18 +36,10 @@ jobs:
           VITE_APP_ENV: production
           VITE_API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
           VITE_PUBLIC_BASE_PATH: /MEG-Platform/
-          VITE_PHOENIX_SIMPLE_EVENT_WRITE: enabled
-          VITE_PHOENIX_CARD_PURCHASE_WRITE: enabled
-          VITE_PHOENIX_BENEFIT_WRITE: enabled
-          VITE_PHOENIX_TRANSFER_WRITE: disabled
-          VITE_PHOENIX_PENDING_WRITE: enabled
-          VITE_PHOENIX_BULK_EVENT_WRITE: enabled
         run: npm run build:web
 
-      - name: Verify Phoenix V15 is the official web entry
-        run: |
-          grep -q 'data-meg-shell="phoenix-v15"' apps/web/dist/index.html
-          grep -q 'MEG Finanças' apps/web/dist/index.html
+      - name: Verify Stage05 root and Pages artifact
+        run: node scripts/verify-pages-root-build.mjs
 
       - name: Verify production API availability
         env:
