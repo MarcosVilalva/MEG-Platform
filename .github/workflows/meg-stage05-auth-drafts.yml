@@ -1,0 +1,37 @@
+name: MEG Stage05 Auth Draft Evidence
+on:
+  push:
+    branches:
+      - 'stage05-screen/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auth-drafts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --audit=false
+      - run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0 @axe-core/playwright@4.13.0
+      - uses: mfinelli/setup-imagemagick@v8
+        with:
+          install-libfuse2: true
+      - name: Executar gates completos e Playwright
+        shell: bash
+        run: bash scripts/meg-stage05-auth-verify.sh
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+          NODE_ENV: test
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+      - name: Capturas integras, com e sem erro
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage05-auth-draft-${{ github.sha }}
+          path: artifacts/meg-stage05-auth
+          if-no-files-found: warn
