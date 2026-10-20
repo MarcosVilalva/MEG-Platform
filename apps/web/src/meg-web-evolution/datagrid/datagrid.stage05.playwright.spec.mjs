@@ -40,19 +40,32 @@ async function seedGamma(page) {
   await page.reload();
 }
 
+async function openSearch(page) {
+  await expect(page.locator('.meg-datagrid')).toBeVisible();
+  const input = page.getByRole('searchbox', { name: 'Buscar em todas as colunas visíveis' });
+  await expect(async () => {
+    if (!(await input.isVisible())) await page.keyboard.press('Control+k');
+    await expect(input).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10000 });
+  return input;
+}
+
 test('Busca normalizada, chip, AND com coluna e Limpar tudo', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 600 });
   await page.goto(url + '?state=visual');
   const input = page.getByRole('searchbox', { name: 'Buscar em todas as colunas visíveis' });
+  await openSearch(page);
   await input.fill('tecnico 003');
   await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('1 de 640 registros');
   await expect(page.getByRole('button', { name: /Remover filtro Busca/i })).toBeVisible();
   await page.getByRole('button', { name: /Remover filtro Busca/i }).click();
   await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('640 de 640 registros');
   await seedGamma(page);
+  await openSearch(page);
   await input.fill('tecnico 003');
   await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('1 de 640 registros');
   await page.getByRole('button', { name: 'Limpar tudo' }).click();
+  await openSearch(page);
   await expect(input).toHaveValue('');
   await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('640 de 640 registros');
 });
@@ -112,6 +125,7 @@ test('PDF com filtros e busca lista critérios e valores do conjunto combinado',
   await page.goto(url + '?state=visual');
   await seedGamma(page);
   const input = page.getByRole('searchbox', { name: 'Buscar em todas as colunas visíveis' });
+  await openSearch(page);
   await input.fill('tecnico 003');
   await expect(page.locator('.meg-datagrid-quick-search__count')).toContainText('1 de 640 registros');
   const promise = page.waitForEvent('download');

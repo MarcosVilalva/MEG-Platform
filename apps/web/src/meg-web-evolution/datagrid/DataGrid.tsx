@@ -810,7 +810,7 @@ export function DataGrid<T extends Record<string, unknown>>({
     if (!searchExpanded) return;
     const handleOutside = (event: PointerEvent) => {
       const target = event.target as Element | null;
-      if (!target?.closest(".meg-datagrid-quick-search")) setSearchExpanded(false);
+      if (!target?.closest(".meg-datagrid-quick-search, .meg-datagrid-clear-all")) setSearchExpanded(false);
     };
     document.addEventListener("pointerdown", handleOutside);
     return () => document.removeEventListener("pointerdown", handleOutside);
