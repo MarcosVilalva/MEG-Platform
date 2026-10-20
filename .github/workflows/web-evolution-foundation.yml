@@ -106,7 +106,14 @@ jobs:
           ROOT_STATUS=0
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/auth/root.playwright.spec.mjs --workers=1 --reporter=line || ROOT_STATUS=$?
           AUTH_STATUS=0
-          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/auth --workers=1 --reporter=line || AUTH_STATUS=$?
+          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test \
+            apps/web/src/meg-web-evolution/auth/login.playwright.spec.mjs \
+            apps/web/src/meg-web-evolution/auth/register.playwright.spec.mjs \
+            apps/web/src/meg-web-evolution/auth/register.seven-steps.playwright.spec.mjs \
+            apps/web/src/meg-web-evolution/auth/register.viewport.playwright.spec.mjs \
+            apps/web/src/meg-web-evolution/auth/register.final-invariants.playwright.spec.mjs \
+            apps/web/src/meg-web-evolution/auth/register.layout.playwright.spec.mjs \
+            --workers=1 --reporter=line || AUTH_STATUS=$?
           TOOLTIP_STATUS=0
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.tooltips.playwright.spec.mjs --workers=1 --reporter=line || TOOLTIP_STATUS=$?
           SNAPSHOT_DIR="apps/web/src/meg-web-evolution/datagrid/datagrid.quality.playwright.spec.mjs-snapshots"
