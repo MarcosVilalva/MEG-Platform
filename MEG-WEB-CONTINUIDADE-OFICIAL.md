@@ -1085,3 +1085,34 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Artifact do pré-teste**: [#11890189402](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/38557018550/artifacts/11890189402) com `login-ae-metricas.csv` e Markdown, capturas, PNG diffs, resultados e JSONs; 194 entradas, 9 AE=0, sem JSONs ambíguos.
 - **Alteração no código**: apenas `login.evidence.playwright.spec.mjs` novo, script de validação e workflow de evidências atualizado para disponibilizar ImageMagick 7; checkpoint atualizado. Login CSS/markup/assets e Cadastro CSS/markup/assets inalterados.
 - **Pendente**: reexecutar CI oficial no novo SHA, atualizar preview e validar visualmente com aprovação explícita do usuário. A comparação com print aprovado de Criar Conta depende desse print ser identificado/confirmado.
+
+---
+
+## Atualização de checkpoint | 20/10/2026 | Etapa 05
+
+**Integração na main**
+- PR #630 mesclada em 19/10/2026 por squash, SHA `e4364bfbd4dd082673a45d8f40fb7d708f62f7d9`. Conteúdo declarado: Login, Criar Conta, responsividade e testes.
+- PRs #626 e #627 fechadas sem merge individual. Código incorporado pela #630. Branches `stage05-login/05-login` e `stage05-screen/05-criar-conta` preservadas até a reorganização das PRs empilhadas.
+- Autorização expressa prévia e aprovação visual final da #630 não estão comprovadas. Este registro não as atribui retroativamente.
+
+**PRs abertas (Draft)**
+| PR | Tela | Base | SHA | CI `auth-drafts` |
+|---|---|---|---|---|
+| #628 | Recuperar Senha | `main` | `a831fd503d28c252ecc7afdc19770452fafe4da8` | verde |
+| #629 | Loading | `stage05-screen/05-recuperar-senha` | `89d94bcede420e85cc0fcde338508900394491e7` | verde |
+
+Auditoria de diff: #628 altera só `RecoverPasswordScreen.tsx`, `recover.playwright.spec.mjs` e `main.tsx`. #629 altera só os arquivos de Loading e `main.tsx`.
+
+**Validação visual por tela**
+- Login: referência aprovada registrada; revalidar na `main`.
+- Criar Conta: pendente. Decidir a composição dos ícones dos benefícios em 1365x600 (esquerda como no Login ou acima) e a rolagem da página, comparando com o print oficial.
+- Recuperar Senha: aprovação explícita pendente.
+- Loading: aprovação explícita pendente.
+
+**Pendências**
+- Autenticação real no Render (CORS) e fluxo de recuperação em ambiente adequado.
+- Reorganização: #628 sobre a `main`, depois #629 com base trocada para `main`.
+- Local, `login.evidence` exige servidor na porta 4174. O CI o cobre. A porta 4175 não é bloqueio universal.
+- O `-fuzz 10%` com AE = 0 do baseline de Cadastro é tolerante e não prova igualdade literal de pixels.
+
+**Situação:** Etapa 05 **não encerrada**. Etapa 06 (Home) não autorizada.
