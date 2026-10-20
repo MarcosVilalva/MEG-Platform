@@ -291,3 +291,6 @@
   .meg-auth-register .meg-auth-header h1 { font-size: 1.4rem; }
   .meg-auth-register .meg-auth-footer { padding-top: .2rem; }
 }
+
+/* Polimento de layout: sem palavra órfã no texto do hero. */
+.meg-auth-page .meg-login-intro { text-wrap: balance; }
