@@ -161,7 +161,7 @@
   .meg-auth-register {
     height: auto;
     min-height: 100dvh;
-    padding: 16px 0 24px;
+    padding-block: 16px 24px;
     overflow-y: visible;
     align-items: flex-start;
   }
