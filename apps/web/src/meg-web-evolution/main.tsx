@@ -7,12 +7,13 @@ import { AppShell } from './shell/AppShell';
 import { LoginScreen } from './auth/LoginScreen';
 import { CreateAccountScreen } from './auth/CreateAccountScreen';
 import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
+import { LoadingScreen } from './auth/LoadingScreen';
 
-type AuthDestination = 'login' | 'create-account' | 'recover-password';
+type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
 function currentAuthDestination(): AuthDestination {
   const query = new URLSearchParams(window.location.search).get('auth');
-  return query === 'create-account' || query === 'recover-password' ? query : 'login';
+  return query === 'create-account' || query === 'recover-password' || query === 'loading' ? query : 'login';
 }
 
 function AuthGateway() {
@@ -67,6 +68,8 @@ function AuthGateway() {
   if (destination === 'recover-password') {
     return <RecoverPasswordScreen onNavigateLogin={() => navigate('login')} />;
   }
+
+  if (destination === 'loading') return <LoadingScreen onNavigateLogin={() => navigate('login')} />;
 
   return <LoginScreen onAuthenticated={() => setSession(readSession())} onNavigate={navigate} />;
 }
