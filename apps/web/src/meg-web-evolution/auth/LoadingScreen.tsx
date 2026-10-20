@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import './login.css';
 import './auth-screens.css';
 import './loading.css';
@@ -28,7 +29,7 @@ export function LoadingScreen({ onNavigateLogin }: Props) {
   }
 
   return (
-    <main className="meg-loading-screen" aria-label="Carregando seus dados" data-meg-loading="preview-only">
+    <main className="meg-loading-screen" aria-label="Carregando seus dados" data-meg-loading="preview-only" style={{ "--meg-loading-art": `url(${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png)` } as CSSProperties}>
       <img className="meg-loading-art" src={`${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png`} alt="" aria-hidden="true" />
       <div className="meg-loading-mobile-copy" aria-hidden="true">
         <div className="meg-loading-mobile-track"><span /></div>
