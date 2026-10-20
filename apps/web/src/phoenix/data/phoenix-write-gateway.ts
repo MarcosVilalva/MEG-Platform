@@ -367,7 +367,7 @@ export function preparePhoenixCardPurchase(input: PhoenixCardPurchaseInput, exis
 
 export function phoenixWriteMessage(code: string) {
   const messages: Record<string, string> = {
-    PHOENIX_WRITE_NOT_ENABLED: 'A gravação financeira da Phoenix ainda não foi liberada neste ambiente.',
+    PHOENIX_WRITE_NOT_ENABLED: 'A gravação financeira ainda não foi liberada neste ambiente.',
     PHOENIX_CARD_WRITE_NOT_ENABLED: 'A gravação de compras no cartão ainda não foi liberada neste ambiente.',
     PHOENIX_BENEFIT_WRITE_NOT_ENABLED: 'A gravação do Benefício Alimentação ainda não foi liberada neste ambiente.',
     PHOENIX_TRANSFER_WRITE_NOT_ENABLED: 'A gravação de transferências ainda não foi liberada neste ambiente.',
