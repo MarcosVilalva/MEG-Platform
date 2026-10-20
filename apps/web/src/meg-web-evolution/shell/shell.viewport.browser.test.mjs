@@ -298,6 +298,42 @@ function command(method, params = {}) {
   return sendCommand(method, params, pageSessionId);
 }
 
+let authInstalled = false;
+async function installAuthSession() {
+  if (authInstalled) return;
+  authInstalled = true;
+  const session = {
+    user: {
+      id: 'e2e-admin',
+      name: 'MEG E2E Administrator',
+      email: 'e2e-admin@example.test',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      isActive: true,
+    },
+    accessToken: 'e2e-access-token',
+    refreshToken: 'e2e-refresh-token',
+    refreshExpiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+  };
+  await command('Page.enable');
+  await command('Page.addScriptToEvaluateOnNewDocument', {
+    source: `(() => {
+      const session = ${JSON.stringify(session)};
+      try { sessionStorage.setItem('meg.auth.session', JSON.stringify(session)); } catch {}
+      const realFetch = window.fetch.bind(window);
+      window.fetch = (input, init) => {
+        const url = typeof input === 'string' ? input : input.url;
+        if (/\\/auth\\/me(\\?|$)/.test(url)) {
+          return Promise.resolve(new Response(JSON.stringify({ user: session.user }), {
+            status: 200, headers: { 'Content-Type': 'application/json' },
+          }));
+        }
+        return realFetch(input, init);
+      };
+    })();`,
+  });
+}
+
 async function evaluate(expression) {
   const result = await command('Runtime.evaluate', {
     expression,
@@ -759,8 +795,8 @@ async function assertReducedTopbarLaunchers(viewport) {
 }
 
 try {
-  await command('Page.enable');
   await command('Runtime.enable');
+  await installAuthSession();
 
   for (const viewport of viewports) {
     await command('Emulation.setDeviceMetricsOverride', {

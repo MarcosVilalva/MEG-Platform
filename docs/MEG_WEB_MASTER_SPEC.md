@@ -978,6 +978,34 @@ Reduzir superfície de ataque e impedir que futuras evoluções reintroduzam vul
     - documentar rotação de segredo e revogação de sessão;
     - revisar incidentes e transformar correções em testes anti-regressão.
 
+---
+
+# 25. Publicação da raiz GitHub Pages — Stage05
+
+## Decisão aprovada
+
+- A raiz do GitHub Pages deve usar Login/Criar Conta Stage05, com `apps/web/src/meg-web-evolution` como implementação.
+- `evolution.html` e `web-evolution.html` permanecem. Pós-login e recuperação de senha continuam placeholders nesta etapa.
+- O shell de `index.html` é substituído apenas no build Web não-Capacitor. O build Android/Capacitor mantém sua entrada e seu fluxo originais.
+- O artifact Pages não publica a entrada `phoenix.html` nem os CSS públicos Phoenix. O conteúdo Phoenix protegido não deve ser apagado sem autorização explícita.
+- O build Pages usa base `/MEG-Platform/`, inclui CSP também no `index.html` e publica `404.html` como fallback do shell Stage05.
+- O smoke Playwright da raiz deve rodar depois do deploy. Antes do merge, a validação deve usar exclusivamente artifact e servidor local sob `/MEG-Platform/`.
+
+## Estado da execução
+
+- Build Web com base `/MEG-Platform/`, verificação do artifact, contrato do smoke e smoke Playwright local passaram.
+- O smoke local exige Login Stage05 visível, CSP, carregamento da fonte/fundos, recarga de cadastro, fallback em caminho desconhecido e 404 para os arquivos Phoenix removidos.
+- Build da API passou. A entrada Capacitor foi verificada separadamente: não recebe o shell Stage05 nem o fallback `404.html`.
+- O conjunto de Login/Criar Conta Playwright passou com 111 testes. Os cenários de pixel-diff executados com endpoints locais duplicados validam a paridade do código atual, não uma comparação independente com baseline histórica.
+- O teste agregado `test:rc1-gate` falha em duas expectativas antigas incompatíveis com a retirada da branch e do smoke Phoenix. Por decisão de Marcos, o contrato permanece sem alteração; essa falha deve ser explicitada na PR Draft e não tratada como validação verde.
+
+## Pendências protegidas
+
+- Não alterar `apps/web/src/app`, `apps/web/src/mobile`, contratos protegidos, `.github/workflows/build-android-apk.yml` ou o fluxo `CAPACITOR_BUILD`.
+- A remoção de fontes, runtimes, contratos e demais componentes Phoenix protegidos exige autorização explícita e etapa separada.
+- A API, `apps/web/public/downloads/app-version.json` e o APK Android permanecem fora desta remoção; o artifact continua a incorporá-los pelo fluxo de distribuição existente.
+- O smoke de produção ainda não foi executado contra o domínio publicado; ele permanece configurado para rodar após deploy.
+
 ## Gate de entrega
 
 Antes de considerar o Security Hardening concluído, deve existir evidência automatizada ou revisável de:

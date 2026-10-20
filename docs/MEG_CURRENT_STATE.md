@@ -11,6 +11,16 @@
 - Security Hardening inicial: concluído e mantido como gate permanente
 - Android e `apps/web/src/mobile`: **somente leitura / protegidos**
 
+## Publicação da raiz Pages — validação em andamento
+
+- Branch de trabalho: `tmp/remove-phoenix-verify`; branch final prevista: `remove-phoenix-publish-meg-evolution`.
+- A raiz Web está sendo preparada para servir Login/Criar Conta Stage05 de `apps/web/src/meg-web-evolution`; `evolution.html` e `web-evolution.html` permanecem.
+- A transformação de `index.html`, fallback `404.html`, CSP e remoção de assets Phoenix aplicam-se somente ao build Web sem `CAPACITOR_BUILD`.
+- O smoke de produção permanece configurado para após deploy. A validação desta etapa foi feita apenas contra o artifact local em `/MEG-Platform/`.
+- Build Web/API e smoke local do artifact passaram. O conjunto Playwright de Login/Criar Conta passou (111 testes); testes de comparação visual usaram endpoints locais duplicados e não constituem comparação independente com baseline histórica.
+- A suíte agregada tem uma falha intencionalmente mantida: `test:rc1-gate` ainda espera a antiga branch Phoenix e o smoke Phoenix. Marcos decidiu manter esse gate protegido sem alterações e abrir a PR Draft registrando o bloqueio.
+- Pendências protegidas: código em `apps/web/src/app`, `apps/web/src/mobile`, contratos protegidos, `build-android-apk.yml` e o fluxo `CAPACITOR_BUILD` não foram removidos nem alterados. A limpeza integral de fontes/contratos Phoenix fica para etapa futura com autorização explícita. `apps/web/public/downloads/app-version.json` e o APK Android continuam no artifact pelo fluxo de distribuição protegido.
+
 ## Objetivo atual
 
 Finalizar o MEG Web sobre a `main` corrente, preservando regras financeiras e a identidade aprovada, com foco em:
