@@ -24,7 +24,7 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children, onLogout }: { children: ReactNode; onLogout: () => void }) {
+export function AppShell({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
