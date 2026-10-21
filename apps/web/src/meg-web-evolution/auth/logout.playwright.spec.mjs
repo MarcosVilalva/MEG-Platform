@@ -109,3 +109,24 @@ test('Refresh atrasado nao restaura sessao', async ({page}) => {
   expect(await page.evaluate(k=>sessionStorage.getItem(k),KEY)).toBeNull();
   await expect(page.locator('.meg-shell')).toHaveCount(0);
 });
+
+test('Novo login pode fazer logout enquanto a revogacao anterior ainda esta pendente',async({page})=>{
+  await setup(page);
+  let releaseFirst;
+  let calls=0;
+  await page.unroute('**/auth/logout');
+  await page.route('**/auth/logout',async route=>{
+    calls++;
+    if(calls===1) await new Promise(resolve=>{releaseFirst=resolve;});
+    await route.fulfill({status:204,headers});
+  });
+  await signOut(page,1280);
+  await page.locator('input[name=email]').fill('fixture@example.test');
+  await page.locator('input[name=password]').fill('ValidPassword123!');
+  await page.getByRole('button',{name:'Entrar no MEG'}).click();
+  await expect(page.locator('.meg-shell')).toBeVisible();
+  await page.getByRole('button',{name:'Sair'}).click();
+  await expect(page.getByRole('heading',{name:'Bem-vindo de volta.'})).toBeVisible();
+  await expect.poll(()=>calls).toBe(2);
+  releaseFirst();
+});

@@ -48,6 +48,7 @@ function AuthGateway() {
       reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
       setLogoutNotice('');
       setFocusLoginAfterLogout(false);
+      logoutPending.current = false;
       setSession(current);
     } catch {
       // Uma validação malsucedida não libera o shell.
