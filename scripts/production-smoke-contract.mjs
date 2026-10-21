@@ -7,7 +7,7 @@ assert.match(workflow, /^name: MEG Production Smoke Test$/m, 'Smoke de produçã
 assert.equal((workflow.match(/- name: Verify API/g) || []).length, 1, 'Verify API deve existir uma única vez.');
 assert.equal((workflow.match(/- name: Verify production security hardening/g) || []).length, 1, 'Hardening deve existir uma única vez.');
 assert.equal((workflow.match(/- name: Verify published Evolution Web/g) || []).length, 1, 'Evolution Web deve ser validado uma única vez.');
-assert.equal((workflow.match(/- name: Verify official Phoenix V15 web application/g) || []).length, 1, 'Phoenix V15 deve ser validado uma única vez.');
+assert.equal((workflow.match(/- name: Verify published MEG Web root/g) || []).length, 1, 'Aplicação MEG Web Evolution deve ser validada uma única vez.');
 
 for (const token of [
   '"financialReady":true',
@@ -16,7 +16,9 @@ for (const token of [
   'docs_status=$(curl',
   'auth_status=$(curl',
   'data-meg-shell="evolution"',
-  'data-meg-shell="phoenix-v15"',
+  'data-meg-web-evolution="true"',
+  'id="meg-web-evolution-root"',
+  'MEG Finanças',
 ]) {
   assert.ok(workflow.includes(token), `Smoke de produção não contém marcador obrigatório: ${token}`);
 }
