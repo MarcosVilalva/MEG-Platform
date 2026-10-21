@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import { rmSync } from 'node:fs';
+import { rmSync, copyFileSync } from 'node:fs';
 
 const stripEmbeddedApkDownloads = () => ({
   name: 'strip-embedded-apk-downloads',
@@ -63,6 +63,16 @@ const evolutionProductionCsp = () => {
   };
 };
 
+const rootServesWebEvolution = () => ({
+  name: 'root-serves-web-evolution',
+  apply: 'build' as const,
+  closeBundle() {
+    if (process.env.CAPACITOR_BUILD) return;
+    const dist = path.resolve(__dirname, 'dist');
+    copyFileSync(path.join(dist, 'web-evolution.html'), path.join(dist, 'index.html'));
+  }
+});
+
 const webInputs = process.env.CAPACITOR_BUILD
   ? { main: path.resolve(__dirname, 'index.html') }
   : {
@@ -77,7 +87,7 @@ export default defineConfig({
   base: process.env.CAPACITOR_BUILD
     ? './'
     : process.env.VITE_PUBLIC_BASE_PATH || (process.env.GITHUB_ACTIONS ? '/MEG-Platform/' : '/'),
-  plugins: [react(), evolutionProductionCsp(), stripEmbeddedApkDownloads()],
+  plugins: [react(), evolutionProductionCsp(), stripEmbeddedApkDownloads(), rootServesWebEvolution()],
   resolve: {
     alias: {
       '@core': path.resolve(__dirname, '../../packages/core/src'),

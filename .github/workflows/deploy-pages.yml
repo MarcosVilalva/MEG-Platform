@@ -44,9 +44,9 @@ jobs:
           VITE_PHOENIX_BULK_EVENT_WRITE: enabled
         run: npm run build:web
 
-      - name: Verify Phoenix V15 is the official web entry
+      - name: Verify Web Evolution is the official web entry
         run: |
-          grep -q 'data-meg-shell="phoenix-v15"' apps/web/dist/index.html
+          grep -q 'data-meg-web-evolution="true"' apps/web/dist/index.html
           grep -q 'MEG Finanças' apps/web/dist/index.html
 
       - name: Verify production API availability
