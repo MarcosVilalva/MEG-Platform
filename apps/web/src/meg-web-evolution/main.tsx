@@ -19,6 +19,35 @@ function currentAuthDestination(): AuthDestination {
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
+  const [checkingSession, setCheckingSession] = useState(
+    () => currentAuthDestination() !== 'loading' && Boolean(readSession())
+  );
+
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState('Preparando acesso...');
+
+  const reportProgress = (progress: number, message: string) => {
+    setLoadingProgress(progress);
+    setLoadingMessage(message);
+  };
+
+  const handleAuthenticated = async () => {
+    const current = readSession();
+    if (!current) return;
+    setCheckingSession(true);
+    reportProgress(25, 'Sessão encontrada. Validando seu acesso...');
+    try {
+      await validateSession(current);
+      reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
+      setSession(current);
+    } catch {
+      // Uma validação malsucedida não libera o shell.
+      setSession(null);
+      navigate('login');
+    } finally {
+      setCheckingSession(false);
+    }
+  };
 
   const navigate = (next: AuthDestination) => {
     const url = new URL(window.location.href);
@@ -29,20 +58,48 @@ function AuthGateway() {
   };
 
   React.useEffect(() => {
+    // A prévia visual permanece isolada, mesmo com sessão armazenada.
+    if (currentAuthDestination() === 'loading') return;
     const existing = readSession();
     if (!existing) return;
     let cancelled = false;
     const checkSession = async () => {
+      if (!cancelled) {
+        reportProgress(25, 'Sessão encontrada. Validando seu acesso...');
+      }
       try {
         await validateSession(existing);
-        if (!cancelled) setSession(existing);
-      } catch {
-        try {
-          const refreshed = await refreshAuthSession();
-          if (!cancelled) setSession(refreshed);
-        } catch {
-          // A falha de rede nunca concede acesso à área autenticada.
+        if (!cancelled) {
+          reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
+          setSession(existing);
         }
+      } catch (cause) {
+        const status = Number(
+          (cause as { status?: number } | null)?.status || 0
+        );
+        // Não renovar automaticamente diante de falhas de rede/servidor.
+        if (status === 401 || status === 403) {
+          try {
+            if (!cancelled) {
+              reportProgress(50, 'Renovando sua sessão...');
+            }
+            const refreshed = await refreshAuthSession();
+            if (cancelled) return;
+            if (!refreshed) {
+              throw new Error('MEG_AUTH_SESSION_REFRESH_EMPTY');
+            }
+            reportProgress(75, 'Sessão renovada. Confirmando seu acesso...');
+            await validateSession(refreshed);
+            if (!cancelled) {
+              reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
+              setSession(refreshed);
+            }
+          } catch {
+            // Sem validação bem-sucedida, não há acesso ao shell.
+          }
+        }
+      } finally {
+        if (!cancelled) setCheckingSession(false);
       }
     };
     void checkSession();
@@ -55,6 +112,17 @@ function AuthGateway() {
     return () => window.removeEventListener('popstate', syncDestination);
   }, []);
 
+  if (checkingSession) {
+    return (
+      <LoadingScreen
+        preview={false}
+        progress={loadingProgress}
+        message={loadingMessage}
+        onNavigateLogin={() => navigate('login')}
+      />
+    );
+  }
+
   if (session) return (
     <AppShell>
       <section className="meg-shell-stage" aria-label="Área de conteúdo da nova Web" />
@@ -62,7 +130,7 @@ function AuthGateway() {
   );
 
   if (destination === 'create-account') {
-    return <CreateAccountScreen onNavigateLogin={() => navigate('login')} onAuthenticated={() => setSession(readSession())} />;
+    return <CreateAccountScreen onNavigateLogin={() => navigate('login')} onAuthenticated={() => { void handleAuthenticated(); }} />;
   }
 
   if (destination === 'recover-password') {
@@ -71,7 +139,7 @@ function AuthGateway() {
 
   if (destination === 'loading') return <LoadingScreen onNavigateLogin={() => navigate('login')} />;
 
-  return <LoginScreen onAuthenticated={() => setSession(readSession())} onNavigate={navigate} />;
+  return <LoginScreen onAuthenticated={() => { void handleAuthenticated(); }} onNavigate={navigate} />;
 }
 
 const root = document.getElementById('meg-web-evolution-root');

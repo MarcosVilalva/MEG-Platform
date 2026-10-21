@@ -78,7 +78,7 @@ export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
       setAuthenticated(true);
       setPassword('');
       setMessage('Acesso autorizado. Preparando seu espaço no MEG.');
-      window.setTimeout(onAuthenticated, 700);
+      onAuthenticated();
     } catch (error) {
       setErrorField('server');
       setMessage(getLoginError(error));
