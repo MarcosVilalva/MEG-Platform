@@ -200,3 +200,15 @@ assert.match(source, /\.meg-nav-item\s*\{[\s\S]*padding:\s*\.7rem\s+\.875rem/);
 assert.match(source, /@media \(max-width:\s*639px\)[\s\S]*\.meg-topbar-launchers\s*\{[\s\S]*grid-area:\s*launchers;[\s\S]*margin-left:\s*0/);
 
 assert.match(source, /@media \(max-width:\s*639px\)[\s\S]*\.meg-sidebar-wrap\s*\{[\s\S]*position:\s*fixed;[\s\S]*width:\s*0;[\s\S]*height:\s*0/);
+
+// Logout da nova Web: integração de callback, ciclo de sessão e proteção contra refresh tardio.
+const shellSource = readFileSync('apps/web/src/meg-web-evolution/shell/AppShell.tsx', 'utf8');
+const gatewaySource = readFileSync('apps/web/src/meg-web-evolution/main.tsx', 'utf8');
+const authSource = readFileSync('apps/web/src/app/auth-client.ts', 'utf8');
+assert.match(shellSource, /onClick=\{onLogout\}/);
+assert.match(gatewaySource, /<AppShell onLogout=\{handleLogout\}>/);
+assert.match(gatewaySource, /const handleLogout = \(\) =>/);
+assert.match(gatewaySource, /setSession\(null\);[\s\S]*setFocusLoginAfterLogout\(true\);[\s\S]*navigate\('login', true\)/);
+assert.match(authSource, /export async function logout\(session: AuthSession\)/);
+assert.match(authSource, /clearSession\(\);\s*await request<void>\('\/auth\/logout'/);
+assert.match(authSource, /revision !== sessionRevision \|\| readSession\(\)\?\.refreshToken !== priorRefreshToken/);

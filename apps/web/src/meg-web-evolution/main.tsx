@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { readSession, refreshAuthSession, validateSession, type AuthSession } from '../app/auth-client';
+import { clearSession, logout, readSession, refreshAuthSession, validateSession, type AuthSession } from '../app/auth-client';
 import './styles/tokens.css';
 import './styles/base.css';
 import { AppShell } from './shell/AppShell';
@@ -23,6 +23,11 @@ function AuthGateway() {
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
   );
 
+  const authRevision = React.useRef(0);
+  const logoutPending = React.useRef(false);
+  const [focusLoginAfterLogout, setFocusLoginAfterLogout] = useState(false);
+  const [logoutNotice, setLogoutNotice] = useState('');
+
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('Preparando acesso...');
 
@@ -34,27 +39,62 @@ function AuthGateway() {
   const handleAuthenticated = async () => {
     const current = readSession();
     if (!current) return;
+    const revision = authRevision.current;
     setCheckingSession(true);
     reportProgress(25, 'Sessão encontrada. Validando seu acesso...');
     try {
       await validateSession(current);
+      if (revision !== authRevision.current) return;
       reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
+      setLogoutNotice('');
+      setFocusLoginAfterLogout(false);
       setSession(current);
     } catch {
       // Uma validação malsucedida não libera o shell.
+      if (revision !== authRevision.current) return;
       setSession(null);
       navigate('login');
     } finally {
-      setCheckingSession(false);
+      if (revision === authRevision.current) setCheckingSession(false);
     }
   };
 
-  const navigate = (next: AuthDestination) => {
+  const navigate = (next: AuthDestination, replace = false) => {
     const url = new URL(window.location.href);
     if (next === 'login') url.searchParams.delete('auth');
     else url.searchParams.set('auth', next);
-    window.history.pushState({}, '', url);
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
     setDestination(next);
+  };
+
+  const handleLogout = () => {
+    if (logoutPending.current) return;
+    logoutPending.current = true;
+    authRevision.current += 1;
+    const revision = authRevision.current;
+    const activeSession = session ?? readSession();
+
+    // O estado React é encerrado imediatamente; a rede não deve prender o usuário no Shell.
+    setSession(null);
+    setCheckingSession(false);
+    setLogoutNotice('');
+    setFocusLoginAfterLogout(true);
+    navigate('login', true);
+
+    if (!activeSession) {
+      clearSession();
+      logoutPending.current = false;
+      return;
+    }
+
+    void logout(activeSession)
+      .catch(() => {
+        // O logout local já ocorreu; a revogação remota não pode ser garantida.
+        if (revision === authRevision.current && !readSession()) {
+          setLogoutNotice('Você saiu deste navegador. Não foi possível confirmar o encerramento da sessão no servidor.');
+        }
+      })
+      .finally(() => { logoutPending.current = false; });
   };
 
   React.useEffect(() => {
@@ -63,13 +103,15 @@ function AuthGateway() {
     const existing = readSession();
     if (!existing) return;
     let cancelled = false;
+    const revision = authRevision.current;
+    const isCurrent = () => !cancelled && revision === authRevision.current;
     const checkSession = async () => {
-      if (!cancelled) {
+      if (isCurrent()) {
         reportProgress(25, 'Sessão encontrada. Validando seu acesso...');
       }
       try {
         await validateSession(existing);
-        if (!cancelled) {
+        if (isCurrent()) {
           reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
           setSession(existing);
         }
@@ -80,17 +122,17 @@ function AuthGateway() {
         // Não renovar automaticamente diante de falhas de rede/servidor.
         if (status === 401 || status === 403) {
           try {
-            if (!cancelled) {
+            if (isCurrent()) {
               reportProgress(50, 'Renovando sua sessão...');
             }
             const refreshed = await refreshAuthSession();
-            if (cancelled) return;
+            if (!isCurrent()) return;
             if (!refreshed) {
               throw new Error('MEG_AUTH_SESSION_REFRESH_EMPTY');
             }
             reportProgress(75, 'Sessão renovada. Confirmando seu acesso...');
             await validateSession(refreshed);
-            if (!cancelled) {
+            if (isCurrent()) {
               reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
               setSession(refreshed);
             }
@@ -99,7 +141,7 @@ function AuthGateway() {
           }
         }
       } finally {
-        if (!cancelled) setCheckingSession(false);
+        if (isCurrent()) setCheckingSession(false);
       }
     };
     void checkSession();
@@ -124,7 +166,7 @@ function AuthGateway() {
   }
 
   if (session) return (
-    <AppShell>
+    <AppShell onLogout={handleLogout}>
       <section className="meg-shell-stage" aria-label="Área de conteúdo da nova Web" />
     </AppShell>
   );
@@ -139,7 +181,12 @@ function AuthGateway() {
 
   if (destination === 'loading') return <LoadingScreen onNavigateLogin={() => navigate('login')} />;
 
-  return <LoginScreen onAuthenticated={() => { void handleAuthenticated(); }} onNavigate={navigate} />;
+  return <LoginScreen
+    onAuthenticated={() => { void handleAuthenticated(); }}
+    onNavigate={navigate}
+    focusOnMount={focusLoginAfterLogout}
+    sessionNotice={logoutNotice}
+  />;
 }
 
 const root = document.getElementById('meg-web-evolution-root');

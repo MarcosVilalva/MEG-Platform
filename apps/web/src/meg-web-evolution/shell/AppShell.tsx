@@ -24,7 +24,7 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, onLogout }: { children: ReactNode; onLogout: () => void }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -191,6 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="meg-nav-item meg-logout-button"
+            onClick={onLogout}
             aria-label="Sair"
             data-tooltip="Sair"
             onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
