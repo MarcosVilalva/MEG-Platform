@@ -35,7 +35,7 @@ async function setup(page, failLogout = false) {
   return { calls: () => calls };
 }
 async function signOut(page,width,collapsed=false) {
-  if(width<1024) await page.getByRole('button',{name:'Abrir menu'}).click();
+  if(width<640) await page.getByRole('button',{name:'Abrir menu'}).click();
   else if(collapsed) await page.getByRole('button',{name:'Recolher menu'}).click();
   await page.getByRole('button',{name:'Sair'}).click();
   await expect(page.getByRole('heading',{name:'Bem-vindo de volta.'})).toBeVisible();
@@ -49,7 +49,7 @@ for(const [width,height] of [[1366,768],[1366,600],[1024,600],[1093,480],[910,40
     const page=await ctx.newPage();
     try {
       const backend=await setup(page);
-      if(width<1024) await page.getByRole('button',{name:'Abrir menu'}).click();
+      if(width<640) await page.getByRole('button',{name:'Abrir menu'}).click();
       else if(width===1024) await page.getByRole('button',{name:'Recolher menu'}).click();
       mkdirSync(OUT,{recursive:true});
       await page.addStyleTag({content:'.meg-profile-name,.meg-avatar{visibility:hidden!important}'});
