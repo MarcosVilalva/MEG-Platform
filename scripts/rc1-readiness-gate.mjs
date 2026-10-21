@@ -104,7 +104,7 @@ check('HTML Phoenix não é cacheado', previewServer.includes("decoded === '/pho
 
 check('Pages valida saúde da API antes da publicação', pagesWorkflow.includes('Verify production API availability') && pagesWorkflow.includes('/health'));
 check('Android valida marcador Phoenix V15 no artefato Web', androidWorkflow.includes('data-meg-shell="phoenix-v15"'));
-check('Smoke de produção exige marcador Phoenix V15', productionSmoke.includes('data-meg-shell="phoenix-v15"'));
+check('Smoke de produção exige marcador MEG Web Evolution', productionSmoke.includes('data-meg-web-evolution="true"') && productionSmoke.includes('meg-web-evolution-root'));
 
 check('Writer Phoenix libera transferência atômica oficial',
   transferGateway.includes("authenticatedRequest<PhoenixTransferResult>('/finance/transfers'")
