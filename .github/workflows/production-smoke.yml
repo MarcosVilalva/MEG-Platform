@@ -110,18 +110,22 @@ jobs:
           cat evolution-site.html || true
           exit 1
 
-      - name: Verify official Phoenix V15 web application
+      - name: Verify published MEG Web root
         run: |
           set -euo pipefail
           for attempt in $(seq 1 24); do
-            if curl --fail-with-body --silent --show-error --max-time 20 https://marcosvilalva.github.io/MEG-Platform/ -o site.html \
-              && grep -q 'data-meg-shell="phoenix-v15"' site.html \
+            if curl --fail-with-body --silent --show-error --max-time 20 \
+              -H 'Cache-Control: no-cache' \
+              https://marcosvilalva.github.io/MEG-Platform/ -o site.html \
+              && grep -q 'data-meg-web-evolution="true"' site.html \
+              && grep -q 'id="meg-web-evolution-root"' site.html \
               && grep -q 'MEG Finanças' site.html; then
-              echo "Phoenix V15 publicada na tentativa $attempt."
+              echo "MEG Web publicada na raiz na tentativa $attempt."
               exit 0
             fi
             echo "GitHub Pages ainda propagando (tentativa $attempt/24)."
             sleep 10
           done
-          echo "Phoenix V15 não ficou disponível no prazo."
+          echo "MEG Web não ficou disponível na raiz no prazo."
+          cat site.html || true
           exit 1
