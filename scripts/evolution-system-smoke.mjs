@@ -68,7 +68,7 @@ try{
   await page.goto(base+'/evolution.html?month='+month);await page.getByRole('heading',{name:'Saldo disponível',exact:true}).waitFor({timeout:15000});assert.equal(await page.getByText('Bem-vindo de volta.',{exact:true}).count(),0);
   await page.goto(base+'/evolution.html?screen=system&month='+month);await page.getByRole('heading',{name:'Saldo disponível',exact:true}).waitFor();
   assert.equal(await page.getByText('Prévia visual · dados ilustrativos').count(),0);
-  for(const viewport of [{width:1672,height:941},{width:1366,height:768},{width:430,height:932}]){
+  for(const viewport of [{width:1920,height:1080},{width:1672,height:941},{width:1366,height:768},{width:430,height:932}]){
     await page.setViewportSize(viewport);
     for(const view of ['home','movements','payables','cards','benefit','analytics','cashflow','settings']){
       await page.goto(base+'/evolution.html?screen=system&view='+view+'&month='+month);await page.locator('.meg-page-content').waitFor();
@@ -111,6 +111,6 @@ try{
 
   // Editar ajuste credor existente conserva o sinal contábil.
   await page.getByRole('button',{name:'Lançamentos',exact:true}).click();await page.getByRole('button',{name:'Editar Ajuste credor existente',exact:true}).click();await page.getByRole('button',{name:'Salvar alterações',exact:true}).click();await page.getByRole('heading',{name:'Saldo disponível',exact:true}).waitFor();const edit=writes.find(x=>x.url==='/finance/events/bulk/update');assert.equal(edit.body.changes.amount,25);
-  assert.deepEqual(pageErrors,[]);fs.writeFileSync(path.join(artifacts,'smoke-results.json'),JSON.stringify({passed:true,viewports:3,views:8,checks:['restauração de sessão','sem overflow geral','filtros de tipo e Smart Grid','saldo insuficiente','data da baixa','comprovante da baixa','saldo antes e depois','baixa atômica','recarga exclusiva benefício','histórico recarga','retry idempotente','novo lançamento real','proteção de duplicidade','operationId preservado','edição preserva sinal credor','sem erros React'],writesMocked:writes.length},null,2));
-  console.log('Evolution: 24 layouts e fluxos financeiros simulados passaram. Nenhum dado real alterado.');
+  assert.deepEqual(pageErrors,[]);fs.writeFileSync(path.join(artifacts,'smoke-results.json'),JSON.stringify({passed:true,viewports:4,views:8,checks:['restauração de sessão','sem overflow geral','filtros de tipo e Smart Grid','saldo insuficiente','data da baixa','comprovante da baixa','saldo antes e depois','baixa atômica','recarga exclusiva benefício','histórico recarga','retry idempotente','novo lançamento real','proteção de duplicidade','operationId preservado','edição preserva sinal credor','sem erros React'],writesMocked:writes.length},null,2));
+  console.log('Evolution: 32 layouts e fluxos financeiros simulados passaram. Nenhum dado real alterado.');
 }finally{await browser.close();server.close();}

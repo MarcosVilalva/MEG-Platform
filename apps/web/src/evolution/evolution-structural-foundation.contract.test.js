@@ -7,8 +7,8 @@ const tokens = readFileSync(new URL('./styles/tokens.css', import.meta.url), 'ut
 
 assert.match(
   screen,
-  /data-meg-structure="fixed-shell-v1"/,
-  'O shell Evolution deve declarar explicitamente o contrato estrutural vigente.'
+  /data-meg-structure="fixed-shell-v2"/,
+  'O shell Evolution deve declarar explicitamente o contrato estrutural v2 vigente.'
 );
 
 for (const token of [
