@@ -1,0 +1,52 @@
+name: MEG Logout Validation (Temporary)
+on:
+  push:
+    branches:
+      - fix/tmp-logout-login-verify
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --audit=false
+      - name: Install existing pinned Playwright runner (without lockfile modification)
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Browser version
+        run: which google-chrome && google-chrome --version
+      - name: Verify mocked logout in a real browser
+        shell: bash
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+          VITE_PUBLIC_BASE_PATH: /
+        run: |
+          set -euo pipefail
+          npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-logout-vite.log 2>&1 &
+          vite_pid=$!
+          trap 'kill "$vite_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
+          npx playwright test apps/web/src/meg-web-evolution/auth/logout.playwright.spec.mjs --workers=1 --reporter=line
+      - name: Upload safe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-logout-browser-evidence
+          path: |
+            artifacts/meg-logout-evidence
+            test-results
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Vite diagnostics on failure
+        if: failure()
+        run: tail -n 100 /tmp/meg-logout-vite.log 2>/dev/null || true
