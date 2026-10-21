@@ -1085,3 +1085,15 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Artifact do pré-teste**: [#11890189402](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/38557018550/artifacts/11890189402) com `login-ae-metricas.csv` e Markdown, capturas, PNG diffs, resultados e JSONs; 194 entradas, 9 AE=0, sem JSONs ambíguos.
 - **Alteração no código**: apenas `login.evidence.playwright.spec.mjs` novo, script de validação e workflow de evidências atualizado para disponibilizar ImageMagick 7; checkpoint atualizado. Login CSS/markup/assets e Cadastro CSS/markup/assets inalterados.
 - **Pendente**: reexecutar CI oficial no novo SHA, atualizar preview e validar visualmente com aprovação explícita do usuário. A comparação com print aprovado de Criar Conta depende desse print ser identificado/confirmado.
+
+---
+
+## Correção pontual Sair → Login (21/10/2026, aguardando revisão)
+
+- **Escopo:** somente encerramento de sessão e retorno ao Login na nova Web; não constitui encerramento da Etapa 05 nem aprovação visual.
+- **Base:** `main` em `f7792edb047bbc36c951baee77ad18e414d19dbe`, merge squash da PR #642.
+- **Causa:** botão Sair do `AppShell.tsx` sem evento/callback; `AuthGateway` não recebia sinal de logout e não desmontava o Shell. O cliente de autenticação já possuía `logout(session)`, sem ligação à interface.
+- **Correção:** o botão aciona logout; a sessão e o cache autenticado local são limpos imediatamente, o Shell desmonta e o Login aparece no mesmo documento. A revogação do refresh token usa o contrato `/auth/logout`, com timeout e aviso se houver falha remota. A renovação assíncrona atrasada não salva sessões invalidadas. Novo login permanece possível, inclusive enquanto a revogação antiga estiver pendente.
+- **Validação temporária:** commit `6e5287a8c1197447121dd182926892a795915995`; [MEG Platform CI #39532869580](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/39532869580) aprovado (`npm run check`, testes e builds Web/API); [MEG Logout Validation #39532869617](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/39532869617) aprovado, 10/10 Playwright com sessões fictícias, viewports 1366×768, 1366×600, 1024×600, 1093×480 e 910×400. Workflow usado apenas na branch temporária; não integrar à `main`.
+- **Limitações:** testes de navegador usaram mocks. Revogação remota só pode ser afirmada quando o servidor responder com sucesso; o contrato atual revoga refresh token, não garante invalidar imediatamente todo access token já emitido. Homologação contra a API real e aprovação humana continuam pendentes.
+- **Proteções:** Android, regras financeiras, DataGrid, baselines visuais, dependências, contratos da API e produção não alterados por esta correção. Nova PR deve permanecer **Draft**, sem merge nem publicação de produção.
