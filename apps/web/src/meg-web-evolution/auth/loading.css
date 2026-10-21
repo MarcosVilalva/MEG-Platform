@@ -41,3 +41,118 @@
 @media (min-width: 1024px) and (max-height: 650px) and (min-aspect-ratio: 2/1) {
   .meg-loading-art { width: min(100%, calc(100dvh * 16 / 9)); margin-inline: auto; }
 }
+
+/* Barra real animada sobre a região inferior da arte. */
+.meg-loading-screen::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: auto 0 0;
+  height: 48%;
+  background: linear-gradient(
+    to bottom,
+    rgba(1, 15, 18, 0) 0%,
+    rgba(1, 15, 18, .94) 35%,
+    #010f12 60%
+  );
+  pointer-events: none;
+}
+
+.meg-loading-screen .meg-loading-mobile-copy {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  left: 1rem;
+  right: 1rem;
+  bottom: max(2rem, env(safe-area-inset-bottom));
+  gap: .8rem;
+}
+
+.meg-loading-screen .meg-loading-mobile-track {
+  width: min(100%, 650px);
+  height: 18px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 2px solid #22e9d6;
+  border-radius: 999px;
+  background: #001418;
+  box-shadow: 0 0 16px #22e9d633;
+}
+
+.meg-loading-screen .meg-loading-mobile-track span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #09d8e1, #60f6bb);
+  box-shadow: 0 0 14px #60f6bb80;
+  animation: meg-loading-indeterminate 1.8s ease-in-out infinite;
+}
+
+.meg-loading-screen .meg-loading-mobile-copy h1 {
+  margin: .3rem 0 0;
+  font-size: clamp(1.2rem, 2.3vw, 2rem);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.meg-loading-screen .meg-loading-mobile-copy p {
+  margin: 0;
+  max-width: 30rem;
+  font-size: clamp(.95rem, 1.3vw, 1.2rem);
+  line-height: 1.4;
+  color: #bdd5d5;
+  text-wrap: balance;
+}
+
+@keyframes meg-loading-indeterminate {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(300%); }
+}
+
+@media (max-width: 480px) {
+  .meg-loading-screen .meg-loading-mobile-track {
+    height: 15px;
+  }
+
+  .meg-loading-screen .meg-loading-mobile-copy {
+    bottom: max(2.5rem, env(safe-area-inset-bottom));
+    gap: .65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meg-loading-screen .meg-loading-mobile-track span {
+    animation: none !important;
+    transform: none;
+    width: 100%;
+    opacity: .65;
+  }
+}
+
+/* MEG: progresso por etapas reais */
+.meg-loading-screen .meg-loading-mobile-track span {
+  width: 100% !important;
+  animation: none !important;
+  transform-origin: left center;
+  transition: transform .35s ease;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meg-loading-screen .meg-loading-mobile-track span {
+    transition: none !important;
+  }
+}
+
+/* Desktop: preservar a ponta da seta e dar respiro acima da logo. */
+@media (min-width: 481px) {
+  .meg-loading-screen .meg-loading-art {
+    box-sizing: border-box;
+    padding-top: 20px;
+    object-position: center top;
+  }
+}

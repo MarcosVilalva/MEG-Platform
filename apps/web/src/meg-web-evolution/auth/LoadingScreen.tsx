@@ -4,16 +4,32 @@ import './auth-screens.css';
 import './loading.css';
 
 type PreviewState = 'loading' | 'empty' | 'error';
-type Props = { onNavigateLogin: () => void };
+type Props = {
+  onNavigateLogin: () => void;
+  preview?: boolean;
+  progress?: number;
+  message?: string;
+};
 
 function readPreviewState(): PreviewState {
   const state = new URLSearchParams(window.location.search).get('state');
   return state === 'error' || state === 'empty' ? state : 'loading';
 }
 
-export function LoadingScreen({ onNavigateLogin }: Props) {
-  // Prévia visual isolada. TODO: integrar somente quando o ciclo real de inicialização for autorizado.
-  const state = readPreviewState();
+export function LoadingScreen({
+  onNavigateLogin,
+  preview = true,
+  progress = 0,
+  message,
+}: Props) {
+  const value = Math.max(0, Math.min(100, progress));
+  const description = message ?? (
+    preview
+      ? 'Prévia visual. Nenhum carregamento real está em execução.'
+      : 'Preparando seu acesso...'
+  );
+  // Estados demonstrativos são exclusivos da rota de prévia.
+  const state = preview ? readPreviewState() : 'loading';
   if (state !== 'loading') {
     const failed = state === 'error';
     return (
@@ -29,15 +45,25 @@ export function LoadingScreen({ onNavigateLogin }: Props) {
   }
 
   return (
-    <main className="meg-loading-screen" aria-label="Carregando seus dados" data-meg-loading="preview-only" style={{ "--meg-loading-art": `url(${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png)` } as CSSProperties}>
+    <main className="meg-loading-screen" aria-label="Carregando seus dados" data-meg-loading={preview ? "preview-only" : "runtime"} style={{ "--meg-loading-art": `url(${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png)` } as CSSProperties}>
       <img className="meg-loading-art" src={`${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png`} alt="" aria-hidden="true" />
       <div className="meg-loading-mobile-copy" aria-hidden="true">
-        <div className="meg-loading-mobile-track"><span /></div>
+        <div className="meg-loading-mobile-track">
+          <span style={{ transform: `scaleX(${value / 100})` }} />
+        </div>
         <h1>Carregando seus dados...</h1>
-        <p>Organizando suas finanças para o seu dia a dia.</p>
+        <p>{description}</p>
       </div>
-      <p className="meg-loading-a11y" role="status" aria-live="polite">Carregando seus dados. Organizando suas finanças para o seu dia a dia.</p>
-      <div className="meg-loading-a11y" role="progressbar" aria-label="Carregamento de dados" aria-valuetext="Carregando" />
+      <p className="meg-loading-a11y" role="status" aria-live="polite">{description}</p>
+      <div
+        className="meg-loading-a11y"
+        role="progressbar"
+        aria-label="Inicialização do acesso"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={value}
+        aria-valuetext={`${value}% — ${description}`}
+      />
     </main>
   );
 }

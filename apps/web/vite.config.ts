@@ -100,6 +100,19 @@ export default defineConfig({
       input: webInputs
     }
   },
+  // MEG: proxy da API também no vite preview
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'https://meg-platform-api.onrender.com',
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/api/, '')
+      }
+    }
+  },
   server: {
     host: '0.0.0.0',
     allowedHosts: ['terminal.local'],
