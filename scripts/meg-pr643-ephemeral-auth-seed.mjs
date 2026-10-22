@@ -9,17 +9,30 @@ try {
   }
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) throw new Error('Ephemeral fixture must start from a clean database.');
-  await db.user.create({
+
+  const plan = await db.plan.create({
+    data: { code: 'ESSENCIAL', name: 'Plano Fictício de Homologação', features: {}, maxMembers: 2 }
+  });
+  const user = await db.user.create({
     data: {
       email,
       name: 'Conta Fictícia QA',
-      role: 'VIEWER',
+      role: 'ADMIN',
       status: 'ACTIVE',
       isActive: true,
       passwordHash: await bcrypt.hash(process.env.MEG_TEST_PASSWORD, 12)
     }
   });
-  process.stdout.write('EPHEMERAL_TEST_ACCOUNT_CREATED=true\n');
+  await db.workspace.create({
+    data: {
+      name: 'Workspace Fictício de Homologação',
+      slug: 'pr643-test-workspace',
+      ownerId: user.id,
+      members: { create: { userId: user.id, role: 'ADMIN', status: 'ACTIVE', isActive: true } },
+      subscription: { create: { planId: plan.id, status: 'ACTIVE' } }
+    }
+  });
+  process.stdout.write('EPHEMERAL_ACCOUNT_WORKSPACE_AND_LICENSE_CREATED=true\n');
 } finally {
   await db.$disconnect();
 }
