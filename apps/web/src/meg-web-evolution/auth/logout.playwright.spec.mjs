@@ -130,3 +130,39 @@ test('Novo login pode fazer logout enquanto a revogacao anterior ainda esta pend
   await expect.poll(()=>calls).toBe(2);
   releaseFirst();
 });
+
+test('perfil pendente de sessao anterior nao substitui proximo usuario',async({page})=>{
+  await setup(page);
+  const nextSession={
+    ...session,
+    user:{...session.user,id:'second-fixture-user',name:'Outro usuário fictício',email:'second.fixture@example.test'},
+    accessToken:'another-fictional-access-token',
+    refreshToken:'another-fictional-refresh-token'
+  };
+  await page.unroute('**/auth/login');
+  await page.route('**/auth/login',r=>r.fulfill({status:200,headers,body:JSON.stringify(nextSession)}));
+  let release;
+  let requested=false;
+  await page.route('**/auth/me/profile',async r=>{
+    requested=true;
+    await new Promise(resolve=>{release=resolve;});
+    await r.fulfill({status:200,headers,body:JSON.stringify({user:{...session.user,name:'Retorno antigo do perfil'}})});
+  });
+  await page.evaluate(()=>{
+    window.__oldProfileDone='pending';
+    void import('/src/app/auth-client.ts')
+      .then(m=>m.updateOwnProfile({name:'Retorno antigo do perfil'}))
+      .then(()=>window.__oldProfileDone='resolved')
+      .catch(()=>window.__oldProfileDone='rejected');
+  });
+  await expect.poll(()=>requested).toBe(true);
+  await page.getByRole('button',{name:'Sair'}).click();
+  await expect(page.getByRole('heading',{name:'Bem-vindo de volta.'})).toBeVisible();
+  await page.locator('input[name=email]').fill(nextSession.user.email);
+  await page.locator('input[name=password]').fill('FictionalPassword123!');
+  await page.getByRole('button',{name:'Entrar no MEG'}).click();
+  await expect(page.locator('.meg-shell')).toBeVisible();
+  release();
+  await expect.poll(()=>page.evaluate(()=>window.__oldProfileDone)).not.toBe('pending');
+  expect(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('meg.auth.session')).user.id)).toBe('second-fixture-user');
+});
