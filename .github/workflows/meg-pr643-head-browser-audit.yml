@@ -1,0 +1,76 @@
+name: MEG PR643 Final SHA Browser Audit
+on:
+  push:
+    branches:
+      - fix/audit-pr643-head
+permissions:
+  contents: read
+jobs:
+  browser-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - name: Read audit scripts from temporary branch
+        uses: actions/checkout@v4
+        with:
+          path: audit-source
+      - name: Checkout exact PR final SHA
+        uses: actions/checkout@v4
+        with:
+          ref: 86da0a5baf3720165e240bc08f818f0120beb5eb
+          path: final-source
+      - name: Verify audited SHA and excluded workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL=$(git -C final-source rev-parse HEAD)
+          test "$ACTUAL" = "86da0a5baf3720165e240bc08f818f0120beb5eb"
+          test ! -f final-source/.github/workflows/meg-logout-verify-temp.yml
+          echo "AUDITED_CODE_SHA=$ACTUAL"
+          echo "WORKFLOW_CONFIG_SHA=$GITHUB_SHA"
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: final-source/package-lock.json
+      - name: Install project dependencies exactly from lockfile
+        working-directory: final-source
+        run: npm ci --audit=false
+      - name: Install existing pinned browser runner without modifying lockfile
+        working-directory: final-source
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Record Chrome version
+        run: which google-chrome && google-chrome --version
+      - name: Run committed suite and isolated extended audit
+        working-directory: final-source
+        shell: bash
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+          VITE_PUBLIC_BASE_PATH: /
+        run: |
+          set -euo pipefail
+          cp ../audit-source/.github/meg-logout-final-audit.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/logout.final-audit.playwright.spec.mjs
+          npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-logout-pr643.log 2>&1 &
+          vite_pid=$!
+          trap 'kill "$vite_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
+          npx playwright test apps/web/src/meg-web-evolution/auth/logout.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/logout.final-audit.playwright.spec.mjs --workers=1 --reporter=line
+      - name: Upload safe browser screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-pr643-head-browser-audit
+          path: |
+            final-source/artifacts/meg-logout-evidence
+            final-source/artifacts/meg-logout-final-audit
+            final-source/test-results
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Show Vite diagnostic on failure
+        if: failure()
+        run: tail -n 100 /tmp/meg-logout-pr643.log 2>/dev/null || true
