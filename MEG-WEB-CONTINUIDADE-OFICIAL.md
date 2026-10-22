@@ -1085,3 +1085,14 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Artifact do pré-teste**: [#11890189402](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/38557018550/artifacts/11890189402) com `login-ae-metricas.csv` e Markdown, capturas, PNG diffs, resultados e JSONs; 194 entradas, 9 AE=0, sem JSONs ambíguos.
 - **Alteração no código**: apenas `login.evidence.playwright.spec.mjs` novo, script de validação e workflow de evidências atualizado para disponibilizar ImageMagick 7; checkpoint atualizado. Login CSS/markup/assets e Cadastro CSS/markup/assets inalterados.
 - **Pendente**: reexecutar CI oficial no novo SHA, atualizar preview e validar visualmente com aprovação explícita do usuário. A comparação com print aprovado de Criar Conta depende desse print ser identificado/confirmado.
+
+---
+
+## Etapa 05 - Refinamento funcional de Recuperar Senha (22/10/2026, Draft)
+
+- **Escolha:** Recuperar Senha, tela já presente na `main` e também na PR histórica #628 em Draft. Não recriar a tela; a entrega reduz risco funcional e de acessibilidade do fluxo existente. Loading, Login e Criar Conta continuam sujeitos à aprovação humana pendente; **nenhuma validação visual é presumida**.
+- **Base independente:** `main@f7792edb047bbc36c951baee77ad18e414d19dbe`. Branch `fix/stage05-recover-safe-flow`; não depende da PR #643, cujo HEAD `c982d3bc4e0fd3593e6872039398b96c422a181b` foi conferido e permanece Draft sem merge.
+- **Contrato real vigente:** `POST /auth/forgot-password`, HTTP 202 com resposta genérica; o backend envia **senha temporária** a e-mail ou WhatsApp quando possível. Não há fluxo público de redefinição com token nesta tela. Nenhuma informação de existência da conta, canal efetivamente utilizado ou entrega é exibida pelo frontend; não há simulação de sucesso após falha HTTP.
+- **Mudanças:** lock síncrono via ref contra envios duplicados, `aria-invalid`/`aria-describedby` e vínculo de erro ao input, foco após erro/sucesso, mensagem neutra de confirmação sem garantir entrega, uma única ação de retorno, tratamento de erro sem revelar campos de resposta, ignorar conclusão após desmontagem. Sem CSS, layout, assets, Login, Shell, rotas, banco, API, dependências ou domínio financeiro alterados.
+- **Evidências planejadas:** workflow exclusivo `MEG Stage05 Recover Safe Flow Evidence` na branch e Playwright (API mockada) em 1366×768, 1366×600, 1024×600, 1093×480 e 910×400, com capturas normal/erro/sucesso, verificação real de acesso aos controles após scroll, foco, prevenção de duplo envio, resposta genérica, falha e retry, WCAG. O CI do SHA da PR é gate adicional. **Não considerar testes aprovados antes de consultar logs.**
+- **Pendências obrigatórias:** resultado dos checks, screenshots e aprovação humana, homologação hospedada e eventual integração com API real fora da suíte de mocks. PR **Draft**, sem merge, deploy, auto-merge ou alteração de `main`.
