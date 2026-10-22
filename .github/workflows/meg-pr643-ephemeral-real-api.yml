@@ -1,0 +1,131 @@
+name: MEG PR643 Ephemeral Real API Homologation
+on:
+  push:
+    branches:
+      - tmp/pr643-real-api-homolog
+
+permissions:
+  contents: read
+
+jobs:
+  real-api-logout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: meg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/meg
+      NODE_ENV: test
+      PORT: '3333'
+      HOST: 127.0.0.1
+      LOG_LEVEL: error
+      CORS_ORIGINS: http://127.0.0.1:4173
+      ADMIN_EMAIL: admin-fixture@example.test
+      RUN_LEGACY_REPAIR: 'false'
+      VITE_API_URL: http://127.0.0.1:3333
+      VITE_PUBLIC_BASE_PATH: /
+      PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - name: Fetch temporary isolated test scripts
+        uses: actions/checkout@v4
+        with:
+          path: harness
+      - name: Fetch exact audited PR643 SHA
+        uses: actions/checkout@v4
+        with:
+          ref: c982d3bc4e0fd3593e6872039398b96c422a181b
+          path: final-source
+      - name: Prove checkout matches audited SHA and no deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA=$(git -C final-source rev-parse HEAD)
+          test "$SHA" = "c982d3bc4e0fd3593e6872039398b96c422a181b"
+          echo "AUDITED_PR_HEAD=$SHA"
+          echo "TEST_HARNESS_SHA=$GITHUB_SHA"
+          test "$NODE_ENV" = test
+          test "$DATABASE_URL" = 'postgresql://ci:ci@127.0.0.1:5432/meg'
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: final-source/package-lock.json
+      - name: Install locked dependencies
+        working-directory: final-source
+        run: npm ci --audit=false
+      - name: Install existing pinned Playwright runner ephemerally
+        working-directory: final-source
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Generate temporary non-personal credentials for this runner only
+        shell: bash
+        run: |
+          set -euo pipefail
+          TEMP_PASS=$(node -e "process.stdout.write(require('node:crypto').randomBytes(24).toString('base64url'))")
+          TEMP_JWT=$(node -e "process.stdout.write(require('node:crypto').randomBytes(48).toString('base64url'))")
+          echo "::add-mask::$TEMP_PASS"
+          echo "::add-mask::$TEMP_JWT"
+          printf 'MEG_TEST_PASSWORD=%s\n' "$TEMP_PASS" >> "$GITHUB_ENV"
+          printf 'JWT_SECRET=%s\n' "$TEMP_JWT" >> "$GITHUB_ENV"
+          echo 'Ephemeral credentials generated and masked; never uploaded or printed.'
+      - name: Prepare isolated PostgreSQL schema
+        working-directory: final-source
+        run: |
+          npm run db:generate
+          npm run db:push
+      - name: Create synthetic active user only in disposable PostgreSQL
+        working-directory: final-source
+        run: |
+          cp ../harness/scripts/meg-pr643-ephemeral-auth-seed.mjs scripts/meg-pr643-homolog-seed.mjs
+          node scripts/meg-pr643-homolog-seed.mjs
+      - name: Run actual Fastify API, Vite and Playwright browser (no network mocks)
+        working-directory: final-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --workspace apps/api run start > /tmp/meg-pr643-real-api.log 2>&1 &
+          api_pid=$!
+          vite_pid=''
+          trap 'kill "$api_pid" 2>/dev/null || true; if [ -n "$vite_pid" ]; then kill "$vite_pid" 2>/dev/null || true; fi' EXIT
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3333/ready > /dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3333/ready > /dev/null
+          npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-pr643-real-web.log 2>&1 &
+          vite_pid=$!
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/web-evolution.html > /dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/web-evolution.html > /dev/null
+          cp ../harness/scripts/meg-pr643-ephemeral-real-api.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/pr643-real-api.playwright.spec.mjs
+          npx playwright test apps/web/src/meg-web-evolution/auth/pr643-real-api.playwright.spec.mjs --workers=1 --reporter=line
+      - name: Upload sanitized screenshots and browser results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-pr643-ephemeral-api-real-login-logout
+          path: |
+            final-source/artifacts/meg-pr643-ephemeral-real-api
+            final-source/test-results
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Diagnostics on failure (no credentials)
+        if: failure()
+        shell: bash
+        run: |
+          tail -n 35 /tmp/meg-pr643-real-api.log 2>/dev/null || true
+          tail -n 35 /tmp/meg-pr643-real-web.log 2>/dev/null || true
