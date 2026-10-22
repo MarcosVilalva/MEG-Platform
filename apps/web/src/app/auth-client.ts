@@ -310,12 +310,24 @@ export async function validateSession(session: AuthSession) {
 }
 
 export async function updateOwnProfile(data: { name: string; phone?: string | null }) {
+  const originalSession = readSession();
+  const originalRevision = sessionRevision;
   const result = await authenticatedRequest<{ user: AuthUser }>('/auth/me/profile', {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
   const current = readSession();
-  if (current) saveSession({ ...current, user: { ...current.user, ...result.user } });
+  // Uma resposta antiga não pode sobrescrever o perfil de quem entrou depois do logout.
+  if (
+    originalSession &&
+    current &&
+    sessionRevision === originalRevision &&
+    current.refreshToken === originalSession.refreshToken &&
+    current.user.id === originalSession.user.id &&
+    result.user.id === originalSession.user.id
+  ) {
+    saveSession({ ...current, user: { ...current.user, ...result.user } });
+  }
   return result;
 }
 
