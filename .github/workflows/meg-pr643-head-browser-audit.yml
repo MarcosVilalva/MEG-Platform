@@ -1,4 +1,4 @@
-name: MEG PR643 Logout Browser Audit
+name: MEG PR643 Final SHA Browser Audit
 on:
   push:
     branches:
@@ -17,14 +17,14 @@ jobs:
       - name: Checkout exact PR final SHA
         uses: actions/checkout@v4
         with:
-          ref: fix/audit-pr643-head
+          ref: c982d3bc4e0fd3593e6872039398b96c422a181b
           path: final-source
       - name: Verify audited SHA and excluded workflow
         shell: bash
         run: |
           set -euo pipefail
           ACTUAL=$(git -C final-source rev-parse HEAD)
-          test "$ACTUAL" = "$GITHUB_SHA"
+          test "$ACTUAL" = "c982d3bc4e0fd3593e6872039398b96c422a181b"
           test ! -f final-source/.github/workflows/meg-logout-verify-temp.yml
           echo "AUDITED_CODE_SHA=$ACTUAL"
           echo "WORKFLOW_CONFIG_SHA=$GITHUB_SHA"
