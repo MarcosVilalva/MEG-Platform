@@ -1,0 +1,57 @@
+name: MEG Stage05 Recover Safe Flow Evidence
+on:
+  push:
+    branches:
+      - fix/stage05-recover-safe-flow
+permissions:
+  contents: read
+jobs:
+  recover-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      VITE_API_URL: http://127.0.0.1:4173/api
+      VITE_PUBLIC_BASE_PATH: /
+      PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - name: Checkout exact branch SHA
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install lockfile dependencies
+        run: npm ci --audit=false
+      - name: Install existing Playwright and Axe for this runner (no lockfile changes)
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0 @axe-core/playwright@4.13.0
+      - name: Report Chrome
+        run: which google-chrome && google-chrome --version
+      - name: Run recovery flow, low-height scroll checks, WCAG and screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "AUDITED_SOURCE_SHA=$(git rev-parse HEAD)"
+          npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/meg-recover-vite.log 2>&1 &
+          vite_pid=$!
+          trap 'kill "$vite_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
+          npx playwright test apps/web/src/meg-web-evolution/auth/recover.hardening.playwright.spec.mjs --workers=1 --reporter=line
+      - name: Upload screenshots, only fictional account data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage05-recover-safe-evidence
+          path: |
+            artifacts/meg-stage05-recover-safe
+            test-results
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Vite log on failure
+        if: failure()
+        run: tail -n 70 /tmp/meg-recover-vite.log 2>/dev/null || true
