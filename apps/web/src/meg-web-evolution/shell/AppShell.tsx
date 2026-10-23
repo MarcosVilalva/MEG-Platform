@@ -24,7 +24,15 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
+export function AppShell({
+  children, onLogout, userName, activeView = 'home', onNavigate,
+}: {
+  children: ReactNode;
+  onLogout?: () => void;
+  userName?: string;
+  activeView?: 'home' | 'launches';
+  onNavigate?: (view: 'home' | 'launches') => void;
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -79,6 +87,8 @@ export function AppShell({ children, onLogout }: { children: ReactNode; onLogout
 
   const hideTooltip = () => setTooltip(null);
   const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
+  const profileName = userName?.trim() || 'Usuário';
+  const initials = profileName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join('');
 
   return (
     <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
@@ -103,10 +113,14 @@ export function AppShell({ children, onLogout }: { children: ReactNode; onLogout
           {navigation.map(([icon, label], index) => (
             <button
               key={label}
-              className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`}
+              className={`meg-nav-item ${(label === 'Lançamentos' ? activeView === 'launches' : label === 'Início' && activeView === 'home') ? 'is-active' : ''}`}
               type="button"
               aria-label={label}
               data-tooltip={label}
+              onClick={() => {
+                if (label === 'Lançamentos') onNavigate?.('launches');
+                if (label === 'Início') onNavigate?.('home');
+              }}
               onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, label, 'right')}
               onMouseLeave={hideTooltip}
               onFocus={(event) => sidebarCollapsed && showTooltip(event, label, 'right')}
@@ -287,8 +301,8 @@ export function AppShell({ children, onLogout }: { children: ReactNode; onLogout
             </IconButton>
 
             <button type="button" className="meg-profile">
-              <span className="meg-avatar">MV</span>
-              <span className="meg-profile-name">Marcos de Andrade Vilalva</span>
+              <span className="meg-avatar">{initials}</span>
+              <span className="meg-profile-name">{profileName}</span>
               <Icon name="chevronDown" />
             </button>
           </div>
