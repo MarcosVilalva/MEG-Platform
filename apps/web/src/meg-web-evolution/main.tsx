@@ -82,6 +82,7 @@ function AuthGateway() {
       // Uma validação malsucedida não libera o shell.
       if (revision !== authRevision.current) return;
       setSession(null);
+      setFocusLoginAfterLogout(true);
       navigate('login');
     } finally {
       if (revision === authRevision.current) setCheckingSession(false);
@@ -132,6 +133,7 @@ function AuthGateway() {
     const existing = readSession();
     if (!existing) return;
     let cancelled = false;
+    let authenticated = false;
     const revision = authRevision.current;
     const isCurrent = () => !cancelled && revision === authRevision.current;
     const checkSession = async () => {
@@ -142,6 +144,7 @@ function AuthGateway() {
         await validateSessionOnce(existing);
         if (isCurrent()) {
           reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
+          authenticated = true;
           setSession(existing);
         }
       } catch (cause) {
@@ -163,6 +166,7 @@ function AuthGateway() {
             await validateSessionOnce(refreshed);
             if (isCurrent()) {
               reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
+              authenticated = true;
               setSession(refreshed);
             }
           } catch {
@@ -170,7 +174,11 @@ function AuthGateway() {
           }
         }
       } finally {
-        if (isCurrent()) setCheckingSession(false);
+        if (isCurrent()) {
+          // Após falha, devolver o foco ao primeiro controle de recuperação do Login.
+          if (!authenticated) setFocusLoginAfterLogout(true);
+          setCheckingSession(false);
+        }
       }
     };
     void checkSession();
