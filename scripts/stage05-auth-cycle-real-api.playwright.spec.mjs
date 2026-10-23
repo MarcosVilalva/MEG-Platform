@@ -56,6 +56,8 @@ test('API e PostgreSQL reais: cadastrar membro pendente, login, Loading, Sair e 
     expect(await page.evaluate(()=>sessionStorage.getItem('meg.auth.session'))).toBeNull();
     await page.goBack();
     await expect(page.locator('.meg-shell')).toHaveCount(0);
+    // Histórico pode apontar para uma rota pública de cadastro, nunca para o Shell.
+    await page.goto(APP);
     await page.reload();
     await expect(page.getByRole('heading',{name:'Bem-vindo de volta.'})).toBeVisible();
     const revoked=await request.post(API+'/auth/refresh',{data:{refreshToken:session.refreshToken}});
