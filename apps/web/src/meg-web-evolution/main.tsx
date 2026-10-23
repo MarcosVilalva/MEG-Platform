@@ -25,6 +25,34 @@ function AuthGateway() {
 
   const authRevision = React.useRef(0);
   const logoutPending = React.useRef(false);
+
+  // Reutiliza a mesma validação enquanto a montagem StrictMode ainda está pendente.
+  // Não armazena resultados nem altera o contrato da API.
+  const validationInFlight = React.useRef<{
+    accessToken: string;
+    refreshToken: string;
+    promise: ReturnType<typeof validateSession>;
+  } | null>(null);
+
+  const validateSessionOnce = (candidate: AuthSession) => {
+    const current = validationInFlight.current;
+    if (current && current.accessToken === candidate.accessToken
+      && current.refreshToken === candidate.refreshToken) return current.promise;
+
+    const promise = validateSession(candidate);
+    validationInFlight.current = {
+      accessToken: candidate.accessToken,
+      refreshToken: candidate.refreshToken,
+      promise,
+    };
+    const clearPending = () => {
+      if (validationInFlight.current?.promise === promise) {
+        validationInFlight.current = null;
+      }
+    };
+    void promise.then(clearPending, clearPending);
+    return promise;
+  };
   const [focusLoginAfterLogout, setFocusLoginAfterLogout] = useState(false);
   const [logoutNotice, setLogoutNotice] = useState('');
 
@@ -43,7 +71,7 @@ function AuthGateway() {
     setCheckingSession(true);
     reportProgress(25, 'Sessão encontrada. Validando seu acesso...');
     try {
-      await validateSession(current);
+      await validateSessionOnce(current);
       if (revision !== authRevision.current) return;
       reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
       setLogoutNotice('');
@@ -111,7 +139,7 @@ function AuthGateway() {
         reportProgress(25, 'Sessão encontrada. Validando seu acesso...');
       }
       try {
-        await validateSession(existing);
+        await validateSessionOnce(existing);
         if (isCurrent()) {
           reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
           setSession(existing);
@@ -132,7 +160,7 @@ function AuthGateway() {
               throw new Error('MEG_AUTH_SESSION_REFRESH_EMPTY');
             }
             reportProgress(75, 'Sessão renovada. Confirmando seu acesso...');
-            await validateSession(refreshed);
+            await validateSessionOnce(refreshed);
             if (isCurrent()) {
               reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
               setSession(refreshed);
