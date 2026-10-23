@@ -1,0 +1,126 @@
+name: MEG Stage05 Loading Auth Characterization
+on:
+  push:
+    branches:
+      - tmp/stage05-loading-auth-qa
+permissions:
+  contents: read
+jobs:
+  auth-loading:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: meg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/meg
+      NODE_ENV: test
+      HOST: 127.0.0.1
+      PORT: '3333'
+      LOG_LEVEL: error
+      CORS_ORIGINS: http://127.0.0.1:4173
+      ADMIN_EMAIL: admin-fixture@example.test
+      RUN_LEGACY_REPAIR: 'false'
+      VITE_API_URL: http://127.0.0.1:3333
+      VITE_PUBLIC_BASE_PATH: /
+      PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - name: Checkout temporary harness
+        uses: actions/checkout@v4
+        with:
+          path: harness
+      - name: Checkout exact PR643 HEAD under examination
+        uses: actions/checkout@v4
+        with:
+          ref: c982d3bc4e0fd3593e6872039398b96c422a181b
+          path: source
+      - name: Verify code SHA unchanged and database strictly local
+        shell: bash
+        run: |
+          set -euo pipefail
+          s=$(git -C source rev-parse HEAD)
+          test "$s" = 'c982d3bc4e0fd3593e6872039398b96c422a181b'
+          test "$DATABASE_URL" = 'postgresql://ci:ci@127.0.0.1:5432/meg'
+          echo "CHARACTERIZED_CODE_SHA=$s"
+          echo "HARNESS_SHA=$GITHUB_SHA"
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Install locked project packages
+        working-directory: source
+        run: npm ci --audit=false
+      - name: Install pinned browser test runner without saving package files
+        working-directory: source
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Generate fake runner secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          PASS=$(node -e "process.stdout.write(require('node:crypto').randomBytes(24).toString('base64url'))")
+          JWT=$(node -e "process.stdout.write(require('node:crypto').randomBytes(48).toString('base64url'))")
+          echo "::add-mask::$PASS"
+          echo "::add-mask::$JWT"
+          printf 'MEG_TEST_PASSWORD=%s\n' "$PASS" >> "$GITHUB_ENV"
+          printf 'JWT_SECRET=%s\n' "$JWT" >> "$GITHUB_ENV"
+      - name: Run all mocked cases then real Fastify/PG cases, record failures separately
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp ../harness/scripts/stage05-loading-auth-matrix.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/loading.auth-matrix.playwright.spec.mjs
+          cp ../harness/scripts/stage05-loading-real-api.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/loading.real-api.playwright.spec.mjs
+          cp ../harness/scripts/meg-pr643-ephemeral-auth-seed.mjs scripts/loading-auth-seed.mjs
+          npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/loading-vite.log 2>&1 &
+          web_pid=$!
+          api_pid=''
+          trap 'kill "$web_pid" 2>/dev/null || true; if [ -n "$api_pid" ]; then kill "$api_pid" 2>/dev/null || true; fi' EXIT
+          for t in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
+          set +e
+          npx playwright test apps/web/src/meg-web-evolution/auth/loading.auth-matrix.playwright.spec.mjs --workers=1 --reporter=line
+          mock_status=$?
+          set -e
+          npm run db:generate
+          npm run db:push
+          node scripts/loading-auth-seed.mjs
+          npm --workspace apps/api run start > /tmp/loading-real-api.log 2>&1 &
+          api_pid=$!
+          for t in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3333/ready >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3333/ready >/dev/null
+          set +e
+          npx playwright test apps/web/src/meg-web-evolution/auth/loading.real-api.playwright.spec.mjs --workers=1 --reporter=line
+          real_status=$?
+          set -e
+          echo "MOCK_SUITE_EXIT=$mock_status"
+          echo "REAL_API_SUITE_EXIT=$real_status"
+          if [ "$mock_status" -ne 0 ] || [ "$real_status" -ne 0 ]; then exit 1; fi
+      - name: Upload sanitized state screenshots and test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-loading-auth-characterization
+          path: |
+            source/artifacts/meg-stage05-loading-auth
+            source/test-results
+          if-no-files-found: warn
+          retention-days: 7
