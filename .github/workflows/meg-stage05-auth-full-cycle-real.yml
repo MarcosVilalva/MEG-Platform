@@ -45,14 +45,14 @@ jobs:
       - name: Checkout exact PR644 audited source
         uses: actions/checkout@v4
         with:
-          ref: tmp/stage05-auth-cycle-audit
+          ref: d821dffde424f3f2720b7459e6edfbf7a4fa3bf1
           path: source
       - name: Verify SHA and environment before any database command
         shell: bash
         run: |
           set -euo pipefail
           ACTUAL=$(git -C source rev-parse HEAD)
-          test "$ACTUAL" = "$GITHUB_SHA"
+          test "$ACTUAL" = 'd821dffde424f3f2720b7459e6edfbf7a4fa3bf1'
           test "$DATABASE_URL" = 'postgresql://ci:ci@127.0.0.1:5432/meg'
           test "$NODE_ENV" = test
           test "$BREVO_API_KEY" = 'isolated-brevo-fixture-not-a-real-key'

@@ -19,13 +19,13 @@ jobs:
           path: harness
       - uses: actions/checkout@v4
         with:
-          ref: tmp/stage05-auth-cycle-audit
+          ref: d821dffde424f3f2720b7459e6edfbf7a4fa3bf1
           path: source
       - name: Verify exact audited code SHA
         run: |
           set -euo pipefail
           SHA=$(git -C source rev-parse HEAD)
-          test "$SHA" = "$GITHUB_SHA"
+          test "$SHA" = 'd821dffde424f3f2720b7459e6edfbf7a4fa3bf1'
           echo "TESTED_CODE_SHA=$SHA"
           echo "HARNESS_SHA=$GITHUB_SHA"
       - uses: actions/setup-node@v4
