@@ -39,6 +39,9 @@ jobs:
       - name: Install pinned Playwright without modifying lockfile
         working-directory: source
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Generate Prisma client before all contract checks
+        working-directory: source
+        run: npm run db:generate
       - name: Run existing project type checks, tests and builds
         working-directory: source
         run: npm run check
