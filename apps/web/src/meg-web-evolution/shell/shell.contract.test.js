@@ -208,7 +208,7 @@ const shellSource = readFileSync('apps/web/src/meg-web-evolution/shell/AppShell.
 const gatewaySource = readFileSync('apps/web/src/meg-web-evolution/main.tsx', 'utf8');
 const authSource = readFileSync('apps/web/src/app/auth-client.ts', 'utf8');
 assert.match(shellSource, /onClick=\{onLogout\}/);
-assert.match(gatewaySource, /<AppShell onLogout=\{handleLogout\}>/);
+assert.match(gatewaySource, /<AppShell[\s\S]*onLogout=\{handleLogout\}[\s\S]*userName=\{session\.user\.name\}[\s\S]*onNavigate=\{setFinancialView\}/);
 assert.match(gatewaySource, /const handleLogout = \(\) =>/);
 assert.match(gatewaySource, /setSession\(null\);[\s\S]*setFocusLoginAfterLogout\(true\);[\s\S]*navigate\('login', true\)/);
 assert.match(authSource, /export async function logout\(session: AuthSession\)/);
