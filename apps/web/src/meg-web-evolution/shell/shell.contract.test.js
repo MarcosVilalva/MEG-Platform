@@ -90,7 +90,9 @@ assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar 
 
 assert.match(source, /aria-label="Navegação principal"/);
 assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
-assert.match(source, /Marcos de Andrade Vilalva/);
+assert.match(source, /className="meg-profile-name">\{profileName\}/);
+assert.match(source, /userName=\{session\.user\.name\}/);
+assert.equal(source.includes('<span className="meg-profile-name">Marcos de Andrade Vilalva</span>'), false, 'profile must come from authenticated session');
 assert.equal(source.includes('meg-sidebar-lockup.svg'), false);
 assert.equal(source.includes('meg-finance-symbol-transparent.svg'), false);
 assert.equal(source.includes('meg-brand-mark'), false);
