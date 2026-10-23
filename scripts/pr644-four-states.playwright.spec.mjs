@@ -77,3 +77,25 @@ for(const [width,height] of sizes){
     }finally{await ctx.close()}
   });
 }
+
+test('Double click dispatch in same tick triggers one request while pending',async({page})=>{
+  let calls=0;
+  let release;
+  await page.route('**/auth/forgot-password',async route=>{
+    calls++;
+    await new Promise(resolve=>{release=resolve});
+    await route.fulfill({status:202,contentType:'application/json',body:JSON.stringify({status:'PASSWORD_SENT',deliveredTo:'private@example.test',notifications:[]})});
+  });
+  await page.goto(URL);
+  await page.getByRole('textbox',{name:'E-mail'}).fill('two-clicks@example.test');
+  await page.evaluate(()=>{
+    const button=document.querySelector('.meg-auth-form button[type=submit]');
+    button.click();
+    button.click();
+  });
+  await expect.poll(()=>calls).toBe(1);
+  await expect(page.getByRole('button',{name:'Solicitando...'})).toBeDisabled();
+  release();
+  await expect(page.getByRole('heading',{name:'Solicitação recebida'})).toBeVisible();
+  expect(calls).toBe(1);
+});
