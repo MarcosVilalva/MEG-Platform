@@ -22,6 +22,10 @@ test('API e PostgreSQL reais: cadastrar membro pendente, login, Loading, Sair e 
     const registration=page.waitForResponse(r=>r.url().endsWith('/auth/register')&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Continuar'}).click();
     const created=await registration;
+    if (created.status() !== 202) {
+      const safe = await created.json().catch(() => ({}));
+      console.log('REGISTER_STATUS=' + created.status() + ' CODE=' + String(safe.error || 'UNKNOWN'));
+    }
     expect(created.status()).toBe(202);
     await expect(page.getByRole('heading',{name:'Aguardando aprovação'})).toBeVisible();
     await expect(page.getByRole('heading',{name:'Aguardando aprovação'})).toBeFocused();

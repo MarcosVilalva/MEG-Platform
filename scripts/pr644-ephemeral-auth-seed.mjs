@@ -11,7 +11,7 @@ try {
   if (existing) throw new Error('Ephemeral fixture must start from a clean database.');
 
   const plan = await db.plan.create({
-    data: { code: 'ESSENCIAL', name: 'Plano Fictício de Homologação', features: {}, maxMembers: 2 }
+    data: { code: 'ESSENCIAL', name: 'Plano Fictício de Homologação', features: {}, maxMembers: 3 }
   });
   const user = await db.user.create({
     data: {
