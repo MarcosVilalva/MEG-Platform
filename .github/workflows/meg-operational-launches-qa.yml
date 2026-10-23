@@ -1,0 +1,134 @@
+name: MEG Operational Launches Real API QA
+on:
+  push:
+    branches:
+      - tmp/operational-launches-data-qa
+permissions:
+  contents: read
+jobs:
+  launches-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 27
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: meg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/meg
+      HOST: 127.0.0.1
+      PORT: '3333'
+      LOG_LEVEL: error
+      CORS_ORIGINS: http://127.0.0.1:4173
+      ADMIN_EMAIL: admin-fixture@example.test
+      RUN_LEGACY_REPAIR: 'false'
+      VITE_API_URL: http://127.0.0.1:3333
+      VITE_PUBLIC_BASE_PATH: /
+      PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - name: Checkout ephemeral QA harness
+        uses: actions/checkout@v4
+        with:
+          path: harness
+      - name: Checkout exact financial delivery SHA
+        uses: actions/checkout@v4
+        with:
+          ref: 93aa4d74f93796e667b82fbc02e281cfcffc9205
+          path: source
+      - name: Guard exact SHA and local database
+        shell: bash
+        run: |
+          set -euo pipefail
+          s=$(git -C source rev-parse HEAD)
+          test "$s" = '93aa4d74f93796e667b82fbc02e281cfcffc9205'
+          test "$DATABASE_URL" = 'postgresql://ci:ci@127.0.0.1:5432/meg'
+          test "$NODE_ENV" = test
+          echo "VERIFIED_FINANCIAL_SHA=$s"
+          echo "QA_HARNESS_SHA=$GITHUB_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Install project dependencies
+        working-directory: source
+        run: npm ci --audit=false
+      - name: Install Playwright pin for disposable runner without lockfile changes
+        working-directory: source
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Generate Prisma client
+        working-directory: source
+        run: npm run db:generate
+      - name: Run full project check and new history tests
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --import tsx --test apps/web/src/meg-web-evolution/launches/history.test.ts
+          npm run check
+      - name: Generate isolated auth secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          PASS=$(node -e "process.stdout.write(require('node:crypto').randomBytes(24).toString('base64url'))")
+          JWT=$(node -e "process.stdout.write(require('node:crypto').randomBytes(48).toString('base64url'))")
+          echo "::add-mask::$PASS"
+          echo "::add-mask::$JWT"
+          printf 'MEG_TEST_PASSWORD=%s\n' "$PASS" >> "$GITHUB_ENV"
+          printf 'JWT_SECRET=%s\n' "$JWT" >> "$GITHUB_ENV"
+      - name: Seed two fictitious users and 253 financial events, ephemeral PG only
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run db:push
+          cp ../harness/scripts/qa-operational-launches-seed.mjs scripts/qa-finance-seed.mjs
+          node scripts/qa-finance-seed.mjs
+      - name: Run actual API and existing Web DataGrid with real isolated database
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp ../harness/scripts/qa-operational-launches.browser.spec.mjs apps/web/src/meg-web-evolution/launches/qa.browser.spec.mjs
+          npm --workspace apps/api run start > /tmp/launches-api.log 2>&1 &
+          api_pid=$!
+          web_pid=''
+          trap 'kill "$api_pid" 2>/dev/null || true; if [ -n "$web_pid" ]; then kill "$web_pid" 2>/dev/null || true; fi' EXIT
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3333/ready >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3333/ready >/dev/null
+          npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/launches-web.log 2>&1 &
+          web_pid=$!
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
+          npx playwright test apps/web/src/meg-web-evolution/launches/qa.browser.spec.mjs --workers=1 --reporter=line
+      - name: Publish screenshots and synthetic QA results only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-operational-launches-qa
+          path: |
+            source/artifacts/operational-launches-qa
+            source/test-results
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Diagnostics if QA fails, no secrets
+        if: failure()
+        run: |
+          tail -n 30 /tmp/launches-api.log 2>/dev/null || true
+          tail -n 30 /tmp/launches-web.log 2>/dev/null || true
