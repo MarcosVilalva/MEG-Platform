@@ -83,6 +83,7 @@ jobs:
           set -euo pipefail
           cp ../harness/scripts/stage05-loading-auth-matrix.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/loading.auth-matrix.playwright.spec.mjs
           cp ../harness/scripts/stage05-loading-real-api.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/loading.real-api.playwright.spec.mjs
+          cp ../harness/scripts/stage05-loading-focus-preview.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/loading.focus-preview.playwright.spec.mjs
           cp ../harness/scripts/meg-pr643-ephemeral-auth-seed.mjs scripts/loading-auth-seed.mjs
           npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 > /tmp/loading-vite.log 2>&1 &
           web_pid=$!
@@ -94,7 +95,7 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
           set +e
-          npx playwright test apps/web/src/meg-web-evolution/auth/loading.auth-matrix.playwright.spec.mjs --workers=1 --reporter=line
+          npx playwright test apps/web/src/meg-web-evolution/auth/loading.auth-matrix.playwright.spec.mjs apps/web/src/meg-web-evolution/auth/loading.focus-preview.playwright.spec.mjs --workers=1 --reporter=line
           mock_status=$?
           set -e
           npm run db:generate
