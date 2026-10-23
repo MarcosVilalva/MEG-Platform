@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { register } from '../../app/auth-client';
 import { AuthScreenLayout } from './AuthScreenLayout';
 
@@ -30,6 +30,8 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
   const formId = useId();
   const errorId = useId();
   const fields = useRef<Partial<Record<FieldKey, HTMLInputElement | null>>>({});
+  const submissionLocked = useRef(false);
+  const confirmationRef = useRef<HTMLHeadingElement>(null);
   const [errorField, setErrorField] = useState<FieldKey | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -41,9 +43,13 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (status === 'pending' || status === 'approved') confirmationRef.current?.focus();
+  }, [status]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (status === 'submitting') return;
+    if (status === 'submitting' || submissionLocked.current) return;
     const normalizedEmail = email.trim().toLowerCase();
     const digits = phone.replace(/\D/g, '');
     let nextError = '';
@@ -62,6 +68,7 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
     }
     setError('');
     setErrorField(null);
+    submissionLocked.current = true;
     setStatus('submitting');
     try {
       const result = await register(name.trim(), normalizedEmail, digits, password, confirmPassword, type, type === 'CREATE_WORKSPACE' ? workspaceName.trim() : undefined);
@@ -70,6 +77,8 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
     } catch (cause) {
       setError(messageForError(cause));
       setStatus('idle');
+    } finally {
+      submissionLocked.current = false;
     }
   }
 
@@ -77,9 +86,8 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
     <AuthScreenLayout variant="register" title="Criar conta" description="Solicite acesso ou crie seu espaço MEG. O cadastro aguarda aprovação.">
       {status === 'pending' || status === 'approved' ? (
         <div className="meg-auth-success" role="status" aria-live="polite">
-          <h2>{status === 'pending' ? 'Aguardando aprovação' : 'Cadastro aprovado'}</h2>
+          <h2 ref={confirmationRef} tabIndex={-1}>{status === 'pending' ? 'Aguardando aprovação' : 'Cadastro aprovado'}</h2>
           <p>{status === 'pending' ? 'Sua solicitação foi enviada. Aguarde a aprovação para acessar o MEG.' : 'Seu acesso foi criado. Você já pode utilizar o MEG.'}</p>
-          <button type="button" className="meg-login-submit meg-auth-submit" onClick={onNavigateLogin}>Voltar ao login</button>
         </div>
       ) : (
         <form className="meg-auth-form" aria-label="Formulário de cadastro" onSubmit={submit} noValidate>
