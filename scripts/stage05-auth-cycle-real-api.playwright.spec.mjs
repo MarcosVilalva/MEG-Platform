@@ -19,6 +19,8 @@ test('API e PostgreSQL reais: cadastrar membro pendente, login, Loading, Sair e 
     await page.locator('input[name=phone]').fill('11999999999');
     await page.locator('input[name=password]').fill(process.env.MEG_TEST_PASSWORD);
     await page.locator('input[name=confirmPassword]').fill(process.env.MEG_TEST_PASSWORD);
+    await page.getByRole('radio',{name:'Criar meu espaço MEG'}).check();
+    await page.locator('input[name=workspaceName]').fill('Espaço Fictício de Cadastro QA');
     const registration=page.waitForResponse(r=>r.url().endsWith('/auth/register')&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Continuar'}).click();
     const created=await registration;

@@ -16,13 +16,15 @@ globalThis.fetch = async (input, options) => {
     return originalFetch(input, options);
   }
   const data = JSON.parse(String(options?.body || '{}'));
-  if (data.to?.length !== 1 || data.to[0]?.email !== 'homolog.pr643@example.test') {
-    throw new Error('Recipient is not the single allowed fictional mailbox');
+  const recipient = data.to?.[0]?.email;
+  if (data.to?.length !== 1 || !['homolog.pr643@example.test', 'admin-fixture@example.test'].includes(recipient)) {
+    throw new Error('Recipient is not an allowed fictional test mailbox');
   }
   // Solicitação de cadastro: confirma o transporte em memória, sem enviar nem guardar dados.
-  if (String(data.subject || '').includes('nova solicitação')) {
+  if ((String(data.subject || '').includes('nova solicitação') || String(data.subject || '').includes('novo cliente'))) {
     return new Response(JSON.stringify({messageId:'isolated-registration-email'}), {status:201,headers:{'Content-Type':'application/json'}});
   }
+  if (recipient !== 'homolog.pr643@example.test') throw new Error('Recovery target must be fake QA account');
   const password = /Senha temporária:\s*(Meg#[0-9a-f]+9a)/u.exec(String(data.textContent || ''))?.[1];
   if (!password || !String(data.subject).includes('senha temporária')) {
     throw new Error('Expected real password-reset message was not generated');
