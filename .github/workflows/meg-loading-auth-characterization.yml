@@ -1,4 +1,4 @@
-name: MEG Stage05 Loading Auth Characterization
+name: MEG Stage05 Loading Auth Remediation Validation
 on:
   push:
     branches:
@@ -43,14 +43,14 @@ jobs:
       - name: Checkout exact PR643 HEAD under examination
         uses: actions/checkout@v4
         with:
-          ref: c982d3bc4e0fd3593e6872039398b96c422a181b
+          ref: 71eb7919e461aca5900412b5e308d7808327c48e
           path: source
       - name: Verify code SHA unchanged and database strictly local
         shell: bash
         run: |
           set -euo pipefail
           s=$(git -C source rev-parse HEAD)
-          test "$s" = 'c982d3bc4e0fd3593e6872039398b96c422a181b'
+          test "$s" = '71eb7919e461aca5900412b5e308d7808327c48e'
           test "$DATABASE_URL" = 'postgresql://ci:ci@127.0.0.1:5432/meg'
           echo "CHARACTERIZED_CODE_SHA=$s"
           echo "HARNESS_SHA=$GITHUB_SHA"
