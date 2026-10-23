@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { login } from '../../app/auth-client';
 import './login.css';
 
@@ -57,10 +57,11 @@ export function LoginScreen({ onAuthenticated, onNavigate, focusOnMount = false,
   const [errorField, setErrorField] = useState<LoginError>(null);
   const [message, setMessage] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
+  const submissionLocked = useRef(false);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (submitting || authenticated) return;
+    if (submitting || authenticated || submissionLocked.current) return;
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setErrorField('email'); setMessage('Digite um e-mail válido.'); return;
@@ -70,6 +71,7 @@ export function LoginScreen({ onAuthenticated, onNavigate, focusOnMount = false,
     }
     setErrorField(null);
     setMessage('');
+    submissionLocked.current = true;
     setSubmitting(true);
     try {
       await login(normalizedEmail, password);
@@ -85,6 +87,7 @@ export function LoginScreen({ onAuthenticated, onNavigate, focusOnMount = false,
       setErrorField('server');
       setMessage(getLoginError(error));
     } finally {
+      submissionLocked.current = false;
       setSubmitting(false);
     }
   };
