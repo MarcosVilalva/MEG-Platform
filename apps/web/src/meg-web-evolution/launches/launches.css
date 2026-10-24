@@ -114,3 +114,18 @@
     width: 100%;
   }
 }
+
+
+/* Operational screen grows with real rows; the generic DataGrid harness uses flex:1 1 0
+   for a fixed-height test stage. In the live Shell that basis collapsed the viewport. */
+.meg-launches__grid .meg-datagrid { height: auto; min-height: 0; }
+.meg-launches__grid .meg-datagrid__viewport {
+  flex: 0 1 auto;
+  min-height: 12rem;
+  max-height: clamp(11rem, calc(100dvh - 19rem), 37rem);
+  overflow: auto;
+}
+.meg-launches__actions {display:flex;flex-wrap:wrap;gap:.55rem;align-items:center}
+@media(max-width:639px) {
+  .meg-launches__grid .meg-datagrid__viewport {min-height:12rem;max-height:clamp(11rem,calc(100dvh - 14rem),32rem)}
+}
