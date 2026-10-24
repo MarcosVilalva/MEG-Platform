@@ -118,6 +118,20 @@ jobs:
               assert body.strip(), "React UI did not render text"
               page.screenshot(path=os.path.join(os.environ["RUNNER_TEMP"],"s2c-tool-ui-1366x768.png"),full_page=True)
               print("S2C_REAL_BROWSER_UI=PASSED")
+              # Verify the no-cost image-upload path with a synthetic local PNG.
+              # Never send official personal/project images or call a model here.
+              from PIL import Image, ImageDraw
+              image_path=os.path.join(os.environ["RUNNER_TEMP"],"synthetic-upload.png")
+              sample=Image.new("RGB",(640,360),(2,35,42))
+              ImageDraw.Draw(sample).text((30,30),"S2C: imagem sintetica de teste",(230,250,245))
+              sample.save(image_path)
+              input_field=page.locator('input[type="file"]').first
+              assert input_field.count() > 0, "Input de upload nao encontrado"
+              input_field.set_input_files(image_path)
+              page.locator('img[alt="Uploaded screenshot 1"]').wait_for(timeout=15000)
+              page.screenshot(path=os.path.join(os.environ["RUNNER_TEMP"],"s2c-tool-upload-synthetic.png"),full_page=True)
+              print("S2C_SYNTHETIC_IMAGE_UPLOAD=PASSED")
+              print("S2C_OFFICIAL_REFERENCE_UPLOAD=NOT_TESTED")
               browser.close()
           PY
       - name: Upload disposable local UI screenshot
@@ -125,6 +139,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: s2c-isolated-browser-evidence
-          path: ${{ runner.temp }}/s2c-tool-ui-1366x768.png
+          path: |
+            ${{ runner.temp }}/s2c-tool-ui-1366x768.png
+            ${{ runner.temp }}/s2c-tool-upload-synthetic.png
           if-no-files-found: ignore
           retention-days: 7
