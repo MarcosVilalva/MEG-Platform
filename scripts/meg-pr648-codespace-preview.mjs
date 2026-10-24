@@ -290,6 +290,30 @@ async function main() {
     fail('Autoridade financeira indisponível após iniciar frontend. Preview não homologado.');
   }
 
+  // A entrada é pela rota Web Evolution, não pelo index legado Phoenix.
+  const landing = await fetch(WEB + '/', { redirect: 'manual', signal: AbortSignal.timeout(10000) });
+  if (landing.status !== 302 || !String(landing.headers.get('location') || '').startsWith('/web-evolution.html')) {
+    fail('Porta 5174 não direcionou para a Web Evolution. Preview bloqueado.');
+  }
+  const webDocument = await fetch(WEB + '/web-evolution.html', { signal: AbortSignal.timeout(10000) });
+  if (!webDocument.ok || !(await webDocument.text()).includes('meg-web-evolution-root')) {
+    fail('Documento oficial da nova Web não foi servido na porta 5174.');
+  }
+  const viaProxyHealth = await fetch(WEB + '/api/health', { signal: AbortSignal.timeout(10000) });
+  const proxyHealthValue = await viaProxyHealth.json().catch(() => ({}));
+  if (!viaProxyHealth.ok || proxyHealthValue.financialReady !== true) {
+    fail('Proxy do navegador não aponta para a API financeira local pronta.');
+  }
+  const viaProxySession = await fetch(WEB + '/api/auth/me', {
+    headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(10000),
+  });
+  const proxySessionValue = await viaProxySession.json().catch(() => ({}));
+  if (!viaProxySession.ok || proxySessionValue.user?.email !== EMAIL) {
+    fail('Validação autenticada /api/auth/me via navegador falhou: HTTP '
+      + viaProxySession.status + '.');
+  }
+  console.log('GATE LOGIN: rota Web Evolution, proxy financeiro e /auth/me autenticado OK.');
+
   const revision = output('git', ['rev-parse', '--short=9', 'HEAD']);
   const host = process.env.CODESPACE_NAME
     ? 'https://' + process.env.CODESPACE_NAME + '-5174.app.github.dev'
