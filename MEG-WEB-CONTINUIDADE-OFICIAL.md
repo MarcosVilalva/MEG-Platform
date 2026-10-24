@@ -1293,3 +1293,14 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Correção no inicializador:** verificar previamente se as portas 3334 e 5174 estão livres, abortando com identificação de porta e instrução segura via \`lsof\` caso contrário. Subprocessos npm passam a rodar em grupo isolado, com encerramento do grupo no \`Ctrl+C\` e detecção da morte de API/Vite antes de informar sucesso.
 - **Retomada obrigatória:** parar o inicializador, identificar o processo que ocupa a porta 3334 (\`lsof -nP -iTCP:3334 -sTCP:LISTEN\`), encerrar somente se confirmado como API órfã desta homologação, verificar também 5174, \`git pull --ff-only\` no clone isolado e reiniciar. NÃO executar comandos amplos \`pkill node\`, \`killall\`, apagar contêiner nem interromper infraestrutura desconhecida.
 - **Validação:** as verificações são restritas ao script de homologação; não alterar writers financeiros, licenças, API de produção, Android, main ou serviços Render. Nenhuma visualização foi homologada explicitamente; CI no SHA final e execução real da versão corrigida continuam pendentes.
+
+
+---
+
+## PR #648 — Ativação controlada da fonte financeira no preview (24/10/2026)
+
+- **Evidência de execução no Codespace:** clone isolado no HEAD `5d8f16bed`, PostgreSQL local 5548 ativo, Fastify 3334 e Vite 5174 iniciados, licença canônica configurada e link sem cache gerado, mas API registrou `NORMALIZATION_PRIMARY_REQUIRED` no startup de `reconcilePrimaryAppStateFromNormalized`. Portanto o anúncio “MEG HOMOLOGAÇÃO DISPONÍVEL” NÃO era prova de `financialReady` nem liberava gravação financeira.
+- **Causa auditada:** o bootstrap primeiro cria usuário e workspace vazio; no startup `server.ts` chama `reconcilePrimaryAppStateFromNormalized` antes de `activateNormalizationPrimary`. Sem marcador `normalized-primary`, a conciliação falha e a rotina de ativação seguinte não executa.
+- **Correção somente em `scripts/meg-pr648-codespace-preview.mjs`:** após autenticação e fundação comercial canônica, GET protegido `/app-state/normalization-preview`; somente se não estiver em rollback, com `source.validCount=0`, `source.invalidCount=0`, `normalized.count=0` e `reconciled=true`, executar o endpoint ADMIN `POST /app-state/normalization-cutover` com `action=activate`, `expectedRevision` e confirmação obrigatória `ATIVAR_BASE_NORMALIZADA`. Se já primária, exigir consistência. Bloquear tudo se houver dados divergentes/inesperados.
+- **Gate final obrigatório:** exigir `GET /health` retornando `financialReady=true` após cutover e novamente após subir o Vite, antes de fornecer URL. Não alterar endpoints financeiros, saldo, status, writers, licenças, regras de negócio, dados reais, Android ou produção.
+- **Validação pendente:** execução corrigida no Codespace e testes de integração contra banco descartável; o novo SHA tem de passar CI e QA. Nenhuma homologação visual presumida.
