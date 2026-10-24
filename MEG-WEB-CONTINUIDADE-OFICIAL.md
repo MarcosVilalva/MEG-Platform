@@ -1260,3 +1260,15 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Qualidade exigida:** CI validate e QA Playwright + Fastify + PostgreSQL 16 descartável em usuários fictícios no mesmo SHA final. Confirmar 1672x941, 1366x768, 1024x600, 910x400 e 390x844, rolagem, Esc/Tab, criação de receita/despesa pendente, histórico e idempotência. `android-rc1` / `financial-e2e` dedicados skipped não contam como aprovados.
 - **Disponibilização:** nenhum serviço Render isolado da PR #648 encontrado no workspace em 24/10; os existentes são de `main` ou etapas antigas e não serão modificados. Sem novo serviço pago/preview público, merge, produção ou dados reais sem autorização. Entregar artifact visual de QA e link sem cache somente se preview isolado real for publicado.
 - **Aprovação:** build e QA comprovam apenas execução técnica, não homologação visual. Android permanece congelado e main não muda.
+
+
+---
+
+## PR #648 — Pacote de homologação funcional isolada no Codespaces (24/10/2026)
+
+- **Decisão atual do usuário:** priorizar a versão funcional do Novo Lançamento e postergar o refinamento visual. Não equivale a aprovação da aparência nem autoriza merge ou produção.
+- **Implementação funcional anteriormente caracterizada:** receitas e despesas pendentes com autenticação, writer canônico, idempotência, isolamento por workspace, autocomplete e histórico/DataGrid; SHA `b36f21c2980ec6f4188428760bd120edd6b58979`, QA integrado 5/5 e CI verdes. Despesa paga, transferência, benefício, cartão e parcelamento permanecem indisponíveis.
+- **Bootstrap isolado:** `apps/web/vite.codespace-preview.config.ts` substitui o proxy de API de produção por `http://127.0.0.1:3334` e exige `VITE_API_URL=/api`; `scripts/meg-pr648-codespace-preview.mjs` prepara PostgreSQL local Docker em 127.0.0.1:5548, Fastify local, Vite 5174, usuário e catálogos estritamente fictícios via APIs canônicas, sem alterar regras financeiras. Bloqueia branch/repositório inesperados e arquivos .env externos potencialmente reais.
+- **Infraestrutura:** usa exclusivamente recursos do Codespace existente, com porta 5174 configurada como privada pelo usuário. Não utiliza Render, API remota, dados reais, produção ou Android; não depende de Gemini nem consome créditos Gemini. Pode consumir cota de processamento do Codespaces.
+- **Estado da publicação:** script adicionado à PR Draft, mas **não executado no Codespace do usuário nesta sessão**; logo **nenhum preview publicado/verificado** e nenhum link sem cache fornecido como ativo. O usuário deverá executar no clone isolado, conferir a porta privada e enviar a URL real gerada pelo script para verificação visual.
+- **Qualidade:** os novos arquivos de infraestrutura precisam de CI no SHA final e execução end-to-end no Codespace. Gates prévios não validam automaticamente os novos arquivos; não declarar homologação técnica/visual completa até testar o bootstrap. Sem merge.
