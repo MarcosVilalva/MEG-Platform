@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import ExcelJS from 'exceljs';
 import { mkdirSync } from 'node:fs';
 
-const URL='http://127.0.0.1:4173/web-evolution.html';
+const APP_URI='http://127.0.0.1:4173/web-evolution.html';
 const API='http://127.0.0.1:3333';
 const USER_A='finance-owner-a@example.test';
 const USER_B='finance-owner-b@example.test';
@@ -11,7 +11,7 @@ test.use({launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROME_PATH||unde
 test.setTimeout(95_000);
 
 async function signIn(page,email) {
-  await page.goto(URL);
+  await page.goto(APP_URI);
   await page.locator('input[name=email]').fill(email);
   await page.locator('input[name=password]').fill(process.env.MEG_TEST_PASSWORD);
   await page.getByRole('button',{name:'Entrar no MEG'}).click();
@@ -28,6 +28,10 @@ test('API real: 251 lançamentos, busca de página 3, exportação idêntica, lo
   page.on('request',r=>{if(r.url().includes('/finance/events?'))pages.push(new URL(r.url()).searchParams.get('page'))});
   try {
     const session=await signIn(page,USER_A);
+    const direct=await request.get(API+'/finance/events?page=1&pageSize=100',{headers:{Authorization:'Bearer '+session.accessToken}});
+    console.log('API_PAGE1_STATUS='+direct.status()+' TOTAL='+(direct.ok()?(await direct.json()).total:'unavailable'));
+    await page.waitForTimeout(1500);
+    console.log('FINANCIAL_UI_STATE='+JSON.stringify((await page.locator('.meg-launches').innerText()).slice(0,700)));
     await expect(page.getByText('251 de 251 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
     expect(new Set(pages)).toEqual(new Set(['1','2','3']));
     expect(await page.getByRole('table',{name:'Histórico completo de lançamentos financeiros'}).count()).toBe(1);
@@ -91,6 +95,8 @@ test('API real: 251 lançamentos, busca de página 3, exportação idêntica, lo
 
 test('falha na página 2 não revela histórico parcial; tentativa de novo completa',async({page})=>{
   await signIn(page,USER_A);
+  await page.waitForTimeout(1500);
+  console.log('RETRY_UI_INITIAL='+JSON.stringify((await page.locator('.meg-launches').innerText()).slice(0,700)));
   await expect(page.getByText('251 de 251 registros no histórico completo.',{exact:false})).toBeVisible({timeout:30000});
   await page.route('**/finance/events?**',async route=>{
     if(new URL(route.request().url()).searchParams.get('page')==='2')
