@@ -303,3 +303,48 @@ test('referências visuais: acesso, teclado e overflow em 1024x600, 910x400 e 39
   }
   console.log('VISUAL_RESPONSIVE_A11Y=PASSED');
 });
+
+
+test('referências oficiais no tamanho nativo 1648x928: proporção do seletor e formulário', async({browser}) => {
+  const context = await browser.newContext({viewport:{width:1648,height:928},reducedMotion:'reduce'});
+  const page = await context.newPage();
+  try {
+    await signIn(page,USER_A);
+    await expect(page.getByText('253 de 253 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
+    await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
+    await expect(page.getByTestId('new-launch-types')).toBeVisible();
+    const choice = page.getByRole('dialog',{name:'Novo lançamento'});
+    const choiceBox = await choice.boundingBox();
+    expect(choiceBox).toBeTruthy();
+    expect(choiceBox.width).toBeGreaterThan(1100);
+    expect(choiceBox.width).toBeLessThan(1320);
+    const expenseCard = page.getByRole('button',{name:'Escolher Despesa'});
+    expect((await expenseCard.boundingBox()).height).toBeGreaterThan(100);
+    await expect(page.locator('.meg-new-launch__choice-foot')).toBeVisible();
+    await expect(page.getByRole('button',{name:'Transferência indisponível'})).toBeDisabled();
+    await expect(page.getByRole('button',{name:'Benefício indisponível'})).toBeDisabled();
+    await page.screenshot({path:OUT+'/reference-native-1648x928-choice.png',animations:'disabled'});
+    await expenseCard.click();
+    const form = page.getByRole('dialog',{name:'Novo lançamento'});
+    const formBox = await form.boundingBox();
+    expect(formBox).toBeTruthy();
+    expect(formBox.width).toBeGreaterThan(1350);
+    await expect(page.locator('.meg-new-launch__columns > .meg-new-launch__panel')).toHaveCount(2);
+    await expect(page.locator('.meg-new-launch__columns > .meg-new-launch__summary')).toBeVisible();
+    await page.getByLabel('Descrição *').fill('Despesa QA para comparar composição');
+    await page.getByRole('textbox',{name:'Valor em reais *'}).fill('18,20');
+    await page.getByLabel('Data *').fill('2026-10-23');
+    const pickFirst = async label => {
+      const select=page.getByLabel(label);
+      const first=await select.locator('option:not([value=""])').first().getAttribute('value');
+      expect(first).toBeTruthy();
+      await select.selectOption(first);
+    };
+    await pickFirst('Categoria *');
+    await pickFirst('Conta *');
+    await pickFirst('Forma de pagamento *');
+    await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 18,20');
+    await page.screenshot({path:OUT+'/reference-native-1648x928-form.png',animations:'disabled'});
+    console.log('REFERENCE_NATIVE_1648X928=PASSED');
+  } finally { await context.close(); }
+});
