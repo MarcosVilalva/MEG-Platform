@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { Prisma, prisma } from '@meg/database';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { Prisma, prisma } from '@meg/database';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';
 import { cardInstallmentRemaining } from '../finance/card-statement-canonical';
