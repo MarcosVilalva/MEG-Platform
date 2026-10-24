@@ -1182,3 +1182,21 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Evidências iniciais:** QA PostgreSQL 16 e navegador sobre commit bacffa63d1ee1f10a686b4b6d7bdf5adbf2d7e9c: https://github.com/MarcosVilalva/MEG-Platform/actions/runs/40047064498 SUCCESS, 3/3 cenários de navegador, API real, criação de receita e despesa pendente, sem impacto no saldo pela pendência, isolamento entre dois usuários e refresh da consulta. Autocomplete e checkpoint adicionados depois, exigindo novo CI e QA no SHA final.
 - **Pendências:** preview hospedado da versão final e aprovação visual explícita; cadastro de referências pela nova UI; baixa protegida de despesa, crédito/parcelas e benefício nos respectivos writers; duplicidades semânticas históricas; Home bancária e alimentação. A PR não está autorizada para produção.
 - **Validação desktop:** entrada apps/web/web-evolution.html sob API e banco QA isolados, credenciais fictícias, sem confundir endereço antigo do Render com a branch atual. Android congelado e dados reais intocados.
+
+
+---
+
+## Visual oficial de Novo Lançamento e correção da grade — PR #648
+
+- Origem: PR #647 Draft, commit 18209e9adb1a3c2ab9b7fd6f871ec9b5daa5f38a. Nova PR #648 Draft, branch feature/meg-web-new-launch-visual-official, empilhada sobre #647. Nenhum merge, deploy, migration, mudança Android ou dado financeiro real alterado.
+- Referência A: chooser oficial com coluna de apresentação, quatro cards Despesa, Receita, Transferência e Benefício e identidade teal escura. Somente Despesa e Receita habilitadas. Transferência e Benefício aparecem como indisponíveis e não têm rota de gravação.
+- Referência B: imagem oficial Novo lançamento financeiro neon.png. Formulário financeiro em três áreas no desktop (informações principais, data/valor/detalhes, resumo dinâmico), categoria e atalhos de catálogos reais; design com tokens oficiais, layout responsivo em 640px e 1024px. Nenhum valor, conta, marca, cartão ou saldo fictício da imagem foi integrado ao produto.
+- Resumo: apenas reprodução formatada do valor digitado e das referências selecionadas, sem cálculos de saldo, fatura, parcela ou status financeiro na tela. Situação final continua no servidor.
+- Segurança: writer POST /finance/events inalterado, operationId estável durante tentativas, prevenção de duplo envio, duplicidade detectada pela API, autocomplete preservado sem trazer valor/data, controle de papéis, refresh do histórico após gravação. Receita é realizada pelo domínio; despesa permanece planned e sem débito.
+- Restrições mantidas: despesa paga, Fixo, parcelamento/cartão, transferência e benefício não liberados no fluxo genérico; os três últimos exigem autoridades separadas.
+- Regressão DataGrid: o viewport original com flex-basis zero foi criado para harness de altura fixa e podia colapsar na tela operacional. Aplicado ajuste CSS exclusivamente dentro de Lançamentos: flex-basis automático e altura mínima com rolagem. O DataGrid não foi refeito nem teve seu código central editado.
+- Acessibilidade: cards com botões, controles indisponíveis desabilitados, rótulos, Tab/Escape, devolução de foco, resumo legível, rolagem no diálogo, prefers-reduced-motion e mobile sem layout fixo.
+- QA exigido: screenshot da seleção, Receita, Despesa, resumo e tabela com cabeçalho/linhas visíveis; PostgreSQL descartável com usuários fictícios; resoluções 1366x768, 1024x600, 910x400 e 390x844; conferir CI e QA no HEAD final. Registrar provas após execução, sem declarar CI como homologação humana.
+- Prévia: nenhuma URL publicada para esta branch. Usar web-evolution.html em ambiente de QA local com API e PostgreSQL fictícios, ou artifacts de GitHub Actions como evidência preliminar. Sem merge ou deploy.
+- Pendências: homologação visual explícita, publicação isolada autorizada, proteção atômica de saldo para pagamento, cadastros por UI e fluxos canônicos de cartão, benefício e transferência.
+
