@@ -1,131 +1,158 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { financeClient, type Account, type Category, type PaymentMethod, type FinancialEvent } from '../../app/finance-client';
-import { basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod, autocompleteFromHistory, type BasicLaunchFields, type BasicLaunchType } from './new-launch';
+import { Icon } from '../components/Icon';
+import { LaunchVisualIcon } from './LaunchVisualIcon';
+import {
+  basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod,
+  autocompleteFromHistory, parsePositiveBRL, formatLaunchDateBR, type BasicLaunchFields, type BasicLaunchType,
+} from './new-launch';
 import './new-launch.css';
 
 type Props = { onClose: () => void; onSaved: (event: FinancialEvent) => void; history: FinancialEvent[] };
 type Catalog = { accounts: Account[]; categories: Category[]; methods: PaymentMethod[] };
-
-const emptyCatalog: Catalog = { accounts: [], categories: [], methods: [] };
-function todayInSaoPaulo() {
+type Stage = 'choose' | 'form';
+const blankCatalog: Catalog = { accounts: [], categories: [], methods: [] };
+const types = [
+  { id: 'expense', title: 'Despesa', subtitle: 'Saídas, compras e gastos', icon: 'expense', detail: 'Pendente, sem débito', available: true },
+  { id: 'income', title: 'Receita', subtitle: 'Entradas e recebimentos', icon: 'income', detail: 'Status definido pelo servidor', available: true },
+  { id: 'transfer', title: 'Transferência', subtitle: 'Movimentação entre contas', icon: 'transfer', detail: 'Exige fluxo de duas contas', available: false },
+  { id: 'benefit', title: 'Benefício', subtitle: 'Usar ou recarregar benefício', icon: 'benefit', detail: 'Exige contrato próprio', available: false },
+] as const;
+function currentDay() {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(new Date());
-  const part = (type: string) => parts.find(p => p.type === type)?.value || '';
+  const part = (name: string) => parts.find(p => p.type === name)?.value || '';
   return [part('year'), part('month'), part('day')].join('-');
 }
-function initialFields(): BasicLaunchFields {
-  return {
-    type: 'expense', description: '', amount: '', day: todayInSaoPaulo(),
-    accountId: '', categoryId: '', paymentMethodId: '', notes: '',
-  };
-}
+const emptyForm = (): BasicLaunchFields => ({
+  type: 'expense', description: '', amount: '', day: currentDay(),
+  accountId: '', categoryId: '', paymentMethodId: '', notes: '',
+});
+const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export function NewLaunchForm({ onClose, onSaved, history }: Props) {
-  const [fields, setFields] = useState<BasicLaunchFields>(initialFields);
-  const [catalog, setCatalog] = useState<Catalog>(emptyCatalog);
-  const [fetching, setFetching] = useState(true);
+  const [stage, setStage] = useState<Stage>('choose');
+  const [fields, setFields] = useState<BasicLaunchFields>(emptyForm);
+  const [catalog, setCatalog] = useState<Catalog>(blankCatalog);
+  const [fetching, setFetching] = useState(false);
   const [catalogError, setCatalogError] = useState('');
-  const [retryCatalog, setRetryCatalog] = useState(0);
+  const [fetchVersion, setFetchVersion] = useState(0);
   const [error, setError] = useState('');
+  const [possibleDuplicate, setPossibleDuplicate] = useState('');
   const [saving, setSaving] = useState(false);
-  const [suspectedDuplicate, setSuspectedDuplicate] = useState('');
   const attemptId = useRef(crypto.randomUUID());
   const savingLock = useRef(false);
-  const dialogRef = useRef<HTMLElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  const dialog = useRef<HTMLElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
+  const closeCurrent = useRef(onClose);
+  closeCurrent.current = onClose;
 
   useEffect(() => {
-    const focusedBefore = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const before = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    titleRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
+    const keyboard = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !savingLock.current) {
         event.preventDefault();
-        onClose();
+        closeCurrent.current();
       }
       if (event.key !== 'Tab') return;
-      const items = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+      const controls = Array.from(dialog.current?.querySelectorAll<HTMLElement>(
         'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
       ) || []).filter(node => node.getClientRects().length > 0);
-      if (!items.length) return;
-      const first = items[0], last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      if (!controls.length) return;
+      const first = controls[0], last = controls[controls.length - 1];
+      if (!dialog.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === title.current)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
     };
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', keyboard);
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      focusedBefore?.focus();
+      document.body.style.overflow = before;
+      document.removeEventListener('keydown', keyboard);
+      previousFocus?.focus();
     };
-  }, [onClose]);
+  }, []);
+  useEffect(() => { title.current?.focus(); }, [stage]);
 
   useEffect(() => {
-    let alive = true;
+    if (stage !== 'form') return;
+    let active = true;
     setFetching(true);
     setCatalogError('');
     Promise.all([financeClient.listAccounts(), financeClient.listCategories(), financeClient.listPaymentMethods()])
       .then(([accounts, categories, methods]) => {
-        if (alive) setCatalog({ accounts, categories, methods });
-      })
-      .catch(() => {
-        if (alive) setCatalogError('Não foi possível consultar os cadastros autorizados. Nenhum lançamento foi enviado.');
-      })
-      .finally(() => { if (alive) setFetching(false); });
-    return () => { alive = false; };
-  }, [retryCatalog]);
+        if (active) setCatalog({ accounts, categories, methods });
+      }).catch(() => {
+        if (active) setCatalogError('Os cadastros autorizados não foram carregados. Nada foi enviado.');
+      }).finally(() => { if (active) setFetching(false); });
+    return () => { active = false; };
+  }, [stage, fetchVersion]);
 
-  const activeAccounts = useMemo(() => catalog.accounts.filter(eligibleAccount), [catalog]);
-  const activeCategories = useMemo(() => catalog.categories.filter(c => eligibleCategory(c, fields.type)), [catalog, fields.type]);
-  const activeMethods = useMemo(() => catalog.methods.filter(eligiblePaymentMethod), [catalog]);
-  const hasCatalog = activeAccounts.length > 0 && activeCategories.length > 0 && activeMethods.length > 0;
-  const suggestions = useMemo(() => Array.from(new Set(history.filter(e => e.type === fields.type).map(e => e.description))), [history, fields.type]);
-
-  const change = (key: keyof BasicLaunchFields, value: string) => {
+  const accounts = useMemo(() => catalog.accounts.filter(eligibleAccount), [catalog.accounts]);
+  const categories = useMemo(() => catalog.categories.filter(c => eligibleCategory(c, fields.type)), [catalog.categories, fields.type]);
+  const methods = useMemo(() => catalog.methods.filter(eligiblePaymentMethod), [catalog.methods]);
+  const completeCatalog = !!(accounts.length && categories.length && methods.length);
+  const suggestions = useMemo(
+    () => [...new Set(history.filter(x => x.type === fields.type).map(x => x.description))].slice(0, 150),
+    [history, fields.type],
+  );
+  const matchingAccount = accounts.find(x => x.id === fields.accountId);
+  const matchingCategory = categories.find(x => x.id === fields.categoryId);
+  const matchingMethod = methods.find(x => x.id === fields.paymentMethodId);
+  const visibleAmount = parsePositiveBRL(fields.amount);
+  const update = (key: keyof BasicLaunchFields, value: string) => {
     if (savingLock.current) return;
     attemptId.current = crypto.randomUUID();
     setError('');
-    setSuspectedDuplicate('');
+    setPossibleDuplicate('');
     setFields(previous => ({ ...previous, [key]: value }));
   };
-  const changeType = (value: BasicLaunchType) => {
+  const chooseType = (value: BasicLaunchType) => {
     if (savingLock.current) return;
     attemptId.current = crypto.randomUUID();
-    setError('');
-    setSuspectedDuplicate('');
     setFields(previous => ({ ...previous, type: value, categoryId: '' }));
+    setError('');
+    setStage('form');
   };
+  const back = () => { if (!savingLock.current) { setStage('choose'); setError(''); } };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (savingLock.current || fetching || catalogError) return;
+    if (savingLock.current || fetching || catalogError || !completeCatalog) return;
     try {
-      const input = basicLaunchInput(fields, activeAccounts, activeCategories, activeMethods);
+      const payload = basicLaunchInput(fields, accounts, categories, methods);
       savingLock.current = true;
       setSaving(true);
       setError('');
-      setSuspectedDuplicate('');
-      const saved = await financeClient.createEvent({ ...input, operationId: attemptId.current });
-      if (!saved?.id) throw new Error('Servidor não confirmou a identificação do lançamento.');
+      setPossibleDuplicate('');
+      const saved = await financeClient.createEvent({ ...payload, operationId: attemptId.current });
+      if (!saved?.id) throw new Error('O servidor não confirmou o identificador do lançamento.');
       onSaved(saved);
     } catch (cause) {
-      const response = cause as { code?: string; duplicate?: { description?: string; amount?: number; date?: string }; status?: number };
+      const response = cause as { code?: string; duplicate?: { description?: string }; status?: number };
       if (response.code === 'POSSIBLE_DUPLICATE') {
-        setSuspectedDuplicate(response.duplicate?.description || 'Um registro semelhante');
-        setError('Possível duplicidade encontrada no servidor. Confira o histórico antes de tentar outra operação.');
+        setPossibleDuplicate(response.duplicate?.description || 'Lançamento semelhante');
+        setError('O servidor identificou possível duplicidade. Confira o histórico antes de prosseguir.');
       } else if (response.code === 'OPERATION_ID_REUSED') {
-        setError('A tentativa de gravação já existe com outros dados. Feche e reabra o formulário para conferir antes de reenviar.');
+        setError('Essa tentativa já foi usada com outros dados. Verifique o histórico antes de reenviar.');
       } else if (response.status === 401 || response.status === 403) {
-        setError('Sua sessão ou permissão não permite gravar este lançamento.');
-      } else if (response.code === 'INVALID_ACCOUNT' || response.code === 'INVALID_CATEGORY' || response.code === 'INVALID_PAYMENT_METHOD') {
-        setError('Um dos cadastros foi alterado ou não pertence ao seu espaço. Atualize os cadastros.');
+        setError('Sessão expirada ou sem autorização de gravação.');
+      } else if (['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(response.code || '')) {
+        setError('Um dos cadastros foi alterado ou não pertence ao seu espaço. Recarregue o formulário.');
       } else if (response.code === 'BENEFIT_CONTRACT_REQUIRED') {
-        setError('Movimentações de benefício exigem o fluxo próprio e não foram gravadas.');
+        setError('Benefícios exigem o fluxo financeiro específico. Nenhum registro foi criado.');
+      } else if (response.status && response.status >= 500) {
+        setError('Não foi possível confirmar a gravação. Confira o histórico antes de tentar novamente.');
       } else {
-        setError(cause instanceof Error && !/^HTTP_|^TypeError/.test(cause.message)
-          ? cause.message : 'Não foi possível confirmar a gravação. Confira os lançamentos antes de reenviar.');
+        setError(cause instanceof Error && !/^(HTTP_|TypeError)/.test(cause.message)
+          ? cause.message : 'Não foi possível confirmar a gravação. Confira o histórico antes de tentar novamente.');
       }
     } finally {
       savingLock.current = false;
@@ -135,85 +162,195 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
 
   return (
     <div className="meg-new-launch__overlay">
-      <section className="meg-new-launch" role="dialog" aria-modal="true" aria-labelledby="meg-new-launch-title" ref={dialogRef}>
+      <section ref={dialog} className={'meg-new-launch is-' + stage} role="dialog" aria-modal="true" aria-labelledby="meg-new-launch-title">
         <header className="meg-new-launch__header">
-          <div>
-            <h2 id="meg-new-launch-title" ref={titleRef} tabIndex={-1}>Novo lançamento</h2>
-            <p>Primeira etapa operacional: receita realizada ou despesa pendente.</p>
+          <button type="button" className="meg-new-launch__back-icon" onClick={stage === 'form' ? back : onClose} disabled={saving} aria-label="Voltar">
+            <Icon name="chevronLeft" width={25} height={25}/>
+          </button>
+          {stage === 'form' && <span className="meg-new-launch__header-mark" aria-hidden="true"><LaunchVisualIcon name="summary" width={32} height={32}/></span>}
+          <div className="meg-new-launch__headline">
+            <h2 id="meg-new-launch-title" tabIndex={-1} ref={title}>Novo lançamento</h2>
+            {stage === 'choose'
+              ? <p>Escolha o tipo de lançamento e siga com um formulário inteligente para Web.</p>
+              : <div className="meg-new-launch__header-inline">
+                  <div className={'meg-new-launch__type-pill is-' + fields.type} data-testid="selected-launch-type">
+                    <span>{fields.type === 'income' ? '↑ Receita' : '↓ Despesa pendente'}</span>
+                    <button type="button" onClick={back} disabled={saving}>Alterar tipo</button>
+                  </div>
+                  <p>Registre sua movimentação com os dados necessários.</p>
+                </div>}
           </div>
-          <button type="button" onClick={onClose} disabled={saving} aria-label="Fechar novo lançamento">Fechar</button>
+          <button type="button" className="meg-new-launch__close" onClick={onClose} disabled={saving} aria-label="Fechar novo lançamento">
+            <span aria-hidden="true">×</span>
+          </button>
         </header>
 
-        {fetching ? <p role="status" className="meg-new-launch__message">Consultando contas, categorias e formas de pagamento...</p> :
-          catalogError ? <div className="meg-new-launch__message" role="alert">
-            <p>{catalogError}</p>
-            <button type="button" onClick={() => setRetryCatalog(n => n + 1)}>Tentar novamente</button>
-          </div> :
-          <form onSubmit={submit} aria-label="Formulário de novo lançamento">
-            <fieldset className="meg-new-launch__type" disabled={saving}>
-              <legend>Tipo do lançamento</legend>
-              <label><input type="radio" name="new-launch-type" checked={fields.type === 'expense'} onChange={() => changeType('expense')} /> Despesa pendente</label>
-              <label><input type="radio" name="new-launch-type" checked={fields.type === 'income'} onChange={() => changeType('income')} /> Receita</label>
-            </fieldset>
+        {stage === 'choose' ? (
+          <div className="meg-new-launch__choose" data-testid="new-launch-types">
+            <div className="meg-new-launch__intro">
+              <span className="meg-new-launch__eyebrow">NOVO LANÇAMENTO</span>
+              <h3>Mais controle para o seu dia a dia</h3>
+              <p>Escolha o tipo de lançamento e preencha as informações no formulário Web. Todas as operações seguem as regras financeiras do MEG.</p>
 
-            <p className="meg-new-launch__notice">
-              {fields.type === 'expense'
-                ? 'Nesta entrega a despesa é registrada como pendente, sem realizar débito. Pagamentos à vista, Fixo e cartão serão liberados somente pelo fluxo financeiro seguro correspondente.'
-                : 'A receita será classificada como realizada pelo servidor, conforme a política financeira vigente.'}
-            </p>
-
-            <div className="meg-new-launch__fields">
-              <label>Descrição *
-                <input required maxLength={300} value={fields.description} list="meg-new-launch-descriptions" onChange={e => {
-                  const description = e.target.value;
-                  const known = autocompleteFromHistory(description, fields.type, history, activeAccounts, activeCategories, activeMethods);
-                  change('description', description);
-                  if (known) setFields(prev => ({ ...prev, description, ...known }));
-                }} autoComplete="off" placeholder="Descreva a movimentação" disabled={saving} />
-                <datalist id="meg-new-launch-descriptions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
-              </label>
-              <label>Valor em reais *
-                <input required inputMode="decimal" value={fields.amount} onChange={e => change('amount', e.target.value)} placeholder="0,00" disabled={saving} />
-              </label>
-              <label>Data *
-                <input required type="date" value={fields.day} onChange={e => change('day', e.target.value)} disabled={saving} />
-              </label>
-              <label>Categoria *
-                <select required value={fields.categoryId} onChange={e => change('categoryId', e.target.value)} disabled={saving}>
-                  <option value="">Selecione uma categoria</option>
-                  {activeCategories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
-                </select>
-              </label>
-              <label>Conta monetária *
-                <select required value={fields.accountId} onChange={e => change('accountId', e.target.value)} disabled={saving}>
-                  <option value="">Selecione uma conta</option>
-                  {activeAccounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
-                </select>
-              </label>
-              <label>Forma de pagamento *
-                <select required value={fields.paymentMethodId} onChange={e => change('paymentMethodId', e.target.value)} disabled={saving}>
-                  <option value="">Selecione uma forma</option>
-                  {activeMethods.map(method => <option key={method.id} value={method.id}>{method.name}</option>)}
-                </select>
-              </label>
-              <label className="meg-new-launch__notes">Observações
-                <textarea maxLength={1000} rows={3} value={fields.notes} onChange={e => change('notes', e.target.value)} placeholder="Opcional" disabled={saving} />
-              </label>
             </div>
+            <div className="meg-new-launch__options" aria-label="Tipos de lançamento">
+              {types.map(option => {
+                const disabled = !option.available;
+                return (
+                  <button key={option.id} type="button" disabled={disabled}
+                    aria-label={disabled ? option.title + ' indisponível' : 'Escolher ' + option.title}
+                    className={'meg-new-launch__option is-' + option.id}
+                    onClick={() => { if (option.id === 'income' || option.id === 'expense') chooseType(option.id); }}
+                  >
+                    <span className="meg-new-launch__option-icon" aria-hidden="true"><LaunchVisualIcon name={option.icon} width={39} height={39} /></span>
+                    <span className="meg-new-launch__option-copy">
+                      <strong>{option.title}</strong><small>{option.subtitle}</small>
+                      <span className="meg-new-launch__option-tags">
+                        <em>{disabled ? 'Indisponível' : option.detail}</em>
+                        {option.id === 'expense' && <em>Conta autorizada</em>}
+                        {option.id === 'income' && <em>Recebimento</em>}
+                        {option.id === 'transfer' && <em>Fluxo entre contas</em>}
+                        {option.id === 'benefit' && <em>Contrato próprio</em>}
+                      </span>
+                    </span>
+                    <span className="meg-new-launch__option-arrow" aria-hidden="true">{disabled ? '•' : <Icon name="chevronRight" width={20} height={20}/>}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="meg-new-launch__choice-foot" aria-label="Características do formulário">
+              <span><Icon name="panelLeftOpen" width={21}/><strong>Layout adaptativo</strong><small>Organização em qualquer tela</small></span>
+              <span><Icon name="list" width={21}/><strong>Leitura clara</strong><small>Dados e rótulos identificados</small></span>
+              <span><Icon name="card" width={21}/><strong>Regras preservadas</strong><small>Autoridade financeira central</small></span>
+              <span><Icon name="chevronRight" width={21}/><strong>Escolha um tipo</strong><small>Para continuar com segurança</small></span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {fetching ? <p className="meg-new-launch__message" role="status">Carregando seus cadastros autorizados...</p> :
+            catalogError ? <div className="meg-new-launch__message" role="alert"><p>{catalogError}</p>
+              <button type="button" onClick={() => setFetchVersion(n => n + 1)}>Tentar novamente</button>
+            </div> :
+            <form onSubmit={submit} aria-label="Formulário de novo lançamento" noValidate={false}>
+              <div className="meg-new-launch__columns">
+                <div className="meg-new-launch__panel meg-new-launch__primary">
+                  <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="description" width={19} height={19}/>Descrição *</span>
+                    <input required maxLength={300} value={fields.description} list="meg-new-launch-descriptions"
+                      onChange={event => {
+                        const description = event.target.value;
+                        const found = autocompleteFromHistory(description, fields.type, history, accounts, categories, methods);
+                        update('description', description);
+                        if (found) setFields(previous => ({ ...previous, description, ...found }));
+                      }} autoComplete="off" placeholder="Descreva a movimentação" disabled={saving}/>
+                    <small className="meg-new-launch__field-counter" aria-label="Caracteres da descrição">{fields.description.length}/300</small>
+                    <datalist id="meg-new-launch-descriptions">{suggestions.map(s => <option key={s} value={s}/>)}</datalist>
+                  </label>
+                  <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="category" width={19} height={19}/>Categoria *</span>
+                    <select required value={fields.categoryId} onChange={event => update('categoryId', event.target.value)} disabled={saving}>
+                      <option value="">Selecione uma categoria</option>
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </label>
+                  <div className="meg-new-launch__field-group">
+                    <span className="meg-new-launch__group-title">Categorias rápidas</span>
+                    <div className="meg-new-launch__chips">
+                      {categories.slice(0, 5).map(c => <button key={c.id} type="button" disabled={saving}
+                        className={'meg-new-launch__chip is-category' + (fields.categoryId === c.id ? ' is-selected' : '')}
+                        aria-pressed={fields.categoryId === c.id} onClick={() => update('categoryId', c.id)}>{c.name}</button>)}
+                    </div>
+                  </div>
+                  <div className="meg-new-launch__field-group">
+                    <span className="meg-new-launch__group-title">Conta monetária *</span>
+                    <div className="meg-new-launch__chips meg-new-launch__account-chips" aria-label="Atalhos de conta">
+                      {accounts.slice(0, 3).map(a => <button type="button" key={a.id}
+                        aria-pressed={fields.accountId === a.id} disabled={saving}
+                        className={'meg-new-launch__chip' + (fields.accountId === a.id ? ' is-selected' : '')}
+                        onClick={() => update('accountId', a.id)}>{a.name}</button>)}
+                    </div>
+                  </div>
+                  <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="account" width={19} height={19}/>Conta *</span>
+                    <select required value={fields.accountId} onChange={event => update('accountId', event.target.value)} disabled={saving}>
+                      <option value="">Selecione uma conta</option>
+                      {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="payment" width={19} height={19}/>Forma de pagamento *</span>
+                    <select required value={fields.paymentMethodId} onChange={event => update('paymentMethodId', event.target.value)} disabled={saving}>
+                      <option value="">Selecione a forma de pagamento</option>
+                      {methods.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                  </label>
+                  <div className="meg-new-launch__chips meg-new-launch__method-chips" aria-label="Atalhos de forma de pagamento">
+                    {methods.slice(0, 3).map(m => <button key={m.id} type="button" disabled={saving}
+                      aria-pressed={fields.paymentMethodId === m.id}
+                      className={'meg-new-launch__chip' + (fields.paymentMethodId === m.id ? ' is-selected' : '')}
+                      onClick={() => update('paymentMethodId', m.id)}>{m.name}</button>)}
+                  </div>
+                </div>
 
-            {!hasCatalog && <p className="meg-new-launch__notice" role="status">
-              Não há todos os cadastros elegíveis necessários. É preciso criar ou ativar conta monetária, categoria e forma de pagamento antes de registrar.
-            </p>}
-            {error && <div className="meg-new-launch__error" role="alert">
-              <p>{error}</p>
-              {suspectedDuplicate && <p>Registro semelhante: {suspectedDuplicate}. Nenhuma nova gravação foi confirmada.</p>}
-            </div>}
+                <div className="meg-new-launch__panel meg-new-launch__secondary">
+                  <div className="meg-new-launch__date-amount">
+                    <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="date" width={19} height={19}/>Data *</span>
+                      <input required type="date" value={fields.day} disabled={saving} onChange={event => update('day', event.target.value)}/>
+                    </label>
+                    <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="amount" width={19} height={19}/>Valor *</span>
+                      <input required aria-label="Valor em reais *" inputMode="decimal" value={fields.amount} disabled={saving}
+                        placeholder="0,00" onChange={event => update('amount', event.target.value)} />
+                    </label>
+                  </div>
+                  <div className="meg-new-launch__field-group">
+                    <span className="meg-new-launch__group-title"><LaunchVisualIcon name="status" width={19} height={19}/>Situação</span>
+                    <div className="meg-new-launch__status" role="group" aria-label="Situação do lançamento">
+                      <span className="is-active">{fields.type === 'income' ? 'Definida pelo servidor' : 'Pendente'}</span>
+                      <span className="is-locked" aria-disabled="true">{fields.type === 'expense' ? 'Paga: não liberada' : 'Status final: servidor'}</span>
+                    </div>
+                    <p className="meg-new-launch__hint">{fields.type === 'expense'
+                      ? 'Sem débito. Pagamento à vista depende da validação segura de saldo.'
+                      : 'O servidor aplica o status financeiro da receita após confirmar a gravação.'}</p>
+                  </div>
+                  <div className="meg-new-launch__locked" aria-label="Parcelamento indisponível">
+                    <strong><LaunchVisualIcon name="installments" width={19} height={19}/>Parcelamento no cartão</strong>
+                    <small>Indisponível neste formulário. Compras parceladas usam o fluxo próprio de cartões.</small>
+                  </div>
+                  <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="notes" width={19} height={19}/>Observações (opcional)</span>
+                    <textarea rows={4} maxLength={1000} value={fields.notes} disabled={saving}
+                      onChange={event => update('notes', event.target.value)} placeholder="Informações adicionais..."/>
+                    <small className="meg-new-launch__field-counter" aria-label="Caracteres das observações">{fields.notes.length}/1000</small>
+                  </label>
+                </div>
 
-            <footer className="meg-new-launch__footer">
-              <button type="button" onClick={onClose} disabled={saving}>Voltar</button>
-              <button type="submit" className="meg-new-launch__save" disabled={saving || !hasCatalog}>{saving ? 'Salvando...' : 'Salvar lançamento'}</button>
-            </footer>
-          </form>}
+                <aside className="meg-new-launch__summary" aria-label="Resumo do lançamento">
+                  <div className="meg-new-launch__summary-title"><span className="meg-new-launch__summary-mark"><LaunchVisualIcon name="summary" width={24} height={24}/></span>
+                    <div><h3>Resumo do lançamento</h3><p>Confira os dados antes de salvar.</p></div></div>
+                  <div className="meg-new-launch__summary-amount-row">
+                    <div className={'meg-new-launch__amount' + (fields.type === 'expense' ? ' is-expense' : '')} data-testid="new-launch-summary-amount" aria-live="polite">
+                      {visibleAmount === null ? 'Valor a informar' : currency.format(visibleAmount)}
+                    </div>
+                    <span className={'meg-new-launch__summary-type is-' + fields.type}>{fields.type === 'expense' ? 'Despesa pendente' : 'Receita'}</span>
+                  </div>
+                  <dl>
+                    <div><dt><LaunchVisualIcon name="summary" width={16} height={16}/>Tipo</dt><dd>{fields.type === 'income' ? 'Receita' : 'Despesa pendente'}</dd></div>
+                    <div><dt>Descrição</dt><dd>{fields.description || 'Não informada'}</dd></div>
+                    <div><dt><LaunchVisualIcon name="category" width={16} height={16}/>Categoria</dt><dd>{matchingCategory?.name || 'Não selecionada'}</dd></div>
+                    <div><dt><LaunchVisualIcon name="account" width={16} height={16}/>Conta</dt><dd>{matchingAccount?.name || 'Não selecionada'}</dd></div>
+                    <div><dt><LaunchVisualIcon name="payment" width={16} height={16}/>Forma de pagamento</dt><dd>{matchingMethod?.name || 'Não selecionada'}</dd></div>
+                    <div><dt><LaunchVisualIcon name="date" width={16} height={16}/>Data</dt><dd data-testid="new-launch-summary-date">{formatLaunchDateBR(fields.day)}</dd></div>
+                    <div><dt>Situação</dt><dd>{fields.type === 'income' ? 'Determinada pelo servidor' : 'Pendente, sem baixa'}</dd></div>
+                  </dl>
+                  <div className="meg-new-launch__summary-foot">Prévia das informações digitadas. Nenhuma movimentação é criada antes de salvar.</div>
+                </aside>
+              </div>
+              {!completeCatalog && <p role="status" className="meg-new-launch__notice">Não há contas, categorias ou formas de pagamento elegíveis suficientes para concluir o registro.</p>}
+              {error && <div role="alert" className="meg-new-launch__error"><p>{error}</p>
+                {possibleDuplicate && <p>Possível duplicidade: {possibleDuplicate}. Nenhuma nova gravação foi confirmada.</p>}</div>}
+              <footer className="meg-new-launch__footer">
+                <button type="button" onClick={back} disabled={saving}><Icon name="chevronLeft" width={18}/> Voltar</button>
+                <button type="submit" className="meg-new-launch__save" disabled={saving || !completeCatalog}>
+                  <span aria-hidden="true">✓</span>{saving ? 'Salvando...' : 'Salvar lançamento'}</button>
+              </footer>
+            </form>}
+          </>
+        )}
       </section>
     </div>
   );

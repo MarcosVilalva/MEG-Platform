@@ -1182,3 +1182,104 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Evidências iniciais:** QA PostgreSQL 16 e navegador sobre commit bacffa63d1ee1f10a686b4b6d7bdf5adbf2d7e9c: https://github.com/MarcosVilalva/MEG-Platform/actions/runs/40047064498 SUCCESS, 3/3 cenários de navegador, API real, criação de receita e despesa pendente, sem impacto no saldo pela pendência, isolamento entre dois usuários e refresh da consulta. Autocomplete e checkpoint adicionados depois, exigindo novo CI e QA no SHA final.
 - **Pendências:** preview hospedado da versão final e aprovação visual explícita; cadastro de referências pela nova UI; baixa protegida de despesa, crédito/parcelas e benefício nos respectivos writers; duplicidades semânticas históricas; Home bancária e alimentação. A PR não está autorizada para produção.
 - **Validação desktop:** entrada apps/web/web-evolution.html sob API e banco QA isolados, credenciais fictícias, sem confundir endereço antigo do Render com a branch atual. Android congelado e dados reais intocados.
+
+
+---
+
+## Visual oficial de Novo Lançamento e correção da grade — PR #648
+
+- Origem: PR #647 Draft, commit 18209e9adb1a3c2ab9b7fd6f871ec9b5daa5f38a. Nova PR #648 Draft, branch feature/meg-web-new-launch-visual-official, empilhada sobre #647. Nenhum merge, deploy, migration, mudança Android ou dado financeiro real alterado.
+- Referência A: chooser oficial com coluna de apresentação, quatro cards Despesa, Receita, Transferência e Benefício e identidade teal escura. Somente Despesa e Receita habilitadas. Transferência e Benefício aparecem como indisponíveis e não têm rota de gravação.
+- Referência B: imagem oficial Novo lançamento financeiro neon.png. Formulário financeiro em três áreas no desktop (informações principais, data/valor/detalhes, resumo dinâmico), categoria e atalhos de catálogos reais; design com tokens oficiais, layout responsivo em 640px e 1024px. Nenhum valor, conta, marca, cartão ou saldo fictício da imagem foi integrado ao produto.
+- Resumo: apenas reprodução formatada do valor digitado e das referências selecionadas, sem cálculos de saldo, fatura, parcela ou status financeiro na tela. Situação final continua no servidor.
+- Segurança: writer POST /finance/events inalterado, operationId estável durante tentativas, prevenção de duplo envio, duplicidade detectada pela API, autocomplete preservado sem trazer valor/data, controle de papéis, refresh do histórico após gravação. Receita é realizada pelo domínio; despesa permanece planned e sem débito.
+- Restrições mantidas: despesa paga, Fixo, parcelamento/cartão, transferência e benefício não liberados no fluxo genérico; os três últimos exigem autoridades separadas.
+- Regressão DataGrid: o viewport original com flex-basis zero foi criado para harness de altura fixa e podia colapsar na tela operacional. Aplicado ajuste CSS exclusivamente dentro de Lançamentos: flex-basis automático e altura mínima com rolagem. O DataGrid não foi refeito nem teve seu código central editado.
+- Acessibilidade: cards com botões, controles indisponíveis desabilitados, rótulos, Tab/Escape, devolução de foco, resumo legível, rolagem no diálogo, prefers-reduced-motion e mobile sem layout fixo.
+- QA exigido: screenshot da seleção, Receita, Despesa, resumo e tabela com cabeçalho/linhas visíveis; PostgreSQL descartável com usuários fictícios; resoluções 1366x768, 1024x600, 910x400 e 390x844; conferir CI e QA no HEAD final. Registrar provas após execução, sem declarar CI como homologação humana.
+- Prévia: nenhuma URL publicada para esta branch. Usar web-evolution.html em ambiente de QA local com API e PostgreSQL fictícios, ou artifacts de GitHub Actions como evidência preliminar. Sem merge ou deploy.
+- Pendências: homologação visual explícita, publicação isolada autorizada, proteção atômica de saldo para pagamento, cadastros por UI e fluxos canônicos de cartão, benefício e transferência.
+
+
+
+---
+
+## PR #648: acabamento de rolagem, resumo e acessibilidade (24/10/2026)
+
+- Etapa autorizada: somente acabamento da seleção do tipo e formulário Novo Lançamento da PR #648, sem iniciar nova tela e sem alterar regra financeira, writers canônicos ou dados reais.
+- Base preservada: PR #647 HEAD 18209e9adb1a3c2ab9b7fd6f871ec9b5daa5f38a, PR #648 empilhada, Draft e sem merge/deploy.
+- Alterações: visual teal oficial em duas etapas mantido. Ícones dos quatro cards padronizados usando Icon já existente; itens indisponíveis mantêm contraste, não ativam gravação. Resumo formata somente a data textual AAAA-MM-DD para DD/MM/AAAA, sem converter Date nem mudar payload da API. Valor em reais permanece prévia local, sem saldo ou cálculos financeiros.
+- Acessibilidade: foco inicial no título, controle de Tab e Shift+Tab também quando o título recebe foco, Esc e devolução ao gatilho. O modal mantém uma área de rolagem com scroll-padding; cabeçalho sticky opaco e rodapé sticky opaco com espaço de foco. Atenção especial às resoluções desktop 1366x768, 1024x600, baixa 910x400 e mobile 390x844.
+- Corrigida previamente a visibilidade do DataGrid por CSS de escopo da tela Lançamentos, sem modificar o componente central. QA exige conferir cabeçalho e linhas renderizados após a gravação.
+- Continuidade financeira: apenas Receita (status final servidor) e Despesa Pendente (sem débito). Transferência, Benefício, Cartão/parcelamento e Despesa Paga não são habilitados. Catálogos e autocomplete continuam autorizados; operationId e writer canônico intocados.
+- Qualidade: testes financeiros, autenticação, consulta histórica e 5xx com estado preservado devem continuar verdes. QA real Fastify/PostgreSQL efêmero, screenshots de topo/final dos formulários e validação de alcance do resumo/observações/rodapé. A versão só poderá ser indicada como tecnicamente validada após CI e QA no mesmo SHA que inclui este checkpoint. Não declarar homologação visual sem aprovação explícita do usuário.
+- Preview: examinar o mecanismo isolado existente antes de criar recursos. Nunca publicar no ambiente produtivo nem usar dados financeiros reais. Se preview isolado requer infraestrutura/custo, informar bloqueio e não executar sem autorização.
+
+
+---
+
+## PR #648 — Comparação de fidelidade com as referências originais (24/10/2026)
+
+- **Pedido ativo:** refinamento de fidelidade das imagens originais A (seletor, arquivo oficial de 03/10 às 17:31:26) e B (Novo lançamento financeiro neon.png); capturas da PR #648 são evidência de implementação anterior, não são a referência visual soberana.
+- **Codespace:** não montado/disponível nesta sessão. Branch e HEAD foram verificados via integração GitHub; mudanças com SHA prévio verificado para não sobrepor alterações posteriores. O working tree de um Codespace externo não foi acessado, nem se afirma que foi inspecionado.
+- **Mudança localizada:** seleção de tipo com largura de modal mais próxima do screenshot oficial, opções mais altas, proporções de hero/cards ajustadas, ícones existentes e faixa informativa inferior. Transferência e Benefício permanecem desabilitados com motivo exposto. Formulário mantém três áreas e agora hierarquia visual aprimorada por labels/ícones já disponíveis, proporção mais ampla à esquerda, valor/resumo com maior legibilidade, bordas e contraste oficiais.
+- **Limite de fidelidade:** não existe no conjunto autorizado do repositório um asset oficial da montanha presente nas imagens do mockup. NÃO reconstruir ou reutilizar arte antiga não aprovada. O screenshot não foi posto como fundo, e dados falsos de saldo/cartão do print não foram integrados. Faixa informativa do seletor reproduz posição e função visual, mas textos descrevem propriedades efetivas do fluxo seguro.
+- **Preservação financeira:** somente receita e despesa pendente continuam graváveis pelo writer central. Despesa paga, cartão/parcelamento, transferência e benefício seguem indisponíveis; nenhuma UI calcula saldo/fatura. Contas, categorias e meios reais vêm da API, autocomplete não copia valor/data, erros 503 mantêm dados, operaçãoId/idempotência e isolamento preservados. Data do resumo continua pt-BR sem mudança no payload.
+- **Responsividade:** modalidade única de rolagem interna do diálogo; cabeçalho/rodapé sticky opacos, alvos e espaçamento. QA requerido em 1366x768, 1024x600, 910x400 e 390x844 com começo/fim, último card, observações, resumo, foco por teclado, exportação e DataGrid existente visível.
+- **Governança:** PR #648 permanece Draft, sem merge, deploy, alteração na main, Android ou dados financeiros reais. Nenhum preview hospedado confirmado; não criar infraestrutura de custo sem autorização. Não declarar homologação visual antes da aprovação expressa do usuário.
+- **Gates:** CI e QA real Fastify/PostgreSQL descartável DEVEM ser refeitos após este checkpoint no mesmo SHA final. Android RC1 e Financial E2E dedicados skipped quando não executados. Capturas no artifact do QA comprovam implementação, não aceitação visual.
+
+- **Ajuste de conformidade de assets:** barras ilustrativas introduzidas em implementação anterior foram excluídas do seletor. A montanha oficial continua ausente como asset independente, sem substituição visual improvisada. Capturas adicionais em 1672×941 devem ser confrontadas diretamente com as duas imagens oficiais em tamanho nativo.
+
+
+---
+
+## PR #648 — Reconstrução visual direta em React/CSS (24/10/2026)
+
+- **Autorização:** o usuário optou pela reconstrução direta, sem API de conversão Screenshot to Code. Escopo exclusivo: seletor de tipos e formulário da PR #648. Prints oficiais soberanos: "Imagem do ChatGPT 3 de out. de 2026, 17_31_26.png" (seletor) e "Novo lançamento financeiro neon.png" (formulário); capturas antigas da PR são evidências de regressão, não referências.
+- **Base preservada:** SHA 96f4acd0daec61aa8384f877fdc1e8c72d8e32e4 confirmado antes da edição. O terminal do Codespace externo não está conectado; o working tree remoto não foi examinado. Operações feitas pela integração GitHub sob lease de SHA. Criar/alterar somente arquivos expressamente citados; não sobrepor trabalho externo.
+- **Reforma, não remendo:** arquivo new-launch.css reconstruído integralmente a partir da composição oficial (sem pilhas de sobrescritas). Modificações de markup limitadas à apresentação em NewLaunchForm.tsx. Seletor com hierarquia, proporção dos cards, cores e faixa inferior; formulário com posicionamento e três regiões, resumo maior, tipografia, rótulos e footer. CSS sem novas dependências e com breakpoints estruturais em 640 e 1024. Imagem de montanhas e arte ilustrativa de cartões continuam ausentes como assets independentes autorizados, não foram redesenhadas nem simuladas por screenshots.
+- **Sem alteração de negócio:** writer financeClient.createEvent, operaçãoId/idempotência, isolamento/workspace, sugestões/autocomplete, carregamento de catálogos, tratamento de duplicidades e erros 503, formatação monetária e data pt-BR permanecem intactos. Receita conforme servidor, despesa apenas pendente; despesa paga, parcelamento/cartões, transferência e benefício seguem bloqueados.
+- **Evidência técnica exigida:** após o commit de checkpoint, repetir CI e QA integrado Fastify + PostgreSQL descartável com usuários fictícios no mesmo HEAD; registrar screenshots em 1672x941, 1366x768, 1024x600, 910x400 e 390x844. Foco Tab/Shift+Tab e Escape, área única de rolagem, rodapé e observações alcançáveis. CI não equivale à homologação visual.
+- **Limitações:** PR permanece Draft, sem merge, deploy de produção, alteração em main/Android, dados reais ou infraestrutura paga. Preview hospedado isolado não confirmado. Layout visual só estará aprovado mediante manifestação expressa do usuário.
+
+- **Encaixe desktop:** em largura >= 1024, formulário é alinhado à direita/parte inferior da área principal com largura limitada a 86,1vw e 1440px; seletor continua central, conforme os dois prints. Para telas menores o overlay usa layout mobile/tablet. Nenhuma rolagem horizontal intencional.
+
+- **Refino pós-captura (antes de novos gates):** em 1672×941, a comparação revelou que o seletor precisava de mais altura útil por card e que a linha externa de tipo do formulário atrasava o início das colunas cerca de 40px. Os cards cresceram sem altura rígida de página, o seletor de tipo migrou para a linha inferior do cabeçalho oficial, o formulário passou a preencher verticalmente o modal e o rótulo visível do campo monetário foi encurtado para “Valor *”, preservando aria-label “Valor em reais *”. CI e QA anteriores de 3121161 deixaram de validar o HEAD e deverão ser refeitos após este checkpoint.
+
+
+---
+
+## PR #648 — Funcionalidade protegida e SVGs oficiais (24/10/2026)
+
+- **Pedido atual:** priorizar a funcionalidade do Novo Lançamento, adicionando identidade visual com SVGs personalizados. Ajustes visuais restantes poderão vir após validação visual expressa. Não avançar para outras telas.
+- **PR e base:** branch `feature/meg-web-new-launch-visual-official`, HEAD inicial `61870f3d03a45557ee3674ac1894f5f852a83806`, PR Draft, base da PR #647. Working tree de Codespace externo não disponível, commits protegidos por lease no GitHub.
+- **Escopo dos arquivos:** `LaunchVisualIcon.tsx` novo, `NewLaunchForm.tsx` com substituição de ícones e contadores de caracteres não financeiros, `new-launch.css` com estilo localizado e este checkpoint.
+- **Regras intocáveis:** receita somente conforme writer e status da API; despesa apenas pendente (planned, sem débito). Nenhuma mudança em `financeClient.createEvent`, `basicLaunchInput`, `event-mutation`, autorização, idempotência, dados/contas por workspace, autocomplete, retry 503, DataGrid ou camada financeira. Transferência, benefício, cartão, parcelas e pagamento de despesas permanecem indisponíveis. Resumo é prévia, não autoriza mutação local.
+- **SVGs:** ícones vetoriais autorais exclusivos do modal, sem dependência de pacote ou imagem externa; diferenciam despesa, receita, transferência, benefício, categorias, contas, pagamento, data, valor, situação, parcelamento, observações e resumo, sem recriar o logotipo ou a montanha dos prints oficiais.
+- **Qualidade exigida:** CI validate e QA Playwright + Fastify + PostgreSQL 16 descartável em usuários fictícios no mesmo SHA final. Confirmar 1672x941, 1366x768, 1024x600, 910x400 e 390x844, rolagem, Esc/Tab, criação de receita/despesa pendente, histórico e idempotência. `android-rc1` / `financial-e2e` dedicados skipped não contam como aprovados.
+- **Disponibilização:** nenhum serviço Render isolado da PR #648 encontrado no workspace em 24/10; os existentes são de `main` ou etapas antigas e não serão modificados. Sem novo serviço pago/preview público, merge, produção ou dados reais sem autorização. Entregar artifact visual de QA e link sem cache somente se preview isolado real for publicado.
+- **Aprovação:** build e QA comprovam apenas execução técnica, não homologação visual. Android permanece congelado e main não muda.
+
+
+---
+
+## PR #648 — Pacote de homologação funcional isolada no Codespaces (24/10/2026)
+
+- **Decisão atual do usuário:** priorizar a versão funcional do Novo Lançamento e postergar o refinamento visual. Não equivale a aprovação da aparência nem autoriza merge ou produção.
+- **Implementação funcional anteriormente caracterizada:** receitas e despesas pendentes com autenticação, writer canônico, idempotência, isolamento por workspace, autocomplete e histórico/DataGrid; SHA `b36f21c2980ec6f4188428760bd120edd6b58979`, QA integrado 5/5 e CI verdes. Despesa paga, transferência, benefício, cartão e parcelamento permanecem indisponíveis.
+- **Bootstrap isolado:** `apps/web/vite.codespace-preview.config.ts` substitui o proxy de API de produção por `http://127.0.0.1:3334` e exige `VITE_API_URL=/api`; `scripts/meg-pr648-codespace-preview.mjs` prepara PostgreSQL local Docker em 127.0.0.1:5548, Fastify local, Vite 5174, usuário e catálogos estritamente fictícios via APIs canônicas, sem alterar regras financeiras. Bloqueia branch/repositório inesperados e arquivos .env externos potencialmente reais.
+- **Infraestrutura:** usa exclusivamente recursos do Codespace existente, com porta 5174 configurada como privada pelo usuário. Não utiliza Render, API remota, dados reais, produção ou Android; não depende de Gemini nem consome créditos Gemini. Pode consumir cota de processamento do Codespaces.
+- **Estado da publicação:** script adicionado à PR Draft, mas **não executado no Codespace do usuário nesta sessão**; logo **nenhum preview publicado/verificado** e nenhum link sem cache fornecido como ativo. O usuário deverá executar no clone isolado, conferir a porta privada e enviar a URL real gerada pelo script para verificação visual.
+- **Qualidade:** os novos arquivos de infraestrutura precisam de CI no SHA final e execução end-to-end no Codespace. Gates prévios não validam automaticamente os novos arquivos; não declarar homologação técnica/visual completa até testar o bootstrap. Sem merge.
+
+
+---
+
+## PR #648 — Correção de bootstrap comercial do preview Codespaces (24/10/2026)
+
+- **Falha efetivamente observada no Codespace:** PostgreSQL 16 local iniciado, `npm ci`, `prisma generate` e `prisma db push` concluídos, Fastify iniciado, mas a criação de conta fictícia falhou com HTTP 402 `LICENSE_NOT_CONFIGURED`.
+- **Causa auditada:** na primeira execução, `ensureCommercialFoundation()` é iniciada assincronamente ao subir a API, antes de existir o usuário administrativo. `registerUser()` então chama `ensurePrimaryWorkspace()` (cria o workspace, mas não sua licença). A checagem comercial `assertWorkspaceWriteAccess()` bloqueia corretamente a criação de catálogos quando a assinatura do workspace está ausente.
+- **Correção restrita à homologação:** criado `scripts/meg-pr648-preview-commercial.ts`, que invoca `ensureCommercialFoundation()` sem duplicar regras de negócios, protegido por igualdade exata do `DATABASE_URL` descartável, `NODE_ENV=development`, `ADMIN_EMAIL=preview-admin@meg.invalid` e marcador `MEG_PR648_PREVIEW_LOCAL_DB=1`. O inicializador `scripts/meg-pr648-codespace-preview.mjs` chama esta rotina após autenticação e antes dos catálogos. Não há bypass de licença, alteração da API, nem dado real.
+- **Execução requerida:** no clone `/workspaces/meg-pr648-homologacao`, executar `git pull --ff-only` e `node scripts/meg-pr648-codespace-preview.mjs`. Manter a porta 5174 privada. A execução corrigida não foi testada ainda no Codespace; só o usuário pode confirmar o preview real.
+- **Governança:** branch da PR #648 em Draft, sem merge/produção/Android; CI no SHA final é gate técnico e não valida visual. Credenciais fictícias em `~/.local/state/meg-pr648-preview/credenciais.txt`; não compartilhar senha em chats.
