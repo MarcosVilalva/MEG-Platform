@@ -91,7 +91,8 @@ jobs:
           console.log('ZOD_V3_COMPAT_IMPORTS=' + updated.length);
           console.log(updated.join('\n'));
           NODE
-          node -p "'PATCHED_ZOD=' + require('zod/package.json').version"
+          (cd apps/api && node -p "'PATCHED_API_ZOD=' + require('zod/package.json').version")
+          (cd apps/web && node -p "'PATCHED_WEB_ZOD=' + require('zod/package.json').version")
           node scripts/npm-security-audit.mjs --audit-level=high
       - name: Install Playwright pin for disposable runner without lockfile changes
         working-directory: source
