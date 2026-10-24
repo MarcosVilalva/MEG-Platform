@@ -159,6 +159,20 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     const balanceBefore=Number((await balanceResponse.json()).available);
 
     await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
+    await page.getByRole('radio',{name:'Receita'}).check();
+    await page.getByRole('textbox',{name:'Valor em reais *'}).fill('7,89');
+    await page.getByLabel('Data *').fill('2026-11-02');
+    await page.getByRole('textbox',{name:'Descrição *'}).fill('Receita criada pelo QA operacional');
+    await expect(page.getByLabel('Categoria *')).toHaveValue(incomeCategory.id);
+    await expect(page.getByLabel('Conta monetária *')).toHaveValue(account.id);
+    await expect(page.getByLabel('Forma de pagamento *')).toHaveValue(method.id);
+    await expect(page.getByRole('textbox',{name:'Valor em reais *'})).toHaveValue('7,89');
+    await expect(page.getByLabel('Data *')).toHaveValue('2026-11-02');
+    await page.getByRole('button',{name:'Voltar'}).click();
+    console.log('NEW_LAUNCH_AUTOCOMPLETE_NO_VALUE_OR_DATE=PASSED');
+
+
+    await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
     await page.getByRole('radio',{name:'Despesa pendente'}).check();
     await page.getByRole('textbox',{name:'Descrição *'}).fill('Despesa pendente criada pelo QA');
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('10,07');
