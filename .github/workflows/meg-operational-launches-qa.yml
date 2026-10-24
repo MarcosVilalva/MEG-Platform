@@ -63,6 +63,36 @@ jobs:
       - name: Install project dependencies
         working-directory: source
         run: npm ci --audit=false
+      - name: Evaluate patched Zod 4.6.7 with v3-compatible imports in disposable checkout
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install zod@4.6.7 -w apps/api -w apps/web --save-exact --audit=false
+          node --input-type=module <<'NODE'
+          import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          const updated = [];
+          function walk(dir) {
+            for (const ent of readdirSync(dir, { withFileTypes: true })) {
+              if (ent.name === 'node_modules' || ent.name === 'dist') continue;
+              const path = join(dir, ent.name);
+              if (ent.isDirectory()) { walk(path); continue; }
+              if (!/\.(?:ts|tsx|js|mjs|cjs)$/.test(ent.name)) continue;
+              const before = readFileSync(path, 'utf8');
+              const after = before
+                .replace(/from (['"])zod\1/g, (_, q) => 'from ' + q + 'zod/v3' + q)
+                .replace(/require\((['"])zod\1\)/g, (_, q) => 'require(' + q + 'zod/v3' + q + ')')
+                .replace(/import\((['"])zod\1\)/g, (_, q) => 'import(' + q + 'zod/v3' + q + ')');
+              if (after !== before) { writeFileSync(path, after); updated.push(path); }
+            }
+          }
+          for (const dir of ['apps/api/src', 'apps/web/src', 'packages', 'scripts']) walk(dir);
+          console.log('ZOD_V3_COMPAT_IMPORTS=' + updated.length);
+          console.log(updated.join('\n'));
+          NODE
+          node -p "'PATCHED_ZOD=' + require('zod/package.json').version"
+          node scripts/npm-security-audit.mjs --audit-level=high
       - name: Install Playwright pin for disposable runner without lockfile changes
         working-directory: source
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
