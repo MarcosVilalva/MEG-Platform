@@ -1246,3 +1246,17 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Encaixe desktop:** em largura >= 1024, formulário é alinhado à direita/parte inferior da área principal com largura limitada a 86,1vw e 1440px; seletor continua central, conforme os dois prints. Para telas menores o overlay usa layout mobile/tablet. Nenhuma rolagem horizontal intencional.
 
 - **Refino pós-captura (antes de novos gates):** em 1672×941, a comparação revelou que o seletor precisava de mais altura útil por card e que a linha externa de tipo do formulário atrasava o início das colunas cerca de 40px. Os cards cresceram sem altura rígida de página, o seletor de tipo migrou para a linha inferior do cabeçalho oficial, o formulário passou a preencher verticalmente o modal e o rótulo visível do campo monetário foi encurtado para “Valor *”, preservando aria-label “Valor em reais *”. CI e QA anteriores de 3121161 deixaram de validar o HEAD e deverão ser refeitos após este checkpoint.
+
+
+---
+
+## PR #648 — Funcionalidade protegida e SVGs oficiais (24/10/2026)
+
+- **Pedido atual:** priorizar a funcionalidade do Novo Lançamento, adicionando identidade visual com SVGs personalizados. Ajustes visuais restantes poderão vir após validação visual expressa. Não avançar para outras telas.
+- **PR e base:** branch `feature/meg-web-new-launch-visual-official`, HEAD inicial `61870f3d03a45557ee3674ac1894f5f852a83806`, PR Draft, base da PR #647. Working tree de Codespace externo não disponível, commits protegidos por lease no GitHub.
+- **Escopo dos arquivos:** `LaunchVisualIcon.tsx` novo, `NewLaunchForm.tsx` com substituição de ícones e contadores de caracteres não financeiros, `new-launch.css` com estilo localizado e este checkpoint.
+- **Regras intocáveis:** receita somente conforme writer e status da API; despesa apenas pendente (planned, sem débito). Nenhuma mudança em `financeClient.createEvent`, `basicLaunchInput`, `event-mutation`, autorização, idempotência, dados/contas por workspace, autocomplete, retry 503, DataGrid ou camada financeira. Transferência, benefício, cartão, parcelas e pagamento de despesas permanecem indisponíveis. Resumo é prévia, não autoriza mutação local.
+- **SVGs:** ícones vetoriais autorais exclusivos do modal, sem dependência de pacote ou imagem externa; diferenciam despesa, receita, transferência, benefício, categorias, contas, pagamento, data, valor, situação, parcelamento, observações e resumo, sem recriar o logotipo ou a montanha dos prints oficiais.
+- **Qualidade exigida:** CI validate e QA Playwright + Fastify + PostgreSQL 16 descartável em usuários fictícios no mesmo SHA final. Confirmar 1672x941, 1366x768, 1024x600, 910x400 e 390x844, rolagem, Esc/Tab, criação de receita/despesa pendente, histórico e idempotência. `android-rc1` / `financial-e2e` dedicados skipped não contam como aprovados.
+- **Disponibilização:** nenhum serviço Render isolado da PR #648 encontrado no workspace em 24/10; os existentes são de `main` ou etapas antigas e não serão modificados. Sem novo serviço pago/preview público, merge, produção ou dados reais sem autorização. Entregar artifact visual de QA e link sem cache somente se preview isolado real for publicado.
+- **Aprovação:** build e QA comprovam apenas execução técnica, não homologação visual. Android permanece congelado e main não muda.

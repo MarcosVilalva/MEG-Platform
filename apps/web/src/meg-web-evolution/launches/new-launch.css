@@ -549,3 +549,33 @@
 @media (prefers-reduced-motion: reduce) {
   .meg-new-launch__option { transition: none; }
 }
+
+/* Ícones SVG exclusivos do lançamento. Sem bibliotecas, screenshots ou efeitos pesados. */
+.meg-new-launch__option-icon svg {
+  display: block;
+  flex: none;
+  width: min(2.55rem, 64%);
+  height: min(2.55rem, 64%);
+  filter: drop-shadow(0 0 .48rem currentColor);
+}
+.meg-new-launch__field-label svg, .meg-new-launch__group-title svg,
+.meg-new-launch__summary dt svg {
+  flex: none;
+  width: 1.13rem;
+  height: 1.13rem;
+  stroke-width: 2.4;
+}
+.meg-new-launch__field-counter {
+  align-self: flex-end;
+  margin-top: -.32rem;
+  font-size: .7rem;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: #b6d4d1;
+  font-weight: 600;
+}
+.meg-new-launch__summary-mark svg,
+.meg-new-launch__header-mark svg {filter: drop-shadow(0 0 .3rem rgba(13,231,217,.26));}
+@media (prefers-reduced-motion: reduce) {
+  .meg-new-launch__option-icon svg {filter: none}
+}
