@@ -64,6 +64,13 @@ jobs:
           pnpm install --frozen-lockfile
           test -x node_modules/.bin/vite
           echo "S2C_FRONTEND_DEPENDENCIES=PASSED"
+      - name: Install isolated Chromium for real browser preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$S2C_TOOL_DIR/backend"
+          poetry run playwright install --with-deps chromium
+          echo "S2C_CHROMIUM_INSTALL=PASSED"
       - name: Start services on loopback only and test frontend to backend proxy
         shell: bash
         run: |
@@ -97,3 +104,27 @@ jobs:
           PY
           echo "S2C_BACKEND_HTTP=PASSED"
           echo "S2C_FRONTEND_HTTP=PASSED"
+          cd "$S2C_TOOL_DIR/backend"
+          poetry run python - <<'PY'
+          import os
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser=p.chromium.launch(headless=True, args=["--no-sandbox"])
+              page=browser.new_page(viewport={"width": 1366, "height": 768},device_scale_factor=1)
+              page.goto("http://127.0.0.1:5173",wait_until="networkidle",timeout=45000)
+              page.wait_for_selector("#root",timeout=10000)
+              page.wait_for_timeout(1200)
+              body=page.locator("body").inner_text()
+              assert body.strip(), "React UI did not render text"
+              page.screenshot(path=os.path.join(os.environ["RUNNER_TEMP"],"s2c-tool-ui-1366x768.png"),full_page=True)
+              print("S2C_REAL_BROWSER_UI=PASSED")
+              browser.close()
+          PY
+      - name: Upload disposable local UI screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s2c-isolated-browser-evidence
+          path: ${{ runner.temp }}/s2c-tool-ui-1366x768.png
+          if-no-files-found: ignore
+          retention-days: 7
