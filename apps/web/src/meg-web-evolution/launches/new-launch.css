@@ -1,0 +1,70 @@
+.meg-new-launch__overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 11, 13, .88);
+  backdrop-filter: blur(9px);
+  overflow-y: auto;
+}
+.meg-new-launch {
+  color: var(--meg-text);
+  width: min(100%, 58rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  border: 1px solid rgba(20, 227, 200, .65);
+  box-shadow: 0 0 36px rgba(20,227,200,.12);
+  background: #04161a;
+  border-radius: 1rem;
+  padding: clamp(.85rem,2vw,1.5rem);
+}
+.meg-new-launch__header, .meg-new-launch__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.meg-new-launch__header h2 {font-size:1.45rem;margin:0}
+.meg-new-launch__header p {color:var(--meg-muted);margin:.4rem 0 .9rem}
+.meg-new-launch__type {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .8rem;
+  margin: .75rem 0;
+  padding: .8rem;
+  border: 1px solid rgba(20,227,200,.3);
+  border-radius: .7rem;
+}
+.meg-new-launch__type legend {padding:0 .4rem;font-weight:600}
+.meg-new-launch__type label {display:flex;align-items:center;gap:.5rem;cursor:pointer}
+.meg-new-launch__type input {accent-color:#14e3c8}
+.meg-new-launch__notice {font-size:.86rem;color:#bdd5d0;line-height:1.45}
+.meg-new-launch__fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem}
+.meg-new-launch__fields label {display:flex;flex-direction:column;gap:.35rem;min-width:0;font-size:.88rem;font-weight:600}
+.meg-new-launch__fields input, .meg-new-launch__fields select, .meg-new-launch__fields textarea {
+  width:100%;min-width:0;min-height:3rem;background:#031e22;border:1px solid rgba(20,227,200,.42);
+  color:var(--meg-text);border-radius:.75rem;padding:.7rem .8rem;font:inherit;
+}
+.meg-new-launch__fields select option {background:#04161a}
+.meg-new-launch__fields textarea {resize:vertical}
+.meg-new-launch__fields :is(input,select,textarea):focus-visible,
+.meg-new-launch :is(button,input[type="radio"]):focus-visible {outline:2px solid #14e3c8;outline-offset:2px}
+.meg-new-launch__notes {grid-column:1/-1}
+.meg-new-launch__footer {margin-top:1.15rem}
+.meg-new-launch__footer button, .meg-new-launch__header button, .meg-new-launch__message button {
+  min-height:3rem;cursor:pointer;border-radius:.65rem;border:1px solid #149b90;
+  color:var(--meg-text);background:#053632;padding:.65rem 1.2rem;
+}
+.meg-new-launch__footer .meg-new-launch__save {flex:1;background:#14e3c8;color:#02100f;font-weight:700}
+.meg-new-launch button:disabled {opacity:.58;cursor:not-allowed}
+.meg-new-launch__error {background:#3a1017;border:1px solid #ff5a5f;border-radius:.75rem;padding:.65rem .9rem;margin-top:.8rem;color:#ffe4e6}
+.meg-new-launch__message {padding:1rem}
+@media(max-width:639px) {
+  .meg-new-launch__overlay{padding:0;display:block}
+  .meg-new-launch{width:100%;max-height:100dvh;min-height:100dvh;border-radius:0}
+  .meg-new-launch__fields{grid-template-columns:minmax(0,1fr)}
+  .meg-new-launch__footer{position:sticky;bottom:-1.5rem;background:#04161a;padding:1rem 0}
+}

@@ -25,13 +25,15 @@ function readSidebarPreference() {
 }
 
 export function AppShell({
-  children, onLogout, userName, activeView = 'home', onNavigate,
+  children, onLogout, userName, activeView = 'home', onNavigate, onNewLaunch, canCreate = false,
 }: {
   children: ReactNode;
   onLogout?: () => void;
   userName?: string;
   activeView?: 'home' | 'launches';
   onNavigate?: (view: 'home' | 'launches') => void;
+  onNewLaunch?: () => void;
+  canCreate?: boolean;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
@@ -265,6 +267,8 @@ export function AppShell({
               className="meg-topbar-launcher meg-topbar-new"
               aria-label="Novo lançamento"
               data-tooltip="Novo lançamento"
+              onClick={onNewLaunch}
+              disabled={!canCreate}
               onMouseEnter={(event) => showTooltip(event, 'Novo lançamento', 'bottom')}
               onMouseLeave={hideTooltip}
               onFocus={(event) => showTooltip(event, 'Novo lançamento', 'bottom')}
