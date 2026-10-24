@@ -43,14 +43,14 @@ jobs:
       - name: Checkout exact financial delivery SHA
         uses: actions/checkout@v4
         with:
-          ref: 94f60d4fa53ee741d07f67ac1d13c2a985c49d9e
+          ref: bacffa63d1ee1f10a686b4b6d7bdf5adbf2d7e9c
           path: source
       - name: Guard exact SHA and local database
         shell: bash
         run: |
           set -euo pipefail
           s=$(git -C source rev-parse HEAD)
-          test "$s" = '94f60d4fa53ee741d07f67ac1d13c2a985c49d9e'
+          test "$s" = 'bacffa63d1ee1f10a686b4b6d7bdf5adbf2d7e9c'
           test "$DATABASE_URL" = 'postgresql://ci:ci@127.0.0.1:5432/meg'
           test "$NODE_ENV" = test
           echo "VERIFIED_FINANCIAL_SHA=$s"
@@ -78,6 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           node --import tsx --test apps/web/src/meg-web-evolution/launches/history.test.ts
+          node --import tsx --test apps/web/src/meg-web-evolution/launches/new-launch.test.ts
           npm run check
       - name: Generate isolated auth secrets
         shell: bash
