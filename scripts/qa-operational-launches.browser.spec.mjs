@@ -153,8 +153,6 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
     await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 1.234,56');
     await page.screenshot({path:OUT+'/05-income-form-desktop.png',animations:'disabled'});
-    await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 10,07');
-    await page.screenshot({path:OUT+'/06-expense-pending-form-desktop.png',animations:'disabled'});
     await page.getByRole('button',{name:/Salvar lançamento/}).click();
     await expect(page.getByText('252 de 252 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
     let events=await request.get(API+'/finance/events?page=1&pageSize=100',{headers});
@@ -194,6 +192,8 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByLabel('Categoria *').selectOption(expenseCategory.id);
     await page.getByLabel('Conta monetária *').selectOption(account.id);
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
+    await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 10,07');
+    await page.screenshot({path:OUT+'/06-expense-pending-form-desktop.png',animations:'disabled'});
     await page.getByRole('button',{name:/Salvar lançamento/}).click();
     await expect(page.getByText('253 de 253 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
     events=await request.get(API+'/finance/events?page=1&pageSize=100',{headers});
