@@ -37,6 +37,10 @@ test('API real: 251 lançamentos, busca de página 3, exportação idêntica, lo
     expect(await page.getByRole('table',{name:'Histórico completo de lançamentos financeiros'}).count()).toBe(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
     mkdirSync(OUT,{recursive:true});
+    const visibleTable = page.getByRole('table',{name:'Histórico completo de lançamentos financeiros'});
+    await expect(visibleTable.locator('thead th:visible').first()).toBeVisible();
+    await expect(visibleTable.locator('tbody tr[data-grid-row]:visible').first()).toBeVisible();
+    expect(await page.locator('.meg-datagrid__viewport').evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThan(160);
     await page.screenshot({path:OUT+'/01-desktop-251-real-api.png',animations:'disabled'});
 
     const fullDownloadPromise=page.waitForEvent('download');
@@ -134,16 +138,24 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     expect(methodResponse.status()).toBe(201);
     const method=await methodResponse.json();
     await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
+    await expect(page.getByTestId('new-launch-types')).toBeVisible();
+    await expect(page.getByRole('button',{name:'Transferência indisponível'})).toBeDisabled();
+    await expect(page.getByRole('button',{name:'Benefício indisponível'})).toBeDisabled();
+    mkdirSync(OUT,{recursive:true});
+    await page.screenshot({path:OUT+'/04-choice-desktop.png',animations:'disabled'});
     await expect(page.getByRole('dialog',{name:'Novo lançamento'})).toBeVisible();
-    await page.getByRole('radio',{name:'Receita'}).check();
+    await page.getByRole('button',{name:'Escolher Receita'}).click();
     await page.getByLabel('Descrição *').fill('Receita criada pelo QA operacional');
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('1.234,56');
     await page.getByLabel('Data *').fill('2026-10-23');
     await page.getByLabel('Categoria *').selectOption(incomeCategory.id);
     await page.getByLabel('Conta monetária *').selectOption(account.id);
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
-    await page.screenshot({path:OUT+'/04-new-income-form.png',animations:'disabled'});
-    await page.getByRole('button',{name:'Salvar lançamento'}).click();
+    await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 1.234,56');
+    await page.screenshot({path:OUT+'/05-income-form-desktop.png',animations:'disabled'});
+    await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 10,07');
+    await page.screenshot({path:OUT+'/06-expense-pending-form-desktop.png',animations:'disabled'});
+    await page.getByRole('button',{name:/Salvar lançamento/}).click();
     await expect(page.getByText('252 de 252 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
     let events=await request.get(API+'/finance/events?page=1&pageSize=100',{headers});
     expect(events.status()).toBe(200);
@@ -159,7 +171,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     const balanceBefore=Number((await balanceResponse.json()).available);
 
     await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
-    await page.getByRole('radio',{name:'Receita'}).check();
+    await page.getByRole('button',{name:'Escolher Receita'}).click();
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('7,89');
     await page.getByLabel('Data *').fill('2026-11-02');
     await page.getByLabel('Descrição *').fill('Receita criada pelo QA operacional');
@@ -168,19 +180,21 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await expect(page.getByLabel('Forma de pagamento *')).toHaveValue(method.id);
     await expect(page.getByRole('textbox',{name:'Valor em reais *'})).toHaveValue('7,89');
     await expect(page.getByLabel('Data *')).toHaveValue('2026-11-02');
-    await page.getByRole('button',{name:'Voltar'}).click();
+    await page.getByRole('button',{name:'Voltar',exact:true}).last().click();
+    await expect(page.getByTestId('new-launch-types')).toBeVisible();
+    await page.getByRole('button',{name:'Fechar novo lançamento'}).click();
     console.log('NEW_LAUNCH_AUTOCOMPLETE_NO_VALUE_OR_DATE=PASSED');
 
 
     await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
-    await page.getByRole('radio',{name:'Despesa pendente'}).check();
+    await page.getByRole('button',{name:'Escolher Despesa'}).click();
     await page.getByLabel('Descrição *').fill('Despesa pendente criada pelo QA');
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('10,07');
     await page.getByLabel('Data *').fill('2026-10-23');
     await page.getByLabel('Categoria *').selectOption(expenseCategory.id);
     await page.getByLabel('Conta monetária *').selectOption(account.id);
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
-    await page.getByRole('button',{name:'Salvar lançamento'}).click();
+    await page.getByRole('button',{name:/Salvar lançamento/}).click();
     await expect(page.getByText('253 de 253 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
     events=await request.get(API+'/finance/events?page=1&pageSize=100',{headers});
     const expense=(await events.json()).items.find(x=>x.description==='Despesa pendente criada pelo QA');
@@ -190,7 +204,8 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     expect(Number(expense.amount)).toBe(10.07);
     const balanceAfter=Number((await (await request.get(API+'/finance/monetary-balance?accountId='+encodeURIComponent(account.id)+'&date=2026-10-23',{headers})).json()).available);
     expect(balanceAfter).toBe(balanceBefore);
-    await page.screenshot({path:OUT+'/05-new-pending-expense-saved.png',animations:'disabled'});
+    await page.screenshot({path:OUT+'/07-history-after-pending-expense.png',animations:'disabled'});
+    await expect(page.getByRole('table',{name:'Histórico completo de lançamentos financeiros'}).locator('tbody tr[data-grid-row]:visible').first()).toBeVisible();
 
     const b=await browser.newContext();
     const bPage=await b.newPage();
@@ -206,4 +221,35 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     }finally{await b.close();}
     console.log('NOVO_LANCAMENTO_BASIC_API=PASSED');
   }finally{await context.close();}
+});
+
+
+test('referências visuais: acesso, teclado e overflow em 1024x600, 910x400 e 390x844',async({browser})=>{
+  const sizes=[[1024,600],[910,400],[390,844]];
+  for(const [width,height] of sizes){
+    const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'});
+    const page=await context.newPage();
+    try{
+      await signIn(page,USER_A);
+      await expect(page.getByText('251 de 251 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
+      await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
+      const chooser=page.getByTestId('new-launch-types');
+      await expect(chooser).toBeVisible();
+      await expect(page.getByRole('button',{name:'Transferência indisponível'})).toBeDisabled();
+      await expect(page.getByRole('button',{name:'Benefício indisponível'})).toBeDisabled();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+      await page.screenshot({path:OUT+'/viewport-'+width+'x'+height+'-choice.png',animations:'disabled'});
+      await page.getByRole('button',{name:'Escolher Despesa'}).click();
+      await expect(page.getByTestId('selected-launch-type')).toBeVisible();
+      await expect(page.getByRole('button',{name:/Salvar lançamento/})).toBeVisible();
+      await page.getByLabel('Descrição *').fill('QA visual de acessibilidade');
+      await expect(page.getByRole('region',{name:'Resumo do lançamento'}).getByText('QA visual de acessibilidade')).toBeVisible();
+      await page.getByRole('button',{name:/Salvar lançamento/}).scrollIntoViewIfNeeded();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+      await page.screenshot({path:OUT+'/viewport-'+width+'x'+height+'-form.png',animations:'disabled'});
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog',{name:'Novo lançamento'})).toHaveCount(0);
+    }finally{await context.close();}
+  }
+  console.log('VISUAL_RESPONSIVE_A11Y=PASSED');
 });
