@@ -1,0 +1,8 @@
+# Jamais versionar credenciais/model outputs privados
+.env
+.env.*
+!.env.example
+*.local
+outputs/
+tmp/
+secrets/
