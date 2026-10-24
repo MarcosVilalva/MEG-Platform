@@ -151,6 +151,11 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByLabel('Categoria *').selectOption(incomeCategory.id);
     await page.getByLabel('Conta *').selectOption(account.id);
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
+    await page.getByRole('textbox',{name:'Valor em reais *'}).fill('1,234');
+    await page.getByRole('button',{name:/Salvar lançamento/}).click();
+    await expect(page.getByRole('alert')).toContainText('valor positivo com até duas casas');
+    await expect(page.getByRole('dialog',{name:'Novo lançamento'})).toBeVisible();
+    await page.getByRole('textbox',{name:'Valor em reais *'}).fill('1.234,56');
     await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 1.234,56');
     await page.screenshot({path:OUT+'/05-income-form-desktop.png',animations:'disabled'});
     await page.getByRole('button',{name:/Salvar lançamento/}).click();
@@ -164,6 +169,14 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     expect(income.status).toBe('paid');
     expect(Number(income.amount)).toBe(1234.56);
     expect(income.accountId).toBe(account.id);
+    const duplicate = await request.post(API+'/finance/events',{headers,data:{
+      description:'Receita criada pelo QA operacional',type:'income',status:'planned',date:'2026-10-23',
+      amount:1234.56,accountId:account.id,categoryId:incomeCategory.id,paymentMethodId:method.id,
+      operationId:'visual-qa-duplicate-attempt-2026'
+    }});
+    expect(duplicate.status()).toBe(409);
+    expect((await duplicate.json()).error).toBe('POSSIBLE_DUPLICATE');
+    console.log('NEW_LAUNCH_DUPLICATE_BLOCKED=PASSED');
     const balanceResponse=await request.get(API+'/finance/monetary-balance?accountId='+encodeURIComponent(account.id)+'&date=2026-10-23',{headers});
     expect(balanceResponse.status()).toBe(200);
     const balanceBefore=Number((await balanceResponse.json()).available);
@@ -194,6 +207,14 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
     await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 10,07');
     await page.screenshot({path:OUT+'/06-expense-pending-form-desktop.png',animations:'disabled'});
+    const failCreate = async route => {
+      if(route.request().method()==='POST') await route.fulfill({status:503,contentType:'application/json',body:'{"error":"SERVICE_UNAVAILABLE"}'});
+      else await route.continue();
+    };
+    await page.route('**/finance/events',failCreate);
+    await page.getByRole('button',{name:/Salvar lançamento/}).click();
+    await expect(page.getByRole('alert')).toContainText('Não foi possível confirmar a gravação');
+    await page.unroute('**/finance/events',failCreate);
     await page.getByRole('button',{name:/Salvar lançamento/}).click();
     await expect(page.getByText('253 de 253 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
     events=await request.get(API+'/finance/events?page=1&pageSize=100',{headers});
