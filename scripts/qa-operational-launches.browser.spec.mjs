@@ -243,7 +243,7 @@ test('referências visuais: acesso, teclado e overflow em 1024x600, 910x400 e 39
       await expect(page.getByTestId('selected-launch-type')).toBeVisible();
       await expect(page.getByRole('button',{name:/Salvar lançamento/})).toBeVisible();
       await page.getByLabel('Descrição *').fill('QA visual de acessibilidade');
-      await expect(page.getByRole('region',{name:'Resumo do lançamento'}).getByText('QA visual de acessibilidade')).toBeVisible();
+      await expect(page.locator('.meg-new-launch__summary').getByText('QA visual de acessibilidade')).toBeVisible();
       await page.getByRole('button',{name:/Salvar lançamento/}).scrollIntoViewIfNeeded();
       expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
       await page.screenshot({path:OUT+'/viewport-'+width+'x'+height+'-form.png',animations:'disabled'});
