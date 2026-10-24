@@ -20,6 +20,7 @@ function currentAuthDestination(): AuthDestination {
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [financialView, setFinancialView] = useState<'launches' | 'home'>('launches');
+  const [newLaunchToken, setNewLaunchToken] = useState(0);
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
@@ -210,9 +211,11 @@ function AuthGateway() {
       userName={session.user.name}
       activeView={financialView}
       onNavigate={setFinancialView}
+      canCreate={session.user.role !== 'VIEWER'}
+      onNewLaunch={() => { setFinancialView('launches'); setNewLaunchToken(n => n + 1); }}
     >
       {financialView === 'launches' ? (
-        <LaunchesScreen key={session.user.id} userId={session.user.id} userName={session.user.name} />
+        <LaunchesScreen key={session.user.id} userId={session.user.id} userName={session.user.name} canCreate={session.user.role !== 'VIEWER'} newLaunchToken={newLaunchToken} />
       ) : (
         <section className="meg-shell-stage" aria-label="Início financeiro">
           <p>O panorama financeiro será disponibilizado após a integração dos indicadores canônicos. Consulte seus lançamentos pelo menu.</p>

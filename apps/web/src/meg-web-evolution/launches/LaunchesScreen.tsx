@@ -4,8 +4,9 @@ import { DataGrid } from '../datagrid/DataGrid';
 import type { DataGridColumn } from '../datagrid/types';
 import { loadAuthorizedEventHistory, toEventGridRows, type EventGridRow, type LoadProgress } from './history';
 import './launches.css';
+import { NewLaunchForm } from './NewLaunchForm';
 
-type Props = { userId: string; userName: string };
+type Props = { userId: string; userName: string; canCreate?: boolean; newLaunchToken?: number };
 
 const eventTypes = {
   income: { label: 'Receita' },
@@ -24,13 +25,16 @@ const eventStatuses = {
   archived: { label: 'Arquivado' },
 };
 
-export function LaunchesScreen({ userId, userName }: Props) {
+export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchToken = 0 }: Props) {
   const [events, setEvents] = useState<FinancialEvent[] | null>(null);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<LoadProgress>({ loaded: 0, total: 0 });
   const [reloadVersion, setReloadVersion] = useState(0);
   const [filteredCount, setFilteredCount] = useState(0);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
+  const [savedNotice, setSavedNotice] = useState('');
+  useEffect(() => { if (newLaunchToken > 0 && canCreate) setShowNew(true); }, [newLaunchToken, canCreate]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,11 +89,19 @@ export function LaunchesScreen({ userId, userName }: Props) {
           <h1>Lançamentos</h1>
           <p>Histórico financeiro autorizado, carregado da API. A busca, os filtros e as exportações abrangem todos os registros carregados.</p>
         </div>
-        <button type="button" className="meg-launches__refresh" onClick={refresh} disabled={events === null && !error}>
-          Atualizar consulta
-        </button>
+        <div className="meg-launches__actions">
+          {canCreate && <button type="button" className="meg-launches__refresh" onClick={() => setShowNew(true)}>+ Novo lançamento</button>}
+          <button type="button" className="meg-launches__refresh" onClick={refresh} disabled={events === null && !error}>Atualizar consulta</button>
+        </div>
       </header>
 
+      {savedNotice && <p className="meg-launches__message" role="status">{savedNotice}</p>}
+      {!canCreate && <p className="meg-launches__count">Acesso de consulta. Sua sessão não possui permissão de gravação.</p>}
+      {showNew && canCreate && <NewLaunchForm onClose={() => setShowNew(false)} onSaved={event => {
+        setShowNew(false);
+        setSavedNotice('Gravação confirmada pelo servidor: ' + event.description + '. Atualizando histórico...');
+        refresh();
+      }} />}
       {events === null ? (
         <div className="meg-launches__message" role={error ? 'alert' : 'status'} aria-live="polite">
           {error ? (
