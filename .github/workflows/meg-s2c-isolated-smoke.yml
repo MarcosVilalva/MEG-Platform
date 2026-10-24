@@ -1,0 +1,99 @@
+name: MEG Screenshot-to-Code isolated smoke (no API keys)
+
+on:
+  push:
+    branches:
+      - poc/meg-web-screenshot-to-code-seletor
+    paths:
+      - .github/workflows/meg-s2c-isolated-smoke.yml
+      - experiments/screenshot-to-code/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-smoke:
+    name: S2C upstream pinned setup and loopback only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      UPSTREAM_SHA: a8139779f7c5ae231b7f2a86fa7f83ddc5f7badc
+      PUPPETEER_SKIP_DOWNLOAD: "1"
+      CI: "true"
+    steps:
+      - name: Install Node.js matching tool requirements
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pnpm matching upstream packageManager
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+      - name: Install Python supported by upstream
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Clone tool in disposable runner TEMP, not MEG source
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOL_DIR="$RUNNER_TEMP/screenshot-to-code"
+          git init "$TOOL_DIR"
+          git -C "$TOOL_DIR" remote add origin https://github.com/abi/screenshot-to-code.git
+          git -C "$TOOL_DIR" fetch --depth=1 origin "$UPSTREAM_SHA"
+          git -C "$TOOL_DIR" checkout --detach FETCH_HEAD
+          test "$(git -C "$TOOL_DIR" rev-parse HEAD)" = "$UPSTREAM_SHA"
+          echo "PINNED_S2C_SHA=$(git -C "$TOOL_DIR" rev-parse HEAD)"
+          echo "S2C_TOOL_DIR=$TOOL_DIR" >> "$GITHUB_ENV"
+      - name: Install backend dependencies isolated
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check poetry
+          cd "$S2C_TOOL_DIR/backend"
+          poetry env use python3.11
+          poetry install --no-interaction --no-root --only main
+          poetry run python -c "import fastapi,uvicorn; print('S2C_BACKEND_IMPORTS=PASSED')"
+      - name: Install frontend dependencies isolated
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$S2C_TOOL_DIR/frontend"
+          pnpm install --frozen-lockfile
+          test -x node_modules/.bin/vite
+          echo "S2C_FRONTEND_DEPENDENCIES=PASSED"
+      - name: Start services on loopback only and test frontend to backend proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$S2C_TOOL_DIR/backend"
+          nohup poetry run uvicorn main:app --host 127.0.0.1 --port 7001 >"$RUNNER_TEMP/meg-s2c-api.log" 2>&1 &
+          API_PID=$!
+          cd "$S2C_TOOL_DIR/frontend"
+          nohup pnpm exec vite --host 127.0.0.1 --port 5173 >"$RUNNER_TEMP/meg-s2c-web.log" 2>&1 &
+          WEB_PID=$!
+          cleanup() { kill "$API_PID" "$WEB_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 90); do
+            if curl -fsS --max-time 3 http://127.0.0.1:7001/ -o "$RUNNER_TEMP/meg-s2c-backend.html" &&
+               curl -fsS --max-time 3 http://127.0.0.1:5173/ -o "$RUNNER_TEMP/meg-s2c-frontend.html"; then
+               break
+            fi
+            sleep 2
+          done
+          grep -q "Your backend is running correctly" "$RUNNER_TEMP/meg-s2c-backend.html"
+          grep -qi "html" "$RUNNER_TEMP/meg-s2c-frontend.html"
+          curl -fsS --max-time 30 http://127.0.0.1:5173/api/capabilities -o "$RUNNER_TEMP/meg-s2c-proxy.json"
+          python - <<'PY'
+          import json,os
+          with open(os.path.join(os.environ["RUNNER_TEMP"],"meg-s2c-proxy.json"),encoding="utf8") as f:
+              v=json.load(f)
+          assert isinstance(v.get("screenshot_preview"),bool),v
+          print("S2C_FRONTEND_BACKEND_PROXY=PASSED")
+          print("S2C_BROWSER_PREVIEW_AVAILABLE="+str(v["screenshot_preview"]))
+          print("S2C_GENERATION=NOT_RUN_NO_PAID_API_AUTHORIZATION")
+          PY
+          echo "S2C_BACKEND_HTTP=PASSED"
+          echo "S2C_FRONTEND_HTTP=PASSED"
