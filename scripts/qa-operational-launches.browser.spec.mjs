@@ -305,8 +305,8 @@ test('referências visuais: acesso, teclado e overflow em 1024x600, 910x400 e 39
 });
 
 
-test('referências oficiais no tamanho nativo 1648x928: proporção do seletor e formulário', async({browser}) => {
-  const context = await browser.newContext({viewport:{width:1648,height:928},reducedMotion:'reduce'});
+test('referências oficiais no tamanho nativo 1672x941: proporção do seletor e formulário', async({browser}) => {
+  const context = await browser.newContext({viewport:{width:1672,height:941},reducedMotion:'reduce'});
   const page = await context.newPage();
   try {
     await signIn(page,USER_A);
@@ -323,7 +323,7 @@ test('referências oficiais no tamanho nativo 1648x928: proporção do seletor e
     await expect(page.locator('.meg-new-launch__choice-foot')).toBeVisible();
     await expect(page.getByRole('button',{name:'Transferência indisponível'})).toBeDisabled();
     await expect(page.getByRole('button',{name:'Benefício indisponível'})).toBeDisabled();
-    await page.screenshot({path:OUT+'/reference-native-1648x928-choice.png',animations:'disabled'});
+    await page.screenshot({path:OUT+'/reference-native-1672x941-choice.png',animations:'disabled'});
     await expenseCard.click();
     const form = page.getByRole('dialog',{name:'Novo lançamento'});
     const formBox = await form.boundingBox();
@@ -344,7 +344,7 @@ test('referências oficiais no tamanho nativo 1648x928: proporção do seletor e
     await pickFirst('Conta *');
     await pickFirst('Forma de pagamento *');
     await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 18,20');
-    await page.screenshot({path:OUT+'/reference-native-1648x928-form.png',animations:'disabled'});
+    await page.screenshot({path:OUT+'/reference-native-1672x941-form.png',animations:'disabled'});
     console.log('REFERENCE_NATIVE_1648X928=PASSED');
   } finally { await context.close(); }
 });
