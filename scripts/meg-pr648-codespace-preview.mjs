@@ -312,7 +312,29 @@ async function main() {
     fail('Validação autenticada /api/auth/me via navegador falhou: HTTP '
       + viaProxySession.status + '.');
   }
-  console.log('GATE LOGIN: rota Web Evolution, proxy financeiro e /auth/me autenticado OK.');
+  // A verificação anterior de /auth/me não exercitava o POST do formulário
+  // com Origin do Codespaces. Reproduzir o navegador via proxy antes de
+  // anunciar o preview; um HTTP 500 por CORS deve bloquear a homologação.
+  const browserOrigin = process.env.CODESPACE_NAME
+    ? 'https://' + process.env.CODESPACE_NAME + '-5174.app.github.dev'
+    : WEB;
+  const browserLogin = await fetch(WEB + '/api/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Host: new URL(browserOrigin).host,
+      Origin: browserOrigin,
+    },
+    body: JSON.stringify(credentials),
+    signal: AbortSignal.timeout(20000),
+  });
+  const browserLoginValue = await browserLogin.json().catch(() => ({}));
+  if (!browserLogin.ok || browserLoginValue?.user?.email !== EMAIL
+    || typeof browserLoginValue?.accessToken !== 'string') {
+    fail('Login do navegador pelo proxy Codespaces falhou: HTTP '
+      + browserLogin.status + '. Preview bloqueado até corrigir a origem/CORS.');
+  }
+  console.log('GATE LOGIN: Web Evolution, /auth/me e POST /api/auth/login com Origin do navegador OK.');
 
   const revision = output('git', ['rev-parse', '--short=9', 'HEAD']);
   const host = process.env.CODESPACE_NAME
