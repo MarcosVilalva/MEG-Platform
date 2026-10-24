@@ -168,3 +168,64 @@
   .meg-new-launch__footer{gap:.4rem}
 }
 @media(prefers-reduced-motion:reduce) {.meg-new-launch__option{transition:none}.meg-new-launch__option:hover{transform:none}}
+
+
+/* Acabamento da PR #648: uma área rolável, campos visíveis acima das ações e
+   tipografia/ícones coerentes sem imagens ou bibliotecas externas. */
+.meg-new-launch {
+  scroll-padding-block-start: 5rem;
+  scroll-padding-block-end: 6.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--meg-line-strong) var(--meg-surface);
+}
+.meg-new-launch__header {
+  position: sticky;
+  top: -1px;
+  z-index: 5;
+  background: #041a1f;
+  border-radius: .65rem .65rem 0 0;
+}
+.meg-new-launch__option-icon svg {display:block;flex:none}
+.meg-new-launch__option:disabled {
+  opacity: 1;
+  filter: none;
+  color: #d0e7e3;
+  background: #06262c;
+  border-style: dashed;
+}
+.meg-new-launch__option:disabled .meg-new-launch__option-arrow {
+  color: #c0d0ce;
+  border-color: rgba(190,215,210,.45);
+}
+.meg-new-launch__option:disabled .meg-new-launch__option-copy em {
+  color: #d0e5df;
+}
+.meg-new-launch__type-pill.is-expense span {
+  border-color: rgba(255,90,95,.62);
+  color: #ffa7a8;
+  background: rgba(255,90,95,.09);
+}
+.meg-new-launch__type-pill.is-income span {
+  border-color: var(--meg-line-strong);
+}
+.meg-new-launch__summary-mark svg {display:block}
+.meg-new-launch__columns { min-width: 0; }
+.meg-new-launch__field, .meg-new-launch__field-group,
+.meg-new-launch__summary, .meg-new-launch__locked {
+  scroll-margin-block-end: 6.25rem;
+}
+.meg-new-launch__footer {
+  bottom: 0;
+  background: #041a1f;
+  padding: .7rem .4rem .5rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--meg-line-strong);
+  box-shadow: 0 -.7rem 1.5rem rgba(0,10,13,.75);
+}
+.meg-new-launch__footer button {min-width:0}
+.meg-new-launch__close, .meg-new-launch__back-icon {background: #063136}
+.meg-new-launch__status .is-locked {opacity:1;color:#d1dede;background:rgba(2,22,25,.95)}
+@media(max-width:639px) {
+  .meg-new-launch {scroll-padding-block-start: 4rem;scroll-padding-block-end: 6.5rem;}
+  .meg-new-launch__footer{padding:.6rem .2rem .5rem}
+}

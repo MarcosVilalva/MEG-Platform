@@ -3,7 +3,7 @@ import { financeClient, type Account, type Category, type PaymentMethod, type Fi
 import { Icon } from '../components/Icon';
 import {
   basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod,
-  autocompleteFromHistory, parsePositiveBRL, type BasicLaunchFields, type BasicLaunchType,
+  autocompleteFromHistory, parsePositiveBRL, formatLaunchDateBR, type BasicLaunchFields, type BasicLaunchType,
 } from './new-launch';
 import './new-launch.css';
 
@@ -12,10 +12,10 @@ type Catalog = { accounts: Account[]; categories: Category[]; methods: PaymentMe
 type Stage = 'choose' | 'form';
 const blankCatalog: Catalog = { accounts: [], categories: [], methods: [] };
 const types = [
-  { id: 'expense', title: 'Despesa', subtitle: 'Saídas, compras e gastos', symbol: '↓', detail: 'Despesa pendente', available: true },
-  { id: 'income', title: 'Receita', subtitle: 'Entradas e recebimentos', symbol: '↑', detail: 'Recebimento', available: true },
-  { id: 'transfer', title: 'Transferência', subtitle: 'Movimentação entre contas', symbol: '⇄', detail: 'Exige fluxo de duas contas', available: false },
-  { id: 'benefit', title: 'Benefício', subtitle: 'Saldo e recarga de alimentação', symbol: '◇', detail: 'Exige contrato próprio', available: false },
+  { id: 'expense', title: 'Despesa', subtitle: 'Saídas, compras e gastos', icon: 'card', detail: 'Despesa pendente', available: true },
+  { id: 'income', title: 'Receita', subtitle: 'Entradas e recebimentos', icon: 'chart', detail: 'Recebimento', available: true },
+  { id: 'transfer', title: 'Transferência', subtitle: 'Movimentação entre contas', icon: 'chevronsRight', detail: 'Exige fluxo de duas contas', available: false },
+  { id: 'benefit', title: 'Benefício', subtitle: 'Saldo e recarga de alimentação', icon: 'gift', detail: 'Exige contrato próprio', available: false },
 ] as const;
 function currentDay() {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -62,8 +62,14 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
       ) || []).filter(node => node.getClientRects().length > 0);
       if (!controls.length) return;
       const first = controls[0], last = controls[controls.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      if (!dialog.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === title.current)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
     };
     document.addEventListener('keydown', keyboard);
     return () => {
@@ -184,7 +190,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                     className={'meg-new-launch__option is-' + option.id}
                     onClick={() => { if (option.id === 'income' || option.id === 'expense') chooseType(option.id); }}
                   >
-                    <span className="meg-new-launch__option-icon" aria-hidden="true">{option.symbol}</span>
+                    <span className="meg-new-launch__option-icon" aria-hidden="true"><Icon name={option.icon} width={34} height={34} /></span>
                     <span className="meg-new-launch__option-copy"><strong>{option.title}</strong><small>{option.subtitle}</small><em>{disabled ? 'Em preparação: ' + option.detail : option.detail}</em></span>
                     <span className="meg-new-launch__option-arrow" aria-hidden="true">{disabled ? '•' : '›'}</span>
                   </button>
@@ -199,7 +205,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
               <button type="button" onClick={() => setFetchVersion(n => n + 1)}>Tentar novamente</button>
             </div> :
             <form onSubmit={submit} aria-label="Formulário de novo lançamento" noValidate={false}>
-              <div className="meg-new-launch__type-pill" data-testid="selected-launch-type">
+              <div className={'meg-new-launch__type-pill is-' + fields.type} data-testid="selected-launch-type">
                 <span>{fields.type === 'income' ? '↑ Receita' : '↓ Despesa pendente'}</span>
                 <button type="button" onClick={back} disabled={saving}>Alterar tipo</button>
               </div>
@@ -272,10 +278,10 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                     <span className="meg-new-launch__group-title">Situação</span>
                     <div className="meg-new-launch__status" role="group" aria-label="Situação do lançamento">
                       <span className="is-active">{fields.type === 'income' ? 'Definida pelo servidor' : 'Pendente'}</span>
-                      <span className="is-locked" aria-disabled="true">{fields.type === 'expense' ? 'Paga indisponível' : 'Recebimento confirmado pelo servidor'}</span>
+                      <span className="is-locked" aria-disabled="true">{fields.type === 'expense' ? 'Paga: não liberada' : 'Status final: servidor'}</span>
                     </div>
                     <p className="meg-new-launch__hint">{fields.type === 'expense'
-                      ? 'Sem débito nesta etapa. Pagamento à vista exige validação atômica de saldo.'
+                      ? 'Sem débito. Pagamento à vista depende da validação segura de saldo.'
                       : 'O servidor aplica o status financeiro da receita após confirmar a gravação.'}</p>
                   </div>
                   <div className="meg-new-launch__locked">
@@ -288,10 +294,10 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                   </label>
                 </div>
 
-                <aside className="meg-new-launch__summary" aria-label="Resumo do lançamento" aria-live="polite">
-                  <div className="meg-new-launch__summary-title"><span className="meg-new-launch__summary-mark">≡</span>
+                <aside className="meg-new-launch__summary" aria-label="Resumo do lançamento">
+                  <div className="meg-new-launch__summary-title"><span className="meg-new-launch__summary-mark"><Icon name="list" width={24} height={24}/></span>
                     <div><h3>Resumo do lançamento</h3><p>Confira os dados antes de salvar.</p></div></div>
-                  <div className={'meg-new-launch__amount' + (fields.type === 'expense' ? ' is-expense' : '')} data-testid="new-launch-summary-amount">
+                  <div className={'meg-new-launch__amount' + (fields.type === 'expense' ? ' is-expense' : '')} data-testid="new-launch-summary-amount" aria-live="polite">
                     {visibleAmount === null ? 'Valor a informar' : currency.format(visibleAmount)}
                   </div>
                   <dl>
@@ -300,7 +306,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                     <div><dt>Categoria</dt><dd>{matchingCategory?.name || 'Não selecionada'}</dd></div>
                     <div><dt>Conta</dt><dd>{matchingAccount?.name || 'Não selecionada'}</dd></div>
                     <div><dt>Forma de pagamento</dt><dd>{matchingMethod?.name || 'Não selecionada'}</dd></div>
-                    <div><dt>Data</dt><dd>{fields.day || 'Não informada'}</dd></div>
+                    <div><dt>Data</dt><dd data-testid="new-launch-summary-date">{formatLaunchDateBR(fields.day)}</dd></div>
                     <div><dt>Situação</dt><dd>{fields.type === 'income' ? 'Determinada pelo servidor' : 'Pendente, sem baixa'}</dd></div>
                   </dl>
                   <div className="meg-new-launch__summary-foot">Prévia das informações digitadas. Nenhuma movimentação é criada antes de salvar.</div>

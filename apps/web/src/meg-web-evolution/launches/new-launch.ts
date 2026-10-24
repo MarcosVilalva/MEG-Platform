@@ -13,6 +13,13 @@ export function parsePositiveBRL(value: string): number | null {
   return cents / 100;
 }
 
+/** Exibição do resumo, sem construir Date para não deslocar o dia por fuso horário. */
+export function formatLaunchDateBR(day: string): string {
+  if (!validISODate(day)) return 'Não informada';
+  const [year, month, date] = day.split('-');
+  return date + '/' + month + '/' + year;
+}
+
 export function validISODate(day: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
   const date = new Date(day + 'T00:00:00.000Z');

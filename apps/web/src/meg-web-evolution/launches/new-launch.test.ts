@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod, parsePositiveBRL, validISODate, autocompleteFromHistory } from './new-launch';
+import { basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod, parsePositiveBRL, validISODate, autocompleteFromHistory, formatLaunchDateBR } from './new-launch';
 import type { Account, Category, PaymentMethod } from '../../app/finance-client';
 
 const accounts = [
@@ -67,4 +67,11 @@ test('autocomplete recupera apenas vínculos autorizados sem data e sem valor do
   assert.equal(known && 'amount' in known, false);
   assert.equal(known && 'date' in known, false);
   assert.equal(autocompleteFromHistory('Salário','expense', old as any, accounts, categories, methods), null);
+});
+
+test('data resumida em pt-BR mantém exatamente o dia enviado, sem conversão de fuso', () => {
+  assert.equal(formatLaunchDateBR('2026-10-23'), '23/10/2026');
+  assert.equal(formatLaunchDateBR('2024-02-29'), '29/02/2024');
+  assert.equal(formatLaunchDateBR('2026-02-29'), 'Não informada');
+  assert.equal(formatLaunchDateBR(''), 'Não informada');
 });
