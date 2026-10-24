@@ -95,7 +95,7 @@ export async function listFinancialEvents(userId: string, input: { page: number;
       where,
       skip: (input.page - 1) * input.pageSize,
       take: input.pageSize,
-      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
       include: { account: true, category: true, paymentMethod: true, importedRow: { select: { rowNumber: true, rawData: true } } }
     }),
     prisma.financialEvent.count({ where })
