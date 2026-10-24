@@ -464,6 +464,21 @@
 }
 .meg-new-launch__field, .meg-new-launch__field-group, .meg-new-launch__summary, .meg-new-launch__locked { scroll-margin-block-end: 6.25rem; }
 
+/* Desktop: dialog acompanha o conteúdo à direita do menu lateral.
+   O seletor mantém a moldura central da referência da Etapa A. */
+@media (min-width: 1024px) {
+  .meg-new-launch__overlay:has(.meg-new-launch.is-form) {
+    justify-items: end;
+    align-items: end;
+    padding-right: 2.5vw;
+    padding-bottom: clamp(.75rem, 2.4vw, 1.5rem);
+  }
+  .meg-new-launch.is-form {
+    width: min(90rem, 86.1vw);
+    min-height: min(840px, calc(100dvh - 3.2rem));
+  }
+}
+
 /* Somente os breakpoints estruturais oficiais: 1024px e 640px. */
 @media (max-width: 1023px) {
   .meg-new-launch__overlay { padding: .45rem; }
