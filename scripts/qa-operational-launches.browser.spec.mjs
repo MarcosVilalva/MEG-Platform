@@ -136,7 +136,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
     await expect(page.getByRole('dialog',{name:'Novo lançamento'})).toBeVisible();
     await page.getByRole('radio',{name:'Receita'}).check();
-    await page.getByRole('textbox',{name:'Descrição *'}).fill('Receita criada pelo QA operacional');
+    await page.getByLabel('Descrição *').fill('Receita criada pelo QA operacional');
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('1.234,56');
     await page.getByLabel('Data *').fill('2026-10-23');
     await page.getByLabel('Categoria *').selectOption(incomeCategory.id);
@@ -162,7 +162,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByRole('radio',{name:'Receita'}).check();
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('7,89');
     await page.getByLabel('Data *').fill('2026-11-02');
-    await page.getByRole('textbox',{name:'Descrição *'}).fill('Receita criada pelo QA operacional');
+    await page.getByLabel('Descrição *').fill('Receita criada pelo QA operacional');
     await expect(page.getByLabel('Categoria *')).toHaveValue(incomeCategory.id);
     await expect(page.getByLabel('Conta monetária *')).toHaveValue(account.id);
     await expect(page.getByLabel('Forma de pagamento *')).toHaveValue(method.id);
@@ -174,7 +174,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
 
     await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
     await page.getByRole('radio',{name:'Despesa pendente'}).check();
-    await page.getByRole('textbox',{name:'Descrição *'}).fill('Despesa pendente criada pelo QA');
+    await page.getByLabel('Descrição *').fill('Despesa pendente criada pelo QA');
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('10,07');
     await page.getByLabel('Data *').fill('2026-10-23');
     await page.getByLabel('Categoria *').selectOption(expenseCategory.id);
