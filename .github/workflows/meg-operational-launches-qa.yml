@@ -43,14 +43,14 @@ jobs:
       - name: Checkout exact financial delivery SHA
         uses: actions/checkout@v4
         with:
-          ref: 0b2bfc58b956b09d12be50b313255d22518b2fb9
+          ref: 578c43ac02ed53414859348f71452bd88f307b8d
           path: source
       - name: Guard exact SHA and local database
         shell: bash
         run: |
           set -euo pipefail
           s=$(git -C source rev-parse HEAD)
-          test "$s" = '0b2bfc58b956b09d12be50b313255d22518b2fb9'
+          test "$s" = '578c43ac02ed53414859348f71452bd88f307b8d'
           test "$DATABASE_URL" = 'postgresql://ci:ci@127.0.0.1:5432/meg'
           test "$NODE_ENV" = test
           echo "VERIFIED_FINANCIAL_SHA=$s"
