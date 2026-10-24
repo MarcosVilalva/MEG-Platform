@@ -25,7 +25,7 @@ function pageSource(count: number) {
     requested,
     loader: async (page: number, pageSize: number, _search: string, _signal: AbortSignal): Promise<FinancialEventPage> => {
       requested.push(page);
-      return { page, pageSize, total: rows.length, items: rows.slice((page-1)*pageSize, page*pageSize) };
+      return { page, pageSize, total: rows.length, revision: 'rev-'+rows.length, items: rows.slice((page-1)*pageSize, page*pageSize) };
     },
   };
 }
@@ -34,7 +34,7 @@ test('consulta vazia só publica histórico completo vazio', async () => {
   const source = pageSource(0);
   const result = await loadAuthorizedEventHistory(source.loader, new AbortController().signal);
   assert.deepEqual(result, []);
-  assert.deepEqual(source.requested, [1]);
+  assert.deepEqual(source.requested, [1,1]);
 });
 
 test('consulta integral 251 lançamentos de quatro páginas? são três, sem recorte de 100', async () => {
@@ -42,7 +42,7 @@ test('consulta integral 251 lançamentos de quatro páginas? são três, sem rec
   const seen: number[] = [];
   const events = await loadAuthorizedEventHistory(source.loader, new AbortController().signal, v => seen.push(v.loaded));
   assert.equal(events.length, 251);
-  assert.deepEqual(source.requested,[1,2,3]);
+  assert.deepEqual(source.requested,[1,2,3,1]);
   assert.deepEqual(seen,[100,200,251]);
   assert.equal(events[250].id,'event-250');
   const mapped = toEventGridRows(events);
@@ -100,4 +100,31 @@ test('valores do servidor são preservados para exibição sem recalcular saldo'
   assert.equal(mapped[0].signedAmount,-42.5);
   assert.equal(mapped[1].signedAmount,42.5);
   assert.equal(mapped[0].competence,'2026-09');
+});
+
+test('não publica quando uma escrita altera a versão sem alterar contagem',async()=>{
+  const src=pageSource(201);
+  await assert.rejects(loadAuthorizedEventHistory(async (...args)=>{
+    const data=await src.loader(...args);
+    return args[0]===2?{...data,revision:'rev-after-write'}:data;
+  },new AbortController().signal),/mudaram durante/i);
+});
+
+test('revalida versão na saída mesmo quando todas as páginas têm a mesma revisão',async()=>{
+  const src=pageSource(201);
+  let calls=0;
+  await assert.rejects(loadAuthorizedEventHistory(async (...args)=>{
+    const data=await src.loader(...args);
+    calls++;
+    return calls===4?{...data,revision:'rev-after-write'}:data;
+  },new AbortController().signal),/mudou antes da confirmação/i);
+  assert.deepEqual(src.requested,[1,2,3,1]);
+});
+
+test('rejeita resposta sem revisão transacional mesmo no histórico vazio',async()=>{
+  const src=pageSource(0);
+  await assert.rejects(loadAuthorizedEventHistory(async (...args)=>{
+    const data=await src.loader(...args);
+    return {...data,revision:undefined};
+  },new AbortController().signal),/Resposta inválida/i);
 });

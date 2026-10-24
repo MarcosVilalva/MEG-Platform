@@ -90,7 +90,7 @@ export async function listFinancialEvents(userId: string, input: { page: number;
       ]
     } : {})
   };
-  const [items, total] = await prisma.$transaction([
+  const [items, total, revisionInfo] = await prisma.$transaction([
     prisma.financialEvent.findMany({
       where,
       skip: (input.page - 1) * input.pageSize,
@@ -98,9 +98,13 @@ export async function listFinancialEvents(userId: string, input: { page: number;
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
       include: { account: true, category: true, paymentMethod: true, importedRow: { select: { rowNumber: true, rawData: true } } }
     }),
-    prisma.financialEvent.count({ where })
-  ]);
+    prisma.financialEvent.count({ where }),
+    prisma.financialEvent.aggregate({ where, _max: { updatedAt: true } }),
+  ], { isolationLevel: 'RepeatableRead' });
+  // Página, total e versão do histórico lidos na mesma fotografia transacional.
+  const revision = String(total) + ':' + (revisionInfo._max.updatedAt?.toISOString() ?? 'empty');
   return {
+    revision,
     items: items.map((item) => ({
       ...item,
       sourceRowNumber: item.importedRow?.rowNumber ?? null,

@@ -18,6 +18,7 @@ export async function loadAuthorizedEventHistory(
   const rows: FinancialEvent[] = [];
   const ids = new Set<string>();
   let expectedTotal: number | null = null;
+  let revision: string | null = null;
 
   for (let page = 1; ; page += 1) {
     if (signal.aborted) throw new DOMException('Consulta cancelada', 'AbortError');
@@ -25,11 +26,18 @@ export async function loadAuthorizedEventHistory(
     if (signal.aborted) throw new DOMException('Consulta cancelada', 'AbortError');
 
     if (!response || !Number.isSafeInteger(response.total) || response.total < 0
+      || typeof response.revision !== 'string' || !response.revision
       || response.page !== page || response.pageSize !== pageSize
       || !Array.isArray(response.items)) {
       throw new Error('Resposta inválida da consulta financeira.');
     }
-    if (expectedTotal === null) expectedTotal = response.total;
+    if (expectedTotal === null) {
+      expectedTotal = response.total;
+      revision = response.revision;
+    }
+    if (response.revision !== revision) {
+      throw new Error('Os lançamentos mudaram durante a leitura. Atualize o histórico completo.');
+    }
     if (response.total !== expectedTotal) {
       throw new Error('O histórico mudou durante a consulta. Atualize para conferir todos os registros.');
     }
@@ -45,7 +53,16 @@ export async function loadAuthorizedEventHistory(
       rows.push(item);
     }
     onProgress({ loaded: rows.length, total: expectedTotal });
-    if (rows.length === expectedTotal) return rows;
+    if (rows.length === expectedTotal) {
+      // Revalidar depois da última página, inclusive no histórico vazio.
+      const confirm = await loadPage(1, pageSize, '', signal);
+      if (signal.aborted) throw new DOMException('Consulta cancelada', 'AbortError');
+      if (!confirm || confirm.revision !== revision || confirm.total !== expectedTotal
+        || confirm.page !== 1 || confirm.pageSize !== pageSize) {
+        throw new Error('O histórico mudou antes da confirmação. Atualize a consulta.');
+      }
+      return rows;
+    }
   }
 }
 

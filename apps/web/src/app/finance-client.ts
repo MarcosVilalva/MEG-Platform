@@ -73,6 +73,7 @@ export type FinancialEvent = {
 };
 
 export type FinancialEventPage = {
+  revision?: string;
   items: FinancialEvent[];
   total: number;
   page: number;
