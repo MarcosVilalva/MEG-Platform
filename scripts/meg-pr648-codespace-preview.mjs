@@ -106,6 +106,7 @@ async function main() {
     HOME: homedir(), USER: process.env.USER || 'codespace',
     NODE_ENV: 'development', LOG_LEVEL: 'warn',
     DATABASE_URL: DB_URL, PORT: '3334', HOST: '127.0.0.1',
+    MEG_PR648_PREVIEW_LOCAL_DB: '1',
     ADMIN_EMAIL: EMAIL,
     CORS_ORIGINS: ['http://localhost:5174', 'http://127.0.0.1:5174',
       ...(process.env.CODESPACE_NAME ? ['https://' + process.env.CODESPACE_NAME + '-5174.app.github.dev'] : [])].join(','),
@@ -155,6 +156,11 @@ async function main() {
   }
   const token = auth.value.accessToken;
   if (!token) fail('Login de homologação não retornou token.');
+
+  // O primeiro cadastro cria o workspace depois da rotina comercial de startup.
+  // O writer exige licença ACTIVE/TRIAL: repetir a rotina canônica no banco
+  // local resolve a ordem de inicialização sem desativar qualquer proteção.
+  command('npm', ['exec', '--', 'tsx', 'scripts/meg-pr648-preview-commercial.ts'], safeEnv);
   for (const [path, desired] of [
     ['/finance/accounts', [
       { name: 'Conta de teste', type: 'checking', institution: 'Banco fictício', openingBalance: 0 },
