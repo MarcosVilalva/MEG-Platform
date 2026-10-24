@@ -276,7 +276,14 @@ async function main() {
     }
   }
 
-  const webEnv = { ...safeEnv, VITE_API_URL: '/api' };
+  // A configuracao do proxy confere a origem do browser contra CODESPACE_NAME.
+  // Nao basta passar essa variavel para a API: o processo Vite tambem precisa
+  // recebe-la explicitamente, pois safeEnv deliberadamente filtra o ambiente.
+  const webEnv = {
+    ...safeEnv,
+    VITE_API_URL: '/api',
+    CODESPACE_NAME: process.env.CODESPACE_NAME || '',
+  };
   const webChild = spawnManaged('Vite de homologação',
     ['--workspace', 'apps/web', 'run', 'dev', '--',
       '--config', 'vite.codespace-preview.config.ts'], webEnv);
