@@ -1230,3 +1230,15 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Gates:** CI e QA real Fastify/PostgreSQL descartável DEVEM ser refeitos após este checkpoint no mesmo SHA final. Android RC1 e Financial E2E dedicados skipped quando não executados. Capturas no artifact do QA comprovam implementação, não aceitação visual.
 
 - **Ajuste de conformidade de assets:** barras ilustrativas introduzidas em implementação anterior foram excluídas do seletor. A montanha oficial continua ausente como asset independente, sem substituição visual improvisada. Capturas adicionais em 1672×941 devem ser confrontadas diretamente com as duas imagens oficiais em tamanho nativo.
+
+
+---
+
+## PR #648 — Reconstrução visual direta em React/CSS (24/10/2026)
+
+- **Autorização:** o usuário optou pela reconstrução direta, sem API de conversão Screenshot to Code. Escopo exclusivo: seletor de tipos e formulário da PR #648. Prints oficiais soberanos: "Imagem do ChatGPT 3 de out. de 2026, 17_31_26.png" (seletor) e "Novo lançamento financeiro neon.png" (formulário); capturas antigas da PR são evidências de regressão, não referências.
+- **Base preservada:** SHA 96f4acd0daec61aa8384f877fdc1e8c72d8e32e4 confirmado antes da edição. O terminal do Codespace externo não está conectado; o working tree remoto não foi examinado. Operações feitas pela integração GitHub sob lease de SHA. Criar/alterar somente arquivos expressamente citados; não sobrepor trabalho externo.
+- **Reforma, não remendo:** arquivo new-launch.css reconstruído integralmente a partir da composição oficial (sem pilhas de sobrescritas). Modificações de markup limitadas à apresentação em NewLaunchForm.tsx. Seletor com hierarquia, proporção dos cards, cores e faixa inferior; formulário com posicionamento e três regiões, resumo maior, tipografia, rótulos e footer. CSS sem novas dependências e com breakpoints estruturais em 640 e 1024. Imagem de montanhas e arte ilustrativa de cartões continuam ausentes como assets independentes autorizados, não foram redesenhadas nem simuladas por screenshots.
+- **Sem alteração de negócio:** writer financeClient.createEvent, operaçãoId/idempotência, isolamento/workspace, sugestões/autocomplete, carregamento de catálogos, tratamento de duplicidades e erros 503, formatação monetária e data pt-BR permanecem intactos. Receita conforme servidor, despesa apenas pendente; despesa paga, parcelamento/cartões, transferência e benefício seguem bloqueados.
+- **Evidência técnica exigida:** após o commit de checkpoint, repetir CI e QA integrado Fastify + PostgreSQL descartável com usuários fictícios no mesmo HEAD; registrar screenshots em 1672x941, 1366x768, 1024x600, 910x400 e 390x844. Foco Tab/Shift+Tab e Escape, área única de rolagem, rodapé e observações alcançáveis. CI não equivale à homologação visual.
+- **Limitações:** PR permanece Draft, sem merge, deploy de produção, alteração em main/Android, dados reais ou infraestrutura paga. Preview hospedado isolado não confirmado. Layout visual só estará aprovado mediante manifestação expressa do usuário.
