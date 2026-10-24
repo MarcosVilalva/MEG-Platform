@@ -1,4 +1,4 @@
-import { defineConfig, mergeConfig, type Plugin, type ViteDevServer } from 'vite';
+import { defineConfig, mergeConfig, type Plugin, type ProxyOptions, type ViteDevServer } from 'vite';
 import base from './vite.config';
 
 // Exclusivo de homologação no Codespaces. A API de produção nunca é destino.
@@ -7,11 +7,32 @@ if (process.env.VITE_API_URL !== '/api') {
 }
 
 const localApi = 'http://127.0.0.1:3334';
-const proxy = {
+
+// O navegador chama o Vite pela mesma origem pública. O salto Vite -> API
+// é interno: não deve herdar Origin, desde que origem e Host coincidam com
+// o endereço HTTPS de homologação do Codespaces nesta porta específica.
+// Origens diferentes continuam sujeitas ao CORS restritivo da API.
+function isFirstPartyCodespaces(origin?: string, host?: string) {
+  if (!origin || !host || !/^[a-z0-9-]+-5174\.app\.github\.dev$/.test(host)) return false;
+  try {
+    return new URL(origin).origin === `https://${host}`;
+  } catch {
+    return false;
+  }
+}
+
+const proxy: Record<string, ProxyOptions> = {
   '/api': {
     target: localApi,
     changeOrigin: true,
     rewrite: (url: string) => url.replace(/^\/api/, ''),
+    configure(serverProxy) {
+      serverProxy.on('proxyReq', (proxyRequest, request) => {
+        if (isFirstPartyCodespaces(request.headers.origin, request.headers.host)) {
+          proxyRequest.removeHeader('origin');
+        }
+      });
+    },
   },
 };
 
