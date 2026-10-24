@@ -73,6 +73,7 @@ export type FinancialEvent = {
 };
 
 export type FinancialEventPage = {
+  revision?: string;
   items: FinancialEvent[];
   total: number;
   page: number;
@@ -239,9 +240,10 @@ export const financeClient = {
     authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   getSyncStatus: () =>
     authorizedRequest<{ token: string; changedAt: string | null; mutationType: string | null }>('/finance/sync-status', { cache: 'no-store' }),
-  listEvents: (page = 1, pageSize = 50, search = '') =>
+  listEvents: (page = 1, pageSize = 50, search = '', signal?: AbortSignal) =>
     authorizedRequest<FinancialEventPage>(
-      `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
+      `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`,
+      { signal, cache: 'no-store' },
     ),
   listAudit: (page = 1, pageSize = 100, filters: { action?: string; entity?: string } = {}) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });

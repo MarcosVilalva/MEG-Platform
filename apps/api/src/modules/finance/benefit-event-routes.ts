@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { BenefitEventMutationError, createBenefitEventProtected, updateBenefitEventProtected } from './benefit-event-mutation';
 
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;

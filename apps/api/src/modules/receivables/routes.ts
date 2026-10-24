@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { prisma } from '@meg/database';
 import { ReceivableDomainError, cancelReceivableProtected, createReceivableProtected, receiveReceivableProtected, reverseReceivableReceiptProtected, updateReceivableProtected } from './service';
 import { CustomerMutationError, createCustomerProtected, updateCustomerProtected } from './customer-mutation';

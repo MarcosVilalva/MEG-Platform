@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { prisma } from '@meg/database';
 import { saveWorkspaceIntegration, workspaceIntegrationForUser } from './service';
 import { sendSystemWhatsApp } from '../notifications/service';

@@ -1,0 +1,116 @@
+.meg-launches {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: clamp(.75rem, 2vw, 1.5rem);
+  min-width: 0;
+  width: 100%;
+  color: var(--meg-text);
+}
+
+.meg-launches__header,
+.meg-launches__detail-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.meg-launches__header h1,
+.meg-launches__detail-heading h2 {
+  margin: 0;
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  font-weight: 700;
+}
+
+.meg-launches__header p {
+  margin: .5rem 0 0;
+  color: var(--meg-muted);
+  font-size: .9rem;
+  max-width: 65rem;
+}
+
+.meg-launches__refresh,
+.meg-launches__message button,
+.meg-launches__detail-heading button {
+  min-height: 2.75rem;
+  padding: .55rem .9rem;
+  border: 1px solid rgba(20,227,200,.36);
+  border-radius: .7rem;
+  background: rgba(5,52,51,.84);
+  color: var(--meg-text);
+  cursor: pointer;
+}
+
+.meg-launches__refresh:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.meg-launches__message,
+.meg-launches__details {
+  padding: 1.1rem;
+  border: 1px solid rgba(20,227,200,.25);
+  border-radius: var(--meg-radius-card);
+  background: rgba(3,28,31,.86);
+}
+
+.meg-launches__message p,
+.meg-launches__count {
+  margin: 0;
+  color: var(--meg-muted);
+  line-height: 1.5;
+}
+
+.meg-launches__message button { margin-top: .8rem; }
+
+.meg-launches__count { font-size: .85rem; }
+
+.meg-launches__grid {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.meg-launches__detail-button {
+  padding: .25rem .2rem;
+  border: 0;
+  border-radius: .25rem;
+  text-align: left;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(20,227,200,.5);
+  text-underline-offset: .2rem;
+}
+
+.meg-launches__details dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1rem;
+  margin: 1rem 0 0;
+}
+
+.meg-launches__details dt {
+  font-size: .75rem;
+  color: var(--meg-muted);
+}
+
+.meg-launches__details dd {
+  overflow-wrap: anywhere;
+  margin: .2rem 0 0;
+}
+
+@media (max-width: 639px) {
+  .meg-launches {
+    padding: .7rem;
+  }
+  .meg-launches__header > div {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .meg-launches__refresh {
+    width: 100%;
+  }
+}

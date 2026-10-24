@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { Prisma, prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { assertWorkspaceWriteAccess } from '../platform-admin/service';

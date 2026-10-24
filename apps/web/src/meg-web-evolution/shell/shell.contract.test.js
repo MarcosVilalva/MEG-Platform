@@ -90,7 +90,9 @@ assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar 
 
 assert.match(source, /aria-label="Navegação principal"/);
 assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
-assert.match(source, /Marcos de Andrade Vilalva/);
+assert.match(source, /className="meg-profile-name">\{profileName\}/);
+assert.match(source, /userName=\{session\.user\.name\}/);
+assert.equal(source.includes('<span className="meg-profile-name">Marcos de Andrade Vilalva</span>'), false, 'profile must come from authenticated session');
 assert.equal(source.includes('meg-sidebar-lockup.svg'), false);
 assert.equal(source.includes('meg-finance-symbol-transparent.svg'), false);
 assert.equal(source.includes('meg-brand-mark'), false);
@@ -206,7 +208,7 @@ const shellSource = readFileSync('apps/web/src/meg-web-evolution/shell/AppShell.
 const gatewaySource = readFileSync('apps/web/src/meg-web-evolution/main.tsx', 'utf8');
 const authSource = readFileSync('apps/web/src/app/auth-client.ts', 'utf8');
 assert.match(shellSource, /onClick=\{onLogout\}/);
-assert.match(gatewaySource, /<AppShell onLogout=\{handleLogout\}>/);
+assert.match(gatewaySource, /<AppShell[\s\S]*onLogout=\{handleLogout\}[\s\S]*userName=\{session\.user\.name\}[\s\S]*onNavigate=\{setFinancialView\}/);
 assert.match(gatewaySource, /const handleLogout = \(\) =>/);
 assert.match(gatewaySource, /setSession\(null\);[\s\S]*setFocusLoginAfterLogout\(true\);[\s\S]*navigate\('login', true\)/);
 assert.match(authSource, /export async function logout\(session: AuthSession\)/);

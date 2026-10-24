@@ -8,6 +8,7 @@ import { LoginScreen } from './auth/LoginScreen';
 import { CreateAccountScreen } from './auth/CreateAccountScreen';
 import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
 import { LoadingScreen } from './auth/LoadingScreen';
+import { LaunchesScreen } from './launches/LaunchesScreen';
 
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
@@ -18,6 +19,7 @@ function currentAuthDestination(): AuthDestination {
 
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [financialView, setFinancialView] = useState<'launches' | 'home'>('launches');
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
@@ -203,8 +205,19 @@ function AuthGateway() {
   }
 
   if (session) return (
-    <AppShell onLogout={handleLogout}>
-      <section className="meg-shell-stage" aria-label="Área de conteúdo da nova Web" />
+    <AppShell
+      onLogout={handleLogout}
+      userName={session.user.name}
+      activeView={financialView}
+      onNavigate={setFinancialView}
+    >
+      {financialView === 'launches' ? (
+        <LaunchesScreen key={session.user.id} userId={session.user.id} userName={session.user.name} />
+      ) : (
+        <section className="meg-shell-stage" aria-label="Início financeiro">
+          <p>O panorama financeiro será disponibilizado após a integração dos indicadores canônicos. Consulte seus lançamentos pelo menu.</p>
+        </section>
+      )}
     </AppShell>
   );
 

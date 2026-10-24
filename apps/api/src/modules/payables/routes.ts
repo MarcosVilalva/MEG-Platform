@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { prisma } from '@meg/database';
 import { createPayablesProtected } from './create-service';
 import { resolveWorkspaceContext } from '../workspaces/service';

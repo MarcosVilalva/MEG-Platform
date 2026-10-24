@@ -4,7 +4,7 @@ import { enteredAmountFromStored, financialAmountValues } from './amount-sign';
 import { recordFinancialAudit } from './audit';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
-import type { z } from 'zod';
+import type { z } from 'zod/v3';
 
 type CreateFinancialEventInput = z.infer<typeof createFinancialEventSchema>;
 type UpdateFinancialEventInput = z.infer<typeof updateFinancialEventSchema>;
@@ -90,17 +90,21 @@ export async function listFinancialEvents(userId: string, input: { page: number;
       ]
     } : {})
   };
-  const [items, total] = await prisma.$transaction([
+  const [items, total, revisionInfo] = await prisma.$transaction([
     prisma.financialEvent.findMany({
       where,
       skip: (input.page - 1) * input.pageSize,
       take: input.pageSize,
-      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
       include: { account: true, category: true, paymentMethod: true, importedRow: { select: { rowNumber: true, rawData: true } } }
     }),
-    prisma.financialEvent.count({ where })
-  ]);
+    prisma.financialEvent.count({ where }),
+    prisma.financialEvent.aggregate({ where, _max: { updatedAt: true } }),
+  ], { isolationLevel: 'RepeatableRead' });
+  // Página, total e versão do histórico lidos na mesma fotografia transacional.
+  const revision = String(total) + ':' + (revisionInfo._max.updatedAt?.toISOString() ?? 'empty');
   return {
+    revision,
     items: items.map((item) => ({
       ...item,
       sourceRowNumber: item.importedRow?.rowNumber ?? null,

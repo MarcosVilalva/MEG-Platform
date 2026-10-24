@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { prisma } from '@meg/database';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { readCanonicalCardStatements } from './service';
 import { cardInstallmentRemaining } from '../finance/card-statement-canonical';

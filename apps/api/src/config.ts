@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { deriveAlexaSkillSecret } from './modules/notifications/alexa-auth';
 
 const environmentSchema = z.object({
