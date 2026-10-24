@@ -1272,3 +1272,14 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Infraestrutura:** usa exclusivamente recursos do Codespace existente, com porta 5174 configurada como privada pelo usuário. Não utiliza Render, API remota, dados reais, produção ou Android; não depende de Gemini nem consome créditos Gemini. Pode consumir cota de processamento do Codespaces.
 - **Estado da publicação:** script adicionado à PR Draft, mas **não executado no Codespace do usuário nesta sessão**; logo **nenhum preview publicado/verificado** e nenhum link sem cache fornecido como ativo. O usuário deverá executar no clone isolado, conferir a porta privada e enviar a URL real gerada pelo script para verificação visual.
 - **Qualidade:** os novos arquivos de infraestrutura precisam de CI no SHA final e execução end-to-end no Codespace. Gates prévios não validam automaticamente os novos arquivos; não declarar homologação técnica/visual completa até testar o bootstrap. Sem merge.
+
+
+---
+
+## PR #648 — Correção de bootstrap comercial do preview Codespaces (24/10/2026)
+
+- **Falha efetivamente observada no Codespace:** PostgreSQL 16 local iniciado, `npm ci`, `prisma generate` e `prisma db push` concluídos, Fastify iniciado, mas a criação de conta fictícia falhou com HTTP 402 `LICENSE_NOT_CONFIGURED`.
+- **Causa auditada:** na primeira execução, `ensureCommercialFoundation()` é iniciada assincronamente ao subir a API, antes de existir o usuário administrativo. `registerUser()` então chama `ensurePrimaryWorkspace()` (cria o workspace, mas não sua licença). A checagem comercial `assertWorkspaceWriteAccess()` bloqueia corretamente a criação de catálogos quando a assinatura do workspace está ausente.
+- **Correção restrita à homologação:** criado `scripts/meg-pr648-preview-commercial.ts`, que invoca `ensureCommercialFoundation()` sem duplicar regras de negócios, protegido por igualdade exata do `DATABASE_URL` descartável, `NODE_ENV=development`, `ADMIN_EMAIL=preview-admin@meg.invalid` e marcador `MEG_PR648_PREVIEW_LOCAL_DB=1`. O inicializador `scripts/meg-pr648-codespace-preview.mjs` chama esta rotina após autenticação e antes dos catálogos. Não há bypass de licença, alteração da API, nem dado real.
+- **Execução requerida:** no clone `/workspaces/meg-pr648-homologacao`, executar `git pull --ff-only` e `node scripts/meg-pr648-codespace-preview.mjs`. Manter a porta 5174 privada. A execução corrigida não foi testada ainda no Codespace; só o usuário pode confirmar o preview real.
+- **Governança:** branch da PR #648 em Draft, sem merge/produção/Android; CI no SHA final é gate técnico e não valida visual. Credenciais fictícias em `~/.local/state/meg-pr648-preview/credenciais.txt`; não compartilhar senha em chats.
