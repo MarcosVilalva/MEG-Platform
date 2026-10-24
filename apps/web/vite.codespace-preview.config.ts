@@ -8,17 +8,18 @@ if (process.env.VITE_API_URL !== '/api') {
 
 const localApi = 'http://127.0.0.1:3334';
 
-// O navegador chama o Vite pela mesma origem pública. O salto Vite -> API
-// é interno: não deve herdar Origin, desde que origem e Host coincidam com
-// o endereço HTTPS de homologação do Codespaces nesta porta específica.
-// Origens diferentes continuam sujeitas ao CORS restritivo da API.
-function isFirstPartyCodespaces(origin?: string, host?: string) {
-  if (!origin || !host || !/^[a-z0-9-]+-5174\.app\.github\.dev$/.test(host)) return false;
-  try {
-    return new URL(origin).origin === `https://${host}`;
-  } catch {
-    return false;
-  }
+// A porta privada do Codespaces recebe a Web de uma origem HTTPS conhecida.
+// GitHub pode reescrever Host ao encaminhar a requisição: ele nao e uma fonte
+// confiavel para comparar com Origin. A excecao abaixo so vale para a origem
+// exata deste Codespace e navegadores que declaram requisicao same-origin.
+// Fora disso, o CORS da API continua intacto e restritivo.
+const codespaceName = process.env.CODESPACE_NAME || '';
+const previewOrigin = /^[a-z0-9-]+$/.test(codespaceName)
+  ? `https://${codespaceName}-5174.app.github.dev`
+  : null;
+
+function isFirstPartyCodespaces(origin?: string, fetchSite?: string) {
+  return Boolean(previewOrigin && origin === previewOrigin && fetchSite === 'same-origin');
 }
 
 const proxy: Record<string, ProxyOptions> = {
@@ -28,7 +29,10 @@ const proxy: Record<string, ProxyOptions> = {
     rewrite: (url: string) => url.replace(/^\/api/, ''),
     configure(serverProxy) {
       serverProxy.on('proxyReq', (proxyRequest, request) => {
-        if (isFirstPartyCodespaces(request.headers.origin, request.headers.host)) {
+        if (isFirstPartyCodespaces(
+          request.headers.origin,
+          request.headers['sec-fetch-site'],
+        )) {
           proxyRequest.removeHeader('origin');
         }
       });
