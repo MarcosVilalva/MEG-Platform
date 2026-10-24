@@ -312,9 +312,10 @@ async function main() {
     fail('Validação autenticada /api/auth/me via navegador falhou: HTTP '
       + viaProxySession.status + '.');
   }
-  // A verificação anterior de /auth/me não exercitava o POST do formulário
-  // com Origin do Codespaces. Reproduzir o navegador via proxy antes de
-  // anunciar o preview; um HTTP 500 por CORS deve bloquear a homologação.
+  // A verificacao de /auth/me nao cobre o POST do formulario.
+  // Simular Origin e Sec-Fetch-Site do navegador sem forjar Host, pois o
+  // encaminhamento publico do Codespaces pode reescrever esse cabecalho.
+  // Este gate LOCAL nao substitui o teste no navegador publico.
   const browserOrigin = process.env.CODESPACE_NAME
     ? 'https://' + process.env.CODESPACE_NAME + '-5174.app.github.dev'
     : WEB;
@@ -322,8 +323,9 @@ async function main() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Host: new URL(browserOrigin).host,
       Origin: browserOrigin,
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'cors',
     },
     body: JSON.stringify(credentials),
     signal: AbortSignal.timeout(20000),
@@ -334,7 +336,8 @@ async function main() {
     fail('Login do navegador pelo proxy Codespaces falhou: HTTP '
       + browserLogin.status + '. Preview bloqueado até corrigir a origem/CORS.');
   }
-  console.log('GATE LOGIN: Web Evolution, /auth/me e POST /api/auth/login com Origin do navegador OK.');
+  console.log('GATE LOGIN LOCAL: /auth/me e POST /api/auth/login com Origin/Sec-Fetch-Site simulados OK.');
+  console.log('ATENCAO: ainda e obrigatoria a verificacao funcional no navegador publico Codespaces.');
 
   const revision = output('git', ['rev-parse', '--short=9', 'HEAD']);
   const host = process.env.CODESPACE_NAME
