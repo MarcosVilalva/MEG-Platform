@@ -149,7 +149,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('1.234,56');
     await page.getByLabel('Data *').fill('2026-10-23');
     await page.getByLabel('Categoria *').selectOption(incomeCategory.id);
-    await page.getByLabel('Conta monetária *').selectOption(account.id);
+    await page.getByLabel('Conta *').selectOption(account.id);
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
     await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 1.234,56');
     await page.screenshot({path:OUT+'/05-income-form-desktop.png',animations:'disabled'});
@@ -174,7 +174,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByLabel('Data *').fill('2026-11-02');
     await page.getByLabel('Descrição *').fill('Receita criada pelo QA operacional');
     await expect(page.getByLabel('Categoria *')).toHaveValue(incomeCategory.id);
-    await expect(page.getByLabel('Conta monetária *')).toHaveValue(account.id);
+    await expect(page.getByLabel('Conta *')).toHaveValue(account.id);
     await expect(page.getByLabel('Forma de pagamento *')).toHaveValue(method.id);
     await expect(page.getByRole('textbox',{name:'Valor em reais *'})).toHaveValue('7,89');
     await expect(page.getByLabel('Data *')).toHaveValue('2026-11-02');
@@ -190,7 +190,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     await page.getByRole('textbox',{name:'Valor em reais *'}).fill('10,07');
     await page.getByLabel('Data *').fill('2026-10-23');
     await page.getByLabel('Categoria *').selectOption(expenseCategory.id);
-    await page.getByLabel('Conta monetária *').selectOption(account.id);
+    await page.getByLabel('Conta *').selectOption(account.id);
     await page.getByLabel('Forma de pagamento *').selectOption(method.id);
     await expect(page.getByTestId('new-launch-summary-amount')).toHaveText('R$ 10,07');
     await page.screenshot({path:OUT+'/06-expense-pending-form-desktop.png',animations:'disabled'});
