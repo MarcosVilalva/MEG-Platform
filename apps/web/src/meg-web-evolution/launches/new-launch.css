@@ -41,7 +41,7 @@
   box-shadow: 0 1.7rem 6rem rgba(0, 7, 9, .77), 0 0 2rem rgba(0, 195, 188, .1), inset 0 0 2rem rgba(5, 183, 177, .055);
 }
 .meg-new-launch.is-choose { width: min(100%, 75.75rem); }
-.meg-new-launch.is-form { width: min(100%, 90rem); }
+.meg-new-launch.is-form { width: min(100%, 90rem); display: flex; flex-direction: column; }
 .meg-new-launch__header {
   display: flex;
   align-items: center;
@@ -138,7 +138,7 @@
 .meg-new-launch__options { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; }
 .meg-new-launch__option {
   min-width: 0;
-  min-height: 8.1rem;
+  min-height: 8.65rem;
   display: flex;
   align-items: center;
   gap: 1.2rem;
@@ -254,13 +254,24 @@
 .meg-new-launch__choice-foot strong { font-size: .8rem; font-weight: 800; }
 .meg-new-launch__choice-foot small { font-size: .69rem; line-height: 1.3; color: #d0dddb; }
 
-/* Etapa B: formulário responsivo com hierarquia idêntica à composição em três áreas. */
-.meg-new-launch__form-meta {
+/* Etapa B: tipo sob o título no cabeçalho, sem deslocar as três regiões. */
+.meg-new-launch__header-inline {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: .2rem .15rem .7rem;
+  flex-wrap: wrap;
+  gap: .55rem 1.4rem;
+  margin-top: .24rem;
+}
+.meg-new-launch__header-inline p {
+  margin: 0;
+  flex: 1 1 12rem;
+  font-size: .85rem;
+}
+.meg-new-launch.is-form > form {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 .meg-new-launch__type-pill { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; margin: 0; }
 .meg-new-launch__type-pill span {
@@ -268,7 +279,7 @@
   border-radius: .55rem;
   background: rgba(7, 158, 142, .16);
   color: #4cfff0;
-  padding: .54rem .9rem;
+  padding: .35rem .72rem;
   font-weight: 800;
 }
 .meg-new-launch__type-pill.is-expense span { border-color: #ff5b6c; background: rgba(126, 39, 53, .26); color: #ffb4bd; }
@@ -280,6 +291,7 @@
   align-items: stretch;
   gap: .65rem;
   min-width: 0;
+  flex: 1 0 auto;
 }
 .meg-new-launch__panel, .meg-new-launch__summary {
   display: flex;
@@ -523,8 +535,11 @@
   .meg-new-launch__option-copy strong { font-size: 1.1rem; }
   .meg-new-launch__choice-foot > span { border-right: 0 !important; border-bottom: 1px solid #087c7b; }
   .meg-new-launch__choice-foot > span:last-child { border-bottom: 0; }
-  .meg-new-launch__form-meta { flex-wrap: wrap; gap: .4rem; }
-  .meg-new-launch__form-meta p { font-size: .76rem; }
+  .meg-new-launch__header-inline { gap: .28rem; }
+  .meg-new-launch__header-inline p { display: none; }
+  .meg-new-launch__type-pill { gap: .35rem; }
+  .meg-new-launch__type-pill span { padding: .27rem .55rem; font-size: .75rem; }
+  .meg-new-launch__type-pill button { font-size: .75rem; }
   .meg-new-launch__summary { grid-column: auto; }
   .meg-new-launch__summary dl { grid-template-columns: minmax(0, 1fr); }
   .meg-new-launch__date-amount { grid-template-columns: minmax(0, 1fr); }

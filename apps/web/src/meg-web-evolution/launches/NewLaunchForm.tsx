@@ -169,9 +169,15 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
           {stage === 'form' && <span className="meg-new-launch__header-mark" aria-hidden="true"><Icon name="list" width={31} height={31}/></span>}
           <div className="meg-new-launch__headline">
             <h2 id="meg-new-launch-title" tabIndex={-1} ref={title}>Novo lançamento</h2>
-            <p>{stage === 'choose'
-              ? 'Escolha o tipo de lançamento e siga com um formulário inteligente para Web.'
-              : 'Registre uma nova movimentação financeira com os dados necessários.'}</p>
+            {stage === 'choose'
+              ? <p>Escolha o tipo de lançamento e siga com um formulário inteligente para Web.</p>
+              : <div className="meg-new-launch__header-inline">
+                  <div className={'meg-new-launch__type-pill is-' + fields.type} data-testid="selected-launch-type">
+                    <span>{fields.type === 'income' ? '↑ Receita' : '↓ Despesa pendente'}</span>
+                    <button type="button" onClick={back} disabled={saving}>Alterar tipo</button>
+                  </div>
+                  <p>Registre sua movimentação com os dados necessários.</p>
+                </div>}
           </div>
           <button type="button" className="meg-new-launch__close" onClick={onClose} disabled={saving} aria-label="Fechar novo lançamento">
             <span aria-hidden="true">×</span>
@@ -225,13 +231,6 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
               <button type="button" onClick={() => setFetchVersion(n => n + 1)}>Tentar novamente</button>
             </div> :
             <form onSubmit={submit} aria-label="Formulário de novo lançamento" noValidate={false}>
-              <div className="meg-new-launch__form-meta">
-                <div className={'meg-new-launch__type-pill is-' + fields.type} data-testid="selected-launch-type">
-                  <span>{fields.type === 'income' ? '↑ Receita' : '↓ Despesa pendente'}</span>
-                  <button type="button" onClick={back} disabled={saving}>Alterar tipo</button>
-                </div>
-                <p>Informações principais, data, valor e resumo</p>
-              </div>
               <div className="meg-new-launch__columns">
                 <div className="meg-new-launch__panel meg-new-launch__primary">
                   <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><Icon name="list" width={18}/>Descrição *</span>
@@ -292,8 +291,8 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                     <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><Icon name="calendar" width={18}/>Data *</span>
                       <input required type="date" value={fields.day} disabled={saving} onChange={event => update('day', event.target.value)}/>
                     </label>
-                    <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><Icon name="card" width={18}/>Valor em reais *</span>
-                      <input required inputMode="decimal" value={fields.amount} disabled={saving}
+                    <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><Icon name="card" width={18}/>Valor *</span>
+                      <input required aria-label="Valor em reais *" inputMode="decimal" value={fields.amount} disabled={saving}
                         placeholder="0,00" onChange={event => update('amount', event.target.value)} />
                     </label>
                   </div>
