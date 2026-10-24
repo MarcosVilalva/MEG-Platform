@@ -12,7 +12,7 @@ type Catalog = { accounts: Account[]; categories: Category[]; methods: PaymentMe
 type Stage = 'choose' | 'form';
 const blankCatalog: Catalog = { accounts: [], categories: [], methods: [] };
 const types = [
-  { id: 'expense', title: 'Despesa', subtitle: 'Saídas, compras e gastos', icon: 'card', detail: 'Despesa pendente', available: true },
+  { id: 'expense', title: 'Despesa', subtitle: 'Saídas, compras e gastos', icon: 'list', detail: 'Despesa pendente', available: true },
   { id: 'income', title: 'Receita', subtitle: 'Entradas e recebimentos', icon: 'chart', detail: 'Recebimento', available: true },
   { id: 'transfer', title: 'Transferência', subtitle: 'Movimentação entre contas', icon: 'chevronsRight', detail: 'Exige fluxo de duas contas', available: false },
   { id: 'benefit', title: 'Benefício', subtitle: 'Saldo e recarga de alimentação', icon: 'gift', detail: 'Exige contrato próprio', available: false },
@@ -179,7 +179,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
               <span className="meg-new-launch__eyebrow">NOVO LANÇAMENTO</span>
               <h3>Mais controle para o seu dia a dia</h3>
               <p>Escolha o tipo de lançamento e preencha as informações no formulário Web. Todas as operações seguem as regras financeiras do MEG.</p>
-              <div className="meg-new-launch__intro-art" aria-hidden="true"><span/><span/><span/><span/><span/><span/></div>
+
             </div>
             <div className="meg-new-launch__options" aria-label="Tipos de lançamento">
               {types.map(option => {
