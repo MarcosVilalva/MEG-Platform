@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { Workbook } from 'exceljs';
+import ExcelJS from 'exceljs';
 import { mkdirSync } from 'node:fs';
 
 const URL='http://127.0.0.1:4173/web-evolution.html';
@@ -38,7 +38,7 @@ test('API real: 251 lançamentos, busca de página 3, exportação idêntica, lo
     const fullDownloadPromise=page.waitForEvent('download');
     await page.getByRole('button',{name:'Exportar Excel'}).click();
     const fullDownload=await fullDownloadPromise;
-    const book=new Workbook();
+    const book=new ExcelJS.Workbook();
     await book.xlsx.readFile(await fullDownload.path());
     const cells=[];
     book.worksheets[0].eachRow(row=>row.eachCell(cell=>{if(typeof cell.value==='string')cells.push(cell.value);}));
@@ -53,7 +53,7 @@ test('API real: 251 lançamentos, busca de página 3, exportação idêntica, lo
     const filteredPromise=page.waitForEvent('download');
     await page.getByRole('button',{name:'Exportar Excel'}).click();
     const filteredFile=await filteredPromise;
-    const filteredBook=new Workbook();
+    const filteredBook=new ExcelJS.Workbook();
     await filteredBook.xlsx.readFile(await filteredFile.path());
     const values=[];
     filteredBook.worksheets[0].eachRow(row=>row.eachCell(cell=>{if(typeof cell.value==='string')values.push(cell.value);}));
