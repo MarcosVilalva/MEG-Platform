@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { assertPlatformAdministrator, listCommercialWorkspaces, updateCommercialLicense } from './service';
 import { createWorkspaceInvoice, refreshCommercialBillingStatuses, updateWorkspaceInvoice } from '../billing/service';
 

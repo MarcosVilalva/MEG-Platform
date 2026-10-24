@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { listFinancialAudit } from './audit';
 import {

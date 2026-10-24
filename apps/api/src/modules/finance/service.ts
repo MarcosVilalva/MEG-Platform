@@ -4,7 +4,7 @@ import { enteredAmountFromStored, financialAmountValues } from './amount-sign';
 import { recordFinancialAudit } from './audit';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
-import type { z } from 'zod';
+import type { z } from 'zod/v3';
 
 type CreateFinancialEventInput = z.infer<typeof createFinancialEventSchema>;
 type UpdateFinancialEventInput = z.infer<typeof updateFinancialEventSchema>;

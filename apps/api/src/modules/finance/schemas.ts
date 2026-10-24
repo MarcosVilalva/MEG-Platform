@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 export const createFinancialEventSchema = z.object({
   description: z.string().min(1),
