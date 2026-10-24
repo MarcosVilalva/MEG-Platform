@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { financeClient, type Account, type Category, type PaymentMethod, type FinancialEvent } from '../../app/finance-client';
-import { basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod, type BasicLaunchFields, type BasicLaunchType } from './new-launch';
+import { basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod, autocompleteFromHistory, type BasicLaunchFields, type BasicLaunchType } from './new-launch';
 import './new-launch.css';
 
-type Props = { onClose: () => void; onSaved: (event: FinancialEvent) => void };
+type Props = { onClose: () => void; onSaved: (event: FinancialEvent) => void; history: FinancialEvent[] };
 type Catalog = { accounts: Account[]; categories: Category[]; methods: PaymentMethod[] };
 
 const emptyCatalog: Catalog = { accounts: [], categories: [], methods: [] };
@@ -21,7 +21,7 @@ function initialFields(): BasicLaunchFields {
   };
 }
 
-export function NewLaunchForm({ onClose, onSaved }: Props) {
+export function NewLaunchForm({ onClose, onSaved, history }: Props) {
   const [fields, setFields] = useState<BasicLaunchFields>(initialFields);
   const [catalog, setCatalog] = useState<Catalog>(emptyCatalog);
   const [fetching, setFetching] = useState(true);
@@ -81,6 +81,7 @@ export function NewLaunchForm({ onClose, onSaved }: Props) {
   const activeCategories = useMemo(() => catalog.categories.filter(c => eligibleCategory(c, fields.type)), [catalog, fields.type]);
   const activeMethods = useMemo(() => catalog.methods.filter(eligiblePaymentMethod), [catalog]);
   const hasCatalog = activeAccounts.length > 0 && activeCategories.length > 0 && activeMethods.length > 0;
+  const suggestions = useMemo(() => Array.from(new Set(history.filter(e => e.type === fields.type).map(e => e.description))), [history, fields.type]);
 
   const change = (key: keyof BasicLaunchFields, value: string) => {
     if (savingLock.current) return;
@@ -163,7 +164,13 @@ export function NewLaunchForm({ onClose, onSaved }: Props) {
 
             <div className="meg-new-launch__fields">
               <label>Descrição *
-                <input required maxLength={300} value={fields.description} onChange={e => change('description', e.target.value)} autoComplete="off" placeholder="Descreva a movimentação" disabled={saving} />
+                <input required maxLength={300} value={fields.description} list="meg-new-launch-descriptions" onChange={e => {
+                  const description = e.target.value;
+                  const known = autocompleteFromHistory(description, fields.type, history, activeAccounts, activeCategories, activeMethods);
+                  change('description', description);
+                  if (known) setFields(prev => ({ ...prev, description, ...known }));
+                }} autoComplete="off" placeholder="Descreva a movimentação" disabled={saving} />
+                <datalist id="meg-new-launch-descriptions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
               </label>
               <label>Valor em reais *
                 <input required inputMode="decimal" value={fields.amount} onChange={e => change('amount', e.target.value)} placeholder="0,00" disabled={saving} />

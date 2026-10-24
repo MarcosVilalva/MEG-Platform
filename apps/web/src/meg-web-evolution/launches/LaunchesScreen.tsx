@@ -97,7 +97,7 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
 
       {savedNotice && <p className="meg-launches__message" role="status">{savedNotice}</p>}
       {!canCreate && <p className="meg-launches__count">Acesso de consulta. Sua sessão não possui permissão de gravação.</p>}
-      {showNew && canCreate && <NewLaunchForm onClose={() => setShowNew(false)} onSaved={event => {
+      {showNew && canCreate && <NewLaunchForm history={events ?? []} onClose={() => setShowNew(false)} onSaved={event => {
         setShowNew(false);
         setSavedNotice('Gravação confirmada pelo servidor: ' + event.description + '. Atualizando histórico...');
         refresh();

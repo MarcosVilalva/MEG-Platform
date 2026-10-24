@@ -1,4 +1,4 @@
-import type { Account, Category, PaymentMethod, FinancialEventInput } from '../../app/finance-client';
+import type { Account, Category, PaymentMethod, FinancialEventInput, FinancialEvent } from '../../app/finance-client';
 
 export type BasicLaunchType = 'income' | 'expense';
 
@@ -75,5 +75,20 @@ export function basicLaunchInput(
     categoryId: fields.categoryId,
     paymentMethodId: fields.paymentMethodId,
     notes: fields.notes.trim(),
+  };
+}
+
+
+/** Histórico autorizado, sem cópia de valor, data, status ou conta de outro usuário. */
+export function autocompleteFromHistory(
+  description: string, type: BasicLaunchType, events: FinancialEvent[],
+  accounts: Account[], categories: Category[], methods: PaymentMethod[],
+): Pick<BasicLaunchFields, 'categoryId' | 'accountId' | 'paymentMethodId'> | null {
+  const known = events.find(event => event.type === type && normalized(event.description) === normalized(description));
+  if (!known) return null;
+  return {
+    accountId: accounts.some(a => a.id === known.accountId && eligibleAccount(a)) ? String(known.accountId) : '',
+    categoryId: categories.some(c => c.id === known.categoryId && eligibleCategory(c, type)) ? String(known.categoryId) : '',
+    paymentMethodId: methods.some(m => m.id === known.paymentMethodId && eligiblePaymentMethod(m)) ? String(known.paymentMethodId) : '',
   };
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod, parsePositiveBRL, validISODate } from './new-launch';
+import { basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod, parsePositiveBRL, validISODate, autocompleteFromHistory } from './new-launch';
 import type { Account, Category, PaymentMethod } from '../../app/finance-client';
 
 const accounts = [
@@ -54,4 +54,17 @@ test('cria payload de receita e despesa pendente usando apenas IDs oficiais', ()
   assert.equal(expense.amount, 10);
   assert.throws(() => basicLaunchInput({ ...fields, type: 'expense', categoryId: 'fixed' }, accounts, categories, methods), /categoria válida/i);
   assert.throws(() => basicLaunchInput({ ...fields, accountId: 'benefit' }, accounts, categories, methods), /conta monetária/i);
+});
+
+
+test('autocomplete recupera apenas vínculos autorizados sem data e sem valor do histórico',()=>{
+  const old = [{
+    id:'item', description:' Salário ', type:'income', status:'paid', date:'2026-01-15', competence:'2026-01',
+    amount:'98765', signedAmount:'98765', accountId:'checking', categoryId:'salary', paymentMethodId:'pix',
+  }];
+  const known = autocompleteFromHistory('salario', 'income', old as any, accounts, categories, methods);
+  assert.deepEqual(known, { accountId:'checking', categoryId:'salary', paymentMethodId:'pix' });
+  assert.equal(known && 'amount' in known, false);
+  assert.equal(known && 'date' in known, false);
+  assert.equal(autocompleteFromHistory('Salário','expense', old as any, accounts, categories, methods), null);
 });
