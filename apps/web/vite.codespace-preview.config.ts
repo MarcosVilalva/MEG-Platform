@@ -36,6 +36,17 @@ const proxy: Record<string, ProxyOptions> = {
           proxyRequest.removeHeader('origin');
         }
       });
+      serverProxy.on('proxyRes', (response, request) => {
+        if (request.method === 'POST'
+          && request.url?.endsWith('/auth/login')
+          && (response.statusCode || 0) >= 500) {
+          console.error('[MEG preview] Login rejeitado pela API local', {
+            status: response.statusCode,
+            originAutorizada: request.headers.origin === previewOrigin,
+            mesmaOrigemBrowser: request.headers['sec-fetch-site'] === 'same-origin',
+          });
+        }
+      });
     },
   },
 };
