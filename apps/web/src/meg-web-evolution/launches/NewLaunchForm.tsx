@@ -141,6 +141,8 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
         setError('Um dos cadastros foi alterado ou não pertence ao seu espaço. Recarregue o formulário.');
       } else if (response.code === 'BENEFIT_CONTRACT_REQUIRED') {
         setError('Benefícios exigem o fluxo financeiro específico. Nenhum registro foi criado.');
+      } else if (response.status && response.status >= 500) {
+        setError('Não foi possível confirmar a gravação. Confira o histórico antes de tentar novamente.');
       } else {
         setError(cause instanceof Error && !/^(HTTP_|TypeError)/.test(cause.message)
           ? cause.message : 'Não foi possível confirmar a gravação. Confira o histórico antes de tentar novamente.');
