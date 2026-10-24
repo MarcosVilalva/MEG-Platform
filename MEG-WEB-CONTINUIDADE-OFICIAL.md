@@ -1200,3 +1200,17 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Prévia: nenhuma URL publicada para esta branch. Usar web-evolution.html em ambiente de QA local com API e PostgreSQL fictícios, ou artifacts de GitHub Actions como evidência preliminar. Sem merge ou deploy.
 - Pendências: homologação visual explícita, publicação isolada autorizada, proteção atômica de saldo para pagamento, cadastros por UI e fluxos canônicos de cartão, benefício e transferência.
 
+
+
+---
+
+## PR #648: acabamento de rolagem, resumo e acessibilidade (24/10/2026)
+
+- Etapa autorizada: somente acabamento da seleção do tipo e formulário Novo Lançamento da PR #648, sem iniciar nova tela e sem alterar regra financeira, writers canônicos ou dados reais.
+- Base preservada: PR #647 HEAD 18209e9adb1a3c2ab9b7fd6f871ec9b5daa5f38a, PR #648 empilhada, Draft e sem merge/deploy.
+- Alterações: visual teal oficial em duas etapas mantido. Ícones dos quatro cards padronizados usando Icon já existente; itens indisponíveis mantêm contraste, não ativam gravação. Resumo formata somente a data textual AAAA-MM-DD para DD/MM/AAAA, sem converter Date nem mudar payload da API. Valor em reais permanece prévia local, sem saldo ou cálculos financeiros.
+- Acessibilidade: foco inicial no título, controle de Tab e Shift+Tab também quando o título recebe foco, Esc e devolução ao gatilho. O modal mantém uma área de rolagem com scroll-padding; cabeçalho sticky opaco e rodapé sticky opaco com espaço de foco. Atenção especial às resoluções desktop 1366x768, 1024x600, baixa 910x400 e mobile 390x844.
+- Corrigida previamente a visibilidade do DataGrid por CSS de escopo da tela Lançamentos, sem modificar o componente central. QA exige conferir cabeçalho e linhas renderizados após a gravação.
+- Continuidade financeira: apenas Receita (status final servidor) e Despesa Pendente (sem débito). Transferência, Benefício, Cartão/parcelamento e Despesa Paga não são habilitados. Catálogos e autocomplete continuam autorizados; operationId e writer canônico intocados.
+- Qualidade: testes financeiros, autenticação, consulta histórica e 5xx com estado preservado devem continuar verdes. QA real Fastify/PostgreSQL efêmero, screenshots de topo/final dos formulários e validação de alcance do resumo/observações/rodapé. A versão só poderá ser indicada como tecnicamente validada após CI e QA no mesmo SHA que inclui este checkpoint. Não declarar homologação visual sem aprovação explícita do usuário.
+- Preview: examinar o mecanismo isolado existente antes de criar recursos. Nunca publicar no ambiente produtivo nem usar dados financeiros reais. Se preview isolado requer infraestrutura/custo, informar bloqueio e não executar sem autorização.
