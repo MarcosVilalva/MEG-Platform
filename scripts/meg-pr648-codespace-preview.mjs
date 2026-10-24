@@ -5,6 +5,7 @@
  * Pré-requisitos: Node 22, npm, Docker, git e portas 3334/5174/5548 livres.
  */
 import { execFileSync, spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
@@ -21,6 +22,7 @@ const EMAIL = 'preview-admin@meg.invalid';
 const STATE = join(homedir(), '.local', 'state', 'meg-pr648-preview');
 const CREDS = join(STATE, 'credenciais.txt');
 const children = [];
+let stopping = false;
 
 function command(bin, args, env = process.env) {
   execFileSync(bin, args, { cwd: ROOT, env, stdio: 'inherit' });
@@ -29,16 +31,64 @@ function output(bin, args) {
   return execFileSync(bin, args, { cwd: ROOT, encoding: 'utf8' }).trim();
 }
 function fail(message) { throw new Error(message); }
+
+// Se outra API/Vite ficou órfã de uma execução anterior, não podemos tratá-la
+// como se fosse a instância iniciada agora. Nunca encerre um PID desconhecido.
+async function assertPortFree(port, label) {
+  await new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once('error', error => {
+      reject(new Error(label + ' bloqueado: porta ' + port
+        + ' ocupada (' + (error.code || 'UNKNOWN') + ').'
+        + ' Identifique o processo com lsof -nP -iTCP:' + port
+        + ' -sTCP:LISTEN, encerre somente se confirmado e reinicie.'));
+    });
+    probe.listen({ host: '127.0.0.1', port }, () => probe.close(resolve));
+  });
+}
 function stop() {
-  for (const child of children) if (child.exitCode === null) child.kill('SIGTERM');
+  if (stopping) return;
+  stopping = true;
+  for (const child of children) {
+    if (!child.pid || child.exitCode !== null || child.signalCode !== null) continue;
+    try {
+      // Linux Codespaces: encerra também npm -> shell -> tsx/vite.
+      process.kill(-child.pid, 'SIGTERM');
+    } catch {
+      try { child.kill('SIGTERM'); } catch { /* Já encerrado. */ }
+    }
+  }
+}
+function spawnManaged(label, args, env) {
+  const child = spawn('npm', args, {
+    cwd: ROOT, env, stdio: 'inherit', detached: true,
+  });
+  children.push(child);
+  child.on('error', error => {
+    if (stopping) return;
+    console.error('[MEG preview] ' + label + ' não iniciou:', error.message);
+    stop();
+    process.exitCode = 1;
+  });
+  child.on('exit', (code, signal) => {
+    if (stopping) return;
+    console.error('[MEG preview] ' + label + ' encerrou inesperadamente ('
+      + (signal || 'code ' + code) + '). Preview não homologado.');
+    stop();
+    process.exitCode = 1;
+  });
+  return child;
 }
 process.on('SIGINT', () => { stop(); process.exit(130); });
 process.on('SIGTERM', () => { stop(); process.exit(143); });
 process.on('exit', stop);
 
-async function waitUrl(url, timeoutMs = 120000) {
+async function waitUrl(url, child, timeoutMs = 120000) {
   const until = Date.now() + timeoutMs;
   while (Date.now() < until) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      fail('Serviço morreu antes de ficar disponível: ' + url);
+    }
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(2500) });
       if (response.ok) return response;
@@ -68,6 +118,8 @@ async function main() {
   for (const file of ['.env', 'apps/api/.env', 'packages/database/.env', 'apps/web/.env']) {
     if (existsSync(join(ROOT, file))) fail('Arquivo ' + file + ' presente. Use um clone novo sem configurações reais.');
   }
+  await assertPortFree(3334, 'API local');
+  await assertPortFree(5174, 'Vite de homologação');
   command('docker', ['info']);
   mkdirSync(STATE, { recursive: true, mode: 0o700 });
 
@@ -122,10 +174,9 @@ async function main() {
   command('npm', ['run', 'db:generate'], safeEnv);
   command('npm', ['run', 'db:push'], safeEnv);
 
-  const apiChild = spawn('npm', ['--workspace', 'apps/api', 'run', 'start'],
-    { cwd: ROOT, env: safeEnv, stdio: 'inherit' });
-  children.push(apiChild);
-  await waitUrl(API + '/ready');
+  const apiChild = spawnManaged('API local',
+    ['--workspace', 'apps/api', 'run', 'start'], safeEnv);
+  await waitUrl(API + '/ready', apiChild);
 
   let password;
   if (existsSync(CREDS)) {
@@ -188,11 +239,14 @@ async function main() {
   }
 
   const webEnv = { ...safeEnv, VITE_API_URL: '/api' };
-  const webChild = spawn('npm', ['--workspace', 'apps/web', 'run', 'dev', '--',
-      '--config', 'vite.codespace-preview.config.ts'],
-    { cwd: ROOT, env: webEnv, stdio: 'inherit' });
-  children.push(webChild);
-  await waitUrl(WEB + '/web-evolution.html');
+  const webChild = spawnManaged('Vite de homologação',
+    ['--workspace', 'apps/web', 'run', 'dev', '--',
+      '--config', 'vite.codespace-preview.config.ts'], webEnv);
+  await waitUrl(WEB + '/web-evolution.html', webChild);
+  if (apiChild.exitCode !== null || apiChild.signalCode !== null
+    || webChild.exitCode !== null || webChild.signalCode !== null) {
+    fail('API ou Vite encerrado durante a inicialização. Preview não homologado.');
+  }
 
   const revision = output('git', ['rev-parse', '--short=9', 'HEAD']);
   const host = process.env.CODESPACE_NAME
