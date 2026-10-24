@@ -1283,3 +1283,13 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Correção restrita à homologação:** criado `scripts/meg-pr648-preview-commercial.ts`, que invoca `ensureCommercialFoundation()` sem duplicar regras de negócios, protegido por igualdade exata do `DATABASE_URL` descartável, `NODE_ENV=development`, `ADMIN_EMAIL=preview-admin@meg.invalid` e marcador `MEG_PR648_PREVIEW_LOCAL_DB=1`. O inicializador `scripts/meg-pr648-codespace-preview.mjs` chama esta rotina após autenticação e antes dos catálogos. Não há bypass de licença, alteração da API, nem dado real.
 - **Execução requerida:** no clone `/workspaces/meg-pr648-homologacao`, executar `git pull --ff-only` e `node scripts/meg-pr648-codespace-preview.mjs`. Manter a porta 5174 privada. A execução corrigida não foi testada ainda no Codespace; só o usuário pode confirmar o preview real.
 - **Governança:** branch da PR #648 em Draft, sem merge/produção/Android; CI no SHA final é gate técnico e não valida visual. Credenciais fictícias em `~/.local/state/meg-pr648-preview/credenciais.txt`; não compartilhar senha em chats.
+
+
+---
+
+## PR #648 — Proteção de inicialização contra portas ocupadas (24/10/2026)
+
+- **Erro real na segunda execução do Codespace:** embora PostgreSQL e licença comercial canônica funcionassem, nova API Fastify falhou com \`EADDRINUSE 127.0.0.1:3334\`; um processo remanescente atendia \`/ready\` e o script exibiu indevidamente “MEG HOMOLOGAÇÃO DISPONÍVEL” enquanto a API nova estava morta.
+- **Correção no inicializador:** verificar previamente se as portas 3334 e 5174 estão livres, abortando com identificação de porta e instrução segura via \`lsof\` caso contrário. Subprocessos npm passam a rodar em grupo isolado, com encerramento do grupo no \`Ctrl+C\` e detecção da morte de API/Vite antes de informar sucesso.
+- **Retomada obrigatória:** parar o inicializador, identificar o processo que ocupa a porta 3334 (\`lsof -nP -iTCP:3334 -sTCP:LISTEN\`), encerrar somente se confirmado como API órfã desta homologação, verificar também 5174, \`git pull --ff-only\` no clone isolado e reiniciar. NÃO executar comandos amplos \`pkill node\`, \`killall\`, apagar contêiner nem interromper infraestrutura desconhecida.
+- **Validação:** as verificações são restritas ao script de homologação; não alterar writers financeiros, licenças, API de produção, Android, main ou serviços Render. Nenhuma visualização foi homologada explicitamente; CI no SHA final e execução real da versão corrigida continuam pendentes.
