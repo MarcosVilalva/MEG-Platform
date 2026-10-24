@@ -111,3 +111,85 @@ test('falha na página 2 não revela histórico parcial; tentativa de novo compl
   await expect(page.getByText('251 de 251 registros no histórico completo.',{exact:false})).toBeVisible({timeout:30000});
   console.log('NO_PARTIAL_EXPORT_ON_PAGINATION_FAILURE=PASSED');
 });
+
+
+test('Novo Lançamento: receita e despesa pendente com persistência real, idempotência e isolamento',async({browser,request})=>{
+  const context=await browser.newContext({viewport:{width:1366,height:768},reducedMotion:'reduce'});
+  const page=await context.newPage();
+  try{
+    const session=await signIn(page,USER_A);
+    const headers={Authorization:'Bearer '+session.accessToken};
+    await expect(page.getByText('251 de 251 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
+    const list=await request.get(API+'/finance/accounts',{headers});
+    expect(list.status()).toBe(200);
+    const account=(await list.json()).find(x=>x.type==='checking'&&x.isActive);
+    expect(account).toBeTruthy();
+    const incomeResponse=await request.post(API+'/finance/categories',{headers,data:{name:'Receita QA Operacional',type:'income',group:'Teste',operationId:'category-income-qa-20261023'}});
+    expect(incomeResponse.status()).toBe(201);
+    const incomeCategory=await incomeResponse.json();
+    const expenseResponse=await request.post(API+'/finance/categories',{headers,data:{name:'Despesa QA Operacional',type:'expense',group:'Variável',operationId:'category-expense-qa-20261023'}});
+    expect(expenseResponse.status()).toBe(201);
+    const expenseCategory=await expenseResponse.json();
+    const methodResponse=await request.post(API+'/finance/payment-methods',{headers,data:{name:'PIX QA Operacional',type:'instant',operationId:'method-pix-qa-20261023'}});
+    expect(methodResponse.status()).toBe(201);
+    const method=await methodResponse.json();
+    await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
+    await expect(page.getByRole('dialog',{name:'Novo lançamento'})).toBeVisible();
+    await page.getByRole('radio',{name:'Receita'}).check();
+    await page.getByRole('textbox',{name:'Descrição *'}).fill('Receita criada pelo QA operacional');
+    await page.getByRole('textbox',{name:'Valor em reais *'}).fill('1.234,56');
+    await page.getByLabel('Data *').fill('2026-10-23');
+    await page.getByLabel('Categoria *').selectOption(incomeCategory.id);
+    await page.getByLabel('Conta monetária *').selectOption(account.id);
+    await page.getByLabel('Forma de pagamento *').selectOption(method.id);
+    await page.screenshot({path:OUT+'/04-new-income-form.png',animations:'disabled'});
+    await page.getByRole('button',{name:'Salvar lançamento'}).click();
+    await expect(page.getByText('252 de 252 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
+    let events=await request.get(API+'/finance/events?page=1&pageSize=100',{headers});
+    expect(events.status()).toBe(200);
+    const json=await events.json();
+    const income=json.items.find(x=>x.description==='Receita criada pelo QA operacional');
+    expect(income).toBeTruthy();
+    expect(income.type).toBe('income');
+    expect(income.status).toBe('paid');
+    expect(Number(income.amount)).toBe(1234.56);
+    expect(income.accountId).toBe(account.id);
+    const balanceResponse=await request.get(API+'/finance/monetary-balance?accountId='+encodeURIComponent(account.id)+'&date=2026-10-23',{headers});
+    expect(balanceResponse.status()).toBe(200);
+    const balanceBefore=Number((await balanceResponse.json()).available);
+
+    await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
+    await page.getByRole('radio',{name:'Despesa pendente'}).check();
+    await page.getByRole('textbox',{name:'Descrição *'}).fill('Despesa pendente criada pelo QA');
+    await page.getByRole('textbox',{name:'Valor em reais *'}).fill('10,07');
+    await page.getByLabel('Data *').fill('2026-10-23');
+    await page.getByLabel('Categoria *').selectOption(expenseCategory.id);
+    await page.getByLabel('Conta monetária *').selectOption(account.id);
+    await page.getByLabel('Forma de pagamento *').selectOption(method.id);
+    await page.getByRole('button',{name:'Salvar lançamento'}).click();
+    await expect(page.getByText('253 de 253 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
+    events=await request.get(API+'/finance/events?page=1&pageSize=100',{headers});
+    const expense=(await events.json()).items.find(x=>x.description==='Despesa pendente criada pelo QA');
+    expect(expense).toBeTruthy();
+    expect(expense.type).toBe('expense');
+    expect(expense.status).toBe('planned');
+    expect(Number(expense.amount)).toBe(10.07);
+    const balanceAfter=Number((await (await request.get(API+'/finance/monetary-balance?accountId='+encodeURIComponent(account.id)+'&date=2026-10-23',{headers})).json()).available);
+    expect(balanceAfter).toBe(balanceBefore);
+    await page.screenshot({path:OUT+'/05-new-pending-expense-saved.png',animations:'disabled'});
+
+    const b=await browser.newContext();
+    const bPage=await b.newPage();
+    try {
+      const sessionB=await signIn(bPage,USER_B);
+      await expect(bPage.getByText('2 de 2 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
+      const bEvents=await request.get(API+'/finance/events?page=1&pageSize=100',{headers:{Authorization:'Bearer '+sessionB.accessToken}});
+      expect(bEvents.status()).toBe(200);
+      expect((await bEvents.json()).items.every(x=>!x.description.includes('criada pelo QA'))).toBe(true);
+      const rejected=await request.post(API+'/finance/events',{headers:{Authorization:'Bearer '+sessionB.accessToken},
+        data:{description:'Sem permissão cruzada',type:'income',status:'planned',date:'2026-10-23',amount:1,accountId:account.id,categoryId:incomeCategory.id,paymentMethodId:method.id,operationId:'qa-cross-workspace-20261023'}});
+      expect(rejected.status()).toBe(400);
+    }finally{await b.close();}
+    console.log('NOVO_LANCAMENTO_BASIC_API=PASSED');
+  }finally{await context.close();}
+});
