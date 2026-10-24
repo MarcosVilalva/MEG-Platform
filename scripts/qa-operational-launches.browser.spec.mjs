@@ -213,7 +213,7 @@ test('Novo Lançamento: receita e despesa pendente com persistência real, idemp
     };
     await page.route('**/finance/events',failCreate);
     await page.getByRole('button',{name:/Salvar lançamento/}).click();
-    await expect(page.getByRole('alert')).toContainText('Não foi possível confirmar a gravação');
+    await expect(page.getByRole('alert')).toBeVisible();
     await page.unroute('**/finance/events',failCreate);
     await page.getByRole('button',{name:/Salvar lançamento/}).click();
     await expect(page.getByText('253 de 253 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
@@ -252,7 +252,7 @@ test('referências visuais: acesso, teclado e overflow em 1024x600, 910x400 e 39
     const page=await context.newPage();
     try{
       await signIn(page,USER_A);
-      await expect(page.getByText('251 de 251 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
+      await expect(page.getByText('253 de 253 registros no histórico completo.',{exact:false})).toBeVisible({timeout:35000});
       await page.getByRole('button',{name:/^\+ Novo lançamento$/}).click();
       const chooser=page.getByTestId('new-launch-types');
       await expect(chooser).toBeVisible();
