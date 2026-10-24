@@ -212,6 +212,44 @@ async function main() {
   // O writer exige licença ACTIVE/TRIAL: repetir a rotina canônica no banco
   // local resolve a ordem de inicialização sem desativar qualquer proteção.
   command('npm', ['exec', '--', 'tsx', 'scripts/meg-pr648-preview-commercial.ts'], safeEnv);
+
+  // Na primeira instalação vazia, o boot da API tenta reconciliar antes de
+  // a fonte normalizada ter sido ativada. Usar o contrato ADMIN existente,
+  // nunca inserir marcadores no banco ou relaxar a proteção do writer.
+  const normalization = await request('/app-state/normalization-preview', {}, token);
+  if (!normalization.response.ok || !normalization.value?.source || !normalization.value?.normalized) {
+    fail('Não foi possível verificar a fonte financeira normalizada no banco descartável.');
+  }
+  const n = normalization.value;
+  if (n.mode === 'app-state-rollback') {
+    fail('Base de homologação em rollback administrativo: ativação automática proibida.');
+  }
+  if (!n.primary) {
+    if (n.source.validCount !== 0 || n.source.invalidCount !== 0 || n.normalized.count !== 0 || !n.reconciled) {
+      fail('Fonte financeira não está vazia/reconciliada. Não realizar cutover automático; exige auditoria.');
+    }
+    const activated = await request('/app-state/normalization-cutover', {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'activate',
+        expectedRevision: n.revision,
+        confirmation: 'ATIVAR_BASE_NORMALIZADA',
+      }),
+    }, token);
+    if (!activated.response.ok || !activated.value?.primary || !activated.value?.reconciled) {
+      fail('Ativação canônica da fonte financeira falhou: HTTP ' + activated.response.status
+        + ' (' + (activated.value?.error || 'sem confirmação') + ').');
+    }
+    console.log('Fonte financeira vazia ativada e reconciliada pela API canônica.');
+  } else if (!n.reconciled || n.source.invalidCount !== 0) {
+    fail('Fonte financeira primária inconsistente. Preview bloqueado até auditoria.');
+  }
+  const financialHealth = await request('/health');
+  if (!financialHealth.response.ok || financialHealth.value?.financialReady !== true) {
+    fail('API sem autoridade financeira confirmada (health.financialReady não é true).');
+  }
+  console.log('GATE FINANCEIRO: API financialReady=true.');
+
   for (const [path, desired] of [
     ['/finance/accounts', [
       { name: 'Conta de teste', type: 'checking', institution: 'Banco fictício', openingBalance: 0 },
@@ -246,6 +284,10 @@ async function main() {
   if (apiChild.exitCode !== null || apiChild.signalCode !== null
     || webChild.exitCode !== null || webChild.signalCode !== null) {
     fail('API ou Vite encerrado durante a inicialização. Preview não homologado.');
+  }
+  const finalHealth = await request('/health');
+  if (!finalHealth.response.ok || finalHealth.value?.financialReady !== true) {
+    fail('Autoridade financeira indisponível após iniciar frontend. Preview não homologado.');
   }
 
   const revision = output('git', ['rev-parse', '--short=9', 'HEAD']);
