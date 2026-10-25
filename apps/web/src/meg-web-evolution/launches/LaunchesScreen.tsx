@@ -5,6 +5,7 @@ import type { DataGridColumn } from '../datagrid/types';
 import { loadAuthorizedEventHistory, toEventGridRows, type EventGridRow, type LoadProgress } from './history';
 import './launches.css';
 import { NewLaunchForm } from './NewLaunchForm';
+import { Icon } from '../components/Icon';
 
 type Props = { userId: string; userName: string; canCreate?: boolean; newLaunchToken?: number };
 
@@ -85,13 +86,24 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
   return (
     <section className="meg-launches" aria-label="Lançamentos financeiros">
       <header className="meg-launches__header">
-        <div>
+        <div className="meg-launches__heading">
           <h1>Lançamentos</h1>
-          <p>Histórico financeiro autorizado, carregado da API. A busca, os filtros e as exportações abrangem todos os registros carregados.</p>
+          <p>Visualize, filtre e gerencie suas movimentações financeiras.</p>
         </div>
         <div className="meg-launches__actions">
-          {canCreate && <button type="button" className="meg-launches__refresh" onClick={() => setShowNew(true)}>+ Novo lançamento</button>}
-          <button type="button" className="meg-launches__refresh" onClick={refresh} disabled={events === null && !error}>Atualizar consulta</button>
+          {canCreate && (
+            <button type="button" className="meg-launches__refresh meg-launches__refresh--primary" onClick={() => setShowNew(true)}>
+              <Icon name="plus" width={20} height={20}/>
+              <span>Novo lançamento</span>
+            </button>
+          )}
+          <button type="button" className="meg-launches__refresh" onClick={refresh} disabled={events === null && !error}>
+            <svg aria-hidden="true" focusable="false" width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 7v5h-5M4 17v-5h5"/>
+              <path d="M5.5 9A7.5 7.5 0 0 1 18 6l2 1M4 17l2 1a7.5 7.5 0 0 0 12.5-3"/>
+            </svg>
+            <span>Atualizar consulta</span>
+          </button>
         </div>
       </header>
 
@@ -115,7 +127,7 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
         <>
           <p className="meg-launches__count" role="status">
             {filteredCount.toLocaleString('pt-BR')} de {records.length.toLocaleString('pt-BR')} registros no histórico completo.
-            A coluna “Valor registrado” mostra o sinal armazenado pela API, não o saldo bancário.
+            A coluna “Valor registrado” mostra o sinal armazenado pela API, não o saldo bancário. Busca, filtros e exportações abrangem os registros carregados.
           </p>
           <div className="meg-launches__grid">
             <DataGrid<EventGridRow>
