@@ -364,19 +364,38 @@ async function main() {
       + 'same-origin: HTTP ' + forwardedLogin.status);
   }
 
-  // Contraprova: um preflight cross-site nao pode passar pela excecao local.
-  // Este teste NAO envia senha ou token a uma origem externa.
+  // Uma resposta 200/204 ao OPTIONS nao autoriza CORS por si so.
+  // O navegador verifica Access-Control-Allow-Origin, nao response.ok.
+  // Os testes abaixo nao expõem token nem senha a servidores externos.
+  const foreignOrigin = 'https://origem-nao-autorizada.invalid';
+  const isCorsAllowed = (response) => {
+    const value = response.headers.get('access-control-allow-origin');
+    return value === '*' || value === foreignOrigin;
+  };
   const untrustedPreflight = await fetch(WEB + '/api/auth/login', {
     method: 'OPTIONS',
     headers: {
-      Origin: 'https://origem-nao-autorizada.invalid',
+      Origin: foreignOrigin,
       'Sec-Fetch-Site': 'cross-site',
       'Access-Control-Request-Method': 'POST',
     },
     signal: AbortSignal.timeout(10000),
   });
-  if (untrustedPreflight.ok) {
-    fail('GATE CORS: preflight de origem externa aceito; preview bloqueado.');
+  if (isCorsAllowed(untrustedPreflight)) {
+    fail('GATE CORS: preflight libera a origem externa (Access-Control-Allow-Origin).');
+  }
+
+  // A mesma origem externa nao pode ser convertida artificialmente numa
+  // chamada local: confirmar que a API rejeita o GET com Origin cross-site.
+  const untrustedGet = await fetch(WEB + '/api/health', {
+    headers: {
+      Origin: foreignOrigin,
+      'Sec-Fetch-Site': 'cross-site',
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (untrustedGet.ok || isCorsAllowed(untrustedGet)) {
+    fail('GATE CORS: requisicao cross-site ignorou a restricao da API.');
   }
   console.log('GATE LOGIN LOCAL: sessao, POST com Origin encaminhada e bloqueio cross-site OK.');
   console.log('ATENCAO: ainda e obrigatoria a verificacao funcional no navegador publico Codespaces.');
