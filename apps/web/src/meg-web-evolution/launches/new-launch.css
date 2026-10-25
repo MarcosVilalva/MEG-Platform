@@ -579,3 +579,67 @@
 @media (prefers-reduced-motion: reduce) {
   .meg-new-launch__option-icon svg {filter: none}
 }
+
+/* Acabamento do Novo Lançamento: alinhamentos e iconografia em SVG.
+   Não altera status, valores ou disponibilidade financeira. */
+.meg-new-launch__type-pill span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  line-height: 1.25;
+}
+.meg-new-launch__type-pill svg,
+.meg-new-launch__option-arrow svg,
+.meg-new-launch__close svg,
+.meg-new-launch__footer svg { display: block; flex: none; }
+.meg-new-launch__field-label,
+.meg-new-launch__group-title,
+.meg-new-launch__locked strong {
+  align-items: center;
+  line-height: 1.35;
+  min-width: 0;
+}
+.meg-new-launch__panel,
+.meg-new-launch__summary { gap: .8rem; }
+.meg-new-launch__summary-title > div { min-width: 0; }
+.meg-new-launch__summary dl div { align-items: center; }
+.meg-new-launch__summary dt {
+  min-width: 0;
+  align-items: center;
+  line-height: 1.35;
+}
+.meg-new-launch__summary dd {
+  text-align: left;
+  line-height: 1.4;
+}
+.meg-new-launch__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.3;
+}
+.meg-new-launch__status span {
+  align-content: center;
+  line-height: 1.35;
+}
+.meg-new-launch__footer button,
+.meg-new-launch__message button {
+  line-height: 1.3;
+  text-align: center;
+}
+.meg-new-launch__close svg { stroke-width: 3; }
+.meg-new-launch__footer .meg-new-launch__save svg { stroke-width: 3.25; }
+@media (min-width: 1024px) {
+  /* A altura acompanha o conteúdo; a rolagem permanece dentro do diálogo. */
+  .meg-new-launch.is-form { min-height: 0; }
+}
+@media (max-width: 639px) {
+  .meg-new-launch__summary dl div {
+    grid-template-columns: minmax(0, 43%) minmax(0, 57%);
+    gap: .45rem;
+  }
+  .meg-new-launch__summary-amount-row { align-items: flex-start; }
+  .meg-new-launch__amount { font-size: clamp(1.55rem, 7.5vw, 2.2rem); }
+}
