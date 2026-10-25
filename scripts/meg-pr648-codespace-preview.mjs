@@ -343,7 +343,42 @@ async function main() {
     fail('Login do navegador pelo proxy Codespaces falhou: HTTP '
       + browserLogin.status + '. Preview bloqueado até corrigir a origem/CORS.');
   }
-  console.log('GATE LOGIN LOCAL: /auth/me e POST /api/auth/login com Origin/Sec-Fetch-Site simulados OK.');
+  // O tunel publico pode alterar Origin mesmo com Sec-Fetch-Site same-origin.
+  // Testar explicitamente esse cenario, que antes passou despercebido porque
+  // todos os testes usavam a Origin exata que o proprio script esperava.
+  const forwardedLogin = await fetch(WEB + '/api/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://origin-encaminhada.invalid',
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'cors',
+    },
+    body: JSON.stringify(credentials),
+    signal: AbortSignal.timeout(20000),
+  });
+  const forwardedValue = await forwardedLogin.json().catch(() => ({}));
+  if (!forwardedLogin.ok || forwardedValue?.user?.email !== EMAIL
+    || typeof forwardedValue?.accessToken !== 'string') {
+    fail('GATE LOGIN: proxy nao tolera Origin encaminhada em solicitacao '
+      + 'same-origin: HTTP ' + forwardedLogin.status);
+  }
+
+  // Contraprova: um preflight cross-site nao pode passar pela excecao local.
+  // Este teste NAO envia senha ou token a uma origem externa.
+  const untrustedPreflight = await fetch(WEB + '/api/auth/login', {
+    method: 'OPTIONS',
+    headers: {
+      Origin: 'https://origem-nao-autorizada.invalid',
+      'Sec-Fetch-Site': 'cross-site',
+      'Access-Control-Request-Method': 'POST',
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (untrustedPreflight.ok) {
+    fail('GATE CORS: preflight de origem externa aceito; preview bloqueado.');
+  }
+  console.log('GATE LOGIN LOCAL: sessao, POST com Origin encaminhada e bloqueio cross-site OK.');
   console.log('ATENCAO: ainda e obrigatoria a verificacao funcional no navegador publico Codespaces.');
 
   const revision = output('git', ['rev-parse', '--short=9', 'HEAD']);
