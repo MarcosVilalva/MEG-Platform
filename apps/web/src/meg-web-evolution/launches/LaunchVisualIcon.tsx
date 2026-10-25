@@ -8,7 +8,8 @@ import type { ReactNode, SVGProps } from 'react';
 export type LaunchVisualIconName =
   | 'expense' | 'income' | 'transfer' | 'benefit'
   | 'description' | 'category' | 'account' | 'payment'
-  | 'date' | 'amount' | 'status' | 'installments' | 'notes' | 'summary';
+  | 'date' | 'amount' | 'status' | 'installments' | 'notes' | 'summary'
+  | 'check' | 'close' | 'lock';
 
 const symbols: Record<LaunchVisualIconName, ReactNode> = {
   expense: <><path d="M9 5.5h14l5 5v25l-4 3-4-3-4 3-4-3-4 3V7a1.5 1.5 0 0 1 1-1.5Z"/><path d="M23 5.5v6h6M13 16h11M13 22h11M13 28h7"/><path d="M32 20v11m-4-4 4 4 4-4"/></>,
@@ -25,6 +26,9 @@ const symbols: Record<LaunchVisualIconName, ReactNode> = {
   installments: <><rect x="4" y="7" width="28" height="22" rx="3"/><path d="M4 14h28M11 22h8"/><rect x="16" y="20" width="28" height="22" rx="3"/><path d="M16 27h28M24 35h10"/></>,
   notes: <><path d="M11 6h26a4 4 0 0 1 4 4v20L30 42H11a4 4 0 0 1-4-4V10a4 4 0 0 1 4-4Z"/><path d="M30 42V31h11M14 16h20M14 23h16M14 30h10"/></>,
   summary: <><rect x="5" y="5" width="38" height="38" rx="5"/><path d="M12 15h4M21 15h16M12 24h4M21 24h16M12 33h4M21 33h16"/></>,
+  check: <path d="m9 25 10 10 21-23"/>,
+  close: <path d="M12 12 36 36M36 12 12 36"/>,
+  lock: <><rect x="10" y="20" width="28" height="23" rx="4"/><path d="M16 20v-7a8 8 0 0 1 16 0v7M24 30v6"/></>,
 };
 
 export function LaunchVisualIcon({
