@@ -8,10 +8,12 @@ if (process.env.VITE_API_URL !== '/api') {
 
 const localApi = 'http://127.0.0.1:3334';
 
-// CODESPACE_NAME e recebido do inicializador isolado da PR #648.
-// O GitHub pode reescrever Host ou remover Sec-Fetch-Site ao encaminhar
-// requisicoes. So a Origin EXATA do Codespace pode ser retirada do salto
-// entre Vite e API local; outras origens continuam sob o CORS da API.
+// Vite atende o navegador na mesma origem publica e encaminha /api para
+// uma API privada (127.0.0.1). O tunel do Codespaces pode reescrever Origin.
+// Para requests que o proprio navegador classifica como same-origin, nao
+// repassar esse Origin no salto interno Vite -> API: CORS entre esses dois
+// processos nao se aplica. Origens cross-site continuam sob o CORS da API.
+// Sec-Fetch-Site e controlado pelo navegador; nao substitui autenticacao.
 const codespaceName = process.env.CODESPACE_NAME || '';
 const previewOrigin = /^[a-z0-9-]+$/.test(codespaceName)
   ? `https://${codespaceName}-5174.app.github.dev`
@@ -21,8 +23,8 @@ if (!previewOrigin) {
   throw new Error('Preview MEG bloqueado: CODESPACE_NAME ausente/invalido no processo Vite.');
 }
 
-function isFirstPartyCodespaces(origin?: string) {
-  return origin === previewOrigin;
+function isFirstPartyRequest(origin?: string, fetchSite?: string) {
+  return Boolean(origin && (origin === previewOrigin || fetchSite === 'same-origin'));
 }
 
 const proxy: Record<string, ProxyOptions> = {
@@ -32,7 +34,10 @@ const proxy: Record<string, ProxyOptions> = {
     rewrite: (url: string) => url.replace(/^\/api/, ''),
     configure(serverProxy) {
       serverProxy.on('proxyReq', (proxyRequest, request) => {
-        if (isFirstPartyCodespaces(request.headers.origin)) {
+        if (isFirstPartyRequest(
+          request.headers.origin,
+          request.headers['sec-fetch-site'],
+        )) {
           proxyRequest.removeHeader('origin');
         }
       });
@@ -42,8 +47,12 @@ const proxy: Record<string, ProxyOptions> = {
           && (response.statusCode || 0) >= 500) {
           console.error('[MEG preview] Login rejeitado pela API local', {
             status: response.statusCode,
-            originAutorizada: request.headers.origin === previewOrigin,
+            origemIgualAoCodespace: request.headers.origin === previewOrigin,
             mesmaOrigemBrowser: request.headers['sec-fetch-site'] === 'same-origin',
+            origemRemovivelNoProxy: isFirstPartyRequest(
+              request.headers.origin,
+              request.headers['sec-fetch-site'],
+            ),
           });
         }
       });
