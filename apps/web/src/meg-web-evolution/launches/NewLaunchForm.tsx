@@ -174,7 +174,10 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
               ? <p>Escolha o tipo de lançamento e siga com um formulário inteligente para Web.</p>
               : <div className="meg-new-launch__header-inline">
                   <div className={'meg-new-launch__type-pill is-' + fields.type} data-testid="selected-launch-type">
-                    <span>{fields.type === 'income' ? '↑ Receita' : '↓ Despesa pendente'}</span>
+                    <span>
+                       <LaunchVisualIcon name={fields.type} width={19} height={19}/>
+                       {fields.type === 'income' ? 'Receita' : 'Despesa pendente'}
+                     </span>
                     <button type="button" onClick={back} disabled={saving}>Alterar tipo</button>
                   </div>
                   <p>Registre sua movimentação com os dados necessários.</p>
