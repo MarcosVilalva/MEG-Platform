@@ -129,3 +129,79 @@
 @media(max-width:639px) {
   .meg-launches__grid .meg-datagrid__viewport {min-height:12rem;max-height:clamp(11rem,calc(100dvh - 14rem),32rem)}
 }
+
+/* Refinamento da tela de Lançamentos conforme o print oficial vigente.
+   Cabeçalho com hierarquia destacada; sem indicador financeiro fictício. */
+.meg-launches__header {
+  position: relative;
+  isolation: isolate;
+  align-items: center;
+  min-height: 7.25rem;
+  padding: clamp(.9rem, 1.4vw, 1.4rem);
+  border: 1px solid rgba(14, 199, 195, .5);
+  border-radius: var(--meg-radius-card);
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(6, 215, 207, .18), transparent 48%),
+    linear-gradient(114deg, rgba(0, 29, 34, .98) 0%, rgba(1, 48, 53, .91) 56%, rgba(0, 23, 30, .98) 100%);
+  box-shadow: inset 0 0 1.75rem rgba(0, 195, 185, .035);
+}
+.meg-launches__heading { flex: 1 1 19rem; min-width: 0; }
+.meg-launches__header h1 {
+  font-size: clamp(2rem, 3.2vw, 3.35rem);
+  letter-spacing: -.04em;
+  line-height: 1.06;
+  font-weight: 850;
+}
+.meg-launches__header p {
+  margin-top: .43rem;
+  color: #d4e5e2;
+  font-size: clamp(.84rem, 1.1vw, 1rem);
+  line-height: 1.45;
+}
+.meg-launches__actions {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .55rem;
+  min-width: 0;
+}
+.meg-launches__refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 2.9rem;
+  line-height: 1.25;
+  font-weight: 700;
+  text-align: center;
+  white-space: normal;
+}
+.meg-launches__refresh svg { display: block; flex: 0 0 auto; }
+.meg-launches__refresh--primary {
+  border-color: #0df4e3;
+  background: linear-gradient(105deg, #10e0e1, #2feabd);
+  color: #032b2d;
+  box-shadow: 0 0 1.1rem rgba(12, 231, 218, .16);
+  font-weight: 850;
+}
+.meg-launches__refresh:not(:disabled):hover {
+  border-color: #49fff0;
+  filter: brightness(1.09);
+}
+.meg-launches__refresh:focus-visible {
+  outline: 2px solid #73fff4;
+  outline-offset: 3px;
+}
+.meg-launches__count {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 639px) {
+  .meg-launches__header { min-height: 0; align-items: stretch; }
+  .meg-launches__heading { flex: 1 1 100%; }
+  .meg-launches__header h1 { font-size: clamp(1.85rem, 8vw, 2.55rem); }
+  .meg-launches__actions { width: 100%; justify-content: stretch; }
+  .meg-launches__refresh { flex: 1 1 10rem; width: auto; }
+}
