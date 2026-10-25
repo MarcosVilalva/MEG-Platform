@@ -181,7 +181,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                 </div>}
           </div>
           <button type="button" className="meg-new-launch__close" onClick={onClose} disabled={saving} aria-label="Fechar novo lançamento">
-            <span aria-hidden="true">×</span>
+            <LaunchVisualIcon name="close" width={23} height={23}/>
           </button>
         </header>
 
@@ -213,7 +213,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                         {option.id === 'benefit' && <em>Contrato próprio</em>}
                       </span>
                     </span>
-                    <span className="meg-new-launch__option-arrow" aria-hidden="true">{disabled ? '•' : <Icon name="chevronRight" width={20} height={20}/>}</span>
+                    <span className="meg-new-launch__option-arrow" aria-hidden="true">{disabled ? <LaunchVisualIcon name="lock" width={19} height={19}/> : <Icon name="chevronRight" width={20} height={20}/>} </span>
                   </button>
                 );
               })}
@@ -346,7 +346,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
               <footer className="meg-new-launch__footer">
                 <button type="button" onClick={back} disabled={saving}><Icon name="chevronLeft" width={18}/> Voltar</button>
                 <button type="submit" className="meg-new-launch__save" disabled={saving || !completeCatalog}>
-                  <span aria-hidden="true">✓</span>{saving ? 'Salvando...' : 'Salvar lançamento'}</button>
+                  <LaunchVisualIcon name="check" width={22} height={22}/>{saving ? 'Salvando...' : 'Salvar lançamento'}</button>
               </footer>
             </form>}
           </>
