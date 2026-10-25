@@ -87,7 +87,7 @@ export default defineConfig(mergeConfig(base, {
     host: '0.0.0.0',
     port: 5174,
     strictPort: true,
-// A resposta CORS do Vite nao pode permitir origens arbitrarias.
+    // A resposta CORS do Vite nao pode permitir origens arbitrarias.
     allowedHosts: ['.app.github.dev'],
     cors: { origin: previewOrigin },
     proxy,
@@ -96,7 +96,7 @@ export default defineConfig(mergeConfig(base, {
     host: '0.0.0.0',
     port: 5174,
     strictPort: true,
-// A resposta CORS do Vite nao pode permitir origens arbitrarias.
+    // A resposta CORS do Vite nao pode permitir origens arbitrarias.
     allowedHosts: ['.app.github.dev'],
     cors: { origin: previewOrigin },
     proxy,
