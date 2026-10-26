@@ -99,6 +99,10 @@ async function evidence(page, dir, name, width, height, checks) {
     }
     return {
       pageHorizontalOverflowPx: Math.max(0, document.documentElement.scrollWidth - viewportWidth),
+      pageVerticalOverflowPx: Math.max(0, document.documentElement.scrollHeight - document.documentElement.clientHeight),
+      dialogVerticalOverflowPx: dialog ? Math.max(0, dialog.scrollHeight - dialog.clientHeight) : null,
+      gridVerticalOverflowPx: grid ? Math.max(0, grid.scrollHeight - grid.clientHeight) : null,
+      visibleStep: dialog?.getAttribute('data-step') ?? null,
       dialog: size(dialog), dataGrid: size(grid),
       dateFieldWidthPx: dateInput?.getBoundingClientRect().width ?? null,
       stickyHeaderTopPx: header?.getBoundingClientRect().top ?? null,
@@ -110,6 +114,12 @@ async function evidence(page, dir, name, width, height, checks) {
   if (metric.pageHorizontalOverflowPx > 1)
     console.warn('Rolagem horizontal da pagina em ' + filename + ': '
       + metric.pageHorizontalOverflowPx + 'px');
+  if (metric.dialogVerticalOverflowPx > 4)
+    console.warn('Rolagem vertical no modal em ' + filename + ': '
+      + metric.dialogVerticalOverflowPx + 'px');
+  if (metric.gridVerticalOverflowPx > 4)
+    console.warn('Rolagem vertical na grade em ' + filename + ': '
+      + metric.gridVerticalOverflowPx + 'px');
   console.log('  ' + filename);
 }
 async function capture(browser, width, height, password, dir, checks) {
@@ -149,10 +159,20 @@ async function capture(browser, width, height, password, dir, checks) {
       await page.locator('.meg-new-launch.is-form').waitFor({ state: 'visible' });
       await page.locator('.meg-new-launch__panel').first()
         .waitFor({ state: 'visible', timeout: 20000 });
-      await evidence(page, dir, prefix + '-inicio', width, height, checks);
-      await page.locator('.meg-new-launch')
-        .evaluate(node => { node.scrollTop = node.scrollHeight; });
-      await evidence(page, dir, prefix + '-rodape', width, height, checks);
+      if (width <= 1024) {
+        // Todas as etapas cabem na viewport sem rolagem vertical.
+        // Nao ha preenchimento ou envio de dados financeiros.
+        await evidence(page, dir, prefix + '-01-dados', width, height, checks);
+        await page.locator('.meg-new-launch__step').nth(1).click();
+        await evidence(page, dir, prefix + '-02-conta', width, height, checks);
+        await page.locator('.meg-new-launch__step').nth(2).click();
+        await evidence(page, dir, prefix + '-03-resumo', width, height, checks);
+      } else {
+        await evidence(page, dir, prefix + '-inicio', width, height, checks);
+        await page.locator('.meg-new-launch')
+          .evaluate(node => { node.scrollTop = node.scrollHeight; });
+        await evidence(page, dir, prefix + '-rodape', width, height, checks);
+      }
       if (type === 'Despesa') {
         await page.getByRole('button', { name: 'Alterar tipo' }).click();
         await page.locator('.meg-new-launch.is-choose').waitFor({ state: 'visible' });
