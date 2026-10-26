@@ -315,7 +315,8 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                     <div className="meg-new-launch__chips">
                       {categories.slice(0, 5).map(c => <button key={c.id} type="button" disabled={saving}
                         className={'meg-new-launch__chip is-category' + (fields.categoryId === c.id ? ' is-selected' : '')}
-                        aria-pressed={fields.categoryId === c.id} onClick={() => update('categoryId', c.id)}>
+                        aria-pressed={fields.categoryId === c.id} data-icon={categoryVisualIcon(c.name)}
+                         onClick={() => update('categoryId', c.id)}>
                          <LaunchVisualIcon name={categoryVisualIcon(c.name)} width={20} height={20}/>
                          <span>{c.name}</span>
                        </button>)}
@@ -398,12 +399,12 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                   </div>
                   <dl>
                     <div><dt><LaunchVisualIcon name="summary" width={16} height={16}/>Tipo</dt><dd>{fields.type === 'income' ? 'Receita' : 'Despesa pendente'}</dd></div>
-                    <div><dt>Descrição</dt><dd>{fields.description || 'Não informada'}</dd></div>
+                    <div><dt><LaunchVisualIcon name="description" width={16} height={16}/>Descrição</dt><dd>{fields.description || 'Não informada'}</dd></div>
                     <div><dt><LaunchVisualIcon name="category" width={16} height={16}/>Categoria</dt><dd>{matchingCategory?.name || 'Não selecionada'}</dd></div>
                     <div><dt><LaunchVisualIcon name="account" width={16} height={16}/>Conta</dt><dd>{matchingAccount?.name || 'Não selecionada'}</dd></div>
                     <div><dt><LaunchVisualIcon name="payment" width={16} height={16}/>Forma de pagamento</dt><dd>{matchingMethod?.name || 'Não selecionada'}</dd></div>
                     <div><dt><LaunchVisualIcon name="date" width={16} height={16}/>Data</dt><dd data-testid="new-launch-summary-date">{formatLaunchDateBR(fields.day)}</dd></div>
-                    <div><dt>Situação</dt><dd>{fields.type === 'income' ? 'Determinada pelo servidor' : 'Pendente, sem baixa'}</dd></div>
+                    <div><dt><LaunchVisualIcon name="status" width={16} height={16}/>Situação</dt><dd>{fields.type === 'income' ? 'Determinada pelo servidor' : 'Pendente, sem baixa'}</dd></div>
                   </dl>
                   <div className="meg-new-launch__summary-foot">Prévia das informações digitadas. Nenhuma movimentação é criada antes de salvar.</div>
                 </aside>
