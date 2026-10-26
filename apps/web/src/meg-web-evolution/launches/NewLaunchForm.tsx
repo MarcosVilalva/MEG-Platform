@@ -11,6 +11,12 @@ import './new-launch.css';
 type Props = { onClose: () => void; onSaved: (event: FinancialEvent) => void; history: FinancialEvent[] };
 type Catalog = { accounts: Account[]; categories: Category[]; methods: PaymentMethod[] };
 type Stage = 'choose' | 'form';
+type FormStep = 'details' | 'accounts' | 'review';
+const FORM_STEPS = [
+  { id: 'details', title: 'Dados', icon: 'description' },
+  { id: 'accounts', title: 'Conta e pagamento', icon: 'payment' },
+  { id: 'review', title: 'Revisão', icon: 'summary' },
+] as const;
 const blankCatalog: Catalog = { accounts: [], categories: [], methods: [] };
 const types = [
   { id: 'expense', title: 'Despesa', subtitle: 'Saídas, compras e gastos', icon: 'expense', detail: 'Pendente, sem débito', available: true },
@@ -33,6 +39,15 @@ const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: '
 
 export function NewLaunchForm({ onClose, onSaved, history }: Props) {
   const [stage, setStage] = useState<Stage>('choose');
+  const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches);
+  const [formStep, setFormStep] = useState<FormStep>('details');
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1024px)');
+    const onChange = () => setCompact(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
   const [fields, setFields] = useState<BasicLaunchFields>(emptyForm);
   const [catalog, setCatalog] = useState<Catalog>(blankCatalog);
   const [fetching, setFetching] = useState(false);
@@ -119,9 +134,21 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
     attemptId.current = crypto.randomUUID();
     setFields(previous => ({ ...previous, type: value, categoryId: '' }));
     setError('');
+    setFormStep('details');
     setStage('form');
   };
-  const back = () => { if (!savingLock.current) { setStage('choose'); setError(''); } };
+  const back = () => { if (!savingLock.current) { setStage('choose'); setFormStep('details'); setError(''); } };
+  const previousStep = () => {
+    if (savingLock.current) return;
+    if (!compact || formStep === 'details') return back();
+    setFormStep(formStep === 'review' ? 'accounts' : 'details');
+    setError('');
+  };
+  const nextStep = () => {
+    if (savingLock.current) return;
+    setError('');
+    setFormStep(formStep === 'details' ? 'accounts' : 'review');
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -136,6 +163,12 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
       if (!saved?.id) throw new Error('O servidor não confirmou o identificador do lançamento.');
       onSaved(saved);
     } catch (cause) {
+      // Erros de formato retornam ao passo editavel. Status financeiro vem da API.
+      if (compact && cause instanceof Error && !('status' in cause)) {
+        if (!fields.description.trim() || !fields.categoryId || !fields.day
+          || parsePositiveBRL(fields.amount) === null) setFormStep('details');
+        else if (!fields.accountId || !fields.paymentMethodId) setFormStep('accounts');
+      }
       const response = cause as { code?: string; duplicate?: { description?: string }; status?: number };
       if (response.code === 'POSSIBLE_DUPLICATE') {
         setPossibleDuplicate(response.duplicate?.description || 'Lançamento semelhante');
@@ -162,7 +195,9 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
 
   return (
     <div className="meg-new-launch__overlay">
-      <section ref={dialog} className={'meg-new-launch is-' + stage} role="dialog" aria-modal="true" aria-labelledby="meg-new-launch-title">
+      <section ref={dialog} className={'meg-new-launch is-' + stage + (compact ? ' is-compact' : '')}
+        data-step={compact && stage === 'form' ? formStep : undefined}
+        role="dialog" aria-modal="true" aria-labelledby="meg-new-launch-title">
         <header className="meg-new-launch__header">
           <button type="button" className="meg-new-launch__back-icon" onClick={stage === 'form' ? back : onClose} disabled={saving} aria-label="Voltar">
             <Icon name="chevronLeft" width={25} height={25}/>
@@ -234,7 +269,18 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
             catalogError ? <div className="meg-new-launch__message" role="alert"><p>{catalogError}</p>
               <button type="button" onClick={() => setFetchVersion(n => n + 1)}>Tentar novamente</button>
             </div> :
-            <form onSubmit={submit} aria-label="Formulário de novo lançamento" noValidate={false}>
+            <form onSubmit={submit} aria-label="Formulário de novo lançamento" noValidate>
+              {compact && <nav className="meg-new-launch__steps" aria-label="Etapas do lançamento">
+                {FORM_STEPS.map((step, index) => (
+                  <button key={step.id} type="button" disabled={saving}
+                    className={'meg-new-launch__step' + (formStep === step.id ? ' is-current' : '')}
+                    aria-current={formStep === step.id ? 'step' : undefined}
+                    onClick={() => { setFormStep(step.id); setError(''); }}>
+                    <LaunchVisualIcon name={step.icon} width={19} height={19}/>
+                    <span>{index + 1}. {step.title}</span>
+                  </button>
+                ))}
+              </nav>}
               <div className="meg-new-launch__columns">
                 <div className="meg-new-launch__panel meg-new-launch__primary">
                   <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="description" width={19} height={19}/>Descrição *</span>
@@ -347,9 +393,18 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
               {error && <div role="alert" className="meg-new-launch__error"><p>{error}</p>
                 {possibleDuplicate && <p>Possível duplicidade: {possibleDuplicate}. Nenhuma nova gravação foi confirmada.</p>}</div>}
               <footer className="meg-new-launch__footer">
-                <button type="button" onClick={back} disabled={saving}><Icon name="chevronLeft" width={18}/> Voltar</button>
-                <button type="submit" className="meg-new-launch__save" disabled={saving || !completeCatalog}>
-                  <LaunchVisualIcon name="check" width={22} height={22}/>{saving ? 'Salvando...' : 'Salvar lançamento'}</button>
+                <button type="button" onClick={previousStep} disabled={saving}>
+                  <Icon name="chevronLeft" width={18}/> Voltar
+                </button>
+                {compact && formStep !== 'review' ? (
+                  <button type="button" className="meg-new-launch__save" onClick={nextStep} disabled={saving || !completeCatalog}>
+                    Continuar <LaunchVisualIcon name="arrow" width={21} height={21}/>
+                  </button>
+                ) : (
+                  <button type="submit" className="meg-new-launch__save" disabled={saving || !completeCatalog}>
+                    <LaunchVisualIcon name="check" width={22} height={22}/>{saving ? 'Salvando...' : 'Salvar lançamento'}
+                  </button>
+                )}
               </footer>
             </form>}
           </>
