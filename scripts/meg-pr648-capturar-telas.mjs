@@ -88,6 +88,9 @@ async function evidence(page, dir, name, width, height, checks) {
     const viewportWidth = document.documentElement.clientWidth;
     const dialog = document.querySelector('.meg-new-launch');
     const grid = document.querySelector('.meg-datagrid__viewport');
+    const dateInput = dialog?.querySelector('input[type="date"]');
+    const footer = dialog?.querySelector('.meg-new-launch__footer');
+    const header = dialog?.querySelector('.meg-new-launch__header');
     function size(node) {
       return node ? {
         clientWidth: node.clientWidth, scrollWidth: node.scrollWidth,
@@ -96,7 +99,11 @@ async function evidence(page, dir, name, width, height, checks) {
     }
     return {
       pageHorizontalOverflowPx: Math.max(0, document.documentElement.scrollWidth - viewportWidth),
-      dialog: size(dialog), dataGrid: size(grid)
+      dialog: size(dialog), dataGrid: size(grid),
+      dateFieldWidthPx: dateInput?.getBoundingClientRect().width ?? null,
+      stickyHeaderTopPx: header?.getBoundingClientRect().top ?? null,
+      stickyFooterBottomPx: footer?.getBoundingClientRect().bottom ?? null,
+      dialogScrollTop: dialog?.scrollTop ?? null
     };
   });
   checks.push({ screen: name, width, height, ...metric });
@@ -107,7 +114,8 @@ async function evidence(page, dir, name, width, height, checks) {
 }
 async function capture(browser, width, height, password, dir, checks) {
   const context = await browser.newContext({
-    viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce'
+    viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce',
+    locale: 'pt-BR', timezoneId: 'America/Sao_Paulo'
   });
   const page = await context.newPage();
   try {
