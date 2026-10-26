@@ -131,7 +131,8 @@ async function capture(browser, width, height, password, dir, checks) {
       .waitFor({ state: 'visible', timeout: 45000 });
     await evidence(page, dir, '01-lancamentos', width, height, checks);
 
-    await page.getByRole('button', { name: 'Novo lançamento' }).click();
+    // O topo e a tela possuem botoes com o mesmo nome acessivel; usar o da tela.
+    await page.locator('.meg-launches__actions .meg-launches__refresh--primary').click();
     await page.locator('.meg-new-launch.is-choose').waitFor({ state: 'visible' });
     await evidence(page, dir, '02-seletor', width, height, checks);
 
