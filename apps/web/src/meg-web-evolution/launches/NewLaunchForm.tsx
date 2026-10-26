@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { financeClient, type Account, type Category, type PaymentMethod, type FinancialEvent } from '../../app/finance-client';
 import { Icon } from '../components/Icon';
-import { LaunchVisualIcon } from './LaunchVisualIcon';
+import { LaunchVisualIcon, type LaunchVisualIconName } from './LaunchVisualIcon';
 import {
   basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod,
   autocompleteFromHistory, parsePositiveBRL, formatLaunchDateBR, type BasicLaunchFields, type BasicLaunchType,
@@ -24,6 +24,16 @@ const types = [
   { id: 'transfer', title: 'Transferência', subtitle: 'Movimentação entre contas', icon: 'transfer', detail: 'Exige fluxo de duas contas', available: false },
   { id: 'benefit', title: 'Benefício', subtitle: 'Usar ou recarregar benefício', icon: 'benefit', detail: 'Exige contrato próprio', available: false },
 ] as const;
+// Mapeamento visual, sem interferência na classificação financeira da categoria.
+function categoryVisualIcon(name: string): LaunchVisualIconName {
+  const label = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/aliment|refeic|comida|mercado/.test(label)) return 'food';
+  if (/casa|moradia|habitac/.test(label)) return 'home';
+  if (/transport|combust|veiculo/.test(label)) return 'transport';
+  if (/saude|farmac|medic/.test(label)) return 'health';
+  if (/compra|loja/.test(label)) return 'shopping';
+  return 'category';
+}
 function currentDay() {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -305,7 +315,10 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                     <div className="meg-new-launch__chips">
                       {categories.slice(0, 5).map(c => <button key={c.id} type="button" disabled={saving}
                         className={'meg-new-launch__chip is-category' + (fields.categoryId === c.id ? ' is-selected' : '')}
-                        aria-pressed={fields.categoryId === c.id} onClick={() => update('categoryId', c.id)}>{c.name}</button>)}
+                        aria-pressed={fields.categoryId === c.id} onClick={() => update('categoryId', c.id)}>
+                         <LaunchVisualIcon name={categoryVisualIcon(c.name)} width={20} height={20}/>
+                         <span>{c.name}</span>
+                       </button>)}
                     </div>
                   </div>
                   <div className="meg-new-launch__field-group">
@@ -314,7 +327,10 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                       {accounts.slice(0, 3).map(a => <button type="button" key={a.id}
                         aria-pressed={fields.accountId === a.id} disabled={saving}
                         className={'meg-new-launch__chip' + (fields.accountId === a.id ? ' is-selected' : '')}
-                        onClick={() => update('accountId', a.id)}>{a.name}</button>)}
+                        onClick={() => update('accountId', a.id)}>
+                         <LaunchVisualIcon name="account" width={19} height={19}/>
+                         <span>{a.name}</span>
+                       </button>)}
                     </div>
                   </div>
                   <label className="meg-new-launch__field"><span className="meg-new-launch__field-label"><LaunchVisualIcon name="account" width={19} height={19}/>Conta *</span>
@@ -333,7 +349,10 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
                     {methods.slice(0, 3).map(m => <button key={m.id} type="button" disabled={saving}
                       aria-pressed={fields.paymentMethodId === m.id}
                       className={'meg-new-launch__chip' + (fields.paymentMethodId === m.id ? ' is-selected' : '')}
-                      onClick={() => update('paymentMethodId', m.id)}>{m.name}</button>)}
+                      onClick={() => update('paymentMethodId', m.id)}>
+                         <LaunchVisualIcon name="payment" width={19} height={19}/>
+                         <span>{m.name}</span>
+                       </button>)}
                   </div>
                 </div>
 
