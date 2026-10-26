@@ -9,7 +9,8 @@ export type LaunchVisualIconName =
   | 'expense' | 'income' | 'transfer' | 'benefit'
   | 'description' | 'category' | 'account' | 'payment'
   | 'date' | 'amount' | 'status' | 'installments' | 'notes' | 'summary'
-  | 'check' | 'close' | 'lock';
+  | 'check' | 'close' | 'lock'
+  | 'food' | 'home' | 'transport' | 'health' | 'shopping' | 'spark' | 'arrow';
 
 const symbols: Record<LaunchVisualIconName, ReactNode> = {
   expense: <><path d="M9 5.5h14l5 5v25l-4 3-4-3-4 3-4-3-4 3V7a1.5 1.5 0 0 1 1-1.5Z"/><path d="M23 5.5v6h6M13 16h11M13 22h11M13 28h7"/><path d="M32 20v11m-4-4 4 4 4-4"/></>,
@@ -29,6 +30,13 @@ const symbols: Record<LaunchVisualIconName, ReactNode> = {
   check: <path d="m9 25 10 10 21-23"/>,
   close: <path d="M12 12 36 36M36 12 12 36"/>,
   lock: <><rect x="10" y="20" width="28" height="23" rx="4"/><path d="M16 20v-7a8 8 0 0 1 16 0v7M24 30v6"/></>,
+  food: <><path d="M10 4v16M16 4v16M22 4v16M16 20v24M34 4v40M34 4c-12 6-12 19 0 20"/></>,
+  home: <><path d="m5 22 19-16 19 16M10 20v22h28V20M19 42V28h10v14"/></>,
+  transport: <><path d="m10 13 4-7h20l4 7 5 12v12H5V25l5-12ZM5 26h38M14 37v5M34 37v5"/><circle cx="13" cy="29" r="3"/><circle cx="35" cy="29" r="3"/></>,
+  health: <><path d="M24 42S5 31 5 18C5 9 16 4 24 14c8-10 19-5 19 4 0 13-19 24-19 24Z"/><path d="M15 24h6l3-6 4 12 3-6h4"/></>,
+  shopping: <><path d="M9 16h30l3 27H6l3-27ZM17 19V13a7 7 0 0 1 14 0v6"/></>,
+  spark: <><path d="m24 2 5 16 16 6-16 5-5 17-5-17-16-5 16-6 5-16Z"/></>,
+  arrow: <><path d="M7 24h34m-13-13 13 13-13 13"/></>,
 };
 
 export function LaunchVisualIcon({
