@@ -60,8 +60,8 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
   const records = useMemo(() => events ? toEventGridRows(events) : [], [events]);
   const selected = events?.find(item => item.id === detailId);
   const columns = useMemo<DataGridColumn<EventGridRow>[]>(() => [
-    { key: 'date', label: 'Data', type: 'date', width: 145, sortable: true, filterable: true },
-    { key: 'description', label: 'Descrição', type: 'text', width: 280, sortable: true, filterable: true,
+    { key: 'date', label: 'Data', type: 'date', width: 125, sortable: true, filterable: true },
+    { key: 'description', label: 'Descrição', type: 'text', width: 240, sortable: true, filterable: true,
       render: (_value, row) => (
         <button
           className="meg-launches__detail-button"
@@ -71,14 +71,16 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
         >{row.description}</button>
       ),
     },
-    { key: 'type', label: 'Tipo', type: 'enum', width: 145, sortable: true, filterable: true, enumValues: eventTypes },
-    { key: 'status', label: 'Situação', type: 'enum', width: 155, sortable: true, filterable: true, enumValues: eventStatuses },
-    { key: 'account', label: 'Conta', type: 'text', width: 180, sortable: true, filterable: true },
-    { key: 'category', label: 'Categoria', type: 'text', width: 180, sortable: true, filterable: true },
-    { key: 'paymentMethod', label: 'Forma de pagamento', type: 'text', width: 180, sortable: true, filterable: true },
-    { key: 'competence', label: 'Competência', type: 'text', width: 140, sortable: true, filterable: true },
-    { key: 'amount', label: 'Valor (R$)', type: 'currency', width: 160, sortable: true, filterable: true },
-    { key: 'signedAmount', label: 'Valor registrado (R$)', type: 'currency', width: 200, sortable: true, filterable: true },
+    // Valor assinado vem da API: + receita e - despesa. Nunca inferir sinal na tela.
+    // A coluna monetaria principal precisa ficar visivel antes do scroll interno.
+    { key: 'signedAmount', label: 'Valor registrado (R$)', type: 'currency', width: 170, sortable: true, filterable: true },
+    { key: 'status', label: 'Situação', type: 'enum', width: 140, sortable: true, filterable: true, enumValues: eventStatuses },
+    { key: 'type', label: 'Tipo', type: 'enum', width: 125, sortable: true, filterable: true, enumValues: eventTypes },
+    { key: 'account', label: 'Conta', type: 'text', width: 165, sortable: true, filterable: true },
+    { key: 'category', label: 'Categoria', type: 'text', width: 165, sortable: true, filterable: true },
+    { key: 'paymentMethod', label: 'Forma de pagamento', type: 'text', width: 165, sortable: true, filterable: true },
+    { key: 'competence', label: 'Competência', type: 'text', width: 135, sortable: true, filterable: true },
+    { key: 'amount', label: 'Valor absoluto (R$)', type: 'currency', width: 150, sortable: true, filterable: true },
   ], []);
 
   const refresh = useCallback(() => setReloadVersion(version => version + 1), []);
