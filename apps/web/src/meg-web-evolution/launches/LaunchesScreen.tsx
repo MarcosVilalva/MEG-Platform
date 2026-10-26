@@ -27,6 +27,15 @@ const eventStatuses = {
 };
 
 export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchToken = 0 }: Props) {
+  const [gridPageSize, setGridPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 5;
+    return window.innerWidth < 640 ? 1 : window.innerWidth <= 1024 ? 3 : 5;
+  });
+  useEffect(() => {
+    const onResize = () => setGridPageSize(window.innerWidth < 640 ? 1 : window.innerWidth <= 1024 ? 3 : 5);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const [events, setEvents] = useState<FinancialEvent[] | null>(null);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<LoadProgress>({ loaded: 0, total: 0 });
@@ -136,10 +145,11 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
               data={records}
               columns={columns}
               rowKey="id"
-              pageSize={25}
+              key={'responsive-finance-grid-' + gridPageSize}
+              pageSize={gridPageSize}
               selectable
               footerAggregates={false}
-              persistenceKey={'finance-events-official-v2-' + userId}
+              persistenceKey={'finance-events-official-v4-' + gridPageSize + '-' + userId}
               exportUserName={userName}
               exportPeriod="Histórico completo autorizado"
               pdfMaxRows={Math.max(1, records.length)}
