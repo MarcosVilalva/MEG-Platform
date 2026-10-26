@@ -139,7 +139,7 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
               pageSize={25}
               selectable
               footerAggregates={false}
-              persistenceKey={'finance-events-' + userId}
+              persistenceKey={'finance-events-official-v2-' + userId}
               exportUserName={userName}
               exportPeriod="Histórico completo autorizado"
               pdfMaxRows={Math.max(1, records.length)}
