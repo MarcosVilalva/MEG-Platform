@@ -869,3 +869,31 @@
   .meg-new-launch.is-compact.is-choose .meg-new-launch__option-tags { display: none; }
   .meg-new-launch.is-compact.is-choose .meg-new-launch__option-arrow { width: 2rem; height: 2rem; }
 }
+
+/* SVGs vetoriais com paleta semântica exclusivamente decorativa.
+   As categorias continuam derivadas do catálogo oficial da API. */
+.meg-new-launch__chip.is-category {
+  border-color: rgba(11, 227, 210, .46);
+  background: linear-gradient(145deg, #072e37, #031e27);
+  box-shadow: inset 0 0 .75rem rgba(9, 176, 178, .07);
+}
+.meg-new-launch__chip.is-category svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  filter: drop-shadow(0 0 .27rem currentColor);
+}
+.meg-new-launch__chip.is-category[data-icon="food"]:not(.is-selected) { color: #f5d653; border-color: #b69c31; }
+.meg-new-launch__chip.is-category[data-icon="home"]:not(.is-selected) { color: #72b9ff; border-color: #3184c4; }
+.meg-new-launch__chip.is-category[data-icon="transport"]:not(.is-selected) { color: #89cfff; border-color: #2779b6; }
+.meg-new-launch__chip.is-category[data-icon="health"]:not(.is-selected) { color: #68edca; border-color: #279982; }
+.meg-new-launch__chip.is-category[data-icon="shopping"]:not(.is-selected) { color: #e6a0ff; border-color: #9a56bf; }
+.meg-new-launch__chip.is-category.is-selected svg { color: inherit; filter: none; }
+.meg-new-launch__option-arrow,
+.meg-new-launch__summary-mark,
+.meg-new-launch__header-mark { flex-shrink: 0; }
+.meg-new-launch__summary dt svg { stroke-width: 2.35; }
+.meg-new-launch__save svg { display: block; flex-shrink: 0; }
+.meg-new-launch__step:focus-visible { outline: 2px solid #73fff4; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .meg-new-launch__chip.is-category svg { filter: none; }
+}
