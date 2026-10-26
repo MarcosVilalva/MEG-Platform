@@ -20,6 +20,7 @@
   --nl-bright: #0de7d9;
   --nl-back: #041b20;
   --nl-ink: #eaf5f3;
+  --nl-dialog-padding: clamp(.8rem, 1.2vw, 1.3rem);
   position: relative;
   isolation: isolate;
   min-width: 0;
@@ -34,7 +35,7 @@
   color: var(--nl-ink);
   border: 1px solid #10e0d2;
   border-radius: 1.22rem;
-  padding: clamp(.8rem, 1.2vw, 1.3rem);
+  padding: var(--nl-dialog-padding);
   background:
     radial-gradient(ellipse at 69% -12%, rgba(7, 171, 168, .20), transparent 48%),
     linear-gradient(110deg, #01272a 0%, #00181e 51%, #02131a 100%);
@@ -47,9 +48,11 @@
   align-items: center;
   gap: clamp(.7rem, 1.4vw, 1.4rem);
   position: sticky;
-  top: -1px;
+  top: 0;
   z-index: 5;
-  padding: .1rem .3rem .85rem;
+  /* Cobre o trecho de rolagem acima da borda do cabecalho. */
+  margin-top: calc(-1 * var(--nl-dialog-padding));
+  padding: var(--nl-dialog-padding) .3rem .85rem;
   min-height: 5.4rem;
   background: #031b20;
   border-bottom: 1px solid rgba(15, 210, 199, .12);
@@ -491,6 +494,16 @@
   }
 }
 
+/* No limite desktop 1024px, tres paineis cortam a data; reduzir para dois
+   paineis com o resumo abaixo sem alterar regras nem esconder campos. */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .meg-new-launch__columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meg-new-launch__summary { grid-column: 1 / -1; }
+  .meg-new-launch__summary dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+  }
+}
 /* Somente os breakpoints estruturais oficiais: 1024px e 640px. */
 @media (max-width: 1023px) {
   .meg-new-launch__overlay { padding: .45rem; }
@@ -514,10 +527,11 @@
 @media (max-width: 639px) {
   .meg-new-launch__overlay { display: block; padding: 0; }
   .meg-new-launch.is-form, .meg-new-launch.is-choose {
+    --nl-dialog-padding: .67rem;
     width: 100%;
     max-height: 100dvh;
     min-height: 100dvh;
-    padding: .67rem;
+    padding: var(--nl-dialog-padding);
     border-radius: 0;
   }
   .meg-new-launch__header { gap: .5rem; padding-bottom: .65rem; }
