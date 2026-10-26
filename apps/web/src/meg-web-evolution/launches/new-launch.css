@@ -657,3 +657,215 @@
   .meg-new-launch__summary-amount-row { align-items: flex-start; }
   .meg-new-launch__amount { font-size: clamp(1.55rem, 7.5vw, 2.2rem); }
 }
+
+/* PR #648 - composição SVG e fluxo sem rolagem em até 1024px.
+   Os mesmos campos React continuam montados; CSS só mostra a seção da etapa.
+   A etapa de revisão mantém os dados da API e o botão de salvamento canônico. */
+.meg-new-launch__steps { display: none; }
+.meg-new-launch__chip svg {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+}
+.meg-new-launch__chip { gap: .42rem; }
+.meg-new-launch__chip > span { min-width: 0; overflow-wrap: anywhere; }
+
+/* O seletor mantém quatro opções reais; retiram-se textos ornamentais
+   em áreas estreitas, nunca opções nem controles obrigatórios. */
+@media (max-width: 1024px) {
+  .meg-new-launch.is-compact.is-form,
+  .meg-new-launch.is-compact.is-choose {
+    --nl-dialog-padding: .65rem;
+    height: calc(100dvh - .9rem);
+    max-height: calc(100dvh - .9rem);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    padding: var(--nl-dialog-padding);
+  }
+  .meg-new-launch.is-compact .meg-new-launch__header {
+    position: relative;
+    flex: 0 0 auto;
+    min-height: 0;
+    margin: 0;
+    padding: .2rem .2rem .6rem;
+    background: transparent;
+  }
+  .meg-new-launch.is-compact.is-form > form {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .meg-new-launch__steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .45rem;
+    flex: 0 0 auto;
+    margin: .5rem 0;
+  }
+  .meg-new-launch__step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    min-width: 0;
+    min-height: 2.9rem;
+    padding: .3rem .4rem;
+    color: #c0d8d4;
+    font-size: .8rem;
+    font-weight: 750;
+    border: 1px solid #12636a;
+    border-radius: .6rem;
+    background: #05272e;
+    cursor: pointer;
+  }
+  .meg-new-launch__step svg { flex: none; display: block; }
+  .meg-new-launch__step.is-current {
+    border-color: #22f5e4;
+    background: rgba(10, 205, 191, .2);
+    color: #43fff0;
+    box-shadow: inset 0 0 1rem rgba(10, 231, 213, .08);
+  }
+  .meg-new-launch.is-compact .meg-new-launch__columns {
+    min-height: 0;
+    flex: 1 1 auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    align-content: center;
+    gap: .6rem;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__panel,
+  .meg-new-launch.is-compact .meg-new-launch__summary {
+    min-height: 0;
+    gap: .6rem;
+    padding: .8rem;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__field textarea {
+    min-height: 5.5rem;
+    resize: none;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__footer {
+    position: relative;
+    bottom: auto;
+    flex: 0 0 auto;
+    margin-top: .5rem;
+    padding: .5rem .15rem 0;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__footer button { min-height: 2.9rem; }
+  .meg-new-launch.is-compact .meg-new-launch__primary > :nth-child(3),
+  .meg-new-launch.is-compact .meg-new-launch__primary > :nth-child(4),
+  .meg-new-launch.is-compact .meg-new-launch__primary > :nth-child(7) {
+    display: none; /* atalhos redundantes com os selects da API */
+  }
+  .meg-new-launch.is-compact[data-step="details"] .meg-new-launch__primary > :nth-child(n+5),
+  .meg-new-launch.is-compact[data-step="details"] .meg-new-launch__secondary > :not(:first-child),
+  .meg-new-launch.is-compact[data-step="details"] .meg-new-launch__summary { display: none; }
+  .meg-new-launch.is-compact[data-step="accounts"] .meg-new-launch__primary > :nth-child(-n+4),
+  .meg-new-launch.is-compact[data-step="accounts"] .meg-new-launch__secondary > :first-child,
+  .meg-new-launch.is-compact[data-step="accounts"] .meg-new-launch__secondary > :last-child,
+  .meg-new-launch.is-compact[data-step="accounts"] .meg-new-launch__summary { display: none; }
+  .meg-new-launch.is-compact[data-step="review"] .meg-new-launch__primary,
+  .meg-new-launch.is-compact[data-step="review"] .meg-new-launch__secondary > :not(:last-child) { display: none; }
+  .meg-new-launch.is-compact[data-step="review"] .meg-new-launch__summary { grid-column: auto; }
+  .meg-new-launch.is-compact[data-step="review"] .meg-new-launch__summary dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .meg-new-launch.is-compact .meg-new-launch__summary dl div { padding: .35rem 0; }
+  .meg-new-launch.is-compact .meg-new-launch__summary-foot { margin-top: 0; padding-top: .45rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__choose {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: .55rem;
+  }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__choice-foot { display: none; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__options {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: .45rem;
+  }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option {
+    min-height: 0;
+    padding: .45rem .65rem;
+  }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option-icon {
+    width: 3.3rem;
+    height: 3.3rem;
+  }
+}
+@media (max-width: 639px) {
+  .meg-new-launch.is-compact.is-form,
+  .meg-new-launch.is-compact.is-choose {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__header {
+    gap: .35rem;
+    padding: .18rem .08rem .42rem;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__headline h2 { font-size: 1.15rem; }
+  .meg-new-launch.is-compact .meg-new-launch__header-inline { margin: 0; }
+  .meg-new-launch.is-compact .meg-new-launch__steps { gap: .25rem; margin: .35rem 0; }
+  .meg-new-launch.is-compact .meg-new-launch__step {
+    flex-direction: column;
+    gap: .1rem;
+    min-height: 3rem;
+    font-size: .7rem;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__step svg { width: 1rem; height: 1rem; }
+  .meg-new-launch.is-compact .meg-new-launch__columns {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: .4rem;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__panel,
+  .meg-new-launch.is-compact .meg-new-launch__summary { padding: .62rem; gap: .47rem; }
+  .meg-new-launch.is-compact .meg-new-launch__field { gap: .28rem; }
+  .meg-new-launch.is-compact .meg-new-launch__field input,
+  .meg-new-launch.is-compact .meg-new-launch__field select {
+    min-height: 2.85rem;
+    padding: .4rem .65rem;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__summary dl div {
+    grid-template-columns: minmax(0, 39%) minmax(0, 61%);
+    gap: .25rem;
+    padding: .29rem 0;
+  }
+  .meg-new-launch.is-compact .meg-new-launch__summary dt,
+  .meg-new-launch.is-compact .meg-new-launch__summary dd { font-size: .71rem; }
+  .meg-new-launch.is-compact .meg-new-launch__summary-title h3 { font-size: 1rem; }
+  .meg-new-launch.is-compact .meg-new-launch__summary-title p { font-size: .72rem; }
+  .meg-new-launch.is-compact .meg-new-launch__summary-mark { width: 2.4rem; height: 2.4rem; }
+  .meg-new-launch.is-compact .meg-new-launch__amount { font-size: 1.5rem; }
+  .meg-new-launch.is-compact .meg-new-launch__footer { margin-top: .3rem; padding-top: .3rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__choose {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: .3rem;
+    padding: .2rem .1rem;
+  }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__intro { padding: .15rem .2rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__intro h3 {
+    font-size: 1.45rem;
+    line-height: 1.05;
+    max-width: 100%;
+    margin: .25rem 0;
+  }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__intro p {
+    max-width: 100%;
+    font-size: .76rem;
+    line-height: 1.25;
+  }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option { gap: .5rem; padding: .3rem .5rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option-icon { width: 2.6rem; height: 2.6rem; border-radius: .65rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option-icon svg { width: 1.65rem; height: 1.65rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option-copy strong { font-size: 1rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option-copy small { font-size: .73rem; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option-tags { display: none; }
+  .meg-new-launch.is-compact.is-choose .meg-new-launch__option-arrow { width: 2rem; height: 2rem; }
+}
