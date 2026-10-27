@@ -5,6 +5,8 @@ import './login.css';
 type LoginScreenProps = {
   onAuthenticated: () => void;
   onNavigate: (destination: 'create-account' | 'recover-password') => void;
+  /** Apenas para preview estático de avaliação visual. Nunca envia credenciais à API. */
+  previewOnly?: boolean;
 };
 
 type LoginError = 'email' | 'password' | 'server' | null;
@@ -43,11 +45,11 @@ export function LoginIcon({ name }: { name: 'shield' | 'mail' | 'lock' | 'eye' |
   return <svg className="meg-login-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{paths[name]}</svg>;
 }
 
-export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
+export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false }: LoginScreenProps) {
   const emailId = useId();
   const passwordId = useId();
   const errorId = useId();
-  const [email, setEmail] = useState(readRememberedEmail);
+  const [email, setEmail] = useState(() => previewOnly ? '' : readRememberedEmail());
   const [password, setPassword] = useState('');
   const [rememberEmail, setRememberEmail] = useState(true);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -58,6 +60,12 @@ export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (previewOnly) {
+      setPassword('');
+      setErrorField(null);
+      setMessage('Prévia visual: login desativado. Nenhum dado foi enviado.');
+      return;
+    }
     if (submitting || authenticated) return;
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
@@ -88,7 +96,7 @@ export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
   };
 
   return (
-    <main className="meg-login" data-meg-login="stage05" aria-label="Acesso ao MEG Finanças">
+    <main className="meg-login" data-meg-login={previewOnly ? 'visual-preview' : 'stage05'} aria-label="Acesso ao MEG Finanças">
       <div className="meg-login-frame">
         <section className="meg-login-hero" aria-label="Conheça o MEG Finanças">
           <img className="meg-login-logo" src={`${import.meta.env.BASE_URL}brand/logo-meg-financas.svg`} alt="MEG Finanças" width="153" height="150" />
