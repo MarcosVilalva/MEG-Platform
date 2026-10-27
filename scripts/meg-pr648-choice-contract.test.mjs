@@ -34,7 +34,7 @@ assert.match(picker, /meg-choice__option-photo/);
 assert.doesNotMatch(picker, /<svg|<HeroArt|<OptionArt|<LaunchVisualIcon/,
   'O seletor nao deve desenhar cenas ou icones SVG.');
 for (const img of ['hero','expense','income','transfer','benefit']) {
-  assert.match(css, new RegExp('meg-assets/' + img + '\\\\.webp'),
+  assert.match(css, new RegExp('meg-assets/' + img + '\\.webp'),
     'Imagem WebP ausente do layout: ' + img);
 }
 assert.match(installer, /MEG_PR648_IMAGENS_REAIS\.zip/);
