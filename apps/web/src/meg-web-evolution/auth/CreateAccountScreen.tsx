@@ -87,7 +87,6 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated, previewO
 
   return (
     <AuthScreenLayout variant="register" title="Criar conta" description="Solicite acesso ou crie seu espaço MEG. O cadastro aguarda aprovação.">
-      {previewOnly && <p className="meg-register-preview-notice" role="note">Prévia visual: utilize apenas dados fictícios. Nenhuma solicitação será enviada.</p>}
       {status === 'pending' || status === 'approved' ? (
         <div className="meg-auth-success" role="status" aria-live="polite">
           <h2>{status === 'pending' ? 'Aguardando aprovação' : 'Cadastro aprovado'}</h2>
@@ -97,6 +96,7 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated, previewO
       ) : (
         <form className="meg-auth-form" aria-label="Formulário de cadastro" onSubmit={submit} noValidate>
           <div className="meg-auth-fields">
+          {previewOnly && <p className="meg-register-preview-notice" role="note">Prévia visual: utilize apenas dados fictícios. Nenhuma solicitação será enviada.</p>}
           <div className="meg-auth-mode" role="group" aria-label="Tipo de cadastro">
             <label><input type="radio" name={`${formId}-type`} checked={type === 'REQUEST_ACCESS'} onChange={() => setType('REQUEST_ACCESS')} disabled={status === 'submitting'} />Solicitar acesso</label>
             <label><input type="radio" name={`${formId}-type`} checked={type === 'CREATE_WORKSPACE'} onChange={() => setType('CREATE_WORKSPACE')} disabled={status === 'submitting'} />Criar meu espaço MEG</label>
