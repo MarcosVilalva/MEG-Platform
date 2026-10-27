@@ -81,20 +81,18 @@ function Preview() {
             else setNotice('Recuperação de Senha será avaliada na etapa correspondente.');
           }} />
       )}
-      <nav className="meg-sequence-preview__navigation" aria-label="Navegação da prévia visual">
-        {loading ? (
-          <button type="button" onClick={goToLogin} disabled={progress < 100}>
-            {progress === 100 ? 'Continuar para o Login' : `Carregando... ${progress}%`}
-            {progress === 100 && <span aria-hidden="true">→</span>}
-          </button>
-        ) : screen === 'create-account' ? (
-          // O cadastro já oferece Voltar ao login no rodapé fixo do painel.
-          // Não inserir segundo botão fora da viewport.
-          null
-        ) : (
-          <button type="button" onClick={reviewLoading}><span aria-hidden="true">←</span> Rever carregamento</button>
-        )}
-      </nav>
+      {screen !== 'create-account' && (
+        <nav className="meg-sequence-preview__navigation" aria-label="Navegação da prévia visual">
+          {loading ? (
+            <button type="button" onClick={goToLogin} disabled={progress < 100}>
+              {progress === 100 ? 'Continuar para o Login' : `Carregando... ${progress}%`}
+              {progress === 100 && <span aria-hidden="true">→</span>}
+            </button>
+          ) : (
+            <button type="button" onClick={reviewLoading}><span aria-hidden="true">←</span> Rever carregamento</button>
+          )}
+        </nav>
+      )}
       <span className={'meg-sequence-preview__notice' + (notice ? ' is-alert' : '')} role="status" aria-live="polite">
         {notice || (loading
           ? (autoAdvance ? 'Prévia ilustrativa • somente avançará após 100%' : 'Tela 01 • carregamento ilustrativo')
