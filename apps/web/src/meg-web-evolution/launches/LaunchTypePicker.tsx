@@ -1,5 +1,4 @@
 import { LaunchVisualIcon, type LaunchVisualIconName } from './LaunchVisualIcon';
-import './launch-type-picker.css';
 
 /**
  * Seleção visual oficial do Novo Lançamento.
