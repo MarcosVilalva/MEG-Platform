@@ -29,7 +29,8 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, .83fr) minmax(0, 1.18fr) minmax(0, .75fr);
+  /* Reserve mais área útil ao gráfico; sem ampliar a imagem por recorte. */
+  grid-template-rows: minmax(0, .73fr) minmax(0, 1.38fr) minmax(0, .75fr);
   justify-items: center;
   align-items: center;
   gap: min(1.2vh, .75rem);
@@ -57,7 +58,7 @@
   width: min(100%, 53rem);
   height: 100%;
   min-height: 0;
-  max-height: 28rem;
+  max-height: 30rem;
   object-fit: contain;
   object-position: center;
   filter: drop-shadow(0 0 1.4rem rgba(13, 220, 201, .23));
@@ -156,7 +157,7 @@
 .meg-loading-state button { min-height: 44px; }
 @media (max-width: 1024px) {
   .meg-loading-composition {
-    grid-template-rows: minmax(0, .84fr) minmax(0, 1.07fr) minmax(0, .7fr);
+    grid-template-rows: minmax(0, .75fr) minmax(0, 1.32fr) minmax(0, .75fr);
     width: 100%;
     padding-inline: clamp(.75rem, 2vw, 1.6rem);
   }
@@ -165,7 +166,7 @@
 }
 @media (max-width: 639px) {
   .meg-loading-composition {
-    grid-template-rows: minmax(0, .9fr) minmax(0, 1.12fr) minmax(0, .92fr);
+    grid-template-rows: minmax(0, .78fr) minmax(0, 1.35fr) minmax(0, .89fr);
     gap: .25rem;
     padding: max(.75rem, env(safe-area-inset-top)) .9rem max(1.3rem, env(safe-area-inset-bottom));
   }
