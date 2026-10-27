@@ -91,6 +91,17 @@ async function evidence(page, dir, name, width, height, checks) {
     const dateInput = dialog?.querySelector('input[type="date"]');
     const footer = dialog?.querySelector('.meg-new-launch__footer');
     const header = dialog?.querySelector('.meg-new-launch__header');
+    const picker = dialog?.querySelector('.meg-choice');
+    const cardArea = dialog?.querySelector('.meg-choice__options');
+    const choiceCards = [...(dialog?.querySelectorAll('.meg-choice__option') || [])];
+    const areaBounds = cardArea?.getBoundingClientRect();
+    const clippedCards = choiceCards
+      .map((card, index) => ({ card, bounds: card.getBoundingClientRect(), index }))
+      .filter(({ bounds }) => areaBounds && (
+        bounds.top < areaBounds.top - 2 || bounds.bottom > areaBounds.bottom + 2
+        || bounds.height < 44
+      ))
+      .map(({ index }) => index + 1);
     function size(node) {
       return node ? {
         clientWidth: node.clientWidth, scrollWidth: node.scrollWidth,
@@ -103,6 +114,10 @@ async function evidence(page, dir, name, width, height, checks) {
       dialogVerticalOverflowPx: dialog ? Math.max(0, dialog.scrollHeight - dialog.clientHeight) : null,
       gridVerticalOverflowPx: grid ? Math.max(0, grid.scrollHeight - grid.clientHeight) : null,
       visibleStep: dialog?.getAttribute('data-step') ?? null,
+      choiceCardCount: choiceCards.length,
+      choiceClippedCards: clippedCards,
+      choiceContentVerticalOverflowPx: picker ? Math.max(0, picker.scrollHeight - picker.clientHeight) : null,
+      choiceOptionsVerticalOverflowPx: cardArea ? Math.max(0, cardArea.scrollHeight - cardArea.clientHeight) : null,
       dialog: size(dialog), dataGrid: size(grid),
       dateFieldWidthPx: dateInput?.getBoundingClientRect().width ?? null,
       stickyHeaderTopPx: header?.getBoundingClientRect().top ?? null,
@@ -152,7 +167,25 @@ async function capture(browser, width, height, password, dir, checks) {
     // O topo e a tela possuem botoes com o mesmo nome acessivel; usar o da tela.
     await page.locator('.meg-launches__actions .meg-launches__refresh--primary').click();
     await page.locator('.meg-new-launch.is-choose').waitFor({ state: 'visible' });
+    await page.locator('.meg-choice__options .meg-choice__option').first().waitFor({ state: 'visible' });
     await evidence(page, dir, '02-seletor', width, height, checks);
+    const pickerCheck = checks[checks.length - 1];
+    assert(pickerCheck.dialogVerticalOverflowPx <= 2,
+      'Seletor tem rolagem vertical no modal em ' + width + 'x' + height);
+    assert(pickerCheck.choiceContentVerticalOverflowPx <= 2
+      && pickerCheck.choiceOptionsVerticalOverflowPx <= 2,
+      'Seletor contem rolagem vertical interna em ' + width + 'x' + height);
+    assert(pickerCheck.choiceCardCount === 4 && pickerCheck.choiceClippedCards.length === 0,
+      'Cartoes cortados/pequenos em ' + width + 'x' + height + ': '
+        + pickerCheck.choiceClippedCards.join(', '));
+    assert(await page.getByRole('button', { name: 'Escolher Despesa' }).isEnabled(),
+      'Despesa precisa estar acessivel.');
+    assert(await page.getByRole('button', { name: 'Escolher Receita' }).isEnabled(),
+      'Receita precisa estar acessivel.');
+    assert(await page.getByRole('button', { name: 'Transferência indisponível' }).isDisabled(),
+      'Transferencia deve permanecer bloqueada.');
+    assert(await page.getByRole('button', { name: 'Benefício indisponível' }).isDisabled(),
+      'Beneficio deve permanecer bloqueado.');
 
     for (const [type, prefix] of [['Despesa', '03-despesa'], ['Receita', '04-receita']]) {
       await page.getByRole('button', { name: 'Escolher ' + type }).click();
