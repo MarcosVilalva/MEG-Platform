@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { LoadingScreen } from '../src/meg-web-evolution/auth/LoadingScreen';
 import { LoginScreen } from '../src/meg-web-evolution/auth/LoginScreen';
+import { CreateAccountScreen } from '../src/meg-web-evolution/auth/CreateAccountScreen';
 import './preview.css';
 
 /**
@@ -12,13 +13,15 @@ import './preview.css';
  * ?tela=fluxo (padrão): progride de 0 a 100% e só então avança.
  * ?tela=carregamento: inspecionar arte sem avanço automático.
  * ?tela=login: abrir login diretamente, também sem autenticação.
+ * ?tela=cadastro: formulário existente em modo visual, sem gravar dados.
  */
 const requestedView = new URLSearchParams(window.location.search).get('tela');
-const autoAdvance = requestedView !== 'login' && requestedView !== 'carregamento';
+const autoAdvance = requestedView !== 'login' && requestedView !== 'carregamento' && requestedView !== 'cadastro';
+type PreviewScreen = 'loading' | 'login' | 'create-account';
 
 function Preview() {
-  const [screen, setScreen] = useState<'loading' | 'login'>(() =>
-    requestedView === 'login' ? 'login' : 'loading');
+  const [screen, setScreen] = useState<PreviewScreen>(() =>
+    requestedView === 'cadastro' ? 'create-account' : requestedView === 'login' ? 'login' : 'loading');
   const [notice, setNotice] = useState('');
   const [progress, setProgress] = useState(0);
   const loading = screen === 'loading';
@@ -55,21 +58,26 @@ function Preview() {
     setProgress(0);
     setScreen('loading');
   };
+  const goToRegister = () => { setNotice(''); setScreen('create-account'); };
 
   return (
     <div className="meg-sequence-preview"
-      data-preview-screen={loading ? 'carregamento' : 'login'}
+      data-preview-screen={loading ? 'carregamento' : screen === 'create-account' ? 'cadastro' : 'login'}
       data-preview-mode="static-only"
       data-preview-autoadvance={autoAdvance ? 'true' : 'false'}>
       {loading ? (
         <LoadingScreen preview progress={progress} onNavigateLogin={goToLogin} />
+      ) : screen === 'create-account' ? (
+        <CreateAccountScreen previewOnly
+          onNavigateLogin={goToLogin}
+          onAuthenticated={() => setNotice('Prévia visual: nenhum cadastro foi efetuado.')} />
       ) : (
         <LoginScreen previewOnly
           onAuthenticated={() => setNotice('Prévia visual: autenticação não executada.')}
-          onNavigate={destination =>
-            setNotice(destination === 'create-account'
-              ? 'Criar Conta será avaliada na etapa correspondente.'
-              : 'Recuperação de Senha será avaliada na etapa correspondente.')} />
+          onNavigate={destination => {
+            if (destination === 'create-account') goToRegister();
+            else setNotice('Recuperação de Senha será avaliada na etapa correspondente.');
+          }} />
       )}
       <nav className="meg-sequence-preview__navigation" aria-label="Navegação da prévia visual">
         {loading ? (
@@ -77,6 +85,8 @@ function Preview() {
             {progress === 100 ? 'Continuar para o Login' : `Carregando... ${progress}%`}
             {progress === 100 && <span aria-hidden="true">→</span>}
           </button>
+        ) : screen === 'create-account' ? (
+          <button type="button" onClick={goToLogin}><span aria-hidden="true">←</span> Voltar ao Login</button>
         ) : (
           <button type="button" onClick={reviewLoading}><span aria-hidden="true">←</span> Rever carregamento</button>
         )}
@@ -84,7 +94,9 @@ function Preview() {
       <span className={'meg-sequence-preview__notice' + (notice ? ' is-alert' : '')} role="status" aria-live="polite">
         {notice || (loading
           ? (autoAdvance ? 'Prévia ilustrativa • somente avançará após 100%' : 'Tela 01 • carregamento ilustrativo')
-          : 'Tela 02 • preview visual • não informe senha real')}
+          : screen === 'create-account'
+            ? 'Tela 03 • cadastro visual • somente dados fictícios'
+            : 'Tela 02 • preview visual • não informe senha real')}
       </span>
     </div>
   );
