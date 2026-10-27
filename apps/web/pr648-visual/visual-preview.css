@@ -11,8 +11,56 @@ button, input { font: inherit; }
 .meg-pr648-preview__sidebar-item.is-active { color:#dffffb; background:rgba(0,215,197,.2); border:1px solid #0ffce4; box-shadow:0 0 1rem #00c6b844; }
 .meg-pr648-preview__page { display:flex; flex-direction:column; min-width:0; min-height:0; padding: .55rem; }
 .meg-pr648-preview__toolbar { flex:0 0 auto; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:1rem; height:2.8rem; padding: 0 1.25rem; font-size:.82rem; color:#d6e7e4; }
-.meg-pr648-preview__overlay { position: relative!important; inset:auto!important; flex:1 1 auto; min-height:0; padding:.25rem!important; background:transparent!important; }
-.meg-pr648-preview__overlay .meg-new-launch.is-choose { margin:0 auto; }
+/* A janela visível (não o tamanho da tela física) determina a altura do preview.
+   Antes, o modal usava 100dvh mesmo dentro de um contêiner com toolbar;
+   a base ficava para trás da barra do Windows ao utilizar 100% de zoom. */
+.meg-pr648-preview__overlay {
+  position: relative!important;
+  inset: auto!important;
+  flex: 1 1 auto;
+  display: grid;
+  place-items: stretch;
+  min-height: 0;
+  min-width: 0;
+  padding: .25rem!important;
+  overflow: hidden;
+  background: transparent!important;
+}
+.meg-pr648-preview__overlay .meg-new-launch.is-choose,
+.meg-pr648-preview__overlay .meg-new-launch.is-compact.is-choose {
+  width: min(100%, 90rem);
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+}
+/* Viewports desktop baixas, inclusive janela 1366x768 com barras de
+   navegador e sistema operacional. Sem esconder cards nem controles. */
+@media (min-width: 1025px) and (max-height: 700px) {
+  .meg-pr648-preview__page { padding: .3rem .5rem; }
+  .meg-pr648-preview__toolbar { height: 2.3rem; padding: 0 .8rem; }
+  .meg-pr648-preview__overlay .meg-new-launch.is-choose { padding: .55rem .7rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__header { padding: 0 .15rem .35rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__headline h2 { font-size: 1.7rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__headline p { margin-top: .18rem; font-size: .76rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__back-icon,
+  .meg-pr648-preview__overlay .meg-new-launch__close { width: 2.65rem; height: 2.65rem; }
+  .meg-pr648-preview__overlay .meg-choice--photo { gap: .3rem; }
+  .meg-pr648-preview__overlay .meg-choice__body { gap: .5rem; }
+  .meg-pr648-preview__overlay .meg-choice__hero-copy { padding: .7rem .9rem; }
+  .meg-pr648-preview__overlay .meg-choice__hero h3 { margin: .4rem 0 .45rem; font-size: clamp(1.75rem, 2.6vw, 2.25rem); }
+  .meg-pr648-preview__overlay .meg-choice__hero p { font-size: .79rem; line-height: 1.28; }
+  .meg-pr648-preview__overlay .meg-choice__options { gap: .35rem; }
+  .meg-pr648-preview__overlay .meg-choice__option { padding: .25rem .7rem; }
+  .meg-pr648-preview__overlay .meg-choice__option-text strong { font-size: 1.36rem; }
+  .meg-pr648-preview__overlay .meg-choice__option-text small { font-size: .73rem; }
+  .meg-pr648-preview__overlay .meg-choice__tags { margin-top: .12rem; }
+  .meg-pr648-preview__overlay .meg-choice__tag { min-height: 1.15rem; padding: .05rem .4rem; font-size: .65rem; }
+  .meg-pr648-preview__overlay .meg-choice__footer { padding: .2rem; }
+  .meg-pr648-preview__overlay .meg-choice__feature { padding: .12rem .4rem; }
+  .meg-pr648-preview__overlay .meg-choice__back-action { min-height: 2.5rem; }
+}
 .meg-pr648-preview__disclaimer { position:fixed; bottom:0; right:0; z-index:40; padding:.25rem .65rem; border-radius:.4rem 0 0 0; background:rgba(0,16,23,.82); color:#9ce8df; font-size:.66rem; pointer-events:none; }
 @media (max-width:1024px) {
  .meg-pr648-preview { grid-template-columns:4.1rem minmax(0,1fr); }
