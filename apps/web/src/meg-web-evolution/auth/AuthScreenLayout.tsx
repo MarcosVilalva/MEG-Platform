@@ -15,7 +15,7 @@ export function AuthScreenLayout({ title, description, children, variant }: Auth
     <main className={`meg-login meg-auth-page ${variant === "register" ? "meg-auth-register" : ""}`} aria-label={title}>
       <div className="meg-login-frame">
         <section className="meg-login-hero" aria-label="Conheça o MEG Finanças">
-          <img className="meg-login-logo" src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/logo.webp`} alt="MEG Finanças" width="153" height="150" />
+          <img className="meg-login-logo" src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/${variant === 'register' ? 'logo-transparent.webp' : 'logo.webp'}`} alt="MEG Finanças" width="153" height="150" />
           <div className="meg-login-hero-copy">
             <h2>Sua vida financeira,<span> com clareza para decidir.</span></h2>
             <p className="meg-login-intro">Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde está indo.</p>
