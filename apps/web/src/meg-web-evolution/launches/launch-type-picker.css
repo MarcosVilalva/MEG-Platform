@@ -125,6 +125,8 @@
   color: #32f4eb;
   font-style: normal;
 }
+.meg-choice__hero h3 > span,
+.meg-choice__hero h3 > em:last-child { display: block; }
 .meg-choice__hero p {
   max-width: 31ch;
   margin: 0;
@@ -177,7 +179,7 @@
   z-index: 0;
   pointer-events: none;
   background-position: center;
-  background-size: cover;
+  background-size: 100% 100%;
   background-repeat: no-repeat;
   transform: translateZ(0);
 }
@@ -390,7 +392,7 @@
   .meg-choice__hero-copy { padding: .43rem .56rem; }
   .meg-choice__eyebrow { font-size: .61rem; }
   .meg-choice__hero h3 { max-width: 19ch; margin: .1rem 0 .15rem; font-size: clamp(1.3rem, 5vw, 1.55rem); }
-  .meg-choice__hero p { max-width: 35ch; font-size: .65rem; line-height: 1.16; }
+  .meg-choice__hero p { display: none; /* copy editorial não crítica; evita corte no mobile */ }
   .meg-choice__options { gap: .31rem; }
   .meg-choice__option { padding: .34rem .52rem; border-radius: .62rem; }
   .meg-choice__option-text { margin-left: 34%; max-width: 54%; }
