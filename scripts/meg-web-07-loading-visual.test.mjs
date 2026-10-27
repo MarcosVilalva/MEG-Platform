@@ -41,7 +41,7 @@ assert.match(login, /onNavigate\('create-account'\)/);
 assert.match(login, /visual-loading\/logo\.webp/);
 assert.match(login, /autoComplete=\{previewOnly \? "off" : "current-password"\}/);
 assert.match(preview, /<LoginScreen previewOnly/);
-assert.match(preview, /view === 'carregamento'/);
+assert.match(preview, /requestedView !== 'carregamento'/);
 assert.match(loginCss, /login-background\.webp/);
 assert.ok(existsSync('apps/web/public/meg-web-evolution/login-background.webp'),
   'Fundo oficial em WebP ausente');
