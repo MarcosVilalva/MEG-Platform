@@ -47,266 +47,303 @@
 }
 @media (prefers-reduced-motion: reduce) { .meg-auth-page *, .meg-auth-page *::before, .meg-auth-page *::after { animation: none !important; transition: none !important; } }
 
-
-/* Grade estruturada do cadastro: a lista de campos rola em telas compactas. */
-.meg-auth-register .meg-auth-card {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: .45rem;
-  max-height: calc(100dvh - 2.2rem);
+/* TELA 03 · Criar Conta
+   Layout refeito como uma estrutura única. A página nunca rola:
+   apenas os campos internos. Header, CTA e retorno ficam visíveis.
+   Preserva campos/fluxo canônicos; sem regras financeiras na UI.
+*/
+html:has(.meg-auth-register),
+body:has(.meg-auth-register),
+#meg-web-evolution-root:has(.meg-auth-register) {
+  height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: .9rem 1.35rem;
 }
-.meg-auth-register .meg-auth-header.meg-login-panel-top { margin: 0; gap: .75rem; align-items: center; }
-.meg-auth-register .meg-auth-header .meg-login-security-icon { width: 2.8rem; height: 2.8rem; }
-.meg-auth-register .meg-auth-header > div { min-width: 0; }
-.meg-auth-register .meg-auth-header h1 { font-size: clamp(1.5rem, 2.1vw, 2rem); margin: .18rem 0; }
-.meg-auth-register .meg-auth-header .meg-login-panel-lead { line-height: 1.35; }
-.meg-auth-register .meg-auth-form {
+.meg-auth-register.meg-login {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100dvh;
+  padding: clamp(.55rem, 1.5vh, 1.3rem) clamp(.75rem, 3vw, 2.8rem);
+  overflow: hidden;
+}
+.meg-auth-register .meg-login-frame {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  width: min(100%, 91rem);
+  height: 100%;
   min-height: 0;
-  gap: .32rem;
+  max-height: 100%;
+  gap: clamp(1rem, 3.8vw, 4.2rem);
 }
-.meg-auth-register .meg-auth-fields {
+.meg-auth-register .meg-login-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: clamp(.6rem, 2vh, 1.3rem);
   min-height: 0;
+  padding: .2rem 0 .35rem;
+}
+.meg-auth-register .meg-login-logo {
+  flex: 0 1 auto;
+  width: clamp(10rem, 13vw, 12.5rem);
+  height: clamp(8rem, 19vh, 10.75rem);
+  max-height: 27%;
+  object-fit: contain;
+  object-position: left center;
+  margin: 0;
+  filter: drop-shadow(0 0 1.1rem rgba(9, 238, 211, .1));
+}
+.meg-auth-register .meg-login-hero-copy {
+  margin: 0;
+}
+.meg-auth-register .meg-login-hero h2 {
+  margin: .35rem 0 .65rem;
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1.06;
+}
+.meg-auth-register .meg-login-intro {
+  margin: 0;
+  max-width: 38rem;
+  font-size: clamp(.88rem, 1.12vw, 1.04rem);
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.meg-auth-register .meg-login-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  gap: .5rem;
+}
+.meg-auth-register .meg-login-feature {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: .35rem;
   min-width: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  display: grid;
-  align-content: start;
-  gap: .3rem;
-  padding: .2rem .25rem .65rem;
-  scroll-padding-top: 1.5rem;
-  scroll-padding-bottom: 5rem;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(35,235,215,.65) transparent;
-  mask-image: linear-gradient(to bottom,#000 0%,#000 89%,rgba(0,0,0,.65) 100%);
-}
-#meg-web-evolution-root:has(.meg-auth-register) {
-  height: auto;
-  min-height: 100%;
-  overflow-y: visible;
-}
-.meg-auth-register .meg-auth-fields .meg-login-input-block { gap: .2rem; }
-.meg-auth-register .meg-auth-fields .meg-login-input-block > label { font-size: .9rem; line-height: 1.2; }
-.meg-auth-register .meg-auth-fields .meg-login-input-wrap,
-.meg-auth-register .meg-auth-fields .meg-login-input-wrap input { min-height: 44px; }
-.meg-auth-register .meg-auth-fields input[aria-invalid="true"] { scroll-margin-block: 24px 92px; }
-.meg-auth-register .meg-auth-form .meg-login-input-wrap:has(input[aria-invalid="true"]) { border-color: #ff9d9d; }
-.meg-auth-register .meg-auth-form .meg-login-submit { min-height: 44px; flex-shrink: 0; }
-.meg-auth-register .meg-auth-error { font-size: .875rem; line-height: 1.45; min-height: 2.625rem; }
-.meg-auth-register .meg-auth-footer {
-  padding-top: .4rem;
-  padding-bottom: 3px;
-  margin-top: 0;
+  padding: .5rem .4rem;
   text-align: center;
 }
-.meg-auth-register .meg-auth-footer button { min-height: 44px; }
-.meg-auth-register .meg-auth-mode label {
-  background-color: rgba(0,17,23,.65);
-  border-color: rgba(35,235,215,.4);
+.meg-auth-register .meg-login-feature-icon {
+  width: 2.5rem;
+  height: 2.5rem;
 }
-.meg-auth-register .meg-auth-mode input[type=radio] {
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 0;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  border-radius: 50%;
-  border: 2px solid #39e8d3;
-  background: #00181d;
-  display: inline-grid;
-  place-items: center;
-}
-.meg-auth-register .meg-auth-mode input[type=radio]::before {
-  content: '';
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #38f1d9;
-  transform: scale(0);
-}
-.meg-auth-register .meg-auth-mode input[type=radio]:checked::before { transform: scale(1); }
-.meg-auth-register .meg-auth-mode input[type=radio]:focus-visible { outline: 2px solid #44f6dd; outline-offset: 3px; }
-.meg-auth-register .meg-login-hero-copy { margin-top: clamp(.55rem,1.1vw,1rem); }
-.meg-auth-register .meg-login-hero h2 { max-width: 100%; }
-.meg-auth-register .meg-login-feature div { min-width: 0; }
-@media (min-width: 1024px) and (min-height: 700px) {
-  .meg-auth-register .meg-auth-card {
-    max-height: none;
-    overflow: visible;
-    grid-template-rows: auto auto auto;
-    padding: .85rem 1.35rem;
-  }
-  .meg-auth-register .meg-auth-form { grid-template-rows: auto auto auto; }
-  .meg-auth-register .meg-auth-fields { overflow: visible; mask-image: none; }
-  .meg-auth-register .meg-auth-error { min-height: 2.625rem; }
-}
-@media (min-width: 1024px) and (max-height: 820px) {
-  html:has(.meg-auth-register),
-  body:has(.meg-auth-register) {
-    height: auto;
-    min-height: 100dvh;
-    overflow-y: auto;
-  }
-  #meg-web-evolution-root:has(.meg-auth-register) {
-    height: auto;
-    min-height: 100%;
-    overflow-y: visible;
-  }
-  .meg-auth-register {
-    height: auto;
-    min-height: 100dvh;
-    padding-block: 16px 24px;
-    overflow-y: visible;
-    align-items: flex-start;
-  }
-  .meg-auth-register .meg-login-frame { align-items: flex-start; }
-  .meg-auth-register .meg-login-hero { position: static; }
-  .meg-auth-register .meg-auth-card {
-    height: auto;
-    max-height: none;
-    min-height: 0;
-    overflow: visible;
-    align-self: flex-start;
-    grid-template-rows: auto auto auto;
-  }
-  .meg-auth-register .meg-auth-form { grid-template-rows: auto auto auto; min-height: auto; }
-  .meg-auth-register .meg-auth-fields {
-    height: auto;
-    max-height: none;
-    overflow: visible;
-    mask-image: none;
-  }
-  .meg-auth-register .meg-login-features {
-    grid-template-columns: minmax(0, 1fr);
-    width: min(100%, 28rem);
-    gap: .55rem;
-    margin-top: 1rem;
-    padding-top: .35rem;
-  }
-  .meg-auth-register .meg-login-feature {
-    flex-direction: row;
-    align-items: center;
-    gap: .75rem;
-    padding: .65rem .75rem;
-  }
-  .meg-auth-register .meg-login-hero h2 { font-size: clamp(2.05rem,3vw,2.7rem); margin: .6rem 0; }
-  .meg-auth-register .meg-login-intro { margin: .7rem 0 .3rem; max-width: 29rem; }
-}
-@media (min-width: 1600px) and (max-width: 2200px) {
-  .meg-auth-register .meg-login-hero h2 { max-width: calc(100% - 2rem); font-size: clamp(2.2rem, 2.5vw, 3rem); }
-  .meg-auth-register .meg-login-hero h2 span { white-space: nowrap; }
-}
-@media (min-width: 2201px) { .meg-auth-register .meg-login-hero h2 { font-size: 3.5rem; } }
-@media (min-width: 481px) and (max-width: 1023px) {
-  .meg-auth-register .meg-login-frame { display: flex; flex-direction: column; gap: 1rem; }
-  .meg-auth-register .meg-login-hero { display: contents; }
-  .meg-auth-register .meg-login-logo { order: 1; margin: 0 0 .35rem .4rem; }
-  .meg-auth-register .meg-auth-card { order: 2; }
-  .meg-auth-register .meg-login-hero-copy { order: 3; padding: 0 .4rem; margin-top: 0; }
-  .meg-auth-register .meg-login-features { order: 4; margin-top: 0; padding-top: .3rem; }
-}
-@media (max-width: 480px) {
-  .meg-auth-register .meg-login-frame { display: flex; flex-direction: column; }
-  .meg-auth-register .meg-login-hero { display: contents; }
-  .meg-auth-register .meg-login-logo { order: 1; }
-  .meg-auth-register .meg-auth-card { order: 2; padding: .85rem; }
-  .meg-auth-register .meg-login-hero-copy { order: 3; }
-  .meg-auth-register .meg-login-features { order: 4; margin-top: 0; }
-  .meg-auth-register .meg-auth-error { min-height: 2.625rem; }
-}
-@media (max-width: 375px) {
-  .meg-auth-register .meg-auth-error { min-height: 3.75rem; }
-}
-
-/* PR #627 - sete correções pontuais: só no cadastro, Login inalterado. */
+.meg-auth-register .meg-login-feature strong { font-size: .83rem; }
+.meg-auth-register .meg-login-feature div > span { font-size: .73rem; line-height: 1.22; }
 .meg-auth-register .meg-auth-card {
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-content: stretch;
+  align-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  gap: .5rem;
+  padding: clamp(.8rem, 1.5vh, 1.2rem) clamp(.9rem, 1.8vw, 1.6rem);
+  border-radius: clamp(1rem, 2vw, 1.8rem);
+}
+.meg-auth-register .meg-auth-header.meg-login-panel-top {
+  margin: 0;
+  min-width: 0;
+  align-items: center;
+  gap: .65rem;
+}
+.meg-auth-register .meg-auth-header > div { min-width: 0; }
+.meg-auth-register .meg-auth-header .meg-login-security-icon {
+  flex: 0 0 2.8rem;
+  width: 2.8rem;
+  height: 2.8rem;
+}
+.meg-auth-register .meg-auth-header h1 {
+  margin: .15rem 0;
+  font-size: clamp(1.55rem, 2.2vw, 2rem);
+  line-height: 1.12;
+}
+.meg-auth-register .meg-auth-header .meg-login-panel-lead {
+  line-height: 1.3;
+  font-size: clamp(.76rem, 1vw, .9rem);
 }
 .meg-auth-register .meg-auth-form {
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
-  row-gap: .55rem; /* 8.8px entre campos/erro e erro/botão, sem deslocar o botão */
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  gap: .4rem;
 }
 .meg-auth-register .meg-auth-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: .5rem;
   width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: .15rem .22rem .75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-block: 1rem 2rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 224, 207, .4) transparent;
+}
+.meg-auth-register .meg-auth-fields::-webkit-scrollbar { width: 4px; }
+.meg-auth-register .meg-auth-fields::-webkit-scrollbar-thumb {
+  border-radius: 99rem;
+  background: rgba(29, 224, 207, .4);
+}
+.meg-auth-register .meg-auth-fields .meg-login-input-block {
+  gap: .22rem;
   min-width: 0;
 }
-.meg-auth-register .meg-auth-error {
-  margin-inline: .25rem; /* mesmas margens internas de 4px dos campos */
+.meg-auth-register .meg-auth-fields .meg-login-input-block > label {
+  font-size: .87rem;
+  line-height: 1.2;
 }
-.meg-auth-register .meg-auth-form > .meg-login-submit {
-  width: auto;
-  margin-inline: .25rem;
+.meg-auth-register .meg-auth-fields .meg-login-input-wrap,
+.meg-auth-register .meg-auth-fields .meg-login-input-wrap input {
+  min-height: 44px;
 }
-@media (max-width: 1023px) {
-  .meg-auth-register {
-    height: auto;
-    min-height: 100dvh;
-    overflow-y: visible;
-  }
-  .meg-auth-register .meg-auth-card {
-    height: auto;
-    min-height: auto;
-    max-height: none;
-    overflow: visible;
-    grid-template-rows: auto auto auto;
-  }
-  .meg-auth-register .meg-auth-form {
-    grid-template-rows: auto auto auto;
-    min-height: auto;
-  }
-  .meg-auth-register .meg-auth-fields {
-    height: auto;
-    min-height: auto;
-    max-height: none;
-    overflow: visible;
-    mask-image: none;
-  }
+.meg-auth-register .meg-auth-fields input[aria-invalid="true"] { scroll-margin-block: 1rem 4rem; }
+.meg-auth-register .meg-auth-form .meg-login-input-wrap:has(input[aria-invalid="true"]) {
+  border-color: #ff9d9d;
 }
-
-/* Até 480px: preservar alvos de 44px e reduzir apenas espaços não funcionais. */
-@media (max-width: 480px) {
-  /* Acrescenta 3px ao rodapé exclusivamente em mobile; alvo visual >=16px. */
-  .meg-auth-register .meg-auth-card { padding-block: .65rem; padding-bottom: calc(.65rem + 3px); }
-  .meg-auth-register .meg-auth-mode {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .35rem;
-  }
-  .meg-auth-register .meg-auth-mode label {
-    min-width: 0;
-    min-height: 44px;
-    padding: .25rem .4rem;
-    gap: .35rem;
-    line-height: 1.15;
-    font-size: .77rem;
-  }
-  .meg-auth-register .meg-auth-fields { gap: .15rem; }
-  .meg-auth-register .meg-auth-fields .meg-login-input-block { gap: .1rem; }
-  .meg-auth-register .meg-auth-header.meg-login-panel-top { gap: .5rem; }
-  .meg-auth-register .meg-auth-header h1 { font-size: 1.4rem; }
-  .meg-auth-register .meg-auth-footer { padding-top: .2rem; }
+.meg-auth-register .meg-auth-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .4rem;
 }
-
-/* Polimento de layout: sem palavra órfã no texto do hero. */
-.meg-auth-page .meg-login-intro { text-wrap: balance; }
-
-/* Tela 03: feedback de teste do cadastro sem simular envio à API.
-   Mantém o mesmo sistema visual do Login aprovado, sem novos breakpoints. */
+.meg-auth-register .meg-auth-mode label {
+  min-width: 0;
+  min-height: 44px;
+  padding: .4rem .5rem;
+  gap: .4rem;
+  line-height: 1.2;
+  background: rgba(0, 17, 23, .7);
+}
+.meg-auth-register .meg-auth-mode input[type="radio"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 1.2rem;
+  accent-color: #20f4d7;
+}
 .meg-auth-register .meg-register-preview-notice {
   margin: 0;
-  padding: .55rem .75rem;
-  border: 1px solid rgba(40, 232, 211, .48);
-  border-radius: .65rem;
-  color: #bcf7ee;
+  padding: .45rem .65rem;
+  border: 1px solid rgba(40, 232, 211, .45);
+  border-radius: .6rem;
   background: rgba(1, 72, 75, .46);
-  font-size: .79rem;
-  line-height: 1.4;
+  color: #bcf7ee;
+  font-size: .75rem;
+  line-height: 1.32;
 }
-.meg-auth-register .meg-auth-error.is-preview-ok {
-  color: #8dffdb;
+.meg-auth-register .meg-auth-error {
+  min-height: 1.3rem;
+  margin: 0 .22rem;
+  padding: 0;
+  font-size: .8rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.meg-auth-register .meg-auth-error.is-preview-ok { color: #8dffdb; }
+.meg-auth-register .meg-auth-form > .meg-login-submit {
+  display: flex;
+  width: calc(100% - .44rem);
+  min-height: 48px;
+  margin-inline: .22rem;
+  padding-block: .55rem;
+  flex: 0 0 auto;
+}
+.meg-auth-register .meg-auth-footer {
+  border-top: 1px solid rgba(42, 213, 205, .25);
+  text-align: center;
+  padding: .2rem 0 0;
+  min-height: 44px;
+}
+.meg-auth-register .meg-auth-footer button { min-height: 44px; }
+.meg-auth-register .meg-auth-success {
+  min-height: 0;
+  align-content: center;
+}
+@media (max-height: 590px) and (min-width: 1025px) {
+  /* Omitir apenas marketing suplementar em janelas muito baixas.
+     Nenhum campo nem botão financeiro é ocultado. */
+  .meg-auth-register .meg-login-features { display: none; }
+  .meg-auth-register .meg-login-logo { max-height: 38%; }
+}
+@media (max-width: 1024px) {
+  .meg-auth-register.meg-login {
+    align-items: stretch;
+    padding: max(.5rem, env(safe-area-inset-top)) .75rem
+      max(.5rem, env(safe-area-inset-bottom));
+  }
+  .meg-auth-register .meg-login-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: .45rem;
+    width: min(100%, 44rem);
+    height: 100%;
+    min-height: 0;
+  }
+  .meg-auth-register .meg-login-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 0;
+    gap: 0;
+  }
+  .meg-auth-register .meg-login-logo {
+    display: block;
+    width: clamp(7.5rem, 20vw, 10rem);
+    height: clamp(4.2rem, 11vh, 6.2rem);
+    max-height: 12vh;
+    object-position: center;
+  }
+  .meg-auth-register .meg-login-hero-copy,
+  .meg-auth-register .meg-login-features { display: none; }
+  .meg-auth-register .meg-auth-card {
+    display: grid;
+    align-self: stretch;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+  }
+}
+@media (max-width: 639px) {
+  .meg-auth-register.meg-login {
+    padding: max(.35rem, env(safe-area-inset-top)) .45rem
+      max(.35rem, env(safe-area-inset-bottom));
+  }
+  .meg-auth-register .meg-login-frame { width: 100%; gap: .2rem; }
+  .meg-auth-register .meg-login-logo {
+    width: min(40vw, 8.5rem);
+    height: clamp(3.6rem, 9.5vh, 5.6rem);
+    max-height: 10vh;
+  }
+  .meg-auth-register .meg-auth-card {
+    padding: .65rem .65rem .4rem;
+    gap: .35rem;
+  }
+  .meg-auth-register .meg-auth-header h1 { font-size: 1.5rem; }
+  .meg-auth-register .meg-auth-header .meg-login-panel-lead { font-size: .77rem; }
+  .meg-auth-register .meg-auth-form { gap: .25rem; }
+  .meg-auth-register .meg-auth-fields { gap: .35rem; padding-bottom: .5rem; }
+  .meg-auth-register .meg-auth-mode label { padding-inline: .32rem; font-size: .78rem; }
+  .meg-auth-register .meg-auth-footer { padding-top: 0; }
 }
