@@ -294,3 +294,19 @@
 
 /* Polimento de layout: sem palavra órfã no texto do hero. */
 .meg-auth-page .meg-login-intro { text-wrap: balance; }
+
+/* Tela 03: feedback de teste do cadastro sem simular envio à API.
+   Mantém o mesmo sistema visual do Login aprovado, sem novos breakpoints. */
+.meg-auth-register .meg-register-preview-notice {
+  margin: 0;
+  padding: .55rem .75rem;
+  border: 1px solid rgba(40, 232, 211, .48);
+  border-radius: .65rem;
+  color: #bcf7ee;
+  background: rgba(1, 72, 75, .46);
+  font-size: .79rem;
+  line-height: 1.4;
+}
+.meg-auth-register .meg-auth-error.is-preview-ok {
+  color: #8dffdb;
+}
