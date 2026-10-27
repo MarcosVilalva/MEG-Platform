@@ -93,3 +93,20 @@ body { color: #f4fffd; background: #001116; }
 @media (prefers-reduced-motion: reduce) {
   .meg-sequence-preview__navigation button { transition: none; }
 }
+
+/* Animação ilustrativa terminando com a passagem para o Login.
+   Nunca interfere no progresso real do aplicativo autenticado. */
+[data-preview-autoadvance="true"] [data-meg-loading="preview-only"] .meg-loading-fill {
+  animation: meg-sequence-finish 4.45s linear both;
+}
+@keyframes meg-sequence-finish {
+  0% { transform: scaleX(.06); }
+  75% { transform: scaleX(.83); }
+  100% { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-preview-autoadvance="true"] [data-meg-loading="preview-only"] .meg-loading-fill {
+    animation: none !important;
+    transform: scaleX(.55);
+  }
+}
