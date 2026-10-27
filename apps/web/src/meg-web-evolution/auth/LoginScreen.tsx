@@ -121,14 +121,14 @@ export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false }
               <label htmlFor={emailId}>E-mail</label>
               <div className={`meg-login-input-wrap ${errorField === 'email' ? 'is-invalid' : ''}`}>
                 <LoginIcon name="mail" />
-                <input id={emailId} type="email" name="email" autoComplete="username" inputMode="email" required placeholder="seu@email.com" value={email} onChange={event => {setEmail(event.target.value); if(errorField) {setErrorField(null);setMessage('');}}} aria-invalid={errorField === 'email'} aria-describedby={errorField === 'email' ? errorId : undefined} disabled={submitting || authenticated} />
+                <input id={emailId} type="email" name="email" autoComplete={previewOnly ? "off" : "username"} inputMode="email" required placeholder="seu@email.com" value={email} onChange={event => {setEmail(event.target.value); if(errorField) {setErrorField(null);setMessage('');}}} aria-invalid={errorField === 'email'} aria-describedby={errorField === 'email' ? errorId : undefined} disabled={submitting || authenticated} />
               </div>
             </div>
             <div className="meg-login-input-block">
               <label htmlFor={passwordId}>Senha</label>
               <div className={`meg-login-input-wrap ${errorField === 'password' ? 'is-invalid' : ''}`}>
                 <LoginIcon name="lock" />
-                <input id={passwordId} type={passwordVisible ? 'text' : 'password'} name="password" autoComplete="current-password" required minLength={8} placeholder="••••••••" value={password} onChange={event => {setPassword(event.target.value); if(errorField) {setErrorField(null);setMessage('');}}} aria-invalid={errorField === 'password'} aria-describedby={errorField === 'password' ? errorId : undefined} disabled={submitting || authenticated} />
+                <input id={passwordId} type={passwordVisible ? 'text' : 'password'} name="password" autoComplete={previewOnly ? "off" : "current-password"} required minLength={8} placeholder="••••••••" value={password} onChange={event => {setPassword(event.target.value); if(errorField) {setErrorField(null);setMessage('');}}} aria-invalid={errorField === 'password'} aria-describedby={errorField === 'password' ? errorId : undefined} disabled={submitting || authenticated} />
                 <button className="meg-login-password-toggle" type="button" aria-label={passwordVisible ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={passwordVisible} disabled={submitting || authenticated} onClick={() => setPasswordVisible(value => !value)}><LoginIcon name={passwordVisible ? 'eye-off' : 'eye'} /></button>
               </div>
             </div>
