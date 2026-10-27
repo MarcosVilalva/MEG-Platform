@@ -16,7 +16,8 @@ body { color: #f4fffd; background: #001116; }
   height: 100dvh;
   overflow: hidden;
 }
-.meg-sequence-preview[data-preview-screen="login"] {
+.meg-sequence-preview[data-preview-screen="login"],
+.meg-sequence-preview[data-preview-screen="cadastro"] {
   min-height: 100dvh;
   height: auto;
   overflow: visible;
@@ -51,7 +52,8 @@ body { color: #f4fffd; background: #001116; }
   outline: 3px solid #9ffff3;
   outline-offset: 3px;
 }
-.meg-sequence-preview[data-preview-screen="login"] .meg-sequence-preview__navigation {
+.meg-sequence-preview[data-preview-screen="login"] .meg-sequence-preview__navigation,
+.meg-sequence-preview[data-preview-screen="cadastro"] .meg-sequence-preview__navigation {
   position: relative;
   top: auto;
   right: auto;
