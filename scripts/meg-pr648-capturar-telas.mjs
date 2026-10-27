@@ -178,7 +178,7 @@ async function capture(browser, width, height, password, dir, checks) {
       ].filter(Boolean);
       return Promise.all(nodes.map(async (node) => {
         const style = getComputedStyle(node);
-        const match = style.backgroundImage.match(/url\\(["']?(.+?)["']?\\)/);
+        const match = style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
         if (!match) return { ok: false, background: style.backgroundImage };
         const asset = new Image();
         return new Promise((resolve) => {
