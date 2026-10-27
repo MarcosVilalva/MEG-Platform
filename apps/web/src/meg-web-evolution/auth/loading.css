@@ -93,14 +93,7 @@
   box-shadow: 0 0 1rem rgba(36, 240, 213, .55);
   transform-origin: left center;
   transform: scaleX(0);
-  transition: transform .25s ease;
-}
-[data-meg-loading="preview-only"] .meg-loading-fill {
-  animation: meg-loading-illustrative 2.8s ease-in-out infinite alternate;
-}
-@keyframes meg-loading-illustrative {
-  from { transform: scaleX(.26); }
-  to { transform: scaleX(.78); }
+  transition: transform .12s linear;
 }
 .meg-loading-progress h1 {
   margin: 0;

@@ -42,7 +42,11 @@ body { color: #f4fffd; background: #001116; }
   box-shadow: 0 0 .9rem rgba(0, 234, 210, .1);
   cursor: pointer;
 }
-.meg-sequence-preview__navigation button:hover { background: #03424b; }
+.meg-sequence-preview__navigation button:not(:disabled):hover { background: #03424b; }
+.meg-sequence-preview__navigation button:disabled {
+  cursor: progress;
+  opacity: .62;
+}
 .meg-sequence-preview__navigation button:focus-visible {
   outline: 3px solid #9ffff3;
   outline-offset: 3px;
@@ -92,21 +96,4 @@ body { color: #f4fffd; background: #001116; }
 }
 @media (prefers-reduced-motion: reduce) {
   .meg-sequence-preview__navigation button { transition: none; }
-}
-
-/* Animação ilustrativa terminando com a passagem para o Login.
-   Nunca interfere no progresso real do aplicativo autenticado. */
-[data-preview-autoadvance="true"] [data-meg-loading="preview-only"] .meg-loading-fill {
-  animation: meg-sequence-finish 4.45s linear both;
-}
-@keyframes meg-sequence-finish {
-  0% { transform: scaleX(.06); }
-  75% { transform: scaleX(.83); }
-  100% { transform: scaleX(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-preview-autoadvance="true"] [data-meg-loading="preview-only"] .meg-loading-fill {
-    animation: none !important;
-    transform: scaleX(.55);
-  }
 }

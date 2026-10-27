@@ -66,16 +66,20 @@ export function LoadingScreen({
             aria-label="Carregamento de dados"
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-valuenow={preview ? undefined : value}
-            aria-valuetext={preview ? 'Prévia visual, sem consulta de dados' : value + '%'}>
-            <span className="meg-loading-fill" style={preview ? undefined : { transform: `scaleX(${value / 100})` }} />
+            aria-valuenow={value}
+            aria-valuetext={preview
+              ? `Progresso ilustrativo: ${value}%. Nenhuma consulta de dados.`
+              : `${value}%`}>
+            <span className="meg-loading-fill" style={{ transform: `scaleX(${value / 100})` }} />
           </div>
           <h1 id="meg-loading-title">Carregando seus dados...</h1>
           <p>{description}</p>
         </div>
       </section>
       <span className="meg-loading-a11y" role="status" aria-live="polite">
-        {preview ? 'Prévia visual de carregamento, sem consulta financeira.' : `Carregamento: ${value}%. ${description}`}
+        {preview
+          ? `Demonstração visual de carregamento: ${value}%. Nenhuma consulta financeira.`
+          : `Carregamento: ${value}%. ${description}`}
       </span>
     </main>
   );

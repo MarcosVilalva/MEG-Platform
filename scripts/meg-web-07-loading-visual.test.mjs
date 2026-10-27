@@ -10,7 +10,8 @@ const login = read('apps/web/src/meg-web-evolution/auth/LoginScreen.tsx');
 const loginCss = read('apps/web/src/meg-web-evolution/auth/login.css');
 
 assert.match(component, /role="progressbar"/);
-assert.match(component, /aria-valuenow=\{preview \? undefined : value\}/);
+assert.match(component, /aria-valuenow=\{value\}/);
+assert.match(component, /Progresso ilustrativo/);
 assert.match(component, /aria-live="polite"/);
 assert.doesNotMatch(component, /loading-master\.png|financeClient|createEvent|authClient\.login/);
 assert.match(css, /visual-loading\/loading-fullbleed-cinematic\.webp/);
@@ -19,7 +20,13 @@ assert.match(component, /meg-loading-stage/);
 assert.doesNotMatch(component, /<picture|scene-mobile\.webp|scene-desktop\.webp/);
 assert.doesNotMatch(css, /meg-loading-illustration|meg-loading-scene/);
 assert.match(css, /background-size: 100% 100%, auto 100%/);
-assert.match(preview, /setTimeout\(\(\) => setScreen\('login'\), 4500\)/);
+assert.match(preview, /durationMs = 4500/);
+assert.match(preview, /percentage = Math\.min\(100, Math\.floor/);
+assert.match(preview, /progress !== 100/);
+assert.match(preview, /setTimeout\(\(\) => setScreen\('login'\), 550\)/);
+assert.match(preview, /disabled=\{progress < 100\}/);
+assert.doesNotMatch(preview, /setTimeout\(\(\) => setScreen\('login'\), 4500\)/);
+assert.doesNotMatch(css, /meg-loading-illustrative/);
 assert.match(preview, /onClick=\{goToLogin\}/);
 assert.match(preview, /onClick=\{reviewLoading\}/);
 assert.match(preview, /requestedView !== 'login' && requestedView !== 'carregamento'/);
@@ -27,7 +34,7 @@ assert.ok(existsSync('apps/web/public/meg-web-evolution/visual-loading/loading-f
 assert.ok(existsSync('apps/web/public/meg-web-evolution/visual-loading/logo-transparent.webp'));
 assert.match(css, /max-width: 1024px/);
 assert.match(css, /max-width: 639px/);
-assert.match(preview, /<LoadingScreen preview progress=\{0\}/);
+assert.match(preview, /<LoadingScreen preview progress=\{progress\}/);
 assert.doesNotMatch(preview, /financeClient|authenticatedRequest|localStorage|createEvent/);
 for(const file of ['ambient', 'hologram', 'logo']) {
   assert.ok(existsSync('apps/web/public/meg-web-evolution/visual-loading/'+file+'.webp'), file+' WebP not found');
@@ -47,4 +54,4 @@ assert.match(preview, /requestedView !== 'carregamento'/);
 assert.match(loginCss, /login-background\.webp/);
 assert.ok(existsSync('apps/web/public/meg-web-evolution/login-background.webp'),
   'Fundo oficial em WebP ausente');
-console.log('MEG visual: tela cheia, fluxo Loading → Login, isolamento de autenticação e DataGrid preservado OK.');
+console.log('MEG visual: barra chega a 100% antes do Login, fluxo preview seguro e DataGrid preservado OK.');
