@@ -49,7 +49,7 @@ export function LaunchTypePicker({
         <div className="meg-choice__hero">
           <span className="meg-choice__hero-photo" aria-hidden="true"/>
           <div className="meg-choice__hero-copy">
-            <h3>Mais <em>controle</em> para o seu <em>dia a dia</em></h3>
+            <h3>Mais <em>controle</em><span>para o seu</span><em>dia a dia</em></h3>
             <p>Escolha o tipo de lançamento e preencha as informações no formulário inteligente.
               O layout da versão Web se adapta automaticamente à largura da sua tela,
               oferecendo mais espaço, organização e agilidade.</p>
