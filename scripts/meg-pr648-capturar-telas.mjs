@@ -173,12 +173,13 @@ async function capture(browser, width, height, password, dir, checks) {
     // Nenhum arquivo externo nem imagem simulando os botões é permitido.
     const artwork = await page.evaluate(async () => {
       const nodes = [
-        document.querySelector('.meg-choice__hero-art'),
-        ...document.querySelectorAll('.meg-choice__option-art'),
+        document.querySelector('.meg-choice__hero-photo'),
+        ...document.querySelectorAll('.meg-choice__option-photo'),
       ].filter(Boolean);
       return Promise.all(nodes.map(async (node) => {
         const style = getComputedStyle(node);
-        const match = style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
+        const urls = [...style.backgroundImage.matchAll(/url\(["']?([^)"']+)["']?\)/g)];
+        const match = urls.at(-1);
         if (!match) return { ok: false, background: style.backgroundImage };
         const asset = new Image();
         return new Promise((resolve) => {
