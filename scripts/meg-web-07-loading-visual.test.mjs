@@ -6,6 +6,8 @@ const component = read('apps/web/src/meg-web-evolution/auth/LoadingScreen.tsx');
 const css = read('apps/web/src/meg-web-evolution/auth/loading.css');
 const preview = read('apps/web/visual-sequence/entry.tsx');
 const grid = read('apps/web/src/meg-web-evolution/datagrid/DataGrid.tsx');
+const login = read('apps/web/src/meg-web-evolution/auth/LoginScreen.tsx');
+const loginCss = read('apps/web/src/meg-web-evolution/auth/login.css');
 
 assert.match(component, /role="progressbar"/);
 assert.match(component, /aria-valuenow=\{preview \? undefined : value\}/);
@@ -20,4 +22,18 @@ for(const file of ['ambient', 'hologram', 'logo']) {
   assert.ok(existsSync('apps/web/public/meg-web-evolution/visual-loading/'+file+'.webp'), file+' WebP not found');
 }
 assert.match(grid, /export function DataGrid/);
-console.log('MEG visual Tela 01: contratos de arte, carregamento e DataGrid preservado OK.');
+assert.match(login, /previewOnly\?: boolean/);
+assert.match(login, /if \(previewOnly\) \{/);
+assert.ok(login.indexOf('if (previewOnly) {') < login.indexOf('await login(normalizedEmail, password)'),
+  'Preview deve retornar antes de qualquer requisição de login');
+assert.match(login, /await login\(normalizedEmail, password\)/);
+assert.match(login, /onNavigate\('recover-password'\)/);
+assert.match(login, /onNavigate\('create-account'\)/);
+assert.match(login, /visual-loading\/logo\.webp/);
+assert.match(login, /autoComplete=\{previewOnly \? "off" : "current-password"\}/);
+assert.match(preview, /<LoginScreen previewOnly/);
+assert.match(preview, /view === 'carregamento'/);
+assert.match(loginCss, /login-background\.webp/);
+assert.ok(existsSync('apps/web/public/meg-web-evolution/login-background.webp'),
+  'Fundo oficial em WebP ausente');
+console.log('MEG visual Telas 01 e 02: arte, segurança do preview, Login e DataGrid preservados OK.');
