@@ -8,6 +8,8 @@ const preview = read('apps/web/visual-sequence/entry.tsx');
 const grid = read('apps/web/src/meg-web-evolution/datagrid/DataGrid.tsx');
 const login = read('apps/web/src/meg-web-evolution/auth/LoginScreen.tsx');
 const loginCss = read('apps/web/src/meg-web-evolution/auth/login.css');
+const createAccount = read('apps/web/src/meg-web-evolution/auth/CreateAccountScreen.tsx');
+const authLayout = read('apps/web/src/meg-web-evolution/auth/AuthScreenLayout.tsx');
 
 assert.match(component, /role="progressbar"/);
 assert.match(component, /aria-valuenow=\{value\}/);
@@ -54,4 +56,20 @@ assert.match(preview, /requestedView !== 'carregamento'/);
 assert.match(loginCss, /login-background\.webp/);
 assert.ok(existsSync('apps/web/public/meg-web-evolution/login-background.webp'),
   'Fundo oficial em WebP ausente');
-console.log('MEG visual: barra chega a 100% antes do Login, fluxo preview seguro e DataGrid preservado OK.');
+assert.match(createAccount, /previewOnly\?: boolean/);
+assert.match(createAccount, /if \(previewOnly\) \{/);
+assert.ok(createAccount.indexOf('if (previewOnly) {') < createAccount.indexOf('await register('),
+  'O cadastro de preview deve bloquear a API antes de enviar quaisquer dados.');
+assert.match(createAccount, /await register\(/);
+assert.match(createAccount, /type === 'REQUEST_ACCESS'/);
+assert.match(createAccount, /type === 'CREATE_WORKSPACE'/);
+assert.match(createAccount, /password !== confirmPassword/);
+assert.match(createAccount, /autoComplete=\{previewOnly \? 'off' : 'new-password'\}/);
+assert.match(createAccount, /onNavigateLogin/);
+assert.match(authLayout, /meg-web-evolution\/visual-loading\/logo\.webp/);
+assert.match(preview, /<CreateAccountScreen previewOnly/);
+assert.match(preview, /destination === 'create-account'/);
+assert.match(preview, /requestedView === 'cadastro'/);
+assert.match(preview, /screen === 'loading' && progress !== 100/);
+assert.doesNotMatch(preview, /register\(|fetch\(|axios\./);
+console.log('MEG visual: fluxo Loading 100% → Login → Criar Conta, bloqueio de API, regras de cadastro e DataGrid preservados OK.');
