@@ -49,7 +49,9 @@ function Preview() {
   }, [loading, progress]);
 
   const goToLogin = () => {
-    if (progress !== 100) return;
+    // O bloqueio até 100% vale somente durante o carregamento.
+    // O retorno do Cadastro deve funcionar mesmo em acesso direto via URL.
+    if (screen === 'loading' && progress !== 100) return;
     setNotice('');
     setScreen('login');
   };
