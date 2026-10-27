@@ -53,7 +53,7 @@ function Preview() {
           <button type="button" onClick={reviewLoading}><span aria-hidden="true">←</span> Rever carregamento</button>
         )}
       </nav>
-      <span className="meg-sequence-preview__notice" role="status" aria-live="polite">
+      <span className={'meg-sequence-preview__notice' + (notice ? ' is-alert' : '')} role="status" aria-live="polite">
         {notice || (loading
           ? (autoAdvance ? 'Prévia visual • avançará automaticamente para o Login' : 'Tela 01 • carregamento visual')
           : 'Tela 02 • preview visual • não informe senha real')}
