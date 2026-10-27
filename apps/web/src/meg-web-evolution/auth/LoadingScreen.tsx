@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import './login.css';
 import './auth-screens.css';
 import './loading.css';
@@ -16,28 +15,38 @@ function readPreviewState(): PreviewState {
   return state === 'error' || state === 'empty' ? state : 'loading';
 }
 
+const base = import.meta.env.BASE_URL;
+const artwork = base + 'meg-web-evolution/visual-loading/';
+
+/**
+ * Tela 01 da revisão visual: arte decorativa separada da interface.
+ * A API/roteador continua responsável por determinar quando termina o
+ * carregamento. Não inventar percentuais, saldos, login nem timers de sucesso.
+ */
 export function LoadingScreen({
   onNavigateLogin,
   preview = true,
   progress = 0,
   message,
 }: Props) {
-  const value = Math.max(0, Math.min(100, progress));
+  const value = Math.max(0, Math.min(100, Number.isFinite(progress) ? progress : 0));
   const description = message ?? (
     preview
-      ? 'Prévia visual. Nenhum carregamento real está em execução.'
-      : 'Preparando seu acesso...'
+      ? 'Organizando suas finanças para o seu dia a dia.'
+      : 'Organizando suas finanças para o seu dia a dia.'
   );
-  // Estados demonstrativos são exclusivos da rota de prévia.
   const state = preview ? readPreviewState() : 'loading';
+
   if (state !== 'loading') {
     const failed = state === 'error';
     return (
       <main className="meg-login meg-loading-alt" aria-label={failed ? 'Falha no carregamento' : 'Nenhum dado para carregar'}>
-        <section className="meg-login-panel meg-loading-state" aria-live="polite" role="status">
-          <img src={`${import.meta.env.BASE_URL}brand/logo-meg-financas.svg`} alt="MEG Finanças" width="120" height="118" />
+        <section className="meg-login-panel meg-loading-state" role="status" aria-live="polite">
+          <img src={artwork + 'logo.webp'} alt="MEG Finanças" width="160" height="130"/>
           <h1>{failed ? 'Não foi possível carregar os dados' : 'Nenhum dado para carregar'}</h1>
-          <p>{failed ? 'Confira a conexão. Este é um estado demonstrativo, sem operações financeiras.' : 'Estado vazio de demonstração. Nenhuma consulta financeira foi realizada.'}</p>
+          <p>{failed
+            ? 'Confira a conexão. Nenhuma operação financeira foi executada.'
+            : 'Não há dados disponíveis para esta visualização.'}</p>
           <button type="button" className="meg-login-submit" onClick={onNavigateLogin}>Voltar ao login</button>
         </section>
       </main>
@@ -45,25 +54,29 @@ export function LoadingScreen({
   }
 
   return (
-    <main className="meg-loading-screen" aria-label="Carregando seus dados" data-meg-loading={preview ? "preview-only" : "runtime"} style={{ "--meg-loading-art": `url(${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png)` } as CSSProperties}>
-      <img className="meg-loading-art" src={`${import.meta.env.BASE_URL}meg-web-evolution/loading-master.png`} alt="" aria-hidden="true" />
-      <div className="meg-loading-mobile-copy" aria-hidden="true">
-        <div className="meg-loading-mobile-track">
-          <span style={{ transform: `scaleX(${value / 100})` }} />
+    <main className="meg-loading-screen"
+      data-meg-loading={preview ? 'preview-only' : 'runtime'}
+      aria-label="Carregando seus dados">
+      <div className="meg-loading-background" aria-hidden="true" />
+      <section className="meg-loading-composition" aria-labelledby="meg-loading-title">
+        <img className="meg-loading-brand" src={artwork + 'logo.webp'} alt="MEG Finanças" />
+        <img className="meg-loading-illustration" src={artwork + 'hologram.webp'} alt="" aria-hidden="true" />
+        <div className="meg-loading-progress">
+          <div className="meg-loading-track" role="progressbar"
+            aria-label="Carregamento de dados"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={preview ? undefined : value}
+            aria-valuetext={preview ? 'Prévia visual, sem consulta de dados' : value + '%'}>
+            <span className="meg-loading-fill" style={preview ? undefined : { transform: `scaleX(${value / 100})` }} />
+          </div>
+          <h1 id="meg-loading-title">Carregando seus dados...</h1>
+          <p>{description}</p>
         </div>
-        <h1>Carregando seus dados...</h1>
-        <p>{description}</p>
-      </div>
-      <p className="meg-loading-a11y" role="status" aria-live="polite">{description}</p>
-      <div
-        className="meg-loading-a11y"
-        role="progressbar"
-        aria-label="Inicialização do acesso"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={value}
-        aria-valuetext={`${value}% — ${description}`}
-      />
+      </section>
+      <span className="meg-loading-a11y" role="status" aria-live="polite">
+        {preview ? 'Prévia visual de carregamento, sem consulta financeira.' : `Carregamento: ${value}%. ${description}`}
+      </span>
     </main>
   );
 }
