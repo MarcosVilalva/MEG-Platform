@@ -52,16 +52,26 @@
   object-position: bottom center;
   filter: drop-shadow(0 0 1.3rem rgba(3, 219, 197, .14));
 }
+.meg-loading-scene {
+  display: grid;
+  place-items: center;
+  justify-self: stretch;
+  align-self: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
 .meg-loading-illustration {
   display: block;
-  align-self: center;
-  width: min(100%, 53rem);
+  width: min(100%, 74rem);
   height: 100%;
+  min-width: 0;
   min-height: 0;
-  max-height: 30rem;
   object-fit: contain;
   object-position: center;
-  filter: drop-shadow(0 0 1.4rem rgba(13, 220, 201, .23));
+  filter: drop-shadow(0 0 1rem rgba(11, 220, 207, .15));
 }
 .meg-loading-progress {
   align-self: start;
@@ -162,7 +172,8 @@
     padding-inline: clamp(.75rem, 2vw, 1.6rem);
   }
   .meg-loading-brand { width: min(45vw, 16rem); }
-  .meg-loading-illustration { width: min(92vw, 47rem); }
+  .meg-loading-scene { width: 100%; }
+  .meg-loading-illustration { width: 100%; }
 }
 @media (max-width: 639px) {
   .meg-loading-composition {
@@ -171,6 +182,7 @@
     padding: max(.75rem, env(safe-area-inset-top)) .9rem max(1.3rem, env(safe-area-inset-bottom));
   }
   .meg-loading-brand { width: min(60vw, 14rem); max-height: 11rem; }
+  .meg-loading-scene { width: 100%; }
   .meg-loading-illustration { width: 100%; max-height: 21rem; }
   .meg-loading-progress { gap: .7rem; }
   .meg-loading-progress h1 { font-size: clamp(1.22rem, 5.6vw, 1.65rem); }
