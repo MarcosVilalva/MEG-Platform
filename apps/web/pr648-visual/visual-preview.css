@@ -1,0 +1,79 @@
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: #00161d; color: #f3fffd; }
+button, input { font: inherit; }
+.meg-pr648-preview { height: 100dvh; width: 100%; display: grid; grid-template-columns: 11.2rem minmax(0,1fr); overflow: hidden; background: radial-gradient(circle at 55% 12%, #07434a 0, transparent 62%), #00151d; }
+.meg-pr648-preview__identity { border-right: 1px solid #0a8986; display: flex; flex-direction: column; gap: .65rem; padding: 1.25rem .8rem; background: rgba(0,22,27,.9); }
+.meg-pr648-preview__brand { text-align: center; display:flex; flex-direction:column; gap:.08rem; margin-bottom:1.4rem; }
+.meg-pr648-preview__brand strong { font-size:2.8rem; color:white; letter-spacing:-.08em; }
+.meg-pr648-preview__brand span { font-size:.75rem; font-weight:850; letter-spacing:.35em; color:#2cfbe6; }
+.meg-pr648-preview__sidebar-item { padding:.85rem 1rem; border-radius:.65rem; font-size:.9rem; font-weight:650; }
+.meg-pr648-preview__sidebar-item.is-active { color:#dffffb; background:rgba(0,215,197,.2); border:1px solid #0ffce4; box-shadow:0 0 1rem #00c6b844; }
+.meg-pr648-preview__page { display:flex; flex-direction:column; min-width:0; min-height:0; padding: .55rem; }
+.meg-pr648-preview__toolbar { flex:0 0 auto; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:1rem; height:2.8rem; padding: 0 1.25rem; font-size:.82rem; color:#d6e7e4; }
+/* A janela visível (não o tamanho da tela física) determina a altura do preview.
+   Antes, o modal usava 100dvh mesmo dentro de um contêiner com toolbar;
+   a base ficava para trás da barra do Windows ao utilizar 100% de zoom. */
+.meg-pr648-preview__overlay {
+  position: relative!important;
+  inset: auto!important;
+  flex: 1 1 auto;
+  display: grid;
+  place-items: stretch;
+  min-height: 0;
+  min-width: 0;
+  padding: .25rem!important;
+  overflow: hidden;
+  background: transparent!important;
+}
+.meg-pr648-preview__overlay .meg-new-launch.is-choose,
+.meg-pr648-preview__overlay .meg-new-launch.is-compact.is-choose {
+  width: min(100%, 90rem);
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+}
+/* Viewports desktop baixas, inclusive janela 1366x768 com barras de
+   navegador e sistema operacional. Sem esconder cards nem controles. */
+@media (min-width: 1025px) and (max-height: 700px) {
+  .meg-pr648-preview__page { padding: .3rem .5rem; }
+  .meg-pr648-preview__toolbar { height: 2.3rem; padding: 0 .8rem; }
+  .meg-pr648-preview__overlay .meg-new-launch.is-choose { padding: .55rem .7rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__header { padding: 0 .15rem .35rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__headline h2 { font-size: 1.7rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__headline p { margin-top: .18rem; font-size: .76rem; }
+  .meg-pr648-preview__overlay .meg-new-launch__back-icon,
+  .meg-pr648-preview__overlay .meg-new-launch__close { width: 2.65rem; height: 2.65rem; }
+  .meg-pr648-preview__overlay .meg-choice--photo { gap: .3rem; }
+  .meg-pr648-preview__overlay .meg-choice__body { gap: .5rem; }
+  .meg-pr648-preview__overlay .meg-choice__hero-copy { padding: .7rem .9rem; }
+  .meg-pr648-preview__overlay .meg-choice__hero h3 { margin: .4rem 0 .45rem; font-size: clamp(1.75rem, 2.6vw, 2.25rem); }
+  .meg-pr648-preview__overlay .meg-choice__hero p { font-size: .79rem; line-height: 1.28; }
+  .meg-pr648-preview__overlay .meg-choice__options { gap: .35rem; }
+  .meg-pr648-preview__overlay .meg-choice__option { padding: .25rem .7rem; }
+  .meg-pr648-preview__overlay .meg-choice__option-text strong { font-size: 1.36rem; }
+  .meg-pr648-preview__overlay .meg-choice__option-text small { font-size: .73rem; }
+  .meg-pr648-preview__overlay .meg-choice__tags { margin-top: .12rem; }
+  .meg-pr648-preview__overlay .meg-choice__tag { min-height: 1.15rem; padding: .05rem .4rem; font-size: .65rem; }
+  .meg-pr648-preview__overlay .meg-choice__footer { padding: .2rem; }
+  .meg-pr648-preview__overlay .meg-choice__feature { padding: .12rem .4rem; }
+  .meg-pr648-preview__overlay .meg-choice__back-action { min-height: 2.5rem; }
+}
+.meg-pr648-preview__disclaimer { position:fixed; bottom:0; right:0; z-index:40; padding:.25rem .65rem; border-radius:.4rem 0 0 0; background:rgba(0,16,23,.82); color:#9ce8df; font-size:.66rem; pointer-events:none; }
+@media (max-width:1024px) {
+ .meg-pr648-preview { grid-template-columns:4.1rem minmax(0,1fr); }
+ .meg-pr648-preview__identity { padding:1rem .25rem; }
+ .meg-pr648-preview__brand strong { font-size:1.5rem; }
+ .meg-pr648-preview__brand span { font-size:.38rem; }
+ .meg-pr648-preview__sidebar-item { font-size:0; min-height:2.2rem; padding:.2rem; text-align:center; }
+ .meg-pr648-preview__sidebar-item:before { content:"•"; font-size:1.25rem; color:#30f0db; }
+}
+@media (max-width:639px) {
+ .meg-pr648-preview { grid-template-columns:minmax(0,1fr); }
+ .meg-pr648-preview__identity,.meg-pr648-preview__toolbar { display:none; }
+ .meg-pr648-preview__page { padding:0; }
+ .meg-pr648-preview__overlay { padding:0!important; }
+ .meg-pr648-preview__disclaimer { font-size:.56rem; }
+}

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  countsTowardMonetaryBalance,
   isBenefitFinancialEvent,
   isMonetaryAccountType,
   paymentBalanceDecision,
@@ -43,6 +44,29 @@ assert.equal(resolveCanonicalFinancialStatus({
   category: { name: 'Mercado', group: 'Alimentação' },
   paymentMethod: { name: 'PIX', type: 'instant' },
 }), 'paid', 'Despesa comum preserva o status solicitado.');
+
+// Caracterização da política aprovada: o writer resolve status de receitas
+// e despesas pendentes na API; a Web não deve recalcular estes estados.
+// A competência temporal é aplicada pelas leituras/balanços canônicos,
+// não por uma inferência da tela sobre o texto "Pago".
+assert.equal(countsTowardMonetaryBalance({
+  type: 'expense',
+  status: resolveCanonicalFinancialStatus({
+    type: 'expense',
+    requestedStatus: 'planned',
+    category: { name: 'Despesa de teste', group: 'Homologação' },
+    paymentMethod: { name: 'Boleto de teste', type: 'bill' },
+  }),
+}), false, 'Despesa pendente/planejada não pode alterar o saldo monetário realizado.');
+
+assert.equal(countsTowardMonetaryBalance({
+  type: 'income',
+  status: resolveCanonicalFinancialStatus({
+    type: 'income',
+    requestedStatus: 'planned',
+    category: { name: 'Receita de teste', group: 'Homologação' },
+  }),
+}), true, 'Receita retorna realizada na política central, sem cálculo de status na Web.');
 
 assert.equal(isBenefitFinancialEvent({ account: { type: 'benefit' } }), true);
 assert.equal(isMonetaryAccountType('checking'), true);

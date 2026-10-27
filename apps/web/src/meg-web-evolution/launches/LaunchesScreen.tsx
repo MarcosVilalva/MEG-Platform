@@ -5,6 +5,7 @@ import type { DataGridColumn } from '../datagrid/types';
 import { loadAuthorizedEventHistory, toEventGridRows, type EventGridRow, type LoadProgress } from './history';
 import './launches.css';
 import { NewLaunchForm } from './NewLaunchForm';
+import { Icon } from '../components/Icon';
 
 type Props = { userId: string; userName: string; canCreate?: boolean; newLaunchToken?: number };
 
@@ -26,6 +27,15 @@ const eventStatuses = {
 };
 
 export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchToken = 0 }: Props) {
+  const [gridPageSize, setGridPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 5;
+    return window.innerWidth < 640 ? 1 : window.innerWidth <= 1024 ? 3 : 5;
+  });
+  useEffect(() => {
+    const onResize = () => setGridPageSize(window.innerWidth < 640 ? 1 : window.innerWidth <= 1024 ? 3 : 5);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const [events, setEvents] = useState<FinancialEvent[] | null>(null);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<LoadProgress>({ loaded: 0, total: 0 });
@@ -59,8 +69,8 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
   const records = useMemo(() => events ? toEventGridRows(events) : [], [events]);
   const selected = events?.find(item => item.id === detailId);
   const columns = useMemo<DataGridColumn<EventGridRow>[]>(() => [
-    { key: 'date', label: 'Data', type: 'date', width: 145, sortable: true, filterable: true },
-    { key: 'description', label: 'Descrição', type: 'text', width: 280, sortable: true, filterable: true,
+    { key: 'date', label: 'Data', type: 'date', width: 125, sortable: true, filterable: true },
+    { key: 'description', label: 'Descrição', type: 'text', width: 240, sortable: true, filterable: true,
       render: (_value, row) => (
         <button
           className="meg-launches__detail-button"
@@ -70,14 +80,16 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
         >{row.description}</button>
       ),
     },
-    { key: 'type', label: 'Tipo', type: 'enum', width: 145, sortable: true, filterable: true, enumValues: eventTypes },
-    { key: 'status', label: 'Situação', type: 'enum', width: 155, sortable: true, filterable: true, enumValues: eventStatuses },
-    { key: 'account', label: 'Conta', type: 'text', width: 180, sortable: true, filterable: true },
-    { key: 'category', label: 'Categoria', type: 'text', width: 180, sortable: true, filterable: true },
-    { key: 'paymentMethod', label: 'Forma de pagamento', type: 'text', width: 180, sortable: true, filterable: true },
-    { key: 'competence', label: 'Competência', type: 'text', width: 140, sortable: true, filterable: true },
-    { key: 'amount', label: 'Valor (R$)', type: 'currency', width: 160, sortable: true, filterable: true },
-    { key: 'signedAmount', label: 'Valor registrado (R$)', type: 'currency', width: 200, sortable: true, filterable: true },
+    // Valor assinado vem da API: + receita e - despesa. Nunca inferir sinal na tela.
+    // A coluna monetaria principal precisa ficar visivel antes do scroll interno.
+    { key: 'signedAmount', label: 'Valor registrado (R$)', type: 'currency', width: 170, sortable: true, filterable: true },
+    { key: 'status', label: 'Situação', type: 'enum', width: 140, sortable: true, filterable: true, enumValues: eventStatuses },
+    { key: 'type', label: 'Tipo', type: 'enum', width: 125, sortable: true, filterable: true, enumValues: eventTypes },
+    { key: 'account', label: 'Conta', type: 'text', width: 165, sortable: true, filterable: true },
+    { key: 'category', label: 'Categoria', type: 'text', width: 165, sortable: true, filterable: true },
+    { key: 'paymentMethod', label: 'Forma de pagamento', type: 'text', width: 165, sortable: true, filterable: true },
+    { key: 'competence', label: 'Competência', type: 'text', width: 135, sortable: true, filterable: true },
+    { key: 'amount', label: 'Valor absoluto (R$)', type: 'currency', width: 150, sortable: true, filterable: true },
   ], []);
 
   const refresh = useCallback(() => setReloadVersion(version => version + 1), []);
@@ -85,13 +97,24 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
   return (
     <section className="meg-launches" aria-label="Lançamentos financeiros">
       <header className="meg-launches__header">
-        <div>
+        <div className="meg-launches__heading">
           <h1>Lançamentos</h1>
-          <p>Histórico financeiro autorizado, carregado da API. A busca, os filtros e as exportações abrangem todos os registros carregados.</p>
+          <p>Visualize, filtre e gerencie suas movimentações financeiras.</p>
         </div>
         <div className="meg-launches__actions">
-          {canCreate && <button type="button" className="meg-launches__refresh" onClick={() => setShowNew(true)}>+ Novo lançamento</button>}
-          <button type="button" className="meg-launches__refresh" onClick={refresh} disabled={events === null && !error}>Atualizar consulta</button>
+          {canCreate && (
+            <button type="button" className="meg-launches__refresh meg-launches__refresh--primary" onClick={() => setShowNew(true)}>
+              <Icon name="plus" width={20} height={20}/>
+              <span>Novo lançamento</span>
+            </button>
+          )}
+          <button type="button" className="meg-launches__refresh" onClick={refresh} disabled={events === null && !error}>
+            <svg aria-hidden="true" focusable="false" width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 7v5h-5M4 17v-5h5"/>
+              <path d="M5.5 9A7.5 7.5 0 0 1 18 6l2 1M4 17l2 1a7.5 7.5 0 0 0 12.5-3"/>
+            </svg>
+            <span>Atualizar consulta</span>
+          </button>
         </div>
       </header>
 
@@ -115,17 +138,18 @@ export function LaunchesScreen({ userId, userName, canCreate = false, newLaunchT
         <>
           <p className="meg-launches__count" role="status">
             {filteredCount.toLocaleString('pt-BR')} de {records.length.toLocaleString('pt-BR')} registros no histórico completo.
-            A coluna “Valor registrado” mostra o sinal armazenado pela API, não o saldo bancário.
+            A coluna “Valor registrado” mostra o sinal armazenado pela API, não o saldo bancário. Busca, filtros e exportações abrangem os registros carregados.
           </p>
           <div className="meg-launches__grid">
             <DataGrid<EventGridRow>
               data={records}
               columns={columns}
               rowKey="id"
-              pageSize={25}
+              key={'responsive-finance-grid-' + gridPageSize}
+              pageSize={gridPageSize}
               selectable
               footerAggregates={false}
-              persistenceKey={'finance-events-' + userId}
+              persistenceKey={'finance-events-official-v4-' + gridPageSize + '-' + userId}
               exportUserName={userName}
               exportPeriod="Histórico completo autorizado"
               pdfMaxRows={Math.max(1, records.length)}
