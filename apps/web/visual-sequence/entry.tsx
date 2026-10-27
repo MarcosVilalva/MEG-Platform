@@ -88,7 +88,9 @@ function Preview() {
             {progress === 100 && <span aria-hidden="true">→</span>}
           </button>
         ) : screen === 'create-account' ? (
-          <button type="button" onClick={goToLogin}><span aria-hidden="true">←</span> Voltar ao Login</button>
+          // O cadastro já oferece Voltar ao login no rodapé fixo do painel.
+          // Não inserir segundo botão fora da viewport.
+          null
         ) : (
           <button type="button" onClick={reviewLoading}><span aria-hidden="true">←</span> Rever carregamento</button>
         )}
