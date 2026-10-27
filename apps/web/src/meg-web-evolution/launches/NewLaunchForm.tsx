@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { financeClient, type Account, type Category, type PaymentMethod, type FinancialEvent } from '../../app/finance-client';
 import { Icon } from '../components/Icon';
 import { LaunchVisualIcon, type LaunchVisualIconName } from './LaunchVisualIcon';
+import { LaunchTypePicker } from './LaunchTypePicker';
 import {
   basicLaunchInput, eligibleAccount, eligibleCategory, eligiblePaymentMethod,
   autocompleteFromHistory, parsePositiveBRL, formatLaunchDateBR, type BasicLaunchFields, type BasicLaunchType,
@@ -18,12 +19,7 @@ const FORM_STEPS = [
   { id: 'review', title: 'Revisão', icon: 'summary' },
 ] as const;
 const blankCatalog: Catalog = { accounts: [], categories: [], methods: [] };
-const types = [
-  { id: 'expense', title: 'Despesa', subtitle: 'Saídas, compras e gastos', icon: 'expense', detail: 'Pendente, sem débito', available: true },
-  { id: 'income', title: 'Receita', subtitle: 'Entradas e recebimentos', icon: 'income', detail: 'Status definido pelo servidor', available: true },
-  { id: 'transfer', title: 'Transferência', subtitle: 'Movimentação entre contas', icon: 'transfer', detail: 'Exige fluxo de duas contas', available: false },
-  { id: 'benefit', title: 'Benefício', subtitle: 'Usar ou recarregar benefício', icon: 'benefit', detail: 'Exige contrato próprio', available: false },
-] as const;
+
 // Mapeamento visual, sem interferência na classificação financeira da categoria.
 function categoryVisualIcon(name: string): LaunchVisualIconName {
   const label = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -204,7 +200,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
   };
 
   return (
-    <div className="meg-new-launch__overlay">
+    <div className={'meg-new-launch__overlay' + (stage === 'choose' ? ' is-choice-overlay' : '')}>
       <section ref={dialog} className={'meg-new-launch is-' + stage + (compact ? ' is-compact' : '')}
         data-step={compact && stage === 'form' ? formStep : undefined}
         role="dialog" aria-modal="true" aria-labelledby="meg-new-launch-title">
@@ -234,45 +230,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
         </header>
 
         {stage === 'choose' ? (
-          <div className="meg-new-launch__choose" data-testid="new-launch-types">
-            <div className="meg-new-launch__intro">
-              <span className="meg-new-launch__eyebrow">NOVO LANÇAMENTO</span>
-              <h3>Mais controle para o seu dia a dia</h3>
-              <p>Escolha o tipo de lançamento e preencha as informações no formulário Web. Todas as operações seguem as regras financeiras do MEG.</p>
-
-            </div>
-            <div className="meg-new-launch__options" aria-label="Tipos de lançamento">
-              {types.map(option => {
-                const disabled = !option.available;
-                return (
-                  <button key={option.id} type="button" disabled={disabled}
-                    aria-label={disabled ? option.title + ' indisponível' : 'Escolher ' + option.title}
-                    className={'meg-new-launch__option is-' + option.id}
-                    onClick={() => { if (option.id === 'income' || option.id === 'expense') chooseType(option.id); }}
-                  >
-                    <span className="meg-new-launch__option-icon" aria-hidden="true"><LaunchVisualIcon name={option.icon} width={39} height={39} /></span>
-                    <span className="meg-new-launch__option-copy">
-                      <strong>{option.title}</strong><small>{option.subtitle}</small>
-                      <span className="meg-new-launch__option-tags">
-                        <em>{disabled ? 'Indisponível' : option.detail}</em>
-                        {option.id === 'expense' && <em>Conta autorizada</em>}
-                        {option.id === 'income' && <em>Recebimento</em>}
-                        {option.id === 'transfer' && <em>Fluxo entre contas</em>}
-                        {option.id === 'benefit' && <em>Contrato próprio</em>}
-                      </span>
-                    </span>
-                    <span className="meg-new-launch__option-arrow" aria-hidden="true">{disabled ? <LaunchVisualIcon name="lock" width={19} height={19}/> : <Icon name="chevronRight" width={20} height={20}/>} </span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="meg-new-launch__choice-foot" aria-label="Características do formulário">
-              <span><Icon name="panelLeftOpen" width={21}/><strong>Layout adaptativo</strong><small>Organização em qualquer tela</small></span>
-              <span><Icon name="list" width={21}/><strong>Leitura clara</strong><small>Dados e rótulos identificados</small></span>
-              <span><Icon name="card" width={21}/><strong>Regras preservadas</strong><small>Autoridade financeira central</small></span>
-              <span><Icon name="chevronRight" width={21}/><strong>Escolha um tipo</strong><small>Para continuar com segurança</small></span>
-            </div>
-          </div>
+          <LaunchTypePicker onChoose={chooseType}/>
         ) : (
           <>
             {fetching ? <p className="meg-new-launch__message" role="status">Carregando seus cadastros autorizados...</p> :
