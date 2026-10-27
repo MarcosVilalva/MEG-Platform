@@ -35,7 +35,8 @@ function Preview() {
   return (
     <div className="meg-sequence-preview"
       data-preview-screen={loading ? 'carregamento' : 'login'}
-      data-preview-mode="static-only">
+      data-preview-mode="static-only"
+      data-preview-autoadvance={autoAdvance ? 'true' : 'false'}>
       {loading ? (
         <LoadingScreen preview progress={0} onNavigateLogin={goToLogin} />
       ) : (
