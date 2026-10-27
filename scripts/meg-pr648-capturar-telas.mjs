@@ -168,6 +168,28 @@ async function capture(browser, width, height, password, dir, checks) {
     await page.locator('.meg-launches__actions .meg-launches__refresh--primary').click();
     await page.locator('.meg-new-launch.is-choose').waitFor({ state: 'visible' });
     await page.locator('.meg-choice__options .meg-choice__option').first().waitFor({ state: 'visible' });
+    // Validação de assets da composição híbrida: quatro imagens de cards e
+    // paisagem de hero precisam ter URL local e decodificar no navegador.
+    // Nenhum arquivo externo nem imagem simulando os botões é permitido.
+    const artwork = await page.evaluate(async () => {
+      const nodes = [
+        document.querySelector('.meg-choice__hero-art'),
+        ...document.querySelectorAll('.meg-choice__option-art'),
+      ].filter(Boolean);
+      return Promise.all(nodes.map(async (node) => {
+        const style = getComputedStyle(node);
+        const match = style.backgroundImage.match(/url\\(["']?(.+?)["']?\\)/);
+        if (!match) return { ok: false, background: style.backgroundImage };
+        const asset = new Image();
+        return new Promise((resolve) => {
+          asset.onload = () => resolve({ ok: asset.naturalWidth > 0, width: asset.naturalWidth });
+          asset.onerror = () => resolve({ ok: false, url: match[1] });
+          asset.src = match[1];
+        });
+      }));
+    });
+    assert(artwork.length === 5 && artwork.every(asset => asset.ok),
+      'Imagens ilustrativas não carregadas: ' + JSON.stringify(artwork));
     await evidence(page, dir, '02-seletor', width, height, checks);
     const pickerCheck = checks[checks.length - 1];
     assert(pickerCheck.dialogVerticalOverflowPx <= 2,
