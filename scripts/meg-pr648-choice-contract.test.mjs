@@ -37,7 +37,7 @@ for (const img of ['hero','expense','income','transfer','benefit']) {
   assert.match(css, new RegExp('meg-assets/' + img + '\\.webp'),
     'Imagem WebP ausente do layout: ' + img);
 }
-assert.match(installer, /MEG_PR648_IMAGENS_REAIS\.zip/);
+assert.match(installer, /MEG_PR648_ARTES_FIEIS\.zip/);
 assert.match(css, /\.meg-new-launch\.is-choose[\s\S]*?overflow:\s*hidden/);
 assert.match(css, /\.meg-choice__options[\s\S]*?grid-template-rows:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
 assert.match(css, /@media \(max-width: 639px\)/);
