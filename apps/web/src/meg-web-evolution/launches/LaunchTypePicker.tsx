@@ -40,17 +40,19 @@ const features = [
   ['Responsivo para Web', 'Mais espaço e organização.'],
 ] as const;
 
-export function LaunchTypePicker({ onChoose }: { onChoose: (type: EnabledLaunchType) => void }) {
+export function LaunchTypePicker({
+  onChoose, onBack,
+}: { onChoose: (type: EnabledLaunchType) => void; onBack: () => void }) {
   return (
     <div className="meg-choice meg-choice--photo" data-testid="new-launch-types">
       <div className="meg-choice__body">
         <div className="meg-choice__hero">
           <span className="meg-choice__hero-photo" aria-hidden="true"/>
           <div className="meg-choice__hero-copy">
-            <span className="meg-choice__eyebrow">NOVO LANÇAMENTO</span>
-            <h3>Mais controle para o seu dia a dia</h3>
+            <h3>Mais <em>controle</em> para o seu <em>dia a dia</em></h3>
             <p>Escolha o tipo de lançamento e preencha as informações no formulário inteligente.
-              A versão Web oferece mais espaço, organização e agilidade.</p>
+              O layout da versão Web se adapta automaticamente à largura da sua tela,
+              oferecendo mais espaço, organização e agilidade.</p>
           </div>
         </div>
         <div className="meg-choice__options" role="group" aria-label="Tipos de lançamento">
@@ -91,10 +93,10 @@ export function LaunchTypePicker({ onChoose }: { onChoose: (type: EnabledLaunchT
             <span className="meg-choice__feature-copy"><strong>{title}</strong><small>{description}</small></span>
           </div>
         ))}
-        <div className="meg-choice__feature meg-choice__feature--last">
-          <span className="meg-choice__feature-icon" aria-hidden="true">→</span>
-          <span className="meg-choice__feature-copy"><strong>Escolha uma opção</strong><small>Selecione para continuar.</small></span>
-        </div>
+        <button type="button" className="meg-choice__back-action" onClick={onBack}>
+          <span aria-hidden="true" className="meg-choice__back-arrow">✓</span>
+          Voltar
+        </button>
       </footer>
     </div>
   );
