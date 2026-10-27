@@ -8,6 +8,7 @@ import {
   autocompleteFromHistory, parsePositiveBRL, formatLaunchDateBR, type BasicLaunchFields, type BasicLaunchType,
 } from './new-launch';
 import './new-launch.css';
+import './launch-type-picker.css';
 
 type Props = { onClose: () => void; onSaved: (event: FinancialEvent) => void; history: FinancialEvent[] };
 type Catalog = { accounts: Account[]; categories: Category[]; methods: PaymentMethod[] };
