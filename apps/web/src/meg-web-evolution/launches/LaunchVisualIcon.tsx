@@ -10,7 +10,8 @@ export type LaunchVisualIconName =
   | 'description' | 'category' | 'account' | 'payment'
   | 'date' | 'amount' | 'status' | 'installments' | 'notes' | 'summary'
   | 'check' | 'close' | 'lock'
-  | 'food' | 'home' | 'transport' | 'health' | 'shopping' | 'spark' | 'arrow';
+  | 'food' | 'home' | 'transport' | 'health' | 'shopping' | 'spark' | 'arrow'
+  | 'monitor' | 'typography' | 'layout';
 
 const symbols: Record<LaunchVisualIconName, ReactNode> = {
   expense: <><path d="M9 5.5h14l5 5v25l-4 3-4-3-4 3-4-3-4 3V7a1.5 1.5 0 0 1 1-1.5Z"/><path d="M23 5.5v6h6M13 16h11M13 22h11M13 28h7"/><path d="M32 20v11m-4-4 4 4 4-4"/></>,
@@ -37,6 +38,9 @@ const symbols: Record<LaunchVisualIconName, ReactNode> = {
   shopping: <><path d="M9 16h30l3 27H6l3-27ZM17 19V13a7 7 0 0 1 14 0v6"/></>,
   spark: <><path d="m24 2 5 16 16 6-16 5-5 17-5-17-16-5 16-6 5-16Z"/></>,
   arrow: <><path d="M7 24h34m-13-13 13 13-13 13"/></>,
+  monitor: <><rect x="4" y="7" width="40" height="28" rx="3"/><path d="M24 35v7M15 42h18"/></>,
+  typography: <><path d="M4 37 17 9l13 28M8 29h18M32 18h12M38 18v20"/></>,
+  layout: <><rect x="5" y="6" width="38" height="36" rx="4"/><path d="M5 16h38M17 16v26M11 11h1M18 11h1"/></>,
 };
 
 export function LaunchVisualIcon({
