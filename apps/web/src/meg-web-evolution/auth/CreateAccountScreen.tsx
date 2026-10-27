@@ -109,7 +109,10 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated, previewO
           <div className="meg-login-input-block"><label htmlFor={`${formId}-confirm`}>Confirmar senha</label><div className="meg-login-input-wrap"><input id={`${formId}-confirm`} type="password" name="confirmPassword" ref={element => { fields.current.confirmPassword = element; }} aria-invalid={errorField === 'confirmPassword'} aria-describedby={errorField === 'confirmPassword' ? errorId : undefined} autoComplete={previewOnly ? 'off' : 'new-password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita sua senha" disabled={status === 'submitting'} required /></div></div>
           <p className="meg-auth-note">O acesso depende de aprovação. Nenhum dado financeiro é criado nesta tela.</p>
           </div>
-          <p id={errorId} className="meg-auth-error" role={error ? 'alert' : 'status'} aria-live="polite">{error}</p>
+          <p id={errorId}
+            className={`meg-auth-error${previewOnly && error.startsWith('Prévia visual:') ? ' is-preview-ok' : ''}`}
+            role={error && !(previewOnly && error.startsWith('Prévia visual:')) ? 'alert' : 'status'}
+            aria-live="polite">{error}</p>
           <button type="submit" className="meg-login-submit meg-auth-submit" disabled={status === 'submitting'} aria-busy={status === 'submitting'}>{status === 'submitting' ? 'Enviando solicitação...' : 'Continuar'}</button>
         </form>
       )}
