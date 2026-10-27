@@ -1,13 +1,31 @@
 * { box-sizing: border-box; }
-html, body, #root { margin: 0; width: 100%; min-height: 100%; overflow-x: hidden; }
+html, body, #root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: clip;
+}
 body { color: #f4fffd; background: #001116; }
-.meg-sequence-preview { width: 100%; height: 100dvh; overflow: hidden; }
+.meg-sequence-preview { width: 100%; min-width: 0; }
+.meg-sequence-preview[data-preview-screen="carregamento"] {
+  height: 100dvh;
+  overflow: hidden;
+}
+.meg-sequence-preview[data-preview-screen="login"] {
+  min-height: 100dvh;
+  height: auto;
+  overflow: visible;
+}
 .meg-sequence-preview__notice {
-  position: fixed; z-index: 3; right: .5rem; bottom: .3rem;
+  position: fixed;
+  z-index: 3;
+  right: max(.45rem, env(safe-area-inset-right));
+  bottom: max(.3rem, env(safe-area-inset-bottom));
   max-width: calc(100vw - 1rem);
   padding: .18rem .45rem;
-  color: #94c5c3;
-  background: rgba(0, 19, 25, .82);
+  color: #a5dddb;
+  background: rgba(0, 19, 25, .92);
+  border: 1px solid rgba(20, 227, 200, .17);
   border-radius: .35rem;
   font: 500 .65rem/1.3 ui-sans-serif, system-ui, sans-serif;
   pointer-events: none;
