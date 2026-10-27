@@ -60,7 +60,10 @@ export function LoadingScreen({
       <div className="meg-loading-background" aria-hidden="true" />
       <section className="meg-loading-composition" aria-labelledby="meg-loading-title">
         <img className="meg-loading-brand" src={artwork + 'logo.webp'} alt="MEG Finanças" />
-        <img className="meg-loading-illustration" src={artwork + 'hologram.webp'} alt="" aria-hidden="true" />
+        <picture className="meg-loading-scene" aria-hidden="true">
+          <source media="(max-width: 639px)" srcSet={artwork + 'scene-mobile.webp'} />
+          <img className="meg-loading-illustration" src={artwork + 'scene-desktop.webp'} alt="" />
+        </picture>
         <div className="meg-loading-progress">
           <div className="meg-loading-track" role="progressbar"
             aria-label="Carregamento de dados"
