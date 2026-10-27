@@ -231,7 +231,7 @@ export function NewLaunchForm({ onClose, onSaved, history }: Props) {
         </header>
 
         {stage === 'choose' ? (
-          <LaunchTypePicker onChoose={chooseType}/>
+          <LaunchTypePicker onChoose={chooseType} onBack={onClose}/>
         ) : (
           <>
             {fetching ? <p className="meg-new-launch__message" role="status">Carregando seus cadastros autorizados...</p> :
