@@ -181,7 +181,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
             <button className="meg-home-privacy" type="button" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(x=>!x)}><Icon name={balanceHidden?'eyeOff':'eye'} size={19}/></button>
           </div>
           <strong className="meg-home-hero-balance">{showMoney(mainBalance)}</strong>
-          <p className="meg-home-hero-meta">{overviewValid?'Em contas e aplicações · '+dateText(overview.effectiveAt):'Saldo consolidado não disponível'}</p>
+          <p className="meg-home-hero-meta">{overviewValid?'Saldo monetário em '+dateText(overview.effectiveAt):'Saldo consolidado não disponível'}</p>
           <button type="button" className="meg-home-hero-details" onClick={()=>go('lancamentos')}>Ver detalhes <Icon name="arrow" size={16}/></button>
         </div>
       </section>
