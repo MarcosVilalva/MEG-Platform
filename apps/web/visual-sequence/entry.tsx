@@ -74,23 +74,19 @@ function Preview() {
           onNavigateLogin={goToLogin}
           onAuthenticated={() => setNotice('Prévia visual: nenhum cadastro foi efetuado.')} />
       ) : (
-        <LoginScreen previewOnly
+        <LoginScreen previewOnly onReviewLoading={reviewLoading}
           onAuthenticated={() => setNotice('Prévia visual: autenticação não executada.')}
           onNavigate={destination => {
             if (destination === 'create-account') goToRegister();
             else setNotice('Recuperação de Senha será avaliada na etapa correspondente.');
           }} />
       )}
-      {screen !== 'create-account' && (
+      {loading && (
         <nav className="meg-sequence-preview__navigation" aria-label="Navegação da prévia visual">
-          {loading ? (
-            <button type="button" onClick={goToLogin} disabled={progress < 100}>
-              {progress === 100 ? 'Continuar para o Login' : `Carregando... ${progress}%`}
-              {progress === 100 && <span aria-hidden="true">→</span>}
-            </button>
-          ) : (
-            <button type="button" onClick={reviewLoading}><span aria-hidden="true">←</span> Rever carregamento</button>
-          )}
+          <button type="button" onClick={goToLogin} disabled={progress < 100}>
+            {progress === 100 ? 'Continuar para o Login' : `Carregando... ${progress}%`}
+            {progress === 100 && <span aria-hidden="true">→</span>}
+          </button>
         </nav>
       )}
       <span className={'meg-sequence-preview__notice' + (notice ? ' is-alert' : '')} role="status" aria-live="polite">
