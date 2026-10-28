@@ -160,8 +160,8 @@
 @media(max-width:639px){
  .meg-home .balance{padding:.75rem}
  .meg-home-wallet-photo{width:56%;opacity:.87}
- .meg-home-hero-copy{width:77%;gap:.45rem}
- .meg-home-hero-balance{font-size:clamp(1.85rem,7.7vw,2.6rem)}
+ .meg-home-hero-copy{width:100%;gap:.45rem}
+ .meg-home-hero-balance{font-size:clamp(1.96rem,7.7vw,2.6rem)}
  .meg-home .meg-home-kpi{padding:.7rem;grid-template-columns:1fr;gap:.3rem;align-content:center}
  .meg-home-kpi-icon{width:2rem;height:2rem}
  .meg-home-kpi-arrow{display:none}
