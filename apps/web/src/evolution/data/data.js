@@ -25,6 +25,7 @@ const emptyReadModels = () => ({
   cashflow: null,
   analytics: null,
   benefitSummary: null,
+  homeOverview: null,
 });
 
 export const createMegDataSource = (seed = {}) => ({
