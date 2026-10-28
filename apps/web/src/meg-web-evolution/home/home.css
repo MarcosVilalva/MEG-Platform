@@ -23,7 +23,7 @@
 .meg-home-panel-heading{display:flex;align-items:center;gap:.75rem;min-width:0}
 .meg-home-panel-heading h2{font-size:clamp(.97rem,1.1vw,1.16rem);font-weight:760;line-height:1.25;letter-spacing:-.025em;margin:0;min-width:0}
 .meg-home-heading-icon{display:grid;place-items:center;flex:0 0 2.2rem;width:2.2rem;height:2.2rem;color:#26f1d5;border-radius:.6rem;background:rgba(0,117,106,.36)}
-.meg-home-period{margin-left:auto;min-width:0;max-width:45%;padding:.43rem .65rem;border:1px solid rgba(20,227,200,.35);border-radius:.55rem;font-size:.75rem;text-align:center;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-home-period{margin-left:auto;min-width:0;max-width:45%;padding:.43rem .65rem;border:1px solid rgba(20,227,200,.35);border-radius:.55rem;font-size:.75rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meg-home-flow-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:1.25rem 0 .65rem;gap:.4rem}
 .meg-home-flow-totals>div{display:flex;align-items:center;gap:.52rem;min-width:0;padding:0 .45rem}
 .meg-home-flow-totals>div+div{border-left:1px solid rgba(20,227,200,.14)}
