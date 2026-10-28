@@ -392,3 +392,28 @@ body:has(.meg-auth-register),
   .meg-auth-register .meg-auth-mode label { padding-inline: .32rem; font-size: .78rem; }
   .meg-auth-register .meg-auth-footer { padding-top: 0; }
 }
+
+/* TELA 04 · Recuperar Senha.
+   Reutiliza a grade aprovada do cadastro sem reescrever estilos do Login.
+   Apenas campos são roláveis; cabeçalho, ação e retorno ficam visíveis.
+   Conteúdo alinhado por centro seguro, evitando corte em viewports pequenas. */
+.meg-auth-recover .meg-auth-fields {
+  align-content: safe center;
+  gap: clamp(.65rem, 1.8vh, 1rem);
+  padding-block: .55rem;
+}
+.meg-auth-recover .meg-auth-note {
+  max-width: 31rem;
+  font-size: clamp(.8rem, 1vw, .92rem);
+  line-height: 1.5;
+  color: #bed8da;
+}
+.meg-auth-recover .meg-auth-success {
+  align-content: safe center;
+  justify-items: start;
+}
+.meg-auth-recover .meg-auth-success h2 {
+  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+  color: #efffff;
+}
+.meg-auth-recover .meg-auth-success p { line-height: 1.55; }
