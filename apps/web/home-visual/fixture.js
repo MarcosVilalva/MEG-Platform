@@ -28,7 +28,11 @@ const demoDays=[
  [11,470,0],[12,900,200],[13,350,100],[14,0,540],[15,420,170],[16,0,370],[17,780,0],[18,0,200],[19,450,140],
  [20,0,280],[21,350,200],[22,780,89.90],[23,500,500],[24,210,123.45],[25,5000,0],[26,0,156.32],
  [27,440,100],[28,300,0],[29,150,200],[30,0,240],[31,220,0],
-].map(([d,income,expense])=>({date:'2026-10-'+String(d).padStart(2,'0'),income,expense,net:income-expense,realizedBalance:9000+d*85}));
+].map(([d,income,expense])=>({
+ date:'2026-10-'+String(d).padStart(2,'0'),income,expense,net:income-expense,
+ // Série exclusivamente ilustrativa da prévia; não representa saldos reais.
+ realizedBalance:[8900,9220,9050,9540,9900,9650,10220,10480,10050,10840,10330,10980,10720,10580,11300,11650,11120,11880,11420,11190,11940,12180,11640,12480,12150,12345.67,12200,12630,12410,12180,12345.67][d-1],
+}));
 
 export const homeVisualFixture=createMegDataSource({
  meta:{mode:'mock',month:'2026-10',sources:['home-approved-image-reference-fictitious']},
