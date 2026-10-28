@@ -1264,3 +1264,14 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - Android, PR #649, Login e recuperação aprovados, shell, DataGrid e regras de negócios originais preservados.
 - Render estático independente: https://meg-home-06-visual.onrender.com/home-visual.html. Gerar link com cache-busting após verificar deploy atual.
 - Pendências: aprovação visual EXPLÍCITA, integração real de navegação e seleção de período, homologação financeira com credenciais e dados reais, gate global Foundation. PR #650 permanece Draft, sem merge.
+
+## Home 06 · Correção de direção visual após rejeição expressa (28/10/2026)
+
+- Usuário REJEITOU a Home anterior como genérica e sem o padrão visual do trabalho anterior. Não registrar a Home como aprovada.
+- Referência visual vigente da Home: print oficial de 03/10/2026, com linha de saldo/fluxo, 4 KPIs, Benefícios/4 ações, 2 DataGrids. A imagem de 28/10 usada anteriormente foi apenas candidata não aprovada.
+- Camada home.css novamente reconstruída de forma integral, não como acúmulo de patches; removido cabeçalho redundante Visão geral para trazer os grids de volta à área útil.
+- HomeFinanceVisuals.tsx novo: SVGs de receita, alimentação, transporte, moradia, entretenimento, saúde, cartão, transferência, benefício etc. Os SVGs servem exclusivamente à apresentação das categorias já classificadas no catálogo. Não aplicam regras financeiras nem mudam IDs/status.
+- HomeScreen.tsx: duas tabelas preservam DataGrid original e ganharam células com SVGs, categorias coloridas e valores semânticos. Quatro atalhos em igual dimensão, como na referência. Nenhum total é calculado pela Home.
+- Benefício usa o saldo canônico separado de contas monetárias; artes WebP seguem isoladas e reaproveitam apenas o conjunto de imagens oficial atual.
+- Gate próprio Home: build API com Prisma, contrato financeiro, build Web e sete viewports; teste também verifica quatro atalhos, SVGs financeiros e badges. Validar SHA exato e Render LIVE, sem declarar gate Foundation aprovado.
+- PR #650 permanece Draft; nenhum merge, Android intocado, telas de autenticação 01-04 preservadas. Aprovação visual explícita PENDENTE.
