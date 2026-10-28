@@ -77,43 +77,6 @@ function Icon({ name, size = 22 }: { name: string; size?: number }) {
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{parts[name] || parts.file}</svg>;
 }
-function BalanceGraph({ cashflow }: { cashflow: Cashflow | null }) {
-  // Geometria exclusivamente visual de valores realizados já apurados pelo domínio.
-  const daily=(cashflow?.days??[]).filter(d=>Number.isFinite(d.realizedBalance));
-  if(daily.length<2) return <div className="meg-home-graph-label">Evolução do saldo indisponível</div>;
-  const sampleCount=Math.min(13,daily.length);
-  const sample=Array.from({length:sampleCount},(_,i)=>daily[Math.round(i*(daily.length-1)/(sampleCount-1))]);
-  const values=sample.map(d=>d.realizedBalance);
-  const min=Math.min(...values),max=Math.max(...values),range=max-min||1;
-  const points=values.map((v,i)=>({x:52+i*42,y:164-(v-min)/range*108}));
-  const smooth=points.reduce((path,p,i)=>{
-    if(i===0)return 'M '+p.x+' '+p.y;
-    const previous=points[i-1],mid=(previous.x+p.x)/2;
-    return path+' C '+mid+' '+previous.y+' '+mid+' '+p.y+' '+p.x+' '+p.y;
-  },'');
-  const bottom=226;
-  const area=smooth+' L '+points[points.length-1].x+' '+bottom+' L '+points[0].x+' '+bottom+' Z';
-  const barWidth=21;
-  return <svg className="meg-home-balance-graph" viewBox="0 0 640 248" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Evolução do saldo realizado no mês, conforme fluxo financeiro canônico">
-    <defs>
-      <linearGradient id="meg-balance-bar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#32ffe4" stopOpacity=".85"/><stop offset="1" stopColor="#037b81" stopOpacity=".46"/></linearGradient>
-      <linearGradient id="meg-balance-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#22ffe2" stopOpacity=".22"/><stop offset="1" stopColor="#15d7c6" stopOpacity="0"/></linearGradient>
-      <filter id="meg-balance-glow" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    </defs>
-    <path d={area} fill="url(#meg-balance-area)"/>
-    {points.map((p,i)=>{
-      const x=p.x-7, top=p.y+11, height=bottom-top;
-      return <g key={sample[i].date} opacity={.42+i/(points.length*2)}>
-        <rect x={x} y={top} width={barWidth} height={height} fill="url(#meg-balance-bar)" rx="1"/>
-        <path d={'M '+(x+barWidth)+' '+top+' l 9 -7 v '+height+' l -9 7 Z'} fill="#00666b" opacity=".92"/>
-        <path d={'M '+x+' '+top+' l 9 -7 h '+barWidth+' l -9 7 Z'} fill="#5ffff0" opacity=".75"/>
-      </g>;
-    })}
-    <path d={smooth} fill="none" stroke="#1af5d9" strokeWidth="9" opacity=".26" filter="url(#meg-balance-glow)"/>
-    <path d={smooth} fill="none" stroke="#a5fff4" strokeWidth="2.6" strokeLinecap="round"/>
-    <circle cx={points[points.length-1].x} cy={points[points.length-1].y} r="7" fill="#bcfff8" stroke="#13bbac" strokeWidth="3"/>
-  </svg>;
-}
 function FlowGraph({ cashflow }: { cashflow: Cashflow | null }) {
   const [selected, setSelected] = useState<number|null>(null);
   const points = cashflow?.days || [];
@@ -141,6 +104,7 @@ const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
     render:(v,row)=><HomeDescriptionCell description={String(v??'')} category={String(row.category??'')} type={String(row.kind??'')}/>},
   {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:99,
     render:(v,row)=><HomeCategoryCell category={String(v??'')} type={String(row.kind??'')}/>},
+  {key:'account',label:'Conta',type:'text',sortable:true,filterable:true,minWidth:78},
   {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:112,
     render:(v,row)=><span className={'meg-home-value '+(Number(row.signedAmount)>=0?'meg-home-positive':'meg-home-negative')}>{Number(row.signedAmount)>=0?'+ ':'− '}{amount(Number(v))}</span>},
 ];
@@ -150,6 +114,7 @@ const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
     render:(v,row)=><HomeDescriptionCell description={String(v??'')} category={String(row.category??'')}/>},
   {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:104,
     render:(v)=><HomeCategoryCell category={String(v??'')}/>},
+  {key:'account',label:'Conta',type:'text',sortable:true,filterable:true,minWidth:78},
   {key:'value',label:'Em aberto',type:'currency',sortable:true,filterable:true,minWidth:105,
     render:(v)=><span className="meg-home-value">{amount(Number(v))}</span>},
 ];
@@ -161,6 +126,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
   const overview=snapshot?.readModels.homeOverview ?? null;
   const [gridTools,setGridTools]=useState({recent:false,upcoming:false});
   const [balanceHidden,setBalanceHidden]=useState(false);
+  const [mobileView,setMobileView]=useState<'saldo'|'indicadores'|'operacoes'|'tabelas'>('saldo');
   const movementRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.transactions??[])
     .filter(t=>t.status!=='cancelled')
     .slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7)
@@ -174,7 +140,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
     .filter(p=>p.status!=='paid'&&p.status!=='cancelled'&&p.openAmount>0)
     .slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,7)
     .map(p=>({id:p.id,date:p.dueDate,description:p.description,
-      category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount})),[snapshot]);
+      category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount,account:'—'})),[snapshot]);
   const go=(destination:HomeAction)=>{
     if(onNavigate) onNavigate(destination);
     else if(!previewOnly) window.dispatchEvent(new CustomEvent('meg:request-navigation',{detail:{destination}}));
@@ -193,30 +159,33 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
   const actions=[
     {icon:'plus',name:'Novo lançamento',dest:'novo' as HomeAction,color:'teal'},
     {icon:'swap',name:'Transferência',dest:'transferencia' as HomeAction,color:'blue'},
-    {icon:'report',name:'Relatórios',dest:'relatorios' as HomeAction,color:'purple'},
-    {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'amber'},
+    {icon:'file',name:'Pagar conta',dest:'pendentes' as HomeAction,color:'purple'},
+    {icon:'report',name:'Relatórios',dest:'relatorios' as HomeAction,color:'amber'},
+    {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'slate'},
   ];
   const paidCount=overview?.paid.count;
-  return <div className="meg-home meg-home-official">
+  return <div className="meg-home meg-home-reference-02" data-mobile-view={mobileView}>
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
     
+    <nav className="meg-home-mobile-tabs" aria-label="Seções da Home">
+      {([{id:'saldo',label:'Resumo'},{id:'indicadores',label:'Contas'},{id:'operacoes',label:'Ações'},{id:'tabelas',label:'Listas'}] as const).map(item=>
+        <button type="button" key={item.id} className={mobileView===item.id?'is-active':''} aria-current={mobileView===item.id?'page':undefined} onClick={()=>setMobileView(item.id)}>{item.label}</button>
+      )}
+    </nav>
     <div className="meg-home-dash">
-      <section className="meg-home-card balance" aria-labelledby="meg-home-available-balance">
-        <img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true" decoding="async"/>
-        <div className="meg-home-hero-scene" aria-hidden="true"/>
+      <section className="meg-home-card balance" data-panel="saldo" aria-labelledby="meg-home-available-balance">
+        <img className="meg-home-wallet-photo" src="/meg-web-evolution/home/wallet-official-02.webp" alt="" aria-hidden="true" decoding="async"/>
         <div className="meg-home-hero-copy">
           <div className="meg-home-hero-heading">
-            <span className="meg-home-hero-icon"><Icon name="wallet" size={26}/></span>
             <h2 id="meg-home-available-balance">Saldo disponível</h2>
             <button className="meg-home-privacy" type="button" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(x=>!x)}><Icon name={balanceHidden?'eyeOff':'eye'} size={19}/></button>
           </div>
-          <div className="meg-home-hero-amount-line"><strong className="meg-home-hero-balance">{showMoney(mainBalance)}</strong></div>
-          <p className="meg-home-hero-meta">{overviewValid?'Saldo consolidado em '+dateText(overview.effectiveAt):'Aguardando saldo consolidado'}</p>
-          <button type="button" className="meg-home-hero-details" onClick={()=>go('lancamentos')}>Consultar movimentações <Icon name="arrow" size={16}/></button>
+          <strong className="meg-home-hero-balance">{showMoney(mainBalance)}</strong>
+          <p className="meg-home-hero-meta">{overviewValid?'Em contas e aplicações · '+dateText(overview.effectiveAt):'Saldo consolidado não disponível'}</p>
+          <button type="button" className="meg-home-hero-details" onClick={()=>go('lancamentos')}>Ver detalhes <Icon name="arrow" size={16}/></button>
         </div>
-        <div className="meg-home-hero-visual" aria-hidden="true"><BalanceGraph cashflow={flow}/></div>
       </section>
-      <section className="meg-home-card flow">
+      <section className="meg-home-card flow" data-panel="saldo">
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="flow" size={20}/></span><h2>Fluxo do mês</h2><span className="meg-home-flow-caption">{periodTitle}</span></div>
         <div className="meg-home-flow-totals">
           <div><Icon name="up" size={18}/><span>Entradas<strong>{showMoney(summary?.income)}</strong></span></div>
@@ -226,19 +195,19 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
         <FlowGraph cashflow={flow}/>
         <div className="meg-home-flow-legend"><span>Entradas</span><span>Saídas</span></div>
       </section>
-      {items.map((item)=><button type="button" key={item.id} className={'meg-home-card meg-home-kpi kpi--'+item.id} onClick={()=>go(item.dest)}>
+      {items.map((item)=><button type="button" key={item.id} data-panel="indicadores" className={'meg-home-card meg-home-kpi kpi--'+item.id} onClick={()=>go(item.dest)}>
         <span className={'meg-home-kpi-icon is-'+item.color}><Icon name={item.icon} size={24}/></span>
         <span className="meg-home-kpi-copy"><span className="meg-home-kpi-title">{item.label}</span><strong>{item.id==='paid'?(paidCount==null?'—':String(paidCount)+' contas'):showMoney(item.value)}</strong><small>{item.caption}</small></span>
         <span className="meg-home-kpi-arrow"><Icon name="arrow" size={17}/></span>
       </button>)}
-      <section className="meg-home-card benefits" aria-labelledby="meg-benefit-title">
-        <img className="meg-home-benefit-scene" src="/meg-web-evolution/home/benefit-neon.webp" alt="" aria-hidden="true"/>
+      <section className="meg-home-card benefits" data-panel="operacoes" aria-labelledby="meg-benefit-title">
+
         <div className="meg-home-benefit-body">
           <div className="meg-home-benefit-intro"><span className="meg-home-heading-icon"><Icon name="gift" size={21}/></span><div><h2 id="meg-benefit-title">Benefícios Verocard</h2><p>Seu saldo e seus benefícios em um só lugar</p></div></div>
           <div className="meg-home-benefit-finances">
             <span className="meg-home-benefit-finances-label">Saldo do benefício</span>
             <strong className="meg-home-benefit-balance">{showMoney(benefit?.balance)}</strong>
-            <small className="meg-home-benefit-reference">{benefit?'Apurado até '+periodTitle:'Sem dados disponíveis'}</small>
+
           </div>
           <div className="meg-home-benefit-monthly">
             <div><Icon name="up" size={17}/><span>Créditos do mês<strong>{showMoney(benefit?.credits)}</strong></span></div>
@@ -248,16 +217,16 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
         </div>
         <img className="meg-home-benefit-card" src="/meg-web-evolution/home/verocard-oficial-panorama.webp" alt="" aria-hidden="true"/>
       </section>
-      <section className="meg-home-card quick">
+      <section className="meg-home-card quick" data-panel="operacoes">
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="zap" size={20}/></span><h2>Ações rápidas</h2></div>
         <div className="meg-home-quick-grid">{actions.map(item=><button type="button" className={'meg-home-quick-action quick-'+item.color} key={item.name} onClick={()=>go(item.dest)}><span className="meg-home-quick-icon"><Icon name={item.icon} size={22}/></span><strong>{item.name}</strong></button>)}</div>
       </section>
-      <section className="meg-home-card recent">
+      <section className="meg-home-card recent" data-panel="tabelas">
         <SectionHeading icon="swap" title="Últimas movimentações"/>
         <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.recent} aria-label="Mostrar ou ocultar ferramentas da tabela de movimentações" onClick={()=>setGridTools(value=>({...value,recent:!value.recent}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('lancamentos')}>Ver todas <Icon name="arrow" size={14}/></button></div>
         <div className={'meg-home-grid-slot '+(gridTools.recent?'is-expanded':'')}><DataGrid data={movementRows} columns={movementColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-recent" ariaLabel="Últimas movimentações"/></div>
       </section>
-      <section className="meg-home-card upcoming">
+      <section className="meg-home-card upcoming" data-panel="tabelas">
         <SectionHeading icon="clock" title="Próximos vencimentos"/>
         <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.upcoming} aria-label="Mostrar ou ocultar ferramentas da tabela de vencimentos" onClick={()=>setGridTools(value=>({...value,upcoming:!value.upcoming}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('pendentes')}>Ver todas <Icon name="arrow" size={14}/></button></div>
         <div className={'meg-home-grid-slot '+(gridTools.upcoming?'is-expanded':'')}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due" ariaLabel="Próximos vencimentos"/></div>
