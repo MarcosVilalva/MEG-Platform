@@ -383,9 +383,11 @@ body:has(.meg-login-welcome),
 }
 .meg-login-welcome .meg-login-logo {
   flex: 0 1 auto;
-  width: clamp(10rem, 13vw, 12.5rem);
-  height: clamp(8rem, 19vh, 10.75rem);
-  max-height: 27%;
+  width: clamp(12.5rem, 18vw, 15.5rem);
+  height: clamp(10.5rem, 30vh, 13.4rem);
+  max-height: 100%;
+  max-width: 100%;
+  margin: 0;
   object-position: left center;
   filter: drop-shadow(0 0 1.2rem rgba(0,230,205,.12));
 }
@@ -549,9 +551,9 @@ body:has(.meg-login-welcome),
   }
   .meg-login-welcome .meg-login-frame { width: 100%; gap: .2rem; }
   .meg-login-welcome .meg-login-logo {
-    width: min(43vw,9rem);
-    height: clamp(3.5rem,10vh,5.5rem);
-    max-height: 11vh;
+    width: min(44vw,10.5rem);
+    height: clamp(4rem,12vh,6.5rem);
+    max-height: 13vh;
   }
   .meg-login-welcome .meg-login-panel {
     border-radius: 1.2rem;
