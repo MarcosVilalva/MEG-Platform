@@ -9,6 +9,7 @@ import './home.css';
 
 type Summary = { month: string; availableBalance: number; income: number; expense: number; projectedResult: number; realizedIncome: number; realizedExpense: number; realizedResult: number; eventCount: number; pendingCount: number; pendingAmount: number };
 type FlowDay = { date: string; income: number; expense: number; net: number; realizedBalance: number };
+type BenefitSummary = { month: string; balance: number; credits: number; used: number };
 type Cashflow = { month: string; openingBalance: number; realizedClosing: number; days: FlowDay[]; totalIncome: number; totalExpense: number };
 type Analytics = { month: string; previous?: { income: number; expense: number; result: number }; delta?: { income: number; expense: number; result: number } };
 type Movement = { id: string; date: string; description: string; type: string; status: string; amount: number; signedAmount: number; categoryId?: string | null };
@@ -17,7 +18,7 @@ type Category = { id: string; name: string };
 type Card = { id: string; name: string; statementAmount?: number; payableStatementAmount?: number };
 export type HomeSnapshot = {
   meta?: { mode?: string; month?: string };
-  readModels: { summary?: Summary | null; cashflow?: Cashflow | null; analytics?: Analytics | null };
+  readModels: { summary?: Summary | null; cashflow?: Cashflow | null; analytics?: Analytics | null; benefitSummary?: BenefitSummary | null };
   transactions: Movement[];
   payables: Payable[];
   cards: Card[];
@@ -112,7 +113,7 @@ const dueColumns: DataGridColumn<Record<string,unknown>>[]=[
   {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:105},
 ];
 function HomeView({ snapshot, previewOnly=false, onNavigate }: { snapshot:HomeSnapshot|null; previewOnly?:boolean; onNavigate?:Props['onNavigate'] }) {
-  const summary=snapshot?.readModels.summary||null, flow=snapshot?.readModels.cashflow||null;
+  const summary=snapshot?.readModels.summary||null, flow=snapshot?.readModels.cashflow||null, benefit=snapshot?.readModels.benefitSummary||null;
   const [gridTools,setGridTools]=useState({recent:false,upcoming:false});
   const [balanceHidden,setBalanceHidden]=useState(false);
   const movementRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.transactions||[]).filter(x=>x.status!=='cancelled').slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(t=>({id:t.id,date:t.date,description:t.description,category:categoryName(snapshot?.categories||[],t.categoryId),value:Math.abs(t.signedAmount),signedAmount:t.signedAmount})),[snapshot]);
@@ -131,7 +132,7 @@ function HomeView({ snapshot, previewOnly=false, onNavigate }: { snapshot:HomeSn
   return <div className="meg-home">
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Dados demonstrativos, sem conexão com suas contas</div>}
     <div className="meg-home-dash">
-      <section className="meg-home-card balance" aria-label="Saldo disponível"><img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true" decoding="async"/><div className="meg-home-hero-copy"><span className="meg-home-hero-icon"><Icon name="wallet" size={31}/></span><div><div className="meg-home-hero-title"><h1>Saldo disponível</h1><button type="button" className="meg-home-privacy" aria-label={balanceHidden?'Mostrar saldo':'Ocultar saldo'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(v=>!v)}><Icon name={balanceHidden?'eyeOff':'eye'} size={19}/></button></div><strong className="meg-home-hero-balance" aria-label={balanceHidden?'Saldo oculto':amount(summary?.availableBalance??null)}>{balanceHidden?'R$ •••••':amount(summary?.availableBalance ?? null)}</strong><p className="meg-home-hero-meta">Saldo disponível · {periodTitle}</p><button type="button" className="meg-home-hero-cta" onClick={()=>go('lancamentos')}>Ver movimentações <Icon name="arrow" size={15}/></button></div></div><BalanceGraph cashflow={flow}/></section>
+      <section className="meg-home-card balance" aria-label="Saldo disponível"><img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true" decoding="async"/><div className="meg-home-hero-copy"><span className="meg-home-hero-icon"><Icon name="wallet" size={31}/></span><div><div className="meg-home-hero-title"><h1>Saldo disponível</h1><button type="button" className="meg-home-privacy" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(v=>!v)}><Icon name={balanceHidden?'eyeOff':'eye'} size={19}/></button></div><strong className="meg-home-hero-balance" aria-label={balanceHidden?'Saldo oculto':amount(summary?.availableBalance??null)}>{balanceHidden?'R$ •••••':amount(summary?.availableBalance ?? null)}</strong><p className="meg-home-hero-meta">Saldo disponível · {periodTitle}</p><button type="button" className="meg-home-hero-cta" onClick={()=>go('lancamentos')}>Ver movimentações <Icon name="arrow" size={15}/></button></div></div><BalanceGraph cashflow={flow}/></section>
       <section className="meg-home-card flow"><SectionHeading icon="flow" title="Fluxo do mês"><span className="meg-home-period">{periodTitle}</span></SectionHeading><div className="meg-home-flow-totals"><div><Icon name="up"/><span>Entradas<strong>{amount(summary?.income)}</strong></span></div><div><Icon name="down"/><span>Saídas<strong>{amount(summary?.expense)}</strong></span></div><div><Icon name="equal"/><span>Resultado<strong>{amount(summary?.projectedResult)}</strong></span></div></div><FlowGraph cashflow={flow}/></section>
       {kpis.map(k=><button key={k.key} type="button" className={'meg-home-card meg-home-kpi kpi--'+k.key} onClick={()=>go(k.dest)}><span className="meg-home-kpi-icon"><Icon name={k.icon} size={26}/></span><span className="meg-home-kpi-copy"><span className="meg-home-kpi-title">{k.label}</span><strong>{amount(k.number)}</strong><small>{k.caption}</small></span><span className="meg-home-kpi-arrow"><Icon name="arrow"/></span></button>)}
       <section className="meg-home-card benefits" aria-labelledby="meg-benefits-title">
@@ -141,10 +142,17 @@ function HomeView({ snapshot, previewOnly=false, onNavigate }: { snapshot:HomeSn
             <span className="meg-home-heading-icon"><Icon name="gift"/></span>
             <div><h2 id="meg-benefits-title">Benefícios Verocard</h2><p>Seus benefícios em um só lugar.</p></div>
           </div>
-          <button className="meg-home-benefit-cta" type="button" onClick={()=>go('beneficios')}>Acessar benefícios <Icon name="arrow" size={15}/></button>
-          <div className="meg-home-benefit-categories" aria-label="Categorias de estabelecimentos">
-            {[{icon:'cart',label:'Supermercados'},{icon:'fuel',label:'Postos'},{icon:'restaurant',label:'Restaurantes'},{icon:'medicine',label:'Farmácias'}].map(x=><span key={x.label}><Icon name={x.icon} size={16}/>{x.label}</span>)}
+
+          <div className="meg-home-benefit-finances" aria-label="Resumo financeiro dos benefícios">
+            <span className="meg-home-benefit-finances-label">Saldo de benefícios</span>
+            <strong className="meg-home-benefit-balance">{balanceHidden?'R$ •••••':benefit&&Number.isFinite(benefit.balance)?amount(benefit.balance):previewOnly?'R$ •••••':'Indisponível'}</strong>
+            <small className="meg-home-benefit-reference">Apurado até {periodTitle}{!benefit&&previewOnly?' · Sem dados reais na prévia':''}</small>
+            <div className="meg-home-benefit-monthly" aria-label="Movimentação do benefício no mês">
+              <span>Créditos <b>{balanceHidden?'••••':amount(benefit?.credits)}</b></span>
+              <span>Utilizado <b>{balanceHidden?'••••':amount(benefit?.used)}</b></span>
+            </div>
           </div>
+          <button className="meg-home-benefit-cta" type="button" onClick={()=>go('beneficios')}>Acessar benefícios <Icon name="arrow" size={15}/></button>
         </div>
         <img className="meg-home-benefit-card" src="/meg-web-evolution/home/verocard-oficial-panorama.webp" alt="" aria-hidden="true" decoding="async"/>
       </section>
@@ -163,17 +171,18 @@ export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate}:Prop
     const month=currentMonth();
     setLoading(true);setError(null);
     try{
-      const [summary,cashflow,analytics,events,payables,cards,categories]=await Promise.all([
+      const [summary,cashflow,analytics,benefitSummary,events,payables,cards,categories]=await Promise.all([
         authenticatedRequest<Summary>('/finance/summary?month='+month,{cache:'no-store'}),
         authenticatedRequest<Cashflow>('/finance/cashflow?month='+month,{cache:'no-store'}),
         authenticatedRequest<Analytics>('/finance/analytics?month='+month,{cache:'no-store'}),
+        authenticatedRequest<BenefitSummary>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/payables?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
       ]);
       const source=composeMegApiSnapshot([
-        fromCanonicalReadModels({summary,cashflow,analytics}),
+        fromCanonicalReadModels({summary,cashflow,analytics,benefitSummary}),
         fromFinancialEvents(events),
         fromPayables(payables),
         fromCards(cards),
