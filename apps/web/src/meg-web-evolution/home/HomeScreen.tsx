@@ -7,22 +7,24 @@ import { DataGrid } from '../datagrid/DataGrid';
 import type { DataGridColumn } from '../datagrid/types';
 import './home.css';
 
+type HomeOverview = { month: string; effectiveAt: string; available: number; payables: { openAmount: number; count: number }; cards: { openAmount: number; count: number }; paid: { count: number } };
 type Summary = { month: string; availableBalance: number; income: number; expense: number; projectedResult: number; realizedIncome: number; realizedExpense: number; realizedResult: number; eventCount: number; pendingCount: number; pendingAmount: number };
 type FlowDay = { date: string; income: number; expense: number; net: number; realizedBalance: number };
 type BenefitSummary = { month: string; balance: number; credits: number; used: number };
 type Cashflow = { month: string; openingBalance: number; realizedClosing: number; days: FlowDay[]; totalIncome: number; totalExpense: number };
 type Analytics = { month: string; previous?: { income: number; expense: number; result: number }; delta?: { income: number; expense: number; result: number } };
-type Movement = { id: string; date: string; description: string; type: string; status: string; amount: number; signedAmount: number; categoryId?: string | null };
+type Movement = { id: string; date: string; description: string; type: string; status: string; amount: number; signedAmount: number; categoryId?: string | null; accountId?: string | null };
 type Payable = { id: string; description: string; dueDate: string; totalAmount: number; openAmount: number; status: string; categoryId?: string | null };
 type Category = { id: string; name: string };
 type Card = { id: string; name: string; statementAmount?: number; payableStatementAmount?: number };
 export type HomeSnapshot = {
   meta?: { mode?: string; month?: string };
-  readModels: { summary?: Summary | null; cashflow?: Cashflow | null; analytics?: Analytics | null; benefitSummary?: BenefitSummary | null };
+  readModels: { summary?: Summary | null; cashflow?: Cashflow | null; analytics?: Analytics | null; benefitSummary?: BenefitSummary | null; homeOverview?: HomeOverview | null };
   transactions: Movement[];
   payables: Payable[];
   cards: Card[];
   categories: Category[];
+  accounts?: {id:string; name:string}[];
   /** Apenas para demonstração visual. Não é um read model financeiro. */
   previewMetrics?: { pay: number; invoice: number; paid: number; payCount: number; invoiceCount: number; paidCount: number };
 };
@@ -32,9 +34,13 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const amount = (value: number | null | undefined) => Number.isFinite(value) ? money.format(value as number) : '—';
+function saoPauloToday() {
+  const parts = new Intl.DateTimeFormat('en-US', {timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const part = (name:string) => parts.find(item=>item.type===name)?.value || '00';
+  return part('year')+'-'+part('month')+'-'+part('day');
+}
 function currentMonth() {
-  const now = new Date();
-  return String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  return saoPauloToday().slice(0, 7);
 }
 function dateText(value?: string) {
   if (!value || !/^\d{4}-\d{2}-\d{2}/.test(value)) return '—';
@@ -101,64 +107,122 @@ function SectionHeading({icon,title,children}:{icon:string;title:string;children
   return <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name={icon}/></span><h2>{title}</h2>{children}</div>;
 }
 const movementColumns: DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Data',type:'date',sortable:true,filterable:true,minWidth:92},
-  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:145},
-  {key:'category',label:'Categoria',type:'enum',sortable:true,filterable:true,minWidth:115},
-  {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:105,render:(v,row)=><span className={(Number(row.signedAmount)>=0?'meg-home-positive':'meg-home-negative')}>{amount(Number(v))}</span>},
+  {key:'date',label:'Data',type:'date',sortable:true,filterable:true,minWidth:95},
+  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:152},
+  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:114},
+  {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:108,render:(v,row)=><span className={Number(row.signedAmount)>=0?'meg-home-positive':'meg-home-negative'}>{Number(row.signedAmount)>=0?'+ ':'− '}{amount(Number(v))}</span>},
+  {key:'account',label:'Conta',type:'text',sortable:true,filterable:true,minWidth:90},
 ];
 const dueColumns: DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',sortable:true,filterable:true,minWidth:105},
-  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:155},
-  {key:'category',label:'Categoria',type:'enum',sortable:true,filterable:true,minWidth:115},
-  {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:105},
+  {key:'date',label:'Vencimento',type:'date',sortable:true,filterable:true,minWidth:103},
+  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:152},
+  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:112},
+  {key:'value',label:'Em aberto',type:'currency',sortable:true,filterable:true,minWidth:113},
 ];
-function HomeView({ snapshot, previewOnly=false, onNavigate }: { snapshot:HomeSnapshot|null; previewOnly?:boolean; onNavigate?:Props['onNavigate'] }) {
-  const summary=snapshot?.readModels.summary||null, flow=snapshot?.readModels.cashflow||null, benefit=snapshot?.readModels.benefitSummary||null;
+function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot|null;previewOnly?:boolean;onNavigate?:Props['onNavigate']}) {
+  const summary=snapshot?.readModels.summary ?? null;
+  const flow=snapshot?.readModels.cashflow ?? null;
+  const benefit=snapshot?.readModels.benefitSummary ?? null;
+  const overview=snapshot?.readModels.homeOverview ?? null;
   const [gridTools,setGridTools]=useState({recent:false,upcoming:false});
   const [balanceHidden,setBalanceHidden]=useState(false);
-  const movementRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.transactions||[]).filter(x=>x.status!=='cancelled').slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(t=>({id:t.id,date:t.date,description:t.description,category:categoryName(snapshot?.categories||[],t.categoryId),value:Math.abs(t.signedAmount),signedAmount:t.signedAmount})),[snapshot]);
-  const dueRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.payables||[]).filter(p=>p.status!=='paid'&&p.status!=='cancelled').slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,8).map(p=>({id:p.id,date:p.dueDate,description:p.description,category:categoryName(snapshot?.categories||[],p.categoryId),value:p.openAmount})),[snapshot]);
-  const go=(destination:HomeAction)=>{if(onNavigate) onNavigate(destination);else if(!previewOnly) window.dispatchEvent(new CustomEvent('meg:request-navigation',{detail:{destination}}));};
-  const period=summary?.month||flow?.month||currentMonth();
-  const periodTitle=monthName.format(new Date(period+'-01T12:00:00Z')).replace(/^./,letter=>letter.toLocaleUpperCase('pt-BR'));
-  const sample=previewOnly?snapshot?.previewMetrics:null;
-  const kpis=[
-    {key:'pay',icon:'file',label:'Contas a pagar',number:sample?.pay??null,caption:sample?sample.payCount+' contas em aberto':'Consultar contas em aberto',dest:'pendentes' as HomeAction},
-    {key:'invoice',icon:'card',label:'Faturas de cartões',number:sample?.invoice??null,caption:sample?sample.invoiceCount+' faturas em aberto':'Consultar faturas',dest:'cartoes' as HomeAction},
-    {key:'pending',icon:'clock',label:'Outras pendências',number:summary?.pendingAmount,caption:(summary?.pendingCount??0)+' itens pendentes',dest:'pendentes' as HomeAction},
-    {key:'paid',icon:'check',label:'Contas pagas',number:sample?.paid??null,caption:sample?sample.paidCount+' contas neste período':'Consultar pagamentos',dest:'pendentes' as HomeAction},
+  const movementRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.transactions??[])
+    .filter(t=>t.status!=='cancelled')
+    .slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7)
+    .map(t=>({
+      id:t.id,date:t.date,description:t.description,
+      category:categoryName(snapshot?.categories??[],t.categoryId),
+      value:Math.abs(t.signedAmount),signedAmount:t.signedAmount,
+      account:snapshot?.accounts?.find(a=>a.id===t.accountId)?.name ?? '—',
+    })),[snapshot]);
+  const dueRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.payables??[])
+    .filter(p=>p.status!=='paid'&&p.status!=='cancelled'&&p.openAmount>0)
+    .slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,7)
+    .map(p=>({id:p.id,date:p.dueDate,description:p.description,
+      category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount})),[snapshot]);
+  const go=(destination:HomeAction)=>{
+    if(onNavigate) onNavigate(destination);
+    else if(!previewOnly) window.dispatchEvent(new CustomEvent('meg:request-navigation',{detail:{destination}}));
+  };
+  const month=summary?.month||flow?.month||currentMonth();
+  const periodTitle=monthName.format(new Date(month+'-01T12:00:00Z')).replace(/^./,c=>c.toLocaleUpperCase('pt-BR'));
+  const overviewValid=overview&&Number.isFinite(overview.available);
+  const mainBalance=overviewValid?overview.available:null;
+  const showMoney=(value:number|null|undefined)=>balanceHidden?'R$ •••••':amount(value);
+  const items=[
+    {id:'pay',icon:'file',label:'Contas a pagar',value:overview?.payables.openAmount,caption:overview?overview.payables.count+' contas em aberto':'Sem leitura disponível',color:'red',dest:'pendentes' as HomeAction},
+    {id:'card',icon:'card',label:'Faturas de cartões',value:overview?.cards.openAmount,caption:overview?overview.cards.count+' faturas em aberto':'Sem leitura disponível',color:'blue',dest:'cartoes' as HomeAction},
+    {id:'pending',icon:'clock',label:'Lançamentos pendentes',value:summary?.pendingAmount,caption:summary?summary.pendingCount+' lançamentos previstos':'Sem leitura disponível',color:'gold',dest:'pendentes' as HomeAction},
+    {id:'paid',icon:'check',label:'Contas pagas',value:null,caption:overview?overview.paid.count+' contas quitadas no período':'Sem leitura disponível',color:'green',dest:'pendentes' as HomeAction},
   ];
-  const actions=[{icon:'plus',name:'Novo lançamento',desc:'Receita, despesa ou transferência',dest:'novo' as HomeAction},{icon:'swap',name:'Transferência',desc:'Entre contas e cartões',dest:'transferencia' as HomeAction},{icon:'report',name:'Relatórios',desc:'Veja seus resultados',dest:'relatorios' as HomeAction},{icon:'settings',name:'Configurar metas',desc:'Organize seus objetivos',dest:'metas' as HomeAction}];
-  return <div className="meg-home">
-    {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Dados demonstrativos, sem conexão com suas contas</div>}
+  const actions=[
+    {icon:'plus',name:'Novo lançamento',dest:'novo' as HomeAction,color:'teal'},
+    {icon:'swap',name:'Transferência',dest:'transferencia' as HomeAction,color:'blue'},
+    {icon:'file',name:'Pagar conta',dest:'pendentes' as HomeAction,color:'purple'},
+    {icon:'report',name:'Relatórios',dest:'relatorios' as HomeAction,color:'amber'},
+    {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'slate'},
+  ];
+  const paidCount=overview?.paid.count;
+  return <div className="meg-home meg-home-panorama">
+    {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
+    <div className="meg-home-welcome"><div><h1>Visão geral</h1><p>Acompanhe suas finanças em um só lugar</p></div><span className="meg-home-welcome-period"><Icon name="clock" size={15}/>{periodTitle}</span></div>
     <div className="meg-home-dash">
-      <section className="meg-home-card balance" aria-label="Saldo disponível"><img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true" decoding="async"/><div className="meg-home-hero-copy"><span className="meg-home-hero-icon"><Icon name="wallet" size={31}/></span><div><div className="meg-home-hero-title"><h1>Saldo disponível</h1><button type="button" className="meg-home-privacy" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(v=>!v)}><Icon name={balanceHidden?'eyeOff':'eye'} size={19}/></button></div><strong className="meg-home-hero-balance" aria-label={balanceHidden?'Saldo oculto':amount(summary?.availableBalance??null)}>{balanceHidden?'R$ •••••':amount(summary?.availableBalance ?? null)}</strong><p className="meg-home-hero-meta">Saldo disponível · {periodTitle}</p><button type="button" className="meg-home-hero-cta" onClick={()=>go('lancamentos')}>Ver movimentações <Icon name="arrow" size={15}/></button></div></div><BalanceGraph cashflow={flow}/></section>
-      <section className="meg-home-card flow"><SectionHeading icon="flow" title="Fluxo do mês"><span className="meg-home-period">{periodTitle}</span></SectionHeading><div className="meg-home-flow-totals"><div><Icon name="up"/><span>Entradas<strong>{amount(summary?.income)}</strong></span></div><div><Icon name="down"/><span>Saídas<strong>{amount(summary?.expense)}</strong></span></div><div><Icon name="equal"/><span>Resultado<strong>{amount(summary?.projectedResult)}</strong></span></div></div><FlowGraph cashflow={flow}/></section>
-      {kpis.map(k=><button key={k.key} type="button" className={'meg-home-card meg-home-kpi kpi--'+k.key} onClick={()=>go(k.dest)}><span className="meg-home-kpi-icon"><Icon name={k.icon} size={26}/></span><span className="meg-home-kpi-copy"><span className="meg-home-kpi-title">{k.label}</span><strong>{amount(k.number)}</strong><small>{k.caption}</small></span><span className="meg-home-kpi-arrow"><Icon name="arrow"/></span></button>)}
-      <section className="meg-home-card benefits" aria-labelledby="meg-benefits-title">
-        <img className="meg-home-benefit-scene" src="/meg-web-evolution/home/benefit-neon.webp" alt="" aria-hidden="true" decoding="async"/>
-        <div className="meg-home-benefit-body">
-          <div className="meg-home-benefit-intro">
-            <span className="meg-home-heading-icon"><Icon name="gift"/></span>
-            <div><h2 id="meg-benefits-title">Benefícios Verocard</h2><p>Seus benefícios em um só lugar.</p></div>
-          </div>
-
-          <div className="meg-home-benefit-finances" aria-label="Resumo financeiro dos benefícios">
-            <span className="meg-home-benefit-finances-label">Saldo de benefícios</span>
-            <strong className="meg-home-benefit-balance">{balanceHidden?'R$ •••••':benefit&&Number.isFinite(benefit.balance)?amount(benefit.balance):previewOnly?'R$ •••••':'Indisponível'}</strong>
-            <small className="meg-home-benefit-reference">Apurado até {periodTitle}{!benefit&&previewOnly?' · Sem dados reais na prévia':''}</small>
-            <div className="meg-home-benefit-monthly" aria-label="Movimentação do benefício no mês">
-              <span>Créditos <b>{balanceHidden?'••••':amount(benefit?.credits)}</b></span>
-              <span>Utilizado <b>{balanceHidden?'••••':amount(benefit?.used)}</b></span>
-            </div>
-          </div>
-          <button className="meg-home-benefit-cta" type="button" onClick={()=>go('beneficios')}>Acessar benefícios <Icon name="arrow" size={15}/></button>
+      <section className="meg-home-card balance" aria-label="Saldo monetário disponível">
+        <img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true"/>
+        <div className="meg-home-hero-copy">
+          <div className="meg-home-hero-heading"><span>Saldo disponível</span><button className="meg-home-privacy" type="button" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(x=>!x)}><Icon name={balanceHidden?'eyeOff':'eye'} size={18}/></button></div>
+          <strong className="meg-home-hero-balance">{showMoney(mainBalance)}</strong>
+          <p className="meg-home-hero-meta">{overviewValid?'Saldo consolidado em '+dateText(overview.effectiveAt):'Saldo em contas e dinheiro indisponível'}</p>
+          <button type="button" className="meg-home-button meg-home-hero-cta" onClick={()=>go('lancamentos')}>Ver detalhes <Icon name="arrow" size={17}/></button>
         </div>
-        <img className="meg-home-benefit-card" src="/meg-web-evolution/home/verocard-oficial-panorama.webp" alt="" aria-hidden="true" decoding="async"/>
+        <BalanceGraph cashflow={flow}/>
       </section>
-      <section className="meg-home-card quick"><SectionHeading icon="zap" title="Ações rápidas"/><div className="meg-home-quick-grid">{actions.map((a,i)=><button key={a.name} type="button" className={'meg-home-quick-action meg-home-quick-'+i} onClick={()=>go(a.dest)}><span className="meg-home-quick-icon"><Icon name={a.icon}/></span><strong>{a.name}</strong><small>{a.desc}</small></button>)}</div></section>
-      <section className="meg-home-card recent"><SectionHeading icon="swap" title="Últimas movimentações"/><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.recent} aria-label="Mostrar ou ocultar ferramentas da tabela de movimentações" onClick={()=>setGridTools(value=>({...value,recent:!value.recent}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('lancamentos')}>Ver todas <Icon name="arrow" size={15}/></button><div className={"meg-home-grid-slot "+(gridTools.recent?"is-expanded":"")}><DataGrid data={movementRows} columns={movementColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-recent" ariaLabel="Últimas movimentações"/></div></section>
-      <section className="meg-home-card upcoming"><SectionHeading icon="clock" title="Próximos vencimentos"/><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.upcoming} aria-label="Mostrar ou ocultar ferramentas da tabela de vencimentos" onClick={()=>setGridTools(value=>({...value,upcoming:!value.upcoming}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('pendentes')}>Ver todas <Icon name="arrow" size={15}/></button><div className={"meg-home-grid-slot "+(gridTools.upcoming?"is-expanded":"")}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due" ariaLabel="Próximos vencimentos"/></div></section>
+      <section className="meg-home-card flow">
+        <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="flow" size={20}/></span><h2>Fluxo do mês</h2><span className="meg-home-flow-caption">{periodTitle}</span></div>
+        <div className="meg-home-flow-totals">
+          <div><Icon name="up" size={18}/><span>Entradas<strong>{showMoney(summary?.income)}</strong></span></div>
+          <div><Icon name="down" size={18}/><span>Saídas<strong>{showMoney(summary?.expense)}</strong></span></div>
+          <div className="meg-home-flow-result"><Icon name="equal" size={18}/><span>Resultado<strong>{showMoney(summary?.projectedResult)}</strong></span></div>
+        </div>
+        <FlowGraph cashflow={flow}/>
+        <div className="meg-home-flow-legend"><span>Entradas</span><span>Saídas</span></div>
+      </section>
+      {items.map((item)=><button type="button" key={item.id} className={'meg-home-card meg-home-kpi kpi--'+item.id} onClick={()=>go(item.dest)}>
+        <span className={'meg-home-kpi-icon is-'+item.color}><Icon name={item.icon} size={24}/></span>
+        <span className="meg-home-kpi-copy"><span className="meg-home-kpi-title">{item.label}</span><strong>{item.id==='paid'?(paidCount==null?'—':String(paidCount)+' contas'):showMoney(item.value)}</strong><small>{item.caption}</small></span>
+        <span className="meg-home-kpi-arrow"><Icon name="arrow" size={17}/></span>
+      </button>)}
+      <section className="meg-home-card benefits" aria-labelledby="meg-benefit-title">
+        <img className="meg-home-benefit-scene" src="/meg-web-evolution/home/benefit-neon.webp" alt="" aria-hidden="true"/>
+        <div className="meg-home-benefit-body">
+          <div className="meg-home-benefit-intro"><span className="meg-home-heading-icon"><Icon name="gift" size={21}/></span><div><h2 id="meg-benefit-title">Benefícios Verocard</h2><p>Seu saldo e seus benefícios em um só lugar</p></div></div>
+          <div className="meg-home-benefit-finances">
+            <span className="meg-home-benefit-finances-label">Saldo do benefício</span>
+            <strong className="meg-home-benefit-balance">{showMoney(benefit?.balance)}</strong>
+            <small className="meg-home-benefit-reference">{benefit?'Apurado até '+periodTitle:'Sem dados disponíveis'}</small>
+          </div>
+          <div className="meg-home-benefit-monthly">
+            <div><Icon name="up" size={17}/><span>Créditos do mês<strong>{showMoney(benefit?.credits)}</strong></span></div>
+            <div><Icon name="down" size={17}/><span>Utilizado no mês<strong>{showMoney(benefit?.used)}</strong></span></div>
+          </div>
+          <button type="button" className="meg-home-button meg-home-benefit-cta" onClick={()=>go('beneficios')}>Acessar benefícios <Icon name="arrow" size={17}/></button>
+        </div>
+        <img className="meg-home-benefit-card" src="/meg-web-evolution/home/verocard-oficial-panorama.webp" alt="" aria-hidden="true"/>
+      </section>
+      <section className="meg-home-card quick">
+        <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="zap" size={20}/></span><h2>Ações rápidas</h2></div>
+        <div className="meg-home-quick-grid">{actions.map(item=><button type="button" className={'meg-home-quick-action quick-'+item.color} key={item.name} onClick={()=>go(item.dest)}><span className="meg-home-quick-icon"><Icon name={item.icon} size={22}/></span><strong>{item.name}</strong></button>)}</div>
+      </section>
+      <section className="meg-home-card recent">
+        <SectionHeading icon="swap" title="Últimas movimentações"/>
+        <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.recent} aria-label="Mostrar ou ocultar ferramentas da tabela de movimentações" onClick={()=>setGridTools(value=>({...value,recent:!value.recent}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('lancamentos')}>Ver todas <Icon name="arrow" size={14}/></button></div>
+        <div className={'meg-home-grid-slot '+(gridTools.recent?'is-expanded':'')}><DataGrid data={movementRows} columns={movementColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-recent" ariaLabel="Últimas movimentações"/></div>
+      </section>
+      <section className="meg-home-card upcoming">
+        <SectionHeading icon="clock" title="Próximos vencimentos"/>
+        <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.upcoming} aria-label="Mostrar ou ocultar ferramentas da tabela de vencimentos" onClick={()=>setGridTools(value=>({...value,upcoming:!value.upcoming}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('pendentes')}>Ver todas <Icon name="arrow" size={14}/></button></div>
+        <div className={'meg-home-grid-slot '+(gridTools.upcoming?'is-expanded':'')}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due" ariaLabel="Próximos vencimentos"/></div>
+      </section>
     </div>
   </div>;
 }
@@ -171,22 +235,24 @@ export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate}:Prop
     const month=currentMonth();
     setLoading(true);setError(null);
     try{
-      const [summary,cashflow,analytics,benefitSummary,events,payables,cards,categories]=await Promise.all([
+      const [summary,cashflow,analytics,benefitSummary,homeOverview,events,payables,cards,categories,accounts]=await Promise.all([
         authenticatedRequest<Summary>('/finance/summary?month='+month,{cache:'no-store'}),
         authenticatedRequest<Cashflow>('/finance/cashflow?month='+month,{cache:'no-store'}),
         authenticatedRequest<Analytics>('/finance/analytics?month='+month,{cache:'no-store'}),
         authenticatedRequest<BenefitSummary>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
+        authenticatedRequest<HomeOverview>('/finance/home-overview?month='+month+'&date='+saoPauloToday(),{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/payables?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
+        authenticatedRequest<unknown>('/finance/accounts',{cache:'no-store'}),
       ]);
       const source=composeMegApiSnapshot([
-        fromCanonicalReadModels({summary,cashflow,analytics,benefitSummary}),
+        fromCanonicalReadModels({summary,cashflow,analytics,benefitSummary,homeOverview}),
         fromFinancialEvents(events),
         fromPayables(payables),
         fromCards(cards),
-        fromFinanceCatalogs({categories}),
+        fromFinanceCatalogs({categories,accounts}),
       ]);
       setSnapshot(source as HomeSnapshot);
     }catch{
