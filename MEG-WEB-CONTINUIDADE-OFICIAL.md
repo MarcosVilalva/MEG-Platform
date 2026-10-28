@@ -1275,3 +1275,14 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - Benefício usa o saldo canônico separado de contas monetárias; artes WebP seguem isoladas e reaproveitam apenas o conjunto de imagens oficial atual.
 - Gate próprio Home: build API com Prisma, contrato financeiro, build Web e sete viewports; teste também verifica quatro atalhos, SVGs financeiros e badges. Validar SHA exato e Render LIVE, sem declarar gate Foundation aprovado.
 - PR #650 permanece Draft; nenhum merge, Android intocado, telas de autenticação 01-04 preservadas. Aprovação visual explícita PENDENTE.
+
+## Home 06 · revisão focal do card Saldo após vídeo (28/10/2026)
+
+- Usuário avaliou a evolução como parcial e rejeitou principalmente o card Saldo disponível. Vídeo enviado nesta conversa `20-11-08.mp4` evidenciou valor pequeno, arte escura e linha quase reta disputando espaço com os textos.
+- Escopo autorizado desta rodada: APENAS card de saldo e fixture da prévia visual. PR #650 continua Draft, sem merge; Home NÃO aprovada visualmente.
+- `HomeScreen.tsx`: identidade editorial do card reconstruída (ícone carteira oficial, título alinhado, valor monetário predominante, data de apuração, privacidade e acesso às movimentações). SVG de evolução/colunas com volume 3D desenha exclusivamente valores `cashflow.days[].realizedBalance` recebidos da autoridade canônica. Nenhum saldo ou regra de negócio calculado na tela.
+- `home.css`: composição limpa do saldo, iluminação e montanhas WebP existentes, gráfico concentrado à direita, máscara de proteção para valores e CTA, responsividade em 640/1024 mantida.
+- `home-visual/fixture.js`: saldos diários demonstrativos não lineares, informados como fictícios, para inspeção do gráfico; não tocar banco ou persistência.
+- `scripts/meg-web-home-06.visual-test.mjs`: checar presença de ícone principal, traçado do gráfico e tamanho mínimo da tipografia em sete viewports.
+- Preservados: Shell, DataGrid, SVGs financeiros das linhas, demais cards, benefícios, políticas financeiras, contas, API e Android. Gate Foundation segue bloqueador independente; gates isolados e Render não substituem aceite visual.
+- Preview Render em `https://meg-home-06-visual.onrender.com/home-visual.html`, validar SHA mais recente e abrir URL com cache-busting. Nenhuma próxima tela autorizada.
