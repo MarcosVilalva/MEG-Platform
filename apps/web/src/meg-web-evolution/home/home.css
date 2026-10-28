@@ -134,3 +134,17 @@
   .meg-home-kpi-arrow{display:none}
 }
 @media (prefers-reduced-motion:reduce){.meg-home-kpi{transition:none}}
+
+
+/* Home: leitura compacta por padrão; filtros, exportação e paginação reabertos pelo botão de ferramentas. */
+.meg-home{padding-inline:1rem}
+.meg-home-grid-slot:not(.is-expanded) .meg-datagrid-toolbar,
+.meg-home-grid-slot:not(.is-expanded) .meg-datagrid-footer{display:none}
+.meg-home-grid-slot .meg-datagrid{gap:0}
+.meg-home-grid-slot .meg-datagrid__viewport{flex:0 0 auto;min-height:0;max-height:13rem;overflow-y:auto}
+.meg-home-grid-slot.is-expanded .meg-datagrid__viewport{max-height:15rem}
+.meg-home-grid-tools{position:absolute;top:.85rem;right:6.7rem;display:grid;place-items:center;min-width:2rem;min-height:2rem;padding:.4rem;border:1px solid rgba(20,227,200,.27);border-radius:.55rem;background:rgba(0,24,29,.8);color:#b6e9df;cursor:pointer}
+.meg-home-grid-tools[aria-expanded="true"]{background:rgba(20,227,200,.17);border-color:var(--meg-accent);color:#58ffeb}
+.meg-home-grid-tools:hover{border-color:var(--meg-accent)}
+.meg-home .recent .meg-home-panel-heading,.meg-home .upcoming .meg-home-panel-heading{padding-right:9.1rem}
+@media(max-width:639px){.meg-home{padding-inline:.6rem}.meg-home-grid-slot .meg-datagrid__viewport{max-height:20rem}.meg-home-grid-tools{right:6.3rem}}
