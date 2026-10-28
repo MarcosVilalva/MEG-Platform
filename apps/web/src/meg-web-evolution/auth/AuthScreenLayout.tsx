@@ -15,7 +15,7 @@ export function AuthScreenLayout({ title, description, children, variant }: Auth
     <main className={`meg-login meg-auth-page ${variant === "register" ? "meg-auth-register" : ""}`} aria-label={title}>
       <div className="meg-login-frame">
         <section className="meg-login-hero" aria-label="Conheça o MEG Finanças">
-          <img className="meg-login-logo" src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/${variant === 'register' ? 'logo-transparent.webp' : 'logo.webp'}`} alt="MEG Finanças" width="153" height="150" />
+          <img className="meg-login-logo" src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/${variant === 'register' ? 'logo-meg-oficial-recortada.webp' : 'logo.webp'}`} alt="MEG Finanças" width="153" height="150" />
           {variant === 'register' ? (
             <>
               <div className="meg-register-hero-copy">
