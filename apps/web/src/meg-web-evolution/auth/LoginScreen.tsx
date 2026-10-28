@@ -102,7 +102,7 @@ export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false, 
       <div className="meg-login-frame">
         <section className="meg-login-hero" aria-label="Bem-vindo ao MEG Finanças">
           <img className="meg-login-logo"
-            src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/logo-transparent.webp`}
+            src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/logo-meg-oficial-recortada.webp`}
             alt="MEG Finanças" width="440" height="360" />
           <div className="meg-login-welcome-copy">
             <p className="meg-login-welcome-eyebrow">MEG WEB EVOLUTION</p>
