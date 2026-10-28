@@ -17,9 +17,10 @@ body { color: #f4fffd; background: #001116; }
   overflow: hidden;
 }
 .meg-sequence-preview[data-preview-screen="login"] {
-  min-height: 100dvh;
-  height: auto;
-  overflow: visible;
+  min-height: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 .meg-sequence-preview[data-preview-screen="cadastro"] {
   width: 100%;
@@ -58,14 +59,7 @@ body { color: #f4fffd; background: #001116; }
   outline: 3px solid #9ffff3;
   outline-offset: 3px;
 }
-.meg-sequence-preview[data-preview-screen="login"] .meg-sequence-preview__navigation {
-  position: relative;
-  top: auto;
-  right: auto;
-  width: max-content;
-  max-width: calc(100vw - 1rem);
-  margin: 0 auto 1.2rem;
-}
+
 .meg-sequence-preview__notice {
   position: absolute;
   width: 1px;
