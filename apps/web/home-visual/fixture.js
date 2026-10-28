@@ -1,48 +1,43 @@
-// Fonte Única de Dados da Etapa 02, em modo exclusivamente ilustrativo.
-// Valores copiados da referência visual oficial "Tela principal.png"; NÃO são dados reais,
-// NÃO são enviados ao backend e NÃO podem ser reutilizados em produção.
-// Todos os componentes da Home recebem esta mesma fonte, sem valores no JSX.
+// PRÉVIA VISUAL DA HOME: todos os valores abaixo são exemplos fictícios,
+// inspirados somente na arte de referência aprovada. NUNCA migram ao banco/API.
+// Fonte única de dados preservada; nenhuma regra financeira é calculada no JSX.
 import { createMegDataSource } from '../src/evolution/data/data.js';
 
-const categories=[
-  {id:'cat-salario',name:'Receita'},{id:'cat-alimentacao',name:'Alimentação'},
-  {id:'cat-entretenimento',name:'Entretenimento'},{id:'cat-transporte',name:'Transporte'},
-  {id:'cat-transferencia',name:'Transferência'},{id:'cat-cartao',name:'Cartão de crédito'},
-  {id:'cat-casa',name:'Casa'},{id:'cat-saude',name:'Saúde'},
+const categories = [
+ {id:'receita',name:'Receita'}, {id:'alimentacao',name:'Alimentação'},
+ {id:'utilidades',name:'Utilidades'}, {id:'transferencias',name:'Transferência'},
+ {id:'saude',name:'Saúde'}, {id:'cartao',name:'Cartão'},
+ {id:'moradia',name:'Moradia'}, {id:'seguros',name:'Seguros'},
 ];
+const accounts=[{id:'conta-a',name:'Conta A'},{id:'conta-b',name:'Conta B'}];
 const transactions=[
- {id:'demo1',date:'2026-10-01',description:'Salário',categoryId:'cat-salario',type:'income',status:'paid',amount:4850,signedAmount:4850},
- {id:'demo2',date:'2026-10-01',description:'Supermercado Extra',categoryId:'cat-alimentacao',type:'expense',status:'paid',amount:342.50,signedAmount:-342.50},
- {id:'demo3',date:'2026-09-30',description:'Netflix',categoryId:'cat-entretenimento',type:'expense',status:'paid',amount:55.90,signedAmount:-55.90},
- {id:'demo4',date:'2026-09-30',description:'Posto Ipiranga',categoryId:'cat-transporte',type:'expense',status:'paid',amount:180,signedAmount:-180},
- {id:'demo5',date:'2026-09-29',description:'Transferência Nubank',categoryId:'cat-transferencia',type:'transfer',status:'paid',amount:500,signedAmount:-500},
+ {id:'m1',date:'2026-10-26',description:'Supermercado',categoryId:'alimentacao',accountId:'conta-a',type:'expense',status:'paid',amount:156.32,signedAmount:-156.32},
+ {id:'m2',date:'2026-10-25',description:'Recebimento',categoryId:'receita',accountId:'conta-b',type:'income',status:'paid',amount:5000,signedAmount:5000},
+ {id:'m3',date:'2026-10-24',description:'Energia elétrica',categoryId:'utilidades',accountId:'conta-a',type:'expense',status:'paid',amount:123.45,signedAmount:-123.45},
+ {id:'m4',date:'2026-10-23',description:'Transferência interna',categoryId:'transferencias',accountId:'conta-b',type:'transfer',status:'paid',amount:500,signedAmount:-500},
+ {id:'m5',date:'2026-10-22',description:'Academia',categoryId:'saude',accountId:'conta-a',type:'expense',status:'paid',amount:89.90,signedAmount:-89.90},
 ];
 const payables=[
- {id:'demo-pay1',description:'Fatura Nubank',dueDate:'2026-10-03',status:'open',totalAmount:532.18,openAmount:532.18,categoryId:'cat-cartao'},
- {id:'demo-pay2',description:'Internet Vivo',dueDate:'2026-10-05',status:'open',totalAmount:129.90,openAmount:129.90,categoryId:'cat-casa'},
- {id:'demo-pay3',description:'Energia Elétrica',dueDate:'2026-10-08',status:'open',totalAmount:214.85,openAmount:214.85,categoryId:'cat-casa'},
- {id:'demo-pay4',description:'Academia Smart Fit',dueDate:'2026-10-10',status:'open',totalAmount:99.90,openAmount:99.90,categoryId:'cat-saude'},
- {id:'demo-pay5',description:'Seguro Auto',dueDate:'2026-10-12',status:'open',totalAmount:189,openAmount:189,categoryId:'cat-transporte'},
+ {id:'p1',description:'Fatura de cartão',dueDate:'2026-10-28',status:'open',totalAmount:1245.80,openAmount:1245.80,categoryId:'cartao'},
+ {id:'p2',description:'Internet',dueDate:'2026-10-30',status:'open',totalAmount:129.90,openAmount:129.90,categoryId:'utilidades'},
+ {id:'p3',description:'Condomínio',dueDate:'2026-11-02',status:'open',totalAmount:450.00,openAmount:450.00,categoryId:'moradia'},
+ {id:'p4',description:'Seguro',dueDate:'2026-11-05',status:'open',totalAmount:189.90,openAmount:189.90,categoryId:'seguros'},
 ];
-const demoFlow=[
- [1,910,0],[2,0,650],[3,930,0],[4,0,500],[5,310,210],[6,930,0],
- [7,0,720],[8,200,280],[9,0,830],[10,650,200],[11,1000,0],
- [12,120,920],[13,320,0],[14,1400,0],[15,1245,832],[16,520,160],
- [17,350,0],[18,0,650],[19,100,0],[20,1250,0],[21,0,820],
- [22,810,300],[23,370,0],[24,0,580],[25,310,0],[26,1500,820],
- [27,0,300],[28,290,0],[29,0,690],[30,650,0],[31,650,0],
-].map(([d,income,expense])=>({date:'2026-10-'+String(d).padStart(2,'0'),income,expense,net:income-expense,realizedBalance:3000+d*18}));
-const source=createMegDataSource({
- meta:{mode:'mock',month:'2026-10',sources:['home-visual-official-reference']},
- categories,transactions,payables,
- cards:[{id:'demo-card',name:'Nubank'},{id:'demo-card2',name:'Cartão 2'}],
+const demoDays=[
+ [1,410,0],[2,0,250],[3,570,0],[4,0,170],[5,330,210],[6,700,0],[7,0,380],[8,280,0],[9,740,120],[10,0,360],
+ [11,470,0],[12,900,200],[13,350,100],[14,0,540],[15,420,170],[16,0,370],[17,780,0],[18,0,200],[19,450,140],
+ [20,0,280],[21,350,200],[22,780,89.90],[23,500,500],[24,210,123.45],[25,5000,0],[26,0,156.32],
+ [27,440,100],[28,300,0],[29,150,200],[30,0,240],[31,220,0],
+].map(([d,income,expense])=>({date:'2026-10-'+String(d).padStart(2,'0'),income,expense,net:income-expense,realizedBalance:9000+d*85}));
+
+export const homeVisualFixture=createMegDataSource({
+ meta:{mode:'mock',month:'2026-10',sources:['home-approved-image-reference-fictitious']},
+ categories,accounts,transactions,payables,
+ cards:[{id:'card-1',name:'Cartão A'},{id:'card-2',name:'Cartão B'}],
  readModels:{
-  summary:{month:'2026-10',availableBalance:3049.15,income:9205.70,expense:6887.71,projectedResult:2317.99,realizedIncome:9205.70,realizedExpense:6887.71,realizedResult:2317.99,eventCount:31,pendingCount:5,pendingAmount:532.18},
-  cashflow:{month:'2026-10',openingBalance:0,realizedClosing:3049.15,totalIncome:9205.70,totalExpense:6887.71,days:demoFlow},
-  analytics:{month:'2026-10'},
+  summary:{month:'2026-10',availableBalance:0,income:8927.45,expense:6314.20,projectedResult:2613.25,realizedIncome:8927.45,realizedExpense:6314.20,realizedResult:2613.25,eventCount:28,pendingCount:5,pendingAmount:532.18},
+  cashflow:{month:'2026-10',openingBalance:8500,realizedClosing:12345.67,totalIncome:8927.45,totalExpense:6314.20,days:demoDays},
+  benefitSummary:{month:'2026-10',balance:1890.32,credits:2150.00,used:259.68},
+  homeOverview:{month:'2026-10',effectiveAt:'2026-10-28',available:12345.67,payables:{openAmount:1245.80,count:3},cards:{openAmount:864.32,count:2},paid:{count:12}},
  },
 });
-export const homeVisualFixture={
- ...source,
- previewMetrics:{pay:1245.80,invoice:864.32,paid:4792.66,payCount:3,invoiceCount:2,paidCount:12},
-};
