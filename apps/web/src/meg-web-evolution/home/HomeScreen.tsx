@@ -242,7 +242,7 @@ export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate}:Prop
         authenticatedRequest<BenefitSummary>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
         authenticatedRequest<HomeOverview>('/finance/home-overview?month='+month+'&date='+saoPauloToday(),{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
-        authenticatedRequest<unknown>('/payables?month='+month,{cache:'no-store'}),
+        authenticatedRequest<unknown>('/payables/open',{cache:'no-store'}),
         authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/accounts',{cache:'no-store'}),
