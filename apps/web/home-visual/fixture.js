@@ -2,7 +2,7 @@
 // Valores copiados da referência visual oficial "Tela principal.png"; NÃO são dados reais,
 // NÃO são enviados ao backend e NÃO podem ser reutilizados em produção.
 // Todos os componentes da Home recebem esta mesma fonte, sem valores no JSX.
-import { createMegDataSource } from '../../src/evolution/data/data.js';
+import { createMegDataSource } from '../src/evolution/data/data.js';
 
 const categories=[
   {id:'cat-salario',name:'Receita'},{id:'cat-alimentacao',name:'Alimentação'},
