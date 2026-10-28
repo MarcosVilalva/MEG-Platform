@@ -110,6 +110,8 @@
   .meg-home-hero-copy h1{margin:.35rem 0 .9rem}
   .meg-home .flow{min-height:15rem}
   .meg-home-flow-totals>div{gap:.3rem;padding-inline:.15rem}
+  .meg-home-flow-totals{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:.6rem}
+  .meg-home-flow-totals>div:last-child{grid-column:1/-1;justify-content:center;border-top:1px solid rgba(20,227,200,.13);padding-top:.5rem}
   .meg-home-flow-totals>div svg{width:15px;height:15px;flex-shrink:0}
   .meg-home-flow-totals>div strong{font-size:.8rem}
   .meg-home-kpi{min-height:6.2rem}
