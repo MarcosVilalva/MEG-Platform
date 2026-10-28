@@ -1,0 +1,49 @@
+name: MEG Web Evolution Home 06 - Visual and Build
+
+on:
+  push:
+    branches:
+      - 'meg-web-evolution/06-home-visual-*'
+
+permissions:
+  contents: read
+
+jobs:
+  home-build-and-screenshots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm install --audit=false
+      - name: Install pinned browser test
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Compile Web
+        run: npm run build:web
+      - name: Capture visual evidence and verify no overflow
+        shell: bash
+        run: |
+          VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 >/tmp/meg-home-06-vite.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/home-visual.html >/dev/null && break
+            sleep 1
+          done
+          PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" node scripts/meg-web-home-06.visual-test.mjs
+      - name: Upload visual screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-06-visual
+          path: artifacts/home-06/
+          if-no-files-found: warn
+      - name: Vite diagnostics
+        if: failure()
+        run: tail -n 80 /tmp/meg-home-06-vite.log || true
