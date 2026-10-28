@@ -1236,3 +1236,7 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Render:** nesta rodada não houve deploy de preview público porque o workspace Render não foi selecionado/autorizado para alterações; não oferecer URL pública como se a Home estivesse hospedada.
 - **Estado de aprovação:** Home **NÃO APROVADA** visualmente, nem homologada funcionalmente. Capturas e build são evidências técnicas, não aceite humano. O aviso demonstrativo aparece somente na prévia visual e não em produção.
 - **Pendências reais:** comparação visual explícita com o print oficial; homologação de dados reais e métricas agregadas de pendências/faturas/contas pagas; navegação das ações para telas futuras, atualização real de notificações, filtro de período global, acessibilidade E2E, preview público sem cache, investigação do gate Foundation. Preservar PR #649, Android e regras financeiras; não iniciar Lançamentos antes do aceite da Home.
+
+
+## Home 06 - Render e assets (27/10/2026)
+PR #650 Draft: artes WebP incorporadas, preview independente no Render `meg-home-06-visual`. Sem acesso a dados reais. Home ainda não aprovada. Gate Foundation pendente. PR #649, Android e main preservados.
