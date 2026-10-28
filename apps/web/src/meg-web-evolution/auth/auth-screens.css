@@ -91,9 +91,10 @@ body:has(.meg-auth-register),
 }
 .meg-auth-register .meg-login-logo {
   flex: 0 1 auto;
-  width: clamp(10rem, 13vw, 12.5rem);
-  height: clamp(8rem, 19vh, 10.75rem);
-  max-height: 27%;
+  width: clamp(12.5rem, 18vw, 15.5rem);
+  height: clamp(10.5rem, 30vh, 13.4rem);
+  max-height: 100%;
+  max-width: 100%;
   object-fit: contain;
   object-position: left center;
   margin: 0;
@@ -376,9 +377,9 @@ body:has(.meg-auth-register),
   }
   .meg-auth-register .meg-login-frame { width: 100%; gap: .2rem; }
   .meg-auth-register .meg-login-logo {
-    width: min(40vw, 8.5rem);
-    height: clamp(3.6rem, 9.5vh, 5.6rem);
-    max-height: 10vh;
+    width: min(44vw, 10.5rem);
+    height: clamp(4rem, 12vh, 6.5rem);
+    max-height: 13vh;
   }
   .meg-auth-register .meg-auth-card {
     padding: .65rem .65rem .4rem;
