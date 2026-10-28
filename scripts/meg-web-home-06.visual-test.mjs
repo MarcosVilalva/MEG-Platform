@@ -29,11 +29,13 @@ try {
    assert.equal(response?.status(),200,'HTTP '+name);
    await page.locator('.meg-home .balance').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-home-kpi').count(),4,'KPIs '+name);
-   const balanceToggle=page.getByRole('button',{name:'Ocultar saldo'});
+   const balanceToggle=page.getByRole('button',{name:'Ocultar saldos'});
    await balanceToggle.click();
    assert.equal(await page.locator('.meg-home-hero-balance').innerText(),'R$ •••••');
-   await page.getByRole('button',{name:'Mostrar saldo'}).click();
-   assert.equal(await page.getByRole('button',{name:'Ocultar saldo'}).getAttribute('aria-pressed'),'false');
+   assert.equal(await page.locator('.meg-home-benefit-balance').innerText(),'R$ •••••','prévia não deve inventar saldo de benefício: '+name);
+   assert.equal(await page.locator('.meg-home-benefit-finances-label').innerText(),'Saldo de benefícios');
+   await page.getByRole('button',{name:'Mostrar saldos'}).click();
+   assert.equal(await page.getByRole('button',{name:'Ocultar saldos'}).getAttribute('aria-pressed'),'false');
    assert.equal(await page.locator('.meg-home-grid-slot').count(),2,'DataGrids '+name);
    assert.equal(await page.locator('.meg-home img').count(),3,'arte da Home '+name);
    const stats=await page.evaluate(()=>({
