@@ -1250,3 +1250,17 @@ Após o pedido `siga`, a proposta MEG Panorama foi implementada na branch da PR 
 ## Home 06 - saldo de benefícios obrigatório (28/10/2026)
 
 Usuário determinou que a Home exiba também o saldo do benefício. Alterações isoladas na PR #650 Draft: `HomeScreen.tsx` lê `GET /finance/benefit-summary?month=YYYY-MM`, incorpora `benefitSummary` à fonte única por `fromCanonicalReadModels`, apresenta saldo de benefícios, créditos e valor utilizado do mês no painel Verocard; saldo bancário permanece separado. A privacidade do ícone de olho oculta ambos os saldos. O endpoint atualmente resume todas as contas de benefício e os eventos Verocard classificados pela política financeira existente, com saldo apurado até o fim do mês consultado; não equivale a saldo por cartão nem comprova saldo bancário atual. Na prévia estática, o saldo do benefício aparece mascarado sem número inventado. A grade de estabelecimentos decorativa foi removida para acomodar os dados reais. Arquivos: `HomeScreen.tsx`, `home.css`, `scripts/meg-web-home-06.visual-test.mjs`. **Home segue NÃO aprovada visualmente**, sem merge, com pendências de homologação real do saldo, refino global da Home, layout e gate Foundation. Não alterar Android ou telas 01-04 aprovadas.
+
+## Home 06 · reconstrução visual autorizada em 28/10/2026
+
+- Usuário autorizou implementar a imagem proposta nesta conversa. A implementação NÃO representa aprovação visual final, nem autoriza merge.
+- Composição nova: grid 12 colunas (7/5, quatro cards 3/12, dois 6/12, dois 6/12); cinco atalhos simétricos; DataGrid original e Shell intactos; arte WebP separada dos dados.
+- HomeScreen.tsx e home.css reconstruídos, sem reaproveitar CSS visual anterior; mock da prévia atualizado e identificado como FICTÍCIO.
+- Fonte única data.js/api-adapter.js recebe readModels.homeOverview.
+- Rota autenticada de somente leitura GET /finance/home-overview: saldo usa monetaryBalanceAt já canônico; cartões usam listCards, contas usam listPayables. A função projectHomeMetrics apenas agrega campos de serviços de domínio em centavos e conta registros, sem mutar regras financeiras.
+- Lançamentos pendentes usam summary.pendingAmount; indicador de contas quitadas mostra quantidade, NÃO inventa valor pago. Contas quitadas referem-se a registros com vencimento no período, sem comprovar data efetiva do pagamento.
+- Saldo dos benefícios vem de GET /finance/benefit-summary, sempre SEPARADO do monetário. Vencimentos usam /payables/open, inclusive outros meses.
+- Contrato financeiro home-overview-read.contract.test.ts, build da API com geração Prisma, build Web e capturas Playwright no gate próprio.
+- Android, PR #649, Login e recuperação aprovados, shell, DataGrid e regras de negócios originais preservados.
+- Render estático independente: https://meg-home-06-visual.onrender.com/home-visual.html. Gerar link com cache-busting após verificar deploy atual.
+- Pendências: aprovação visual EXPLÍCITA, integração real de navegação e seleção de período, homologação financeira com credenciais e dados reais, gate global Foundation. PR #650 permanece Draft, sem merge.
