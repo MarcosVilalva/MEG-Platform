@@ -38,7 +38,7 @@
 .meg-home-hero-meta{margin:0 0 0 4rem;color:#9df5e4;font-size:.78rem;line-height:1.3;font-weight:690;white-space:normal}
 .meg-home-hero-details{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;min-height:2.25rem;min-width:0;margin:.36rem 0 0 4rem;padding:.37rem .72rem;border:1px solid #34ddca88;border-radius:.5rem;background:#00363bba;color:#d9fff8;font-size:.75rem;font-weight:720;cursor:pointer}
 .meg-home-hero-details:hover{border-color:#6effe4;background:#07655d}
-.meg-home-hero-visual{position:absolute;right:-2.5%;bottom:-5.2%;z-index:3;width:66%;height:90%;display:flex;align-items:flex-end;pointer-events:none;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 20%,#000);mask-image:linear-gradient(90deg,transparent,#000 20%,#000)}
+.meg-home-hero-visual{position:absolute;right:-2%;bottom:-5%;z-index:3;width:62%;height:90%;display:flex;align-items:flex-end;pointer-events:none;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 37%,#000 100%);mask-image:linear-gradient(90deg,transparent 0%,#000 37%,#000 100%)}
 .meg-home-balance-graph{position:relative;left:auto;right:auto;bottom:auto;width:100%;height:100%;filter:drop-shadow(0 0 5px #17dbc865);pointer-events:none}
 .meg-home-graph-label{position:absolute;right:1rem;bottom:1rem;max-width:13rem;color:#b3d9d6;font-size:.68rem;text-align:right}
 
@@ -190,7 +190,7 @@
  .meg-home-hero-amount-line{padding-left:.3rem;padding-top:.75rem}
  .meg-home-hero-meta{margin-left:.3rem}
  .meg-home-hero-details{margin-left:.3rem;margin-top:.12rem}
- .meg-home-hero-visual{width:98%;height:61%;bottom:-9%;right:-12%;opacity:.72;-webkit-mask-image:linear-gradient(90deg,transparent,#000 54%);mask-image:linear-gradient(90deg,transparent,#000 54%)}
+ .meg-home-hero-visual{width:98%;height:58%;bottom:-9%;right:-12%;opacity:.62;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 64%);mask-image:linear-gradient(90deg,transparent 0%,#000 64%)}
  .meg-home-hero-meta{font-size:.7rem}
  .meg-home .flow{min-height:15.5rem;padding:.78rem}
  .meg-home-flow-totals{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:.42rem;margin:.82rem 0 .52rem}
