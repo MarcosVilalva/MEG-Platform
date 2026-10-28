@@ -78,13 +78,41 @@ function Icon({ name, size = 22 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{parts[name] || parts.file}</svg>;
 }
 function BalanceGraph({ cashflow }: { cashflow: Cashflow | null }) {
-  const values = cashflow?.days?.map(item => item.realizedBalance).filter(Number.isFinite) || [];
-  if (values.length < 2) return <div className="meg-home-graph-label">Evolução disponível após sincronização</div>;
-  const min = Math.min(...values), max = Math.max(...values);
-  const spread = max - min || 1;
-  const coordinates = values.map((v,i)=>[i*100/(values.length-1),83-(v-min)*68/spread]);
-  const path = coordinates.map(([x,y],i)=>(i?'L':'M')+x.toFixed(2)+' '+y.toFixed(2)).join(' ');
-  return <svg className="meg-home-balance-graph" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Evolução do saldo realizado no mês"><path d={path} fill="none" stroke="#50ffeb" strokeWidth=".8" vectorEffect="non-scaling-stroke"/>{coordinates.map(([x,y],i)=><circle key={i} cx={x} cy={y} r=".9" fill="#89fff4" />)}</svg>;
+  // Geometria exclusivamente visual de valores realizados já apurados pelo domínio.
+  const daily=(cashflow?.days??[]).filter(d=>Number.isFinite(d.realizedBalance));
+  if(daily.length<2) return <div className="meg-home-graph-label">Evolução do saldo indisponível</div>;
+  const sampleCount=Math.min(13,daily.length);
+  const sample=Array.from({length:sampleCount},(_,i)=>daily[Math.round(i*(daily.length-1)/(sampleCount-1))]);
+  const values=sample.map(d=>d.realizedBalance);
+  const min=Math.min(...values),max=Math.max(...values),range=max-min||1;
+  const points=values.map((v,i)=>({x:52+i*42,y:164-(v-min)/range*108}));
+  const smooth=points.reduce((path,p,i)=>{
+    if(i===0)return 'M '+p.x+' '+p.y;
+    const previous=points[i-1],mid=(previous.x+p.x)/2;
+    return path+' C '+mid+' '+previous.y+' '+mid+' '+p.y+' '+p.x+' '+p.y;
+  },'');
+  const bottom=226;
+  const area=smooth+' L '+points[points.length-1].x+' '+bottom+' L '+points[0].x+' '+bottom+' Z';
+  const barWidth=21;
+  return <svg className="meg-home-balance-graph" viewBox="0 0 640 248" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Evolução do saldo realizado no mês, conforme fluxo financeiro canônico">
+    <defs>
+      <linearGradient id="meg-balance-bar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#32ffe4" stopOpacity=".85"/><stop offset="1" stopColor="#037b81" stopOpacity=".46"/></linearGradient>
+      <linearGradient id="meg-balance-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#22ffe2" stopOpacity=".22"/><stop offset="1" stopColor="#15d7c6" stopOpacity="0"/></linearGradient>
+      <filter id="meg-balance-glow" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <path d={area} fill="url(#meg-balance-area)"/>
+    {points.map((p,i)=>{
+      const x=p.x-7, top=p.y+11, height=bottom-top;
+      return <g key={sample[i].date} opacity={.42+i/(points.length*2)}>
+        <rect x={x} y={top} width={barWidth} height={height} fill="url(#meg-balance-bar)" rx="1"/>
+        <path d={'M '+(x+barWidth)+' '+top+' l 9 -7 v '+height+' l -9 7 Z'} fill="#00666b" opacity=".92"/>
+        <path d={'M '+x+' '+top+' l 9 -7 h '+barWidth+' l -9 7 Z'} fill="#5ffff0" opacity=".75"/>
+      </g>;
+    })}
+    <path d={smooth} fill="none" stroke="#1af5d9" strokeWidth="9" opacity=".26" filter="url(#meg-balance-glow)"/>
+    <path d={smooth} fill="none" stroke="#a5fff4" strokeWidth="2.6" strokeLinecap="round"/>
+    <circle cx={points[points.length-1].x} cy={points[points.length-1].y} r="7" fill="#bcfff8" stroke="#13bbac" strokeWidth="3"/>
+  </svg>;
 }
 function FlowGraph({ cashflow }: { cashflow: Cashflow | null }) {
   const [selected, setSelected] = useState<number|null>(null);
@@ -173,15 +201,20 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
     
     <div className="meg-home-dash">
-      <section className="meg-home-card balance" aria-label="Saldo monetário disponível">
-        <img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true"/>
+      <section className="meg-home-card balance" aria-labelledby="meg-home-available-balance">
+        <img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true" decoding="async"/>
+        <div className="meg-home-hero-scene" aria-hidden="true"/>
         <div className="meg-home-hero-copy">
-          <div className="meg-home-hero-heading"><span>Saldo disponível</span><button className="meg-home-privacy" type="button" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(x=>!x)}><Icon name={balanceHidden?'eyeOff':'eye'} size={18}/></button></div>
-          <strong className="meg-home-hero-balance">{showMoney(mainBalance)}</strong>
-          <p className="meg-home-hero-meta">{overviewValid?'Saldo consolidado em '+dateText(overview.effectiveAt):'Saldo em contas e dinheiro indisponível'}</p>
-          <button type="button" className="meg-home-button meg-home-hero-cta" onClick={()=>go('lancamentos')}>Ver detalhes <Icon name="arrow" size={17}/></button>
+          <div className="meg-home-hero-heading">
+            <span className="meg-home-hero-icon"><Icon name="wallet" size={26}/></span>
+            <h2 id="meg-home-available-balance">Saldo disponível</h2>
+            <button className="meg-home-privacy" type="button" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(x=>!x)}><Icon name={balanceHidden?'eyeOff':'eye'} size={19}/></button>
+          </div>
+          <div className="meg-home-hero-amount-line"><strong className="meg-home-hero-balance">{showMoney(mainBalance)}</strong></div>
+          <p className="meg-home-hero-meta">{overviewValid?'Saldo consolidado em '+dateText(overview.effectiveAt):'Aguardando saldo consolidado'}</p>
+          <button type="button" className="meg-home-hero-details" onClick={()=>go('lancamentos')}>Consultar movimentações <Icon name="arrow" size={16}/></button>
         </div>
-        <BalanceGraph cashflow={flow}/>
+        <div className="meg-home-hero-visual" aria-hidden="true"><BalanceGraph cashflow={flow}/></div>
       </section>
       <section className="meg-home-card flow">
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="flow" size={20}/></span><h2>Fluxo do mês</h2><span className="meg-home-flow-caption">{periodTitle}</span></div>
