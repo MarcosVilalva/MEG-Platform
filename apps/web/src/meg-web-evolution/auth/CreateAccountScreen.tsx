@@ -5,7 +5,12 @@ import { AuthScreenLayout } from './AuthScreenLayout';
 type AccountType = 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
 type Status = 'idle' | 'submitting' | 'pending' | 'approved';
 type FieldKey = 'name' | 'email' | 'phone' | 'password' | 'confirmPassword' | 'workspaceName';
-type Props = { onNavigateLogin: () => void; onAuthenticated: () => void };
+type Props = {
+  onNavigateLogin: () => void;
+  onAuthenticated: () => void;
+  /** Prévia pública exclusivamente visual: jamais envia dados à API. */
+  previewOnly?: boolean;
+};
 
 function formatPhone(raw: string) {
   const digits = raw.replace(/\D/g, '').slice(0, 15);
@@ -26,7 +31,7 @@ function messageForError(error: unknown) {
   return 'Não foi possível enviar o cadastro. Verifique a conexão e tente novamente.';
 }
 
-export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props) {
+export function CreateAccountScreen({ onNavigateLogin, onAuthenticated, previewOnly = false }: Props) {
   const formId = useId();
   const errorId = useId();
   const fields = useRef<Partial<Record<FieldKey, HTMLInputElement | null>>>({});
@@ -62,6 +67,13 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
     }
     setError('');
     setErrorField(null);
+    if (previewOnly) {
+      // Após validar os campos, não solicita cadastro no preview público.
+      setPassword('');
+      setConfirmPassword('');
+      setError('Prévia visual: os campos foram validados neste navegador. Nenhum cadastro foi enviado.');
+      return;
+    }
     setStatus('submitting');
     try {
       const result = await register(name.trim(), normalizedEmail, digits, password, confirmPassword, type, type === 'CREATE_WORKSPACE' ? workspaceName.trim() : undefined);
@@ -84,19 +96,23 @@ export function CreateAccountScreen({ onNavigateLogin, onAuthenticated }: Props)
       ) : (
         <form className="meg-auth-form" aria-label="Formulário de cadastro" onSubmit={submit} noValidate>
           <div className="meg-auth-fields">
+          {previewOnly && <p className="meg-register-preview-notice" role="note">Prévia visual: utilize apenas dados fictícios. Nenhuma solicitação será enviada.</p>}
           <div className="meg-auth-mode" role="group" aria-label="Tipo de cadastro">
             <label><input type="radio" name={`${formId}-type`} checked={type === 'REQUEST_ACCESS'} onChange={() => setType('REQUEST_ACCESS')} disabled={status === 'submitting'} />Solicitar acesso</label>
             <label><input type="radio" name={`${formId}-type`} checked={type === 'CREATE_WORKSPACE'} onChange={() => setType('CREATE_WORKSPACE')} disabled={status === 'submitting'} />Criar meu espaço MEG</label>
           </div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-name`}>Nome completo</label><div className="meg-login-input-wrap"><input id={`${formId}-name`} name="name" ref={element => { fields.current.name = element; }} aria-invalid={errorField === 'name'} aria-describedby={errorField === 'name' ? errorId : undefined} autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" disabled={status === 'submitting'} required /></div></div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-email`}>E-mail</label><div className="meg-login-input-wrap"><input id={`${formId}-email`} name="email" ref={element => { fields.current.email = element; }} aria-invalid={errorField === 'email'} aria-describedby={errorField === 'email' ? errorId : undefined} type="email" inputMode="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" disabled={status === 'submitting'} required /></div></div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-phone`}>Telefone</label><div className="meg-login-input-wrap"><input id={`${formId}-phone`} name="phone" ref={element => { fields.current.phone = element; }} aria-invalid={errorField === 'phone'} aria-describedby={errorField === 'phone' ? errorId : undefined} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-name`}>Nome completo</label><div className="meg-login-input-wrap"><input id={`${formId}-name`} name="name" ref={element => { fields.current.name = element; }} aria-invalid={errorField === 'name'} aria-describedby={errorField === 'name' ? errorId : undefined} autoComplete={previewOnly ? 'off' : 'name'} value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-email`}>E-mail</label><div className="meg-login-input-wrap"><input id={`${formId}-email`} name="email" ref={element => { fields.current.email = element; }} aria-invalid={errorField === 'email'} aria-describedby={errorField === 'email' ? errorId : undefined} type="email" inputMode="email" autoComplete={previewOnly ? 'off' : 'email'} value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-phone`}>Telefone</label><div className="meg-login-input-wrap"><input id={`${formId}-phone`} name="phone" ref={element => { fields.current.phone = element; }} aria-invalid={errorField === 'phone'} aria-describedby={errorField === 'phone' ? errorId : undefined} type="tel" inputMode="tel" autoComplete={previewOnly ? 'off' : 'tel'} value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" disabled={status === 'submitting'} required /></div></div>
           {type === 'CREATE_WORKSPACE' && <div className="meg-login-input-block"><label htmlFor={`${formId}-workspace`}>Nome do espaço MEG</label><div className="meg-login-input-wrap"><input id={`${formId}-workspace`} name="workspaceName" ref={element => { fields.current.workspaceName = element; }} aria-invalid={errorField === 'workspaceName'} aria-describedby={errorField === 'workspaceName' ? errorId : undefined} value={workspaceName} onChange={e => setWorkspaceName(e.target.value)} placeholder="Meu espaço" disabled={status === 'submitting'} required /></div></div>}
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-password`}>Senha</label><div className="meg-login-input-wrap"><input id={`${formId}-password`} type="password" name="password" ref={element => { fields.current.password = element; }} aria-invalid={errorField === 'password'} aria-describedby={errorField === 'password' ? errorId : undefined} autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" disabled={status === 'submitting'} required /></div></div>
-          <div className="meg-login-input-block"><label htmlFor={`${formId}-confirm`}>Confirmar senha</label><div className="meg-login-input-wrap"><input id={`${formId}-confirm`} type="password" name="confirmPassword" ref={element => { fields.current.confirmPassword = element; }} aria-invalid={errorField === 'confirmPassword'} aria-describedby={errorField === 'confirmPassword' ? errorId : undefined} autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita sua senha" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-password`}>Senha</label><div className="meg-login-input-wrap"><input id={`${formId}-password`} type="password" name="password" ref={element => { fields.current.password = element; }} aria-invalid={errorField === 'password'} aria-describedby={errorField === 'password' ? errorId : undefined} autoComplete={previewOnly ? 'off' : 'new-password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" disabled={status === 'submitting'} required /></div></div>
+          <div className="meg-login-input-block"><label htmlFor={`${formId}-confirm`}>Confirmar senha</label><div className="meg-login-input-wrap"><input id={`${formId}-confirm`} type="password" name="confirmPassword" ref={element => { fields.current.confirmPassword = element; }} aria-invalid={errorField === 'confirmPassword'} aria-describedby={errorField === 'confirmPassword' ? errorId : undefined} autoComplete={previewOnly ? 'off' : 'new-password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita sua senha" disabled={status === 'submitting'} required /></div></div>
           <p className="meg-auth-note">O acesso depende de aprovação. Nenhum dado financeiro é criado nesta tela.</p>
           </div>
-          <p id={errorId} className="meg-auth-error" role={error ? 'alert' : 'status'} aria-live="polite">{error}</p>
+          <p id={errorId}
+            className={`meg-auth-error${previewOnly && error.startsWith('Prévia visual:') ? ' is-preview-ok' : ''}`}
+            role={error && !(previewOnly && error.startsWith('Prévia visual:')) ? 'alert' : 'status'}
+            aria-live="polite">{error}</p>
           <button type="submit" className="meg-login-submit meg-auth-submit" disabled={status === 'submitting'} aria-busy={status === 'submitting'}>{status === 'submitting' ? 'Enviando solicitação...' : 'Continuar'}</button>
         </form>
       )}

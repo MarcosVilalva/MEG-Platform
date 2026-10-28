@@ -1,0 +1,101 @@
+/* Somente o preview desta sequência. Nenhuma mudança na UI de produção. */
+* { box-sizing: border-box; }
+html, body, #root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: clip;
+}
+body { color: #f4fffd; background: #001116; }
+.meg-sequence-preview {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.meg-sequence-preview[data-preview-screen="carregamento"] {
+  height: 100dvh;
+  overflow: hidden;
+}
+.meg-sequence-preview[data-preview-screen="login"] {
+  min-height: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.meg-sequence-preview[data-preview-screen="cadastro"],
+.meg-sequence-preview[data-preview-screen="recuperar-senha"] {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.meg-sequence-preview__navigation {
+  position: absolute;
+  z-index: 10;
+  top: max(.7rem, env(safe-area-inset-top));
+  right: max(.8rem, env(safe-area-inset-right));
+}
+.meg-sequence-preview__navigation button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  min-height: 44px;
+  padding: .52rem .85rem;
+  border: 1px solid rgba(20, 234, 222, .68);
+  border-radius: .7rem;
+  background: rgba(0, 27, 35, .88);
+  color: #f1fffe;
+  font: 650 .81rem/1.3 ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 0 .9rem rgba(0, 234, 210, .1);
+  cursor: pointer;
+}
+.meg-sequence-preview__navigation button:not(:disabled):hover { background: #03424b; }
+.meg-sequence-preview__navigation button:disabled {
+  cursor: progress;
+  opacity: .62;
+}
+.meg-sequence-preview__navigation button:focus-visible {
+  outline: 3px solid #9ffff3;
+  outline-offset: 3px;
+}
+
+.meg-sequence-preview__notice {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+.meg-sequence-preview__notice.is-alert {
+  position: fixed;
+  z-index: 11;
+  top: auto;
+  right: max(.45rem, env(safe-area-inset-right));
+  bottom: max(.4rem, env(safe-area-inset-bottom));
+  width: auto;
+  height: auto;
+  max-width: min(28rem, calc(100vw - .9rem));
+  margin: 0;
+  padding: .6rem .85rem;
+  clip: auto;
+  overflow: visible;
+  white-space: normal;
+  color: #bdf6ef;
+  background: rgba(0, 24, 29, .95);
+  border: 1px solid rgba(35, 238, 220, .42);
+  border-radius: .6rem;
+  font: 500 .78rem/1.35 ui-sans-serif, system-ui, sans-serif;
+}
+@media (max-width: 639px) {
+  .meg-sequence-preview__navigation { top: max(.35rem, env(safe-area-inset-top)); right: .35rem; }
+  .meg-sequence-preview__navigation button { min-height: 44px; padding-inline: .55rem; font-size: .73rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meg-sequence-preview__navigation button { transition: none; }
+}
