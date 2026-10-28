@@ -98,44 +98,88 @@ body:has(.meg-auth-register),
   margin: 0;
   filter: drop-shadow(0 0 1.1rem rgba(9, 238, 211, .1));
 }
-.meg-auth-register .meg-login-hero-copy {
-  margin: 0;
+/* Cadastro: painel editorial premium. Elimina cards promocionais e
+   utiliza a paisagem fotográfica oficial já existente, sem imagens de UI. */
+.meg-auth-register.meg-login {
+  background:
+    linear-gradient(90deg, rgba(0,12,16,.50) 0%, rgba(0,13,17,.28) 41%, rgba(0,18,21,.12) 64%, rgba(0,16,20,.24) 100%),
+    image-set(
+      url('/meg-web-evolution/login-background.webp') 1x,
+      url('/meg-web-evolution/login-background@2x.webp') 2x
+    ) center center / cover no-repeat,
+    #001116;
 }
-.meg-auth-register .meg-login-hero h2 {
-  margin: .35rem 0 .65rem;
-  font-size: clamp(2rem, 3vw, 3rem);
-  line-height: 1.06;
+.meg-auth-register .meg-register-hero-copy {
+  flex: 1 1 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+  max-width: 39rem;
+  padding: clamp(.75rem,2vh,1.8rem) 0;
 }
-.meg-auth-register .meg-login-intro {
+.meg-auth-register .meg-register-hero-eyebrow {
+  margin: 0 0 clamp(.65rem,1.7vh,1.3rem);
+  font-size: clamp(.68rem,.89vw,.85rem);
+  font-weight: 800;
+  letter-spacing: .32em;
+  color: #4cffe6;
+  text-shadow: 0 0 .8rem rgba(0,220,198,.2);
+}
+.meg-auth-register .meg-register-hero-copy h2 {
+  max-width: 16ch;
   margin: 0;
-  max-width: 38rem;
-  font-size: clamp(.88rem, 1.12vw, 1.04rem);
-  line-height: 1.4;
+  font-size: clamp(2.45rem,3.7vw,4.3rem);
+  line-height: 1.08;
+  font-weight: 850;
+  letter-spacing: -.045em;
+  color: #fff;
   text-wrap: balance;
+  text-shadow: 0 .15rem .9rem rgba(0,8,13,.52);
 }
-.meg-auth-register .meg-login-features {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  gap: .5rem;
+.meg-auth-register .meg-register-hero-copy h2 span {
+  display: block;
+  max-width: max-content;
+  color: #3af6e1;
+  background: linear-gradient(105deg,#20dce7 0%,#36fae1 57%,#7bffca);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-right: .15em;
 }
-.meg-auth-register .meg-login-feature {
+.meg-auth-register .meg-register-hero-description {
+  max-width: 32rem;
+  margin: clamp(.85rem,2vh,1.5rem) 0 0;
+  font-size: clamp(.95rem,1.24vw,1.2rem);
+  line-height: 1.55;
+  color: #d5eff0;
+  text-wrap: pretty;
+  text-shadow: 0 .12rem .7rem rgba(0,7,12,.75);
+}
+.meg-auth-register .meg-register-hero-signature {
   display: flex;
   align-items: center;
-  flex-direction: column;
-  gap: .35rem;
-  min-width: 0;
-  padding: .5rem .4rem;
-  text-align: center;
+  flex: 0 0 auto;
+  gap: 1rem;
+  width: min(100%, 25rem);
+  min-height: 2.2rem;
+  color: rgba(200,253,243,.86);
+  font-size: .7rem;
+  letter-spacing: .27em;
+  font-weight: 800;
+  white-space: nowrap;
 }
-.meg-auth-register .meg-login-feature-icon {
-  width: 2.5rem;
-  height: 2.5rem;
+.meg-auth-register .meg-register-hero-signature-line {
+  display: block;
+  height: 2px;
+  min-width: 2.3rem;
+  flex: 0 1 4rem;
+  border-radius: 1rem;
+  background: linear-gradient(90deg,#11ece4,#62ffcf);
+  box-shadow: 0 0 .7rem rgba(34,250,222,.48);
 }
-.meg-auth-register .meg-login-feature strong { font-size: .83rem; }
-.meg-auth-register .meg-login-feature div > span { font-size: .73rem; line-height: 1.22; }
 .meg-auth-register .meg-auth-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -280,10 +324,9 @@ body:has(.meg-auth-register),
   align-content: center;
 }
 @media (max-height: 590px) and (min-width: 1025px) {
-  /* Omitir apenas marketing suplementar em janelas muito baixas.
-     Nenhum campo nem botão financeiro é ocultado. */
-  .meg-auth-register .meg-login-features { display: none; }
-  .meg-auth-register .meg-login-logo { max-height: 38%; }
+  .meg-auth-register .meg-login-logo { max-height: 33%; }
+  .meg-auth-register .meg-register-hero-copy h2 { font-size: clamp(2rem,3vw,3.2rem); }
+  .meg-auth-register .meg-register-hero-description { font-size: .89rem; }
 }
 @media (max-width: 1024px) {
   .meg-auth-register.meg-login {
@@ -315,8 +358,8 @@ body:has(.meg-auth-register),
     max-height: 12vh;
     object-position: center;
   }
-  .meg-auth-register .meg-login-hero-copy,
-  .meg-auth-register .meg-login-features { display: none; }
+  .meg-auth-register .meg-register-hero-copy,
+  .meg-auth-register .meg-register-hero-signature { display: none; }
   .meg-auth-register .meg-auth-card {
     display: grid;
     align-self: stretch;
