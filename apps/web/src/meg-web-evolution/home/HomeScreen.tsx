@@ -99,24 +99,24 @@ function SectionHeading({icon,title,children}:{icon:string;title:string;children
   return <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name={icon}/></span><h2>{title}</h2>{children}</div>;
 }
 const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Data',type:'date',sortable:true,filterable:true,minWidth:90},
-  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:145,
+  {key:'date',label:'Data',type:'date',width:80,minWidth:70,sortable:true,filterable:true},
+  {key:'description',label:'Descrição',type:'text',width:154,minWidth:115,sortable:true,filterable:true,
     render:(v,row)=><HomeDescriptionCell description={String(v??'')} category={String(row.category??'')} type={String(row.kind??'')}/>},
-  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:99,
+  {key:'category',label:'Categoria',type:'text',width:96,minWidth:80,sortable:true,filterable:true,
     render:(v,row)=><HomeCategoryCell category={String(v??'')} type={String(row.kind??'')}/>},
-  {key:'account',label:'Conta',type:'text',sortable:true,filterable:true,minWidth:78},
-  {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:112,
+  {key:'value',label:'Valor',type:'currency',width:112,minWidth:96,sortable:true,filterable:true,
     render:(v,row)=><span className={'meg-home-value '+(Number(row.signedAmount)>=0?'meg-home-positive':'meg-home-negative')}>{Number(row.signedAmount)>=0?'+ ':'− '}{amount(Number(v))}</span>},
+  {key:'account',label:'Conta',type:'text',width:72,minWidth:60,sortable:true,filterable:true},
 ];
 const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',sortable:true,filterable:true,minWidth:101},
-  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:145,
+  {key:'date',label:'Data',type:'date',width:80,minWidth:70,sortable:true,filterable:true},
+  {key:'description',label:'Descrição',type:'text',width:154,minWidth:115,sortable:true,filterable:true,
     render:(v,row)=><HomeDescriptionCell description={String(v??'')} category={String(row.category??'')}/>},
-  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:104,
+  {key:'category',label:'Categoria',type:'text',width:96,minWidth:80,sortable:true,filterable:true,
     render:(v)=><HomeCategoryCell category={String(v??'')}/>},
-  {key:'account',label:'Conta',type:'text',sortable:true,filterable:true,minWidth:78},
-  {key:'value',label:'Em aberto',type:'currency',sortable:true,filterable:true,minWidth:105,
+  {key:'value',label:'Valor',type:'currency',width:112,minWidth:96,sortable:true,filterable:true,
     render:(v)=><span className="meg-home-value">{amount(Number(v))}</span>},
+  {key:'account',label:'Conta',type:'text',width:72,minWidth:60,sortable:true,filterable:true},
 ];
 
 function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot|null;previewOnly?:boolean;onNavigate?:Props['onNavigate']}) {
