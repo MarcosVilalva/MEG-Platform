@@ -21,18 +21,26 @@
 .meg-home-panel-heading h2{margin:0;color:#f4fffc;font-size:1.02rem;font-weight:790;letter-spacing:-.012em;line-height:1.2}
 .meg-home-heading-icon{display:grid;place-items:center;flex:0 0 2.18rem;width:2.18rem;height:2.18rem;border-radius:.59rem;background:#09615b76;color:#30f9df}
 
-/* PANORAMA: área de saldo com arte ambiente exclusiva e valor real em HTML. */
-.meg-home .balance{min-height:17rem;padding:1.33rem 1.42rem;background:#00282e}
-.meg-home-landscape{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 52%;filter:saturate(1.28);pointer-events:none}
-.meg-home .balance::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,#001922f2,#001922cd 41%,#0031373d 88%),linear-gradient(0deg,#001821a8,transparent 62%);pointer-events:none}
-.meg-home-hero-copy{position:relative;z-index:3;display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;max-width:78%;min-width:0}
-.meg-home-hero-heading{display:flex;align-items:center;gap:.7rem;font-size:1rem;font-weight:760;line-height:1.15;text-transform:none}
-.meg-home-privacy{display:grid;place-items:center;width:2rem;height:2rem;flex:0 0 2rem;padding:0;border:1px solid #39d9c27a;border-radius:50%;background:#002c33ad;color:#c7fff6}
-.meg-home-hero-balance{font-size:clamp(2.2rem,3.45vw,3.36rem);font-weight:850;line-height:1.05;letter-spacing:-.045em;font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:0 4px 16px #0007}
-.meg-home-hero-meta{margin:0 0 .42rem;color:#b0e9df;font-size:.79rem;line-height:1.28}
-.meg-home-hero-cta{position:relative;z-index:4}
-.meg-home-balance-graph{position:absolute;left:31%;bottom:-3%;width:68%;height:52%;z-index:2;filter:drop-shadow(0 0 7px #40ffe0);pointer-events:none}
-.meg-home-graph-label{position:absolute;z-index:2;right:1rem;bottom:.75rem;max-width:12rem;color:#a5dbd3;font-size:.67rem;text-align:right}
+/* SALDO: reconstrucao editorial. Imagem e atmosfera WEBP;
+   barras e curva SVG alimentadas exclusivamente pelo fluxo canonico. */
+.meg-home .balance{min-height:17rem;padding:1.26rem 1.35rem;background:#001e28}
+.meg-home-landscape{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:65% 57%;opacity:.8;filter:saturate(1.48) brightness(.85) contrast(1.15);pointer-events:none}
+.meg-home .balance::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#00171ceF 0%,#002129e5 27%,#002b3494 53%,#00232a29 100%),radial-gradient(ellipse at 70% 40%,#19ffce36,transparent 58%),linear-gradient(0deg,#001a22c9,transparent 54%)}
+.meg-home-hero-scene{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(118deg,transparent 0 51%,#1bffdf12 54%,transparent 58%),radial-gradient(ellipse at 75% 85%,#20ffcb24,transparent 61%)}
+.meg-home-hero-copy{position:relative;z-index:4;display:flex;flex-direction:column;align-items:flex-start;gap:.43rem;width:55%;min-width:0;max-width:none;padding:.18rem 0 0 .2rem}
+.meg-home-hero-heading{display:flex;align-items:center;gap:.76rem;width:100%;line-height:1.2;text-transform:none}
+.meg-home-hero-icon{display:grid;place-items:center;flex:0 0 3.3rem;width:3.3rem;height:3.3rem;border:1px solid #25e2cbb3;border-radius:.85rem;background:linear-gradient(135deg,#075c57b8,#003e43ae);color:#3cffe2;box-shadow:inset 0 1px #d1fff729,0 0 25px #0aecd122}
+.meg-home-hero-heading h2{margin:0;font-size:clamp(1.06rem,1.23vw,1.35rem);font-weight:780;letter-spacing:-.018em;color:#f8fffc}
+.meg-home-privacy{display:grid;place-items:center;flex:0 0 2.1rem;width:2.1rem;height:2.1rem;margin-left:.18rem;padding:0;border:1px solid #55fce58f;border-radius:50%;background:#002d36b3;color:#d1fff7;cursor:pointer}
+.meg-home-privacy:hover{background:#0a716890;border-color:#83ffed}
+.meg-home-hero-amount-line{display:flex;align-items:center;min-width:0;max-width:100%;padding:.35rem 0 .05rem 4rem}
+.meg-home-hero-balance{display:block;max-width:100%;font-size:clamp(2.65rem,3.7vw,4.1rem);line-height:1.03;font-weight:860;letter-spacing:-.053em;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:0 2px 14px #000b}
+.meg-home-hero-meta{margin:0 0 0 4rem;color:#9df5e4;font-size:.78rem;line-height:1.3;font-weight:690;white-space:normal}
+.meg-home-hero-details{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;min-height:2.25rem;min-width:0;margin:.36rem 0 0 4rem;padding:.37rem .72rem;border:1px solid #34ddca88;border-radius:.5rem;background:#00363bba;color:#d9fff8;font-size:.75rem;font-weight:720;cursor:pointer}
+.meg-home-hero-details:hover{border-color:#6effe4;background:#07655d}
+.meg-home-hero-visual{position:absolute;right:-2.5%;bottom:-5.2%;z-index:3;width:66%;height:90%;display:flex;align-items:flex-end;pointer-events:none;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 20%,#000);mask-image:linear-gradient(90deg,transparent,#000 20%,#000)}
+.meg-home-balance-graph{position:relative;left:auto;right:auto;bottom:auto;width:100%;height:100%;filter:drop-shadow(0 0 5px #17dbc865);pointer-events:none}
+.meg-home-graph-label{position:absolute;right:1rem;bottom:1rem;max-width:13rem;color:#b3d9d6;font-size:.68rem;text-align:right}
 
 /* Fluxo com eixo positivo/negativo, tooltip acessível e números legíveis. */
 .meg-home .flow{min-height:17rem;padding:.88rem 1.05rem;background:linear-gradient(140deg,#012e32,#001d23)}
@@ -173,11 +181,16 @@
 @media(max-width:639px){
  .meg-home{padding:0 .55rem 1rem}
  .meg-home-dash{gap:.6rem}
- .meg-home .balance{min-height:13rem;padding:1rem}
- .meg-home-hero-copy{max-width:95%}
- .meg-home-hero-heading{font-size:.82rem}
- .meg-home-hero-balance{font-size:clamp(1.87rem,8vw,2.7rem)}
- .meg-home-balance-graph{left:23%;width:75%;height:30%}
+ .meg-home .balance{min-height:14.6rem;padding:.9rem .75rem}
+ .meg-home-hero-copy{width:100%;max-width:100%;gap:.45rem}
+ .meg-home-hero-heading{gap:.5rem}
+ .meg-home-hero-balance{font-size:clamp(2.05rem,7.7vw,2.85rem)}
+ .meg-home-hero-icon{width:2.55rem;height:2.55rem;flex-basis:2.55rem}
+ .meg-home-hero-heading h2{font-size:.95rem}
+ .meg-home-hero-amount-line{padding-left:.3rem;padding-top:.75rem}
+ .meg-home-hero-meta{margin-left:.3rem}
+ .meg-home-hero-details{margin-left:.3rem;margin-top:.12rem}
+ .meg-home-hero-visual{width:98%;height:61%;bottom:-9%;right:-12%;opacity:.72;-webkit-mask-image:linear-gradient(90deg,transparent,#000 54%);mask-image:linear-gradient(90deg,transparent,#000 54%)}
  .meg-home-hero-meta{font-size:.7rem}
  .meg-home .flow{min-height:15.5rem;padding:.78rem}
  .meg-home-flow-totals{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:.42rem;margin:.82rem 0 .52rem}
