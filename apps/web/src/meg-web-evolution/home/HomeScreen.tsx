@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { authenticatedRequest } from '../../app/auth-client';
 // A fonte única da Etapa 02 é JavaScript. Sua tipagem fica isolada na fronteira de adaptação.
 // @ts-expect-error módulo JS da Etapa 02, sem declarações TS exportadas
-import { composeMegApiSnapshot, fromCanonicalReadModels, fromFinancialEvents, fromPayables, fromCards } from '../../evolution/data/api-adapter.js';
+import { composeMegApiSnapshot, fromCanonicalReadModels, fromFinancialEvents, fromPayables, fromCards, fromFinanceCatalogs } from '../../evolution/data/api-adapter.js';
 import { DataGrid } from '../datagrid/DataGrid';
 import type { DataGridColumn } from '../datagrid/types';
 import './home.css';
@@ -161,19 +161,21 @@ export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate}:Prop
     const month=currentMonth();
     setLoading(true);setError(null);
     try{
-      const [summary,cashflow,analytics,events,payables,cards]=await Promise.all([
+      const [summary,cashflow,analytics,events,payables,cards,categories]=await Promise.all([
         authenticatedRequest<Summary>('/finance/summary?month='+month,{cache:'no-store'}),
         authenticatedRequest<Cashflow>('/finance/cashflow?month='+month,{cache:'no-store'}),
         authenticatedRequest<Analytics>('/finance/analytics?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/payables?month='+month,{cache:'no-store'}),
         authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
+        authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
       ]);
       const source=composeMegApiSnapshot([
         fromCanonicalReadModels({summary,cashflow,analytics}),
         fromFinancialEvents(events),
         fromPayables(payables),
         fromCards(cards),
+        fromFinanceCatalogs({categories}),
       ]);
       setSnapshot(source as HomeSnapshot);
     }catch{
