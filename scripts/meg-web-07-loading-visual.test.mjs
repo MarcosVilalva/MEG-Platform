@@ -69,6 +69,17 @@ assert.match(createAccount, /password !== confirmPassword/);
 assert.match(createAccount, /autoComplete=\{previewOnly \? 'off' : 'new-password'\}/);
 assert.match(createAccount, /onNavigateLogin/);
 assert.match(authLayout, /variant === 'register' \? 'logo-transparent\.webp' : 'logo\.webp'/);
+assert.match(authLayout, /variant === 'register' \? \(/);
+assert.match(authLayout, /className="meg-register-hero-copy"/);
+assert.match(authLayout, /className="meg-register-hero-signature"/);
+assert.match(authLayout, /Seu próximo passo/);
+assert.match(authLayout, /começa aqui\./);
+assert.match(authCss, /\.meg-auth-register \.meg-register-hero-copy \{/);
+assert.match(authCss, /\.meg-auth-register \.meg-register-hero-description \{/);
+assert.match(authCss, /\.meg-auth-register \.meg-register-hero-signature \{/);
+assert.doesNotMatch(authCss, /\.meg-auth-register \.meg-login-feature/);
+assert.match(authCss, /\.meg-auth-register \.meg-register-hero-copy,\s*\.meg-auth-register \.meg-register-hero-signature \{ display: none; \}/);
+
 assert.match(authCss, /\.meg-auth-register\.meg-login \{/);
 assert.match(authCss, /height: 100dvh/);
 assert.match(authCss, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
