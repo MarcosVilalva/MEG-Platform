@@ -12,6 +12,19 @@ Manter a documentação atualizada com o resultado real de cada etapa, a revisã
 
 Preservar Loading aprovado, responsividade, SVGs lineares premium, neon elegante, profundidade 3D, legibilidade, telas fixas e rolagem somente nas áreas densas. Conferir todas as regras de lançamento, conta, crédito, benefício e baixa no checkpoint oficial antes de editar fluxos financeiros.
 
+## Regra permanente de simetria visual entre telas (MEG Web Evolution)
+
+**Prioridade obrigatória em toda revisão de interface:** preservar a **simetria e coerência visual** de uma tela para a próxima. Esta é uma decisão expressa do usuário aprovada em 28/10/2026, não uma sugestão estética.
+
+- Entre telas relacionadas, alinhar a mesma **grade estrutural**, eixos, margens, espaçamentos, proporções, hierarquia tipográfica, tamanho/presença da marca MEG, cabeçalhos, botões de ação, formulários, modais e estados visuais. O conjunto deve parecer um único produto, não páginas independentes.
+- O **logotipo MEG oficial deve ser um elemento de destaque**, legível, nítido e com dimensões consistentes entre telas equivalentes. Evitar arquivos com margens internas excessivas, object-fit que reduza a marca ou limites de altura que produzam logos minúsculos.
+- Manter unidade de cores, imagens decorativas, linguagem de profundidade/iluminação e posições de comandos; **não forçar identidade absoluta** quando os conteúdos e regras de negócio exigirem disposição distinta.
+- Exigir **comparação visual lado a lado** de telas relacionadas em desktop, tablet e celular, incluindo os breakpoints principais de 640 e 1024 px; inspecionar alinhamento, proporção da marca, cortes, sobreposição, rolagem externa indevida e acessibilidade. Testes/build/deploy não substituem aprovação visual explícita.
+- Ao implementar ou revisar uma tela, avaliar o impacto sobre o sistema visual completo; corrigir estruturas incoerentes em vez de empilhar exceções CSS. Preservar DataGrid, interações reais e domínio financeiro; nunca fabricar informação financeira para obter simetria.
+- **Hierarquia preservada:** 1) regras de negócio do repositório; 2) print oficial atual; 3) Prompt Master. A simetria é requisito transversal **dentro desses limites**, não autorização para contrariar um print oficial ou regra financeira.
+- **Aceite registrado:** em 28/10/2026, o usuário aprovou expressamente as revisões visuais do Login e Criar Conta **com a marca MEG ampliada e reenquadrada**, além do Loading já aprovado. Isso não representa homologação funcional de autenticação/cadastro, conclusão da suíte E2E, aprovação de outras telas ou autorização de merge.
+
+
 ## Metodologia obrigatória do projeto
 
 Aplicar por padrão, em toda implementação, revisão, handoff ou validação relevante:
