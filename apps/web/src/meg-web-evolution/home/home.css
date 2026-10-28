@@ -114,8 +114,8 @@
 .meg-home-grid-slot .meg-datagrid__viewport{min-height:0;max-height:100%;height:100%;overflow:hidden}
 .meg-home-grid-slot.is-expanded .meg-datagrid__viewport{height:auto;max-height:100%;overflow-y:auto}
 .meg-home-grid-slot:not(.is-expanded) .meg-datagrid-toolbar,.meg-home-grid-slot:not(.is-expanded) .meg-datagrid-footer{display:none}
-.meg-home-grid-slot .meg-datagrid-table th{height:1.34rem;min-height:1.34rem;padding:.08rem .2rem!important}
-.meg-home-grid-slot .meg-datagrid-table td{height:1.42rem;min-height:1.42rem;padding:.10rem .23rem!important;font-size:.66rem;white-space:nowrap}
+.meg-home-grid-slot .meg-datagrid-table th{height:1.26rem;min-height:1.26rem;padding:.04rem .15rem!important}
+.meg-home-grid-slot .meg-datagrid-table td{height:1.26rem;min-height:1.26rem;padding:.04rem .18rem!important;font-size:.65rem;white-space:nowrap}
 .meg-home-grid-slot .meg-datagrid-sort-button{min-height:1.3rem;padding:.1rem .2rem;font-size:.64rem}
 .meg-home-grid-slot .meg-datagrid-filter-button{min-width:1.25rem;min-height:1.25rem;flex-basis:1.25rem}
 .meg-home-transaction-cell{display:inline-flex;align-items:center;gap:.26rem;min-width:0;max-width:100%}
@@ -154,8 +154,8 @@
  .meg-home[data-mobile-view="saldo"] .balance,.meg-home[data-mobile-view="saldo"] .flow,.meg-home[data-mobile-view="operacoes"] .benefits,.meg-home[data-mobile-view="operacoes"] .quick,.meg-home[data-mobile-view="tabelas"] .recent,.meg-home[data-mobile-view="tabelas"] .upcoming{grid-column:1/-1}
  .meg-home[data-mobile-view="indicadores"] .meg-home-kpi{display:grid;grid-column:span 1}
  .meg-home-hero-balance{font-size:clamp(1.95rem,5.2vw,3rem)}
- .meg-home .quick{display:flex}
- .meg-home .benefits{display:flex}
+
+
 }
 @media(max-width:639px){
  .meg-home .balance{padding:.75rem}
