@@ -46,7 +46,7 @@ const evolutionProductionCsp = () => {
     transformIndexHtml: {
       order: 'pre' as const,
       handler(html: string, context: { path?: string }) {
-        if (!context.path?.endsWith('/evolution.html') && !context.path?.endsWith('/web-evolution.html') && !context.path?.endsWith('/datagrid-harness.html')) return html;
+        if (!context.path?.endsWith('/evolution.html') && !context.path?.endsWith('/web-evolution.html') && !context.path?.endsWith('/datagrid-harness.html') && !context.path?.endsWith('/home-visual.html')) return html;
         return {
           html,
           tags: [{
@@ -80,7 +80,8 @@ const webInputs = process.env.CAPACITOR_BUILD
       phoenix: path.resolve(__dirname, 'phoenix.html'),
       evolution: path.resolve(__dirname, 'evolution.html'),
       webEvolution: path.resolve(__dirname, 'web-evolution.html'),
-      dataGridHarness: path.resolve(__dirname, 'datagrid-harness.html')
+      dataGridHarness: path.resolve(__dirname, 'datagrid-harness.html'),
+      homeVisual: path.resolve(__dirname, 'home-visual.html')
     };
 
 export default defineConfig({
