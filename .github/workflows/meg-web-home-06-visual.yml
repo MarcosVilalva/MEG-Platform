@@ -24,6 +24,8 @@ jobs:
         run: npm install --audit=false
       - name: Install pinned browser test
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Generate Prisma client for API type checks
+        run: npm --workspace packages/database run db:generate
       - name: Compile API read-only projection
         run: npm run build:api
       - name: Verify Home financial read-model invariants
