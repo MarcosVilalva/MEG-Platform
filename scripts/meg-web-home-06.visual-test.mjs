@@ -73,6 +73,16 @@ try {
      assert.ok(limits.scrollHeight<=limits.clientHeight+1,name+': rolagem vertical do painel: '+JSON.stringify(limits));
      assert.ok(limits.scrollWidth<=limits.clientWidth+1,name+': rolagem horizontal do painel: '+JSON.stringify(limits));
      assert.ok(limits.visible,name+': conteúdo fora do viewport '+JSON.stringify(limits));
+     const tables=await page.locator('.meg-home .meg-datagrid-table').evaluateAll(nodes=>nodes.map(table=>{
+       const panel=table.closest('.meg-home-card').getBoundingClientRect();
+       const rect=table.getBoundingClientRect();
+       const rows=[...table.querySelectorAll('tbody tr')].slice(0,5);
+       return {right:rect.right,panelRight:panel.right,bottom:rows.at(-1)?.getBoundingClientRect().bottom??rect.bottom,panelBottom:panel.bottom,count:rows.length};
+     }));
+     assert.equal(tables.length,2,name+': ambas as tabelas');
+     assert.ok(tables.every(t=>t.right<=t.panelRight+1),name+': última coluna cortada '+JSON.stringify(tables));
+     assert.ok(tables.every(t=>t.bottom<=t.panelBottom-3),name+': última linha cortada '+JSON.stringify(tables));
+
    }
    if(width<1024){
      const views=['saldo','indicadores','operacoes','tabelas'];
@@ -80,6 +90,7 @@ try {
        const names={saldo:'Resumo',indicadores:'Contas',operacoes:'Ações',tabelas:'Listas'};
        await page.getByRole('button',{name:names[view],exact:true}).click();
        assert.equal(await page.locator('.meg-home').getAttribute('data-mobile-view'),view,'troca de painel '+name);
+       assert.equal(await page.locator('.meg-home-dash>[data-panel]:visible').count(),view==='indicadores'?4:2,'painéis visíveis na aba '+view+' '+name);
      }
      await page.getByRole('button',{name:'Resumo',exact:true}).click();
    }
