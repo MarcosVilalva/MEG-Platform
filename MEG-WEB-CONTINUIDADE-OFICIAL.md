@@ -1240,3 +1240,8 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 
 ## Home 06 - Render e assets (27/10/2026)
 PR #650 Draft: artes WebP incorporadas, preview independente no Render `meg-home-06-visual`. Sem acesso a dados reais. Home ainda não aprovada. Gate Foundation pendente. PR #649, Android e main preservados.
+
+
+## Home 06 - MEG Panorama (candidata visual, 27/10/2026)
+
+Após o pedido `siga`, a proposta MEG Panorama foi implementada na branch da PR #650. O CSS da Home foi refeito em camada limpa, preservando o grid soberano 7/5, quatro KPIs e duas linhas 6/6. Saldo recebeu controle acessível para mostrar/ocultar valores e acesso a movimentações; gráfico diário teve escala visual centralizada e suporte a toque/teclado; Verocard ganhou composição e CTA próprios; DataGrid, Shell, Android e autenticação aprovada não foram alterados. O preview demonstrativo segue em `meg-home-06-visual.onrender.com/home-visual.html`, com auto-deploy; não utiliza API, credenciais ou banco. A PR continua Draft. Não há aprovação visual da Home, nem autorização de merge. Gates e última publicação devem ser conferidos pelo SHA da revisão.
