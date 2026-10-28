@@ -153,7 +153,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
     {id:'pay',icon:'file',label:'Contas a pagar',value:overview?.payables.openAmount,caption:overview?overview.payables.count+' contas em aberto':'Sem leitura disponível',color:'red',dest:'pendentes' as HomeAction},
     {id:'card',icon:'card',label:'Faturas de cartões',value:overview?.cards.openAmount,caption:overview?overview.cards.count+' faturas em aberto':'Sem leitura disponível',color:'blue',dest:'cartoes' as HomeAction},
     {id:'pending',icon:'clock',label:'Lançamentos pendentes',value:summary?.pendingAmount,caption:summary?summary.pendingCount+' lançamentos previstos':'Sem leitura disponível',color:'gold',dest:'pendentes' as HomeAction},
-    {id:'paid',icon:'check',label:'Contas pagas',value:null,caption:overview?overview.paid.count+' contas quitadas no período':'Sem leitura disponível',color:'green',dest:'pendentes' as HomeAction},
+    {id:'paid',icon:'check',label:'Contas pagas',value:null,caption:overview?overview.paid.count+' contas com vencimento no mês, quitadas':'Sem leitura disponível',color:'green',dest:'pendentes' as HomeAction},
   ];
   const actions=[
     {icon:'plus',name:'Novo lançamento',dest:'novo' as HomeAction,color:'teal'},
