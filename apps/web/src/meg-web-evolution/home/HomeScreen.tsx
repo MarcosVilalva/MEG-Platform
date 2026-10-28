@@ -4,6 +4,7 @@ import { authenticatedRequest } from '../../app/auth-client';
 // @ts-expect-error módulo JS da Etapa 02, sem declarações TS exportadas
 import { composeMegApiSnapshot, fromCanonicalReadModels, fromFinancialEvents, fromPayables, fromCards, fromFinanceCatalogs } from '../../evolution/data/api-adapter.js';
 import { DataGrid } from '../datagrid/DataGrid';
+import { HomeDescriptionCell, HomeCategoryCell } from './HomeFinanceVisuals';
 import type { DataGridColumn } from '../datagrid/types';
 import './home.css';
 
@@ -106,19 +107,25 @@ function FlowGraph({ cashflow }: { cashflow: Cashflow | null }) {
 function SectionHeading({icon,title,children}:{icon:string;title:string;children?:ReactNode}) {
   return <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name={icon}/></span><h2>{title}</h2>{children}</div>;
 }
-const movementColumns: DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Data',type:'date',sortable:true,filterable:true,minWidth:95},
-  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:152},
-  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:114},
-  {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:108,render:(v,row)=><span className={Number(row.signedAmount)>=0?'meg-home-positive':'meg-home-negative'}>{Number(row.signedAmount)>=0?'+ ':'− '}{amount(Number(v))}</span>},
-  {key:'account',label:'Conta',type:'text',sortable:true,filterable:true,minWidth:90},
+const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
+  {key:'date',label:'Data',type:'date',sortable:true,filterable:true,minWidth:90},
+  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:145,
+    render:(v,row)=><HomeDescriptionCell description={String(v??'')} category={String(row.category??'')} type={String(row.kind??'')}/>},
+  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:99,
+    render:(v,row)=><HomeCategoryCell category={String(v??'')} type={String(row.kind??'')}/>},
+  {key:'value',label:'Valor',type:'currency',sortable:true,filterable:true,minWidth:112,
+    render:(v,row)=><span className={'meg-home-value '+(Number(row.signedAmount)>=0?'meg-home-positive':'meg-home-negative')}>{Number(row.signedAmount)>=0?'+ ':'− '}{amount(Number(v))}</span>},
 ];
-const dueColumns: DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',sortable:true,filterable:true,minWidth:103},
-  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:152},
-  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:112},
-  {key:'value',label:'Em aberto',type:'currency',sortable:true,filterable:true,minWidth:113},
+const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
+  {key:'date',label:'Vencimento',type:'date',sortable:true,filterable:true,minWidth:101},
+  {key:'description',label:'Descrição',type:'text',sortable:true,filterable:true,minWidth:145,
+    render:(v,row)=><HomeDescriptionCell description={String(v??'')} category={String(row.category??'')}/>},
+  {key:'category',label:'Categoria',type:'text',sortable:true,filterable:true,minWidth:104,
+    render:(v)=><HomeCategoryCell category={String(v??'')}/>},
+  {key:'value',label:'Em aberto',type:'currency',sortable:true,filterable:true,minWidth:105,
+    render:(v)=><span className="meg-home-value">{amount(Number(v))}</span>},
 ];
+
 function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot|null;previewOnly?:boolean;onNavigate?:Props['onNavigate']}) {
   const summary=snapshot?.readModels.summary ?? null;
   const flow=snapshot?.readModels.cashflow ?? null;
@@ -132,7 +139,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
     .map(t=>({
       id:t.id,date:t.date,description:t.description,
       category:categoryName(snapshot?.categories??[],t.categoryId),
-      value:Math.abs(t.signedAmount),signedAmount:t.signedAmount,
+      value:Math.abs(t.signedAmount),signedAmount:t.signedAmount,kind:t.type,
       account:snapshot?.accounts?.find(a=>a.id===t.accountId)?.name ?? '—',
     })),[snapshot]);
   const dueRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.payables??[])
@@ -158,14 +165,13 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
   const actions=[
     {icon:'plus',name:'Novo lançamento',dest:'novo' as HomeAction,color:'teal'},
     {icon:'swap',name:'Transferência',dest:'transferencia' as HomeAction,color:'blue'},
-    {icon:'file',name:'Pagar conta',dest:'pendentes' as HomeAction,color:'purple'},
-    {icon:'report',name:'Relatórios',dest:'relatorios' as HomeAction,color:'amber'},
-    {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'slate'},
+    {icon:'report',name:'Relatórios',dest:'relatorios' as HomeAction,color:'purple'},
+    {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'amber'},
   ];
   const paidCount=overview?.paid.count;
-  return <div className="meg-home meg-home-panorama">
+  return <div className="meg-home meg-home-official">
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
-    <div className="meg-home-welcome"><div><h1>Visão geral</h1><p>Acompanhe suas finanças em um só lugar</p></div><span className="meg-home-welcome-period"><Icon name="clock" size={15}/>{periodTitle}</span></div>
+    
     <div className="meg-home-dash">
       <section className="meg-home-card balance" aria-label="Saldo monetário disponível">
         <img className="meg-home-landscape" src="/meg-web-evolution/home/hero-mountains.webp" alt="" aria-hidden="true"/>
