@@ -22,7 +22,8 @@ body { color: #f4fffd; background: #001116; }
   max-height: 100dvh;
   overflow: hidden;
 }
-.meg-sequence-preview[data-preview-screen="cadastro"] {
+.meg-sequence-preview[data-preview-screen="cadastro"],
+.meg-sequence-preview[data-preview-screen="recuperar-senha"] {
   width: 100%;
   height: 100dvh;
   min-height: 0;
