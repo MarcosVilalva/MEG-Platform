@@ -1295,3 +1295,15 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - **Conteúdo oficial da imagem:** saldo com imagem real de carteira, fluxo mensal sem estatísticas inventadas, 4 KPIs simétricos, Benefícios Verocard com saldo separado e sem ofertas/descontos, **5 ações rápidas alinhadas**, 2 tabelas DataGrid com ícones semânticos. Contratos financeiros têm prioridade sobre números que aparecem no mockup.
 - **Situação:** apenas a REFERÊNCIA VISUAL está escolhida; a Home atual na PR #650 **continua rejeitada/não aprovada**, branch isolada, PR Draft sem merge. Android, telas 01–04 aprovadas, DataGrid e regras financeiras não alterados nesta decisão. Não iniciar tela posterior.
 - **Próxima implementação autorizada por esta decisão:** reconstrução/adequação da Home à nova imagem, com arte em assets separados, testes de viewport e preview sem cache. Não confundir o commit documental com publicação de uma Home nova.
+
+## Home 06 · Implementação da imagem oficial 02 (28/10/2026)
+
+- Aprovada como **referência**, não como tela final: `MEG_HOME_REFERENCIA_VISUAL_02_20261028.png`, documentada em `docs/MEG-WEB-HOME-REFERENCIA-VISUAL-OFICIAL-02-20261028.md`.
+- **Escopo implementado na PR #650 Draft:** nova versão de `HomeScreen.tsx`, `home.css`, asset `apps/web/public/meg-web-evolution/home/wallet-official-02.webp` extraído somente da zona artística da imagem 02 e testes em `scripts/meg-web-home-06.visual-test.mjs`.
+- Saldo monetário é componente React, com controle de privacidade e data de referência; removido gráfico 3D SVG e montanhas do card. Benefícios permanecem totalmente separados no painel Verocard; nenhuma oferta ou desconto comercial foi incluído.
+- Cinco botões simétricos: Novo lançamento, Transferência, Pagar conta, Relatórios, Configurar metas. Quatro KPIs e duas tabelas continuam consumindo autoridades e DataGrid preexistentes.
+- **Desktop:** distribuição de quatro linhas em altura proporcional ao viewport, incluindo cinco linhas por tabela, sem rolagem externa; objetivo de verificação em 1366×768 e 1672×941 com navegador real. CSS de Home e topbar **somente com Home montada**, preservando CSS das demais telas.
+- **Mobile/tablet:** quatro abas internas `Resumo`, `Contas`, `Ações` e `Listas`, tornando todo o conteúdo acessível sem reduzir tipografia nem adicionar rolagem à página. Essa é uma **adaptação funcional proposta**, ainda sujeita à aprovação visual específica do usuário.
+- Prévia exclusivamente ilustrativa no Render independente `meg-home-06-visual`; conteúdo fictício identificado. A arte da carteira é um recorte da imagem oficial, não uma screenshot de tela inteira nem campos clicáveis rasterizados.
+- Testes: build API, contratos financeiros, build Web, sete viewports, assets, simetria dos cinco atalhos, privacidade dos saldos, abas e critérios de não rolagem desktop. Verificar resultado no SHA final, sem equiparar CI a validação visual.
+- **NÃO APROVADA** visualmente; PR #650 ainda em Draft, sem merge. Gate geral Foundation pendente. Android, telas 01-04 e DataGrid mantidos sem alteração.
