@@ -29,13 +29,18 @@ try {
    assert.equal(response?.status(),200,'HTTP '+name);
    await page.locator('.meg-home .balance').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-home-kpi').count(),4,'KPIs '+name);
+   assert.equal(await page.locator('.meg-home-quick-action').count(),5,'5 ações alinhadas '+name);
    const balanceToggle=page.getByRole('button',{name:'Ocultar saldos'});
    await balanceToggle.click();
    assert.equal(await page.locator('.meg-home-hero-balance').innerText(),'R$ •••••');
    assert.equal(await page.locator('.meg-home-benefit-balance').innerText(),'R$ •••••','prévia não deve inventar saldo de benefício: '+name);
-   assert.equal(await page.locator('.meg-home-benefit-finances-label').innerText(),'Saldo de benefícios');
+   assert.equal(await page.locator('.meg-home-benefit-finances-label').innerText(),'Saldo do benefício');
    await page.getByRole('button',{name:'Mostrar saldos'}).click();
    assert.equal(await page.getByRole('button',{name:'Ocultar saldos'}).getAttribute('aria-pressed'),'false');
+   assert.match(await page.locator('.meg-home-benefit-balance').innerText(),/1\.890,32/,'benefício da fonte mock '+name);
+   const btns=await page.locator('.meg-home-quick-action').evaluateAll(nodes=>nodes.map(el=>({height:el.getBoundingClientRect().height,width:el.getBoundingClientRect().width})));
+   assert.ok(Math.max(...btns.map(x=>x.height))-Math.min(...btns.map(x=>x.height))<2,'botões com mesma altura '+name);
+   if(width>=1024) assert.ok(Math.max(...btns.map(x=>x.width))-Math.min(...btns.map(x=>x.width))<2,'botões com mesma largura '+name);
    assert.equal(await page.locator('.meg-home-grid-slot').count(),2,'DataGrids '+name);
    assert.equal(await page.locator('.meg-home img').count(),3,'arte da Home '+name);
    const stats=await page.evaluate(()=>({
