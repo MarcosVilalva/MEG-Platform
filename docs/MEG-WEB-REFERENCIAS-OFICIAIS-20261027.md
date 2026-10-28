@@ -32,7 +32,7 @@ O usuário autorizou uma **reconstrução sequencial**, com somente uma tela por
 |---|---|
 | Carregamento após login | `Loading pos login.png` |
 | Login | `Login.png` |
-| Home | `Tela principal.png` |
+| Home | **`MEG_HOME_REFERENCIA_VISUAL_02_20261028.png`** (nova referência da Home escolhida pelo usuário em 28/10; substitui exclusivamente `Tela principal.png` para a Home) |
 | Lançamentos, preservando DataGrid | `Lancçamentos - utilizar data grid.png` |
 | Seletor de Novo Lançamento | `Novo lançamento financeiro neon(2).png` |
 | Despesa | `Lançamento Despesa.png` |
@@ -81,3 +81,7 @@ Não inventar ou duplicar saldos nas telas para suprir a falta de base.
 ## Decisão de continuidade
 
 Nenhuma imagem deste conjunto é autorizada como screenshot de interface completa em produção. Somente ilustrações decorativas, recortadas quando necessário; todas as ações continuam sendo HTML/React reais.
+
+## Atualização soberana: Home 06 (28/10/2026)
+
+O usuário escolheu explicitamente a **segunda imagem** do novo conjunto de duas propostas como **referência visual oficial da Home** e exigiu enquadramento desktop **sem rolagem vertical nem horizontal**. O novo registro vinculante está em `docs/MEG-WEB-HOME-REFERENCIA-VISUAL-OFICIAL-02-20261028.md`, identificado por SHA-256 da imagem. Esta decisão **substitui só a referência Home** de 03/10, mantendo os prints oficiais das outras telas. Os valores fictícios, percentuais e nomes de bancos na arte não se tornam dados/regras. A escolha de referência não homologa a implementação da Home.
