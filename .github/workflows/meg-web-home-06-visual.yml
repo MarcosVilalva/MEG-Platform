@@ -24,6 +24,10 @@ jobs:
         run: npm install --audit=false
       - name: Install pinned browser test
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Compile API read-only projection
+        run: npm run build:api
+      - name: Verify Home financial read-model invariants
+        run: npx tsx apps/api/src/modules/finance/home-overview-read.contract.test.ts
       - name: Compile Web
         run: npm run build:web
       - name: Capture visual evidence and verify no overflow
