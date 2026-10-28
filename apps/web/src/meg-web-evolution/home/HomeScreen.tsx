@@ -87,8 +87,8 @@ function FlowGraph({ cashflow }: { cashflow: Cashflow | null }) {
   return <div className="meg-home-flow-plot">
     <div className="meg-home-flow-columns" role="group" aria-label="Fluxo diário">
       {fullDays.map((item,i)=><button key={i} type="button" className={'meg-home-flow-day '+(selected===i?'is-selected':'')} onMouseEnter={()=>setSelected(i)} onMouseLeave={()=>setSelected(null)} onFocus={()=>setSelected(i)} onBlur={()=>setSelected(null)} aria-label={(i+1)+' de '+(cashflow?.month||'mês')+': entradas '+amount(item?.income)+', saídas '+amount(item?.expense)}>
-        <span className="meg-home-bar-positive" style={{height:(item?Math.min(100,100*item.income/max):0)+'%'}} />
-        <span className="meg-home-bar-negative" style={{height:(item?Math.min(100,100*item.expense/max):0)+'%'}} />
+        <span className="meg-home-bar-positive" style={{height:(item?Math.min(48,48*item.income/max):0)+'%'}} />
+        <span className="meg-home-bar-negative" style={{height:(item?Math.min(48,48*item.expense/max):0)+'%'}} />
       </button>)}
     </div>
     <div className="meg-home-flow-zero" aria-hidden="true"/>
