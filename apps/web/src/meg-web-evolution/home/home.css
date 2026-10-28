@@ -9,7 +9,7 @@
 .meg-home-error button{border:1px solid var(--meg-accent);border-radius:.5rem;padding:.4rem .7rem;background:transparent;cursor:pointer}
 .meg-home-loading{padding:2rem 1rem;text-align:center;color:var(--meg-muted)}
 .meg-home .balance{min-height:17.2rem;padding:1.45rem;background:radial-gradient(ellipse at 70% -20%,rgba(4,185,171,.26),transparent 55%),linear-gradient(115deg,#002322,#011519 69%);}
-.meg-home-landscape{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.84;filter:drop-shadow(0 0 1.8rem rgba(17,230,205,.25))}
+.meg-home-landscape{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 55%;pointer-events:none;opacity:.94;filter:saturate(1.18)}
 .meg-home .balance::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,16,19,.75),rgba(0,21,25,.44) 47%,rgba(0,15,19,.02));pointer-events:none;z-index:1}
 .meg-home-hero-copy{position:relative;z-index:3;display:flex;gap:1.25rem;align-items:flex-start;min-width:0}
 .meg-home-hero-icon{display:grid;place-items:center;flex:0 0 3.8rem;width:3.8rem;height:3.8rem;border:1px solid rgba(20,227,200,.62);border-radius:.88rem;color:#33ffdf;background:rgba(1,87,80,.56)}
