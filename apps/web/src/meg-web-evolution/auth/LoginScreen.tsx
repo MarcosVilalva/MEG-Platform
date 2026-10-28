@@ -7,6 +7,8 @@ type LoginScreenProps = {
   onNavigate: (destination: 'create-account' | 'recover-password') => void;
   /** Apenas para preview estático de avaliação visual. Nunca envia credenciais à API. */
   previewOnly?: boolean;
+  /** Navegação somente da prévia isolada, sem alterar o Login real. */
+  onReviewLoading?: () => void;
 };
 
 type LoginError = 'email' | 'password' | 'server' | null;
@@ -45,7 +47,7 @@ export function LoginIcon({ name }: { name: 'shield' | 'mail' | 'lock' | 'eye' |
   return <svg className="meg-login-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{paths[name]}</svg>;
 }
 
-export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false }: LoginScreenProps) {
+export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false, onReviewLoading }: LoginScreenProps) {
   const emailId = useId();
   const passwordId = useId();
   const errorId = useId();
@@ -96,18 +98,23 @@ export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false }
   };
 
   return (
-    <main className="meg-login" data-meg-login={previewOnly ? 'visual-preview' : 'stage05'} aria-label="Acesso ao MEG Finanças">
+    <main className="meg-login meg-login-welcome" data-meg-login={previewOnly ? 'visual-preview' : 'stage05'} aria-label="Acesso ao MEG Finanças">
       <div className="meg-login-frame">
-        <section className="meg-login-hero" aria-label="Conheça o MEG Finanças">
-          <img className="meg-login-logo" src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/logo.webp`} alt="MEG Finanças" width="153" height="150" />
-          <div className="meg-login-hero-copy">
+        <section className="meg-login-hero" aria-label="Bem-vindo ao MEG Finanças">
+          <img className="meg-login-logo"
+            src={`${import.meta.env.BASE_URL}meg-web-evolution/visual-loading/logo-transparent.webp`}
+            alt="MEG Finanças" width="440" height="360" />
+          <div className="meg-login-welcome-copy">
+            <p className="meg-login-welcome-eyebrow">MEG WEB EVOLUTION</p>
             <h1>Sua vida financeira,<span> com clareza para decidir.</span></h1>
-            <p className="meg-login-intro">Saldo, compromissos e projeções em uma visão única para você saber onde está e para onde está indo.</p>
+            <p className="meg-login-intro">
+              Saldo, compromissos e projeções em uma visão única
+              para você saber onde está e para onde está indo.
+            </p>
           </div>
-          <div className="meg-login-features" aria-label="Benefícios do MEG">
-            <article className="meg-login-feature"><span className="meg-login-feature-icon"><LoginIcon name="bars" /></span><div><strong>Saldo real</strong><span>Visão completa e atualizada</span></div></article>
-            <article className="meg-login-feature"><span className="meg-login-feature-icon"><LoginIcon name="target" /></span><div><strong>Projetos</strong><span>Mais controle para seus planos</span></div></article>
-            <article className="meg-login-feature"><span className="meg-login-feature-icon"><LoginIcon name="sliders" /></span><div><strong>Controle</strong><span>Decisões melhores todos os dias</span></div></article>
+          <div className="meg-login-welcome-signature" aria-hidden="true">
+            <span className="meg-login-welcome-line" />
+            <span>SEU ESPAÇO FINANCEIRO</span>
           </div>
         </section>
 
@@ -117,6 +124,7 @@ export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false }
             <div><p className="meg-login-panel-label">ACESSO SEGURO</p><h2 id="meg-login-heading">Bem-vindo de volta.</h2><p className="meg-login-panel-lead">Entre na sua conta para acessar o MEG.</p></div>
           </div>
           <form className="meg-login-form" onSubmit={submit} noValidate>
+            <div className="meg-login-fields">
             <div className="meg-login-input-block">
               <label htmlFor={emailId}>E-mail</label>
               <div className={`meg-login-input-wrap ${errorField === 'email' ? 'is-invalid' : ''}`}>
@@ -136,6 +144,7 @@ export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false }
               <label className="meg-login-remember"><input type="checkbox" checked={rememberEmail} onChange={event => setRememberEmail(event.target.checked)} disabled={submitting || authenticated}/><span>Lembrar meu e-mail</span></label>
               <a href="?auth=recover-password" onClick={event => {event.preventDefault();onNavigate('recover-password');}}>Esqueci minha senha</a>
             </div>
+            </div>
             <p id={errorId} className={`meg-login-message ${errorField ? 'is-error' : ''}`} role={errorField ? 'alert' : 'status'} aria-live="polite">{message}</p>
             <button type="submit" className="meg-login-submit" disabled={submitting || authenticated} aria-busy={submitting}>
               <span>{submitting ? 'Entrando...' : authenticated ? 'Acesso autorizado' : 'Entrar no MEG'}</span>
@@ -143,7 +152,17 @@ export function LoginScreen({ onAuthenticated, onNavigate, previewOnly = false }
             </button>
           </form>
           <div className="meg-login-create"><span>Ainda não tem acesso?</span><a href="?auth=create-account" onClick={event => {event.preventDefault();onNavigate('create-account');}}>Criar conta</a></div>
-          <p className="meg-login-secure-note"><LoginIcon name="shield" /><span className="meg-login-note-text">Sessão protegida</span><span aria-hidden="true">•</span><span className="meg-login-note-text">Conexão segura com o MEG</span></p>
+          <p className="meg-login-secure-note">
+            <LoginIcon name="shield" />
+            <span className="meg-login-note-text">Sessão protegida</span>
+            <span aria-hidden="true">•</span>
+            <span className="meg-login-note-text">Conexão segura com o MEG</span>
+          </p>
+          {previewOnly && onReviewLoading && (
+            <button type="button" className="meg-login-preview-review" onClick={onReviewLoading}>
+              Rever carregamento
+            </button>
+          )}
         </section>
       </div>
     </main>
