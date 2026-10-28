@@ -29,11 +29,11 @@ try {
    assert.equal(response?.status(),200,'HTTP '+name);
    await page.locator('.meg-home .balance').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-home-kpi').count(),4,'KPIs '+name);
-   assert.equal(await page.locator('.meg-home-hero-icon').count(),1,'icone principal do saldo '+name);
-   assert.ok(await page.locator('.meg-home-balance-graph path').count()>=2,'grafico de evolucao do saldo '+name);
+   assert.equal(await page.locator('.meg-home-wallet-photo').count(),1,'carteira oficial da referencia 02 '+name);
+   assert.equal(await page.locator('.meg-home-balance-graph').count(),0,'sem grafico SVG decorativo no saldo '+name);
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
    assert.ok(balanceSize>=31,'saldo visualmente protagonista '+name+': '+balanceSize);
-   assert.equal(await page.locator('.meg-home-quick-action').count(),4,'4 ações do print oficial '+name);
+   assert.equal(await page.locator('.meg-home-quick-action').count(),5,'5 ações da imagem oficial 02 '+name);
    const balanceToggle=page.getByRole('button',{name:'Ocultar saldos'});
    await balanceToggle.click();
    assert.equal(await page.locator('.meg-home-hero-balance').innerText(),'R$ •••••');
@@ -49,7 +49,9 @@ try {
    assert.equal(await page.locator('.meg-home-welcome').count(),0,'sem cabeçalho redundante '+name);
    assert.ok(await page.locator('.meg-home-category-icon').count()>=5,'SVGs financeiros nas movimentações '+name);
    assert.ok(await page.locator('.meg-home-category-pill').count()>=5,'categorias semânticas no DataGrid '+name);
-   assert.equal(await page.locator('.meg-home img').count(),3,'arte da Home '+name);
+   assert.equal(await page.locator('.meg-home img').count(),2,'wallet e arte do beneficio '+name);
+   const loaded=await page.locator('.meg-home img').evaluateAll(images=>images.every(img=>img.complete && img.naturalWidth>0));
+   assert.ok(loaded,'assets oficiais carregados '+name);
    const stats=await page.evaluate(()=>({
      viewport:window.innerWidth,
      documentWidth:document.documentElement.scrollWidth,
@@ -60,6 +62,27 @@ try {
    }));
    assert.ok(stats.documentWidth<=stats.viewport+1,name+': rolagem horizontal: '+JSON.stringify(stats));
    assert.ok(stats.documentHeight<=stats.viewportHeight+1,name+': overflow externo: '+JSON.stringify(stats));
+   if(width>=1024 && height>=768){
+     const limits=await page.evaluate(()=>{
+       const main=document.querySelector('.meg-main');
+       const grid=document.querySelector('.meg-home-dash');
+       const panels=[...document.querySelectorAll('.meg-home-dash>.meg-home-card')];
+       const visible=panels.every(el=>{const r=el.getBoundingClientRect();return r.top>=main.getBoundingClientRect().top-1 && r.bottom<=main.getBoundingClientRect().bottom+1});
+       return {clientHeight:main.clientHeight,scrollHeight:main.scrollHeight,gridBottom:grid.getBoundingClientRect().bottom,mainBottom:main.getBoundingClientRect().bottom,visible,scrollWidth:main.scrollWidth,clientWidth:main.clientWidth};
+     });
+     assert.ok(limits.scrollHeight<=limits.clientHeight+1,name+': rolagem vertical do painel: '+JSON.stringify(limits));
+     assert.ok(limits.scrollWidth<=limits.clientWidth+1,name+': rolagem horizontal do painel: '+JSON.stringify(limits));
+     assert.ok(limits.visible,name+': conteúdo fora do viewport '+JSON.stringify(limits));
+   }
+   if(width<1024){
+     const views=['saldo','indicadores','operacoes','tabelas'];
+     for (const view of views){
+       const names={saldo:'Resumo',indicadores:'Contas',operacoes:'Ações',tabelas:'Listas'};
+       await page.getByRole('button',{name:names[view],exact:true}).click();
+       assert.equal(await page.locator('.meg-home').getAttribute('data-mobile-view'),view,'troca de painel '+name);
+     }
+     await page.getByRole('button',{name:'Resumo',exact:true}).click();
+   }
    assert.equal(jsErrors.length,0,name+': console errors '+jsErrors.join(' | '));
    await page.screenshot({path:'artifacts/home-06/'+name+'.png',fullPage:true});
    console.log('PASS',name,width+'×'+height,JSON.stringify(stats));
