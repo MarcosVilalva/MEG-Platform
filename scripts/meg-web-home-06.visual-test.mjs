@@ -29,6 +29,10 @@ try {
    assert.equal(response?.status(),200,'HTTP '+name);
    await page.locator('.meg-home .balance').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-home-kpi').count(),4,'KPIs '+name);
+   assert.equal(await page.locator('.meg-home-hero-icon').count(),1,'icone principal do saldo '+name);
+   assert.ok(await page.locator('.meg-home-balance-graph path').count()>=2,'grafico de evolucao do saldo '+name);
+   const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
+   assert.ok(balanceSize>=31,'saldo visualmente protagonista '+name+': '+balanceSize);
    assert.equal(await page.locator('.meg-home-quick-action').count(),4,'4 ações do print oficial '+name);
    const balanceToggle=page.getByRole('button',{name:'Ocultar saldos'});
    await balanceToggle.click();
