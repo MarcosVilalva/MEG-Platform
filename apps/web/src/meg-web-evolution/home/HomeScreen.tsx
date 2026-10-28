@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { authenticatedRequest } from '../../app/auth-client';
 // A fonte única da Etapa 02 é JavaScript. Sua tipagem fica isolada na fronteira de adaptação.
 // @ts-expect-error módulo JS da Etapa 02, sem declarações TS exportadas
@@ -22,6 +22,8 @@ export type HomeSnapshot = {
   payables: Payable[];
   cards: Card[];
   categories: Category[];
+  /** Apenas para demonstração visual. Não é um read model financeiro. */
+  previewMetrics?: { pay: number; invoice: number; paid: number; payCount: number; invoiceCount: number; paidCount: number };
 };
 type HomeAction = 'lancamentos' | 'pendentes' | 'cartoes' | 'beneficios' | 'novo' | 'transferencia' | 'relatorios' | 'metas';
 type Props = { snapshot?: HomeSnapshot | null; previewOnly?: boolean; onNavigate?: (action: HomeAction) => void };
@@ -41,7 +43,7 @@ function categoryName(ids: Category[], id?: string | null) {
   return ids.find(item => item.id === id)?.name || 'Sem categoria';
 }
 function Icon({ name, size = 22 }: { name: string; size?: number }) {
-  const parts: Record<string, React.ReactNode> = {
+  const parts: Record<string, ReactNode> = {
     wallet: <><rect x="3" y="6" width="18" height="15" rx="3"/><path d="M4 8V5a2 2 0 0 1 2-2h12"/><path d="M16 13h5v5h-5a2 2 0 0 1 0-5Z"/></>,
     flow: <><path d="M4 19V12M10 19V5M16 19V9M22 19v-9"/></>,
     up: <path d="m4 15 8-8 8 8M12 7v14"/>,
@@ -106,7 +108,7 @@ function FlowGraph({ cashflow }: { cashflow: Cashflow | null }) {
     <div className="meg-home-flow-axis"><span>01</span><span>08</span><span>15</span><span>22</span><span>{daysInMonth}</span></div>
   </div>;
 }
-function SectionHeading({icon,title,children}:{icon:string;title:string;children?:React.ReactNode}) {
+function SectionHeading({icon,title,children}:{icon:string;title:string;children?:ReactNode}) {
   return <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name={icon}/></span><h2>{title}</h2>{children}</div>;
 }
 const movementColumns: DataGridColumn<Record<string,unknown>>[]=[
@@ -129,11 +131,12 @@ function HomeView({ snapshot, previewOnly=false, onNavigate }: { snapshot:HomeSn
   const period=summary?.month||flow?.month||currentMonth();
   const periodTitle=monthName.format(new Date(period+'-01T12:00:00Z'));
   const pastPaidCount=snapshot?.payables.filter(p=>p.status==='paid').length||0;
+  const sample=previewOnly?snapshot?.previewMetrics:null;
   const kpis=[
-    {key:'pay',icon:'file',label:'Contas a pagar',number:null,caption:dueRows.length+' contas em aberto',dest:'pendentes' as HomeAction},
-    {key:'invoice',icon:'card',label:'Faturas de cartões',number:null,caption:(snapshot?.cards.length||0)+' cartões cadastrados',dest:'cartoes' as HomeAction},
+    {key:'pay',icon:'file',label:'Contas a pagar',number:sample?.pay??null,caption:(sample?.payCount??dueRows.length)+' contas em aberto',dest:'pendentes' as HomeAction},
+    {key:'invoice',icon:'card',label:'Faturas de cartões',number:sample?.invoice??null,caption:(sample?.invoiceCount??snapshot?.cards.length??0)+' faturas em aberto',dest:'cartoes' as HomeAction},
     {key:'pending',icon:'clock',label:'Outras pendências',number:summary?.pendingAmount,caption:(summary?.pendingCount??0)+' itens pendentes',dest:'pendentes' as HomeAction},
-    {key:'paid',icon:'check',label:'Contas pagas',number:null,caption:pastPaidCount+' contas neste período',dest:'pendentes' as HomeAction},
+    {key:'paid',icon:'check',label:'Contas pagas',number:sample?.paid??null,caption:(sample?.paidCount??pastPaidCount)+' contas neste período',dest:'pendentes' as HomeAction},
   ];
   const actions=[{icon:'plus',name:'Novo lançamento',desc:'Receita, despesa ou transferência',dest:'novo' as HomeAction},{icon:'swap',name:'Transferência',desc:'Entre contas e cartões',dest:'transferencia' as HomeAction},{icon:'report',name:'Relatórios',desc:'Veja seus resultados',dest:'relatorios' as HomeAction},{icon:'settings',name:'Configurar metas',desc:'Organize seus objetivos',dest:'metas' as HomeAction}];
   return <div className="meg-home">
