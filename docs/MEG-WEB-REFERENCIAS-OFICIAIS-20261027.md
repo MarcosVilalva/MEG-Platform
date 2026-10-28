@@ -8,6 +8,24 @@ O usuário autorizou uma **reconstrução sequencial**, com somente uma tela por
 
 **Padrão visual:** base dark teal, brilhos turquesa, painéis em vidro, identidade MEG e **imagens artísticas WebP reais**. Nunca utilizar screenshot inteiro como camada clicável; campos, botões, tabela, feedback e estado são código real. Ícones pequenos de comandos continuam possíveis quando necessários à acessibilidade.
 
+## Regra oficial transversal: simetria e protagonismo da marca
+
+**Decisão visual aprovada em 28/10/2026:** a simetria entre telas é prioridade obrigatória da MEG Web Evolution. Ela complementa a fidelidade aos prints oficiais, sem substituí-los. A marca MEG é o ponto de reconhecimento e deve ter destaque consistente.
+
+**Checklist visual obrigatório, tela por tela:**
+
+1. **Grade e eixos:** comparar telas relacionadas lado a lado; alinhar posições de logotipo, conteúdo editorial, títulos, formulários, painéis, cabeçalhos, rodapés e ações principais.
+2. **Proporção e ritmo:** padronizar margens, espaçamentos, tamanhos relativos de áreas, bordas, tipografia e hierarquia. Desvios devem ter justificativa funcional, responsiva ou de acessibilidade.
+3. **Marca oficial:** não miniaturizar, redesenhar nem substituir por ícone genérico. Preservar nitidez, enquadramento sem margens transparentes excessivas e peso visual equivalente em telas relacionadas.
+4. **Identidade:** repetir de modo coerente paleta, imagens reais decorativas e iluminação; não transformar as telas em cópias quando sua finalidade exigir composição própria.
+5. **Responsividade estrutural:** desktop, tablet e celular, com breakpoints principais 640/1024 px; zero rolagem horizontal e nenhum texto, botão, campo ou conteúdo cortado/oculto. Quando houver rolagem interna necessária, ela não deve passar por trás de botões fixos.
+6. **Funcionalidade preservada:** regra financeira, dados canônicos, DataGrid, autenticação, formulários, teclado, contraste e alvos de toque têm prioridade sobre simetria meramente ornamental.
+7. **Gate de aceite:** inspeção visual comparativa antes de considerar uma nova tela aprovada; CI, build ou deploy não substituem o aceite explícito do usuário.
+
+**Hierarquia inalterada:** (1) regras de negócio do repositório; (2) print oficial atual; (3) Prompt Master. Esta regra de simetria opera transversalmente dentro dessas prioridades.
+
+**Aprovação registrada:** o usuário confirmou em 28/10/2026 que a versão atual do Login e Criar Conta, após recuperação do tamanho e enquadramento da logo MEG, **ficou muito boa e está aprovada visualmente**. A tela de carregamento já tinha aprovação visual. A homologação funcional, o banco de testes e a aprovação de outras telas continuam separados.
+
 ## Registro das referências
 
 | Tela / finalidade | Imagem do projeto |
