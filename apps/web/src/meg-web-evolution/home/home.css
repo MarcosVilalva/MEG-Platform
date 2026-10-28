@@ -152,7 +152,7 @@
  .meg-home-dash>[data-panel]{display:none}
  .meg-home[data-mobile-view="saldo"] [data-panel="saldo"],.meg-home[data-mobile-view="indicadores"] [data-panel="indicadores"],.meg-home[data-mobile-view="operacoes"] [data-panel="operacoes"],.meg-home[data-mobile-view="tabelas"] [data-panel="tabelas"]{display:flex}
  .meg-home[data-mobile-view="saldo"] .balance,.meg-home[data-mobile-view="saldo"] .flow,.meg-home[data-mobile-view="operacoes"] .benefits,.meg-home[data-mobile-view="operacoes"] .quick,.meg-home[data-mobile-view="tabelas"] .recent,.meg-home[data-mobile-view="tabelas"] .upcoming{grid-column:1/-1}
- .meg-home[data-mobile-view="indicadores"] .meg-home-kpi{grid-column:span 1}
+ .meg-home[data-mobile-view="indicadores"] .meg-home-kpi{display:grid;grid-column:span 1}
  .meg-home-hero-balance{font-size:clamp(1.95rem,5.2vw,3rem)}
  .meg-home .quick{display:flex}
  .meg-home .benefits{display:flex}
