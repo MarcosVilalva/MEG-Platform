@@ -116,7 +116,7 @@ function HomeView({ snapshot, previewOnly=false, onNavigate }: { snapshot:HomeSn
   const dueRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.payables||[]).filter(p=>p.status!=='paid'&&p.status!=='cancelled').slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,8).map(p=>({id:p.id,date:p.dueDate,description:p.description,category:categoryName(snapshot?.categories||[],p.categoryId),value:p.openAmount})),[snapshot]);
   const go=(destination:HomeAction)=>{if(onNavigate) onNavigate(destination);else if(!previewOnly) window.dispatchEvent(new CustomEvent('meg:request-navigation',{detail:{destination}}));};
   const period=summary?.month||flow?.month||currentMonth();
-  const periodTitle=monthName.format(new Date(period+'-01T12:00:00Z'));
+  const periodTitle=monthName.format(new Date(period+'-01T12:00:00Z')).replace(/^./,letter=>letter.toLocaleUpperCase('pt-BR'));
   const sample=previewOnly?snapshot?.previewMetrics:null;
   const kpis=[
     {key:'pay',icon:'file',label:'Contas a pagar',number:sample?.pay??null,caption:sample?sample.payCount+' contas em aberto':'Consultar contas em aberto',dest:'pendentes' as HomeAction},
