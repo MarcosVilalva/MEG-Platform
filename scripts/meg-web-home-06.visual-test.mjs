@@ -30,6 +30,7 @@ try {
    await page.locator('.meg-home .balance').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-home-kpi').count(),4,'KPIs '+name);
    assert.equal(await page.locator('.meg-home-grid-slot').count(),2,'DataGrids '+name);
+   assert.equal(await page.locator('.meg-home img').count(),3,'arte da Home '+name);
    const stats=await page.evaluate(()=>({
      viewport:window.innerWidth,
      documentWidth:document.documentElement.scrollWidth,
