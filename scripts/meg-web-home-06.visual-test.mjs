@@ -35,6 +35,7 @@ try {
    assert.equal(await page.locator('.meg-topbar-home-context').count(),1,'saudação exclusiva da Home '+name);
    assert.equal((await page.locator('.meg-profile-name').textContent())?.trim(),'Marcos de Andrade Vilalva','identificação demonstrativa do print oficial '+name);
    assert.equal(await page.locator('.meg-home-flow-distribution').count(),1,'fluxo visual com totais da autoridade '+name);
+   assert.match(await page.locator('.meg-home-flow-result').innerText(),/Resultado projetado/i,'projectedResult nunca identificado como saldo '+name);
    assert.equal(await page.locator('.meg-home-wallet-photo').count(),1,'carteira oficial da referencia 02 '+name);
    assert.equal(await page.locator('.meg-home-balance-graph').count(),0,'sem grafico SVG decorativo no saldo '+name);
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
@@ -58,6 +59,8 @@ try {
    assert.equal(await page.locator('.meg-home img').count(),2,'wallet e arte do beneficio '+name);
    const loaded=await page.locator('.meg-home img').evaluateAll(images=>images.every(img=>img.complete && img.naturalWidth>0));
    assert.ok(loaded,'assets oficiais carregados '+name);
+   const dueFirst=await page.locator('.meg-home .upcoming .meg-datagrid-table tbody tr').first().innerText();
+   assert.match(dueFirst,/28\/10\/2026/,'vencimentos devem iniciar em ordem cronológica sem sort persistido '+name);
    const stats=await page.evaluate(()=>({
      viewport:window.innerWidth,
      documentWidth:document.documentElement.scrollWidth,
