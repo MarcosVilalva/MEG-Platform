@@ -151,13 +151,17 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'slate'},
   ];
   const paidCount=overview?.paid.count;
-  return <div className="meg-home meg-home-reference-02">
+  return <div className="meg-home meg-home-studio">
     <h1 className="meg-home-sr-title">Visão geral das finanças</h1>
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
     
+    <header className="meg-home-intro">
+      <div className="meg-home-intro-copy"><span className="meg-home-eyebrow"><span className="meg-home-eyebrow-dot"/> SEU PAINEL FINANCEIRO</span><h1>Visão geral</h1><p>Resumo das suas finanças em <strong>{periodTitle}</strong></p></div>
+      <span className="meg-home-intro-brand" aria-hidden="true">MEG <span>FINANÇAS</span></span>
+    </header>
     <div className="meg-home-dash">
       <section className="meg-home-card balance" data-panel="saldo" aria-labelledby="meg-home-available-balance">
-        <img className="meg-home-balance-art" src="/meg-web-evolution/home/meg-balance-scene-hd.webp" alt="" aria-hidden="true" decoding="async"/>
+        <span className="meg-home-balance-watermark" aria-hidden="true">MEG<span>FINANÇAS</span></span>
         <div className="meg-home-hero-copy">
           <div className="meg-home-hero-heading">
             <h2 id="meg-home-available-balance">Saldo disponível</h2>
@@ -200,7 +204,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
           </div>
           <button type="button" className="meg-home-button meg-home-benefit-cta" onClick={()=>go('beneficios')}>Acessar benefícios <Icon name="arrow" size={17}/></button>
         </div>
-        <img className="meg-home-benefit-card" src="/meg-web-evolution/home/verocard-oficial-panorama.webp" alt="" aria-hidden="true"/>
+        <span className="meg-home-benefit-monogram" aria-hidden="true">VERO<span>CARD</span></span>
       </section>
       <section className="meg-home-card quick" data-panel="operacoes">
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="zap" size={20}/></span><h2>Ações rápidas</h2></div>
