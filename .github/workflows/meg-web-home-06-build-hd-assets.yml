@@ -9,6 +9,10 @@ on:
       - 'scripts/meg-web-home-06.build-hd-assets.mjs'
       - '.github/workflows/meg-web-home-06-build-hd-assets.yml'
 
+concurrency:
+  group: meg-home-06-hd-assets-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -57,5 +61,7 @@ jobs:
             echo "No image difference to commit."
             exit 0
           fi
-          git commit -m "assets(home): trocar miniaturas desfocadas por artes HD independentes"
+          git commit -m "assets(home): atualizar cena oficial HD da carteira"
+          git fetch origin meg-web-evolution/06-home-visual-20261027
+          git rebase origin/meg-web-evolution/06-home-visual-20261027
           git push origin HEAD:refs/heads/meg-web-evolution/06-home-visual-20261027
