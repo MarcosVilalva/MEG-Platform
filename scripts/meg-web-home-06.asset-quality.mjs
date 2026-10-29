@@ -12,7 +12,7 @@ try{sharp=require(process.env.MEG_SHARP_MODULE||'sharp')}catch(err){
   throw Error('Sharp ausente. Instale no runner isolado: '+String(err));
 }
 const manifest=[
-  {name:'Carteira do saldo',file:'wallet-official-02.webp',minWidth:1200,minHeight:600},
+  {name:'Cena financeira HD do saldo',file:'meg-balance-scene-hd.webp',minWidth:2000,minHeight:1100},
   {name:'Cartão do benefício',file:'verocard-oficial-panorama.webp',minWidth:900,minHeight:500},
 ];
 const measured=[];
@@ -47,8 +47,8 @@ if(url){
       const page=await context.newPage();
       try{
         await page.goto(url,{waitUntil:'networkidle',timeout:45000});
-        await page.locator('.meg-home-wallet-photo').waitFor();
-        const images=await page.locator('.meg-home-wallet-photo, .meg-home-benefit-card').evaluateAll(nodes=>
+        await page.locator('.meg-home-balance-art').waitFor();
+        const images=await page.locator('.meg-home-balance-art, .meg-home-benefit-card').evaluateAll(nodes=>
           nodes.map(node=>{
             const rect=node.getBoundingClientRect();
             const css=getComputedStyle(node);
