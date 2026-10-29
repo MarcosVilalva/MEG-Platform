@@ -45,16 +45,16 @@ for(let y=0;y<sourceHeight;y++){
   const brightness=.299*r+.587*g+.114*b;
   const colorDifference=Math.max(r,g,b)-Math.min(r,g,b);
   const spatial=smooth(305,362,x)*(1-smooth(1150,1200,x))*smooth(77,128,y)*(1-smooth(731,789,y));
-  const darkLeather=1-smooth(51,99,brightness);
-  const brownAttenuation=1-.65*smooth(12,49,colorDifference);
+  const darkLeather=1-smooth(37,74,brightness);
+  const brownAttenuation=1-.86*smooth(9,40,colorDifference);
   const alpha=clamp(spatial*darkLeather*brownAttenuation);
   matted[o]=r;matted[o+1]=g;matted[o+2]=b;matted[o+3]=Math.round(255*alpha);
  }
 }
 const cutout=await sharp(matted,{raw:{width:sourceWidth,height:sourceHeight,channels:4}}).png().toBuffer();
-const walletMark=await sharp(officialLogo).resize(144,144,{fit:'contain'}).png().toBuffer();
+const walletMark=await sharp(officialLogo).resize(137,137,{fit:'contain'}).png().toBuffer();
 const walletBranded=await sharp(cutout)
- .composite([{input:walletMark,left:812,top:501}])
+ .composite([{input:walletMark,left:660,top:485}])
  .extract({left:290,top:64,width:930,height:744})
  .rotate(13,{background:{r:0,g:0,b:0,alpha:0}})
  .resize({width:860})
@@ -75,8 +75,8 @@ const walletScene=Buffer.from([
  '<rect width="1800" height="1000" fill="url(#teal)" opacity=".26"/>',
  '</svg>'
 ].join(''));
-const x=Math.round(1740-(brandedMeta.width??860));
-const y=Math.max(85,Math.round((915-(brandedMeta.height??750))/2));
+const x=Math.round(1620-(brandedMeta.width??860));
+const y=Math.max(110,Math.round((950-(brandedMeta.height??750))/2));
 const wallet=await sharp(walletScene)
  .composite([{input:walletBranded,left:x,top:y}])
  .webp({quality:98,effort:6}).toBuffer();
