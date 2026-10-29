@@ -72,6 +72,22 @@ try {
      shell:document.querySelector('.meg-shell')?.getBoundingClientRect().toJSON(),
      grid:document.querySelector('.meg-home-dash')?.getBoundingClientRect().toJSON(),
    }));
+   // Contrato geométrico da referência oficial 02: primeira linha 7/5,
+   // mobile empilhado, sem sobreposição ou achatamento do Fluxo.
+   const firstRow=await page.evaluate(()=>{
+     const a=document.querySelector('.meg-home .balance').getBoundingClientRect();
+     const b=document.querySelector('.meg-home .flow').getBoundingClientRect();
+     return {saldo:{left:a.left,right:a.right,top:a.top,bottom:a.bottom,width:a.width,height:a.height},fluxo:{left:b.left,right:b.right,top:b.top,bottom:b.bottom,width:b.width,height:b.height}};
+   });
+   if(width>=1024){
+     assert.ok(Math.abs(firstRow.saldo.top-firstRow.fluxo.top)<=2,name+': primeira linha desalinhada '+JSON.stringify(firstRow));
+     assert.ok(Math.abs(firstRow.saldo.height-firstRow.fluxo.height)<=2,name+': altura inconsistente '+JSON.stringify(firstRow));
+     assert.ok(firstRow.fluxo.left>=firstRow.saldo.right,name+': Saldo e Fluxo sobrepostos '+JSON.stringify(firstRow));
+     const ratio=firstRow.saldo.width/firstRow.fluxo.width;
+     assert.ok(ratio>=1.20&&ratio<=1.60,name+': proporção 7/5 alterada: '+ratio);
+   }else{
+     assert.ok(firstRow.fluxo.top>=firstRow.saldo.bottom-1,name+': Saldo/Fluxo sobrepostos no mobile '+JSON.stringify(firstRow));
+   }
    assert.ok(stats.documentWidth<=stats.viewport+1,name+': rolagem horizontal: '+JSON.stringify(stats));
    assert.ok(stats.documentHeight<=stats.viewportHeight+1,name+': overflow externo: '+JSON.stringify(stats));
    // Rolagem vertical natural é permitida, mas nenhum painel pode
