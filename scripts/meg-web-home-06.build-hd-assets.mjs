@@ -1,6 +1,6 @@
 /**
- * MEG Web Evolution / Home 06 / imagens editoriais oficiais.
- * Composição vetorial própria, independente de foto externa, screenshot ou mock.
+ * MEG Web Evolution / Home 06 / cena HD do saldo e Verocard.
+ * Cena do saldo sem carteira: arte vetorial própria e logotipo canônico.
  * Números e controles permanecem exclusivamente no React.
  * O logotipo vem do SVG canônico do projeto (nunca redesenhado).
  */
@@ -15,75 +15,61 @@ const root = resolve(import.meta.dirname, '../apps/web/public/meg-web-evolution/
 mkdirSync(root, { recursive: true });
 const officialLogo = readFileSync(resolve(import.meta.dirname, '../apps/web/public/brand/logo-meg-financas.svg'));
 
-const walletBodySvg = String.raw`
-<svg xmlns="http://www.w3.org/2000/svg" width="990" height="690" viewBox="0 0 990 690">
+// Cena editorial estática. Gráfico de fundo é decorativo, sem representar dados.
+const sceneW=2400,sceneH=1200;
+const bars=Array.from({length:10},(_,i)=>{
+  const x=1320+i*93,h=164+i*55,y=886-h;
+  const shade=['#13ead8','#0bc8c4','#0f9fba'][i%3];
+  return [
+   '<g opacity="'+(0.40+i*.05).toFixed(3)+'">',
+   '<rect x="'+x+'" y="'+y+'" width="48" height="'+h+'" rx="5" fill="url(#columnFill)" stroke="'+shade+'" stroke-width="3"/>',
+   '<path d="M'+x+' '+y+'l20 -14h48l-20 14Z" fill="#8bfff3" opacity=".4"/>',
+   '<path d="M'+(x+48)+' '+y+'l20 -14v'+h+'l-20 14Z" fill="#087d91" opacity=".5"/>',
+   '<path d="M'+(x+8)+' '+(y+14)+'v'+(h-26)+'" stroke="#9ffff2" stroke-opacity=".32" stroke-width="3"/>',
+   '</g>'
+  ].join('');
+}).join('');
+const sceneSvg=String.raw`
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1200" viewBox="0 0 2400 1200">
 <defs>
- <linearGradient id="leather" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#062832"/><stop offset=".17" stop-color="#071b24"/><stop offset=".55" stop-color="#050f18"/><stop offset=".86" stop-color="#03090e"/><stop offset="1" stop-color="#082b30"/></linearGradient>
- <linearGradient id="rim" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#52cabb"/><stop offset=".22" stop-color="#18555a"/><stop offset=".65" stop-color="#06151f"/><stop offset="1" stop-color="#2b6c6a"/></linearGradient>
- <radialGradient id="edge" cx=".75" cy=".15" r=".9"><stop stop-color="#19a7a2" stop-opacity=".31"/><stop offset=".52" stop-color="#0a2734" stop-opacity=".08"/><stop offset="1" stop-color="#030b10" stop-opacity=".24"/></radialGradient>
- <filter id="grain"><feTurbulence baseFrequency=".44" numOctaves="3" seed="17" type="fractalNoise"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
- <filter id="softshadow" x="-30%" y="-40%" width="160%" height="180%"><feGaussianBlur stdDeviation="24"/></filter>
- <clipPath id="body"><rect x="60" y="55" width="840" height="540" rx="63"/></clipPath>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00131d"/><stop offset=".48" stop-color="#002a34"/><stop offset="1" stop-color="#031924"/></linearGradient>
+ <radialGradient id="halo"><stop stop-color="#12e7c7" stop-opacity=".46"/><stop offset=".4" stop-color="#16a9aa" stop-opacity=".24"/><stop offset="1" stop-color="#11cab9" stop-opacity="0"/></radialGradient>
+ <linearGradient id="columnFill" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#046377" stop-opacity=".5"/><stop offset=".4" stop-color="#0ca7af" stop-opacity=".8"/><stop offset="1" stop-color="#083b4a" stop-opacity=".9"/></linearGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#093943"/><stop offset="1" stop-color="#02141e"/></linearGradient>
+ <linearGradient id="pathline" x1="0" y1="0" x2="1" y2=".1"><stop stop-color="#036875" stop-opacity="0"/><stop offset=".3" stop-color="#15c0b7"/><stop offset=".78" stop-color="#7cfff2"/><stop offset="1" stop-color="#08c0ca"/></linearGradient>
+ <filter id="depth"><feGaussianBlur stdDeviation="53"/></filter>
+ <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+ <filter id="floorBlur"><feGaussianBlur stdDeviation="12"/></filter>
 </defs>
-<ellipse cx="508" cy="618" rx="408" ry="49" fill="#000508" opacity=".72" filter="url(#softshadow)"/>
-<rect x="54" y="54" width="852" height="547" rx="72" fill="#00080b" stroke="#0d4348" stroke-width="9"/>
-<g clip-path="url(#body)">
- <rect x="60" y="55" width="840" height="540" rx="63" fill="url(#leather)"/>
- <rect x="60" y="55" width="840" height="540" rx="63" fill="url(#edge)"/>
- <rect x="60" y="55" width="840" height="540" rx="63" filter="url(#grain)" opacity=".47"/>
- <path d="M55 87Q160 28 300 53L825 55Q913 63 901 154" fill="none" stroke="#3dafa7" stroke-opacity=".53" stroke-width="8"/>
- <path d="M61 530Q350 625 899 560" fill="none" stroke="#3c928d" stroke-opacity=".2" stroke-width="14"/>
- <path d="M133 55V597" stroke="#15434a" stroke-width="13" opacity=".63"/>
- <path d="M139 55V597" stroke="#58c7b4" stroke-width="2" opacity=".31"/>
- <path d="M780 110L940 275" stroke="#2fd4c4" stroke-opacity=".045" stroke-width="165"/>
- <rect x="80" y="75" width="800" height="495" rx="47" fill="none" stroke="#84c7c0" stroke-opacity=".46" stroke-width="2.6" stroke-dasharray="4 11"/>
- <rect x="91" y="86" width="778" height="473" rx="38" fill="none" stroke="#02141c" stroke-width="6"/>
+<rect width="2400" height="1200" fill="url(#bg)"/>
+<g opacity=".54" filter="url(#depth)">
+ <ellipse cx="1804" cy="398" rx="830" ry="470" fill="url(#halo)"/>
+ <path d="M1430 -100h68v615h-68z" fill="#9efff5" opacity=".32" transform="rotate(12 1430 0)"/>
+ <path d="M1890 -100h38v535h-38z" fill="#39f6ed" opacity=".3" transform="rotate(-8 1900 0)"/>
+ <ellipse cx="2210" cy="520" rx="270" ry="230" fill="#166a71"/>
 </g>
-<rect x="64" y="59" width="832" height="532" rx="61" fill="none" stroke="url(#rim)" stroke-width="5"/>
-</svg>`;
-const walletLogo = await sharp(officialLogo).resize(226, 226, {fit:'contain'}).png().toBuffer();
-// Separar etapas Sharp: o pipeline libvips otimiza resize/rotate na mesma
-// instância e pode produzir envelope vertical distinto do solicitado.
-const walletEmbossed = await sharp(Buffer.from(walletBodySvg))
- .composite([{input:walletLogo,left:560,top:314}])
- .resize({width:785,height:795,fit:'fill'})
- .png().toBuffer();
-const walletRotated = await sharp(walletEmbossed)
- .rotate(9,{background:{r:0,g:0,b:0,alpha:0}})
- .png().toBuffer();
-const walletBody = await sharp(walletRotated)
- .resize({height:590})
- .png().toBuffer();
-const walletMeta=await sharp(walletBody).metadata();
-
-const walletScene=String.raw`
-<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000">
-<defs>
-<linearGradient id="scene" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00141e"/><stop offset=".34" stop-color="#02323d"/><stop offset=".70" stop-color="#00222e"/><stop offset="1" stop-color="#091d25"/></linearGradient>
-<radialGradient id="window"><stop stop-color="#55e2c5" stop-opacity=".62"/><stop offset=".42" stop-color="#23a8a5" stop-opacity=".24"/><stop offset="1" stop-color="#13c7b7" stop-opacity="0"/></radialGradient>
-<linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#07565b"/><stop offset=".27" stop-color="#06363c"/><stop offset="1" stop-color="#041923"/></linearGradient>
-<filter id="blur"><feGaussianBlur stdDeviation="57"/></filter>
-</defs>
-<rect width="1800" height="1000" fill="url(#scene)"/>
-<ellipse cx="1250" cy="215" rx="585" ry="425" fill="url(#window)"/>
-<g filter="url(#blur)" opacity=".45">
-<rect x="1150" y="-60" width="67" height="390" rx="34" fill="#8cffe7" transform="rotate(11 1150 -60)"/>
-<rect x="1370" y="-10" width="56" height="335" rx="28" fill="#c5ffeb" transform="rotate(9 1370 -10)"/>
-<circle cx="1701" cy="320" r="152" fill="#368f81"/>
-<circle cx="945" cy="340" r="105" fill="#05b6b1"/>
+<path d="M0 940L2400 830V1200H0Z" fill="url(#floor)"/>
+<g opacity=".17" stroke="#3ac5b9" fill="none" stroke-width="2">
+ <path d="M0 1044L2400 918"/><path d="M0 1111L2400 1021"/>
+ <path d="M600 1200L1450 861"/><path d="M1200 1200L1800 838"/><path d="M1750 1200L2200 830"/>
 </g>
-<path d="M0 770 L1800 690 L1800 1000 L0 1000Z" fill="url(#floor)"/>
-<path d="M300 850L1800 754" stroke="#20958e" stroke-opacity=".14" stroke-width="4"/>
-<ellipse cx="1355" cy="865" rx="490" ry="68" fill="#020b11" opacity=".7" filter="url(#blur)"/>
-<ellipse cx="1450" cy="820" rx="520" ry="175" fill="url(#window)" opacity=".18"/>
-</svg>`;
-// Enquadramento editorial: a carteira inteira deve permanecer na faixa visível
-// do hero (object-fit:cover), inclusive em 1366px, sem cortar sua base.
-const walletX= Math.floor(1800-(walletMeta.width??585)-100);
-const walletY= Math.max(198,Math.floor((1000-(walletMeta.height??585))/2));
-if(walletX<700 || walletY<0 || walletY+(walletMeta.height??0)>1000)throw Error('Wallet geometry exceeds scene: '+JSON.stringify({walletX,walletY,width:walletMeta.width,height:walletMeta.height}));
-const wallet=await sharp(Buffer.from(walletScene))
- .composite([{input:walletBody,left:walletX,top:walletY}])
+<ellipse cx="1810" cy="910" rx="590" ry="92" fill="#000a11" opacity=".68" filter="url(#depth)"/>
+<g>
+ <ellipse cx="1860" cy="921" rx="535" ry="88" fill="#02212d" stroke="#0c6571" stroke-width="6"/>
+ <path d="M1325 923v45c0 48 235 85 535 85s535-37 535-85v-45" fill="#02131d" stroke="#0b4f58" stroke-width="4"/>
+ <ellipse cx="1860" cy="918" rx="527" ry="82" fill="#073542" stroke="#27b2a6" stroke-opacity=".65" stroke-width="5"/>
+ <ellipse cx="1860" cy="918" rx="470" ry="58" fill="#001823" opacity=".7"/>
+ <path d="M1480 940Q1850 1021 2260 940" stroke="#1be8d0" stroke-opacity=".62" stroke-width="7" fill="none" filter="url(#floorBlur)"/>
+</g>
+<!-- BARS -->
+<path d="M890 797C1140 849 1240 720 1432 667S1735 459 1870 487S2100 383 2310 324" fill="none" stroke="#24f7d9" stroke-width="29" stroke-opacity=".47" filter="url(#glow)"/>
+<path d="M890 797C1140 849 1240 720 1432 667S1735 459 1870 487S2100 383 2310 324" fill="none" stroke="url(#pathline)" stroke-width="8" stroke-linecap="round"/>
+<path d="M1050 878C1220 812 1300 840 1475 760S1745 615 1930 650S2210 520 2385 476" stroke="#45eee3" stroke-opacity=".23" stroke-width="3" fill="none"/>
+<g filter="url(#glow)" opacity=".6"><circle cx="1870" cy="487" r="20" fill="#9efff2"/><circle cx="2310" cy="324" r="21" fill="#7bfff0"/></g>
+</svg>`.replace('<!-- BARS -->',bars);
+const logo=await sharp(officialLogo).resize(315,315,{fit:'contain'}).png().toBuffer();
+const hero=await sharp(Buffer.from(sceneSvg))
+ .composite([{input:logo,left:1875,top:540}])
  .webp({lossless:true,effort:6}).toBuffer();
 
 const cardSvg=String.raw`
@@ -122,7 +108,7 @@ const cardTransparent={r:0,g:0,b:0,alpha:0};
 const card=await sharp({create:{width:1800,height:1040,channels:4,background:cardTransparent}})
  .composite([{input:cardBody,left:Math.floor((1800-(cardMeta.width??1210))/2),top:Math.floor((1040-(cardMeta.height??850))/2)}])
  .webp({quality:96,effort:6}).toBuffer();
-for(const [name,buffer] of [['wallet-official-02.webp',wallet],['verocard-oficial-panorama.webp',card]]){
+for(const [name,buffer] of [['meg-balance-scene-hd.webp',hero],['verocard-oficial-panorama.webp',card]]){
  const p=resolve(root,name);writeFileSync(p,buffer);const info=await sharp(buffer).metadata();
  if((info.width??0)<1800||(info.height??0)<1000||statSync(p).size<30000)throw Error(name+': quality gate failed');
  console.log(JSON.stringify({name,width:info.width,height:info.height,bytes:statSync(p).size,sha256:createHash('sha256').update(buffer).digest('hex')}));
