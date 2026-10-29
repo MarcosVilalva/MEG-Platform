@@ -1367,3 +1367,15 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - Nenhum saldo, API, pagamento, benefício, DataGrid, Shell, Android ou tela de autenticação foi alterado. A PR #650 segue **Draft, sem merge**; aprovação visual e homologação com contas reais permanecem pendentes.
 
 - **Correção posterior no mesmo ciclo:** o workflow de auditoria de imagem foi promovido de não bloqueador para **gate bloqueador** (commit 1596f0f2). Com as miniaturas atuais, o resultado esperado é falha. Isso impede aceitar qualidade baixa como se fosse aprovada. O relatório continua publicado pelo passo always().
+
+
+## Home 06 | Substituição efetiva dos assets HD (29/10/2026)
+
+- O usuário autorizou continuar a reconstrução, priorizando a nitidez real das imagens. O visual oficial da Home continua sendo a imagem 02. Home NÃO aprovada.
+- Criado script de geração isolado: scripts/meg-web-home-06.build-hd-assets.mjs. Fonte fotográfica da carteira: Aleksandrs Karevs, Pexels 15440419, licença Pexels Free. O enquadramento e o tratamento de luz são adaptados à composição dark-teal. O cartão do painel Verocard é **ilustração demonstrativa construída em vetor e renderizada em WebP**, não a fotografia de cartão físico emitido. Nenhum número financeiro está dentro das imagens.
+- Criado workflow .github/workflows/meg-web-home-06-build-hd-assets.yml, limitado à branch isolada, com Sharp pinado no runner, controle de tamanho/resolução, commit de somente dois arquivos WebP e push por github-actions[bot].
+- **Commit de assets gerados:** ec13a618b7e2760445e52351d9030fee70676a86. Carteira: 1800×1000 px (289.862 bytes). Cartão: 1800×1040 px (69.628 bytes). A etapa de geração de HD foi concluída com sucesso na execução GitHub 40937871970.
+- IMPORTANTE: **não é uma fotografia oficial da marca MEG ou cartão Verocard**. Deve ser conferida esteticamente contra a referência 02, principalmente textura/fundo da carteira, logotipo do cartão, perspectiva, luz e cores. Se o usuário rejeitar a composição, voltar à elaboração dos assets sem mexer nas regras ou no grid.
+- Os assets antigos de 224×185 e 204×131 px foram substituídos no código da PR; não existe necessidade de CSS para esticá-los artificialmente.
+- O pipeline de qualidade de imagens continua **bloqueador**, precisa passar no novo SHA (não declarar aprovado só pela presença de dimensões grandes). A compilação Home e Foundation devem ser reexecutadas sobre o SHA novo. Render deve publicar o mesmo SHA e oferecer URL sem cache.
+- PR #650 permanece Draft, sem merge; Android, regras financeiras, autenticação e DataGrid preservados. Nenhuma tela futura iniciada.
