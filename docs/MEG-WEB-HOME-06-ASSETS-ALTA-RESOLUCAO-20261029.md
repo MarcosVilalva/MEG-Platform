@@ -38,3 +38,14 @@ Taste Skill continua apenas como auditor de composição, subordinado ao print o
 6. Publicar novo Render apenas após implementar efetivamente os assets novos e verificar o SHA, com link sem cache.
 
 Nenhuma regra financeira, API, DataGrid, Shell, autenticação nem Android foi alterado neste piloto. Home não aprovada. PR #650 segue Draft e sem merge.
+
+
+## Execução: geração e publicação dos substitutos HD
+
+- Implementação: scripts/meg-web-home-06.build-hd-assets.mjs. Fonte fotográfica Pexels [Aleksandrs Karevs, foto 15440419](https://www.pexels.com/photo/keys-beside-a-leather-wallet-15440419/), sob licença Pexels (uso comercial permitido). A fotografia é recortada de uma origem de alta resolução e tratada com iluminação do padrão MEG.
+- Segunda imagem: ilustração de cartão seguindo o modelo 02, construída em SVG intermediário **somente no pipeline** e rasterizada por Sharp em WebP. A imagem não contém números financeiros e não é um cartão real emitido por instituição financeira.
+- Workflow gerador: .github/workflows/meg-web-home-06-build-hd-assets.yml. Executado com sucesso na ação GitHub 40937871970; commit dos binários ec13a618b7e2760445e52351d9030fee70676a86. Nenhuma dependência Sharp foi adicionada ao bundle da Web.
+- Substituição efetiva: carteira **1800×1000 px / 289.862 bytes**; Verocard **1800×1040 px / 69.628 bytes**. Ambos substituem o conteúdo dos arquivos homônimos (antigos 224×185 e 204×131).
+- O gate bloqueador Sharp + Playwright passou com **zero falhas** na ação GitHub 40938203161, incluindo 1366×768, 1920×1080 e 390×844 em DPR 2. Isso comprova resolução e densidade, não a semelhança fotográfica.
+- Ajuste editorial posterior em home.css: maior enquadramento da carteira com tratamento de cor cool-teal e aumento discreto da arte Verocard no card. CSS apenas, não calcular/simular dados.
+- **Divergência ainda possível com referência 02:** a carteira é fotografia licenciada sem o logotipo MEG impresso, com perspectiva diferente do print. A arte do Verocard é interpretação da referência, não arquivo físico oficial. A Home continua **não aprovada** visualmente até o usuário validar o Render da revisão final. Não dizer que o design foi homologado por causa de build, imagens HD ou auditoria.
