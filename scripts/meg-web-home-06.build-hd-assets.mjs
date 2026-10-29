@@ -42,11 +42,17 @@ const walletBodySvg = String.raw`
 <rect x="64" y="59" width="832" height="532" rx="61" fill="none" stroke="url(#rim)" stroke-width="5"/>
 </svg>`;
 const walletLogo = await sharp(officialLogo).resize(226, 226, {fit:'contain'}).png().toBuffer();
-const walletBody = await sharp(Buffer.from(walletBodySvg))
+// Separar etapas Sharp: o pipeline libvips otimiza resize/rotate na mesma
+// instância e pode produzir envelope vertical distinto do solicitado.
+const walletEmbossed = await sharp(Buffer.from(walletBodySvg))
  .composite([{input:walletLogo,left:560,top:314}])
  .resize({width:785,height:795,fit:'fill'})
+ .png().toBuffer();
+const walletRotated = await sharp(walletEmbossed)
  .rotate(9,{background:{r:0,g:0,b:0,alpha:0}})
- .resize({width:585})
+ .png().toBuffer();
+const walletBody = await sharp(walletRotated)
+ .resize({height:590})
  .png().toBuffer();
 const walletMeta=await sharp(walletBody).metadata();
 
