@@ -1447,3 +1447,16 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - `HomeScreen.tsx`, integração autenticada, Shell, DataGrid reutilizável, backend, regras financeiras, telas 01–04 e Android **não foram alterados funcionalmente** nesta rodada. As correções anteriores de `Resultado projetado`, vencimentos cronológicos e `Situação` continuam preservadas.
 - A PR #650 permanece **Draft, sem merge**. Gate visual Home, Foundation, fonte HD e preflight devem ser conferidos no SHA final com assets. Foundation já apresentava falhas independentes da Home em snapshots do DataGrid; não substituir esse diagnóstico por sucesso de build.
 - **Pendências:** comprovar preview Render do SHA final (workspace Render não selecionado nesta sessão), inspecionar screenshots desktop/tablet/320/390, conferir status de todos os gates, comparar com o PNG original e colher aprovação visual explícita. Não avançar para próximas telas.
+
+## Home 06 | substituição IMPLEMENTADA da carteira por cena HD com marca MEG (29/10/2026)
+
+- Contexto: usuário rejeitou mockup que não era implementado; autorizou expressamente **tirar a carteira** e usar uma imagem de alta definição atrás do saldo com logo MEG. Essa adaptação está aprovada como diretriz de implementação, não homologação visual da Home.
+- `HomeScreen.tsx`: substituído `img.meg-home-wallet-photo` por `img.meg-home-balance-art` com URL `/meg-web-evolution/home/meg-balance-scene-hd.webp`. Valor do saldo, privacidade e botão de detalhes permanecem funcionais e não são rasterizados.
+- `home.css`: apresentação do hero usa a nova cena em 100% da área, gradiente do texto e composição oficial em 7/5. Todo restante do layout oficial 02 preservado.
+- `scripts/meg-web-home-06.build-hd-assets.mjs`: removida geração de carteira, substituída por imagem HD 2400×1200 construída em Sharp/SVG, fundo dark teal, gráficos abstratos luminosos e logo do SVG canônico `public/brand/logo-meg-financas.svg`. Gráficos de fundo são exclusivamente decorativos, sem simular ganhos, métricas ou cálculos financeiros.
+- Binário gerado e commitado por workflow em `apps/web/public/meg-web-evolution/home/meg-balance-scene-hd.webp`; arquivo antigo `wallet-official-02.webp` removido do branch (não apenas oculto via CSS). Verocard atual mantido.
+- `scripts/meg-web-home-06.asset-quality.mjs`: verifica novo arquivo, fonte mínima 2000×1100 e densidade Retina nos viewports oficiais.
+- `scripts/meg-web-home-06.visual-test.mjs`: exige nova cena, valida URL e ausência da classe de carteira antiga, mantendo controles e DataGrids.
+- `.github/workflows/meg-web-home-06-build-hd-assets.yml`: gera novo asset, remove binário antigo em commit sem force e usa fetch/rebase; build isolado da Home continua exigido.
+- Proibido chamar tela pronta antes de verificar screenshot, green gates do último SHA e aprovação explícita. Base da PR #650 permanece Draft, sem merge. O Android, APIs financeiras, transferências, faturas, saldos e DataGrid compartilhado não foram alterados nesta tarefa.
+- **Pendências:** conferir captura do último SHA com asset gerado, execução final de `Home 06 - Visual and Build` e `Foundation`, validar publicação exata no Render e aprovação visual. Falhas anteriores do Foundation relacionadas a contratos de viewport do DataGrid são independentes da nova arte e não devem ser ignoradas.
