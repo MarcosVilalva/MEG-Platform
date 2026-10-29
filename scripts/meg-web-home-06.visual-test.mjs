@@ -117,10 +117,12 @@ try {
        name+': vencimentos devem permanecer acessíveis no mobile');
    }
    assert.equal(jsErrors.length,0,name+': console errors '+jsErrors.join(' | '));
-   await page.locator('.meg-main').evaluate(el=>{el.scrollTop=0});
-   await page.screenshot({path:'artifacts/home-06/'+name+'.png',fullPage:true});
-   await page.locator('.meg-main').evaluate(el=>{el.scrollTop=el.scrollHeight});
-   await page.screenshot({path:'artifacts/home-06/'+name+'-parte-inferior.png',fullPage:true});
+   // Evidência confiável: centralizar o primeiro/último painel no viewport,
+   // em vez de alterar scrollTop de um elemento que pode não ser o scroller final.
+   await page.locator('.meg-home .balance').scrollIntoViewIfNeeded();
+   await page.screenshot({path:'artifacts/home-06/'+name+'.png'});
+   await page.locator('.meg-home .upcoming').scrollIntoViewIfNeeded();
+   await page.screenshot({path:'artifacts/home-06/'+name+'-parte-inferior.png'});
    console.log('PASS',name,width+'×'+height,JSON.stringify(stats));
   }catch(error){
    errors++;
