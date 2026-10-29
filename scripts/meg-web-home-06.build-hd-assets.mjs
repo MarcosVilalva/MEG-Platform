@@ -23,19 +23,48 @@ crop.height=Math.min(crop.height,meta.height-crop.top);
 // em resolução nativa sobre a carteira, sem reaproveitar os pixels do mockup.
 const officialLogo=readFileSync(resolve(import.meta.dirname,'../apps/web/public/brand/logo-meg-financas.svg'));
 const walletBase=await sharp(photo).extract(crop).resize(1800,1000,{fit:'cover',position:'centre'})
- .modulate({brightness:.83,saturation:.74}).toBuffer();
-const walletLighting=Buffer.from([
- '<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000">',
- '<defs><linearGradient id="scene" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#001e29" stop-opacity=".55"/><stop offset=".62" stop-color="#003c45" stop-opacity=".21"/><stop offset="1" stop-color="#00252c" stop-opacity=".48"/></linearGradient>',
- '<radialGradient id="light"><stop stop-color="#1efbe3" stop-opacity=".33"/><stop offset="1" stop-color="#1efbe3" stop-opacity="0"/></radialGradient></defs>',
- '<rect width="1800" height="1000" fill="url(#scene)"/>',
- '<ellipse cx="1430" cy="180" rx="680" ry="400" fill="url(#light)"/>',
+ .modulate({brightness:.89,saturation:.68}).toBuffer();
+
+// Não ampliar pixels da referência 02: isolar a carteira da fotografia HD
+// e integrá-la a um novo ambiente teal, removendo chaves/mesa como foco.
+// A máscara acompanha a silhueta da fotografia Pexels acima, não os dados da UI.
+const walletSilhouette=Buffer.from([
+ '<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000">',
+ '<defs><filter id="edge" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="3"/></filter></defs>',
+ '<path d="M350 90 Q380 76 425 78 L990 91 Q1121 100 1160 176 L1186 733 Q1191 764 1158 771 L335 779 Q319 769 321 730 L323 145 Q324 111 350 90 Z" fill="#fff" filter="url(#edge)"/>',
  '</svg>'
 ].join(''));
-const walletMark=await sharp(officialLogo).resize(178,178,{fit:'contain'}).png().toBuffer();
-const wallet=await sharp(walletBase)
- .composite([{input:walletLighting,left:0,top:0},{input:walletMark,left:800,top:452}])
- .webp({quality:93,effort:6}).toBuffer();
+const cutout=await sharp(walletBase)
+ .composite([{input:walletSilhouette,blend:'dest-in'}])
+ .png().toBuffer();
+const walletMark=await sharp(officialLogo).resize(180,180,{fit:'contain'}).png().toBuffer();
+const walletBranded=await sharp(cutout)
+ .composite([{input:walletMark,left:826,top:503}])
+ .extract({left:292,top:42,width:920,height:762})
+ .rotate(13,{background:{r:0,g:0,b:0,alpha:0}})
+ .resize({width:1010})
+ .png().toBuffer();
+const brandedMeta=await sharp(walletBranded).metadata();
+if((brandedMeta.width??0)>1160||(brandedMeta.height??0)>985)throw Error('Arte de carteira fora do envelope: '+brandedMeta.width+'x'+brandedMeta.height);
+const walletScene=Buffer.from([
+ '<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000">',
+ '<defs><linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#001720"/><stop offset=".43" stop-color="#00303b"/><stop offset="1" stop-color="#042129"/></linearGradient>',
+ '<radialGradient id="teal"><stop stop-color="#20d2cc" stop-opacity=".58"/><stop offset="1" stop-color="#03bcaa" stop-opacity="0"/></radialGradient>',
+ '<filter id="blur"><feGaussianBlur stdDeviation="72"/></filter>',
+ '<linearGradient id="desk" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b3f45"/><stop offset="1" stop-color="#00151d"/></linearGradient></defs>',
+ '<rect width="1800" height="1000" fill="url(#background)"/>',
+ '<g filter="url(#blur)" opacity=".7"><ellipse cx="1220" cy="105" rx="230" ry="190" fill="#4affec"/><ellipse cx="1660" cy="208" rx="250" ry="200" fill="#125e64"/><ellipse cx="1080" cy="740" rx="410" ry="150" fill="#12b9b2"/></g>',
+ '<rect x="0" y="775" width="1800" height="225" fill="url(#desk)" opacity=".72"/>',
+ '<path d="M1040 835 L1700 695 L1800 862 L1190 1000 L950 1000 Z" fill="#01121d" stroke="#125e65" stroke-width="11" opacity=".8"/>',
+ '<path d="M1030 855 L1680 717" stroke="#16cabc" stroke-opacity=".28" stroke-width="5"/>',
+ '<rect width="1800" height="1000" fill="url(#teal)" opacity=".26"/>',
+ '</svg>'
+].join(''));
+const x=Math.round(1790-(brandedMeta.width??1010));
+const y=Math.max(15,Math.round((975-(brandedMeta.height??880))/2));
+const wallet=await sharp(walletScene)
+ .composite([{input:walletBranded,left:x,top:y}])
+ .webp({quality:94,effort:6}).toBuffer();
 
 // O cartão é uma ilustração HD da linguagem da referência visual 02.
 // Dados, botões, cifras e status continuam exclusivamente no React.
