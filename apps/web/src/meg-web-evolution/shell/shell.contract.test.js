@@ -89,8 +89,8 @@ assert.equal(source.includes('.meg-sidebar-control'), false, 'old sidebar footer
 assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar toggle must not exist');
 
 assert.match(source, /aria-label="Navegação principal"/);
-assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
-assert.match(source, /Marcos de Andrade Vilalva/);
+assert.match(source, /Buscar na Home: movimentações e vencimentos/, 'busca restrita aos dados realmente consultados');
+assert.match(source, /userName/, 'identidade deve vir da sessão autenticada');
 assert.equal(source.includes('meg-sidebar-lockup.svg'), false);
 assert.equal(source.includes('meg-finance-symbol-transparent.svg'), false);
 assert.equal(source.includes('meg-brand-mark'), false);
