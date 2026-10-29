@@ -72,6 +72,20 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
   border-color:#5dffe5;
 }
 
+/* Saudacao opcional da Home: no Shell a busca e os controles continuam funcionais.
+   A exibicao depende do espaco real do container, sem afetar Login ou outras telas. */
+.meg-topbar-home-context{display:none;min-width:0;flex-direction:column;gap:.15rem;justify-content:center}
+.meg-topbar-home-context strong{font-size:1.2rem;line-height:1.1;font-weight:800;letter-spacing:-.03em;color:#f5fffc;white-space:nowrap}
+.meg-topbar-home-context span{font-size:.69rem;line-height:1.25;color:#9ecbc7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@container meg-shell-body (min-width:72rem){
+  .meg-shell:has(.meg-home) .meg-topbar:has(.meg-topbar-home-context){
+    grid-template-columns:auto minmax(9.5rem,11.5rem) minmax(8rem,1fr) auto;
+    gap:.8rem;padding-inline:1.12rem;
+  }
+  .meg-shell:has(.meg-home) .meg-topbar-home-context{display:flex}
+  .meg-shell:has(.meg-home) .meg-search{width:min(34rem,100%)}
+}
+
 /* Saldo: carteira fotografica HD e controles reais de privacidade. */
 .meg-home .balance{display:flex;align-items:center;min-height:16rem;padding:1.4rem clamp(1.2rem,2.2vw,2.2rem);background:#001b24}
 .meg-home-wallet-photo{position:absolute;z-index:0;inset:0 0 0 auto;width:77%;height:100%;object-fit:cover;object-position:center;filter:saturate(1.08) contrast(1.14) brightness(.94);pointer-events:none}
