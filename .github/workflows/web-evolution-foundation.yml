@@ -100,7 +100,8 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4173/web-evolution.html >/dev/null
           curl -fsS http://127.0.0.1:4173/datagrid-harness.html >/dev/null
-          node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
+          # O Shell autenticado exige sessão válida. Validar sua geometria pela montagem isolada da Home, nunca burlando o login.
+          MEG_WEB_EVOLUTION_URL=http://127.0.0.1:4173/home-visual.html node apps/web/src/meg-web-evolution/shell/shell.viewport.browser.test.mjs
           node apps/web/src/meg-web-evolution/datagrid/datagrid.viewport.browser.test.mjs
           TOOLTIP_STATUS=0
           PLAYWRIGHT_CHROME_PATH="$(which google-chrome)" npx playwright test apps/web/src/meg-web-evolution/datagrid/datagrid.tooltips.playwright.spec.mjs --workers=1 --reporter=line || TOOLTIP_STATUS=$?
