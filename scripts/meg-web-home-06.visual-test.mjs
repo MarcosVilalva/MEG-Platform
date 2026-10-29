@@ -62,40 +62,64 @@ try {
    }));
    assert.ok(stats.documentWidth<=stats.viewport+1,name+': rolagem horizontal: '+JSON.stringify(stats));
    assert.ok(stats.documentHeight<=stats.viewportHeight+1,name+': overflow externo: '+JSON.stringify(stats));
-   if(width>=1024 && height>=768){
-     const limits=await page.evaluate(()=>{
-       const main=document.querySelector('.meg-main');
-       const grid=document.querySelector('.meg-home-dash');
-       const panels=[...document.querySelectorAll('.meg-home-dash>.meg-home-card')];
-       const visible=panels.every(el=>{const r=el.getBoundingClientRect();return r.top>=main.getBoundingClientRect().top-1 && r.bottom<=main.getBoundingClientRect().bottom+1});
-       return {clientHeight:main.clientHeight,scrollHeight:main.scrollHeight,gridBottom:grid.getBoundingClientRect().bottom,mainBottom:main.getBoundingClientRect().bottom,visible,scrollWidth:main.scrollWidth,clientWidth:main.clientWidth};
+   // Rolagem vertical natural é permitida, mas nenhum painel pode
+   // mascarar linhas, controles ou colunas para caber na janela.
+   const geometry=await page.evaluate(()=>{
+     const main=document.querySelector('.meg-main');
+     const home=document.querySelector('.meg-home');
+     const panels=[...document.querySelectorAll('.meg-home-dash>.meg-home-card')];
+     const cards=panels.map(el=>{
+       const r=el.getBoundingClientRect(),style=getComputedStyle(el);
+       return {kind:el.className,top:r.top,bottom:r.bottom,height:r.height,overflow:style.overflowY};
      });
-     assert.ok(limits.scrollHeight<=limits.clientHeight+1,name+': rolagem vertical do painel: '+JSON.stringify(limits));
-     assert.ok(limits.scrollWidth<=limits.clientWidth+1,name+': rolagem horizontal do painel: '+JSON.stringify(limits));
-     assert.ok(limits.visible,name+': conteúdo fora do viewport '+JSON.stringify(limits));
-     const tables=await page.locator('.meg-home .meg-datagrid-table').evaluateAll(nodes=>nodes.map(table=>{
-       const panel=table.closest('.meg-home-card').getBoundingClientRect();
+     const tables=[...document.querySelectorAll('.meg-home .meg-datagrid-table')].map(table=>{
+       const parent=table.closest('.meg-home-card');
+       const panel=parent.getBoundingClientRect();
        const rect=table.getBoundingClientRect();
-       const rows=[...table.querySelectorAll('tbody tr')].slice(0,5);
-       return {right:rect.right,panelRight:panel.right,bottom:rows.at(-1)?.getBoundingClientRect().bottom??rect.bottom,panelBottom:panel.bottom,count:rows.length};
-     }));
-     assert.equal(tables.length,2,name+': ambas as tabelas');
-     assert.ok(tables.every(t=>t.right<=t.panelRight+1),name+': última coluna cortada '+JSON.stringify(tables));
-     assert.ok(tables.every(t=>t.bottom<=t.panelBottom-3),name+': última linha cortada '+JSON.stringify(tables));
-
-   }
-   if(width<1024){
-     const views=['saldo','indicadores','operacoes','tabelas'];
-     for (const view of views){
-       const names={saldo:'Resumo',indicadores:'Contas',operacoes:'Ações',tabelas:'Listas'};
-       await page.getByRole('button',{name:names[view],exact:true}).click();
-       assert.equal(await page.locator('.meg-home').getAttribute('data-mobile-view'),view,'troca de painel '+name);
-       assert.equal(await page.locator('.meg-home-dash>[data-panel]:visible').count(),view==='indicadores'?4:2,'painéis visíveis na aba '+view+' '+name);
-     }
-     await page.getByRole('button',{name:'Resumo',exact:true}).click();
+       const rows=[...table.querySelectorAll('tbody tr')];
+       const last=rows.slice(0,5).at(-1)?.getBoundingClientRect();
+       return {count:rows.length,right:rect.right,panelRight:panel.right,lastBottom:last?.bottom??null,panelBottom:panel.bottom};
+     });
+     return {
+       mainClientHeight:main.clientHeight,mainScrollHeight:main.scrollHeight,
+       mainClientWidth:main.clientWidth,mainScrollWidth:main.scrollWidth,
+       homeScrollWidth:home.scrollWidth,homeClientWidth:home.clientWidth,
+       cards,tables,
+     };
+   });
+   assert.ok(geometry.mainScrollWidth<=geometry.mainClientWidth+1,
+     name+': rolagem horizontal no Shell '+JSON.stringify(geometry));
+   assert.ok(geometry.homeScrollWidth<=geometry.homeClientWidth+1,
+     name+': rolagem horizontal da Home '+JSON.stringify(geometry));
+   assert.ok(geometry.cards.every(c=>c.height>=95),
+     name+': card espremido '+JSON.stringify(geometry.cards));
+   if(width>=1024){
+     assert.equal(geometry.tables.length,2,name+': duas tabelas reais');
+     assert.ok(geometry.tables.every(t=>t.right<=t.panelRight+1),
+       name+': coluna cortada '+JSON.stringify(geometry.tables));
+     assert.ok(geometry.tables.every(t=>t.lastBottom===null||t.lastBottom<=t.panelBottom+1),
+       name+': linha cortada '+JSON.stringify(geometry.tables));
+     assert.ok(geometry.tables[0].count>=5,'cinco movimentações da fixture '+name);
+     assert.ok(geometry.tables[1].count>=4,'vencimentos da fixture '+name);
+     const kpiHeights=await page.locator('.meg-home-kpi').evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().height));
+     assert.ok(Math.max(...kpiHeights)-Math.min(...kpiHeights)<2,
+       name+': KPIs assimétricos');
+   }else{
+     // Não se exige que tudo seja exibido simultaneamente em 320px.
+     // Todos os quatro grupos permanecem no fluxo normal e acessíveis.
+     assert.equal(await page.locator('.meg-home-mobile-tabs').count(),0,
+       name+': abas antigas não aprovadas');
+     assert.ok(geometry.cards.every(c=>c.height>0),
+       name+': painel escondido em mobile');
+     await page.locator('.meg-home .upcoming').scrollIntoViewIfNeeded();
+     assert.ok(await page.locator('.meg-home .upcoming').isVisible(),
+       name+': vencimentos devem permanecer acessíveis no mobile');
    }
    assert.equal(jsErrors.length,0,name+': console errors '+jsErrors.join(' | '));
+   await page.locator('.meg-main').evaluate(el=>{el.scrollTop=0});
    await page.screenshot({path:'artifacts/home-06/'+name+'.png',fullPage:true});
+   await page.locator('.meg-main').evaluate(el=>{el.scrollTop=el.scrollHeight});
+   await page.screenshot({path:'artifacts/home-06/'+name+'-parte-inferior.png',fullPage:true});
    console.log('PASS',name,width+'×'+height,JSON.stringify(stats));
   }catch(error){
    errors++;
