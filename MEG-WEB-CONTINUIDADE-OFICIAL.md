@@ -1494,3 +1494,11 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - `scripts/meg-web-home-06.visual-test.mjs`: contratos atualizados para verificar Fluxo abaixo do Saldo dentro do núcleo, KPI rail lado a lado no desktop, empilhamento tablet/mobile, DataGrids full width e nenhum corte/scroll horizontal. Outros testes de privacidade, domínio, ações e data permanecem.
 - `scripts/meg-web-home-06.asset-quality.mjs`: auditoria gráfica aponta para `.meg-home-atlas`, sem imagens cenográficas. Nenhuma alteração em API, leitura financeira, Shell global, DataGrid central, Android ou outras telas.
 - **Pendências:** capturas da aplicação real e revisão, gates Foundation/Preflight, prova do deploy exato no Render e **aprovação visual explícita**. PR #650 deve permanecer em Draft, sem merge.
+
+
+## HOME 06 - DECISÃO VIGENTE: ATLAS REPROVADA VISUALMENTE (29/10/2026)
+
+- O usuário examinou a captura real da Home ATLAS e declarou expressamente: **"pior de todas até agora"**. **ATLAS REPROVADA.** Nenhuma tela Home foi homologada; não tratar ATLAS, STUDIO, ORBIT ou quaisquer propostas rejeitadas como referência visual ou layout aceito.
+- O pedido atual permanece focado **somente na Home**, com paleta MEG dark teal/turquesa e preservação integral das regras financeiras canônicas. A qualidade visual é uma pendência crítica e não pode ser compensada por CI verde, imagens geradas ou versões superficiais de CSS.
+- Bloquear merge da PR #650 enquanto não existir nova proposta aprovada explicitamente. Manter PR **Draft**. Não avançar para outras telas. Nenhuma migração do Android.
+- **Não recomeçar outra refação automática baseada na ATLAS.** O próximo trabalho deve definir a experiência de informação da Home e só depois reconstruir a apresentação limpa em isolamento, com captura real e revisão visual. Não inferir aprovação ou publicação em Render apenas por URL sem cache.
