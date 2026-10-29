@@ -83,7 +83,7 @@
   background:#001b25;
 }
 .meg-home-wallet-photo{
-  position:absolute;z-index:0;inset:0;width:100%;height:100%;
+  position:absolute;z-index:0;inset:0 0 0 auto;width:90%;height:100%;
   object-fit:cover;object-position:center;pointer-events:none;
 }
 .meg-home .balance::before{
