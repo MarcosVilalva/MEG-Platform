@@ -86,6 +86,19 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
   .meg-shell:has(.meg-home) .meg-search{width:min(34rem,100%)}
 }
 
+/* Ajuste local para topbar em largura intermediaria:
+   periodo explicito mais longo nao pode se sobrepor a busca.
+   O campo de busca continua preenchivel; nao mexe nas outras telas. */
+@container meg-shell-body (min-width:40rem) and (max-width:72rem){
+  .meg-shell:has(.meg-home) .meg-topbar{
+    grid-template-columns:auto minmax(0,1fr) auto;
+    gap:.58rem;padding-inline:.78rem;
+  }
+  .meg-shell:has(.meg-home) .meg-search{width:100%;min-width:0;max-width:100%}
+  .meg-shell:has(.meg-home) .meg-period{min-width:0;padding-inline:.6rem;font-size:.79rem}
+  .meg-shell:has(.meg-home) .meg-topbar-actions{gap:.44rem}
+}
+
 /* Saldo: carteira fotografica HD e controles reais de privacidade. */
 .meg-home .balance{display:flex;align-items:center;min-height:16rem;padding:1.4rem clamp(1.2rem,2.2vw,2.2rem);background:#001b24}
 .meg-home-wallet-photo{position:absolute;z-index:0;inset:0 0 0 auto;width:77%;height:100%;object-fit:cover;object-position:center;filter:saturate(1.08) contrast(1.14) brightness(.94);pointer-events:none}
