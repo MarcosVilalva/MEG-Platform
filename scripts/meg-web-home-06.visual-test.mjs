@@ -30,6 +30,10 @@ try {
    assert.equal(response?.status(),200,'HTTP '+name);
    await page.locator('.meg-home .balance').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-home-kpi').count(),4,'KPIs '+name);
+   assert.equal(await page.locator('.meg-home-flow-stat').count(),2,'dois indicadores separados no fluxo '+name);
+   assert.equal(await page.locator('.meg-home-kpi-arrow').count(),4,'setas de acesso dos quatro KPIs '+name);
+   assert.equal(await page.locator('.meg-topbar-home-context').count(),1,'saudação exclusiva da Home '+name);
+   assert.equal((await page.locator('.meg-profile-name').textContent())?.trim(),'Marcos de Andrade Vilalva','identificação demonstrativa do print oficial '+name);
    assert.equal(await page.locator('.meg-home-flow-distribution').count(),1,'fluxo visual com totais da autoridade '+name);
    assert.equal(await page.locator('.meg-home-wallet-photo').count(),1,'carteira oficial da referencia 02 '+name);
    assert.equal(await page.locator('.meg-home-balance-graph').count(),0,'sem grafico SVG decorativo no saldo '+name);
@@ -96,6 +100,10 @@ try {
    assert.ok(geometry.cards.every(c=>c.height>=95),
      name+': card espremido '+JSON.stringify(geometry.cards));
    if(width>=1024){
+     if(width>=1366){
+       const contextVisible=await page.locator('.meg-topbar-home-context').isVisible();
+       assert.ok(contextVisible,'saudação visível no desktop largo '+name);
+     }
      assert.equal(geometry.tables.length,2,name+': duas tabelas reais');
      assert.ok(geometry.tables.every(t=>t.right<=t.panelRight+1),
        name+': coluna cortada '+JSON.stringify(geometry.tables));
@@ -107,6 +115,10 @@ try {
      assert.ok(Math.max(...kpiHeights)-Math.min(...kpiHeights)<2,
        name+': KPIs assimétricos');
    }else{
+     if(width<640){
+       const touchTargets=await page.locator('.meg-home-privacy, .meg-home-grid-tools, .meg-home-see-all').evaluateAll(nodes=>nodes.map(node=>({name:node.className,height:node.getBoundingClientRect().height,width:node.getBoundingClientRect().width})));
+       assert.ok(touchTargets.every(item=>item.height>=47.5&&item.width>=47.5),'alvos de toque >=48px: '+name+' '+JSON.stringify(touchTargets));
+     }
      // Não se exige que tudo seja exibido simultaneamente em 320px.
      // Todos os quatro grupos permanecem no fluxo normal e acessíveis.
      assert.equal(await page.locator('.meg-home-mobile-tabs').count(),0,
