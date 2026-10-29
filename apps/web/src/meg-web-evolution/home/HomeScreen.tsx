@@ -135,8 +135,8 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
   const items=[
     {id:'pay',icon:'file',label:'Contas a pagar',value:overview?.payables.openAmount,caption:overview?overview.payables.count+' contas em aberto':'Sem leitura disponível',color:'red',dest:'pendentes' as HomeAction},
     {id:'card',icon:'card',label:'Faturas de cartões',value:overview?.cards.openAmount,caption:overview?overview.cards.count+' faturas em aberto':'Sem leitura disponível',color:'blue',dest:'cartoes' as HomeAction},
-    {id:'pending',icon:'clock',label:'Lançamentos pendentes',value:summary?.pendingAmount,caption:summary?summary.pendingCount+' lançamentos previstos':'Sem leitura disponível',color:'gold',dest:'pendentes' as HomeAction},
-    {id:'paid',icon:'check',label:'Contas pagas',value:null,caption:overview?overview.paid.count+' contas com vencimento no mês, quitadas':'Sem leitura disponível',color:'green',dest:'pendentes' as HomeAction},
+    {id:'pending',icon:'clock',label:'Outras pendências',value:summary?.pendingAmount,caption:summary?summary.pendingCount+' lançamentos previstos':'Sem leitura disponível',color:'gold',dest:'pendentes' as HomeAction},
+    {id:'paid',icon:'check',label:'Contas pagas',value:null,caption:overview?overview.paid.count+' contas quitadas no período':'Sem leitura disponível',color:'green',dest:'pendentes' as HomeAction},
   ];
   const actions=[
     {icon:'plus',name:'Novo lançamento',dest:'novo' as HomeAction,color:'teal'},
@@ -159,27 +159,27 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
             <button className="meg-home-privacy" type="button" aria-label={balanceHidden?'Mostrar saldos':'Ocultar saldos'} aria-pressed={balanceHidden} onClick={()=>setBalanceHidden(x=>!x)}><Icon name={balanceHidden?'eyeOff':'eye'} size={19}/></button>
           </div>
           <strong className="meg-home-hero-balance">{showMoney(mainBalance)}</strong>
-          <p className="meg-home-hero-meta">{overviewValid?'Saldo monetário em '+dateText(overview.effectiveAt):'Saldo consolidado não disponível'}</p>
+          <p className="meg-home-hero-meta">{overviewValid?'Saldo monetário · posição em '+dateText(overview.effectiveAt):'Saldo consolidado não disponível'}</p>
           <button type="button" className="meg-home-hero-details" onClick={()=>go('lancamentos')}>Ver detalhes <Icon name="arrow" size={16}/></button>
         </div>
       </section>
       <section className="meg-home-card flow" data-panel="saldo">
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="flow" size={20}/></span><h2>Fluxo do mês</h2><span className="meg-home-flow-caption">{periodTitle}</span></div>
         <div className="meg-home-flow-totals">
-          <div><Icon name="up" size={18}/><span>Entradas<strong>{showMoney(summary?.income)}</strong></span></div>
-          <div><Icon name="down" size={18}/><span>Saídas<strong>{showMoney(summary?.expense)}</strong></span></div>
+          <div className="meg-home-flow-stat is-income"><span className="meg-home-flow-stat-icon"><Icon name="up" size={25}/></span><span className="meg-home-flow-stat-copy">Entradas<strong>{showMoney(summary?.income)}</strong></span></div>
+          <div className="meg-home-flow-stat is-expense"><span className="meg-home-flow-stat-icon"><Icon name="down" size={25}/></span><span className="meg-home-flow-stat-copy">Saídas<strong>{showMoney(summary?.expense)}</strong></span></div>
           {summary && (summary.income>0 || summary.expense>0) && <div className="meg-home-flow-distribution" role="img" aria-label="Proporção visual entre entradas e saídas apuradas no período">
             <span className="meg-home-flow-in" style={{flexGrow:Math.max(0,summary.income)}}/>
             <span className="meg-home-flow-out" style={{flexGrow:Math.max(0,summary.expense)}}/>
           </div>}
-          <div className="meg-home-flow-result"><Icon name="equal" size={18}/><span>Resultado<strong>{showMoney(summary?.projectedResult)}</strong></span></div>
+          <div className="meg-home-flow-result"><span>Saldo do período<strong>{showMoney(summary?.projectedResult)}</strong></span></div>
         </div>
 
       </section>
       {items.map((item)=><button type="button" key={item.id} data-panel="indicadores" className={'meg-home-card meg-home-kpi kpi--'+item.id} onClick={()=>go(item.dest)}>
         <span className={'meg-home-kpi-icon is-'+item.color}><Icon name={item.icon} size={24}/></span>
         <span className="meg-home-kpi-copy"><span className="meg-home-kpi-title">{item.label}</span><strong>{item.id==='paid'?(paidCount==null?'—':String(paidCount)+' contas'):showMoney(item.value)}</strong><small>{item.caption}</small></span>
-        <span className="meg-home-kpi-arrow"><Icon name="arrow" size={17}/></span>
+        <span className="meg-home-kpi-arrow" aria-hidden="true"><Icon name="arrow" size={17}/></span>
       </button>)}
       <section className="meg-home-card benefits" data-panel="operacoes" aria-labelledby="meg-benefit-title">
 
@@ -188,7 +188,6 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
           <div className="meg-home-benefit-finances">
             <span className="meg-home-benefit-finances-label">Saldo do benefício</span>
             <strong className="meg-home-benefit-balance">{showMoney(benefit?.balance)}</strong>
-
           </div>
           <div className="meg-home-benefit-monthly">
             <div><Icon name="up" size={17}/><span>Créditos do mês<strong>{showMoney(benefit?.credits)}</strong></span></div>
@@ -200,7 +199,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
       </section>
       <section className="meg-home-card quick" data-panel="operacoes">
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="zap" size={20}/></span><h2>Ações rápidas</h2></div>
-        <div className="meg-home-quick-grid">{actions.map(item=><button type="button" className={'meg-home-quick-action quick-'+item.color} key={item.name} onClick={()=>go(item.dest)}><span className="meg-home-quick-icon"><Icon name={item.icon} size={22}/></span><strong>{item.name}</strong></button>)}</div>
+        <div className="meg-home-quick-grid">{actions.map(item=><button type="button" className={'meg-home-quick-action quick-'+item.color} key={item.name} onClick={()=>go(item.dest)} title={item.name}><span className="meg-home-quick-icon"><Icon name={item.icon} size={25}/></span><strong>{item.name}</strong></button>)}</div>
       </section>
       <section className="meg-home-card recent" data-panel="tabelas">
         <SectionHeading icon="swap" title="Últimas movimentações"/>
