@@ -34,8 +34,10 @@ type ShellProps = {
   onNavigate?: (label:string) => void;
   onLogout?: () => void;
   userName?: string;
+  /** Apresenta o contexto da Home sem alterar as demais telas do Shell. */
+  homeContext?: boolean;
 };
-export function AppShell({children,selectedMonth,onMonthChange,searchQuery='',onSearchChange,onNewTransaction,onNavigate,onLogout,userName}:ShellProps) {
+export function AppShell({children,selectedMonth,onMonthChange,searchQuery='',onSearchChange,onNewTransaction,onNavigate,onLogout,userName,homeContext=false}:ShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [periodOpen,setPeriodOpen]=useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
@@ -91,6 +93,8 @@ export function AppShell({children,selectedMonth,onMonthChange,searchQuery='',on
 
   const hideTooltip = () => setTooltip(null);
   const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
+  const displayFirstName = (userName||'').trim().split(/\s+/)[0];
+  const todayLabel = new Intl.DateTimeFormat('pt-BR', {weekday:'long', day:'numeric', month:'long', year:'numeric', timeZone:'America/Sao_Paulo'}).format(new Date());
 
   return (
     <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
@@ -273,6 +277,11 @@ export function AppShell({children,selectedMonth,onMonthChange,searchQuery='',on
               <Icon name="plus" width={22} height={22} strokeWidth={1.85} />
             </button>
           </div>
+
+          {homeContext && displayFirstName && <div className="meg-topbar-home-context" aria-label="Contexto da página inicial">
+            <strong>Olá, {displayFirstName}</strong>
+            <span>{todayLabel}</span>
+          </div>}
 
           <label className="meg-search">
             <Icon name="search" />
