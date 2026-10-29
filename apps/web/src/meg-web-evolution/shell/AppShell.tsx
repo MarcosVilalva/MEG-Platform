@@ -284,12 +284,12 @@ export function AppShell({children,selectedMonth,onMonthChange,searchQuery='',on
             <div className="meg-period-picker">
               <button type="button" className="meg-period" aria-expanded={periodOpen} aria-label="Selecionar período financeiro" onClick={()=>setPeriodOpen(v=>!v)}>
                 <Icon name="calendar" />
-                <span>{selectedMonth && /^\\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth) ? new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(selectedMonth+'-01T12:00:00Z')) : 'Período atual'}</span>
+                <span>{selectedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth) ? new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(selectedMonth+'-01T12:00:00Z')) : 'Período atual'}</span>
                 <Icon name="chevronDown" />
               </button>
               {periodOpen&&<div className="meg-period-popover">
                 <label htmlFor="meg-period-input">Competência</label>
-                <input id="meg-period-input" type="month" value={selectedMonth||''} onChange={e=>{if(/^\\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){onMonthChange?.(e.target.value);setPeriodOpen(false);}}}/>
+                <input id="meg-period-input" type="month" value={selectedMonth||''} onChange={e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){onMonthChange?.(e.target.value);setPeriodOpen(false);}}}/>
               </div>}
             </div>
 
