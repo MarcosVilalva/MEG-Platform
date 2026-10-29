@@ -36,7 +36,9 @@ try {
    assert.equal((await page.locator('.meg-profile-name').textContent())?.trim(),'Marcos de Andrade Vilalva','identificação demonstrativa do print oficial '+name);
    assert.equal(await page.locator('.meg-home-flow-distribution').count(),1,'fluxo visual com totais da autoridade '+name);
    assert.match(await page.locator('.meg-home-flow-result').innerText(),/Resultado projetado/i,'projectedResult nunca identificado como saldo '+name);
-   assert.equal(await page.locator('.meg-home-studio .meg-home-intro h1').innerText(),'Visão geral','novo cabeçalho funcional '+name);
+   assert.equal(await page.locator('.meg-home-atlas .meg-home-intro h1').innerText(),'Sua vida financeira, com clareza.','cabeçalho ATLAS '+name);
+   assert.equal(await page.locator('.meg-home-risk-rail .meg-home-kpi').count(),4,'painel lateral de quatro indicadores '+name);
+   assert.equal(await page.locator('.meg-home-ledger > section').count(),2,'dois DataGrids com largura total '+name);
    assert.equal(await page.locator('.meg-home img').count(),0,'nenhuma imagem cenográfica dependente de download '+name);
    assert.equal(await page.locator('.meg-home-wallet-photo,.meg-home-balance-art,.meg-home-benefit-card').count(),0,'assets antigos removidos do DOM '+name);
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
@@ -68,22 +70,33 @@ try {
      shell:document.querySelector('.meg-shell')?.getBoundingClientRect().toJSON(),
      grid:document.querySelector('.meg-home-dash')?.getBoundingClientRect().toJSON(),
    }));
-   // Layout novo: Saldo ocupa 8/12 e Fluxo 4/12 em desktop amplo;
-   // mobile empilhado, sem sobreposição nem achatamento dos painéis.
-   const firstRow=await page.evaluate(()=>{
-     const a=document.querySelector('.meg-home .balance').getBoundingClientRect();
-     const b=document.querySelector('.meg-home .flow').getBoundingClientRect();
-     return {saldo:{left:a.left,right:a.right,top:a.top,bottom:a.bottom,width:a.width,height:a.height},fluxo:{left:b.left,right:b.right,top:b.top,bottom:b.bottom,width:b.width,height:b.height}};
+   // ATLAS: Saldo e Fluxo dentro do MESMO núcleo financeiro;
+   // indicadores ao lado no desktop, abaixo em tablet/mobile.
+   const stage=await page.evaluate(()=>{
+     const rect=selector=>{
+       const {left,right,top,bottom,width,height}=document.querySelector(selector).getBoundingClientRect();
+       return {left,right,top,bottom,width,height};
+     };
+     return {
+       overview:rect('.meg-home-overview'),
+       primary:rect('.meg-home-primary'),
+       balance:rect('.meg-home .balance'),
+       flow:rect('.meg-home .flow'),
+       rail:rect('.meg-home-risk-rail'),
+       ledger:rect('.meg-home-ledger'),
+       recent:rect('.meg-home .recent'),
+       upcoming:rect('.meg-home .upcoming')
+     };
    });
+   assert.ok(stage.flow.top>=stage.balance.bottom-1,name+': faixa Fluxo deve suceder saldo dentro do núcleo '+JSON.stringify(stage));
+   assert.ok(stage.primary.right>=stage.balance.right-1&&stage.primary.right>=stage.flow.right-1,name+': painéis internos fora do núcleo '+JSON.stringify(stage));
    if(width>=1024){
-     assert.ok(Math.abs(firstRow.saldo.top-firstRow.fluxo.top)<=2,name+': primeira linha desalinhada '+JSON.stringify(firstRow));
-     assert.ok(Math.abs(firstRow.saldo.height-firstRow.fluxo.height)<=2,name+': altura inconsistente '+JSON.stringify(firstRow));
-     assert.ok(firstRow.fluxo.left>=firstRow.saldo.right,name+': Saldo e Fluxo sobrepostos '+JSON.stringify(firstRow));
-     const ratio=firstRow.saldo.width/firstRow.fluxo.width;
-     assert.ok(ratio >= (width>=1280?1.75:1.20) && ratio <= (width>=1280?2.50:1.60),name+': proporção da nova primeira linha: '+ratio);
+     assert.ok(stage.rail.left>=stage.primary.right-1,name+': indicadores devem ocupar coluna lateral '+JSON.stringify(stage));
+     assert.ok(Math.abs(stage.rail.top-stage.primary.top)<=2,name+': topo da rail desalinhado '+JSON.stringify(stage));
    }else{
-     assert.ok(firstRow.fluxo.top>=firstRow.saldo.bottom-1,name+': Saldo/Fluxo sobrepostos no mobile '+JSON.stringify(firstRow));
+     assert.ok(stage.rail.top>=stage.primary.bottom-1,name+': indicadores sobrepostos ao núcleo em tablet/mobile '+JSON.stringify(stage));
    }
+   assert.ok(stage.upcoming.top>=stage.recent.bottom-1,name+': tabelas full width em sequência '+JSON.stringify(stage));
    assert.ok(stats.documentWidth<=stats.viewport+1,name+': rolagem horizontal: '+JSON.stringify(stats));
    assert.ok(stats.documentHeight<=stats.viewportHeight+1,name+': overflow externo: '+JSON.stringify(stats));
    // Rolagem vertical natural é permitida, mas nenhum painel pode
