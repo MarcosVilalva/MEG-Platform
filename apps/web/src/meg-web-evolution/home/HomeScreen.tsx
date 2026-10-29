@@ -126,7 +126,6 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
   const overview=snapshot?.readModels.homeOverview ?? null;
   const [gridTools,setGridTools]=useState({recent:false,upcoming:false});
   const [balanceHidden,setBalanceHidden]=useState(false);
-  const [mobileView,setMobileView]=useState<'saldo'|'indicadores'|'operacoes'|'tabelas'>('saldo');
   const movementRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.transactions??[])
     .filter(t=>t.status!=='cancelled')
     .slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7)
@@ -164,14 +163,9 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
     {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'slate'},
   ];
   const paidCount=overview?.paid.count;
-  return <div className="meg-home meg-home-reference-02" data-mobile-view={mobileView}>
+  return <div className="meg-home meg-home-reference-02">
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
     
-    <nav className="meg-home-mobile-tabs" aria-label="Seções da Home">
-      {([{id:'saldo',label:'Resumo'},{id:'indicadores',label:'Contas'},{id:'operacoes',label:'Ações'},{id:'tabelas',label:'Listas'}] as const).map(item=>
-        <button type="button" key={item.id} className={mobileView===item.id?'is-active':''} aria-current={mobileView===item.id?'page':undefined} onClick={()=>setMobileView(item.id)}>{item.label}</button>
-      )}
-    </nav>
     <div className="meg-home-dash">
       <section className="meg-home-card balance" data-panel="saldo" aria-labelledby="meg-home-available-balance">
         <img className="meg-home-wallet-photo" src="/meg-web-evolution/home/wallet-official-02.webp" alt="" aria-hidden="true" decoding="async"/>
