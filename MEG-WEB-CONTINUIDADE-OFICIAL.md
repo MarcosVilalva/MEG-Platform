@@ -1365,3 +1365,5 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - **PENDÊNCIA CRÍTICA:** produzir ou obter imagens de carteira/cartão ORIGINAIS e NÍTIDAS em alta resolução, respeitando composição e identidade da imagem oficial 02; gerar WebP/AVIF para mobile/desktop com Sharp, sem upscale dos recortes. Confirmar marca/logotipo pelos originais oficiais. Só então tornar o gate bloqueador e publicar nova Home.
 - **Sem mudança nas imagens da tela nesta rodada**: não afirmar que o desfoque foi resolvido ou que a Home teve melhora visual. Esta entrega foi uma auditoria e integração de ferramentas para impedir recorrência.
 - Nenhum saldo, API, pagamento, benefício, DataGrid, Shell, Android ou tela de autenticação foi alterado. A PR #650 segue **Draft, sem merge**; aprovação visual e homologação com contas reais permanecem pendentes.
+
+- **Correção posterior no mesmo ciclo:** o workflow de auditoria de imagem foi promovido de não bloqueador para **gate bloqueador** (commit 1596f0f2). Com as miniaturas atuais, o resultado esperado é falha. Isso impede aceitar qualidade baixa como se fosse aprovada. O relatório continua publicado pelo passo always().
