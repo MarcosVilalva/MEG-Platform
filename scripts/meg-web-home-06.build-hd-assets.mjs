@@ -56,8 +56,9 @@ const walletMark=await sharp(officialLogo).resize(137,137,{fit:'contain'}).png()
 const walletBranded=await sharp(cutout)
  .composite([{input:walletMark,left:660,top:485}])
  .extract({left:290,top:64,width:930,height:744})
+ .extend({top:90,bottom:115,left:120,right:125,background:{r:0,g:0,b:0,alpha:0}})
  .rotate(13,{background:{r:0,g:0,b:0,alpha:0}})
- .resize({width:860})
+ .resize({width:870})
  .png().toBuffer();
 const brandedMeta=await sharp(walletBranded).metadata();
 if((brandedMeta.width??0)>1100||(brandedMeta.height??0)>975)throw Error('Carteira fora do envelope: '+brandedMeta.width+'x'+brandedMeta.height);
@@ -70,12 +71,12 @@ const walletScene=Buffer.from([
  '<rect width="1800" height="1000" fill="url(#background)"/>',
  '<g filter="url(#blur)" opacity=".7"><ellipse cx="1220" cy="105" rx="230" ry="190" fill="#4affec"/><ellipse cx="1660" cy="208" rx="250" ry="200" fill="#125e64"/><ellipse cx="1080" cy="740" rx="410" ry="150" fill="#12b9b2"/></g>',
  '<rect x="0" y="775" width="1800" height="225" fill="url(#desk)" opacity=".72"/>',
- '<path d="M1040 835 L1700 695 L1800 862 L1190 1000 L950 1000 Z" fill="#01121d" stroke="#125e65" stroke-width="11" opacity=".8"/>',
- '<path d="M1030 855 L1680 717" stroke="#16cabc" stroke-opacity=".28" stroke-width="5"/>',
+ '<path d="M1040 835 L1700 695 L1800 862 L1190 1000 L950 1000 Z" fill="#01121d" stroke="#125e65" stroke-width="7" opacity=".32"/>',
+ '<path d="M1030 855 L1680 717" stroke="#16cabc" stroke-opacity=".11" stroke-width="4"/>',
  '<rect width="1800" height="1000" fill="url(#teal)" opacity=".26"/>',
  '</svg>'
 ].join(''));
-const x=Math.round(1620-(brandedMeta.width??860));
+const x=Math.round(1690-(brandedMeta.width??870));
 const y=Math.max(110,Math.round((950-(brandedMeta.height??750))/2));
 const wallet=await sharp(walletScene)
  .composite([{input:walletBranded,left:x,top:y}])
