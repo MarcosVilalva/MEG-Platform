@@ -1389,3 +1389,13 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - scripts/meg-web-home-06.visual-test.mjs: passou a exigir a barra proporcional na prévia.
 - Correção de compilação: a primeira remoção do gráfico apagou acidentalmente definições locais de SectionHeading e colunas DataGrid, causando TS2304 no preflight. Essas definições foram restauradas no commit d57b6b21, antes de qualquer merge. É obrigatório passar build final depois dessa correção.
 - Home sem aprovação visual. PR #650 Draft sem merge. Foundation e homologação autenticada com contas reais permanecem independentes.
+
+
+### Home 06 · Refinamento artístico da referência oficial 02 (29/10/2026)
+
+- Confirmação do usuário no chat 06: **a última imagem selecionada é a imagem oficial 02**, carteira MEG e cartão Verocard. A seleção de referência **não** constitui homologação da Home implementada.
+- A inspeção dos novos assets de 1800 px demonstrou divergência de identidade: a fotografia da carteira não continha a marca MEG; o cartão vetorial exibia uma palavra VEROCARD gigantesca não presente no modelo escolhido.
+- Atualizado `scripts/meg-web-home-06.build-hd-assets.mjs` na PR #650 para usar o **SVG oficial** `apps/web/public/brand/logo-meg-financas.svg` como marca nativa das duas artes HD, com iluminação teal da carteira, novo enquadramento gráfico do cartão, reflexos e composição mais próxima da imagem 02. Não utilizar pixels ampliados do screenshot.
+- O workflow isolado de geração de imagens é acionado pelo script e deve materializar os dois WebPs. **Não declarar as artes ou a Home aprovadas sem confirmação de geração, inspeção das capturas e avaliação visual explícita.**
+- Preservados: autoridade financeira, saldo de benefício separado, DataGrid, Shell autenticado, Android e telas 01–04. PR #650 continua Draft e merge bloqueado se qualquer gate estiver vermelho.
+- Pendentes: confirmar novo commit de binários e deploy do SHA correspondente, executar auditoria de densidade, conferir alinhamentos desktop/mobile e obter aprovação visual.
