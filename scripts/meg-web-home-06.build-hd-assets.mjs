@@ -74,7 +74,7 @@ const walletY= Math.max(60,Math.floor((975-(walletMeta.height??900))/2));
 if(walletX<550 || walletY<0 || (walletMeta.width??0)>1240 || (walletMeta.height??0)>1000)throw Error('Wallet geometry exceeds scene');
 const wallet=await sharp(Buffer.from(walletScene))
  .composite([{input:walletBody,left:walletX,top:walletY}])
- .webp({quality:95,effort:6}).toBuffer();
+ .webp({lossless:true,effort:6}).toBuffer();
 
 const cardSvg=String.raw`
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="720" viewBox="0 0 1100 720">
