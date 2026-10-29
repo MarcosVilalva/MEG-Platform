@@ -122,11 +122,11 @@
 .meg-home-wallet-photo{
   position:absolute;
   inset:0 0 0 auto;
-  width:56%;
+  width:64%;
   height:100%;
   object-fit:cover;
-  object-position:52% center;
-  filter:saturate(1.12);
+  object-position:50% center;
+  filter:saturate(.82) hue-rotate(155deg) brightness(.82) contrast(1.14);
   pointer-events:none;
 }
 .meg-home .balance::before{
@@ -310,7 +310,7 @@
   z-index:1;
   right:.2rem;
   top:8%;
-  width:39%;
+  width:43%;
   height:84%;
   object-fit:contain;
   object-position:center;
