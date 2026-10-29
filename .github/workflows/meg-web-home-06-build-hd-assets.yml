@@ -1,0 +1,61 @@
+name: MEG Home 06 - Build original HD visual assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'meg-web-evolution/06-home-visual-*'
+    paths:
+      - 'scripts/meg-web-home-06.build-hd-assets.mjs'
+      - '.github/workflows/meg-web-home-06-build-hd-assets.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-hd-assets:
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.ref == 'refs/heads/meg-web-evolution/06-home-visual-20261027'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Sharp (not an app dependency)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix /tmp/meg-hd-tools --no-save --audit=false --fund=false sharp@0.35.5
+      - name: Generate full-resolution sources
+        env:
+          MEG_SHARP_MODULE: /tmp/meg-hd-tools/node_modules/sharp
+        run: node scripts/meg-web-home-06.build-hd-assets.mjs
+      - name: Confirm image dimensions and physical size
+        shell: bash
+        env:
+          MEG_SHARP_MODULE: /tmp/meg-hd-tools/node_modules/sharp
+        run: |
+          set -euo pipefail
+          node scripts/meg-web-home-06.asset-quality.mjs --strict
+          test "$(wc -c < apps/web/public/meg-web-evolution/home/wallet-official-02.webp)" -gt 90000
+          test "$(wc -c < apps/web/public/meg-web-evolution/home/verocard-oficial-panorama.webp)" -gt 30000
+      - name: Commit only the new Web Home image assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            apps/web/public/meg-web-evolution/home/wallet-official-02.webp \
+            apps/web/public/meg-web-evolution/home/verocard-oficial-panorama.webp
+          if git diff --cached --quiet; then
+            echo "No image difference to commit."
+            exit 0
+          fi
+          git commit -m "assets(home): trocar miniaturas desfocadas por artes HD independentes"
+          git push origin HEAD:refs/heads/meg-web-evolution/06-home-visual-20261027
