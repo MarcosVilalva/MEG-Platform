@@ -415,6 +415,11 @@
   .meg-home .meg-home-kpi{grid-column:span 3}
   .meg-home .benefits,.meg-home .quick,.meg-home .recent,.meg-home .upcoming{grid-column:span 6}
 }
+/* Exceção técnica: dois DataGrids completos com cinco colunas precisam
+   de pelo menos ~520px cada; entre 1024 e 1279px, ficam empilhados. */
+@media(min-width:1024px) and (max-width:1279px){
+  .meg-home .recent,.meg-home .upcoming{grid-column:span 12}
+}
 @media(max-width:639px){
   .meg-home{padding:.7rem .55rem 1.2rem}
   .meg-home-dash{gap:.7rem}
