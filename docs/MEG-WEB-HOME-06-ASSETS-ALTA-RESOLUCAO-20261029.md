@@ -26,7 +26,7 @@ Taste Skill continua apenas como auditor de composição, subordinado ao print o
 - Verificações de desktop 1366×768 e 1920×1080 e mobile 390×844, a DPR 2.
 - Saídas: artifacts/home-06/asset-quality/report.json e report.md, disponíveis no artefato GitHub Actions.
 - Metas iniciais para fontes originais: carteira >=1200×600 px; cartão >=900×500 px. Esses números são parâmetros de imagem para testar alta densidade, não regra de negócio.
-- O workflow é inicialmente **diagnóstico não bloqueador**, porque as fontes ainda precisam ser substituídas. Se reportar LOW_RESOLUTION, a imagem continua **reprovada**, mesmo com job verde. Nunca alegar melhoria visual apenas por passar o build.
+- O workflow passou a ser **gate bloqueador**: enquanto houver LOW_RESOLUTION o job falha, preservando o relatório em artefato pelo passo if: always(). Isso é intencional até a substituição por fontes originais HD. Nunca alegar melhoria visual apenas por passar o build.
 
 ## Substituição necessária
 
@@ -34,7 +34,7 @@ Taste Skill continua apenas como auditor de composição, subordinado ao print o
 2. Usar a marca MEG do conjunto oficial; não inventar logos, bancos, cartões ou promoções.
 3. Gerar variantes WebP/AVIF a partir das fontes grandes com Sharp e, somente com fontes aprovadas, avaliar vite-imagetools para srcset responsivo.
 4. Confirmar sem blur e sem cortes nos screenshots, contrastando com a referência 02. O diagnóstico de resolução não detecta qualidade artística, que exige validação humana.
-5. Transformar a auditoria em gate bloqueador após substituir as fontes.
+5. Manter o gate bloqueador agora e corrigir a falha substituindo as fontes de imagem, nunca reduzindo seu rigor para ficar verde.
 6. Publicar novo Render apenas após implementar efetivamente os assets novos e verificar o SHA, com link sem cache.
 
 Nenhuma regra financeira, API, DataGrid, Shell, autenticação nem Android foi alterado neste piloto. Home não aprovada. PR #650 segue Draft e sem merge.
