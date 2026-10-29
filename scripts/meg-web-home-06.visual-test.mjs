@@ -36,7 +36,9 @@ try {
    assert.equal((await page.locator('.meg-profile-name').textContent())?.trim(),'Marcos de Andrade Vilalva','identificação demonstrativa do print oficial '+name);
    assert.equal(await page.locator('.meg-home-flow-distribution').count(),1,'fluxo visual com totais da autoridade '+name);
    assert.match(await page.locator('.meg-home-flow-result').innerText(),/Resultado projetado/i,'projectedResult nunca identificado como saldo '+name);
-   assert.equal(await page.locator('.meg-home-wallet-photo').count(),1,'carteira oficial da referencia 02 '+name);
+   assert.equal(await page.locator('.meg-home-balance-art').count(),1,'cena HD financeira oficial no saldo '+name);
+   assert.equal(await page.locator('.meg-home-wallet-photo').count(),0,'carteira anterior removida '+name);
+   assert.match(await page.locator('.meg-home-balance-art').getAttribute('src'),/meg-balance-scene-hd\.webp/,'novo asset do saldo '+name);
    assert.equal(await page.locator('.meg-home-balance-graph').count(),0,'sem grafico SVG decorativo no saldo '+name);
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
    assert.ok(balanceSize>=31,'saldo visualmente protagonista '+name+': '+balanceSize);
@@ -56,7 +58,7 @@ try {
    assert.equal(await page.locator('.meg-home-welcome').count(),0,'sem cabeçalho redundante '+name);
    assert.ok(await page.locator('.meg-home-category-icon').count()>=5,'SVGs financeiros nas movimentações '+name);
    assert.ok(await page.locator('.meg-home-category-pill').count()>=5,'categorias semânticas no DataGrid '+name);
-   assert.equal(await page.locator('.meg-home img').count(),2,'wallet e arte do beneficio '+name);
+   assert.equal(await page.locator('.meg-home img').count(),2,'cena financeira e arte do beneficio '+name);
    const loaded=await page.locator('.meg-home img').evaluateAll(images=>images.every(img=>img.complete && img.naturalWidth>0));
    assert.ok(loaded,'assets oficiais carregados '+name);
    const dueFirst=await page.locator('.meg-home .upcoming .meg-datagrid-table tbody tr').first().innerText();
