@@ -154,7 +154,7 @@ assert.match(source, /container-name:\s*meg-shell-body/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
-assert.match(source, /aria-label="Buscar"/);
+assert.match(source, /aria-label="Buscar movimentações e vencimentos da Home"/);
 
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav,[\s\S]*flex:\s*1\s+1\s+auto;[\s\S]*min-height:\s*0;[\s\S]*justify-content:\s*space-evenly;[\s\S]*gap:\s*clamp\(2px, \.8vh, 6px\)/);
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav-item,[\s\S]*height:\s*clamp\(34px, 6\.2vh, 42px\)/);
