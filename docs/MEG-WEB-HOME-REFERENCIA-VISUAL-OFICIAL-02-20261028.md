@@ -20,13 +20,14 @@
 6. **Simetria obrigatória:** alinhamento de títulos, ícones, conteúdo e ações; alturas iguais por linha; botões de mesma altura, espaçamentos e cantos consistentes; nada sobreposto.
 7. **Arte híbrida:** imagem WebP real para carteira, cartão e cenas artísticas; HTML/React para dados, tabelas, botões e leitura funcional. SVG somente onde for útil (ícones, gráficos **reais** baseados em read models).
 
-## Regra da tela única e limites físicos
+## Regra de viewport, acessibilidade e atualização de 28/10/2026
 
-- **Desktop:** toda a Home, incluindo cabeçalho do Shell, 4 linhas de painéis e as linhas principais de ambas as tabelas, deve caber no viewport em **100% de zoom**, **sem rolagem vertical ou horizontal da página**. Validar especialmente **1366×768** e **1672×941**, com evidência do viewport útil real do navegador. Não basta que caiba em captura de 1536×1024.
-- Fazer ajuste **estrutural**, por distribuição de altura, densidade editorial e sizing proporcional ao viewport (sem fixar alturas de um jeito que corte conteúdo). Não esconder ou truncar informação financeira crítica para passar em um teste.
-- **Celular/tablet:** a imagem 02 define identidade e ordem visual, mas literalmente mostrar todos os 4 blocos e dez linhas de tabela de uma só vez num viewport estreito é incompatível com legibilidade, alvos de toque e ausência de cortes. **Não forçar escala minúscula ou ocultar conteúdo.** A solução mobile sem rolagem da página exige composição própria com painéis/abas navegáveis, sujeita a validação específica; o aceite desta imagem para desktop NÃO equivale a aceite do design mobile.
-- Testar as dimensões padrão 320×700, 390×844, 768×1024, 1366×768, 1672×941 e 2560×1440. Critérios: \`documentElement.scrollWidth <= innerWidth\`, \`documentElement.scrollHeight <= innerHeight\`, ausência de scroll externo e elementos visíveis. Para mobile, testes devem respeitar a adaptação aprovada sem esconder acesso ao conteúdo.
-- Não aplicar \`overflow:hidden\` no \`body\`/Home apenas para passar um teste: é proibido cortar informações e controles.
+**Atualização posterior à escolha da imagem:** o usuário rejeitou visualmente, por vídeo, a Home comprimida que tentava encaixar todos os cards em uma tela sem rolagem. Em seguida autorizou a continuidade da reconstrução com **rolagem vertical natural**, sem sacrificar títulos, botões, números ou linhas do DataGrid. Essa autorização substitui o requisito anterior de zero rolagem vertical, **somente para a implementação da Home**. A imagem 02 continua sendo a referência estética e de composição.
+
+- **Desktop:** distribuir as quatro linhas na grade oficial sem compressão artificial. A área principal pode rolar verticalmente quando a altura do viewport for insuficiente. Nenhuma rolagem horizontal da página. As tabelas devem exibir integralmente as cinco linhas previstas, sem conteúdo cortado por `overflow:hidden`.
+- **Celular e tablet:** composição vertical estrutural com tipografia legível e todos os blocos acessíveis por rolagem. A ideia anterior de quatro abas foi descartada por não ter validação do usuário. Evitar escala minúscula e cortes.
+- **Verificação:** testar ao menos 320×700, 390×844, 768×1024, 1366×768, 1672×941 e 2560×1440, em zoom 100%; verificar largura do documento, largura da Home, integridade das tabelas, alinhamento, alvos de toque e captura do topo e do final da página.
+- **Proibido:** esconder dados financeiros para forçar o cumprimento de um teste de viewport ou declarar que um build verde substitui a avaliação visual.
 
 ## Qualidade e aceitação
 
