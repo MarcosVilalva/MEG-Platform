@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { authenticatedRequest } from '../../app/auth-client';
 // A fonte única da Etapa 02 é JavaScript. Sua tipagem fica isolada na fronteira de adaptação.
 // @ts-expect-error módulo JS da Etapa 02, sem declarações TS exportadas
@@ -30,7 +30,7 @@ export type HomeSnapshot = {
   previewMetrics?: { pay: number; invoice: number; paid: number; payCount: number; invoiceCount: number; paidCount: number };
 };
 type HomeAction = 'lancamentos' | 'pendentes' | 'cartoes' | 'beneficios' | 'novo' | 'transferencia' | 'relatorios' | 'metas';
-type Props = { snapshot?: HomeSnapshot | null; previewOnly?: boolean; onNavigate?: (action: HomeAction) => void };
+type Props = { snapshot?: HomeSnapshot | null; previewOnly?: boolean; onNavigate?: (action: HomeAction) => void; selectedMonth?: string; searchQuery?: string };
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
@@ -119,27 +119,28 @@ const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'account',label:'Conta',type:'text',width:72,minWidth:60,sortable:true,filterable:true},
 ];
 
-function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot|null;previewOnly?:boolean;onNavigate?:Props['onNavigate']}) {
+function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapshot:HomeSnapshot|null;previewOnly?:boolean;onNavigate?:Props['onNavigate'];searchQuery?:string}) {
   const summary=snapshot?.readModels.summary ?? null;
   const flow=snapshot?.readModels.cashflow ?? null;
   const benefit=snapshot?.readModels.benefitSummary ?? null;
   const overview=snapshot?.readModels.homeOverview ?? null;
   const [gridTools,setGridTools]=useState({recent:false,upcoming:false});
   const [balanceHidden,setBalanceHidden]=useState(false);
+  const query=searchQuery.trim().toLocaleLowerCase('pt-BR');
   const movementRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.transactions??[])
-    .filter(t=>t.status!=='cancelled')
+    .filter(t=>t.status!=='cancelled' && (!query || [t.description,categoryName(snapshot?.categories??[],t.categoryId),snapshot?.accounts?.find(a=>a.id===t.accountId)?.name].some(value=>String(value??'').toLocaleLowerCase('pt-BR').includes(query))))
     .slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7)
     .map(t=>({
       id:t.id,date:t.date,description:t.description,
       category:categoryName(snapshot?.categories??[],t.categoryId),
       value:Math.abs(t.signedAmount),signedAmount:t.signedAmount,kind:t.type,
       account:snapshot?.accounts?.find(a=>a.id===t.accountId)?.name ?? '—',
-    })),[snapshot]);
+    })),[snapshot,query]);
   const dueRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.payables??[])
-    .filter(p=>p.status!=='paid'&&p.status!=='cancelled'&&p.openAmount>0)
+    .filter(p=>p.status!=='paid'&&p.status!=='cancelled'&&p.openAmount>0 && (!query || [p.description,categoryName(snapshot?.categories??[],p.categoryId)].some(value=>String(value??'').toLocaleLowerCase('pt-BR').includes(query))))
     .slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,7)
     .map(p=>({id:p.id,date:p.dueDate,description:p.description,
-      category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount,account:'—'})),[snapshot]);
+      category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount,account:'—'})),[snapshot,query]);
   const go=(destination:HomeAction)=>{
     if(onNavigate) onNavigate(destination);
     else if(!previewOnly) window.dispatchEvent(new CustomEvent('meg:request-navigation',{detail:{destination}}));
@@ -229,14 +230,16 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
     </div>
   </div>;
 }
-export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate}:Props) {
+export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate,selectedMonth,searchQuery}:Props) {
   const [snapshot,setSnapshot]=useState<HomeSnapshot|null>(provided||null);
   const [error,setError]=useState<string|null>(null);
   const [loading,setLoading]=useState(!provided&&!previewOnly);
+  const requestId=useRef(0);
+  const month=selectedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth)?selectedMonth:currentMonth();
   const reload=useCallback(async()=>{
     if(previewOnly) return;
-    const month=currentMonth();
-    setLoading(true);setError(null);
+    const id=++requestId.current;
+    setLoading(true);setError(null);setSnapshot(null);
     try{
       const [summary,cashflow,analytics,benefitSummary,homeOverview,events,payables,cards,categories,accounts]=await Promise.all([
         authenticatedRequest<Summary>('/finance/summary?month='+month,{cache:'no-store'}),
@@ -257,16 +260,17 @@ export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate}:Prop
         fromCards(cards),
         fromFinanceCatalogs({categories,accounts}),
       ]);
-      setSnapshot(source as HomeSnapshot);
+      if(id===requestId.current)setSnapshot(source as HomeSnapshot);
     }catch{
-      setError('Não foi possível carregar os dados financeiros. Nenhum valor foi estimado.');
-    }finally{setLoading(false);}
-  },[previewOnly]);
+      if(id===requestId.current)setError('Não foi possível carregar os dados financeiros. Nenhum valor foi estimado.');
+    }finally{if(id===requestId.current)setLoading(false);}
+  },[previewOnly,month]);
   useEffect(()=>{if(provided){setSnapshot(provided);return;}void reload();if(previewOnly)return;
     const onRefresh=()=>void reload();
     window.addEventListener('meg:data-invalidated',onRefresh);
     window.addEventListener('focus',onRefresh);
     return()=>{window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh);};
+    return()=>{requestId.current++;};
   },[provided,previewOnly,reload]);
-  return <>{error&&<div className="meg-home-error" role="alert">{error} <button type="button" onClick={()=>void reload()}>Tentar novamente</button></div>}{loading&&!snapshot?<div className="meg-home-loading" role="status">Carregando dados financeiros...</div>:<HomeView snapshot={snapshot} previewOnly={previewOnly} onNavigate={onNavigate}/>}</>;
+  return <>{error&&<div className="meg-home-error" role="alert">{error} <button type="button" onClick={()=>void reload()}>Tentar novamente</button></div>}{loading&&!snapshot?<div className="meg-home-loading" role="status">Carregando dados financeiros...</div>:<HomeView snapshot={snapshot} previewOnly={previewOnly} onNavigate={onNavigate} searchQuery={searchQuery}/>}</>;
 }
