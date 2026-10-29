@@ -1325,3 +1325,12 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - `scripts/meg-web-home-06.visual-test.mjs`: passa a testar largura sem overflow, altura adequada dos cards, simetria de KPIs e atalhos, todas as colunas e linhas das tabelas, acesso aos painéis no celular e duas capturas (topo/parte inferior) por viewport.
 - Nenhuma alteração em saldos, serviços, regras financeiras, DataGrid global, autenticação aprovada ou Android. A PR #650 continua Draft, sem merge, e a Home NÃO está aprovada visualmente.
 - O usuário deverá validar tanto o topo quanto a parte inferior pelo Render publicado no SHA exato, com link sem cache. O gate Foundation continua bloqueador independente.
+
+## Home 06 | Piloto Taste Skill v2 iniciado (29/10/2026)
+
+- O usuário aprovou começar a experiência com Taste Skill na PR #650. Revisão da ferramenta confirmou que `redesign-existing-projects` foi aposentado; método aplicável a dashboard financeiro é `design-taste-frontend` com `references/app-screens.md`, usando `--app`.
+- Documento de auditoria e prioridades: `docs/MEG-WEB-HOME-06-TASTE-AUDITORIA-20261029.md`.
+- Workflow isolado `.github/workflows/meg-web-home-06-taste-audit.yml`: obtém somente no runner a revisão pinada `12af471f627f866411b4bd785b19646d3672784c` do Taste Skill e roda `lint.mjs --app` + `inspect.mjs --app` contra a prévia, gerando relatório e capturas de 1366/768/390 px.
+- Este piloto é **diagnóstico e não bloqueador**. Não incorporar código, dados ou tokens do plugin ao produto nem reinterpretar a imagem oficial 02. Onde o guia genérico conflitar com os prints e regras MEG, a regra interna prevalece.
+- **Sem alterações nesta rodada** em `HomeScreen.tsx`, `home.css`, DataGrid, Shell, API, Android e telas 01–04. Nenhuma tela foi visualmente aprovada. PR #650 segue Draft e sem merge; gate geral Foundation ainda requer correção independente.
+- Próximo passo estrito: avaliar relatório de auditoria, escolher os 3 achados reais prioritários e implementar correções de uma só vez, comparando screenshots antes/depois e publicando um preview sem cache somente quando existir commit visual novo.
