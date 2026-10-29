@@ -58,7 +58,7 @@ const walletBranded=await sharp(cutout)
  .extract({left:290,top:64,width:930,height:744})
  .extend({top:90,bottom:115,left:120,right:125,background:{r:0,g:0,b:0,alpha:0}})
  .rotate(13,{background:{r:0,g:0,b:0,alpha:0}})
- .resize({width:870})
+ .resize({width:770})
  .png().toBuffer();
 const brandedMeta=await sharp(walletBranded).metadata();
 if((brandedMeta.width??0)>1100||(brandedMeta.height??0)>975)throw Error('Carteira fora do envelope: '+brandedMeta.width+'x'+brandedMeta.height);
@@ -76,7 +76,7 @@ const walletScene=Buffer.from([
  '<rect width="1800" height="1000" fill="url(#teal)" opacity=".26"/>',
  '</svg>'
 ].join(''));
-const x=Math.round(1690-(brandedMeta.width??870));
+const x=Math.round(1670-(brandedMeta.width??985));
 const y=Math.max(110,Math.round((950-(brandedMeta.height??750))/2));
 const wallet=await sharp(walletScene)
  .composite([{input:walletBranded,left:x,top:y}])
