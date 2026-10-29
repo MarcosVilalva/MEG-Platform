@@ -505,6 +505,8 @@
   border-radius:.45rem;background:#3c3827;color:#fff6d8;cursor:pointer;
 }
 @media(max-width:639px){
-  .meg-shell:has(.meg-home) .meg-period-popover{right:-3rem;min-width:10.2rem}
+  .meg-shell:has(.meg-home) .meg-period-picker{grid-area:period;width:100%;min-width:0}
+  .meg-shell:has(.meg-home) .meg-period-picker .meg-period{width:100%;min-width:0;max-width:100%;justify-content:center}
+  .meg-shell:has(.meg-home) .meg-period-popover{right:0;min-width:10.2rem}
   .meg-shell:has(.meg-home) .meg-home-operation-notice{margin:.55rem .55rem 0;align-items:flex-start}
 }
