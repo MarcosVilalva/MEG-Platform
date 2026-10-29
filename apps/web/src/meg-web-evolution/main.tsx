@@ -158,6 +158,7 @@ function AuthGateway() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       userName={session.user.name}
+      homeContext
       onLogout={handleLogout}
       onNewTransaction={()=>navigateHome('Novo lançamento')}
       onNavigate={navigateHome}
