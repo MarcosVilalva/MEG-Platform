@@ -58,6 +58,7 @@ try{
   await page.locator('.meg-home-hero-balance').waitFor({state:'visible',timeout:30000});
   assert.match(await page.locator('.meg-home-hero-balance').innerText(),/999,99/,'saldo monetário da API');
   assert.match(await page.locator('.meg-home-benefit-balance').innerText(),/123,45/,'benefício separado da API');
+  assert.match(await page.locator('.meg-home-flow-result').innerText(),/Resultado projetado/i,'resultado da camada financeira não é saldo bancário');
   assert.equal(await page.locator('.meg-profile-name').innerText(),user.name,'perfil real da sessão');
   assert.ok(apiCalls.some(x=>x.startsWith('/finance/home-overview?')),'overview canônico');
   assert.equal(await page.locator('.meg-home-preview-warning').count(),0,'Home autenticada sem rótulo de preview');
