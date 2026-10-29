@@ -118,7 +118,11 @@ assert.match(source, /\.meg-topbar-actions\s*\{[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period\s*\{[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*white-space:\s*nowrap/);
 
-assert.match(source, /Outubro&nbsp;de&nbsp;2026/);
+assert.doesNotMatch(source, /Outubro&nbsp;de&nbsp;2026/, 'período não pode ser demonstrativo fixo');
+assert.match(source, /onMonthChange/, 'competência deve executar callback real');
+assert.match(source, /onSearchChange/, 'busca deve estar conectada');
+assert.match(source, /onLogout/, 'saída deve estar conectada');
+assert.doesNotMatch(source, /Marcos de Andrade Vilalva/, 'nome do usuário não pode ser fixo');
 assert.match(source, /\.meg-period\s*\{[\s\S]*width:\s*max-content;[\s\S]*min-width:\s*11\.75rem;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*display:\s*inline-block;[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
 
