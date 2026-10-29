@@ -120,7 +120,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     })),[snapshot,query]);
   const dueRows=useMemo<Record<string,unknown>[]>(()=> (snapshot?.payables??[])
     .filter(p=>p.status!=='paid'&&p.status!=='cancelled'&&p.openAmount>0 && (!query || [p.description,categoryName(snapshot?.categories??[],p.categoryId)].some(value=>String(value??'').toLocaleLowerCase('pt-BR').includes(query))))
-    .slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,7)
+    .slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)||a.id.localeCompare(b.id)).slice(0,7)
     .map(p=>({id:p.id,date:p.dueDate,description:p.description,
       category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount,account:'—'})),[snapshot,query]);
   const go=(destination:HomeAction)=>{
@@ -136,7 +136,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     {id:'pay',icon:'file',label:'Contas a pagar',value:overview?.payables.openAmount,caption:overview?overview.payables.count+' contas em aberto':'Sem leitura disponível',color:'red',dest:'pendentes' as HomeAction},
     {id:'card',icon:'card',label:'Faturas de cartões',value:overview?.cards.openAmount,caption:overview?overview.cards.count+' faturas em aberto':'Sem leitura disponível',color:'blue',dest:'cartoes' as HomeAction},
     {id:'pending',icon:'clock',label:'Outras pendências',value:summary?.pendingAmount,caption:summary?summary.pendingCount+' lançamentos previstos':'Sem leitura disponível',color:'gold',dest:'pendentes' as HomeAction},
-    {id:'paid',icon:'check',label:'Contas pagas',value:null,caption:overview?overview.paid.count+' contas quitadas no período':'Sem leitura disponível',color:'green',dest:'pendentes' as HomeAction},
+    {id:'paid',icon:'check',label:'Contas pagas',value:null,caption:overview?'Quitadas no período selecionado':'Sem leitura disponível',color:'green',dest:'pendentes' as HomeAction},
   ];
   const actions=[
     {icon:'plus',name:'Novo lançamento',dest:'novo' as HomeAction,color:'teal'},
@@ -172,7 +172,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
             <span className="meg-home-flow-in" style={{flexGrow:Math.max(0,summary.income)}}/>
             <span className="meg-home-flow-out" style={{flexGrow:Math.max(0,summary.expense)}}/>
           </div>}
-          <div className="meg-home-flow-result"><span>Saldo do período<strong>{showMoney(summary?.projectedResult)}</strong></span></div>
+          <div className="meg-home-flow-result"><span>Resultado projetado<strong>{showMoney(summary?.projectedResult)}</strong></span></div>
         </div>
 
       </section>
@@ -209,7 +209,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
       <section className="meg-home-card upcoming" data-panel="tabelas">
         <SectionHeading icon="clock" title="Próximos vencimentos"/>
         <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.upcoming} aria-label="Mostrar ou ocultar ferramentas da tabela de vencimentos" onClick={()=>setGridTools(value=>({...value,upcoming:!value.upcoming}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('pendentes')}>Ver todas <Icon name="arrow" size={14}/></button></div>
-        <div className={'meg-home-grid-slot '+(gridTools.upcoming?'is-expanded':'')}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due" ariaLabel="Próximos vencimentos"/></div>
+        <div className={'meg-home-grid-slot '+(gridTools.upcoming?'is-expanded':'')}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due-chronological-v2" ariaLabel="Próximos vencimentos"/></div>
       </section>
     </div>
   </div>;
