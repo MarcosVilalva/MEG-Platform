@@ -1,5 +1,5 @@
 /**
- * Verificação da independência gráfica da Home Studio.
+ * Verificação da independência gráfica da Home ATLAS.
  * A nova interface não utiliza fotos decorativas, imagens de carteira,
  * dados de performance desenhados em SVG ou assets externos.
  */
@@ -24,9 +24,9 @@ if(url){
       try{
         const page=await context.newPage();
         await page.goto(url,{waitUntil:'networkidle',timeout:45000});
-        await page.locator('.meg-home-studio .balance').waitFor({state:'visible'});
+        await page.locator('.meg-home-atlas .balance').waitFor({state:'visible'});
         const d=await page.evaluate(()=>{
-          const home=document.querySelector('.meg-home-studio');
+          const home=document.querySelector('.meg-home-atlas');
           const hero=document.querySelector('.meg-home .balance');
           const benefit=document.querySelector('.meg-home .benefits');
           const imgs=home?.querySelectorAll('img').length??-1;
@@ -43,7 +43,7 @@ const issues=sourceViolations.length+display.filter(x=>!x.passed).length;
 const report={kind:'MEG_HOME_STUDIO_GRAPHIC_INDEPENDENCE',sourceViolations,display,issues,visualApproved:false};
 writeFileSync(resolve(output,'report.json'),JSON.stringify(report,null,2)+'\n');
 writeFileSync(resolve(output,'report.md'),[
-  '# Auditoria gráfica da Home Studio',
+  '# Auditoria gráfica da Home ATLAS',
   '',
   'Sem fotos decorativas ou gráfico de desempenho fictício. Preservados logo do Shell e dados reais do React.',
   '',
