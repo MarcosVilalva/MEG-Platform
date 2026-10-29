@@ -5,6 +5,7 @@ import { chromium } from '@playwright/test';
 const sizes = [
   ['desktop-oficial', 1672, 941],
   ['desktop-padrao', 1366, 768],
+  ['desktop-limite', 1024, 768],
   ['desktop-baixo', 1366, 600],
   ['tablet', 768, 1024],
   ['mobile', 390, 844],
