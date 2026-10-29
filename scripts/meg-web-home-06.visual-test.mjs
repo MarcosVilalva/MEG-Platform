@@ -61,6 +61,7 @@ try {
    assert.ok(loaded,'assets oficiais carregados '+name);
    const dueFirst=await page.locator('.meg-home .upcoming .meg-datagrid-table tbody tr').first().innerText();
    assert.match(dueFirst,/28\/10\/2026/,'vencimentos devem iniciar em ordem cronológica sem sort persistido '+name);
+   assert.ok(await page.locator('.meg-home .upcoming .meg-home-payable-status').count()>=4,'status do contrato canônico disponível sem conta fictícia '+name);
    const stats=await page.evaluate(()=>({
      viewport:window.innerWidth,
      documentWidth:document.documentElement.scrollWidth,
