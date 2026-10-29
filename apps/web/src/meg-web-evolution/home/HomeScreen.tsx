@@ -269,8 +269,7 @@ export function HomeScreen({snapshot:provided,previewOnly=false,onNavigate,selec
     const onRefresh=()=>void reload();
     window.addEventListener('meg:data-invalidated',onRefresh);
     window.addEventListener('focus',onRefresh);
-    return()=>{window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh);};
-    return()=>{requestId.current++;};
+    return()=>{requestId.current++;window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh);};
   },[provided,previewOnly,reload]);
   return <>{error&&<div className="meg-home-error" role="alert">{error} <button type="button" onClick={()=>void reload()}>Tentar novamente</button></div>}{loading&&!snapshot?<div className="meg-home-loading" role="status">Carregando dados financeiros...</div>:<HomeView snapshot={snapshot} previewOnly={previewOnly} onNavigate={onNavigate} searchQuery={searchQuery}/>}</>;
 }
