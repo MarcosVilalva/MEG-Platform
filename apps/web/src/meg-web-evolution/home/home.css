@@ -243,7 +243,7 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
 .meg-home .balance::before{background:linear-gradient(90deg,#001923 0%,#001923ed 35%,#002431b0 70%,#00243133)}
 .meg-home-hero-copy{width:100%;gap:.66rem}
 .meg-home-hero-heading h2{font-size:1rem}
-.meg-home-hero-balance{font-size:clamp(1.9rem,8.2vw,2.65rem)}
+.meg-home-hero-balance{font-size:clamp(2rem,8.2vw,2.65rem)}
 .meg-home-hero-meta{font-size:.75rem;max-width:90%}
 .meg-home .flow{min-height:15rem;padding:1rem .8rem}
 .meg-home-flow-caption{font-size:.68rem}
