@@ -155,7 +155,7 @@
 /* As duas grades passam a ocupar toda a largura útil.
    Isso elimina o espremer de cinco colunas em meio painel. */
 .meg-home-ledger{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem}
-.meg-home .recent,.meg-home .upcoming{position:relative;display:flex;flex-direction:column;min-width:0;min-height:18rem;padding:1rem 1.15rem 1.1rem;border:1px solid var(--atlas-border);border-radius:1rem;background:#0a2028;overflow:visible}
+.meg-home .recent,.meg-home .upcoming{position:relative;display:flex;flex-direction:column;min-width:0;min-height:21.5rem;padding:1rem 1.15rem 1.1rem;border:1px solid var(--atlas-border);border-radius:1rem;background:#0a2028;overflow:visible}
 .meg-home .recent .meg-home-panel-heading,.meg-home .upcoming .meg-home-panel-heading{padding-right:10rem}
 .meg-home-panel-controls{position:absolute;right:1rem;top:.92rem;display:flex;align-items:center;gap:.43rem;z-index:2}
 .meg-home-see-all,.meg-home-grid-tools{min-height:2.75rem;font-size:.75rem;padding:.42rem .65rem}
