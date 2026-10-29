@@ -1426,3 +1426,12 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - **Workflow HD:** commit simultâneo na branch causou rejeição de push, sem perda de alterações. `.github/workflows/meg-web-home-06-build-hd-assets.yml` agora serializa a geração por ref e faz `git fetch`/`git rebase` antes do push, sem `force`.
 - **Testes adicionados:** `scripts/meg-web-home-06.visual-test.mjs` exige rótulo de resultado, cronologia e situação canônica; `scripts/meg-web-home-06.authenticated.test.mjs` exige distinção entre resultado projetado e saldo do benefício. Ainda é preciso confirmar gates completos sobre SHA final com binários.
 - **Pendências reais:** inspeção final da arte da carteira e Verocard contra referência original; concluir gates, investigar falha Foundation se persistir (no passado houve sobreposição busca/período a 900×700), confirmar Render no SHA exato e capturas; aprovação visual explícita do usuário. Nenhuma tela posterior autorizada.
+
+
+#### Complemento operacional HD: geração final da rodada
+
+- A geração do script de wallet HD encontrou primeiro conflito de push quando a branch mudou em paralelo; o workflow passou a fazer fetch/rebase, sem force. Em tentativa posterior o gate rejeitou arte 1115×901 fora do envelope máximo de 1100px; escala ajustada no script.
+- O workflow de geração HD da correção de escala (run 40956768180) concluiu com **success**, materializando a nova carteira na branch por commit automático. Confirmar o SHA da PR após o commit do bot, não reutilizar o SHA do script.
+- Inspeção da arte resultante: a marca MEG ficou legível e inteira e a mesa de madeira perdeu destaque, mas a borda do recorte fotográfico continua perceptível na parte inferior/direita. **Divergência estética permanece** e deve ser mostrada para aprovação explícita antes de qualquer merge.
+- Variação visual está limitada a Home. A coluna Situação utiliza status retornado pela API, a nomenclatura Resultado projetado foi corrigida sem regras locais e a ordem inicial de vencimentos é cronológica por data.
+- Os gates Home Visual and Build, Foundation e confirmação Render **não são declarados concluídos** sem consulta do último SHA com binários; estado Draft permanece obrigatório.
