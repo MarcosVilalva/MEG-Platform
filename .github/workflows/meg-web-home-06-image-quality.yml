@@ -10,6 +10,8 @@ on:
       - 'scripts/meg-web-home-06.asset-quality.mjs'
       - 'apps/web/public/meg-web-evolution/home/**'
       - 'apps/web/src/meg-web-evolution/home/**'
+      - 'docs/MEG-WEB-HOME-06-ASSETS-ALTA-RESOLUCAO-20261029.md'
+      - 'MEG-WEB-CONTINUIDADE-OFICIAL.md'
 
 permissions:
   contents: read
