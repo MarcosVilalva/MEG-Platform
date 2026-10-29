@@ -1379,3 +1379,13 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - Os assets antigos de 224×185 e 204×131 px foram substituídos no código da PR; não existe necessidade de CSS para esticá-los artificialmente.
 - O pipeline de qualidade de imagens continua **bloqueador**, precisa passar no novo SHA (não declarar aprovado só pela presença de dimensões grandes). A compilação Home e Foundation devem ser reexecutadas sobre o SHA novo. Render deve publicar o mesmo SHA e oferecer URL sem cache.
 - PR #650 permanece Draft, sem merge; Android, regras financeiras, autenticação e DataGrid preservados. Nenhuma tela futura iniciada.
+
+
+## Home 06 | Refinamento do Fluxo e revisão final HD (29/10/2026)
+
+- Carteira e Verocard HD continuam na branch. Gate de resolução aprovado no SHA bb7aed6c com densidade DPR2 adequada. A fonte da carteira é fotografia licenciada da Pexels, com perspectiva diferente da imagem oficial 02, sujeita à validação.
+- home.css refinado: iluminação frio/teal, enquadramento maior da carteira e equilíbrio da arte Verocard. Nenhuma regra financeira alterada.
+- HomeScreen.tsx: removido o gráfico SVG de fluxo diário oculto; substituído por barra visual horizontal de entradas e saídas, usando exclusivamente totais já apurados pelo read model. CSS flex-grow define geometria, não calcula saldo, resultados ou status. Quando os dois valores são zero, não há barra.
+- scripts/meg-web-home-06.visual-test.mjs: passou a exigir a barra proporcional na prévia.
+- Correção de compilação: a primeira remoção do gráfico apagou acidentalmente definições locais de SectionHeading e colunas DataGrid, causando TS2304 no preflight. Essas definições foram restauradas no commit d57b6b21, antes de qualquer merge. É obrigatório passar build final depois dessa correção.
+- Home sem aprovação visual. PR #650 Draft sem merge. Foundation e homologação autenticada com contas reais permanecem independentes.
