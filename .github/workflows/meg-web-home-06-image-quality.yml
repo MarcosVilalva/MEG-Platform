@@ -37,7 +37,6 @@ jobs:
           mkdir -p /tmp/meg-image-audit
           npm install --prefix /tmp/meg-image-audit --no-save --audit=false --fund=false sharp@0.35.5
       - name: Start local Home preview and measure image quality
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
