@@ -1334,3 +1334,11 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - Este piloto é **diagnóstico e não bloqueador**. Não incorporar código, dados ou tokens do plugin ao produto nem reinterpretar a imagem oficial 02. Onde o guia genérico conflitar com os prints e regras MEG, a regra interna prevalece.
 - **Sem alterações nesta rodada** em `HomeScreen.tsx`, `home.css`, DataGrid, Shell, API, Android e telas 01–04. Nenhuma tela foi visualmente aprovada. PR #650 segue Draft e sem merge; gate geral Foundation ainda requer correção independente.
 - Próximo passo estrito: avaliar relatório de auditoria, escolher os 3 achados reais prioritários e implementar correções de uma só vez, comparando screenshots antes/depois e publicando um preview sem cache somente quando existir commit visual novo.
+
+## Home 06 | Resultados do piloto Taste Skill (29/10/2026)
+
+- Confirmado: `design-taste-frontend` v2.1.5, módulo app, auditado no GitHub Actions da PR #650, run `40916502984`. Tool externa baixada somente no runner no commit imutável `12af471f627f866411b4bd785b19646d3672784c`; não instalada como dependência do runtime.
+- Saída: 6 FAIL e 2 WARN **do Taste**, sem equivalência com gate oficial. Detalhes em `docs/MEG-WEB-HOME-06-TASTE-AUDITORIA-20261029.md`.
+- Mudanças seguras aplicadas ao visual da Home: `h1` acessível sem alterar composição visível, bordas dos painéis discretizadas, text-shadow decorativo removido do saldo. **Não alterados** saldos, cards, benefício, regras financeiras, DataGrid, Shell, Android ou autenticação aprovada.
+- Exceções justificadas: gradientes da imagem oficial 02 e ícones coloridos dos cards/atalhos não podem ser suprimidos por padrão externo; a referência soberana prevalece. Texto `XLS/PDF` em 7px identificado pelo checker fica como investigação, sem intervenção global no DataGrid.
+- Inspector de terceiro mede parte visível e pode não enxergar a rolagem interna de `.meg-main`; usar Playwright específico para conferir tabelas completas. **Home não aprovada**, PR Draft sem merge, gate Foundation independente.
