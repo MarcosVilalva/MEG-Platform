@@ -46,7 +46,7 @@ const walletBody = await sharp(Buffer.from(walletBodySvg))
  .composite([{input:walletLogo,left:560,top:314}])
  .resize({width:785,height:795,fit:'fill'})
  .rotate(9,{background:{r:0,g:0,b:0,alpha:0}})
- .resize({width:695})
+ .resize({width:585})
  .png().toBuffer();
 const walletMeta=await sharp(walletBody).metadata();
 
@@ -73,8 +73,8 @@ const walletScene=String.raw`
 </svg>`;
 // Enquadramento editorial: a carteira inteira deve permanecer na faixa visível
 // do hero (object-fit:cover), inclusive em 1366px, sem cortar sua base.
-const walletX= Math.floor(1800-(walletMeta.width??695)-105);
-const walletY= Math.max(180,Math.floor((1000-(walletMeta.height??680))/2));
+const walletX= Math.floor(1800-(walletMeta.width??585)-100);
+const walletY= Math.max(198,Math.floor((1000-(walletMeta.height??585))/2));
 if(walletX<700 || walletY<0 || walletY+(walletMeta.height??0)>1000)throw Error('Wallet geometry exceeds scene');
 const wallet=await sharp(Buffer.from(walletScene))
  .composite([{input:walletBody,left:walletX,top:walletY}])
