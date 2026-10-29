@@ -126,7 +126,7 @@
   height:100%;
   object-fit:cover;
   object-position:50% center;
-  filter:saturate(.82) hue-rotate(155deg) brightness(.82) contrast(1.14);
+  filter:saturate(1.02) brightness(.94) contrast(1.08);
   pointer-events:none;
 }
 .meg-home .balance::before{
