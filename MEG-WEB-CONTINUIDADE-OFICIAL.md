@@ -1307,3 +1307,11 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - Prévia exclusivamente ilustrativa no Render independente `meg-home-06-visual`; conteúdo fictício identificado. A arte da carteira é um recorte da imagem oficial, não uma screenshot de tela inteira nem campos clicáveis rasterizados.
 - Testes: build API, contratos financeiros, build Web, sete viewports, assets, simetria dos cinco atalhos, privacidade dos saldos, abas e critérios de não rolagem desktop. Verificar resultado no SHA final, sem equiparar CI a validação visual.
 - **NÃO APROVADA** visualmente; PR #650 ainda em Draft, sem merge. Gate geral Foundation pendente. Android, telas 01-04 e DataGrid mantidos sem alteração.
+
+
+## Home 06 | rejeição do encaixe sem rolagem (28/10/2026)
+
+- O usuário enviou o vídeo `21-00-46.mp4` mostrando a Home publicada em 1366×768 e declarou que a solução "não foi boa ideia".
+- **Feedback visual explícito:** versão compactada/reprovada, com título do saldo cortado, CTA parcialmente escondido, tipografia excessivamente reduzida e tabelas exibindo apenas três linhas. O gate de não rolagem não equivale a preservação da integridade visual ou dos dados.
+- **Não aprovar a tela atual, não fazer merge da PR #650.** O requisito de 'nenhuma rolagem vertical' precisa de reavaliação: proposta de permitir rolagem vertical natural sem rolagem horizontal, sem cortar painéis, mantendo a identidade da referência oficial 02 e regras financeiras existentes. Essa proposta ainda não substitui formalmente a decisão do usuário até sua concordância explícita.
+- Nenhuma regra financeira, tela anterior ou Android deve ser alterada por causa deste feedback. Corrigir estrutura limpa em vez de empilhar remendos de altura fixa/overflow oculto.
