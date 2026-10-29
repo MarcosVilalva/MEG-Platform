@@ -71,7 +71,7 @@ const cardSvg=[
 const officialCardMark=await sharp(officialLogo).resize(230,230,{fit:'contain'}).png().toBuffer();
 const card=await sharp(Buffer.from(cardSvg))
  .composite([{input:officialCardMark,left:198,top:154}])
- .webp({quality:95,effort:6}).toBuffer(););
+ .webp({quality:95,effort:6}).toBuffer();
 
 for(const [name,buf] of [['wallet-official-02.webp',wallet],['verocard-oficial-panorama.webp',card]]){
  const filepath=resolve(root,name);writeFileSync(filepath,buf);
