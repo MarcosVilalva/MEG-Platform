@@ -1,0 +1,66 @@
+name: MEG Home 06 - Image source quality audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'meg-web-evolution/06-home-visual-*'
+    paths:
+      - '.github/workflows/meg-web-home-06-image-quality.yml'
+      - 'scripts/meg-web-home-06.asset-quality.mjs'
+      - 'apps/web/public/meg-web-evolution/home/**'
+      - 'apps/web/src/meg-web-evolution/home/**'
+
+permissions:
+  contents: read
+
+jobs:
+  image-quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout isolated Home branch
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install workspace dependencies
+        run: npm ci --audit=false
+      - name: Install pinned Playwright for browser-only audit
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Install Sharp as isolated tool, not app dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/meg-image-audit
+          npm install --prefix /tmp/meg-image-audit --no-save --audit=false --fund=false sharp@0.35.5
+      - name: Start local Home preview and measure image quality
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          export MEG_SHARP_MODULE=/tmp/meg-image-audit/node_modules/sharp
+          export PLAYWRIGHT_CHROME_PATH="$(command -v google-chrome)"
+          export MEG_HOME_PREVIEW_URL=http://127.0.0.1:4173/home-visual.html
+          VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 >/tmp/meg-image-audit-vite.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          READY=0
+          for attempt in {1..35}; do
+            if curl -fsS "$MEG_HOME_PREVIEW_URL" >/dev/null; then READY=1; break; fi
+            sleep 1
+          done
+          test "$READY" = 1
+          node scripts/meg-web-home-06.asset-quality.mjs --strict
+      - name: Publish factual resolution report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-06-image-quality-report
+          path: artifacts/home-06/asset-quality/
+          if-no-files-found: warn
+      - name: Local server diagnostics if needed
+        if: failure()
+        run: tail -n 70 /tmp/meg-image-audit-vite.log || true
