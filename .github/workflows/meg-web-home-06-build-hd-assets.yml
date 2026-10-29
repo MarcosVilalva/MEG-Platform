@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/meg-web-home-06.asset-quality.mjs --strict
-          test "$(wc -c < apps/web/public/meg-web-evolution/home/wallet-official-02.webp)" -gt 90000
+          test "$(wc -c < apps/web/public/meg-web-evolution/home/meg-balance-scene-hd.webp)" -gt 90000
           test "$(wc -c < apps/web/public/meg-web-evolution/home/verocard-oficial-panorama.webp)" -gt 30000
       - name: Commit only the new Web Home image assets
         shell: bash
@@ -55,13 +55,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- \
-            apps/web/public/meg-web-evolution/home/wallet-official-02.webp \
+            apps/web/public/meg-web-evolution/home/meg-balance-scene-hd.webp \
             apps/web/public/meg-web-evolution/home/verocard-oficial-panorama.webp
           if git diff --cached --quiet; then
             echo "No image difference to commit."
             exit 0
           fi
-          git commit -m "assets(home): atualizar cena oficial HD da carteira"
+          git rm --ignore-unmatch -- apps/web/public/meg-web-evolution/home/wallet-official-02.webp
+          git commit -m "assets(home): cena financeira HD sem carteira, com marca MEG"
           git fetch origin meg-web-evolution/06-home-visual-20261027
           git rebase origin/meg-web-evolution/06-home-visual-20261027
           git push origin HEAD:refs/heads/meg-web-evolution/06-home-visual-20261027
