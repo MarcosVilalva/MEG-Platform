@@ -151,15 +151,17 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     {icon:'settings',name:'Configurar metas',dest:'metas' as HomeAction,color:'slate'},
   ];
   const paidCount=overview?.paid.count;
-  return <div className="meg-home meg-home-studio">
+  return <div className="meg-home meg-home-atlas">
     <span className="meg-home-sr-title">Resumo financeiro</span>
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
     
     <header className="meg-home-intro">
-      <div className="meg-home-intro-copy"><span className="meg-home-eyebrow"><span className="meg-home-eyebrow-dot"/> SEU PAINEL FINANCEIRO</span><h1>Visão geral</h1><p>Resumo das suas finanças em <strong>{periodTitle}</strong></p></div>
+      <div className="meg-home-intro-copy"><span className="meg-home-eyebrow"><span className="meg-home-eyebrow-dot"/> MEG FINANÇAS / VISÃO GERAL</span><h1>Sua vida financeira, com clareza.</h1><p>Posição e movimentações de <strong>{periodTitle}</strong></p></div>
       <span className="meg-home-intro-brand" aria-hidden="true">MEG <span>FINANÇAS</span></span>
     </header>
-    <div className="meg-home-dash">
+    <div className="meg-home-dashboard">
+      <div className="meg-home-overview">
+        <div className="meg-home-primary">
       <section className="meg-home-card balance" data-panel="saldo" aria-labelledby="meg-home-available-balance">
         <span className="meg-home-balance-watermark" aria-hidden="true">MEG<span>FINANÇAS</span></span>
         <div className="meg-home-hero-copy">
@@ -185,11 +187,17 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
         </div>
 
       </section>
+        </div>
+        <section className="meg-home-risk-rail" aria-labelledby="meg-home-risk-title">
+          <div className="meg-home-risk-heading"><span className="meg-home-eyebrow">EM FOCO</span><h2 id="meg-home-risk-title">Acompanhe de perto</h2></div>
       {items.map((item)=><button type="button" key={item.id} data-panel="indicadores" className={'meg-home-card meg-home-kpi kpi--'+item.id} onClick={()=>go(item.dest)}>
         <span className={'meg-home-kpi-icon is-'+item.color}><Icon name={item.icon} size={24}/></span>
         <span className="meg-home-kpi-copy"><span className="meg-home-kpi-title">{item.label}</span><strong>{item.id==='paid'?(paidCount==null?'—':String(paidCount)+' contas'):showMoney(item.value)}</strong><small>{item.caption}</small></span>
         <span className="meg-home-kpi-arrow" aria-hidden="true"><Icon name="arrow" size={17}/></span>
       </button>)}
+        </section>
+      </div>
+      <div className="meg-home-operations">
       <section className="meg-home-card benefits" data-panel="operacoes" aria-labelledby="meg-benefit-title">
 
         <div className="meg-home-benefit-body">
@@ -210,6 +218,8 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="zap" size={20}/></span><h2>Ações rápidas</h2></div>
         <div className="meg-home-quick-grid">{actions.map(item=><button type="button" className={'meg-home-quick-action quick-'+item.color} key={item.name} onClick={()=>go(item.dest)} title={item.name}><span className="meg-home-quick-icon"><Icon name={item.icon} size={25}/></span><strong>{item.name}</strong></button>)}</div>
       </section>
+      </div>
+      <div className="meg-home-ledger">
       <section className="meg-home-card recent" data-panel="tabelas">
         <SectionHeading icon="swap" title="Últimas movimentações"/>
         <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.recent} aria-label="Mostrar ou ocultar ferramentas da tabela de movimentações" onClick={()=>setGridTools(value=>({...value,recent:!value.recent}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('lancamentos')}>Ver todas <Icon name="arrow" size={14}/></button></div>
@@ -220,6 +230,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
         <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.upcoming} aria-label="Mostrar ou ocultar ferramentas da tabela de vencimentos" onClick={()=>setGridTools(value=>({...value,upcoming:!value.upcoming}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('pendentes')}>Ver todas <Icon name="arrow" size={14}/></button></div>
         <div className={'meg-home-grid-slot '+(gridTools.upcoming?'is-expanded':'')}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due-chronological-v3" ariaLabel="Próximos vencimentos"/></div>
       </section>
+      </div>
     </div>
   </div>;
 }
