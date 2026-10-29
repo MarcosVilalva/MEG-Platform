@@ -30,6 +30,7 @@ try {
    assert.equal(response?.status(),200,'HTTP '+name);
    await page.locator('.meg-home .balance').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-home-kpi').count(),4,'KPIs '+name);
+   assert.equal(await page.locator('.meg-home-flow-distribution').count(),1,'fluxo visual com totais da autoridade '+name);
    assert.equal(await page.locator('.meg-home-wallet-photo').count(),1,'carteira oficial da referencia 02 '+name);
    assert.equal(await page.locator('.meg-home-balance-graph').count(),0,'sem grafico SVG decorativo no saldo '+name);
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
