@@ -36,13 +36,12 @@ try {
    assert.equal((await page.locator('.meg-profile-name').textContent())?.trim(),'Marcos de Andrade Vilalva','identificação demonstrativa do print oficial '+name);
    assert.equal(await page.locator('.meg-home-flow-distribution').count(),1,'fluxo visual com totais da autoridade '+name);
    assert.match(await page.locator('.meg-home-flow-result').innerText(),/Resultado projetado/i,'projectedResult nunca identificado como saldo '+name);
-   assert.equal(await page.locator('.meg-home-balance-art').count(),1,'cena HD financeira oficial no saldo '+name);
-   assert.equal(await page.locator('.meg-home-wallet-photo').count(),0,'carteira anterior removida '+name);
-   assert.match(await page.locator('.meg-home-balance-art').getAttribute('src'),/meg-balance-scene-hd\.webp/,'novo asset do saldo '+name);
-   assert.equal(await page.locator('.meg-home-balance-graph').count(),0,'sem grafico SVG decorativo no saldo '+name);
+   assert.equal(await page.locator('.meg-home-studio .meg-home-intro h1').innerText(),'Visão geral','novo cabeçalho funcional '+name);
+   assert.equal(await page.locator('.meg-home img').count(),0,'nenhuma imagem cenográfica dependente de download '+name);
+   assert.equal(await page.locator('.meg-home-wallet-photo,.meg-home-balance-art,.meg-home-benefit-card').count(),0,'assets antigos removidos do DOM '+name);
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
    assert.ok(balanceSize>=31,'saldo visualmente protagonista '+name+': '+balanceSize);
-   assert.equal(await page.locator('.meg-home-quick-action').count(),5,'5 ações da imagem oficial 02 '+name);
+   assert.equal(await page.locator('.meg-home-quick-action').count(),5,'5 ações funcionais '+name);
    const balanceToggle=page.getByRole('button',{name:'Ocultar saldos'});
    await balanceToggle.click();
    assert.equal(await page.locator('.meg-home-hero-balance').innerText(),'R$ •••••');
@@ -58,9 +57,6 @@ try {
    assert.equal(await page.locator('.meg-home-welcome').count(),0,'sem cabeçalho redundante '+name);
    assert.ok(await page.locator('.meg-home-category-icon').count()>=5,'SVGs financeiros nas movimentações '+name);
    assert.ok(await page.locator('.meg-home-category-pill').count()>=5,'categorias semânticas no DataGrid '+name);
-   assert.equal(await page.locator('.meg-home img').count(),2,'cena financeira e arte do beneficio '+name);
-   const loaded=await page.locator('.meg-home img').evaluateAll(images=>images.every(img=>img.complete && img.naturalWidth>0));
-   assert.ok(loaded,'assets oficiais carregados '+name);
    const dueFirst=await page.locator('.meg-home .upcoming .meg-datagrid-table tbody tr').first().innerText();
    assert.match(dueFirst,/28\/10\/2026/,'vencimentos devem iniciar em ordem cronológica sem sort persistido '+name);
    assert.ok(await page.locator('.meg-home .upcoming .meg-home-payable-status').count()>=4,'status do contrato canônico disponível sem conta fictícia '+name);
@@ -72,8 +68,8 @@ try {
      shell:document.querySelector('.meg-shell')?.getBoundingClientRect().toJSON(),
      grid:document.querySelector('.meg-home-dash')?.getBoundingClientRect().toJSON(),
    }));
-   // Contrato geométrico da referência oficial 02: primeira linha 7/5,
-   // mobile empilhado, sem sobreposição ou achatamento do Fluxo.
+   // Layout novo: Saldo ocupa 8/12 e Fluxo 4/12 em desktop amplo;
+   // mobile empilhado, sem sobreposição nem achatamento dos painéis.
    const firstRow=await page.evaluate(()=>{
      const a=document.querySelector('.meg-home .balance').getBoundingClientRect();
      const b=document.querySelector('.meg-home .flow').getBoundingClientRect();
@@ -84,7 +80,7 @@ try {
      assert.ok(Math.abs(firstRow.saldo.height-firstRow.fluxo.height)<=2,name+': altura inconsistente '+JSON.stringify(firstRow));
      assert.ok(firstRow.fluxo.left>=firstRow.saldo.right,name+': Saldo e Fluxo sobrepostos '+JSON.stringify(firstRow));
      const ratio=firstRow.saldo.width/firstRow.fluxo.width;
-     assert.ok(ratio>=1.20&&ratio<=1.60,name+': proporção 7/5 alterada: '+ratio);
+     assert.ok(ratio >= (width>=1280?1.75:1.20) && ratio <= (width>=1280?2.50:1.60),name+': proporção da nova primeira linha: '+ratio);
    }else{
      assert.ok(firstRow.fluxo.top>=firstRow.saldo.bottom-1,name+': Saldo/Fluxo sobrepostos no mobile '+JSON.stringify(firstRow));
    }
