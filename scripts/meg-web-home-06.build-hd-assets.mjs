@@ -75,7 +75,7 @@ const walletScene=String.raw`
 // do hero (object-fit:cover), inclusive em 1366px, sem cortar sua base.
 const walletX= Math.floor(1800-(walletMeta.width??585)-100);
 const walletY= Math.max(198,Math.floor((1000-(walletMeta.height??585))/2));
-if(walletX<700 || walletY<0 || walletY+(walletMeta.height??0)>1000)throw Error('Wallet geometry exceeds scene');
+if(walletX<700 || walletY<0 || walletY+(walletMeta.height??0)>1000)throw Error('Wallet geometry exceeds scene: '+JSON.stringify({walletX,walletY,width:walletMeta.width,height:walletMeta.height}));
 const wallet=await sharp(Buffer.from(walletScene))
  .composite([{input:walletBody,left:walletX,top:walletY}])
  .webp({lossless:true,effort:6}).toBuffer();
