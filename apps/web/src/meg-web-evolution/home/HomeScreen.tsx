@@ -164,6 +164,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate}:{snapshot:HomeSnapshot
   ];
   const paidCount=overview?.paid.count;
   return <div className="meg-home meg-home-reference-02">
+    <h1 className="meg-home-sr-title">Visão geral das finanças</h1>
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores fictícios para avaliar o layout · Sem conexão com contas reais</div>}
     
     <div className="meg-home-dash">
