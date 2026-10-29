@@ -28,24 +28,39 @@ const walletBase=await sharp(photo).extract(crop).resize(1800,1000,{fit:'cover',
 // Não ampliar pixels da referência 02: isolar a carteira da fotografia HD
 // e integrá-la a um novo ambiente teal, removendo chaves/mesa como foco.
 // A máscara acompanha a silhueta da fotografia Pexels acima, não os dados da UI.
-const walletSilhouette=Buffer.from([
- '<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000">',
- '<defs><filter id="edge" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="3"/></filter></defs>',
- '<path d="M350 90 Q380 76 425 78 L990 91 Q1121 100 1160 176 L1186 733 Q1191 764 1158 771 L335 779 Q319 769 321 730 L323 145 Q324 111 350 90 Z" fill="#fff" filter="url(#edge)"/>',
- '</svg>'
-].join(''));
-const cutout=await sharp(walletBase)
- .composite([{input:walletSilhouette,blend:'dest-in'}])
- .png().toBuffer();
-const walletMark=await sharp(officialLogo).resize(180,180,{fit:'contain'}).png().toBuffer();
+// O fundo marrom da foto nao faz parte da carteira. A alpha-matte
+// conserva pixels escuros da superficie de couro e atenua as cores
+// marrons da mesa dentro de uma caixa espacial com bordas suaves.
+// Nao produz efeito de "recorte retangular" nem altera pixels do print.
+const raw=await sharp(walletBase).removeAlpha().raw().toBuffer({resolveWithObject:true});
+const {width:sourceWidth,height:sourceHeight,channels}=raw.info;
+const matted=Buffer.alloc(sourceWidth*sourceHeight*4);
+const clamp=(x)=>Math.max(0,Math.min(1,x));
+const smooth=(edge0,edge1,x)=>{const t=clamp((x-edge0)/(edge1-edge0));return t*t*(3-2*t);};
+for(let y=0;y<sourceHeight;y++){
+ for(let x=0;x<sourceWidth;x++){
+  const idx=(y*sourceWidth+x)*channels;
+  const r=raw.data[idx],g=raw.data[idx+1],b=raw.data[idx+2];
+  const o=(y*sourceWidth+x)*4;
+  const brightness=.299*r+.587*g+.114*b;
+  const colorDifference=Math.max(r,g,b)-Math.min(r,g,b);
+  const spatial=smooth(305,362,x)*(1-smooth(1150,1200,x))*smooth(77,128,y)*(1-smooth(731,789,y));
+  const darkLeather=1-smooth(51,99,brightness);
+  const brownAttenuation=1-.65*smooth(12,49,colorDifference);
+  const alpha=clamp(spatial*darkLeather*brownAttenuation);
+  matted[o]=r;matted[o+1]=g;matted[o+2]=b;matted[o+3]=Math.round(255*alpha);
+ }
+}
+const cutout=await sharp(matted,{raw:{width:sourceWidth,height:sourceHeight,channels:4}}).png().toBuffer();
+const walletMark=await sharp(officialLogo).resize(144,144,{fit:'contain'}).png().toBuffer();
 const walletBranded=await sharp(cutout)
- .composite([{input:walletMark,left:826,top:503}])
- .extract({left:292,top:42,width:920,height:762})
+ .composite([{input:walletMark,left:812,top:501}])
+ .extract({left:290,top:64,width:930,height:744})
  .rotate(13,{background:{r:0,g:0,b:0,alpha:0}})
- .resize({width:1010})
+ .resize({width:860})
  .png().toBuffer();
 const brandedMeta=await sharp(walletBranded).metadata();
-if((brandedMeta.width??0)>1160||(brandedMeta.height??0)>985)throw Error('Arte de carteira fora do envelope: '+brandedMeta.width+'x'+brandedMeta.height);
+if((brandedMeta.width??0)>1100||(brandedMeta.height??0)>975)throw Error('Carteira fora do envelope: '+brandedMeta.width+'x'+brandedMeta.height);
 const walletScene=Buffer.from([
  '<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000">',
  '<defs><linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#001720"/><stop offset=".43" stop-color="#00303b"/><stop offset="1" stop-color="#042129"/></linearGradient>',
@@ -60,11 +75,11 @@ const walletScene=Buffer.from([
  '<rect width="1800" height="1000" fill="url(#teal)" opacity=".26"/>',
  '</svg>'
 ].join(''));
-const x=Math.round(1790-(brandedMeta.width??1010));
-const y=Math.max(15,Math.round((975-(brandedMeta.height??880))/2));
+const x=Math.round(1740-(brandedMeta.width??860));
+const y=Math.max(85,Math.round((915-(brandedMeta.height??750))/2));
 const wallet=await sharp(walletScene)
  .composite([{input:walletBranded,left:x,top:y}])
- .webp({quality:94,effort:6}).toBuffer();
+ .webp({quality:98,effort:6}).toBuffer();
 
 // O cartão é uma ilustração HD da linguagem da referência visual 02.
 // Dados, botões, cifras e status continuam exclusivamente no React.
