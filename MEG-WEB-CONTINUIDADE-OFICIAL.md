@@ -1460,3 +1460,16 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - `.github/workflows/meg-web-home-06-build-hd-assets.yml`: gera novo asset, remove binário antigo em commit sem force e usa fetch/rebase; build isolado da Home continua exigido.
 - Proibido chamar tela pronta antes de verificar screenshot, green gates do último SHA e aprovação explícita. Base da PR #650 permanece Draft, sem merge. O Android, APIs financeiras, transferências, faturas, saldos e DataGrid compartilhado não foram alterados nesta tarefa.
 - **Pendências:** conferir captura do último SHA com asset gerado, execução final de `Home 06 - Visual and Build` e `Foundation`, validar publicação exata no Render e aprovação visual. Falhas anteriores do Foundation relacionadas a contratos de viewport do DataGrid são independentes da nova arte e não devem ser ignoradas.
+
+
+## Home 06 | validação objetiva do Bloco Saldo + Fluxo após rejeição estética (29/10/2026)
+
+
+- O usuário expressou forte desgaste com a evolução visual e pediu **uma entrega sólida**, não outra promessa ou dashboard diferente. **Home continua a única prioridade**; referência oficial 02 continua soberana.
+- Implementação limitada ao painel de saldo. O gerador `scripts/meg-web-home-06.build-hd-assets.mjs` deixa de desenhar barras ascendentes/linha de rentabilidade fictícia; gera cenário ambiental de vidro/iluminação teal com SVG canônico MEG, em 2400 × 1200 pixels, sem alterar os dados React.
+- Bloco de saldo e Fluxo permanecem no padrão de duas colunas da imagem oficial. `scripts/meg-web-home-06.visual-test.mjs` agora exige geometria da primeira linha (alinhamento, altura equivalente, ausência de colisão, proporção 7/5 com tolerância) e empilhamento tablet/mobile sem sobreposição.
+- O workflow de geração de assets HD (run 40967482789) concluiu com sucesso e publicou o WebP na branch. O teste Home Visual and Build (run 40967722914) concluiu **success**, incluindo capturas reais nos oito tamanhos e contrato 7/5. Arte do saldo fotografada e revisada na captura `desktop-oficial.png` e `mobile.png` do artifact `12938966448`.
+- Inspeção visual: nova cena está mais discreta, sem rentabilidade simulada e com leitura do saldo preservada. Ainda **não** reproduz a riqueza fotográfica da referência oficial. Portanto **não homologar Home**.
+- Preservados APIs, auth, operações financeiras, cálculo de saldos, status, domínio de benefícios, card Verocard, DataGrid compartilhado e Android.
+- PR #650 permanece Draft, sem merge. **Foundation e Preflight do SHA `15764e3fcb42083aad66d9328f0bf0485ced5633` estavam em execução** quando registrado; não declarar verde. Render continua sem comprovação do SHA implantado.
+- Próxima decisão: só considerar esse bloco aprovado mediante avaliação visual explícita do usuário; seguir para demais cards da Home somente depois de consolidar o primeiro bloco, sem alterar layout ou identidade.
