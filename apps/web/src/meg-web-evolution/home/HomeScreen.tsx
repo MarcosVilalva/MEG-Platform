@@ -96,13 +96,13 @@ const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
 ];
 const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'date',label:'Data',type:'date',width:80,minWidth:70,sortable:true,filterable:true},
-  {key:'description',label:'Descrição',type:'text',width:154,minWidth:115,sortable:true,filterable:true,
+  {key:'description',label:'Descrição',type:'text',width:146,minWidth:105,sortable:true,filterable:true,
     render:(v,row)=><HomeDescriptionCell description={String(v??'')} category={String(row.category??'')}/>},
-  {key:'category',label:'Categoria',type:'text',width:96,minWidth:80,sortable:true,filterable:true,
+  {key:'category',label:'Categoria',type:'text',width:88,minWidth:72,sortable:true,filterable:true,
     render:(v)=><HomeCategoryCell category={String(v??'')}/>},
-  {key:'value',label:'Valor',type:'currency',width:112,minWidth:96,sortable:true,filterable:true,
+  {key:'value',label:'Valor',type:'currency',width:106,minWidth:88,sortable:true,filterable:true,
     render:(v)=><span className="meg-home-value">{amount(Number(v))}</span>},
-  {key:'status',label:'Situação',type:'text',width:93,minWidth:85,sortable:true,filterable:true,
+  {key:'status',label:'Situação',type:'text',width:86,minWidth:75,sortable:true,filterable:true,
     render:(v)=><span className="meg-home-payable-status">{payableStatusLabel(String(v??''))}</span>},
 ];
 
