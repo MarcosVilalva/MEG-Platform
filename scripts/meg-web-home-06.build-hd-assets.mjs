@@ -15,61 +15,44 @@ const root = resolve(import.meta.dirname, '../apps/web/public/meg-web-evolution/
 mkdirSync(root, { recursive: true });
 const officialLogo = readFileSync(resolve(import.meta.dirname, '../apps/web/public/brand/logo-meg-financas.svg'));
 
-// Cena editorial estática. Gráfico de fundo é decorativo, sem representar dados.
-const sceneW=2400,sceneH=1200;
-const bars=Array.from({length:10},(_,i)=>{
-  const x=1320+i*93,h=164+i*55,y=886-h;
-  const shade=['#13ead8','#0bc8c4','#0f9fba'][i%3];
-  return [
-   '<g opacity="'+(0.40+i*.05).toFixed(3)+'">',
-   '<rect x="'+x+'" y="'+y+'" width="48" height="'+h+'" rx="5" fill="url(#columnFill)" stroke="'+shade+'" stroke-width="3"/>',
-   '<path d="M'+x+' '+y+'l20 -14h48l-20 14Z" fill="#8bfff3" opacity=".4"/>',
-   '<path d="M'+(x+48)+' '+y+'l20 -14v'+h+'l-20 14Z" fill="#087d91" opacity=".5"/>',
-   '<path d="M'+(x+8)+' '+(y+14)+'v'+(h-26)+'" stroke="#9ffff2" stroke-opacity=".32" stroke-width="3"/>',
-   '</g>'
-  ].join('');
-}).join('');
-const sceneSvg=String.raw`
-<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1200" viewBox="0 0 2400 1200">
-<defs>
- <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00131d"/><stop offset=".48" stop-color="#002a34"/><stop offset="1" stop-color="#031924"/></linearGradient>
- <radialGradient id="halo"><stop stop-color="#12e7c7" stop-opacity=".46"/><stop offset=".4" stop-color="#16a9aa" stop-opacity=".24"/><stop offset="1" stop-color="#11cab9" stop-opacity="0"/></radialGradient>
- <linearGradient id="columnFill" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#046377" stop-opacity=".5"/><stop offset=".4" stop-color="#0ca7af" stop-opacity=".8"/><stop offset="1" stop-color="#083b4a" stop-opacity=".9"/></linearGradient>
- <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#093943"/><stop offset="1" stop-color="#02141e"/></linearGradient>
- <linearGradient id="pathline" x1="0" y1="0" x2="1" y2=".1"><stop stop-color="#036875" stop-opacity="0"/><stop offset=".3" stop-color="#15c0b7"/><stop offset=".78" stop-color="#7cfff2"/><stop offset="1" stop-color="#08c0ca"/></linearGradient>
- <filter id="depth"><feGaussianBlur stdDeviation="53"/></filter>
- <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
- <filter id="floorBlur"><feGaussianBlur stdDeviation="12"/></filter>
-</defs>
-<rect width="2400" height="1200" fill="url(#bg)"/>
-<g opacity=".54" filter="url(#depth)">
- <ellipse cx="1804" cy="398" rx="830" ry="470" fill="url(#halo)"/>
- <path d="M1430 -100h68v615h-68z" fill="#9efff5" opacity=".32" transform="rotate(12 1430 0)"/>
- <path d="M1890 -100h38v535h-38z" fill="#39f6ed" opacity=".3" transform="rotate(-8 1900 0)"/>
- <ellipse cx="2210" cy="520" rx="270" ry="230" fill="#166a71"/>
-</g>
-<path d="M0 940L2400 830V1200H0Z" fill="url(#floor)"/>
-<g opacity=".17" stroke="#3ac5b9" fill="none" stroke-width="2">
- <path d="M0 1044L2400 918"/><path d="M0 1111L2400 1021"/>
- <path d="M600 1200L1450 861"/><path d="M1200 1200L1800 838"/><path d="M1750 1200L2200 830"/>
-</g>
-<ellipse cx="1810" cy="910" rx="590" ry="92" fill="#000a11" opacity=".68" filter="url(#depth)"/>
-<g>
- <ellipse cx="1860" cy="921" rx="535" ry="88" fill="#02212d" stroke="#0c6571" stroke-width="6"/>
- <path d="M1325 923v45c0 48 235 85 535 85s535-37 535-85v-45" fill="#02131d" stroke="#0b4f58" stroke-width="4"/>
- <ellipse cx="1860" cy="918" rx="527" ry="82" fill="#073542" stroke="#27b2a6" stroke-opacity=".65" stroke-width="5"/>
- <ellipse cx="1860" cy="918" rx="470" ry="58" fill="#001823" opacity=".7"/>
- <path d="M1480 940Q1850 1021 2260 940" stroke="#1be8d0" stroke-opacity=".62" stroke-width="7" fill="none" filter="url(#floorBlur)"/>
-</g>
-<!-- BARS -->
-<path d="M890 797C1140 849 1240 720 1432 667S1735 459 1870 487S2100 383 2310 324" fill="none" stroke="#24f7d9" stroke-width="29" stroke-opacity=".47" filter="url(#glow)"/>
-<path d="M890 797C1140 849 1240 720 1432 667S1735 459 1870 487S2100 383 2310 324" fill="none" stroke="url(#pathline)" stroke-width="8" stroke-linecap="round"/>
-<path d="M1050 878C1220 812 1300 840 1475 760S1745 615 1930 650S2210 520 2385 476" stroke="#45eee3" stroke-opacity=".23" stroke-width="3" fill="none"/>
-<g filter="url(#glow)" opacity=".6"><circle cx="1870" cy="487" r="20" fill="#9efff2"/><circle cx="2310" cy="324" r="21" fill="#7bfff0"/></g>
-</svg>`.replace('<!-- BARS -->',bars);
-const logo=await sharp(officialLogo).resize(315,315,{fit:'contain'}).png().toBuffer();
+// Hero editorial sem carteira e sem grafico ficticio de rendimento.
+// A arte é apenas atmosfera, e não disputa a leitura do saldo real.
+const sceneSvg=[
+ '<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1200" viewBox="0 0 2400 1200">',
+ '<defs>',
+ '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00121b"/><stop offset=".46" stop-color="#01343c"/><stop offset="1" stop-color="#001721"/></linearGradient>',
+ '<radialGradient id="soft" cx=".69" cy=".35" r=".60"><stop stop-color="#3de5cb" stop-opacity=".41"/><stop offset=".40" stop-color="#168f95" stop-opacity=".18"/><stop offset="1" stop-color="#0b4452" stop-opacity="0"/></radialGradient>',
+ '<linearGradient id="desk" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b4b53"/><stop offset="1" stop-color="#01151f"/></linearGradient>',
+ '<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8dfbea" stop-opacity=".23"/><stop offset=".35" stop-color="#48d8cd" stop-opacity=".045"/><stop offset="1" stop-color="#0a7278" stop-opacity=".12"/></linearGradient>',
+ '<filter id="blur"><feGaussianBlur stdDeviation="85"/></filter>',
+ '<filter id="soften"><feGaussianBlur stdDeviation="25"/></filter>',
+ '<filter id="shadow"><feGaussianBlur stdDeviation="35"/></filter>',
+ '</defs>',
+ '<rect width="2400" height="1200" fill="url(#bg)"/>',
+ '<rect width="2400" height="1200" fill="url(#soft)"/>',
+ '<g filter="url(#blur)" opacity=".50">',
+ '<circle cx="1830" cy="182" r="225" fill="#3ce3d7"/>',
+ '<ellipse cx="2230" cy="410" rx="175" ry="370" fill="#095568"/>',
+ '<circle cx="1570" cy="575" r="155" fill="#249c9c"/>',
+ '<rect x="1450" y="-150" width="78" height="820" rx="40" fill="#7afde9" transform="rotate(9 1450 -150)"/>',
+ '<rect x="2060" y="-95" width="45" height="620" rx="26" fill="#76e4de" transform="rotate(11 2060 -95)"/>',
+ '</g>',
+ '<path d="M0 992L2400 902V1200H0Z" fill="url(#desk)" opacity=".72"/>',
+ '<path d="M910 1035L2400 973" stroke="#40b8b1" stroke-opacity=".13" stroke-width="5"/>',
+ '<ellipse cx="1955" cy="984" rx="368" ry="76" fill="#000b15" opacity=".72" filter="url(#shadow)"/>',
+ '<g transform="translate(1780 289)">',
+ '<rect x="17" y="25" width="499" height="569" rx="54" fill="#00141d" opacity=".51" filter="url(#shadow)"/>',
+ '<rect width="510" height="565" rx="48" fill="#032d38" fill-opacity=".55" stroke="#4bdcca" stroke-opacity=".44" stroke-width="5"/>',
+ '<rect x="20" y="20" width="470" height="525" rx="37" fill="url(#glass)" stroke="#86ffea" stroke-opacity=".15" stroke-width="3"/>',
+ '<path d="M31 68Q80 26 174 27" stroke="#b8fff2" stroke-opacity=".18" stroke-width="8" fill="none"/>',
+ '<path d="M435 53V485" stroke="#76ffe6" stroke-opacity=".12" stroke-width="14"/>',
+ '</g>',
+ '<g opacity=".2" filter="url(#soften)"><ellipse cx="1818" cy="867" rx="390" ry="32" fill="#4df8e6"/></g>',
+ '</svg>'
+].join('');
+const logo=await sharp(officialLogo).resize(350,350,{fit:'contain'}).png().toBuffer();
 const hero=await sharp(Buffer.from(sceneSvg))
- .composite([{input:logo,left:1875,top:540}])
+ .composite([{input:logo,left:1870,top:400}])
  .webp({lossless:true,effort:6}).toBuffer();
 
 const cardSvg=String.raw`
