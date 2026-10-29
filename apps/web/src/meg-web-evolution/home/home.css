@@ -442,7 +442,7 @@
   .meg-home-benefit-monthly strong{font-size:.78rem}
   .meg-home-benefit-card{width:35%;right:-.18rem;top:20%;height:60%;opacity:.76}
   .meg-home .quick{min-height:17rem;padding:1rem .8rem}
-  .meg-home-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;min-height:0}
+  .meg-home-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(6.4rem,1fr);gap:.45rem;min-height:0}
   .meg-home-quick-action{min-height:5.4rem;gap:.4rem;padding:.45rem .1rem}
   .meg-home-quick-icon{flex-basis:2.2rem;width:2.2rem;height:2.2rem}
   .meg-home-quick-action strong{font-size:.7rem}
