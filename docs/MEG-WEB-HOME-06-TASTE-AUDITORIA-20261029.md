@@ -52,3 +52,20 @@
 ## Resultado desta rodada
 
 O piloto de auditoria está registrado em código e será executado no GitHub Actions, sem incorporar o Taste Skill ao runtime do MEG. **Nenhum redesign do produto foi aprovado por esse registro.** Os relatórios de execução ficam em `artifacts/home-06/taste` (artefato GitHub Actions).
+
+## Primeira execução medida | 29/10/2026
+
+**Execução GitHub Actions:** `40916502984`. Teste externo `design-taste-frontend` em modo `--app`, versão fixada `12af471f627f866411b4bd785b19646d3672784c`.
+
+- O job experimental foi concluído tecnicamente, com artefato `meg-home-06-taste-diagnostic` contendo `lint.json`, `inspect/report.json` e imagens desktop/tablet/mobile.
+- O inspector analisou 1366 × 854, 768 × 1024 e 390 px. **Encontrou 6 FAIL e 2 WARN**. Esses são diagnósticos de projeto genérico, **não** status dos gates oficiais MEG.
+- FAIL: `gradient`, `text-shadow`, `button-fx`, `icon-chips`, `tiny-text`, `no-title`.
+- WARN: `dev-server` e `heavy-borders`.
+- `gradient` e `icon-chips`: existem no print oficial 02, inclusive nos cards e atalhos. **Exceção justificada:** não eliminá-los cegamente.
+- `no-title`: adicionado `h1` semanticamente acessível, visualmente oculto para não criar um cabeçalho extra que descaracterize o print.
+- `heavy-borders` e `text-shadow`: o CSS da Home foi refinado reduzindo contraste das bordas e removendo sombra decorativa do valor do saldo. Não altera números ou componentes financeiros.
+- `tiny-text`: o inspector apontou especificamente `XLS` e `PDF` em 7px. Isso precisa ser confirmado no estado de ferramentas do DataGrid antes de mudar componente global; **pendente**.
+- `dev-server`: era um servidor Vite de diagnóstico. O gate de produção da Web continua separado.
+- **Limitação:** o inspector reporta a altura do documento, mas a Home rola dentro de `.meg-main`; portanto, sua captura inicial não garante inspeção dos DataGrids abaixo da dobra. Os testes Playwright específicos do MEG continuam obrigatórios.
+
+**Próxima comparação:** executar novamente a auditoria depois dos ajustes e confrontar screenshot desktop/mobile com a referência 02. O objetivo é diminuir ruído visual sem reduzir hierarquia e densidade financeira. O aceite permanece exclusivamente do usuário.
