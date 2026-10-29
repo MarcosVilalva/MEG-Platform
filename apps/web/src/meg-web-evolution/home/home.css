@@ -216,6 +216,7 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
 .meg-home-positive{color:#37f3c9;font-weight:780}
 .meg-home-negative{color:#ff7c8c;font-weight:780}
 .meg-home-value{font-size:.77rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.meg-home-payable-status{display:inline-flex;align-items:center;min-height:1.8rem;padding:.28rem .48rem;border-radius:.46rem;border:1px solid rgba(56,222,199,.28);background:rgba(1,91,95,.25);color:#b6f4e5;font-size:.72rem;font-weight:680;white-space:nowrap}
 
 /* A solução mobile abandonou abas não aprovadas que escondiam painéis:
    conteúdo todo acessível com rolagem vertical simples. */
