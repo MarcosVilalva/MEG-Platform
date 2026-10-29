@@ -479,3 +479,32 @@
   .meg-home-grid-slot .meg-datagrid-cards{padding:.35rem}
 }
 @media(prefers-reduced-motion:reduce){.meg-home *{animation:none!important;transition:none!important}}
+
+/* Controles funcionais do Shell, visíveis apenas com a Home atual montada. */
+.meg-shell:has(.meg-home) .meg-period-picker{position:relative;flex:0 0 auto;z-index:30}
+.meg-shell:has(.meg-home) .meg-period-popover{
+  position:absolute;z-index:60;right:0;top:calc(100% + .35rem);
+  display:grid;gap:.5rem;min-width:12.6rem;padding:.78rem;
+  border:1px solid rgba(45,220,199,.55);border-radius:.65rem;
+  background:#00252b;color:#d9fdf7;box-shadow:0 .65rem 1.5rem #0008;
+}
+.meg-shell:has(.meg-home) .meg-period-popover label{font-size:.77rem;font-weight:750}
+.meg-shell:has(.meg-home) .meg-period-popover input{
+  min-width:0;width:100%;min-height:2.5rem;padding:.4rem;
+  border:1px solid #18bca9;border-radius:.45rem;background:#06343a;color:white;
+  font:inherit;color-scheme:dark;
+}
+.meg-shell:has(.meg-home) .meg-home-operation-notice{
+  display:flex;align-items:center;justify-content:space-between;gap:.7rem;
+  margin:.7rem 1.1rem 0;padding:.7rem .85rem;
+  border:1px solid rgba(255,195,88,.55);border-radius:.65rem;
+  background:#312b19;color:#ffe5ad;font-size:.83rem;line-height:1.45;
+}
+.meg-home-operation-notice button{
+  min-height:2rem;padding:.3rem .6rem;border:1px solid #d4b775;
+  border-radius:.45rem;background:#3c3827;color:#fff6d8;cursor:pointer;
+}
+@media(max-width:639px){
+  .meg-shell:has(.meg-home) .meg-period-popover{right:-3rem;min-width:10.2rem}
+  .meg-shell:has(.meg-home) .meg-home-operation-notice{margin:.55rem .55rem 0;align-items:flex-start}
+}
