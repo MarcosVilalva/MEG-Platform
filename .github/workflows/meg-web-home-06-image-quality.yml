@@ -1,4 +1,4 @@
-name: MEG Home 06 - Image source quality audit
+name: MEG Home 06 - Graphic independence audit
 
 on:
   workflow_dispatch:
@@ -32,17 +32,10 @@ jobs:
         run: npm ci --audit=false
       - name: Install pinned Playwright for browser-only audit
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
-      - name: Install Sharp as isolated tool, not app dependency
+      - name: Audit new Home without decorative images
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/meg-image-audit
-          npm install --prefix /tmp/meg-image-audit --no-save --audit=false --fund=false sharp@0.35.5
-      - name: Start local Home preview and measure image quality
-        shell: bash
-        run: |
-          set -euo pipefail
-          export MEG_SHARP_MODULE=/tmp/meg-image-audit/node_modules/sharp
           export PLAYWRIGHT_CHROME_PATH="$(command -v google-chrome)"
           export MEG_HOME_PREVIEW_URL=http://127.0.0.1:4173/home-visual.html
           VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 >/tmp/meg-image-audit-vite.log 2>&1 &
@@ -59,7 +52,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: meg-home-06-image-quality-report
+          name: meg-home-06-graphic-independence
           path: artifacts/home-06/asset-quality/
           if-no-files-found: warn
       - name: Local server diagnostics if needed
