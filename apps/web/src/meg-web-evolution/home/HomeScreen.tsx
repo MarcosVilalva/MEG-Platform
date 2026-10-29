@@ -157,7 +157,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     
     <div className="meg-home-dash">
       <section className="meg-home-card balance" data-panel="saldo" aria-labelledby="meg-home-available-balance">
-        <img className="meg-home-wallet-photo" src="/meg-web-evolution/home/wallet-official-02.webp" alt="" aria-hidden="true" decoding="async"/>
+        <img className="meg-home-balance-art" src="/meg-web-evolution/home/meg-balance-scene-hd.webp" alt="" aria-hidden="true" decoding="async"/>
         <div className="meg-home-hero-copy">
           <div className="meg-home-hero-heading">
             <h2 id="meg-home-available-balance">Saldo disponível</h2>
