@@ -1,0 +1,85 @@
+name: MEG Home 06 - Taste Skill visual audit (experimental)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'meg-web-evolution/06-home-visual-*'
+    paths:
+      - '.github/workflows/meg-web-home-06-taste-audit.yml'
+      - 'docs/MEG-WEB-HOME-06-TASTE-AUDITORIA-20261029.md'
+      - 'apps/web/src/meg-web-evolution/home/**'
+      - 'apps/web/home-visual/**'
+
+permissions:
+  contents: read
+
+jobs:
+  taste-home-audit:
+    name: Visual-only audit (non-blocking)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install MEG dependencies
+        run: npm ci --audit=false
+      - name: Fetch reviewed Taste Skill revision without repository changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/meg-taste-skill
+          git -C /tmp/meg-taste-skill init -q
+          git -C /tmp/meg-taste-skill remote add origin https://github.com/Leonxlnx/taste-skill.git
+          git -C /tmp/meg-taste-skill fetch --no-tags --depth 1 origin 12af471f627f866411b4bd785b19646d3672784c
+          git -C /tmp/meg-taste-skill checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/meg-taste-skill rev-parse HEAD)" = 12af471f627f866411b4bd785b19646d3672784c
+      - name: Static UI audit, app rules
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/home-06/taste
+          node /tmp/meg-taste-skill/skills/taste-skill/scripts/lint.mjs --app --json \
+            apps/web/src/meg-web-evolution/home/home.css \
+            apps/web/src/meg-web-evolution/home/HomeScreen.tsx \
+            apps/web/src/meg-web-evolution/home/HomeFinanceVisuals.tsx \
+            | tee artifacts/home-06/taste/lint.json
+      - name: Real-browser visual audit on published-equivalent local preview
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/home-06/taste/inspect
+          VITE_PUBLIC_BASE_PATH=/ npm --workspace apps/web run dev -- --host 127.0.0.1 --port 4173 >/tmp/meg-taste-vite.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          READY=0
+          for attempt in {1..50}; do
+            if curl --fail --silent http://127.0.0.1:4173/home-visual.html >/dev/null; then READY=1; break; fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            tail -n 100 /tmp/meg-taste-vite.log
+            exit 1
+          fi
+          node /tmp/meg-taste-skill/skills/taste-skill/scripts/inspect.mjs \
+            http://127.0.0.1:4173/home-visual.html \
+            --app --widths 1366,768,390 \
+            --out artifacts/home-06/taste/inspect --json \
+            | tee artifacts/home-06/taste/inspector-console.json
+      - name: Archive Taste results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-06-taste-diagnostic
+          path: artifacts/home-06/taste/
+          if-no-files-found: warn
+      - name: Vite debug output
+        if: failure()
+        run: tail -n 80 /tmp/meg-taste-vite.log || true
