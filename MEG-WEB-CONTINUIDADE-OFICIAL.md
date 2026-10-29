@@ -1399,3 +1399,16 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - O workflow isolado de geração de imagens é acionado pelo script e deve materializar os dois WebPs. **Não declarar as artes ou a Home aprovadas sem confirmação de geração, inspeção das capturas e avaliação visual explícita.**
 - Preservados: autoridade financeira, saldo de benefício separado, DataGrid, Shell autenticado, Android e telas 01–04. PR #650 continua Draft e merge bloqueado se qualquer gate estiver vermelho.
 - Pendentes: confirmar novo commit de binários e deploy do SHA correspondente, executar auditoria de densidade, conferir alinhamentos desktop/mobile e obter aprovação visual.
+
+
+### Home 06 | refinamento de hierarquia, profundidade e responsividade (29/10/2026)
+
+- **Autorização:** o usuário autorizou outra rodada visual na Home com base apenas na referência oficial 02. Isso não equivale a homologação da tela nem autorização de merge.
+- **React Home:** HomeScreen.tsx reorganizado em dois indicadores de Fluxo do mês com ícones destacados, distribuição proporcional aos totais canônicos e rótulo visual Outras pendências. Saldo e resultado continuam exclusivos da API; benefício separado do dinheiro.
+- **CSS Home:** home.css foi reconstruído por seções substituídas na origem, sem empilhar overrides. Hero, Fluxo, KPIs com setas, Verocard com perspectiva, cinco atalhos e DataGrid real receberam refinamento e hierarquia. Rolar verticalmente na área principal continua permitido; rolagem horizontal externa proibida.
+- **Shell:** AppShell.tsx recebeu propriedade opcional homeContext, somente chamada na Home real e prévia. Saudação usa usuário autenticado e data de execução, calculada com new Date() no fuso São Paulo; aparece apenas com espaço suficiente no container. Busca, período, menu e demais telas não mudaram.
+- **Prévia:** home-visual/entry.jsx usa identidade e mês do print oficial apenas na fixture; busca demonstrativa funciona e comandos de telas futuras exibem aviso de indisponibilidade. Sem autenticação ou banco nesta prévia.
+- **Responsividade:** breakpoints 640/1024; exceção de DataGrids 1024-1279. Em 320 px, apenas uma coluna, controles das tabelas no fluxo normal e alvos de toque de 48 px. Fonte do saldo mobile corrigida após falha factual inicial de 30,4 px.
+- **Testes:** script visual estendido com verificações de cabeçalho, Fluxo, setas e toque mobile. Workflow visual passou no SHA 3eab3b908ce65941e97a7ba8a7902e3167e2326b; novos gates do SHA final continuam por conferir.
+- **Proteções:** API financeira, regras de negócio, DataGrid reutilizável, Android e autenticação 01-04 preservados. Mudança opcional do Shell só é habilitada na Home.
+- **Pendências:** validar gates finais, confirmar o deploy do mesmo SHA em Render, inspecionar capturas desktop/mobile e receber aprovação visual expressa. PR #650 continua Draft; sem merge.
