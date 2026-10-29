@@ -77,13 +77,13 @@
   .meg-shell:has(.meg-home) .meg-topbar-actions{gap:.4rem}
 }
 
-/* PRIMEIRA LINHA · hero saldo, composição 7/5 intacta. */
+/* PRIMEIRA LINHA · cena HD financeira sem carteira, composição 7/5 intacta. */
 .meg-home .balance{
   display:flex;align-items:center;min-height:17.1rem;padding:1.55rem clamp(1.15rem,2.2vw,2.15rem);
   background:#001b25;
 }
-.meg-home-wallet-photo{
-  position:absolute;z-index:0;inset:0 0 0 auto;width:90%;height:100%;
+.meg-home-balance-art{
+  position:absolute;z-index:0;inset:0;width:100%;height:100%;
   object-fit:cover;object-position:center;pointer-events:none;
 }
 .meg-home .balance::before{
@@ -254,7 +254,7 @@
   .meg-home .meg-home-kpi,.meg-home .balance,.meg-home .flow,.meg-home .benefits,.meg-home .quick,.meg-home .recent,.meg-home .upcoming{grid-column:1}
   .meg-home .balance{min-height:15.7rem;padding:1rem}
   .meg-home .balance::before{background:linear-gradient(90deg,#001923 0%,rgba(0,22,30,.96) 42%,rgba(0,24,32,.63) 72%,rgba(0,20,27,.27))}
-  .meg-home-wallet-photo{object-position:65% center}
+  .meg-home-balance-art{object-position:60% center}
   .meg-home-hero-copy{width:100%;gap:.69rem}
   .meg-home-hero-heading h2{font-size:1rem}
   .meg-home-hero-balance{font-size:clamp(2rem,8.2vw,2.7rem)}
