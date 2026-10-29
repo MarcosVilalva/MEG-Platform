@@ -24,8 +24,20 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+type ShellProps = {
+  children: ReactNode;
+  selectedMonth?: string;
+  onMonthChange?: (month:string) => void;
+  searchQuery?: string;
+  onSearchChange?: (query:string) => void;
+  onNewTransaction?: () => void;
+  onNavigate?: (label:string) => void;
+  onLogout?: () => void;
+  userName?: string;
+};
+export function AppShell({children,selectedMonth,onMonthChange,searchQuery='',onSearchChange,onNewTransaction,onNavigate,onLogout,userName}:ShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [periodOpen,setPeriodOpen]=useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
@@ -104,6 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button
               key={label}
               className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`}
+              onClick={()=>{setDrawerOpen(false);onNavigate?.(label);}}
               type="button"
               aria-label={label}
               data-tooltip={label}
@@ -191,6 +204,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="meg-nav-item meg-logout-button"
+            onClick={onLogout}
             aria-label="Sair"
             data-tooltip="Sair"
             onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
@@ -248,6 +262,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               className="meg-topbar-launcher meg-topbar-new"
+              onClick={onNewTransaction}
               aria-label="Novo lançamento"
               data-tooltip="Novo lançamento"
               onMouseEnter={(event) => showTooltip(event, 'Novo lançamento', 'bottom')}
@@ -262,19 +277,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           <label className="meg-search">
             <Icon name="search" />
             <span className="sr-only">Buscar</span>
-            <input aria-label="Buscar" placeholder="Buscar movimentações, contas, cartões, relatórios..." />
+            <input aria-label="Buscar movimentações e vencimentos da Home" placeholder="Buscar na Home: movimentações e vencimentos..." value={searchQuery} onChange={event=>onSearchChange?.(event.target.value)} />
           </label>
 
           <div className="meg-topbar-actions">
-            <button type="button" className="meg-period">
-              <Icon name="calendar" />
-              <span>Outubro&nbsp;de&nbsp;2026</span>
-              <Icon name="chevronDown" />
-            </button>
+            <div className="meg-period-picker">
+              <button type="button" className="meg-period" aria-expanded={periodOpen} aria-label="Selecionar período financeiro" onClick={()=>setPeriodOpen(v=>!v)}>
+                <Icon name="calendar" />
+                <span>{selectedMonth && /^\\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth) ? new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(selectedMonth+'-01T12:00:00Z')) : 'Período atual'}</span>
+                <Icon name="chevronDown" />
+              </button>
+              {periodOpen&&<div className="meg-period-popover">
+                <label htmlFor="meg-period-input">Competência</label>
+                <input id="meg-period-input" type="month" value={selectedMonth||''} onChange={e=>{if(/^\\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){onMonthChange?.(e.target.value);setPeriodOpen(false);}}}/>
+              </div>}
+            </div>
 
             <IconButton
               label="Notificações"
               className="meg-notification"
+              onClick={()=>onNavigate?.('Notificações')}
               data-tooltip="Notificações"
               onMouseEnter={(event) => showTooltip(event, 'Notificações', 'bottom')}
               onMouseLeave={hideTooltip}
@@ -282,12 +304,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               onBlur={hideTooltip}
             >
               <Icon name="bell" />
-              <span className="meg-notification-dot" aria-hidden="true" />
+
             </IconButton>
 
-            <button type="button" className="meg-profile">
-              <span className="meg-avatar">MV</span>
-              <span className="meg-profile-name">Marcos de Andrade Vilalva</span>
+            <button type="button" className="meg-profile" onClick={()=>onNavigate?.('Perfil')}>
+              <span className="meg-avatar">{(userName||"MEG").trim().split(/\s+/).slice(0,2).map(w=>w.charAt(0)).join("").toLocaleUpperCase("pt-BR")}</span>
+              <span className="meg-profile-name">{userName||"Usuário autenticado"}</span>
               <Icon name="chevronDown" />
             </button>
           </div>
