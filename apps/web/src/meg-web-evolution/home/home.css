@@ -1,191 +1,458 @@
-/* MEG Home 06 · Referência visual oficial 02 · 28/10/2026
-   Sem reuso da camada visual histórica. Interface real, assets separados.
-   Nenhum valor financeiro é calculado neste arquivo. */
-.meg-shell:has(.meg-home) .meg-main{display:flex;flex-direction:column;overflow:hidden}
-.meg-shell:has(.meg-home) .meg-topbar{min-height:4.45rem;padding:.55rem 1.05rem}
-.meg-shell:has(.meg-home) .meg-topbar-launcher{width:2.5rem;height:2.5rem}
-.meg-shell:has(.meg-home) .meg-search{min-height:2.65rem}
-.meg-shell:has(.meg-home) .meg-period{min-height:2.65rem}
-.meg-home{box-sizing:border-box;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;height:100%;padding:.42rem .72rem .55rem;color:#f4fffc;overflow:visible}
-.meg-home *,.meg-home *::before,.meg-home *::after{box-sizing:border-box}
+/* MEG Web Evolution / Home 06
+   Composição oficial 02. Revisão após rejeição da compactação artificial.
+   Altura fluida, rolagem vertical natural no conteúdo do Shell.
+   Nenhum valor, total ou status é calculado nesta camada.
+   Breakpoints estruturais apenas em 640px e 1024px. */
+
+.meg-shell:has(.meg-home) .meg-main{
+  display:block;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(19,222,196,.36) transparent;
+}
+.meg-home{
+  position:relative;
+  display:block;
+  width:100%;
+  height:auto;
+  min-height:100%;
+  min-width:0;
+  padding:1rem 1.1rem 1.3rem;
+  color:#f3fffc;
+  overflow:visible;
+}
+.meg-home *, .meg-home *::before,.meg-home *::after{box-sizing:border-box}
 .meg-home button{font:inherit;cursor:pointer}
-.meg-home button:focus-visible{outline:2px solid #7affed;outline-offset:1px}
-.meg-home-preview-warning{flex:0 0 auto;display:flex;align-items:center;min-height:1.42rem;max-width:100%;align-self:flex-start;margin:0 0 .38rem;padding:.15rem .5rem;border:1px solid #ad8b3e78;border-radius:.4rem;background:#57401861;color:#f1d797;font-size:.62rem;line-height:1.12;font-weight:730}
-.meg-home-dash{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:minmax(0,1.09fr) minmax(0,.50fr) minmax(0,1.10fr) minmax(0,1.18fr);gap:.54rem;flex:1;min-height:0;min-width:0}
-.meg-home-dash>*{min-width:0;min-height:0}
-.meg-home-card{position:relative;isolation:isolate;overflow:hidden;min-width:0;min-height:0;border:1px solid #008e8999;border-radius:.85rem;background:linear-gradient(135deg,#00272c,#001a21);box-shadow:0 .4rem 1.1rem #0000002b}
-.meg-home-card:hover{border-color:#12ac9fa6}
-.meg-home .balance{grid-column:span 7}
-.meg-home .flow{grid-column:span 5}
-.meg-home .meg-home-kpi{grid-column:span 3}
-.meg-home .benefits,.meg-home .quick,.meg-home .recent,.meg-home .upcoming{grid-column:span 6}
-.meg-home-heading-icon{width:1.9rem;height:1.9rem;flex:0 0 1.9rem;display:grid;place-items:center;border-radius:.53rem;background:#008d8180;color:#0cf0de}
-.meg-home-panel-heading{display:flex;align-items:center;min-width:0;gap:.5rem}
-.meg-home-panel-heading h2{margin:0;color:#f7fffd;font-size:.89rem;font-weight:800;white-space:nowrap;line-height:1.1}
-.meg-home-button,.meg-home-hero-details,.meg-home-see-all,.meg-home-grid-tools{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:1.95rem;border:1px solid #59d3c4a8;border-radius:.53rem;background:#00242bc9;color:#fff;font-weight:700;font-size:.72rem;padding:.3rem .7rem;white-space:nowrap}
-.meg-home-button:hover,.meg-home-hero-details:hover,.meg-home-see-all:hover,.meg-home-grid-tools:hover{background:#04766a;border-color:#69fbe7}
+.meg-home button:focus-visible{outline:2px solid #75ffea;outline-offset:2px}
+.meg-home-preview-warning{
+  display:inline-flex;
+  max-width:100%;
+  align-items:center;
+  padding:.42rem .68rem;
+  margin:0 0 .85rem;
+  border:1px solid rgba(240,179,67,.38);
+  border-radius:.52rem;
+  background:rgba(72,53,18,.52);
+  color:#f5d99b;
+  font-size:.72rem;
+  line-height:1.3;
+  font-weight:690;
+}
+.meg-home-loading{padding:2rem;text-align:center;color:#b9d6d1}
+.meg-home-error{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:1rem;border:1px solid #d15a67;border-radius:.8rem;background:#351e26}
+.meg-home-error button{padding:.55rem .85rem;border:1px solid #2be5d0;border-radius:.5rem;background:#06453f}
+.meg-home-dash{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:auto;
+  align-items:stretch;
+  gap:.9rem;
+  width:100%;
+  min-width:0;
+}
+.meg-home-dash>*{min-width:0}
+.meg-home-card{
+  position:relative;
+  isolation:isolate;
+  min-width:0;
+  overflow:hidden;
+  border:1px solid rgba(19,178,163,.63);
+  border-radius:.9rem;
+  background:linear-gradient(135deg,#002d35,#001c25);
+  box-shadow:inset 0 1px rgba(119,255,235,.07),0 9px 24px #0003;
+}
+.meg-home .balance,.meg-home .flow,.meg-home .benefits,.meg-home .quick,.meg-home .recent,.meg-home .upcoming{
+  grid-column:1/-1;
+}
+.meg-home-heading-icon{
+  display:grid;
+  place-items:center;
+  width:2.5rem;
+  height:2.5rem;
+  flex:0 0 2.5rem;
+  color:#30f9df;
+  background:rgba(5,134,123,.35);
+  border-radius:.64rem;
+}
+.meg-home-panel-heading{display:flex;align-items:center;gap:.7rem;min-width:0}
+.meg-home-panel-heading h2{margin:0;color:#f7fffc;font-size:1.03rem;font-weight:780;letter-spacing:-.012em;line-height:1.25}
+.meg-home-button,.meg-home-hero-details,.meg-home-see-all,.meg-home-grid-tools{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.45rem;
+  min-height:2.55rem;
+  padding:.55rem .9rem;
+  border:1px solid rgba(42,225,204,.65);
+  border-radius:.62rem;
+  color:#edfffb;
+  background:rgba(2,52,59,.75);
+  font-size:.82rem;
+  font-weight:740;
+  text-decoration:none;
+  white-space:nowrap;
+}
+.meg-home-button:hover,.meg-home-hero-details:hover,.meg-home-see-all:hover,.meg-home-grid-tools:hover{
+  background:rgba(10,110,98,.75);
+  border-color:#5dffe5;
+}
 
-/* Saldo com recorte artístico da carteira da imagem 02, sem SVG de gráfico. */
-.meg-home .balance{display:flex;align-items:center;padding:clamp(.75rem,1.3vw,1.28rem) clamp(.85rem,2vw,2rem);background:#001f27}
-.meg-home-wallet-photo{position:absolute;z-index:0;right:0;top:0;width:52%;height:100%;object-fit:cover;object-position:center;filter:saturate(1.2);pointer-events:none}
-.meg-home .balance::before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(90deg,#001b24 0%,#001a23f5 42%,#001e2d2c 77%,#00161b20 100%)}
-.meg-home-hero-copy{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:clamp(.25rem,.55vw,.65rem);width:69%;min-width:0}
-.meg-home-hero-heading{display:flex;align-items:center;gap:.52rem;max-width:100%}
-.meg-home-hero-heading h2{margin:0;font-size:clamp(.85rem,1.08vw,1.18rem);font-weight:800;line-height:1.18}
-.meg-home-privacy{display:grid;place-items:center;flex:0 0 1.65rem;width:1.65rem;height:1.65rem;padding:0;border:0;border-radius:50%;background:#00443e80;color:#bbf7ec}
-.meg-home-hero-balance{display:block;color:#fff;font-size:clamp(1.9rem,3.2vw,3.45rem);font-weight:860;letter-spacing:-.045em;white-space:nowrap;line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px #0009}
-.meg-home-hero-meta{max-width:100%;margin:0;color:#8deee0;font-size:.76rem;line-height:1.3;white-space:normal}
-.meg-home-hero-details{margin-top:.18rem;padding:.27rem .8rem;background:#001c27cc}
-.meg-home-balance-graph,.meg-home-hero-visual,.meg-home-landscape{display:none}
+/* Saldo: asset real com leitura prioritária e controles sem obstrução. */
+.meg-home .balance{
+  display:flex;
+  align-items:center;
+  min-height:14.9rem;
+  padding:1.6rem clamp(1.2rem,2.15vw,2.3rem);
+  background:#00212b;
+}
+.meg-home-wallet-photo{
+  position:absolute;
+  inset:0 0 0 auto;
+  width:56%;
+  height:100%;
+  object-fit:cover;
+  object-position:52% center;
+  filter:saturate(1.12);
+  pointer-events:none;
+}
+.meg-home .balance::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:linear-gradient(90deg,#001e27 0%,#001f29f3 33%,#00222dc4 52%,#00222d18 100%);
+}
+.meg-home-hero-copy{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:.85rem;
+  width:min(70%,33rem);
+  min-width:0;
+}
+.meg-home-hero-heading{display:flex;align-items:center;gap:.65rem;min-width:0}
+.meg-home-hero-heading h2{margin:0;font-size:1.12rem;line-height:1.25;font-weight:780}
+.meg-home-privacy{
+  display:grid;
+  place-items:center;
+  flex:0 0 2.3rem;
+  width:2.3rem;
+  height:2.3rem;
+  padding:0;
+  border:1px solid rgba(55,240,216,.35);
+  border-radius:50%;
+  background:rgba(0,70,69,.55);
+  color:#ccfff4;
+}
+.meg-home-hero-balance{
+  display:block;
+  max-width:100%;
+  color:#fff;
+  font-size:clamp(2.45rem,3.4vw,3.55rem);
+  line-height:1.12;
+  font-weight:850;
+  letter-spacing:-.045em;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+  text-shadow:0 4px 14px #0009;
+}
+.meg-home-hero-meta{margin:0;color:#9af4e2;font-size:.83rem;line-height:1.35;font-weight:620}
+.meg-home-hero-details{min-height:2.55rem;padding:.58rem 1rem}
+.meg-home-landscape,.meg-home-balance-graph,.meg-home-hero-visual{display:none}
 
-/* Fluxo: somente entradas, saídas e resultado existentes. Sem comparativos fictícios. */
-.meg-home .flow{padding:clamp(.62rem,.9vw,1rem) clamp(.65rem,1.15vw,1.08rem);display:flex;flex-direction:column;background:linear-gradient(138deg,#003038,#001b23)}
-.meg-home-flow-caption{margin-left:auto;max-width:40%;color:#c6ddd9;font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.meg-home-flow-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;flex:1;align-content:center;margin:0}
-.meg-home-flow-totals>div{display:flex;gap:.5rem;align-items:center;min-width:0}
-.meg-home-flow-totals>div svg{color:#17e9d7;flex:0 0 1.25rem}
-.meg-home-flow-totals>div:nth-child(2) svg{color:#fc697b}
-.meg-home-flow-totals>div>span{font-size:.71rem;color:#bfddd7;min-width:0;line-height:1.35}
-.meg-home-flow-totals strong{display:block;color:#f4fffc;font-size:clamp(.79rem,1.25vw,1.19rem);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
-.meg-home-flow-result{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding-top:.44rem;border-top:1px solid #4cfff339}
-.meg-home-flow-result>span{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
-.meg-home-flow-result strong{color:#77f9df;font-size:clamp(.85rem,1.2vw,1.18rem)}
+/* Fluxo: resultado canônico, sem tendência inventada. */
+.meg-home .flow{
+  display:flex;
+  flex-direction:column;
+  min-height:14.9rem;
+  padding:1.2rem 1.3rem;
+  background:linear-gradient(145deg,#002d35,#001a24);
+}
+.meg-home-flow-caption{margin-left:auto;max-width:43%;font-size:.8rem;color:#c0d9d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-home-flow-totals{
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1rem;
+  align-content:center;
+  margin:.65rem 0 0;
+}
+.meg-home-flow-totals>div{display:flex;align-items:center;gap:.6rem;min-width:0}
+.meg-home-flow-totals>div svg{width:1.4rem;flex:0 0 1.4rem;color:#3af1d2}
+.meg-home-flow-totals>div:nth-child(2) svg{color:#ff7788}
+.meg-home-flow-totals span{display:block;min-width:0;font-size:.81rem;line-height:1.45;color:#c7dcd8}
+.meg-home-flow-totals strong{
+  display:block;
+  font-size:clamp(1rem,1.35vw,1.38rem);
+  line-height:1.25;
+  font-weight:800;
+  color:#f4fffc;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.meg-home-flow-result{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  padding-top:.9rem;
+  border-top:1px solid rgba(64,236,213,.22);
+}
 .meg-home-flow-result>svg{display:none}
+.meg-home-flow-result>span{display:flex;justify-content:space-between;align-items:center;width:100%;gap:1rem}
+.meg-home-flow-result strong{color:#65fce0;font-size:clamp(1.05rem,1.55vw,1.4rem)}
 .meg-home-flow-plot,.meg-home-flow-legend{display:none}
 
-/* Quatro KPIs perfeitamente alinhados. */
-.meg-home-kpi{display:grid;grid-template-columns:2.55rem minmax(0,1fr) 1.25rem;gap:.53rem;align-items:center;width:100%;padding:.5rem .62rem;text-align:left}
-.meg-home-kpi-icon{display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:.61rem}
-.meg-home-kpi-icon.is-red{color:#ff8093;background:#93354288}
-.meg-home-kpi-icon.is-blue{color:#82c9ff;background:#114d7faa}
-.meg-home-kpi-icon.is-gold{color:#fbd078;background:#8c5e268c}
-.meg-home-kpi-icon.is-green{color:#23f6d7;background:#006f5b8c}
-.meg-home-kpi-copy{display:grid;gap:.12rem;min-width:0}
-.meg-home-kpi-title{font-size:clamp(.69rem,.82vw,.83rem);font-weight:770;color:#a6ffeb;line-height:1.12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kpi--pay .meg-home-kpi-title{color:#ff667c}
-.kpi--card .meg-home-kpi-title{color:#69c9ff}
-.kpi--pending .meg-home-kpi-title{color:#ffc65e}
-.meg-home-kpi-copy strong{font-size:clamp(.93rem,1.36vw,1.42rem);color:#f8fffc;font-weight:830;line-height:1.12;white-space:nowrap;font-variant-numeric:tabular-nums}
-.meg-home-kpi-copy small{color:#c5dbd6;font-size:.65rem;line-height:1.12;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.meg-home-kpi-arrow{display:grid;place-items:center;width:1.25rem;height:1.25rem;border-radius:50%;color:#c6f7ef;background:#005b5b5e}
+/* Quatro indicadores com alinhamento e tipografia legível. */
+.meg-home-kpi{
+  grid-column:span 1;
+  display:grid;
+  grid-template-columns:2.65rem minmax(0,1fr);
+  align-items:center;
+  gap:.8rem;
+  min-width:0;
+  min-height:7.2rem;
+  padding:.95rem 1rem;
+  text-align:left;
+}
+.meg-home-kpi:hover{background:linear-gradient(145deg,#03383e,#00212a);border-color:rgba(42,239,214,.8)}
+.meg-home-kpi-icon{display:grid;place-items:center;width:2.65rem;height:2.65rem;border-radius:.65rem}
+.meg-home-kpi-icon.is-red{color:#ff8c9c;background:rgba(177,59,84,.32)}
+.meg-home-kpi-icon.is-blue{color:#8bc9ff;background:rgba(29,87,173,.35)}
+.meg-home-kpi-icon.is-gold{color:#ffdb8a;background:rgba(158,106,30,.32)}
+.meg-home-kpi-icon.is-green{color:#45f7d2;background:rgba(9,122,93,.38)}
+.meg-home-kpi-copy{display:grid;gap:.25rem;min-width:0}
+.meg-home-kpi-title{font-size:.84rem;font-weight:740;line-height:1.2;color:#c4ffeb}
+.kpi--pay .meg-home-kpi-title{color:#ff8795}
+.kpi--card .meg-home-kpi-title{color:#8ec6ff}
+.kpi--pending .meg-home-kpi-title{color:#ffda88}
+.meg-home-kpi-copy strong{
+  font-size:clamp(1.06rem,1.45vw,1.48rem);
+  line-height:1.15;
+  color:#fff;
+  font-weight:810;
+  font-variant-numeric:tabular-nums;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.meg-home-kpi-copy small{font-size:.73rem;line-height:1.3;color:#b8d5d1}
+.meg-home-kpi-arrow{display:none}
 
-/* Benefícios com saldo, créditos e utilizado; sem promoções. */
-.meg-home .benefits{padding:.65rem .82rem;background:linear-gradient(116deg,#003b45,#002732 70%,#001e27)}
-.meg-home .benefits::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#003a43ee,#003641dc 47%,#0037421c 76%)}
-.meg-home-benefit-body{position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;gap:.3rem;width:70%;height:100%;min-width:0;justify-content:space-between}
-.meg-home-benefit-intro{display:flex;align-items:center;gap:.55rem;min-width:0}
-.meg-home-benefit-intro h2{font-size:.94rem;font-weight:820;line-height:1.14;margin:0;white-space:nowrap}
-.meg-home-benefit-intro p{margin:.15rem 0 0;color:#bbdcd9;font-size:.66rem;white-space:nowrap}
-.meg-home-benefit-finances{display:flex;align-items:center;gap:.65rem;min-width:0;flex-wrap:wrap}
-.meg-home-benefit-finances-label{font-size:.68rem;color:#c0e4df}
-.meg-home-benefit-balance{font-size:clamp(1.25rem,2.15vw,2.13rem);font-weight:850;font-variant-numeric:tabular-nums;white-space:nowrap}
-.meg-home-benefit-reference{font-size:.61rem;color:#acd8cf}
-.meg-home-benefit-monthly{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;width:100%}
-.meg-home-benefit-monthly>div{display:flex;align-items:center;gap:.34rem;min-width:0;padding:.3rem .47rem;border:1px solid #35bead55;border-radius:.5rem;background:#004b4a60}
-.meg-home-benefit-monthly>div:nth-child(2){border-color:#fc64763a}
-.meg-home-benefit-monthly svg{flex:0 0 1rem;color:#3bf5d6}
-.meg-home-benefit-monthly>div:nth-child(2) svg{color:#ff788a}
-.meg-home-benefit-monthly span{min-width:0;font-size:.65rem;color:#c3dfdb;white-space:nowrap}
-.meg-home-benefit-monthly strong{display:block;font-size:clamp(.7rem,1vw,.94rem);font-weight:790;color:#f9fffb;font-variant-numeric:tabular-nums}
-.meg-home-benefit-cta{min-height:1.8rem;align-self:flex-start}
-.meg-home-benefit-card{position:absolute;z-index:1;right:0;top:0;width:42%;height:100%;object-fit:contain;object-position:center;pointer-events:none;filter:drop-shadow(-.4rem .5rem .45rem #0007);transform:none}
+/* Verocard: o benefício não integra o saldo bancário. */
+.meg-home .benefits{
+  min-height:14rem;
+  padding:1.05rem 1.15rem;
+  background:linear-gradient(130deg,#003c44,#00212e);
+}
+.meg-home .benefits::before{
+  content:"";
+  position:absolute;
+  z-index:1;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(90deg,#003740fa,#003741ed 44%,#002a3672 78%,#00253033);
+}
+.meg-home-benefit-body{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:.65rem;
+  width:72%;
+  min-width:0;
+  min-height:11.5rem;
+}
+.meg-home-benefit-intro{display:flex;align-items:center;gap:.65rem;min-width:0}
+.meg-home-benefit-intro h2{margin:0;font-size:1rem;line-height:1.25;font-weight:790}
+.meg-home-benefit-intro p{margin:.18rem 0 0;font-size:.75rem;line-height:1.28;color:#b9dad5}
+.meg-home-benefit-finances{display:flex;align-items:baseline;flex-wrap:wrap;gap:.35rem .8rem;min-width:0}
+.meg-home-benefit-finances-label{font-size:.78rem;color:#baf1e4}
+.meg-home-benefit-balance{font-size:clamp(1.55rem,2.22vw,2.25rem);font-weight:830;line-height:1.1;color:#fff;font-variant-numeric:tabular-nums}
+.meg-home-benefit-reference{font-size:.7rem;color:#b6dcd4}
+.meg-home-benefit-monthly{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;width:100%}
+.meg-home-benefit-monthly>div{
+  display:flex;
+  align-items:center;
+  gap:.42rem;
+  min-width:0;
+  min-height:3.1rem;
+  padding:.55rem .6rem;
+  border:1px solid rgba(49,203,182,.38);
+  border-radius:.62rem;
+  background:rgba(6,74,76,.46);
+}
+.meg-home-benefit-monthly>div:nth-child(2){border-color:rgba(233,105,116,.37)}
+.meg-home-benefit-monthly svg{flex:0 0 1.1rem;color:#57ffe0}
+.meg-home-benefit-monthly>div:nth-child(2) svg{color:#ff8290}
+.meg-home-benefit-monthly span{min-width:0;font-size:.7rem;line-height:1.25;color:#c5ded8}
+.meg-home-benefit-monthly strong{display:block;margin-top:.18rem;font-size:.86rem;font-weight:800;font-variant-numeric:tabular-nums;color:#f9fffd;white-space:nowrap}
+.meg-home-benefit-cta{min-height:2.35rem}
+.meg-home-benefit-card{
+  position:absolute;
+  z-index:1;
+  right:.2rem;
+  top:8%;
+  width:39%;
+  height:84%;
+  object-fit:contain;
+  object-position:center;
+  transform:none;
+  filter:drop-shadow(-.6rem .7rem 1rem #0009);
+  pointer-events:none;
+}
 .meg-home-benefit-scene{display:none}
 
-/* Cinco ações em um só eixo. */
-.meg-home .quick{padding:.7rem .78rem;display:flex;flex-direction:column}
-.meg-home-quick-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.42rem;flex:1;min-height:0;margin:.45rem 0 0}
-.meg-home-quick-action{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.35rem;min-width:0;min-height:0;padding:.35rem .15rem;border:1px solid #13948e73;border-radius:.65rem;color:#f4fffc;background:linear-gradient(165deg,#013942,#00212a);text-align:center}
-.meg-home-quick-action:hover{border-color:#44e6d6;background:#03565c}
-.meg-home-quick-icon{display:grid;place-items:center;flex:0 0 2.15rem;width:2.15rem;height:2.15rem;border-radius:.58rem;color:#00272a;background:#06e9d5}
-.meg-home-quick-action.quick-blue .meg-home-quick-icon{color:#fff;background:#1275dd}
-.meg-home-quick-action.quick-purple .meg-home-quick-icon{color:#fff;background:#8244dc}
-.meg-home-quick-action.quick-amber .meg-home-quick-icon{color:#fff;background:#e58a12}
-.meg-home-quick-action.quick-slate .meg-home-quick-icon{color:#fff;background:#385672}
-.meg-home-quick-action strong{max-width:100%;font-size:clamp(.61rem,.75vw,.79rem);font-weight:730;line-height:1.18;overflow-wrap:anywhere}
-
-/* Tabelas financeiras reais. DataGrid original preservado. */
-.meg-home .recent,.meg-home .upcoming{padding:.55rem .65rem;display:flex;flex-direction:column}
-.meg-home-panel-controls{position:absolute;right:.64rem;top:.53rem;z-index:3;display:flex;gap:.35rem}
-.meg-home-see-all,.meg-home-grid-tools{min-height:1.63rem;padding:.22rem .45rem;font-size:.66rem}
-.meg-home-grid-tools{width:1.63rem;padding:0}
-.meg-home .recent .meg-home-panel-heading,.meg-home .upcoming .meg-home-panel-heading{padding-right:7.6rem;min-height:1.8rem}
-.meg-home-grid-slot{flex:1;min-width:0;min-height:0;margin-top:.35rem}
-.meg-home-grid-slot .meg-datagrid{min-width:0;min-height:0;height:100%;border:0!important;background:transparent!important;box-shadow:none!important;gap:0}
-.meg-home-grid-slot .meg-datagrid__viewport{min-height:0;max-height:100%;height:100%;overflow:hidden}
-.meg-home-grid-slot.is-expanded .meg-datagrid__viewport{height:auto;max-height:100%;overflow-y:auto}
-.meg-home-grid-slot:not(.is-expanded) .meg-datagrid-toolbar,.meg-home-grid-slot:not(.is-expanded) .meg-datagrid-footer{display:none}
-.meg-home-grid-slot .meg-datagrid-table th{height:1.26rem;min-height:1.26rem;padding:.04rem .15rem!important}
-.meg-home-grid-slot .meg-datagrid-table td{height:1.26rem;min-height:1.26rem;padding:.04rem .18rem!important;font-size:.65rem;white-space:nowrap}
-.meg-home-grid-slot .meg-datagrid-sort-button{min-height:1.3rem;padding:.1rem .2rem;font-size:.64rem}
-.meg-home-grid-slot .meg-datagrid-filter-button{min-width:1.25rem;min-height:1.25rem;flex-basis:1.25rem}
-.meg-home-transaction-cell{display:inline-flex;align-items:center;gap:.26rem;min-width:0;max-width:100%}
-.meg-home-transaction-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#effffb;font-weight:660}
-.meg-home-category-icon{display:grid;place-items:center;flex:0 0 1.15rem;width:1.15rem;height:1.15rem;border-radius:.28rem;color:#9feade;background:#00696377}
-.meg-home-category-pill{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c3ede5;font-size:.65rem}
-.meg-home-category-icon.is-income,.meg-home-category-pill.is-income{color:#52fcd8}
-.meg-home-category-icon.is-food,.meg-home-category-pill.is-food{color:#efc673}
-.meg-home-category-icon.is-media,.meg-home-category-pill.is-media{color:#d2aaff}
-.meg-home-category-icon.is-home,.meg-home-category-pill.is-home{color:#93bbff}
-.meg-home-category-icon.is-fuel,.meg-home-category-pill.is-fuel{color:#9bceef}
-.meg-home-category-icon.is-health,.meg-home-category-pill.is-health{color:#d3a7ff}
-.meg-home-category-icon.is-transfer,.meg-home-category-pill.is-transfer{color:#75d7ee}
-.meg-home-category-icon.is-card,.meg-home-category-pill.is-card{color:#79bfff}
-.meg-home-value{font-variant-numeric:tabular-nums;font-size:.67rem;white-space:nowrap}
-.meg-home-positive{color:#20f1bf;font-weight:790}
-.meg-home-negative{color:#ff6075;font-weight:790}
-.meg-home-mobile-tabs{display:none}
-@media(min-width:1024px) and (max-height:710px){
- .meg-home-dash{grid-template-rows:minmax(0,1fr) minmax(0,.52fr) minmax(0,1fr) minmax(0,1.2fr);gap:.35rem}
- .meg-home .balance,.meg-home .flow{padding:.45rem .65rem}
- .meg-home .benefits,.meg-home .quick{padding:.38rem .55rem}
- .meg-home-kpi{padding:.28rem .4rem}
- .meg-home-benefit-body{gap:.1rem}
- .meg-home-benefit-monthly>div{padding:.15rem .25rem}
+/* Cinco atalhos simétricos, com alvos de toque adequados. */
+.meg-home .quick{display:flex;flex-direction:column;min-height:14rem;padding:1.05rem 1.15rem}
+.meg-home-quick-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:.6rem;
+  margin-top:.95rem;
+  flex:1;
+  min-height:7.5rem;
 }
-/* Mobile/tablet: quatro painéis navegáveis em vez de reduzir a dashboard inteira. */
-@media(max-width:1023px){
- .meg-home{padding:.45rem .6rem .6rem}
- .meg-home-mobile-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.34rem;flex:0 0 auto;margin-bottom:.55rem}
- .meg-home-mobile-tabs button{min-width:0;min-height:2.6rem;padding:.25rem;border:1px solid #08796fa6;border-radius:.57rem;background:#00282e;color:#a8dacf;font-size:.73rem}
- .meg-home-mobile-tabs button.is-active{border-color:#23ead2;background:#00695ca8;color:#fff}
- .meg-home-dash{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:.55rem}
- .meg-home-dash>[data-panel]{display:none}
- .meg-home[data-mobile-view="saldo"] [data-panel="saldo"],.meg-home[data-mobile-view="indicadores"] [data-panel="indicadores"],.meg-home[data-mobile-view="operacoes"] [data-panel="operacoes"],.meg-home[data-mobile-view="tabelas"] [data-panel="tabelas"]{display:flex}
- .meg-home[data-mobile-view="saldo"] .balance,.meg-home[data-mobile-view="saldo"] .flow,.meg-home[data-mobile-view="operacoes"] .benefits,.meg-home[data-mobile-view="operacoes"] .quick,.meg-home[data-mobile-view="tabelas"] .recent,.meg-home[data-mobile-view="tabelas"] .upcoming{grid-column:1/-1}
- .meg-home[data-mobile-view="indicadores"] .meg-home-kpi{display:grid;grid-column:span 1}
- .meg-home-hero-balance{font-size:clamp(1.95rem,5.2vw,3rem)}
+.meg-home-quick-action{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:.7rem;
+  min-width:0;
+  min-height:7.5rem;
+  padding:.65rem .25rem;
+  border:1px solid rgba(37,190,175,.43);
+  border-radius:.7rem;
+  color:#f1fffc;
+  background:linear-gradient(160deg,#06424a,#00252e);
+  text-align:center;
+}
+.meg-home-quick-action:hover{border-color:#48ffdf;background:#074c51}
+.meg-home-quick-icon{display:grid;place-items:center;flex:0 0 2.7rem;width:2.7rem;height:2.7rem;border-radius:.67rem;background:#0de4d0;color:#00272c}
+.meg-home-quick-action.quick-blue .meg-home-quick-icon{background:#247ae2;color:white}
+.meg-home-quick-action.quick-purple .meg-home-quick-icon{background:#8454de;color:white}
+.meg-home-quick-action.quick-amber .meg-home-quick-icon{background:#e99627;color:white}
+.meg-home-quick-action.quick-slate .meg-home-quick-icon{background:#426382;color:white}
+.meg-home-quick-action strong{max-width:100%;font-size:.76rem;line-height:1.25;font-weight:740;overflow-wrap:anywhere}
 
+/* Tabelas: DataGrid real com cinco linhas completas e controles acessíveis. */
+.meg-home .recent,.meg-home .upcoming{
+  display:flex;
+  flex-direction:column;
+  min-height:17rem;
+  padding:1rem 1.02rem .85rem;
+  overflow:visible;
+}
+.meg-home-panel-controls{position:absolute;top:.96rem;right:1.02rem;z-index:2;display:flex;gap:.42rem;align-items:center}
+.meg-home-see-all,.meg-home-grid-tools{min-height:2.2rem;padding:.4rem .6rem;font-size:.75rem}
+.meg-home-grid-tools{width:2.2rem;padding:0}
+.meg-home .recent .meg-home-panel-heading,.meg-home .upcoming .meg-home-panel-heading{padding-right:9rem}
+.meg-home-grid-slot{flex:1 1 auto;min-width:0;min-height:0;margin-top:.75rem}
+.meg-home-grid-slot .meg-datagrid{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  min-width:0;
+  min-height:0;
+  height:auto;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.meg-home-grid-slot .meg-datagrid__viewport{
+  position:relative;
+  min-width:0;
+  min-height:0;
+  height:auto;
+  max-height:none;
+  flex:0 0 auto;
+  overflow:visible;
+}
+.meg-home-grid-slot:not(.is-expanded) .meg-datagrid-toolbar,
+.meg-home-grid-slot:not(.is-expanded) .meg-datagrid-footer{display:none}
+.meg-home-grid-slot.is-expanded .meg-datagrid-toolbar,
+.meg-home-grid-slot.is-expanded .meg-datagrid-footer{display:flex;flex-wrap:wrap}
+.meg-home-grid-slot .meg-datagrid-table{max-width:100%;font-size:.75rem}
+.meg-home-grid-slot .meg-datagrid-table th{height:2.1rem;min-height:2.1rem;padding:.25rem .28rem!important}
+.meg-home-grid-slot .meg-datagrid-table td{height:2.22rem;min-height:2.22rem;padding:.32rem .28rem!important;font-size:.75rem}
+.meg-home-grid-slot .meg-datagrid-sort-button{min-height:1.95rem;padding:.22rem .25rem;font-size:.72rem}
+.meg-home-grid-slot .meg-datagrid-filter-button{min-width:1.7rem;min-height:1.7rem;flex-basis:1.7rem}
+.meg-home-transaction-cell{display:inline-flex;align-items:center;gap:.4rem;min-width:0;max-width:100%}
+.meg-home-transaction-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#edfffa;font-weight:650;font-size:.76rem}
+.meg-home-category-icon{display:grid;place-items:center;flex:0 0 1.55rem;width:1.55rem;height:1.55rem;border-radius:.4rem;color:#abf3e7;background:rgba(10,128,116,.32)}
+.meg-home-category-pill{display:inline-block;max-width:100%;padding:.22rem .42rem;border-radius:.44rem;background:rgba(20,90,93,.37);color:#bdece3;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-home-category-icon.is-income,.meg-home-category-pill.is-income{color:#52ffdc}
+.meg-home-category-icon.is-food,.meg-home-category-pill.is-food{color:#efcb7a}
+.meg-home-category-icon.is-home,.meg-home-category-pill.is-home{color:#a8c7ff}
+.meg-home-category-icon.is-fuel,.meg-home-category-pill.is-fuel{color:#8ed5ef}
+.meg-home-category-icon.is-health,.meg-home-category-pill.is-health{color:#e0aaff}
+.meg-home-category-icon.is-media,.meg-home-category-pill.is-media{color:#d6a9ff}
+.meg-home-category-icon.is-transfer,.meg-home-category-pill.is-transfer{color:#79e5f7}
+.meg-home-category-icon.is-card,.meg-home-category-pill.is-card{color:#82baff}
+.meg-home-positive{color:#34f4c3;font-weight:800}
+.meg-home-negative{color:#ff7987;font-weight:800}
+.meg-home-value{font-size:.76rem;font-variant-numeric:tabular-nums;white-space:nowrap}
 
+/* A solução mobile abandonou abas não aprovadas que escondiam painéis:
+   conteúdo todo acessível com rolagem vertical simples. */
+.meg-home-mobile-tabs{display:none}
+
+@media(min-width:640px){
+  .meg-home{padding:1rem 1.15rem 1.4rem}
+  .meg-home-dash{gap:1rem}
+  .meg-home .balance,.meg-home .flow,.meg-home .benefits,.meg-home .quick,.meg-home .recent,.meg-home .upcoming{grid-column:1/-1}
+}
+@media(min-width:1024px){
+  .meg-home-dash{grid-template-columns:repeat(12,minmax(0,1fr));gap:.9rem}
+  .meg-home .balance{grid-column:span 7}
+  .meg-home .flow{grid-column:span 5}
+  .meg-home .meg-home-kpi{grid-column:span 3}
+  .meg-home .benefits,.meg-home .quick,.meg-home .recent,.meg-home .upcoming{grid-column:span 6}
 }
 @media(max-width:639px){
- .meg-home .balance{padding:.75rem}
- .meg-home-wallet-photo{width:56%;opacity:.87}
- .meg-home-hero-copy{width:100%;gap:.45rem}
- .meg-home-hero-balance{font-size:clamp(1.96rem,7.7vw,2.6rem)}
- .meg-home .meg-home-kpi{padding:.7rem;grid-template-columns:1fr;gap:.3rem;align-content:center}
- .meg-home-kpi-icon{width:2rem;height:2rem}
- .meg-home-kpi-arrow{display:none}
- .meg-home-kpi-title{font-size:.72rem}
- .meg-home-kpi-copy strong{font-size:clamp(.85rem,4.1vw,1.23rem)}
- .meg-home-kpi-copy small{white-space:normal;font-size:.63rem}
- .meg-home .benefits{padding:.75rem}
- .meg-home-benefit-body{width:75%}
- .meg-home-benefit-card{width:36%;opacity:.8}
- .meg-home-benefit-intro h2{font-size:.82rem}
- .meg-home-benefit-intro p{font-size:.63rem;white-space:normal}
- .meg-home-benefit-finances{gap:.25rem}
- .meg-home-benefit-monthly{grid-template-columns:1fr;gap:.28rem}
- .meg-home-benefit-monthly>div{padding:.3rem .5rem}
- .meg-home .quick{padding:.75rem}
- .meg-home-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
- .meg-home-quick-action{gap:.2rem}
- .meg-home-quick-icon{flex-basis:1.9rem;width:1.9rem;height:1.9rem}
- .meg-home-quick-action strong{font-size:.69rem}
- .meg-home-flow-totals strong{font-size:.92rem}
- .meg-home .recent,.meg-home .upcoming{padding:.52rem .34rem}
- .meg-home-panel-heading h2{font-size:.77rem}
- .meg-home-heading-icon{width:1.7rem;height:1.7rem;flex-basis:1.7rem}
- .meg-home .recent .meg-home-panel-heading,.meg-home .upcoming .meg-home-panel-heading{padding-right:7.1rem}
- .meg-home-grid-slot .meg-datagrid__viewport{overflow-x:auto}
+  .meg-home{padding:.7rem .55rem 1.2rem}
+  .meg-home-dash{gap:.7rem}
+  .meg-home .balance{min-height:14rem;padding:1.12rem .95rem}
+  .meg-home-wallet-photo{width:60%;opacity:.72}
+  .meg-home-hero-copy{width:93%;gap:.75rem}
+  .meg-home-hero-heading h2{font-size:1rem}
+  .meg-home-hero-balance{font-size:clamp(2rem,8vw,2.8rem)}
+  .meg-home-hero-meta{font-size:.73rem}
+  .meg-home .flow{min-height:14rem;padding:1rem}
+  .meg-home-flow-totals span{font-size:.73rem}
+  .meg-home-flow-totals strong{font-size:.95rem}
+  .meg-home-kpi{grid-template-columns:1fr;align-content:start;gap:.55rem;min-height:9rem;padding:.85rem .7rem}
+  .meg-home-kpi-icon{width:2.25rem;height:2.25rem}
+  .meg-home-kpi-copy strong{font-size:clamp(.94rem,4vw,1.17rem)}
+  .meg-home-kpi-copy small{font-size:.68rem}
+  .meg-home .benefits{min-height:16.2rem;padding:1rem .8rem}
+  .meg-home-benefit-body{width:76%;min-height:13.8rem}
+  .meg-home-benefit-intro h2{font-size:.91rem}
+  .meg-home-benefit-intro p{font-size:.69rem}
+  .meg-home-benefit-finances{display:grid;gap:.15rem}
+  .meg-home-benefit-balance{font-size:1.6rem}
+  .meg-home-benefit-monthly{grid-template-columns:1fr;gap:.35rem}
+  .meg-home-benefit-monthly>div{min-height:2.6rem;padding:.4rem .5rem}
+  .meg-home-benefit-monthly strong{font-size:.78rem}
+  .meg-home-benefit-card{width:35%;right:-.18rem;top:20%;height:60%;opacity:.76}
+  .meg-home .quick{min-height:17rem;padding:1rem .8rem}
+  .meg-home-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;min-height:0}
+  .meg-home-quick-action{min-height:5.4rem;gap:.4rem;padding:.45rem .1rem}
+  .meg-home-quick-icon{flex-basis:2.2rem;width:2.2rem;height:2.2rem}
+  .meg-home-quick-action strong{font-size:.7rem}
+  .meg-home .recent,.meg-home .upcoming{min-height:0;padding:.8rem .6rem 1rem}
+  .meg-home .recent .meg-home-panel-heading,.meg-home .upcoming .meg-home-panel-heading{padding-right:7.8rem}
+  .meg-home-panel-heading h2{font-size:.87rem}
+  .meg-home-heading-icon{width:2.1rem;height:2.1rem;flex-basis:2.1rem}
+  .meg-home-panel-controls{top:.78rem;right:.6rem}
+  .meg-home-see-all,.meg-home-grid-tools{min-height:2rem;font-size:.68rem}
+  .meg-home-grid-tools{width:2rem}
+  .meg-home-grid-slot .meg-datagrid-cards{padding:.35rem}
 }
 @media(prefers-reduced-motion:reduce){.meg-home *{animation:none!important;transition:none!important}}
