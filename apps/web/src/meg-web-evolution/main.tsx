@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { readSession, refreshAuthSession, validateSession, type AuthSession } from '../app/auth-client';
+import { readSession, refreshAuthSession, validateSession, clearSession, logout, type AuthSession } from '../app/auth-client';
 import './styles/tokens.css';
 import './styles/base.css';
 import { AppShell } from './shell/AppShell';
@@ -17,8 +17,35 @@ function currentAuthDestination(): AuthDestination {
   return query === 'create-account' || query === 'recover-password' || query === 'loading' ? query : 'login';
 }
 
+function todayMonth() {
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+  return (parts.find(p=>p.type==='year')?.value||'2026')+'-'+(parts.find(p=>p.type==='month')?.value||'01');
+}
+
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [selectedMonth,setSelectedMonth]=useState(todayMonth);
+  const [searchQuery,setSearchQuery]=useState('');
+  const [operationNotice,setOperationNotice]=useState('');
+  const navigateHome=(label:string)=>{
+    if(label==='Início'||label==='Home'){setOperationNotice('');return;}
+    setOperationNotice('A seção "'+label+'" ainda não foi implementada na nova Web. Nenhuma operação financeira foi executada.');
+  };
+  const actionName:Record<string,string>={
+    lancamentos:'Lançamentos',pendentes:'Pendentes',cartoes:'Cartões',
+    beneficios:'Benefícios',novo:'Novo lançamento',transferencia:'Transferência',
+    relatorios:'Relatórios',metas:'Configurar metas',
+  };
+  const handleLogout=()=>{
+    const current=readSession();
+    if(!window.confirm('Deseja encerrar sua sessão no MEG Finanças?'))return;
+    clearSession();
+    setSession(null);
+    setSearchQuery('');
+    setOperationNotice('');
+    navigate('login');
+    if(current) void logout(current).catch(()=>undefined);
+  };
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
@@ -125,8 +152,18 @@ function AuthGateway() {
   }
 
   if (session) return (
-    <AppShell>
-      <HomeScreen />
+    <AppShell
+      selectedMonth={selectedMonth}
+      onMonthChange={(month)=>{setSelectedMonth(month);setOperationNotice('');}}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      userName={session.user.name}
+      onLogout={handleLogout}
+      onNewTransaction={()=>navigateHome('Novo lançamento')}
+      onNavigate={navigateHome}
+    >
+      {operationNotice&&<div className="meg-home-operation-notice" role="status">{operationNotice} <button type="button" onClick={()=>setOperationNotice('')} aria-label="Dispensar aviso">Fechar</button></div>}
+      <HomeScreen selectedMonth={selectedMonth} searchQuery={searchQuery} onNavigate={action=>navigateHome(actionName[action]||action)}/>
     </AppShell>
   );
 
