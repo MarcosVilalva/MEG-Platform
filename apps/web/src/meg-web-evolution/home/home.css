@@ -101,8 +101,8 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
 
 /* Saldo: carteira fotografica HD e controles reais de privacidade. */
 .meg-home .balance{display:flex;align-items:center;min-height:16rem;padding:1.4rem clamp(1.2rem,2.2vw,2.2rem);background:#001b24}
-.meg-home-wallet-photo{position:absolute;z-index:0;inset:0 0 0 auto;width:77%;height:100%;object-fit:cover;object-position:center;filter:saturate(1.08) contrast(1.14) brightness(.94);pointer-events:none}
-.meg-home .balance::before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(90deg,#001923 0%,rgba(0,26,35,.98) 23%,rgba(0,30,38,.77) 46%,rgba(0,35,44,.18) 80%,rgba(0,28,35,.05))}
+.meg-home-wallet-photo{position:absolute;z-index:0;inset:0 0 0 auto;width:81%;height:100%;object-fit:cover;object-position:center;filter:saturate(1.03) contrast(1.05) brightness(.96);pointer-events:none}
+.meg-home .balance::before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(90deg,#001923 0%,rgba(0,26,35,.96) 31%,rgba(0,30,38,.68) 52%,rgba(0,35,44,.06) 80%,transparent 100%)}
 .meg-home .balance::after{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:radial-gradient(ellipse at 82% 0%,rgba(64,255,235,.19),transparent 47%)}
 .meg-home-hero-copy{position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.8rem;width:min(70%,34rem);min-width:0}
 .meg-home-hero-heading{display:flex;align-items:center;gap:.7rem;min-width:0}
@@ -152,9 +152,9 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
 .meg-home-kpi-arrow{display:grid;place-items:center;justify-self:end;width:2.1rem;height:2.1rem;border:1px solid rgba(60,218,200,.15);border-radius:50%;background:rgba(12,93,102,.22);color:#b7e9e6}
 
 /* Verocard: read model de beneficio separado do saldo monetario. */
-.meg-home .benefits{display:flex;align-items:stretch;min-height:16.5rem;padding:1.2rem 1.18rem;background:radial-gradient(ellipse at 77% 8%,rgba(19,143,146,.35),transparent 47%),linear-gradient(120deg,#03424a 0%,#002e3a 57%,#001e2a 100%)}
+.meg-home .benefits{display:flex;align-items:stretch;min-height:16.5rem;padding:1.2rem 1.18rem;background:radial-gradient(ellipse at 79% 2%,rgba(50,210,197,.29),transparent 46%),linear-gradient(0deg,rgba(14,54,61,.69),transparent 36%),linear-gradient(125deg,#03424a,#002e3a 57%,#001c28)}
 .meg-home .benefits::before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(90deg,#003940 2%,rgba(0,55,63,.93) 35%,rgba(0,42,54,.29) 72%,transparent)}
-.meg-home-benefit-body{position:relative;z-index:3;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:.7rem;width:60%;min-width:0}
+.meg-home-benefit-body{position:relative;z-index:3;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:.7rem;width:55%;min-width:0}
 .meg-home-benefit-intro{display:flex;align-items:center;gap:.7rem;min-width:0}
 .meg-home-benefit-intro h2{margin:0;font-size:1.1rem;line-height:1.25;font-weight:790;letter-spacing:-.023em}
 .meg-home-benefit-intro p{margin:.22rem 0 0;font-size:.78rem;line-height:1.25;color:#bedbd8}
@@ -169,20 +169,20 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
 .meg-home-benefit-monthly span{min-width:0;font-size:.72rem;line-height:1.27;color:#c0dad6}
 .meg-home-benefit-monthly strong{display:block;margin-top:.18rem;font-size:.9rem;font-weight:790;color:#f4fffb;font-variant-numeric:tabular-nums;white-space:nowrap}
 .meg-home-benefit-cta{min-height:3rem;padding:.5rem .85rem}
-.meg-home-benefit-card{position:absolute;z-index:2;right:1.8%;top:11%;width:45%;height:77%;object-fit:contain;object-position:center;pointer-events:none;filter:drop-shadow(-.8rem 1.2rem .75rem #0008);transform:perspective(850px) rotateY(-12deg) rotateZ(-7deg)}
+.meg-home-benefit-card{position:absolute;z-index:2;right:0;top:5%;width:50%;height:91%;object-fit:contain;object-position:center;pointer-events:none;filter:drop-shadow(-1.1rem 1.3rem 1rem rgba(0,0,0,.65));transform:perspective(900px) rotateY(-16deg) rotateZ(-8deg)}
 .meg-home-benefit-scene{display:none}
 
 /* Cinco atalhos simetricos com alvos de toque, sem acoes inventadas. */
 .meg-home .quick{display:flex;flex-direction:column;min-height:16.5rem;padding:1.2rem 1rem}
-.meg-home-quick-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.62rem;margin-top:.95rem;flex:1;min-height:0}
-.meg-home-quick-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;min-width:0;min-height:8.1rem;padding:.65rem .34rem;border:1px solid rgba(40,197,178,.26);border-radius:.8rem;color:#f4fffb;background:linear-gradient(165deg,rgba(6,75,80,.57),rgba(0,40,48,.51));text-align:center;transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.meg-home-quick-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.62rem;margin-top:.95rem;flex:1;min-height:0;align-items:center}
+.meg-home-quick-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;min-width:0;min-height:8rem;height:8rem;padding:.65rem .34rem;border:1px solid rgba(40,197,178,.26);border-radius:.8rem;color:#f4fffb;background:linear-gradient(165deg,rgba(6,75,80,.57),rgba(0,40,48,.51));text-align:center;transition:background .16s ease,border-color .16s ease,transform .16s ease}
 .meg-home-quick-action:hover,.meg-home-quick-action:focus-visible{background:linear-gradient(160deg,rgba(7,102,105,.67),rgba(1,54,60,.74));border-color:rgba(70,247,219,.64);transform:translateY(-2px)}
 .meg-home-quick-icon{display:grid;place-items:center;flex:0 0 3.12rem;width:3.12rem;height:3.12rem;border-radius:.8rem;background:linear-gradient(145deg,#30f8e0,#09bfb8);color:#00343b;box-shadow:0 6px 15px rgba(4,193,171,.14)}
 .meg-home-quick-action.quick-blue .meg-home-quick-icon{background:linear-gradient(145deg,#399bff,#216be0);color:#fff}
 .meg-home-quick-action.quick-purple .meg-home-quick-icon{background:linear-gradient(145deg,#a468ff,#713dd1);color:#fff}
 .meg-home-quick-action.quick-amber .meg-home-quick-icon{background:linear-gradient(145deg,#ffb94e,#e77b18);color:#fff}
 .meg-home-quick-action.quick-slate .meg-home-quick-icon{background:linear-gradient(145deg,#537999,#2b4860);color:#fff}
-.meg-home-quick-action strong{max-width:100%;font-size:.79rem;line-height:1.32;font-weight:725;overflow-wrap:normal}
+.meg-home-quick-action strong{max-width:100%;font-size:.82rem;line-height:1.32;font-weight:740;overflow-wrap:normal}
 
 /* O DataGrid da Etapa 04 permanece real e funcional; so apresentacao local. */
 .meg-home .recent,.meg-home .upcoming{display:flex;flex-direction:column;min-height:19rem;padding:1.02rem 1.03rem 1rem;overflow:visible}
@@ -269,21 +269,21 @@ border:1px solid rgba(49,235,214,.13);border-radius:.7rem;}
 .meg-home-kpi-icon{width:2.7rem;height:2.7rem}
 .meg-home-kpi-copy strong{font-size:1.18rem}
 .meg-home-kpi-copy small{font-size:.72rem}
-.meg-home .benefits{min-height:20rem;padding:1.05rem .82rem}
-.meg-home-benefit-body{width:100%;gap:.65rem}
+.meg-home .benefits{display:grid;grid-template-columns:minmax(0,1fr);min-height:0;padding:1.05rem .82rem 1.1rem;gap:.8rem}
+.meg-home-benefit-body{width:100%;gap:.7rem}
 .meg-home-benefit-intro{max-width:100%}
 .meg-home-benefit-intro h2{font-size:1rem}
 .meg-home-benefit-intro p{font-size:.7rem}
-.meg-home-benefit-finances{max-width:72%}
+.meg-home-benefit-finances{max-width:100%}
 .meg-home-benefit-balance{font-size:1.57rem}
 .meg-home-benefit-monthly{max-width:100%;gap:.4rem}
 .meg-home-benefit-monthly>div{min-height:3rem;padding:.38rem .45rem}
 .meg-home-benefit-monthly span{font-size:.75rem}
 .meg-home-benefit-monthly strong{font-size:.85rem}
-.meg-home-benefit-card{width:46%;height:54%;right:-1%;top:20%;opacity:.64}
+.meg-home-benefit-card{position:relative;justify-self:center;top:auto;right:auto;width:min(77%,18rem);height:auto;max-height:12rem;opacity:1;transform:perspective(900px) rotateY(-9deg) rotateZ(-4deg)}
 .meg-home .quick{min-height:20rem;padding:1rem .8rem}
 .meg-home-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(6.6rem,1fr);gap:.45rem;margin-top:.8rem}
-.meg-home-quick-action{min-height:6.6rem;gap:.46rem;padding:.48rem .2rem}
+.meg-home-quick-action{min-height:6.6rem;height:auto;gap:.46rem;padding:.48rem .2rem}
 .meg-home-quick-icon{width:2.75rem;height:2.75rem;flex-basis:2.75rem}
 .meg-home-quick-action strong{font-size:.75rem}
 .meg-home .recent,.meg-home .upcoming{min-height:0;padding:.9rem .66rem 1rem}
