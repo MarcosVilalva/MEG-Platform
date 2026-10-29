@@ -47,6 +47,10 @@ function dateText(value?: string) {
   if (!value || !/^\d{4}-\d{2}-\d{2}/.test(value)) return '—';
   return day.format(new Date(value.slice(0, 10) + 'T12:00:00Z'));
 }
+function payableStatusLabel(status: string) {
+  // Tradução textual do status retornado pelo domínio; não classifica vencimento nem calcula baixa.
+  return ({open:'A pagar',partial:'Parcial'} as Record<string,string>)[status] ?? status;
+}
 function categoryName(ids: Category[], id?: string | null) {
   return ids.find(item => item.id === id)?.name || 'Sem categoria';
 }
@@ -98,7 +102,8 @@ const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
     render:(v)=><HomeCategoryCell category={String(v??'')}/>},
   {key:'value',label:'Valor',type:'currency',width:112,minWidth:96,sortable:true,filterable:true,
     render:(v)=><span className="meg-home-value">{amount(Number(v))}</span>},
-  {key:'account',label:'Conta',type:'text',width:72,minWidth:60,sortable:true,filterable:true},
+  {key:'status',label:'Situação',type:'text',width:93,minWidth:85,sortable:true,filterable:true,
+    render:(v)=><span className="meg-home-payable-status">{payableStatusLabel(String(v??''))}</span>},
 ];
 
 function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapshot:HomeSnapshot|null;previewOnly?:boolean;onNavigate?:Props['onNavigate'];searchQuery?:string}) {
@@ -122,7 +127,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     .filter(p=>p.status!=='paid'&&p.status!=='cancelled'&&p.openAmount>0 && (!query || [p.description,categoryName(snapshot?.categories??[],p.categoryId)].some(value=>String(value??'').toLocaleLowerCase('pt-BR').includes(query))))
     .slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)||a.id.localeCompare(b.id)).slice(0,7)
     .map(p=>({id:p.id,date:p.dueDate,description:p.description,
-      category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount,account:'—'})),[snapshot,query]);
+      category:categoryName(snapshot?.categories??[],p.categoryId),value:p.openAmount,status:p.status})),[snapshot,query]);
   const go=(destination:HomeAction)=>{
     if(onNavigate) onNavigate(destination);
     else if(!previewOnly) window.dispatchEvent(new CustomEvent('meg:request-navigation',{detail:{destination}}));
@@ -209,7 +214,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
       <section className="meg-home-card upcoming" data-panel="tabelas">
         <SectionHeading icon="clock" title="Próximos vencimentos"/>
         <div className="meg-home-panel-controls"><button className="meg-home-grid-tools" type="button" aria-expanded={gridTools.upcoming} aria-label="Mostrar ou ocultar ferramentas da tabela de vencimentos" onClick={()=>setGridTools(value=>({...value,upcoming:!value.upcoming}))}><Icon name="flow" size={16}/></button><button className="meg-home-see-all" type="button" onClick={()=>go('pendentes')}>Ver todas <Icon name="arrow" size={14}/></button></div>
-        <div className={'meg-home-grid-slot '+(gridTools.upcoming?'is-expanded':'')}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due-chronological-v2" ariaLabel="Próximos vencimentos"/></div>
+        <div className={'meg-home-grid-slot '+(gridTools.upcoming?'is-expanded':'')}><DataGrid data={dueRows} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-home-due-chronological-v3" ariaLabel="Próximos vencimentos"/></div>
       </section>
     </div>
   </div>;
