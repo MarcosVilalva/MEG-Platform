@@ -6,5 +6,5 @@ export function CardBrandMark({brand}:{brand?:string|null}){
  if(scheme==='elo'||scheme.includes('elo'))return <span className="pano-scheme pano-scheme-elo" aria-label="Bandeira Elo">elo</span>;
  if(scheme.includes('american express')||scheme==='amex')return <span className="pano-scheme pano-scheme-amex" aria-label="American Express">AMEX</span>;
  // Não adivinhar bandeira usando nome do banco, cartão, números ou cores.
- return <span className="pano-scheme-unavailable" aria-label="Bandeira não informada">MEG</span>;
+ return <span className="pano-scheme-unavailable" aria-label="Bandeira não informada">•••</span>;
 }
