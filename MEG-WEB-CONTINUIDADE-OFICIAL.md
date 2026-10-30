@@ -1407,3 +1407,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Causa reproduzida por leitura do CSS do HEAD `c44cfd`: no breakpoint ≥1024px `.pano-mid{display:flex;flex-direction:column}` herda do estilo base `align-items:start`; filhos `.pano-benefits` e `.pano-actions` encolhem para largura intrínseca em lugar de preencher a coluna definida pelo grid exterior. Corretivo: `align-items:stretch` e `width:100%;align-self:stretch` na camada exclusivamente da Home.
 - A lista de cinco ações rápidas agora usa colunas automáticas com mínimo útil de `6.4rem`, em vez de cinco colunas forçadas dentro de 5/12 de largura em 1024px. Mantidos somente breakpoints 640/1024px e todos os botões/fluxos existentes.
 - Playwright verifica largura efetiva da coluna de Benefícios/Ações em relação às trilhas reais, além da largura de cada ação rápida (mínimo 88px) nos nove viewports. Finanças, Android, Shell, autenticação, DataGrid inalterados. Requer gate técnico e visual da PR #651 em Draft, sem merge nem homologação.
+
+
+## 30/10/2026 | Continuidade Home 06 e auditoria de autodeploy Render
+- Direção explícita do usuário: **manter o funcionamento automático** do Render, corrigir desperdício de build e erros de verificação. Não suspender automaticamente os ambientes importantes.
+- Checagem de PR #651 no SHA `9e188d6b`: Home Panorama falhou antes da execução por duplicação de `const panels`; corrigido no script com `midPanels`, sem alterar tela. Workflow Home agora inclui `node --check` antes do npm ci e reporta corretamente nove resoluções.
+- Build Render segue bloqueado por consumo de 500/500 minutos de pipeline; último deploy comprovado live `c44cfd37`. A nova revisão de testes/documentação usa `[skip render]` para não provocar build desnecessário. CI GitHub Actions permanece automático.
+- Foundation anterior falhou em testes de toolbar e screenshots do DataGrid compartilhado. **Não atualizar snapshots automaticamente nem tocar no DataGrid em uma etapa da Home.**
+- Auditoria operacional e roteiro de filtros seguros para autodeploy: `docs/MEG-RENDER-PUBLICACAO-AUTOMATICA-AUDITORIA-20261030.md`. Conector Render não oferece update de filtros em serviços já existentes. Nenhuma alteração de produção no Render, API ou banco.
+- Home 06 sem homologação, PR Draft e sem merge. Próximos gates requerem conclusão e inspeção visual de screenshots gerados pelo novo SHA.

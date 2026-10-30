@@ -16,6 +16,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Fail fast before installing Playwright or compiling the application.
+      - name: Verificar sintaxe do teste visual antes do build
+        run: node --check scripts/meg-home-06-panorama-viewport.mjs
       - name: Instalar dependências
         run: npm ci --audit=false
       - name: Conferir build da Web e da API
@@ -29,7 +32,7 @@ jobs:
         run: cd apps/web && npx vite build --config vite.home-06-panorama.config.ts
       - name: Preparar teste de navegador
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
-      - name: Capturar e verificar 7 resoluções
+      - name: Capturar e verificar 9 resoluções
         shell: bash
         env:
           PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome

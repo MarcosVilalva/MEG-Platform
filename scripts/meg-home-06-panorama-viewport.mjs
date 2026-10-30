@@ -42,12 +42,12 @@ try{
    const mid=document.querySelector('.pano-mid');
    const midR=mid?.getBoundingClientRect();
    const midStyle=mid?getComputedStyle(mid):null;
-   const panels=[...document.querySelectorAll('.pano-mid>.pano-panel')].map(node=>node.getBoundingClientRect());
+   const midPanels=[...document.querySelectorAll('.pano-mid>.pano-panel')].map(node=>node.getBoundingClientRect());
    const gridCols=midStyle?.display==='grid'
      ?midStyle.gridTemplateColumns.trim().split(/\s+/).map(parseFloat).filter(n=>Number.isFinite(n)&&n>1).length:1;
    const gap=midStyle?parseFloat(midStyle.columnGap)||0:0;
    const minPanelWidth=midR?(midR.width-Math.max(0,gridCols-1)*gap)/gridCols:0;
-   const midFillsColumns=Boolean(midR&&panels.length===2&&panels.every(p=>
+   const midFillsColumns=Boolean(midR&&midPanels.length===2&&midPanels.every(p=>
       p.width>=minPanelWidth-3&&p.left>=midR.left-2&&p.right<=midR.right+2));
    const actionButtons=[...document.querySelectorAll('.pano-action-list>.pano-action')].map(x=>x.getBoundingClientRect());
    const actionsLegible=actionButtons.length===5&&actionButtons.every(r=>r.width>=88&&r.height>=60);
@@ -63,7 +63,7 @@ try{
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
    return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
-    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,midFillsColumns,actionsLegible,midPanelWidths:panels.map(p=>Math.round(p.width)),
+    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,midFillsColumns,actionsLegible,midPanelWidths:midPanels.map(p=>Math.round(p.width)),
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   const layout=await page.evaluate(()=>{
