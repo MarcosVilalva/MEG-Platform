@@ -30,10 +30,11 @@ try{
    const hero=document.querySelector('.pano-hero');
    const charts=document.querySelectorAll('.pano-chart canvas').length;
    const panels=document.querySelectorAll('.pano-stat').length;
+   const datagridViewports=[...document.querySelectorAll('.pano-grid .meg-datagrid__viewport')].map(v=>({height:v.getBoundingClientRect().height,rows:v.querySelectorAll('tbody tr, .meg-datagrid-card-row').length}));
    const rootR=root?.getBoundingClientRect();
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
-   return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,
+   return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
     heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
@@ -42,7 +43,7 @@ try{
   await page.waitForTimeout(250);
   await page.screenshot({path:join(dir,name+'-bottom.png')});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=0});
-  const safe=result.overflow<=1&&result.clip<=1&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&errors.length===0;
+  const safe=result.overflow<=1&&result.clip<=1&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
   console.log(name,JSON.stringify({...result,errors,pass:safe}));
   if(!safe)failed=true;
   if(name==='mobile-390'){
