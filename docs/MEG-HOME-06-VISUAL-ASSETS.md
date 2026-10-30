@@ -1,24 +1,27 @@
-# HOME 06 | Fotografias e licença | 30/10/2026
+# Home 06 · Assets fotográficos e marcas · revisão de 30/10/2026
 
-A Home 06 clean-room usa **fotos reais**, apenas como plano de fundo, com **interface e valores independentes da imagem**.
-Nenhum número, botão, gráfico ou título foi rasterizado.
+## Hero panorâmico real
+- Foto: montanhas sob céu turquesa (aurora boreal).
+- Unsplash: https://unsplash.com/photos/snow-covered-mountain-under-blue-sky-M6JMfzye72E
+- Imagem CDN: https://images.unsplash.com/photo-1604240400568-c50e9a0f518f
+- Renderizada no hero como foto WebP HD com recorte responsivo e camada dark teal. Textos, dados e botões são DOM, não imagem.
 
-## Fotografia 1 | Hero panorâmico
-- Fotógrafo: **Pascal Debrunner**, Unsplash.
-- Fonte e licença: https://unsplash.com/photos/a-lake-surrounded-by-trees-and-a-mountain-BtMu8YbfFjQ
-- Imagem: https://images.unsplash.com/photo-1691661485699-7e459573cb35
-- Entrega atual: CDN Unsplash, WebP, crop responsivo, até 2560 pixels, com véu dark teal na camada CSS.
-- CSS: \`apps/web/src/meg-web-evolution/home/home-dashboard.css\`, seletor \`.pano-hero::before\`.
+## Fundo do carrossel de cartões
+- Foto abstrata real de rastros de luz azuis, por Denis Sebastian Tamas.
+- Unsplash: https://unsplash.com/photos/blue-and-white-light-streaks-XGMA0_m9Tac
+- Imagem CDN: https://images.unsplash.com/photo-1591963372472-1fdb7539a42e
+- Conteúdo sobre a fotografia: dados canônicos do cartão. Bandeira SVG condicional somente se o cadastro informa Visa, Mastercard, Elo ou Amex; sem inferência a partir do banco ou nome. Marcas de pagamento não significam patrocínio nem parceria.
 
-## Fotografia 2 | Benefício Alimentação
-- Fotógrafo: **Florian Paulus**, Unsplash.
-- Fonte e licença: https://unsplash.com/photos/a-produce-section-of-a-grocery-store-filled-with-fresh-produce-C0sKd8JR1_k
-- Imagem: https://images.unsplash.com/photo-1705140643816-2bb76d7ddeb1
-- Entrega atual: CDN Unsplash, WebP, crop responsivo, até 1300 pixels.
-- CSS: \`apps/web/src/meg-web-evolution/home/home-dashboard.css\`, seletor \`.pano-benefit-card::before\`.
+## Benefício Alimentação
+- Foto real de verduras e hortaliças em mercado.
+- Unsplash: https://unsplash.com/photos/a-produce-section-of-a-grocery-store-filled-with-fresh-produce-C0sKd8JR1_k
+- CDN: https://images.unsplash.com/photo-1705140643816-2bb76d7ddeb1
+- Fotografia decorativa no card. Saldo/créditos/uso continuam originados do benefício canônico separado da conta monetária.
 
-## Direitos e critérios
-Unsplash License: https://unsplash.com/license. Fotografias publicadas sob essa licença podem ser usadas em aplicações pessoais e comerciais, respeitadas as condições da licença. Atribuição registrada por transparência. Evitar representar a operadora real como marca do produto comercial.
+## Direitos e otimização
+- Fotos Unsplash sob https://unsplash.com/license conforme verificação dos registros públicos no momento desta revisão.
+- Recurso via CDN com parâmetros de WebP e largura de até 2560 px (hero) e 1200/1400 px (cartões/benefício). Não são arquivos locais. A disponibilidade das imagens depende do provedor externo. A implementação não considera essas imagens fontes de regra, nem contém dados pessoais rasterizados.
+- Para disponibilizar os recursos localmente no futuro, baixar somente os assets autorizados, gerar 1×/2× e preservar créditos/licenças. Não copiar uma imagem completa do dashboard de referência como interface.
 
-## Pendência de otimização
-As imagens são servidas do CDN do autor da licença, com alta resolução; **não são arquivos locais do repositório nesta entrega**. Em etapa futura, considerar cópias WebP/AVIF 1×/2× com licença e proveniência registradas, após confirmar desempenho e fidelidade dos recortes por breakpoint. Não bloquear funcionamento se uma atualização futura de asset falhar.
+## Estado
+Este documento registra os assets da **Home 06 em Draft PR #651**, ainda sem homologação visual da implementação.
