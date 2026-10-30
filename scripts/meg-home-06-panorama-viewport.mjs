@@ -28,6 +28,17 @@ try{
   await page.waitForTimeout(900);
   const result=await page.evaluate(()=>{
    const root=document.querySelector('.pano-root');
+   const amountElements=[...document.querySelectorAll('.pano-balance>strong,.pano-stat strong,.pano-card-amount strong')];
+   const wrappedAmounts=amountElements.filter(el=>{
+    const s=getComputedStyle(el),line=parseFloat(s.lineHeight),rect=el.getBoundingClientRect();
+    return Number.isFinite(line)&&rect.height>line*1.45;
+   }).map(el=>el.textContent?.trim());
+   const responsiveSpotlight=document.querySelector('.pano-spotlight');
+   const financialColumn=document.querySelector('.pano-financial-column');
+   const financialGeometry=financialColumn?.getBoundingClientRect(),cardArea=document.querySelector('.pano-cards')?.getBoundingClientRect();
+   const shouldStack=Boolean(responsiveSpotlight&&financialGeometry&&cardArea&&financialGeometry.right>cardArea.left+8);
+   const expectedStack=innerWidth<1024||(financialGeometry?.width??0)<460;
+
    const shellMain=document.querySelector('.meg-main');
    const mainOverflow=Boolean(shellMain&&shellMain.scrollWidth>shellMain.clientWidth+1);
    const mainCanScroll=Boolean(shellMain&&shellMain.scrollHeight>shellMain.clientHeight+30);
@@ -46,7 +57,7 @@ try{
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
    return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
-    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,
+    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,shouldStack,expectedStack,
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   const layout=await page.evaluate(()=>{
@@ -79,7 +90,7 @@ try{
   if(width<=639 && (scroll.content<=scroll.client+120 || scroll.top<100))failed=true;
   await page.screenshot({path:join(dir,name+'-bottom.png')});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=0});
-  const safe=result.overflow<=1&&result.clip<=1&&!result.mainOverflow&&result.mainCanScroll&&result.scrollerGeometry&&!result.chartHeaderOverlap&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
+  const safe=result.overflow<=1&&result.clip<=1&&!result.mainOverflow&&(width>639||result.mainCanScroll)&&result.scrollerGeometry&&!result.chartHeaderOverlap&&result.wrappedAmounts.length===0&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
   console.log(name,JSON.stringify({...result,errors,pass:safe}));
   if(!safe)failed=true;
   if(name==='desktop-1672'){

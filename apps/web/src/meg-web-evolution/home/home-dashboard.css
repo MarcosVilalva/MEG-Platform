@@ -28,7 +28,7 @@
 .pano-balance-top>span{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
 .pano-balance-scope{font-size:.58rem;letter-spacing:.075em;font-weight:800;color:#8ef0d8}
 .pano-balance-top button{display:grid;place-items:center;width:2.75rem;height:2.75rem;flex:0 0 2.75rem;background:#07484c9c;border:1px solid #63c6b56d;border-radius:50%;color:#d4fff8}
-.pano-balance>strong{font-size:clamp(1.9rem,8vw,2.7rem);font-weight:850;line-height:1.12;letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;white-space:normal}
+.pano-balance>strong{font-size:clamp(1.75rem,7.6vw,3.4rem);font-weight:850;line-height:1.12;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:100%}
 .pano-balance-bottom{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem .85rem}
 .pano-balance-bottom>span{color:#b3d7d6;font-size:.69rem}
 .pano-balance-bottom button{display:inline-flex;align-items:center;gap:.32rem;min-height:2.35rem;border:0;border-bottom:1px solid #62d5c58c;padding:.25rem 0;border-radius:0;background:transparent;color:#7df2d9;font-size:.72rem;font-weight:750}
@@ -86,7 +86,7 @@
 @keyframes pano-card-prev{from{opacity:.65;translate:-12% 0;scale:.94}to{opacity:1;translate:0 0;scale:1}}
 .pano-credit-card.is-arriving-next{animation:pano-card-next .28s ease-out both}
 .pano-credit-card.is-arriving-prev{animation:pano-card-prev .28s ease-out both}
-.pano-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:.38rem;margin-top:.46rem;min-width:0}
+.pano-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));align-items:stretch;gap:.38rem;margin-top:.46rem;min-width:0}
 .pano-stat{min-width:0;min-height:5rem;display:flex;align-items:center;justify-content:flex-start;padding:.49rem .45rem;text-align:left;border:1px solid #238f888a;border-radius:.64rem;background:linear-gradient(145deg,#062e34,#04242c);color:#f6fffc;transition:border-color .16s,background .16s}
 .pano-stat:hover{background:#0b3940;border-color:#37dabb}
 .pano-stat-head{display:flex;align-items:center;gap:.43rem;min-width:0;width:100%}
@@ -96,7 +96,7 @@
 .pano-stat.is-benefit .pano-stat-icon{background:#0b5a52;color:#9cffe3}
 .pano-stat-copy{display:flex;flex-direction:column;justify-content:center;gap:.16rem;min-width:0;flex:1}
 .pano-stat-label{font-size:clamp(.65rem,2.7vw,.76rem);line-height:1.18;font-weight:760;color:#badbd7}
-.pano-stat strong{width:100%;font-size:clamp(.83rem,3.55vw,1.07rem);font-weight:850;letter-spacing:-.024em;line-height:1.16;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pano-stat strong{width:100%;font-size:clamp(.86rem,3.25vw,1.08rem);font-weight:850;letter-spacing:-.02em;line-height:1.16;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pano-stat small{font-size:.59rem;line-height:1.2;color:#a8c9c3}
 .pano-finance-block{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem;min-width:0;align-items:start;margin-top:.5rem}
 .pano-flow{display:flex;flex-direction:column;min-width:0;min-height:0}
@@ -190,7 +190,7 @@
 }
 @media(min-width:1024px){
  .pano-root{padding:.7rem .8rem 1.2rem}
- .pano-spotlight{grid-template-columns:minmax(0,4fr) minmax(0,6fr);gap:.62rem;align-items:stretch}
+ .pano-spotlight{grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));gap:.62rem;align-items:stretch}
  .pano-financial-column{grid-template-rows:auto auto;gap:0}
  .pano-hero{min-height:10rem;padding:1rem 1.15rem}
  .pano-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:.46rem;margin-top:.46rem}

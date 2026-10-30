@@ -1378,3 +1378,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Nova estrutura `pano-financial-column`: saldo e KPIs 2x2 formam **coluna esquerda** na largura desktop, cartões ocupam **coluna direita**; em tablet/celular empilhamento estrutural. Carrossel limitado a palco de até 43rem de largura e cards na proporção física 1,72; parou de esticar vizinhos conforme largura arbitrária da página. Setas, dots e controle de privacidade têm alvos >=44 CSS px.
 - Teste Playwright ampliado para 1920px e 360px, scroll real do conteúdo, ausência de overflow horizontal do `.meg-main`, geometria do scroll, escalas visuais dos cartões e alvos de toque. Teste verde não implica aprovação visual; capturas da nova revisão devem ser inspecionadas antes de apresentar como validação.
 - Não editar Android, API financeira, auth, Shell, sidebar ou DataGrid; nenhum campo, entidade ou regra financeira criada. PR #651 permanece Draft, sem merge; sem homologação.
+
+
+### Correção imediata de captura: números quebrados em 320px e coluna insuficiente em 1024px
+- Após revisão efetiva das capturas no commit `eed6285`: em 320px, indicadores quebravam último dígito de valores monetários; em 1024px a coluna de 4/6 com sidebar expandida espremia saldo e KPIs, quebrando seus valores. **Testes gerais tinham passado, mas a regressão visual era real.**
+- Fix sem terceiro breakpoint: grid de KPIs usa `repeat(auto-fit,minmax(min(100%,10.5rem),1fr))` no mobile; em 320px um card por linha, em 390px dois. Para desktop ≥1024, área superior usa `auto-fit` com trilhas mínimas de 31,5rem, de modo que a sidebar existente determine quantas colunas cabem sem quebra. Valores monetários ganham `white-space:nowrap` com tamanhos tipográficos compatíveis.
+- Teste Playwright passa a falhar quando `strong` de moeda ocupa duas linhas. Autonomia financeira e UX não alteradas; continua pendente captura visual de novo HEAD, CI/Render e validação expressa.
