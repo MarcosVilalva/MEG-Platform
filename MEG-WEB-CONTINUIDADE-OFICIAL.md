@@ -1547,3 +1547,13 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - **Atenção:** proposta aprovada é referência visual; implementação ainda **não homologada**, nem possui comprovação de fidelidade. Testes de geometria antigos 7/5 podem precisar adaptação à nova estrutura aprovada (hero panorâmico em linha própria). Não modificar gates financeiros para forçar aprovação.
 - **Gates:** CI de `7b36055da286ec8590221fb16638e1858d544eda` iniciou automaticamente; resultados e deploy SHA exato ainda não comprovados neste registro. PR Draft, merge bloqueado.
 - **Pendências:** validar logs/artefatos da execução, corrigir falhas, comparar screenshots reais 1672×941, 1366×768, 390×844 e 320×700; revisão funcional de autenticação e dados reais; fornecer preview Render com SHA verificado e aguardar aprovação visual da implementação.
+
+
+## Home 06 | Regra de reconstrução limpa após reprovação visual (29/10/2026)
+
+- Usuário rejeitou a implementação apresentada no vídeo `22-29-55.mp4` e identificou como causa o reaproveitamento de JSX/CSS visual antigo e o acúmulo de reescritas/remendos sobre uma base ruim.
+- **Determinação explícita:** quando a interface visual não ficar boa, **descartar integralmente a implementação visual reprovada e criar cada componente visual do zero**, sem reaproveitar JSX/CSS/estrutura visual rejeitada nem empilhar substituições ou overrides na mesma folha.
+- Na próxima rodada da Home, partir de arquivos/estrutura de apresentação novos e isolados, criados a partir da imagem homologada, e remover/desativar a apresentação reprovada somente após validar a substituição. A fotografia pode ser um asset oficial HD; gráficos devem ser ECharts/SVG funcionais; textos e valores no DOM e autoridade financeira na API.
+- **Preservação obrigatória:** Shell/sidebar, autenticação, DataGrid compartilhado, fonte única e adaptadores, contratos/autoridades financeiras e Android. Reutilizar regras e interfaces de dados estáveis não significa reaproveitar UI antiga.
+- **Validação incremental real:** hero, KPIs, fluxo, benefícios, ações e tabelas, com captura de navegador nas larguras necessárias, antes de declarar a Home implementada. Nunca equiparar testes verdes a homologação visual.
+- **Status:** a imagem escolhida continua homologada como referência, mas a implementação da PR #650 foi reprovada; PR deve permanecer Draft e sem merge. Esta atualização é documental, sem reconstrução realizada nesta rodada.
