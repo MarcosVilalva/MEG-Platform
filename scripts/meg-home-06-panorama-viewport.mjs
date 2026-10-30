@@ -41,6 +41,24 @@ try{
     heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
+  const layout=await page.evaluate(()=>{
+   const rect=(s)=>document.querySelector(s)?.getBoundingClientRect();
+   const spotlight=rect('.pano-spotlight'),hero=rect('.pano-hero'),cards=rect('.pano-cards');
+   const kpis=[...document.querySelectorAll('.pano-stat')];
+   const valueInsideRight=kpis.every(el=>{
+    const icon=el.querySelector('.pano-stat-icon')?.getBoundingClientRect();
+    const amount=el.querySelector('strong')?.getBoundingClientRect();
+    return Boolean(icon&&amount&&amount.left>=icon.right-1);
+   });
+   const tightCards=Boolean(cards&&hero&&(innerWidth<1024||Math.abs(cards.top-hero.top)<=2));
+   const center=rect('.pano-credit-card'),stage=rect('.pano-card-stage');
+   const centered=Boolean(center&&stage&&Math.abs((center.left+center.width/2)-(stage.left+stage.width/2))<=3);
+   const peeks=[...document.querySelectorAll('.pano-card-peek')].map(x=>x.getBoundingClientRect());
+   const attached=Boolean(center&&stage&&peeks.every(p=>Math.min(center.right,p.right)-Math.max(center.left,p.left)>0));
+   return {valueInsideRight,tightCards,centered,attached,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
+  });
+  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached)failed=true;
+  console.log(name+' COMPOSITION',JSON.stringify(layout));
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
   await page.waitForTimeout(250);
@@ -87,11 +105,10 @@ try{
    const firstPrevEnabled=await page.getByRole('button',{name:'Cartão anterior',exact:true}).isEnabled();
    const circularLoop=lastNextPreview===firstName&&lastNavEnabled&&afterWrapName===firstName&&firstPrevPreview===lastName&&afterReverseWrapName===lastName&&firstPrevEnabled;
    const geometry=await page.locator('.pano-stat').evaluateAll(nodes=>nodes.map(node=>{
-    const head=node.querySelector('.pano-stat-head')?.getBoundingClientRect();
-    const label=node.querySelector('.pano-stat-label')?.getBoundingClientRect();
     const icon=node.querySelector('.pano-stat-icon')?.getBoundingClientRect();
+    const value=node.querySelector('strong')?.getBoundingClientRect();
     const box=node.getBoundingClientRect();
-    return {height:box.height,aligned:head&&label&&icon?Math.abs((label.top+label.height/2)-(icon.top+icon.height/2))<5:false};
+    return {height:box.height,aligned:icon&&value?value.left>=icon.right-1:false};
    }));
    const compactKpis=geometry.every(g=>g.aligned&&g.height<=125);
    await page.locator('.pano-stat.is-income').click();

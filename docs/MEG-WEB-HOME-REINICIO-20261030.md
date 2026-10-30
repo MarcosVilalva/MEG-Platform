@@ -94,3 +94,7 @@ Vídeo `14-48-11.mp4` e pesquisa de decisões históricas reforçam uso obrigat�
 
 ## Home 06, revisão de densidade visual após rejeição (30/10/2026)
 A captura Playwright da versão `ffd6299d` demonstrou desproporção do carrossel (7/12), compressão do gráfico (5/12) e hero com informação insuficiente em área muito grande. Nesta candidata isolada a relação passa para gráfico 7/12 e cartões 5/12, com cartão central dimensionado, laterais cíclicos preservados, hero sem legenda decorativa e leitura numérica compacta. Benefícios/Ações passam a ter paridade 6/6. Teste visual de cabeçalho do gráfico inclui medição contra sobreposição em mobile. Sem aprovação visual.
+
+
+## Reconstrução estrutural da faixa superior em 30/10/2026
+A proposta anterior de aumentar/diminuir `min-height` por remendos de CSS foi descartada após reprovação. A Home da PR #651 recebe uma estrutura separada por responsabilidade: `pano-spotlight` (saldo monetário + cartões reais, na proporção 4/6 desktop), `pano-overview` (indicadores lidos da API, valor à direita do ícone) e `pano-finance-block` (fluxo diário + Benefícios/Ações). Imagens continuam reais/documentadas, sem valores embutidos. Loop circular do carrossel permanece. A mudança é exclusivamente visual, sem alteração das entidades, contratos financeiros e das telas homologadas. Permanece pendente aprovação visual.

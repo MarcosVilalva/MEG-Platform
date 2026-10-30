@@ -171,32 +171,14 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
   {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso">×</button></div>}
-  <section className="pano-hero" aria-label="Visão financeira">
+  <div className="pano-spotlight" aria-label="Saldo e cartões financeiros">
+  <section className="pano-hero" aria-label="Saldo disponível monetário">
    <div className="pano-balance" aria-label="Saldo disponível monetário">
     <div className="pano-balance-top"><span>Saldo disponível <span className="pano-balance-scope">CONTAS MONETÁRIAS</span></span><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={19}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
     <div className="pano-balance-bottom"><span>{data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
    </div>
   </section>
-  <section className="pano-overview" aria-label="Indicadores financeiros">
-   {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>s.kind==='income'?focusMovements('income'):s.kind==='expense'?focusMovements('expense'):s.kind==='pending'?focusPending():focusBenefit()} aria-label={s.label+': '+format(s.value,hidden)+'. Abrir detalhes'}>
-    <span className="pano-stat-head">
-     <span className="pano-stat-icon"><HomeGlyph name={s.icon} size={19}/></span>
-     <span className="pano-stat-label">{s.label}</span>
-    </span>
-    <strong>{format(s.value,hidden)}</strong>
-    {s.note&&<small>{s.note}</small>}
-   </button>)}
-  </section>
-  <section className="pano-finance-block" aria-label="Leitura gerencial do mês">
-   <section ref={flowSection} className="pano-panel pano-flow">
-    <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro"/>
-     <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros">Ver relatórios <HomeGlyph name="arrow" size={16}/></button>
-    </div>
-    <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
-    <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
-    <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
-   </section>
    <section ref={cardsSection} className="pano-panel pano-cards">
     <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all" onClick={()=>move('cartoes')}>Ver todos <HomeGlyph name="arrow" size={14}/></button></div>
     {selectedCard?<>
@@ -232,7 +214,28 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
       </div>}
      </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
+  </div>
+  <section className="pano-overview" aria-label="Indicadores financeiros">
+   {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>s.kind==='income'?focusMovements('income'):s.kind==='expense'?focusMovements('expense'):s.kind==='pending'?focusPending():focusBenefit()} aria-label={s.label+': '+format(s.value,hidden)+'. Abrir detalhes'}>
+    <span className="pano-stat-head">
+     <span className="pano-stat-icon"><HomeGlyph name={s.icon} size={23}/></span>
+     <span className="pano-stat-copy">
+      <span className="pano-stat-label">{s.label}</span>
+      <strong>{format(s.value,hidden)}</strong>
+      {s.note&&<small>{s.note}</small>}
+     </span>
+    </span>
+   </button>)}
   </section>
+  <div className="pano-finance-block" aria-label="Leitura gerencial do mês">
+   <section ref={flowSection} className="pano-panel pano-flow">
+    <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro"/>
+     <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros">Ver relatórios <HomeGlyph name="arrow" size={16}/></button>
+    </div>
+    <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
+    <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
+    <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
+   </section>
   <div className="pano-mid">
    <section ref={benefitSection} className="pano-panel pano-benefits">
     <PanelTitle icon="gift" title="Benefícios" meta="Saldo separado das contas monetárias"/>
@@ -248,6 +251,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
       <span className="pano-action-icon"><HomeGlyph name={a.icon} size={22}/></span><strong>{a.title}</strong><small>{a.desc}</small>
      </button>)}</div>
    </section>
+  </div>
   </div>
   <div className="pano-tables">
    <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="layers" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>

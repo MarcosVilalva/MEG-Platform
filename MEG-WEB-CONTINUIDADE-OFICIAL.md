@@ -1353,3 +1353,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Teste de viewport passou a medir eventual sobreposição real entre título e ação do gráfico. Carrossel cíclico da rodada anterior preservado.
 - Gates devem ser verificados no HEAD da revisão e as capturas devem ser examinadas antes de apresentar prévia para avaliação. PR #651 continua Draft, sem merge.
 - No HEAD anterior `ffd6299d`, a suíte Home Panorama passou, mas a Foundation geral falhou em regressões/baselines visuais do DataGrid e testes da toolbar. Essa falha não autoriza mexer no DataGrid desta etapa.
+
+
+## 30/10/2026 | Home 06 | Reconstrução de layout aprovada para execução, ainda sem homologação
+- O usuário reprovou visualmente as composições anteriores. A instrução "Continue" autoriza reconstrução apenas da camada visual da **Home 06**, após confronto com o modelo financeiro `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`. Nenhuma nova entidade/campo/regra financeira permitida.
+- Problema raiz: cartão esticado artificialmente ao lado do gráfico e saldos/KPIs com quantidade inadequada de espaço vazio; vários CSS de correção acumulados. A nova Home usa folha CSS reescrita de forma isolada, sem reaproveitar estilos rejeitados da PR #650.
+- Nova estrutura: `pano-spotlight` desktop com saldo fotográfico e carrossel de cartão real lado a lado em grade 4/6; indicadores compactos numa linha, cada valor à direita do ícone; segunda faixa com gráfico financeiro e coluna de Benefícios/Ações rápidas; DataGrids mantidos no fim.
+- Preservados: modelos de leitura da API, saldo monetário e benefício segregados, privacidade, filtros, fatura canônica, navegação cíclica de cartões com swipe e teclado, estado vazio, DataGrid compartilhado e Shell.
+- Proporções móveis estruturalmente empilhadas em 1024/640, sem breakpoints improvisados. Verificações Playwright adicionais de horizontalidade do KPI, centro do cartão, cartões adjacentes e geometria da área superior.
+- Limite técnico: fotografia via CDN ainda não está vendorizada; integração autenticada real não foi validada; teste Home Panorama e Foundation do SHA devem ser verificados, assim como preview Render *live* antes de validar visualmente. PR #651 Draft, sem merge, usuário ainda não aprovou Home.
