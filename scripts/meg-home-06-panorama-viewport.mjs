@@ -58,7 +58,7 @@ try{
    const filterClosed=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar').evaluate(el=>getComputedStyle(el).display==='none');
    const itemBefore=await page.locator('.pano-credit-card-name').textContent();
    const schemeBefore=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
-   await page.getByRole('button',{name:'Próximo cartão'}).click();
+   await page.locator('.pano-card-nav').getByRole('button',{name:'Próximo cartão'}).click();
    const itemAfter=await page.locator('.pano-credit-card-name').textContent();
    const schemeAfter=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
    await page.locator('.pano-credit-card').click();
