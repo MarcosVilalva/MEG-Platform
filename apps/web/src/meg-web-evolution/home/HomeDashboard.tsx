@@ -82,7 +82,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const cardsSection=useRef<HTMLElement|null>(null);
  const flowSection=useRef<HTMLElement|null>(null);
  const reveal=(node:HTMLElement|null)=>node?.scrollIntoView({behavior:'smooth',block:'start'});
- const focusMovements=(mode:'income'|'expense')=>{setMovementMode(mode);reveal(movementSection.current)};
+ const focusMovements=(mode:'all'|'income'|'expense')=>{setMovementMode(mode);reveal(movementSection.current)};
  const focusPending=()=>reveal(dueSection.current);
  const focusCards=()=>reveal(cardsSection.current);
  const selectedCard=data.cards[cardIndex]??null;
@@ -151,7 +151,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    <div className="pano-balance" aria-label="Saldo disponível monetário">
     <div className="pano-balance-top"><span><HomeGlyph name="wallet" size={19}/> Saldo disponível</span><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={18}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
-    <div className="pano-balance-bottom"><span>{data.available?'Saldo monetário em '+dateString(data.available.date):'Saldo atual indisponível até ativação da leitura canônica'}</span><button type="button" onClick={()=>move('lancamentos')}>Ver detalhes <HomeGlyph name="arrow" size={15}/></button></div>
+    <div className="pano-balance-bottom"><span>{data.available?'Saldo monetário em '+dateString(data.available.date):'Saldo atual indisponível até ativação da leitura canônica'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver detalhes <HomeGlyph name="arrow" size={15}/></button></div>
    </div>
   </section>
   <section className="pano-finance-block" aria-label="Leitura gerencial do mês">
