@@ -38,6 +38,10 @@ try{
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
+  await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
+  await page.waitForTimeout(250);
+  await page.screenshot({path:join(dir,name+'-bottom.png')});
+  await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=0});
   const safe=result.overflow<=1&&result.clip<=1&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&errors.length===0;
   console.log(name,JSON.stringify({...result,errors,pass:safe}));
   if(!safe)failed=true;
