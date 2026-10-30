@@ -1239,3 +1239,5 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 **Documentação completa:** `docs/MEG-WEB-HOME-REINICIO-20261030.md` (auditoria inicial, direção visual e plano de isolamento/limpeza).
 
 **Status:** Etapa Home 06 em REDEFINIÇÃO, nova apresentação ainda não implementada e não homologada; PR #650 Draft sem merge. Prioridade: especificação visual em componentes novos, validação no navegador e publicação de prévia comprovada. Não avançar para outras telas.
+
+**PR de trabalho nova:** [#651](https://github.com/MarcosVilalva/MEG-Platform/pull/651), Draft, base PR #649; aberta em 30/10/2026 para a reconstrução limpa da Home. **PR #650 continua rejeitada e fora da base.**
