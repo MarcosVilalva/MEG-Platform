@@ -88,11 +88,16 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const focusPending=()=>reveal(dueSection.current);
  const focusBenefit=()=>reveal(benefitSection.current);
  const selectedCard=data.cards[cardIndex]??null;
+ const previousCard=data.cards[cardIndex-1]??null;
+ const nextCard=data.cards[cardIndex+1]??null;
  const stepCard=(direction:number)=>{setCardIndex(i=>Math.max(0,Math.min(data.cards.length-1,i+direction)));setCardExpanded(false)};
 
  const move=(target:Action)=>{
   if(onNavigate)onNavigate(target);
-  else setNotice('A navegação para esta função será ativada quando a tela correspondente for implementada.');
+  else {
+   const labels:Record<Action,string>={novo:'Novo lançamento',transferencia:'Transferência',pendentes:'Pendentes',cartoes:'Cartões',lancamentos:'Lançamentos',beneficios:'Benefícios',relatorios:'Relatórios',metas:'Configurações'};
+   setNotice(labels[target]+' ainda não está disponível nesta etapa da Web. A Home continua navegável para os detalhes já implementados.');
+  }
  };
  const categories=useMemo(()=>new Map(data.categories.map(c=>[c.id,c.name])),[data.categories]);
  const accounts=useMemo(()=>new Map(data.accounts.map(a=>[a.id,a.name])),[data.accounts]);
@@ -178,14 +183,20 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all" onClick={()=>move('cartoes')}>Ver todos <HomeGlyph name="arrow" size={14}/></button></div>
     {selectedCard?<>
       <div className="pano-card-stage" aria-label={'Cartão '+(cardIndex+1)+' de '+data.cards.length}>
-       {data.cards.length>1&&<button type="button" className="pano-card-peek is-prev" disabled={cardIndex===0} onClick={()=>stepCard(-1)} aria-label="Cartão anterior"><HomeGlyph name="card" size={18}/></button>}
+       {previousCard&&<button type="button" className={'pano-card-peek is-prev pano-peek-tone-'+((cardIndex-1)%3)} onClick={()=>stepCard(-1)} aria-label={'Cartão anterior: '+previousCard.name}>
+        <span className="pano-card-peek-brand"><CardBrandMark brand={previousCard.brand}/></span>
+        <span className="pano-card-peek-name">{previousCard.name}</span>
+       </button>}
        <button type="button" className={'pano-credit-card pano-plastic-tone-'+(cardIndex%3)} onClick={()=>setCardExpanded(v=>!v)} aria-expanded={cardExpanded} aria-label={'Ver detalhes do cartão '+selectedCard.name}>
         <span className="pano-credit-card-top"><HomeGlyph name="card" size={24}/><CardBrandMark brand={selectedCard.brand}/></span>
         <span className="pano-credit-card-name">{selectedCard.name}</span>
         <span className="pano-credit-card-meta">{selectedCard.lastFour?'••••  '+selectedCard.lastFour:'Cartão cadastrado'}</span>
         <span className="pano-credit-card-bottom"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></span>
        </button>
-       {data.cards.length>1&&<button type="button" className="pano-card-peek is-next" disabled={cardIndex===data.cards.length-1} onClick={()=>stepCard(1)} aria-label="Próximo cartão"><HomeGlyph name="card" size={18}/></button>}
+       {nextCard&&<button type="button" className={'pano-card-peek is-next pano-peek-tone-'+((cardIndex+1)%3)} onClick={()=>stepCard(1)} aria-label={'Próximo cartão: '+nextCard.name}>
+        <span className="pano-card-peek-brand"><CardBrandMark brand={nextCard.brand}/></span>
+        <span className="pano-card-peek-name">{nextCard.name}</span>
+       </button>
       </div>
       <div className="pano-card-nav"><button type="button" aria-label="Cartão anterior" disabled={cardIndex===0} onClick={()=>stepCard(-1)}><HomeGlyph name="arrow" size={19}/></button><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===cardIndex?'is-current':''} onClick={()=>{setCardIndex(i);setCardExpanded(false)}} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===cardIndex?'true':undefined}/>)}</span><button type="button" aria-label="Próximo cartão" disabled={cardIndex===data.cards.length-1} onClick={()=>stepCard(1)}><HomeGlyph name="arrow" size={19}/></button></div>
       {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
