@@ -65,7 +65,8 @@ try{
    });
    const financialColumn=document.querySelector('.pano-financial-column')?.getBoundingClientRect();
    const spotlightEl=document.querySelector('.pano-spotlight');
-   const tracks=spotlightEl?getComputedStyle(spotlightEl).gridTemplateColumns.trim().split(/\s+/).length:0;
+   // auto-fit pode expor trilhas colapsadas "0px": não são colunas visuais.
+   const tracks=spotlightEl?getComputedStyle(spotlightEl).gridTemplateColumns.trim().split(/\s+/).map(s=>parseFloat(s)).filter(n=>Number.isFinite(n)&&n>1).length:0;
    const isStacked=tracks===1;
    const tightCards=Boolean(cards&&hero&&financialColumn&&(isStacked
     ? cards.top>=financialColumn.bottom-2&&cards.top-financialColumn.bottom<=32&&Math.abs(cards.left-financialColumn.left)<=3

@@ -1395,3 +1395,8 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 ### Correção de harness após workflow #41117909227
 - Workflow Home Panorama do SHA `f9295434` falhou antes das capturas por **SyntaxError: Identifier 'spotlight' has already been declared**. Auditoria do script também identificou variável de retorno `tracks/isStacked` no contexto incorreto. Ambas as falhas são do teste e foram corrigidas sem alterar a Home.
 - As capturas reais do SHA `47acfa` já mostraram números íntegros em 320px e empilhamento seguro em 1024px. O único motivo confirmado da falha do SHA `47acfa` era o teste antigo que exigia cards alinhados horizontalmente em todos os desktops. Revalidar no próximo SHA, sem chamar a tela homologada.
+
+
+### Gate Home 06 | CSS Grid auto-fit e colunas vazias
+- SHA `b28128a2`: workflow visual executou nove viewports e interações; falha isolada `tightCards=false` somente em 1920px. Causa do script: CSS `repeat(auto-fit,...)` pode retornar também trilha colapsada `0px` no `gridTemplateColumns`, que foi contada como terceira coluna fictícia. A captura desktop confirmou somente duas colunas ocupadas, sem corte.
+- Teste corrigido para contar somente trilhas reais `>1px`. Nenhuma mudança no código de Home/financeiro; conferir novo gate final antes de proclamar sucesso.
