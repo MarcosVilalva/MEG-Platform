@@ -196,7 +196,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
        {nextCard&&<button type="button" className={'pano-card-peek is-next pano-peek-tone-'+((cardIndex+1)%3)} onClick={()=>stepCard(1)} aria-label={'Próximo cartão: '+nextCard.name}>
         <span className="pano-card-peek-brand"><CardBrandMark brand={nextCard.brand}/></span>
         <span className="pano-card-peek-name">{nextCard.name}</span>
-       </button>
+       </button>}
       </div>
       <div className="pano-card-nav"><button type="button" aria-label="Cartão anterior" disabled={cardIndex===0} onClick={()=>stepCard(-1)}><HomeGlyph name="arrow" size={19}/></button><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===cardIndex?'is-current':''} onClick={()=>{setCardIndex(i);setCardExpanded(false)}} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===cardIndex?'true':undefined}/>)}</span><button type="button" aria-label="Próximo cartão" disabled={cardIndex===data.cards.length-1} onClick={()=>stepCard(1)}><HomeGlyph name="arrow" size={19}/></button></div>
       {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
