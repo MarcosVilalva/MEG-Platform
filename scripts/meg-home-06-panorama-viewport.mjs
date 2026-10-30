@@ -39,6 +39,18 @@ try{
    const shellBody=document.querySelector('.meg-shell-body');
    const scrollerGeometry=Boolean(shellBody&&shellMain&&shellMain.getBoundingClientRect().bottom<=innerHeight+2);
 
+   const mid=document.querySelector('.pano-mid');
+   const midR=mid?.getBoundingClientRect();
+   const midStyle=mid?getComputedStyle(mid):null;
+   const panels=[...document.querySelectorAll('.pano-mid>.pano-panel')].map(node=>node.getBoundingClientRect());
+   const gridCols=midStyle?.display==='grid'
+     ?midStyle.gridTemplateColumns.trim().split(/\s+/).map(parseFloat).filter(n=>Number.isFinite(n)&&n>1).length:1;
+   const gap=midStyle?parseFloat(midStyle.columnGap)||0:0;
+   const minPanelWidth=midR?(midR.width-Math.max(0,gridCols-1)*gap)/gridCols:0;
+   const midFillsColumns=Boolean(midR&&panels.length===2&&panels.every(p=>
+      p.width>=minPanelWidth-3&&p.left>=midR.left-2&&p.right<=midR.right+2));
+   const actionButtons=[...document.querySelectorAll('.pano-action-list>.pano-action')].map(x=>x.getBoundingClientRect());
+   const actionsLegible=actionButtons.length===5&&actionButtons.every(r=>r.width>=88&&r.height>=60);
    const graph=document.querySelector('.pano-flow');
    const hero=document.querySelector('.pano-hero');
    const charts=document.querySelectorAll('.pano-chart canvas').length;
@@ -51,7 +63,7 @@ try{
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
    return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
-    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,
+    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,midFillsColumns,actionsLegible,midPanelWidths:panels.map(p=>Math.round(p.width)),
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   const layout=await page.evaluate(()=>{
@@ -91,7 +103,7 @@ try{
   if(width<=639 && (scroll.content<=scroll.client+120 || scroll.top<100))failed=true;
   await page.screenshot({path:join(dir,name+'-bottom.png')});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=0});
-  const safe=result.overflow<=1&&result.clip<=1&&!result.mainOverflow&&(width>639||result.mainCanScroll)&&result.scrollerGeometry&&!result.chartHeaderOverlap&&result.wrappedAmounts.length===0&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
+  const safe=result.overflow<=1&&result.clip<=1&&!result.mainOverflow&&(width>639||result.mainCanScroll)&&result.scrollerGeometry&&!result.chartHeaderOverlap&&result.wrappedAmounts.length===0&&result.midFillsColumns&&result.actionsLegible&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
   console.log(name,JSON.stringify({...result,errors,pass:safe}));
   if(!safe)failed=true;
   if(name==='desktop-1672'){

@@ -102,3 +102,7 @@ A proposta anterior de aumentar/diminuir `min-height` por remendos de CSS foi de
 
 ### Responsividade auditada após vídeo de 30/10/2026
 A versão anterior foi reprovada pelo usuário. `16-31-44.mp4` mostra navegador em desktop e carrossel de proporções ruins. O requisito é mobile-first com `640px` e `1024px` somente. A nova revisão impede alturas artificiais no body da Home, diminui palco de cartões e reposiciona KPIs ao lado do saldo no desktop em duas linhas 2x2; em tablet e celular a leitura empilha naturalmente. Controles de carrossel recebem 44px de alvo. Os DataGrids e a camada financeira permanecem intactos.
+
+
+### Registro de revisão do vídeo 17-01-12.mp4 (30/10/2026)
+A segunda faixa desperdiça espaço porque o contêiner de Benefícios/Ações é flex-column com alinhamento ao início; seus filhos ficam com largura intrínseca. Correção restrita ao CSS isolado da Home: stretch nos filhos e grid de atalhos auto-fit com largura mínima funcional, sem breakpoint novo. Ampliação do Playwright para flagrar painéis que não usam a largura da coluna, inclusive com sidebar e zoom do navegador. Sem novos campos, entidades, cálculos ou alterações do modelo financeiro. PR não homologada.

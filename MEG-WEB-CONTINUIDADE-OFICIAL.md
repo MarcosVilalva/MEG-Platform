@@ -1400,3 +1400,10 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 ### Gate Home 06 | CSS Grid auto-fit e colunas vazias
 - SHA `b28128a2`: workflow visual executou nove viewports e interações; falha isolada `tightCards=false` somente em 1920px. Causa do script: CSS `repeat(auto-fit,...)` pode retornar também trilha colapsada `0px` no `gridTemplateColumns`, que foi contada como terceira coluna fictícia. A captura desktop confirmou somente duas colunas ocupadas, sem corte.
 - Teste corrigido para contar somente trilhas reais `>1px`. Nenhuma mudança no código de Home/financeiro; conferir novo gate final antes de proclamar sucesso.
+
+
+## 30/10/2026 | Home 06 | Evidência 17-01-12.mp4 e correção de largura efetiva
+- Vídeo de **17,203 segundos**, captura de navegador desktop 1920x1080, inspecionado quadro a quadro por amostragem (16 quadros). A imagem mostra a segunda faixa com `Benefícios` e `Ações rápidas` ocupando apenas parte estreita da coluna direita, deixando faixa vazia extensa, mesmo em viewport largo. No vídeo também é possível verificar que a navegação circular de cartões opera; isto NÃO prova aprovação visual.
+- Causa reproduzida por leitura do CSS do HEAD `c44cfd`: no breakpoint ≥1024px `.pano-mid{display:flex;flex-direction:column}` herda do estilo base `align-items:start`; filhos `.pano-benefits` e `.pano-actions` encolhem para largura intrínseca em lugar de preencher a coluna definida pelo grid exterior. Corretivo: `align-items:stretch` e `width:100%;align-self:stretch` na camada exclusivamente da Home.
+- A lista de cinco ações rápidas agora usa colunas automáticas com mínimo útil de `6.4rem`, em vez de cinco colunas forçadas dentro de 5/12 de largura em 1024px. Mantidos somente breakpoints 640/1024px e todos os botões/fluxos existentes.
+- Playwright verifica largura efetiva da coluna de Benefícios/Ações em relação às trilhas reais, além da largura de cada ação rápida (mínimo 88px) nos nove viewports. Finanças, Android, Shell, autenticação, DataGrid inalterados. Requer gate técnico e visual da PR #651 em Draft, sem merge nem homologação.
