@@ -1,0 +1,52 @@
+name: MEG Home 06 Panorama Clean Room
+on:
+  push:
+    branches:
+      - 'meg-web-evolution/06-home-reinicio-20261030'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci --audit=false
+      - name: Conferir build da Web e da API
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+        run: |
+          npm run db:generate
+          npm run build:api
+          npm run build:web
+      - name: Compilar prévia isolada
+        run: cd apps/web && npx vite build --config vite.home-06-panorama.config.ts
+      - name: Preparar teste de navegador
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Capturar e verificar 7 resoluções
+        shell: bash
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4173 --directory apps/web/dist-home-06-panorama >/tmp/meg-panorama-preview.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/home-06-panorama.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/home-06-panorama.html >/dev/null
+          node scripts/meg-home-06-panorama-viewport.mjs
+      - name: Publicar evidências da Home
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-panorama
+          path: artifacts/home-06-panorama
+          if-no-files-found: warn
