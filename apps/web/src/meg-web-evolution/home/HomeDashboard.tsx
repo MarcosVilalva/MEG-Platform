@@ -177,14 +177,12 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
     <div className="pano-balance-bottom"><span>{data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
    </div>
-   <span className="pano-hero-caption"><HomeGlyph name="sparkle" size={15}/> VISÃO FINANCEIRA · {period}</span>
   </section>
   <section className="pano-overview" aria-label="Indicadores financeiros">
    {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>s.kind==='income'?focusMovements('income'):s.kind==='expense'?focusMovements('expense'):s.kind==='pending'?focusPending():focusBenefit()} aria-label={s.label+': '+format(s.value,hidden)+'. Abrir detalhes'}>
     <span className="pano-stat-head">
      <span className="pano-stat-icon"><HomeGlyph name={s.icon} size={19}/></span>
      <span className="pano-stat-label">{s.label}</span>
-     <HomeGlyph name="arrow" size={15}/>
     </span>
     <strong>{format(s.value,hidden)}</strong>
     {s.note&&<small>{s.note}</small>}
@@ -192,7 +190,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   </section>
   <section className="pano-finance-block" aria-label="Leitura gerencial do mês">
    <section ref={flowSection} className="pano-panel pano-flow">
-    <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro" meta={period}/>
+    <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro"/>
      <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros">Ver relatórios <HomeGlyph name="arrow" size={16}/></button>
     </div>
     <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>

@@ -30,12 +30,15 @@ try{
    const hero=document.querySelector('.pano-hero');
    const charts=document.querySelectorAll('.pano-chart canvas').length;
    const panels=document.querySelectorAll('.pano-stat').length;
+   const flowHeader=document.querySelector('.pano-flow-head h2')?.getBoundingClientRect();
+   const flowButton=document.querySelector('.pano-flow-head .pano-flow-open')?.getBoundingClientRect();
+   const chartHeaderOverlap=Boolean(flowHeader&&flowButton&&flowHeader.top<flowButton.bottom&&flowButton.top<flowHeader.bottom&&flowHeader.right>flowButton.left+1);
    const datagridViewports=[...document.querySelectorAll('.pano-grid .meg-datagrid__viewport')].map(v=>({height:v.getBoundingClientRect().height,rows:v.querySelectorAll('tbody tr, .meg-datagrid-card-row').length}));
    const rootR=root?.getBoundingClientRect();
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
    return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
-    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,
+    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
@@ -46,7 +49,7 @@ try{
   if(width<=639 && (scroll.content<=scroll.client+120 || scroll.top<100))failed=true;
   await page.screenshot({path:join(dir,name+'-bottom.png')});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=0});
-  const safe=result.overflow<=1&&result.clip<=1&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
+  const safe=result.overflow<=1&&result.clip<=1&&!result.chartHeaderOverlap&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
   console.log(name,JSON.stringify({...result,errors,pass:safe}));
   if(!safe)failed=true;
   if(name==='desktop-1672'){

@@ -20,42 +20,36 @@
 .pano-panel-title h2 svg{color:#37f0d2}
 .pano-panel-title>span{font-size:.7rem;color:#a5cbd0;white-space:nowrap}
 /* Fotografia real em alta resolução. DOM preserva valores e ações. */
-.pano-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:1rem;min-width:0;overflow:hidden;min-height:10.8rem;padding:1.05rem clamp(1rem,2vw,2.1rem);border:1px solid #39cdb083;border-radius:.9rem;background:#052129}
+.pano-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:flex-start;min-width:0;overflow:hidden;min-height:9.8rem;padding:1rem clamp(1rem,2vw,2rem);border:1px solid rgba(54,197,174,.45);border-radius:.9rem;background:#06262b}
 .pano-hero::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,rgba(1,16,22,.96) 0%,rgba(1,20,28,.86) 35%,rgba(1,19,28,.34) 70%,rgba(1,20,26,.72)),url("https://images.unsplash.com/photo-1604240400568-c50e9a0f518f?auto=format&fit=crop&w=2560&q=88&fm=webp") center 52%/cover no-repeat;filter:saturate(1.05)}
 .pano-hero::after{content:"";z-index:-1;position:absolute;inset:0;background:linear-gradient(0deg,#001d2370,transparent 55%),radial-gradient(circle at 76% 17%,#00edc522,transparent 30%);pointer-events:none}
-.pano-hero-intro{flex:0 1 18rem;min-width:0;align-self:flex-end;text-align:right;text-shadow:0 3px 16px #00171d}
 .pano-eyebrow{display:inline-flex;align-items:center;gap:.42rem;color:#68f9db;font-size:.68rem;font-weight:840;letter-spacing:.1em}
-.pano-hero-intro h1{font-weight:840;font-size:clamp(1.35rem,2.05vw,2.05rem);line-height:1.1;letter-spacing:-.045em;margin:.45rem 0 .45rem}
-.pano-hero-intro h1 em{font-style:normal;color:#36efd7}
-.pano-hero-intro p{margin:0;color:#d6e9e8;font-size:clamp(.74rem,.9vw,.88rem);line-height:1.46;max-width:20rem}
-.pano-balance{flex:1 1 auto;min-width:0;max-width:43rem;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.48rem;text-shadow:0 3px 18px #00171b}
+.pano-balance{flex:1 1 auto;min-width:0;max-width:44rem;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.4rem;text-shadow:0 3px 14px #00171b}
 .pano-balance-top{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:.9rem;font-size:1rem;font-weight:750;color:#e6faf7}
 .pano-balance-top>span{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
 .pano-balance-top>span svg{color:#35f1ca}
 .pano-balance-top button{display:grid;place-items:center;width:2.6rem;height:2.6rem;flex-shrink:0;border:1px solid #66daca65;border-radius:50%;background:#022a3299;color:#e0fff8}
-.pano-balance>strong{font-size:clamp(2.55rem,3.7vw,3.75rem);line-height:1.05;letter-spacing:-.055em;font-weight:850;font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere;color:#fff}
+.pano-balance>strong{font-size:clamp(2.45rem,3.25vw,3.55rem);line-height:1.06;letter-spacing:-.043em;font-weight:840;font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere;color:#f4fffd}
 .pano-balance-bottom{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:.65rem 1.4rem}
 .pano-balance-bottom>span{font-size:.71rem;color:#cee5e3;line-height:1.4}
 .pano-balance-bottom button{display:inline-flex;align-items:center;gap:.38rem;border:0;border-bottom:1px solid #65e7cbab;border-radius:0;background:transparent;color:#8cf5de;padding:.35rem 0;min-height:2.4rem;font-size:.73rem;font-weight:780}
 .pano-balance-scope{font-size:.57rem;letter-spacing:.14em;font-weight:820;color:#8fe4d3;border-left:1px solid #7cc4b59c;padding-left:.7rem}
-.pano-hero-caption{align-self:flex-end;display:inline-flex;align-items:center;gap:.42rem;font-size:.65rem;font-weight:820;letter-spacing:.08em;color:#d0faf2;white-space:nowrap;text-shadow:0 2px 10px #00161f}
-.pano-hero-caption svg{color:#46efd0}
 /* Faixa de indicadores equilibrados, todos interativos. */
-.pano-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;min-width:0;margin-top:.58rem}
-.pano-stat{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.35rem;min-width:0;min-height:5.8rem;text-align:left;padding:.72rem .82rem;color:#f5fffd;background:linear-gradient(150deg,#04343a,#03252e);border:1px solid #249d9785;border-radius:.73rem;transition:background .15s,border-color .15s,transform .15s}
+.pano-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;min-width:0;margin-top:.6rem}
+.pano-stat{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.34rem;min-width:0;min-height:5.55rem;text-align:left;padding:.67rem .8rem;color:#f5fffd;background:linear-gradient(155deg,#062c34,#032129);border:1px solid rgba(41,158,151,.5);border-radius:.75rem;transition:background .15s,border-color .15s}
 .pano-stat:hover{background:#0a4348;border-color:#39efd2;transform:translateY(-1px)}
-.pano-stat-head{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:.54rem;min-height:1.85rem;color:#46e8cf}
+.pano-stat-head{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:.5rem;min-height:1.75rem;color:#46e8cf}
 .pano-stat-head>svg{margin-left:auto;opacity:.55;transform:rotate(-42deg)}
 .pano-stat-icon{display:grid;place-items:center;width:1.85rem;height:1.85rem;flex:0 0 1.85rem;border-radius:.45rem;color:#3ff4d0;background:#07554f}
 .pano-stat.is-expense .pano-stat-icon{background:#502332;color:#ff839a}
 .pano-stat.is-pending .pano-stat-icon{background:#584223;color:#ffd68f}
 .pano-stat.is-benefit .pano-stat-icon{background:#0c685c;color:#9dffe4}
-.pano-stat-label{min-width:0;flex:1;font-size:.77rem;color:#d1ece7;font-weight:740;line-height:1.25;overflow-wrap:anywhere}
-.pano-stat strong{width:100%;font-size:clamp(1.1rem,1.55vw,1.55rem);line-height:1.15;letter-spacing:-.032em;font-weight:860;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.pano-stat-label{min-width:0;flex:1;font-size:.81rem;color:#d4ebe7;font-weight:770;line-height:1.22;overflow-wrap:anywhere}
+.pano-stat strong{width:100%;font-size:clamp(1.15rem,1.56vw,1.55rem);line-height:1.18;letter-spacing:-.029em;font-weight:830;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .pano-stat small{font-size:.64rem;color:#97bfb8;line-height:1.2;margin-top:-.1rem}
 /* Centro de leitura: gráfico como protagonista + cartões físicos. */
-.pano-finance-block{min-width:0;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:.75rem;align-items:stretch;margin-top:.72rem}
-.pano-flow{display:flex;flex-direction:column;min-height:25rem}
+.pano-finance-block{min-width:0;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:.7rem;align-items:stretch;margin-top:.67rem}
+.pano-flow{display:flex;flex-direction:column;min-height:21.5rem}
 .pano-flow-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
 .pano-flow-head>.pano-panel-title{flex:1;min-width:0}
 .pano-flow-open,.pano-view-all{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;min-height:2.5rem;border:1px solid #22998e80;border-radius:.52rem;color:#9effe4;background:#09515980;padding:.35rem .58rem;font-size:.7rem;font-weight:700;white-space:nowrap}
@@ -67,34 +61,34 @@
 .pano-flow-footnote{font-size:.67rem;color:#83afae;margin:.25rem 0 0;line-height:1.4}
 .pano-chart-key{display:inline-block;width:.35rem;height:.35rem;vertical-align:middle;border-radius:50%;background:#4fe9c4}
 .pano-chart-key.is-expense{background:#ff889c}
-.pano-cards{position:relative;isolation:isolate;min-height:25rem;display:flex;flex-direction:column;overflow:hidden;border-color:#2fcbaf7a;background:linear-gradient(145deg,#092d33,#031b25)}
+.pano-cards{position:relative;isolation:isolate;min-height:21.5rem;display:flex;flex-direction:column;overflow:hidden;border-color:rgba(47,203,175,.38);background:linear-gradient(145deg,#092d33,#031b25)}
 .pano-carousel-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
-.pano-card-stage{position:relative;display:flex;align-items:center;justify-content:center;flex:1;min-width:0;min-height:16.5rem;margin:.5rem 0 .4rem;isolation:isolate;overflow:hidden;border-radius:.65rem;background:#061e25;touch-action:pan-y;outline-offset:2px}
-.pano-credit-card{position:relative;isolation:isolate;z-index:2;display:flex;flex-direction:column;justify-content:space-between;gap:.4rem;width:min(75%,27.5rem);min-height:13.2rem;aspect-ratio:1.72/1;padding:1.15rem 1.3rem;border:1px solid #c3ffff7d;border-radius:1.05rem;color:#fff;text-align:left;overflow:hidden;box-shadow:0 26px 37px #001016d9,0 7px 12px #000e13aa,inset 0 1px 1px #d6fff071;background:#062d3d;transform:perspective(1100px) rotateY(-5deg) rotateX(3deg);transition:transform .2s ease,box-shadow .2s ease;will-change:transform}
+.pano-card-stage{position:relative;display:flex;align-items:center;justify-content:center;flex:1;min-width:0;min-height:13rem;margin:.4rem 0 .25rem;isolation:isolate;overflow:hidden;border-radius:.62rem;background:#061e25;touch-action:pan-y;outline-offset:2px}
+.pano-credit-card{position:relative;isolation:isolate;z-index:2;display:flex;flex-direction:column;justify-content:space-between;gap:.25rem;width:min(73%,21rem);min-height:10rem;aspect-ratio:1.72/1;padding:.79rem .98rem;border:1px solid #c3ffff85;border-radius:.82rem;color:#fff;text-align:left;overflow:hidden;box-shadow:0 16px 24px #001016c9,0 4px 8px #000e1399,inset 0 1px 1px #d6fff071;background:#062d3d;transform:perspective(1100px) rotateY(-3deg) rotateX(1.4deg);transition:transform .2s ease,box-shadow .2s ease;will-change:transform}
 .pano-credit-card::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(117deg,#05232ed8 0%,#09303ea8 56%,#0d738260),url("https://images.unsplash.com/photo-1591963372472-1fdb7539a42e?auto=format&fit=crop&w=1400&q=91&fm=webp") center 51%/cover no-repeat}
 .pano-credit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(125deg,#b9fff415,transparent 40%,#05384b25 54%,#e7fff414 68%,transparent 79%),linear-gradient(0deg,#00192cc9,transparent 55%);pointer-events:none}
 .pano-credit-card.pano-plastic-tone-1::before{filter:hue-rotate(35deg) saturate(1.25)}
 .pano-credit-card.pano-plastic-tone-2::before{filter:hue-rotate(-38deg) saturate(.7)}
 .pano-credit-card:hover{border-color:#bcffef}
 .pano-credit-card-top,.pano-credit-card-bottom{display:flex;justify-content:space-between;align-items:center;gap:.3rem}
-.pano-credit-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;color:#dcfff8;min-height:3.25rem}
+.pano-credit-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;color:#dcfff8;min-height:2.45rem}
 .pano-scheme{flex-shrink:0;max-width:70px}
 .pano-scheme-elo{color:#fff;font-size:1.6rem;letter-spacing:-.07em;font-weight:900}
 .pano-scheme-amex{background:#246db2;padding:.22rem;font-weight:900;font-size:.72rem;border-radius:.25rem;color:#fff}
 .pano-scheme-unavailable{font-size:.8rem;font-weight:900;letter-spacing:.15em;color:#d4fffa}
-.pano-credit-card-name{font-size:clamp(1.08rem,1.4vw,1.38rem);font-weight:850;max-width:100%;overflow-wrap:anywhere;letter-spacing:-.025em;text-shadow:0 2px 8px #001b25}
+.pano-credit-card-name{font-size:clamp(.98rem,1.12vw,1.2rem);font-weight:840;max-width:100%;overflow-wrap:anywhere;letter-spacing:-.023em;text-shadow:0 2px 8px #001b25}
 .pano-credit-card-meta{font-size:.68rem;color:#d0e8e9;letter-spacing:.075em;text-transform:uppercase}
 .pano-credit-card-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:.65rem;margin-top:auto}
 .pano-credit-card-bottom>span{font-size:.84rem;color:#e4f8fa;max-width:100%;line-height:1.25;letter-spacing:.13em}
 .pano-credit-card-bottom strong{font-size:1.05rem;font-weight:870;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pano-card-peek{position:absolute;isolation:isolate;z-index:1;top:50%;transform:translateY(-50%) scale(.92);width:31%;height:70%;min-width:3rem;overflow:hidden;padding:.85rem .5rem;border:1px solid #64b8c09c;border-radius:.9rem;background:#0b4250;color:#e7fbff;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:.3rem;box-shadow:0 18px 24px #001016ba;filter:brightness(.78)}
+.pano-card-peek{position:absolute;isolation:isolate;z-index:1;top:50%;transform:translateY(-50%) scale(.9);width:29%;height:72%;min-width:3rem;overflow:hidden;padding:.57rem .4rem;border:1px solid #64b8c08c;border-radius:.74rem;background:#0b4250;color:#e7fbff;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:.3rem;box-shadow:0 14px 22px #001016b0;filter:brightness(.75)}
 .pano-card-peek::before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(110deg,#042b419c,#0d4c5790),url("https://images.unsplash.com/photo-1591963372472-1fdb7539a42e?auto=format&fit=crop&w=640&q=82&fm=webp") center/cover no-repeat}
 .pano-card-peek.pano-peek-tone-1::before{filter:hue-rotate(35deg) saturate(1.2)}
 .pano-card-peek.pano-peek-tone-2::before{filter:hue-rotate(-38deg) saturate(.8)}
 .pano-card-peek-brand{display:flex;align-items:center;justify-content:center;min-height:2.2rem;max-width:100%;transform:scale(.8);transform-origin:center}
 .pano-card-peek-name{font-size:.66rem;line-height:1.2;font-weight:800;text-align:center;max-width:100%;word-break:break-word;text-shadow:0 1px 4px #001921}
-.pano-card-peek.is-prev{left:-9%}
-.pano-card-peek.is-next{right:-9%}
+.pano-card-peek.is-prev{left:-12%}
+.pano-card-peek.is-next{right:-12%}
 .pano-card-peek:hover{border-color:#a8ffef;filter:brightness(1.17)}
 .pano-card-nav{display:flex;align-items:center;justify-content:space-between;gap:.4rem;min-width:0;margin-top:.25rem}
 .pano-card-nav>button{display:grid;place-items:center;width:2.45rem;height:2.45rem;flex:0 0 2.45rem;border:1px solid #429d9b74;border-radius:50%;background:#063f48;color:#cafff5}
@@ -115,8 +109,8 @@
 .pano-card-chip{width:3.05rem;height:2.35rem;filter:drop-shadow(0 1px 2px #001820)}
 .pano-card-contactless{width:1.35rem;height:1.4rem;opacity:.87}
 .pano-card-kind{font-size:.6rem!important;letter-spacing:.17em!important;color:#b7eae7!important;font-weight:800}
-.pano-card-amount{display:flex;align-items:baseline;justify-content:space-between;gap:.65rem;padding:.45rem .18rem .52rem;border-bottom:1px solid #63b9b24b;color:#aecfcd;font-size:.73rem}
-.pano-card-amount strong{color:#fff;font-size:clamp(1.1rem,1.65vw,1.5rem);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pano-card-amount{display:flex;align-items:baseline;justify-content:space-between;gap:.4rem;padding:.33rem .18rem .43rem;border-bottom:1px solid #63b9b24b;color:#aecfcd;font-size:.7rem}
+.pano-card-amount strong{color:#fff;font-size:clamp(1.05rem,1.42vw,1.36rem);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .pano-credit-card:hover{transform:perspective(1100px) rotateY(-2deg) rotateX(1deg);box-shadow:0 28px 45px #001016ed,0 3px 21px #0fcbb728}
 @media(prefers-reduced-motion:reduce){.pano-credit-card,.pano-credit-card:hover{transform:none}}
 /* A animação ocorre sobre o cartão ativo, sem clonar lançamentos, valores ou cartões. */
@@ -125,8 +119,8 @@
 .pano-credit-card.is-arriving-next{animation:pano-card-enter-next .32s cubic-bezier(.2,.7,.2,1) both}
 .pano-credit-card.is-arriving-prev{animation:pano-card-enter-prev .32s cubic-bezier(.2,.7,.2,1) both}
 /* Benefício usa imagem real de mercado e nome genérico de domínio. */
-.pano-mid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:.65rem;margin-top:.67rem}
-.pano-benefits,.pano-actions{min-width:0;min-height:12.5rem}
+.pano-mid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.68rem;margin-top:.7rem}
+.pano-benefits,.pano-actions{min-width:0;min-height:11rem}
 .pano-benefits>.pano-panel-title>span{font-size:.66rem;white-space:normal;text-align:right;line-height:1.32;max-width:12rem}
 .pano-benefit-card{position:relative;isolation:isolate;display:flex;align-items:stretch;width:100%;min-height:8rem;overflow:hidden;margin-top:.52rem;padding:0;border:1px solid #55d6b488;border-radius:.71rem;color:#fff;text-align:left;background:#074e46}
 .pano-benefit-card::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#032e34ef 0%,#04433bd3 38%,#003b3580 60%,#03453b09 100%),url("https://images.unsplash.com/photo-1705140643816-2bb76d7ddeb1?auto=format&fit=crop&w=1400&q=88&fm=webp") right 43%/cover no-repeat}
@@ -141,10 +135,10 @@
 .pano-benefit-details{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;margin-top:.5rem}
 .pano-benefit-details>span{display:flex;align-items:baseline;gap:.35rem;color:#a6ccc6;font-size:.67rem}
 .pano-benefit-details strong{font-weight:820;font-size:.84rem;color:#effffb}
-.pano-action-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.49rem;margin-top:.58rem}
-.pano-action{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.6rem;min-width:0;min-height:9.25rem;padding:.7rem .35rem;border:1px solid #269a9780;border-radius:.65rem;text-align:center;background:linear-gradient(146deg,#064048,#04252e);color:#f2fcf8}
+.pano-action-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.48rem;margin-top:.52rem}
+.pano-action{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.4rem;min-width:0;min-height:7.2rem;padding:.55rem .3rem;border:1px solid #269a9780;border-radius:.65rem;text-align:center;background:linear-gradient(146deg,#064048,#04252e);color:#f2fcf8}
 .pano-action:hover{background:#08505a;border-color:#48eed0}
-.pano-action-icon{display:grid;place-items:center;width:2.65rem;height:2.65rem;flex:0 0 2.65rem;border-radius:.64rem;background:#2de5c4;color:#003b37}
+.pano-action-icon{display:grid;place-items:center;width:2.3rem;height:2.3rem;flex:0 0 2.3rem;border-radius:.6rem;background:#2de5c4;color:#003b37}
 .pano-action.is-blue .pano-action-icon{background:#246dc9;color:#fff}
 .pano-action.is-violet .pano-action-icon{background:#734fbd;color:#fff}
 .pano-action.is-amber .pano-action-icon{background:#a57e2f;color:#fff}
@@ -169,12 +163,11 @@
 .pano-negative{color:#ff8897}
 @media(max-width:1023px){
  .pano-root{padding:.6rem}
- .pano-hero{min-height:10rem}
- .pano-hero-intro h1{font-size:clamp(1.25rem,2.7vw,2rem)}
+ .pano-hero{min-height:9.8rem}
  .pano-finance-block{grid-template-columns:minmax(0,1fr)}
  .pano-flow{min-height:18.5rem}
- .pano-cards{min-height:22rem}
- .pano-card-stage{min-height:15rem}
+ .pano-cards{min-height:21rem}
+ .pano-card-stage{min-height:13.2rem}
  .pano-mid{grid-template-columns:repeat(2,minmax(0,1fr))}
  .pano-tables{grid-template-columns:minmax(0,1fr)}
  .pano-action-list{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -185,15 +178,11 @@
  .meg-shell:has(.pano-root) .meg-main{min-height:0;overflow-y:auto;overscroll-behavior:contain}
  .pano-root{padding:.45rem .42rem 1rem}
  .pano-hero{display:flex;flex-direction:column;align-items:stretch;min-height:0;padding:.85rem 1rem;border-radius:.74rem;gap:.5rem}
- .pano-hero-caption{align-self:flex-start;font-size:.58rem;white-space:normal}
  .pano-hero::before{background-position:center,65% 50%}
- .pano-hero-intro{align-self:flex-start;text-align:left;flex:0 1 auto}
- .pano-hero-intro h1{font-size:clamp(1.3rem,6vw,1.8rem)}
- .pano-hero-intro p{font-size:.72rem}
  .pano-balance{flex:0 0 auto;min-width:0;width:100%;padding:.15rem 0}
  .pano-balance>strong{font-size:clamp(2.15rem,9vw,3.05rem)}
  .pano-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:.43rem;margin-top:.5rem}
- .pano-stat{min-height:6.2rem;padding:.58rem .65rem;gap:.3rem}
+ .pano-stat{min-height:5.7rem;padding:.58rem .65rem;gap:.27rem}
  .pano-stat-icon{width:1.6rem;height:1.6rem;flex-basis:1.6rem}
  .pano-stat-label{font-size:.68rem}
  .pano-stat-head{gap:.38rem}
@@ -202,18 +191,22 @@
  .pano-panel{padding:.7rem}
  .pano-panel-title h2{font-size:.86rem}
  .pano-panel-title>span{font-size:.65rem}
- .pano-flow{min-height:17rem}
+ .pano-flow{min-height:17.5rem}
+ .pano-flow-head{flex-wrap:wrap;row-gap:.35rem}
+ .pano-flow-head>.pano-panel-title{flex:1 1 10rem}
+ .pano-flow-open{min-height:2.3rem;font-size:.66rem}
+ .pano-flow-balance{flex-wrap:wrap}
  .pano-flow-open{font-size:.64rem}
  .pano-chart{min-height:11.5rem}
  .pano-mid{grid-template-columns:minmax(0,1fr)}
- .pano-cards{min-height:20.5rem}
- .pano-credit-card{width:min(76%,21rem);max-width:21rem;min-height:10.5rem;padding:.8rem .9rem;border-radius:.8rem}
- .pano-card-stage{min-height:13rem}
+ .pano-cards{min-height:19.75rem}
+ .pano-credit-card{width:min(74%,20rem);max-width:20rem;min-height:9.75rem;padding:.8rem .9rem;border-radius:.8rem}
+ .pano-card-stage{min-height:12.25rem}
  .pano-card-chip{width:2.25rem;height:1.75rem}
  .pano-card-contactless{width:1rem;height:1.1rem}
  .pano-benefit-card{min-height:8.6rem}
  .pano-action-list{grid-template-columns:repeat(2,minmax(0,1fr))}
- .pano-action{min-height:6.9rem}
+ .pano-action{min-height:6.45rem}
  .pano-grid-heading{flex-wrap:wrap}
  .pano-grid-actions{margin-left:auto}
  .pano-grid .meg-datagrid-cards{min-width:0}

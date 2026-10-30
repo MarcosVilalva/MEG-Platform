@@ -1344,3 +1344,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Carrossel: índice módulo N; anterior do primeiro é o último, próximo do último é o primeiro; navegação circular por botões, cartões laterais e indicadores; setas só desabilitam para 0/1 cartão; para 2 cartões evita mostrar duas prévias do mesmo registro; teclado setas esquerda/direita e swipe horizontal em touchscreen; animação lateral com `prefers-reduced-motion` respeitado. Nenhuma clonagem de registros financeiros.
 - Teste Playwright reforçado para detectar travamento de ponta, validação de identidade dos peeks e alinhamento vertical título/ícone dos indicadores.
 - Proteções: PR #651 Draft, sem merge; não modificar Android, finanças centrais, API, Shell, autenticação e DataGrid central. Gates, screenshots reais e Render SHA-live precisam ser conferidos e validação visual explícita continua pendente.
+
+
+## 30/10/2026 | Home 06 | Revisão de proporções após reprovação visual
+- Usuário reprovou novamente o preview da Home, apesar de correção técnica do carrossel. **Não homologar.**
+- Diagnóstico pela captura real Playwright do SHA `ffd6299d`: hero com grande área fotográfica sem conteúdo; gráfico relegado a 5/12 e carrossel a 7/12; cartão central superdimensionado; no mobile o título e a área do período da visualização sobrepostos. A aparência foi considerada insatisfatória, ainda que Home Panorama tenha passado.
+- Correção estrutural apenas no CSS isolado da Home: relação visual do gráfico/carrossel invertida para 7/5, cartão principal em escala menor com peeks adjacentes, altura do hero reduzida, KPIs limpos, atalhos menos altos e seções Benefícios/Ações em 6/6. Removidos estilos de elementos não usados. Retirada a legenda supérflua do hero e o período duplicado do título do gráfico.
+- Teste de viewport passou a medir eventual sobreposição real entre título e ação do gráfico. Carrossel cíclico da rodada anterior preservado.
+- Gates devem ser verificados no HEAD da revisão e as capturas devem ser examinadas antes de apresentar prévia para avaliação. PR #651 continua Draft, sem merge.
+- No HEAD anterior `ffd6299d`, a suíte Home Panorama passou, mas a Foundation geral falhou em regressões/baselines visuais do DataGrid e testes da toolbar. Essa falha não autoriza mexer no DataGrid desta etapa.

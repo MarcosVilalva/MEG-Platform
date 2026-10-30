@@ -90,3 +90,7 @@ A Home deve permitir reconhecer situação financeira e próximo passo em poucos
 
 ## Refinamento dos cartões e do looping (30/10/2026)
 Vídeo `14-48-11.mp4` e pesquisa de decisões históricas reforçam uso obrigatório de carrossel circular real: card central, anterior/seguinte, wrap em ambas as extremidades, sem cópia de entidades financeiras. Navegação de teclado e gesto horizontal complementam botões; uma única entrada não cria peeks falsos. Indicadores compactos passam a reunir ícone e rótulo na mesma linha; hero sem headline redundante libera altura para o conteúdo de decisão. Esta revisão é candidata não homologada.
+
+
+## Home 06, revisão de densidade visual após rejeição (30/10/2026)
+A captura Playwright da versão `ffd6299d` demonstrou desproporção do carrossel (7/12), compressão do gráfico (5/12) e hero com informação insuficiente em área muito grande. Nesta candidata isolada a relação passa para gráfico 7/12 e cartões 5/12, com cartão central dimensionado, laterais cíclicos preservados, hero sem legenda decorativa e leitura numérica compacta. Benefícios/Ações passam a ter paridade 6/6. Teste visual de cabeçalho do gráfico inclui medição contra sobreposição em mobile. Sem aprovação visual.
