@@ -1527,3 +1527,12 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - Validação: `MEG Web Evolution Home 06 - Visual and Build` workflow **40982543990**, SHA `a169ecf43c3c01e7c90d51ca3adf998e8932cd32`, **success**, com capturas reais nos oito viewports (artefato **12945861504**). Auditoria de assets **40982513220** sobre o mesmo conjunto visual antes da última modificação apenas nos testes, **success**.
 - Preservados: fonte financeira API, eventos, conta/benefício Verocard, 4 KPIs funcionais, 5 atalhos, DataGrid compartilhado, auth, Shell/sidebar global, todas demais telas e Android.
 - **Gate:** Home NÃO HOMOLOGADA. PR #650 permanece Draft, sem merge. Foundation e Preflight do SHA testado ainda em andamento na última consulta. Render do SHA exato não foi comprovado implantado; parâmetro `?v=` é apenas cache-buster. A aprovação visual do usuário é obrigatória.
+
+
+## Home 06 | Referência visual aprovada em 29/10/2026
+
+- **Aprovação explícita do usuário:** após apresentar a proposta dark teal de dashboard com fotografia panorâmica de montanhas e lago, card de saldo translúcido, quatro indicadores, gráfico moderno de fluxo, área de benefícios, ações rápidas e dois DataGrids, o usuário declarou "essa e boa", perguntou sobre a implementação e confirmou **"homologado"**.
+- **Escopo da homologação:** somente a **imagem/conceito visual escolhido** para orientar a próxima implementação da Home 06. **Não é homologação da Home React atualmente publicada**, nem validação funcional, financeira, responsiva ou autorização de merge.
+- **Diretriz vigente:** manter paleta MEG dark teal/turquesa; reconstruir a apresentação isoladamente e comparar com a imagem aprovada, preservando Shell/sidebar, autenticação, DataGrid, APIs, autoridades financeiras e Android. Gráfico interativo pode consumir ECharts com séries reais de `/finance/cashflow`, sem inventar rentabilidade ou totais.
+- **Atenções de negócio:** saldo monetário não inclui saldo Verocard; percentuais comparativos, saldos de contas, descontos promocionais e números da arte são ilustrativos, e só aparecem em produção se disponibilizados pelas autoridades canônicas.
+- **Gates:** PR #650 permanece Draft, sem merge. Última inspeção antes deste registro apontou `MEG Web Evolution Foundation` com falha em `Validate Web Evolution viewport contracts`; corrigir e revalidar. Ainda é necessária a aprovação explícita da implementação real em desktop e mobile, com preview publicado no SHA exato e link sem cache.
