@@ -33,12 +33,6 @@ try{
     const s=getComputedStyle(el),line=parseFloat(s.lineHeight),rect=el.getBoundingClientRect();
     return Number.isFinite(line)&&rect.height>line*1.45;
    }).map(el=>el.textContent?.trim());
-   const responsiveSpotlight=document.querySelector('.pano-spotlight');
-   const financialColumn=document.querySelector('.pano-financial-column');
-   const financialGeometry=financialColumn?.getBoundingClientRect(),cardArea=document.querySelector('.pano-cards')?.getBoundingClientRect();
-   const shouldStack=Boolean(responsiveSpotlight&&financialGeometry&&cardArea&&financialGeometry.right>cardArea.left+8);
-   const expectedStack=innerWidth<1024||(financialGeometry?.width??0)<460;
-
    const shellMain=document.querySelector('.meg-main');
    const mainOverflow=Boolean(shellMain&&shellMain.scrollWidth>shellMain.clientWidth+1);
    const mainCanScroll=Boolean(shellMain&&shellMain.scrollHeight>shellMain.clientHeight+30);
@@ -57,7 +51,7 @@ try{
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
    return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
-    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,shouldStack,expectedStack,
+    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,tracks,isStacked,
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   const layout=await page.evaluate(()=>{
@@ -69,7 +63,13 @@ try{
     const amount=el.querySelector('strong')?.getBoundingClientRect();
     return Boolean(icon&&amount&&amount.left>=icon.right-1);
    });
-   const tightCards=Boolean(cards&&hero&&(innerWidth<1024||Math.abs(cards.top-hero.top)<=2));
+   const financialColumn=document.querySelector('.pano-financial-column')?.getBoundingClientRect();
+   const spotlight=document.querySelector('.pano-spotlight');
+   const tracks=spotlight?getComputedStyle(spotlight).gridTemplateColumns.trim().split(/\s+/).length:0;
+   const isStacked=tracks===1;
+   const tightCards=Boolean(cards&&hero&&financialColumn&&(isStacked
+    ? cards.top>=financialColumn.bottom-2&&cards.top-financialColumn.bottom<=32&&Math.abs(cards.left-financialColumn.left)<=3
+    : tracks===2&&Math.abs(cards.top-financialColumn.top)<=3&&cards.left>=financialColumn.right-2));
    const center=rect('.pano-credit-card'),stage=rect('.pano-card-stage');
    const centered=Boolean(center&&stage&&Math.abs((center.left+center.width/2)-(stage.left+stage.width/2))<=3);
    const peeks=[...document.querySelectorAll('.pano-card-peek')].map(x=>x.getBoundingClientRect());

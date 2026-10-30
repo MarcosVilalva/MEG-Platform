@@ -1384,3 +1384,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Após revisão efetiva das capturas no commit `eed6285`: em 320px, indicadores quebravam último dígito de valores monetários; em 1024px a coluna de 4/6 com sidebar expandida espremia saldo e KPIs, quebrando seus valores. **Testes gerais tinham passado, mas a regressão visual era real.**
 - Fix sem terceiro breakpoint: grid de KPIs usa `repeat(auto-fit,minmax(min(100%,10.5rem),1fr))` no mobile; em 320px um card por linha, em 390px dois. Para desktop ≥1024, área superior usa `auto-fit` com trilhas mínimas de 31,5rem, de modo que a sidebar existente determine quantas colunas cabem sem quebra. Valores monetários ganham `white-space:nowrap` com tamanhos tipográficos compatíveis.
 - Teste Playwright passa a falhar quando `strong` de moeda ocupa duas linhas. Autonomia financeira e UX não alteradas; continua pendente captura visual de novo HEAD, CI/Render e validação expressa.
+
+
+### 30/10/2026 | Gate após correção 47acfa: falso negativo de geometria, sem nova regra
+- Capturas finais do SHA `47acfa825a44e23b47a9b6d70d6604fd5bde827e` foram efetivamente revisadas: em 320px os números de KPI não quebram; em 1024px o saldo/KPIs empilham sobre o carrossel sem cortes ou overflow. Outros 7 viewports passaram métricas e interações.
+- Workflow Home Panorama saiu como failure **por assert antigo `tightCards` em 1024px**, que exigia mesma linha entre saldo e cartão sempre que `innerWidth>=1024`, mesmo quando CSS `auto-fit` detecta largura insuficiente da área do Shell. Não era falha funcional observada da Home, mas falso negativo no teste.
+- Corrigido teste para consultar as colunas reais computadas do grid: em uma coluna exige empilhamento com gap <=32px, em duas exige alinhamento no topo e ausência de sobreposição. Sem alteração visual, API, Android, Shell ou DataGrid neste commit. Novo gate precisa passar antes de liberar link de validação do SHA final.
