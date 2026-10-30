@@ -20,23 +20,24 @@
 .pano-panel-title h2 svg{color:#37f0d2}
 .pano-panel-title>span{font-size:.7rem;color:#a5cbd0;white-space:nowrap}
 /* Fotografia real em alta resolução. DOM preserva valores e ações. */
-.pano-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:1rem;min-width:0;overflow:hidden;min-height:11.9rem;padding:1.08rem 1.2rem;border:1px solid #2fd9c189;border-radius:.91rem;background:#04252c}
-.pano-hero::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,rgba(1,15,22,.96) 0%,rgba(1,23,30,.8) 34%,rgba(1,24,33,.18) 73%,rgba(1,21,28,.20)),url("https://images.unsplash.com/photo-1604240400568-c50e9a0f518f?auto=format&fit=crop&w=2560&q=88&fm=webp") center 48%/cover no-repeat;filter:saturate(1.16)}
-.pano-hero::after{content:"";z-index:-1;position:absolute;inset:0;background:linear-gradient(0deg,#001d2366,transparent 70%),radial-gradient(circle at 76% 20%,#00f6c324,transparent 28%);pointer-events:none}
-.pano-hero-intro{flex:1 1 auto;min-width:0;align-self:center;text-shadow:0 2px 12px #00171d}
+.pano-hero{position:relative;isolation:isolate;display:flex;align-items:stretch;justify-content:space-between;gap:clamp(1rem,3vw,3.5rem);min-width:0;overflow:hidden;min-height:15.2rem;padding:1.5rem clamp(1.1rem,2.4vw,2.6rem);border:1px solid #39cdb083;border-radius:1rem;background:#052129}
+.pano-hero::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,rgba(1,16,22,.96) 0%,rgba(1,20,28,.86) 35%,rgba(1,19,28,.34) 70%,rgba(1,20,26,.72)),url("https://images.unsplash.com/photo-1604240400568-c50e9a0f518f?auto=format&fit=crop&w=2560&q=88&fm=webp") center 52%/cover no-repeat;filter:saturate(1.05)}
+.pano-hero::after{content:"";z-index:-1;position:absolute;inset:0;background:linear-gradient(0deg,#001d2370,transparent 55%),radial-gradient(circle at 76% 17%,#00edc522,transparent 30%);pointer-events:none}
+.pano-hero-intro{flex:0 1 18rem;min-width:0;align-self:flex-end;text-align:right;text-shadow:0 3px 16px #00171d}
 .pano-eyebrow{display:inline-flex;align-items:center;gap:.42rem;color:#68f9db;font-size:.68rem;font-weight:840;letter-spacing:.1em}
-.pano-hero-intro h1{font-weight:850;font-size:clamp(1.8rem,3.2vw,3.15rem);line-height:1.03;letter-spacing:-.05em;margin:.45rem 0 .4rem}
+.pano-hero-intro h1{font-weight:840;font-size:clamp(1.35rem,2.05vw,2.05rem);line-height:1.1;letter-spacing:-.045em;margin:.45rem 0 .45rem}
 .pano-hero-intro h1 em{font-style:normal;color:#36efd7}
-.pano-hero-intro p{margin:0;color:#d6e9e8;font-size:clamp(.76rem,1.1vw,.99rem);line-height:1.38;max-width:38rem}
-.pano-balance{flex:0 1 22rem;min-width:14.7rem;padding:.83rem .95rem;border-radius:.8rem;border:1px solid #5decd579;background:#012932c9;backdrop-filter:blur(15px);box-shadow:0 13px 35px #00161ebb;display:flex;flex-direction:column;gap:.42rem}
-.pano-balance-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:.85rem;font-weight:770}
-.pano-balance-top>span{display:flex;align-items:center;gap:.44rem}
+.pano-hero-intro p{margin:0;color:#d6e9e8;font-size:clamp(.74rem,.9vw,.88rem);line-height:1.46;max-width:20rem}
+.pano-balance{flex:1 1 auto;min-width:0;max-width:43rem;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.8rem;text-shadow:0 3px 18px #00171b}
+.pano-balance-top{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:.9rem;font-size:1rem;font-weight:750;color:#e6faf7}
+.pano-balance-top>span{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
 .pano-balance-top>span svg{color:#35f1ca}
-.pano-balance-top button{display:grid;place-items:center;width:2.6rem;height:2.6rem;flex-shrink:0;border:1px solid #4ac1ba72;border-radius:.54rem;background:#053c44;color:#d5fff7}
-.pano-balance>strong{font-size:clamp(1.55rem,2.6vw,2.45rem);line-height:1.1;letter-spacing:-.043em;font-weight:870;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pano-balance-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.36rem}
-.pano-balance-bottom>span{font-size:.66rem;color:#bbd4d3;line-height:1.4}
-.pano-balance-bottom button{display:inline-flex;align-items:center;gap:.3rem;border:0;border-radius:.45rem;background:#0a686b9e;color:#78f6e2;padding:.38rem .55rem;min-height:2.4rem;font-size:.68rem;font-weight:750}
+.pano-balance-top button{display:grid;place-items:center;width:2.6rem;height:2.6rem;flex-shrink:0;border:1px solid #66daca65;border-radius:50%;background:#022a3299;color:#e0fff8}
+.pano-balance>strong{font-size:clamp(2.75rem,4.55vw,4.8rem);line-height:1;letter-spacing:-.065em;font-weight:860;font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere;color:#fff}
+.pano-balance-bottom{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:.65rem 1.4rem}
+.pano-balance-bottom>span{font-size:.71rem;color:#cee5e3;line-height:1.4}
+.pano-balance-bottom button{display:inline-flex;align-items:center;gap:.38rem;border:0;border-bottom:1px solid #65e7cbab;border-radius:0;background:transparent;color:#8cf5de;padding:.35rem 0;min-height:2.4rem;font-size:.73rem;font-weight:780}
+.pano-balance-scope{font-size:.57rem;letter-spacing:.14em;font-weight:820;color:#8fe4d3;border-left:1px solid #7cc4b59c;padding-left:.7rem}
 /* Faixa de indicadores equilibrados, todos interativos. */
 .pano-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;min-width:0;margin-top:.67rem}
 .pano-stat{display:flex;flex-direction:column;align-items:flex-start;gap:.26rem;min-width:0;min-height:8.15rem;text-align:left;padding:.68rem .82rem;color:#f5fffd;background:linear-gradient(150deg,#04343a,#03252e);border:1px solid #249d9785;border-radius:.73rem;transition:background .15s,border-color .15s,transform .15s}
@@ -51,8 +52,8 @@
 .pano-stat strong{width:100%;font-size:clamp(1.08rem,1.67vw,1.55rem);line-height:1.13;letter-spacing:-.038em;font-weight:860;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .pano-stat small{font-size:.65rem;color:#91b9b5;line-height:1.3}
 /* Centro de leitura: gráfico como protagonista + cartões físicos. */
-.pano-finance-block{min-width:0;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:.65rem;align-items:stretch;margin-top:.67rem}
-.pano-flow{display:flex;flex-direction:column;min-height:20rem}
+.pano-finance-block{min-width:0;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:.75rem;align-items:stretch;margin-top:.72rem}
+.pano-flow{display:flex;flex-direction:column;min-height:25rem}
 .pano-flow-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
 .pano-flow-head>.pano-panel-title{flex:1;min-width:0}
 .pano-flow-open,.pano-view-all{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;min-height:2.5rem;border:1px solid #22998e80;border-radius:.52rem;color:#9effe4;background:#09515980;padding:.35rem .58rem;font-size:.7rem;font-weight:700;white-space:nowrap}
@@ -64,36 +65,36 @@
 .pano-flow-footnote{font-size:.67rem;color:#83afae;margin:.25rem 0 0;line-height:1.4}
 .pano-chart-key{display:inline-block;width:.35rem;height:.35rem;vertical-align:middle;border-radius:50%;background:#4fe9c4}
 .pano-chart-key.is-expense{background:#ff889c}
-.pano-cards{min-height:20rem;display:flex;flex-direction:column}
+.pano-cards{position:relative;isolation:isolate;min-height:25rem;display:flex;flex-direction:column;overflow:hidden;border-color:#2fcbaf7a;background:linear-gradient(145deg,#092d33,#031b25)}
 .pano-carousel-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
-.pano-card-stage{position:relative;display:flex;align-items:center;justify-content:center;flex:1;min-width:0;min-height:12rem;margin:.35rem .1rem 0;isolation:isolate}
-.pano-credit-card{position:relative;isolation:isolate;z-index:2;display:flex;flex-direction:column;justify-content:space-between;gap:.32rem;width:min(100%,21rem);min-height:10.4rem;aspect-ratio:1.85/1;padding:.75rem .95rem;border:1px solid #85f9efaa;border-radius:.82rem;color:#fff;text-align:left;overflow:hidden;box-shadow:0 10px 28px #001923,0 0 20px #12e6d733;background:#052f42}
-.pano-credit-card::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(112deg,#053a48dd,#00243ba3 58%,#048c8b4d),url("https://images.unsplash.com/photo-1591963372472-1fdb7539a42e?auto=format&fit=crop&w=1200&q=87&fm=webp") center 55%/cover no-repeat}
-.pano-credit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(0deg,#00182cdd,transparent 50%),radial-gradient(circle at 80% 30%,#00eacc23,transparent 42%);pointer-events:none}
+.pano-card-stage{position:relative;display:flex;align-items:center;justify-content:center;flex:1;min-width:0;min-height:16.5rem;margin:.5rem 0 .4rem;isolation:isolate;overflow:hidden;border-radius:.65rem;background:#061e25}
+.pano-credit-card{position:relative;isolation:isolate;z-index:2;display:flex;flex-direction:column;justify-content:space-between;gap:.4rem;width:min(75%,27.5rem);min-height:13.2rem;aspect-ratio:1.72/1;padding:1.15rem 1.3rem;border:1px solid #c3ffff7d;border-radius:1.05rem;color:#fff;text-align:left;overflow:hidden;box-shadow:0 26px 37px #001016d9,0 7px 12px #000e13aa,inset 0 1px 1px #d6fff071;background:#062d3d;transform:perspective(1100px) rotateY(-5deg) rotateX(3deg);transition:transform .2s ease,box-shadow .2s ease}
+.pano-credit-card::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(117deg,#05232ed8 0%,#09303ea8 56%,#0d738260),url("https://images.unsplash.com/photo-1591963372472-1fdb7539a42e?auto=format&fit=crop&w=1400&q=91&fm=webp") center 51%/cover no-repeat}
+.pano-credit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(125deg,#b9fff415,transparent 40%,#05384b25 54%,#e7fff414 68%,transparent 79%),linear-gradient(0deg,#00192cc9,transparent 55%);pointer-events:none}
 .pano-credit-card.pano-plastic-tone-1::before{filter:hue-rotate(35deg) saturate(1.25)}
 .pano-credit-card.pano-plastic-tone-2::before{filter:hue-rotate(-38deg) saturate(.7)}
 .pano-credit-card:hover{border-color:#bcffef}
 .pano-credit-card-top,.pano-credit-card-bottom{display:flex;justify-content:space-between;align-items:center;gap:.3rem}
-.pano-credit-card-top{color:#9df9ed;min-height:2.2rem}
+.pano-credit-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;color:#dcfff8;min-height:3.25rem}
 .pano-scheme{flex-shrink:0;max-width:70px}
 .pano-scheme-elo{color:#fff;font-size:1.6rem;letter-spacing:-.07em;font-weight:900}
 .pano-scheme-amex{background:#246db2;padding:.22rem;font-weight:900;font-size:.72rem;border-radius:.25rem;color:#fff}
 .pano-scheme-unavailable{font-size:.8rem;font-weight:900;letter-spacing:.15em;color:#d4fffa}
-.pano-credit-card-name{font-size:.98rem;font-weight:850;max-width:100%;overflow-wrap:anywhere}
-.pano-credit-card-meta{font-size:.7rem;color:#deedf4;letter-spacing:.04em}
-.pano-credit-card-bottom{margin-top:auto;align-items:flex-end}
-.pano-credit-card-bottom>span{font-size:.66rem;color:#c1e2e5;max-width:6rem;line-height:1.3}
+.pano-credit-card-name{font-size:clamp(1.08rem,1.4vw,1.38rem);font-weight:850;max-width:100%;overflow-wrap:anywhere;letter-spacing:-.025em;text-shadow:0 2px 8px #001b25}
+.pano-credit-card-meta{font-size:.68rem;color:#d0e8e9;letter-spacing:.075em;text-transform:uppercase}
+.pano-credit-card-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:.65rem;margin-top:auto}
+.pano-credit-card-bottom>span{font-size:.84rem;color:#e4f8fa;max-width:100%;line-height:1.25;letter-spacing:.13em}
 .pano-credit-card-bottom strong{font-size:1.05rem;font-weight:870;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pano-card-peek{position:absolute;isolation:isolate;z-index:1;top:50%;transform:translateY(-50%);width:22%;height:69%;min-width:3.25rem;overflow:hidden;padding:.56rem .35rem;border:1px solid #5bc3d09c;border-radius:.75rem;background:#0b4250;color:#e7fbff;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:.25rem;box-shadow:0 7px 23px #001725a3}
+.pano-card-peek{position:absolute;isolation:isolate;z-index:1;top:50%;transform:translateY(-50%) scale(.92);width:31%;height:70%;min-width:3rem;overflow:hidden;padding:.85rem .5rem;border:1px solid #64b8c09c;border-radius:.9rem;background:#0b4250;color:#e7fbff;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:.3rem;box-shadow:0 18px 24px #001016ba;filter:brightness(.78)}
 .pano-card-peek::before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(110deg,#042b419c,#0d4c5790),url("https://images.unsplash.com/photo-1591963372472-1fdb7539a42e?auto=format&fit=crop&w=640&q=82&fm=webp") center/cover no-repeat}
 .pano-card-peek.pano-peek-tone-1::before{filter:hue-rotate(35deg) saturate(1.2)}
 .pano-card-peek.pano-peek-tone-2::before{filter:hue-rotate(-38deg) saturate(.8)}
 .pano-card-peek-brand{display:flex;align-items:center;justify-content:center;min-height:2.2rem;max-width:100%;transform:scale(.8);transform-origin:center}
 .pano-card-peek-name{font-size:.66rem;line-height:1.2;font-weight:800;text-align:center;max-width:100%;word-break:break-word;text-shadow:0 1px 4px #001921}
-.pano-card-peek.is-prev{left:0}
-.pano-card-peek.is-next{right:0}
+.pano-card-peek.is-prev{left:-9%}
+.pano-card-peek.is-next{right:-9%}
 .pano-card-peek:hover{border-color:#a8ffef;filter:brightness(1.17)}
-.pano-card-nav{display:flex;align-items:center;justify-content:space-between;gap:.4rem;min-width:0}
+.pano-card-nav{display:flex;align-items:center;justify-content:space-between;gap:.4rem;min-width:0;margin-top:.25rem}
 .pano-card-nav>button{display:grid;place-items:center;width:2.45rem;height:2.45rem;flex:0 0 2.45rem;border:1px solid #429d9b74;border-radius:50%;background:#063f48;color:#cafff5}
 .pano-card-nav>button:first-child svg{transform:rotate(180deg)}
 .pano-card-nav>button:disabled{opacity:.3;cursor:default}
@@ -106,6 +107,16 @@
 .pano-card-details>span strong{font-weight:830;color:#fff}
 .pano-card-details>button,.pano-card-empty button{display:inline-flex;align-items:center;justify-content:center;gap:.28rem;min-height:2.3rem;border:1px solid #3aa69a;border-radius:.4rem;background:#0d5155;color:#a5ffea;font-size:.69rem}
 .pano-card-empty{display:flex;flex-direction:column;gap:.45rem;align-items:center;justify-content:center;flex:1;color:#aedbd9;font-size:.73rem}
+.pano-card-stage::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,#031b27ba,#01383b48,#06151caa),url("https://images.unsplash.com/photo-1699982758974-0703b87f052d?auto=format&fit=crop&w=1600&q=82&fm=webp") center/cover no-repeat;filter:saturate(.9)}
+.pano-card-stage::after{content:"";pointer-events:none;position:absolute;inset:0;background:radial-gradient(ellipse at 49% 74%,#18d6bc21,transparent 60%)}
+.pano-card-hardware{display:flex;align-items:center;gap:.65rem;color:#e4fff9}
+.pano-card-chip{width:3.05rem;height:2.35rem;filter:drop-shadow(0 1px 2px #001820)}
+.pano-card-contactless{width:1.35rem;height:1.4rem;opacity:.87}
+.pano-card-kind{font-size:.6rem!important;letter-spacing:.17em!important;color:#b7eae7!important;font-weight:800}
+.pano-card-amount{display:flex;align-items:baseline;justify-content:space-between;gap:.65rem;padding:.45rem .18rem .52rem;border-bottom:1px solid #63b9b24b;color:#aecfcd;font-size:.73rem}
+.pano-card-amount strong{color:#fff;font-size:clamp(1.1rem,1.65vw,1.5rem);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pano-credit-card:hover{transform:perspective(1100px) rotateY(-2deg) rotateX(1deg);box-shadow:0 28px 45px #001016ed,0 3px 21px #0fcbb728}
+@media(prefers-reduced-motion:reduce){.pano-credit-card,.pano-credit-card:hover{transform:none}}
 /* Benefício usa imagem real de mercado e nome genérico de domínio. */
 .pano-mid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:.65rem;margin-top:.67rem}
 .pano-benefits,.pano-actions{min-width:0;min-height:12.5rem}
@@ -151,12 +162,12 @@
 .pano-negative{color:#ff8897}
 @media(max-width:1023px){
  .pano-root{padding:.6rem}
- .pano-hero{min-height:11rem}
- .pano-hero-intro h1{font-size:clamp(1.6rem,3.4vw,2.5rem)}
+ .pano-hero{min-height:13rem}
+ .pano-hero-intro h1{font-size:clamp(1.25rem,2.7vw,2rem)}
  .pano-finance-block{grid-template-columns:minmax(0,1fr)}
  .pano-flow{min-height:18.5rem}
- .pano-cards{min-height:19rem}
- .pano-card-stage{min-height:11rem}
+ .pano-cards{min-height:22rem}
+ .pano-card-stage{min-height:15rem}
  .pano-mid{grid-template-columns:repeat(2,minmax(0,1fr))}
  .pano-tables{grid-template-columns:minmax(0,1fr)}
  .pano-action-list{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -166,12 +177,13 @@
  .meg-shell:has(.pano-root) .meg-shell-body{height:100dvh;max-height:100dvh;min-height:0}
  .meg-shell:has(.pano-root) .meg-main{min-height:0;overflow-y:auto;overscroll-behavior:contain}
  .pano-root{padding:.45rem .42rem 1rem}
- .pano-hero{display:flex;flex-direction:column;align-items:stretch;min-height:0;padding:.8rem;border-radius:.74rem;gap:.7rem}
+ .pano-hero{display:flex;flex-direction:column;align-items:stretch;min-height:0;padding:1.1rem;border-radius:.74rem;gap:1.2rem}
  .pano-hero::before{background-position:center,65% 50%}
- .pano-hero-intro h1{font-size:clamp(1.7rem,8vw,2.2rem)}
+ .pano-hero-intro{align-self:flex-start;text-align:left;flex:0 1 auto}
+ .pano-hero-intro h1{font-size:clamp(1.3rem,6vw,1.8rem)}
  .pano-hero-intro p{font-size:.72rem}
- .pano-balance{flex:0 0 auto;min-width:0;width:100%;padding:.66rem .72rem}
- .pano-balance>strong{font-size:clamp(1.75rem,7.4vw,2.45rem)}
+ .pano-balance{flex:0 0 auto;min-width:0;width:100%;padding:.25rem 0}
+ .pano-balance>strong{font-size:clamp(2.15rem,9vw,3.05rem)}
  .pano-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:.48rem;margin-top:.53rem}
  .pano-stat{min-height:7.5rem;padding:.65rem}
  .pano-stat strong{font-size:clamp(.97rem,4.3vw,1.28rem)}
@@ -183,8 +195,11 @@
  .pano-flow-open{font-size:.64rem}
  .pano-chart{min-height:11.5rem}
  .pano-mid{grid-template-columns:minmax(0,1fr)}
- .pano-cards{min-height:19rem}
- .pano-credit-card{max-width:17.5rem;min-height:9.75rem}
+ .pano-cards{min-height:20.5rem}
+ .pano-credit-card{width:min(76%,21rem);max-width:21rem;min-height:10.5rem;padding:.8rem .9rem;border-radius:.8rem}
+ .pano-card-stage{min-height:13rem}
+ .pano-card-chip{width:2.25rem;height:1.75rem}
+ .pano-card-contactless{width:1rem;height:1.1rem}
  .pano-benefit-card{min-height:8.6rem}
  .pano-action-list{grid-template-columns:repeat(2,minmax(0,1fr))}
  .pano-action{min-height:6.9rem}

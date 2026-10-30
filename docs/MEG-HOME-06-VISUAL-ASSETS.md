@@ -25,3 +25,10 @@
 
 ## Estado
 Este documento registra os assets da **Home 06 em Draft PR #651**, ainda sem homologação visual da implementação.
+
+## Rodada de materiais físicos e hierarquia (30/10/2026)
+- Fotografia real de pedra preta, Kanishk Jain, Unsplash (licença gratuita): https://unsplash.com/photos/a-close-up-of-a-black-marble-surface-D6T5Q0rdXg0; CDN `https://images.unsplash.com/photo-1699982758974-0703b87f052d`. Material fotográfico de fundo do palco dos cartões; os dados, marcas e comandos são HTML/SVG.
+- A fotografia licenciada de rastros de luz (Denis Sebastian Tamas) permanece como textura fotográfica do plástico, sem substituir informações do cartão por uma imagem fictícia com números rasterizados. Chip e aproximação são SVGs decorativos; não indicam tecnologia habilitada na conta.
+- Fatura foi retirada da face física e realocada abaixo, para distinguir informação de gestão financeira de texto impresso no cartão. Dados da fatura permanecem vindos da leitura canônica.
+- Saldo monetário passa a ser informação tipográfica no hero fotográfico, sem cartão translúcido artificial. Nenhuma regra financeira foi alterada.
+- Dependência de CDN permanece uma pendência técnica: assets ainda não versionados localmente nem aprovados visualmente.

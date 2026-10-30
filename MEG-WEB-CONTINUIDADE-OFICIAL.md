@@ -1325,3 +1325,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 **Escopo e bloqueios:** PR #651 Draft; sem merge; sem edição de Android, API financeira, autenticação, Shell, topbar, DataGrid nem telas futuras. Home ainda sem homologação visual. Não tratar dados da prévia como dados financeiros reais.
 
 **Continuidade entre chats:** consultar este checkpoint e `docs/MEG-WEB-HOME-REINICIO-20261030.md`. A etapa autorizada permanece **Home 06**, e o próximo chat deve continuar exclusivamente nela. O vídeo seguinte passa a ser evidência direta para diagnóstico e decisões autônomas.
+
+
+## 30/10/2026 | Continuação Home 06 | Cartões e saldo, PR #651 (aguardando validação)
+
+- Nova direção explícita do usuário: dar protagonismo aos cartões, material fotográfico real e sensação física; eliminar o container artificial do saldo disponível. Autonomia para correções intermediárias, mas sem homologar sem aprovação visual expressa.
+- A versão atual mantém fotografias reais HD já licenciadas (montanha, luz azul, alimentos) e acrescenta fotografia de pedra preta sob o carrossel. Cartões aumentados, com textura fotográfica, chip/ícone de aproximação decorativos, efeitos de luz e sombra e fatura em linha de informação fora do cartão. Os dados, bandeiras e quantidades continuam sendo lidos da API, nunca inventados no fluxo autenticado.
+- Saldo disponível redesenhado como dado monetário principal diretamente sobre fotografia panorâmica, sem card/container translúcido independente. Controle de privacidade e acesso a movimentações preservados. Indisponibilidade da rota canônica continua explicitada, sem cálculo alternativo.
+- `14-13-34.mp4` foi citado como evidência; o arquivo binário ainda não está acessível no chat atual ou nos anexos localizados. Não declarar análise quadro a quadro desse vídeo nem aprovação visual.
+- Mudança restrita a JSX/CSS da Home e documentação/checkpoint; proteger Android, Shell, topbar, autenticação, DataGrid e cálculos financeiros. Commit/gates/Render devem ser registrados pelo SHA efetivo; PR segue Draft e sem merge.
