@@ -56,6 +56,13 @@ try{
    const filterOpen=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar').evaluate(el=>getComputedStyle(el).display!=='none');
    await page.getByRole('button',{name:'Ocultar filtros das movimentações'}).click();
    const filterClosed=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar').evaluate(el=>getComputedStyle(el).display==='none');
+   const heroOffsetBefore=await page.locator('.pano-hero').evaluate(el=>el.offsetTop);
+   await page.getByRole('button',{name:'Abrir relatórios financeiros'}).click();
+   const noticeVisible=await page.locator('.pano-notice').isVisible();
+   const heroOffsetAfter=await page.locator('.pano-hero').evaluate(el=>el.offsetTop);
+   const noLayoutShift=heroOffsetBefore===heroOffsetAfter;
+   await page.getByRole('button',{name:'Fechar aviso'}).click();
+   const nextCardPreview=await page.locator('.pano-card-peek.is-next .pano-card-peek-name').textContent();
    const itemBefore=await page.locator('.pano-credit-card-name').textContent();
    const schemeBefore=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
    await page.locator('.pano-card-nav').getByRole('button',{name:'Próximo cartão'}).click();
@@ -67,8 +74,8 @@ try{
    const incomeFocused=await page.getByText('Últimas receitas').isVisible();
    await page.getByRole('button',{name:'Limpar seleção'}).click();
    const restored=await page.getByText('Últimas movimentações').isVisible();
-   const passed=initiallyHidden&&filterOpen&&filterClosed&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&incomeFocused&&restored;
-   console.log('INTERACTIONS',JSON.stringify({initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,details,incomeFocused,restored,passed}));
+   const passed=initiallyHidden&&filterOpen&&filterClosed&&nextCardPreview===itemAfter&&noticeVisible&&noLayoutShift&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&incomeFocused&&restored;
+   console.log('INTERACTIONS',JSON.stringify({initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,nextCardPreview,noticeVisible,noLayoutShift,details,incomeFocused,restored,passed}));
    if(!passed)failed=true;
   }
   if(name==='mobile-390'){
