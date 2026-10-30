@@ -17,7 +17,9 @@ export const homePreviewFixture:HomeFinancialData={
  benefit:{month:'2026-10',balance:1250,credits:1480,used:230},
  accounts:[{id:'bank',name:'Conta principal',type:'checking'},{id:'benefit',name:'Benefício Alimentação',type:'benefit'}],
  categories:[{id:'c1',name:'Supermercado'},{id:'c2',name:'Saúde'},{id:'c3',name:'Transporte'},{id:'c4',name:'Receitas'},{id:'c5',name:'Casa'}],
- cards:[{id:'one',name:'Cartão de crédito',statementAmount:980.55}],
+ cards:[{id:'one',name:'Cartão de crédito',issuer:'Banco Exemplo',lastFour:'1234',statementAmount:980.55,payableStatementAmount:980.55,creditLimit:4200,availableLimit:2260,dueDay:12},
+        {id:'two',name:'Cartão de compras',issuer:'Banco Fictício',lastFour:'5678',statementAmount:245.80,payableStatementAmount:245.80,creditLimit:2600,availableLimit:1900,dueDay:20},
+        {id:'three',name:'Cartão adicional',issuer:'Instituição fictícia',lastFour:'9012',statementAmount:89.40,payableStatementAmount:89.40,creditLimit:1800,availableLimit:1150,dueDay:25}],
  transactions:[
   {id:'e1',date:'2026-10-29',description:'Supermercado',status:'paid',type:'expense',amount:210.40,signedAmount:-210.40,categoryId:'c1',accountId:'benefit'},
   {id:'e2',date:'2026-10-28',description:'Remuneração',status:'paid',type:'income',amount:3250,signedAmount:3250,categoryId:'c4',accountId:'bank'},
