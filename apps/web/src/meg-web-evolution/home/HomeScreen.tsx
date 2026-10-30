@@ -133,22 +133,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     <div className="meg-home-dash">
       <HomeCard className="balance" data-panel="saldo" aria-labelledby="meg-home-available-balance">
         <div className="meg-home-hero-visual" aria-hidden="true">
-          <svg className="meg-home-hero-led" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="presentation">
-            <defs>
-              <linearGradient id="meg-hero-column" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#28ffe2"/><stop offset=".6" stopColor="#08bcba"/><stop offset="1" stopColor="#086b83"/></linearGradient>
-              <linearGradient id="meg-hero-line" x1="0" y1="0" x2="1" y2="0"><stop stopColor="#00aeaa" stopOpacity="0"/><stop offset=".48" stopColor="#5cffe8"/><stop offset="1" stopColor="#adfff1"/></linearGradient>
-              <filter id="meg-hero-glow"><feGaussianBlur stdDeviation="6"/></filter>
-            </defs>
-            <g opacity=".83" transform="translate(410 90)">
-              {[76,96,116,143,167,194].map((height,index)=>{
-                const x=index*45,y=180-height;
-                return <g key={index}><rect x={x} y={y} width="29" height={height} rx="2" fill="url(#meg-hero-column)" opacity={.48+index*.08}/><path d={`M${x} ${y}l10 -8h29l-10 8z`} fill="#adffef" opacity=".53"/></g>;
-              })}
-            </g>
-            <path d="M0 253 C110 278 168 221 236 234 S350 250 409 198 S505 218 579 124 S658 172 720 72" fill="none" stroke="#4effde" strokeWidth="11" opacity=".55" filter="url(#meg-hero-glow)"/>
-            <path d="M0 253 C110 278 168 221 236 234 S350 250 409 198 S505 218 579 124 S658 172 720 72" fill="none" stroke="url(#meg-hero-line)" strokeWidth="2.8"/>
-            <circle cx="579" cy="124" r="7" fill="#efffff" stroke="#47ffe4" strokeWidth="4"/>
-          </svg>
+
         </div>
         <div className="meg-home-hero-copy">
           <div className="meg-home-hero-heading">
