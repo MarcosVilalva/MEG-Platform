@@ -1,59 +1,60 @@
 /**
- * Verificação da independência gráfica da Home ATLAS.
- * A nova interface não utiliza fotos decorativas, imagens de carteira,
- * dados de performance desenhados em SVG ou assets externos.
+ * Auditoria de assets da Home 06 baseada na imagem atual do usuário.
+ * Fonte licenciada: Benjamin Cole, One Cold Night, Unsplash (licença Unsplash).
+ * https://unsplash.com/photos/DDhET-updco
+ *
+ * A auditoria visual da página e o carregamento em produção são gates separados.
+ * Nenhuma arte deve conter valores financeiros pintados na própria imagem.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync,readFileSync,writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-
 const root=resolve(import.meta.dirname,'..');
 const output=resolve(root,'artifacts/home-06/asset-quality');
 mkdirSync(output,{recursive:true});
-const source=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/HomeScreen.tsx'),'utf8');
+const jsx=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/HomeScreen.tsx'),'utf8');
 const css=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/home.css'),'utf8');
-const oldPatterns=['meg-home-wallet-photo','meg-home-balance-art','wallet-official-02.webp','meg-balance-scene-hd.webp','meg-home-benefit-card','verocard-oficial-panorama.webp'];
-const sourceViolations=oldPatterns.filter(p=>source.includes(p)||css.includes(p));
-const display=[];
+const chart=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/HomeCashflowChart.tsx'),'utf8');
+const bad=['meg-home-wallet-photo','wallet-official-02.webp','meg-balance-scene-hd.webp','meg-home-atlas','meg-home-studio'];
+const violations=bad.filter(token=>jsx.includes(token)||css.includes(token));
+if(!css.includes('https://unsplash.com/photos/DDhET-updco')||!css.includes('images.unsplash.com/photo-1490237251747-4557595144b4'))violations.push('crédito e foto licenciada ausentes');
+if(!chart.includes('d.income')||!chart.includes('d.expense'))violations.push('chart sem dados canônicos');
 const url=process.env.MEG_HOME_PREVIEW_URL;
+const display=[];
 if(url){
-  const {chromium}=await import('@playwright/test');
-  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox','--disable-dev-shm-usage']});
-  try{
-    for(const [width,height] of [[1366,768],[1920,1080],[390,844]]){
-      const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:2});
-      try{
-        const page=await context.newPage();
-        await page.goto(url,{waitUntil:'networkidle',timeout:45000});
-        await page.locator('.meg-home-atlas .balance').waitFor({state:'visible'});
-        const d=await page.evaluate(()=>{
-          const home=document.querySelector('.meg-home-atlas');
-          const hero=document.querySelector('.meg-home .balance');
-          const benefit=document.querySelector('.meg-home .benefits');
-          const imgs=home?.querySelectorAll('img').length??-1;
-          const heroHasUrl=getComputedStyle(hero).backgroundImage.includes('url(');
-          const benefitHasUrl=getComputedStyle(benefit).backgroundImage.includes('url(');
-          return {images:imgs,heroHasUrl,benefitHasUrl,scrollWidth:home.scrollWidth,clientWidth:home.clientWidth};
-        });
-        display.push({viewport:width+'x'+height, ...d, passed:d.images===0&&!d.heroHasUrl&&!d.benefitHasUrl&&d.scrollWidth<=d.clientWidth+1});
-      }finally{await context.close()}
-    }
-  }finally{await browser.close()}
+ const {chromium}=await import('@playwright/test');
+ const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox','--disable-dev-shm-usage']});
+ try{
+  for(const [width,height] of [[1366,768],[1920,1080],[390,844]]){
+   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:2});
+   try{
+    const page=await context.newPage();
+    await page.goto(url,{waitUntil:'networkidle',timeout:45000});
+    await page.locator('.meg-home-reference-screen .balance').waitFor({state:'visible'});
+    const result=await page.evaluate(()=>{
+     const home=document.querySelector('.meg-home-reference-screen');
+     const hero=document.querySelector('.meg-home-hero-visual');
+     return {stylePhoto:getComputedStyle(hero).backgroundImage.includes('images.unsplash.com/photo-1490237251747-4557595144b4'),
+      imageTags:home.querySelectorAll('img').length,
+      chart:home.querySelectorAll('.meg-home-flow-chart').length,
+      overflow:home.scrollWidth>home.clientWidth+1};
+    });
+    display.push({viewport:width+'x'+height,...result,passed:result.stylePhoto&&result.imageTags===0&&result.chart===1&&!result.overflow});
+   }finally{await context.close()}
+  }
+ }finally{await browser.close()}
 }
-const issues=sourceViolations.length+display.filter(x=>!x.passed).length;
-const report={kind:'MEG_HOME_STUDIO_GRAPHIC_INDEPENDENCE',sourceViolations,display,issues,visualApproved:false};
+const issues=violations.length+display.filter(x=>!x.passed).length;
+const report={kind:'MEG_HOME_LICENSED_ASSET_AUDIT',credit:'Benjamin Cole / Unsplash',url:'https://unsplash.com/photos/DDhET-updco',violations,display,issues,visualApproved:false};
 writeFileSync(resolve(output,'report.json'),JSON.stringify(report,null,2)+'\n');
 writeFileSync(resolve(output,'report.md'),[
-  '# Auditoria gráfica da Home ATLAS',
-  '',
-  'Sem fotos decorativas ou gráfico de desempenho fictício. Preservados logo do Shell e dados reais do React.',
-  '',
-  '| Viewport | Imagens decorativas | URL de fundo no saldo | URL de fundo no benefício | Página sem overflow | Resultado |',
-  '|---|---:|---|---|---|---|',
-  ...display.map(r=>'| '+r.viewport+' | '+r.images+' | '+r.heroHasUrl+' | '+r.benefitHasUrl+' | '+(r.scrollWidth<=r.clientWidth+1?'Sim':'Não')+' | '+(r.passed?'OK':'FALHOU')+' |'),
-  '',
-  'Violação em fonte: '+(sourceViolations.join(', ')||'nenhuma'),
-  '',
-  'Gates automáticos não substituem aprovação visual expressa.'
+ '# MEG Home | Auditoria da referência visual',
+ '','Foto de Benjamin Cole (Unsplash License). Link: https://unsplash.com/photos/DDhET-updco',
+ 'O gráfico usa apenas dias de caixa da API canônica. Icons SVG são renderizados no DOM.',
+ '','| Tela | Foto atribuída | Gráfico | Sem overflow | Status |',
+ '|---|---|---|---|---|',
+ ...display.map(x=>'| '+x.viewport+' | '+x.stylePhoto+' | '+x.chart+' | '+(!x.overflow)+' | '+(x.passed?'OK':'FALHA')+' |'),
+ '','Violações: '+(violations.join(', ')||'nenhuma'),
+ '','CI não substitui aprovação visual do usuário.'
 ].join('\n')+'\n');
-console.log(JSON.stringify({issues,sourceViolations,display},null,2));
+console.log(JSON.stringify(report,null,2));
 if(issues&&process.argv.includes('--strict'))process.exitCode=1;
