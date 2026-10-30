@@ -1536,3 +1536,14 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - **Diretriz vigente:** manter paleta MEG dark teal/turquesa; reconstruir a apresentação isoladamente e comparar com a imagem aprovada, preservando Shell/sidebar, autenticação, DataGrid, APIs, autoridades financeiras e Android. Gráfico interativo pode consumir ECharts com séries reais de `/finance/cashflow`, sem inventar rentabilidade ou totais.
 - **Atenções de negócio:** saldo monetário não inclui saldo Verocard; percentuais comparativos, saldos de contas, descontos promocionais e números da arte são ilustrativos, e só aparecem em produção se disponibilizados pelas autoridades canônicas.
 - **Gates:** PR #650 permanece Draft, sem merge. Última inspeção antes deste registro apontou `MEG Web Evolution Foundation` com falha em `Validate Web Evolution viewport contracts`; corrigir e revalidar. Ainda é necessária a aprovação explícita da implementação real em desktop e mobile, com preview publicado no SHA exato e link sem cache.
+
+
+## Home 06 | Primeira implementação da imagem homologada (29/10/2026)
+
+- Após aprovação explícita da imagem, a branch isolada da PR #650 recebeu primeira implementação real no React.
+- `HomeScreen.tsx`: introduzida região `.meg-home-panorama` com cabeçalho contextual interno e saldo monetário em card translúcido; a área Verocard sinaliza expressamente a separação do saldo monetário. Dados/autenticação/navegação/DataGrid preservados.
+- `home.css`: refinamento escopado da Home com foto HD local já licenciada, composição panorâmica, indicadores em cards, Fluxo e painéis operacionais, breakpoints mobile/tablet. Shell e sidebar não alterados.
+- `HomeCashflowChart.tsx`: preserva barras das séries canônicas `cashflow.days.income` e `expense`; acrescenta linha de `cashflow.days.net` (resultado **diário**), com tooltip baseado apenas nos três campos canônicos. Não simula rendimento.
+- **Atenção:** proposta aprovada é referência visual; implementação ainda **não homologada**, nem possui comprovação de fidelidade. Testes de geometria antigos 7/5 podem precisar adaptação à nova estrutura aprovada (hero panorâmico em linha própria). Não modificar gates financeiros para forçar aprovação.
+- **Gates:** CI de `7b36055da286ec8590221fb16638e1858d544eda` iniciou automaticamente; resultados e deploy SHA exato ainda não comprovados neste registro. PR Draft, merge bloqueado.
+- **Pendências:** validar logs/artefatos da execução, corrigir falhas, comparar screenshots reais 1672×941, 1366×768, 390×844 e 320×700; revisão funcional de autenticação e dados reais; fornecer preview Render com SHA verificado e aguardar aprovação visual da implementação.
