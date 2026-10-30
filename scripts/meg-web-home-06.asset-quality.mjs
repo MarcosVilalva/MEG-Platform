@@ -1,25 +1,34 @@
 /**
- * Auditoria de assets da Home 06 baseada na imagem atual do usuário.
- * Fonte licenciada: 志远 杨 (@yangzhiyuan), Misty mountains shrouded in blue twilight fog, Unsplash (licença Unsplash).
- * https://unsplash.com/photos/kzH-sVU5pqs
- *
- * A auditoria visual da página e o carregamento em produção são gates separados.
- * Nenhuma arte deve conter valores financeiros pintados na própria imagem.
+ * Auditoria da identidade visual da Home 06.
+ * Foto licenciada: Francesco Ungaro, Unsplash License
+ * https://unsplash.com/photos/a-mountain-range-with-a-body-of-water-in-the-foreground-VrpZtXxwyvE
+ * Assets WebP locais em 1600x700 e 2560x1120, gerados pelo workflow Home Hero HD.
+ * SVGs da Home: linguagem Lucide (ISC License).
  */
-import { mkdirSync,readFileSync,writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import {mkdirSync,readFileSync,writeFileSync,statSync} from 'node:fs';
+import {resolve} from 'node:path';
 const root=resolve(import.meta.dirname,'..');
 const output=resolve(root,'artifacts/home-06/asset-quality');
 mkdirSync(output,{recursive:true});
 const jsx=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/HomeScreen.tsx'),'utf8');
 const css=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/home.css'),'utf8');
 const chart=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/HomeCashflowChart.tsx'),'utf8');
-const bad=['meg-home-wallet-photo','wallet-official-02.webp','meg-balance-scene-hd.webp','meg-home-atlas','meg-home-studio'];
-const violations=bad.filter(token=>jsx.includes(token)||css.includes(token));
-if(!css.includes('https://unsplash.com/photos/kzH-sVU5pqs')||!css.includes('images.unsplash.com/photo-1758637689971-fe6124e7cabd'))violations.push('crédito e foto licenciada ausentes');
-if(!chart.includes('d.income')||!chart.includes('d.expense'))violations.push('chart sem dados canônicos');
-const url=process.env.MEG_HOME_PREVIEW_URL;
-const display=[];
+const icons=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/HomeIcons.tsx'),'utf8');
+const invalid=['meg-home-wallet-photo','wallet-official-02.webp','meg-balance-scene-hd.webp','meg-home-atlas','meg-home-studio'];
+const violations=invalid.filter(token=>jsx.includes(token)||css.includes(token));
+const source='https://unsplash.com/photos/a-mountain-range-with-a-body-of-water-in-the-foreground-VrpZtXxwyvE';
+if(!css.includes(source)||!icons.includes('Lucide'))violations.push('créditos de imagem ou ícones ausentes');
+if(!chart.includes('d.income')||!chart.includes('d.expense'))violations.push('gráfico sem leitura canônica');
+if(!chart.includes("type:'bar'")||!chart.includes("min:0"))violations.push('gráfico de comparação não identificado');
+for(const [filename,width] of [['meg-hero-mountains-1600.webp',1600],['meg-hero-mountains-2560.webp',2560]]){
+ const file=resolve(root,'apps/web/public/meg-web-evolution/home',filename);
+ try{
+  const bytes=statSync(file).size;
+  if(bytes<30000||bytes>1500000)violations.push(filename+': tamanho suspeito '+bytes);
+  if(!css.includes(filename))violations.push(filename+': imagem não aplicada no CSS');
+ }catch{violations.push(filename+': arquivo local não encontrado')}
+}
+const display=[];const url=process.env.MEG_HOME_PREVIEW_URL;
 if(url){
  const {chromium}=await import('@playwright/test');
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox','--disable-dev-shm-usage']});
@@ -30,31 +39,38 @@ if(url){
     const page=await context.newPage();
     await page.goto(url,{waitUntil:'networkidle',timeout:45000});
     await page.locator('.meg-home-reference-screen .balance').waitFor({state:'visible'});
-    const result=await page.evaluate(()=>{
-     const home=document.querySelector('.meg-home-reference-screen');
-     const hero=document.querySelector('.meg-home-hero-visual');
-     return {stylePhoto:getComputedStyle(hero).backgroundImage.includes('images.unsplash.com/photo-1758637689971-fe6124e7cabd'),
-      imageTags:home.querySelectorAll('img').length,
-      chart:home.querySelectorAll('.meg-home-flow-chart').length,
-      overflow:home.scrollWidth>home.clientWidth+1};
+    const result=await page.evaluate(async()=>{
+      const home=document.querySelector('.meg-home-reference-screen');
+      const hero=document.querySelector('.meg-home-hero-visual');
+      const refs=['meg-hero-mountains-1600.webp','meg-hero-mountains-2560.webp'];
+      const local=await Promise.all(refs.map(async name=>{
+        const r=await fetch('/meg-web-evolution/home/'+name);
+        return {name,ok:r.ok,type:r.headers.get('content-type')};
+      }));
+      return {stylePhoto:getComputedStyle(hero).backgroundImage.includes('meg-hero-mountains-2560.webp'),
+        imageTags:home.querySelectorAll('img').length,
+        icons:home.querySelectorAll('.meg-home-icon-svg').length,
+        chart:home.querySelectorAll('.meg-home-flow-chart').length,
+        overflow:home.scrollWidth>home.clientWidth+1,assets:local};
     });
-    display.push({viewport:width+'x'+height,...result,passed:result.stylePhoto&&result.imageTags===0&&result.chart===1&&!result.overflow});
+    display.push({viewport:width+'x'+height,...result,passed:result.stylePhoto&&result.imageTags===0&&result.icons>=16&&result.chart===1&&!result.overflow&&result.assets.every(x=>x.ok)});
    }finally{await context.close()}
   }
  }finally{await browser.close()}
 }
 const issues=violations.length+display.filter(x=>!x.passed).length;
-const report={kind:'MEG_HOME_LICENSED_ASSET_AUDIT',credit:'志远 杨 / Unsplash',url:'https://unsplash.com/photos/kzH-sVU5pqs',violations,display,issues,visualApproved:false};
+const report={kind:'MEG_HOME_LOCAL_HD_ASSET_AUDIT',credit:'Francesco Ungaro / Unsplash',source,violations,display,issues,visualApproved:false};
 writeFileSync(resolve(output,'report.json'),JSON.stringify(report,null,2)+'\n');
 writeFileSync(resolve(output,'report.md'),[
- '# MEG Home | Auditoria da referência visual',
- '','Foto de Benjamin Cole (Unsplash License). Link: https://unsplash.com/photos/kzH-sVU5pqs',
- 'O gráfico usa apenas dias de caixa da API canônica. Icons SVG são renderizados no DOM.',
- '','| Tela | Foto atribuída | Gráfico | Sem overflow | Status |',
- '|---|---|---|---|---|',
- ...display.map(x=>'| '+x.viewport+' | '+x.stylePhoto+' | '+x.chart+' | '+(!x.overflow)+' | '+(x.passed?'OK':'FALHA')+' |'),
- '','Violações: '+(violations.join(', ')||'nenhuma'),
- '','CI não substitui aprovação visual do usuário.'
+ '# Home MEG - Auditoria de assets locais e simetria',
+ '', 'Foto © Francesco Ungaro, licença Unsplash: '+source,
+ 'Iconografia da área interna baseada na biblioteca Lucide, licença ISC.',
+ 'ECharts exibe exclusivamente entradas e saídas fornecidas pelo backend.',
+ '', '| Viewport | WebP locais | Ícones SVG | Gráfico | Sem overflow | Resultado |',
+ '|---|---|---:|---|---|---|',
+ ...display.map(x=>'| '+x.viewport+' | '+x.assets.every(a=>a.ok)+' | '+x.icons+' | '+x.chart+' | '+!x.overflow+' | '+(x.passed?'OK':'FALHA')+' |'),
+ '', 'Pendências: '+(violations.join(', ')||'nenhuma'), '',
+ 'A aprovação visual depende de decisão expressa do usuário.'
 ].join('\n')+'\n');
 console.log(JSON.stringify(report,null,2));
 if(issues&&process.argv.includes('--strict'))process.exitCode=1;
