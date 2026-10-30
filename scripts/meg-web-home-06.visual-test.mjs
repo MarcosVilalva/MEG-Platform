@@ -164,6 +164,19 @@ try {
        name+': KPIs assimétricos');
    }else{
      if(width<640){
+       const flowRects=await page.locator('.meg-home .flow .meg-home-flow-stat-copy strong').evaluateAll(elements=>elements.map(el=>{
+         const r=el.getBoundingClientRect();
+         return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};
+       }));
+       assert.equal(flowRects.length,2,name+': duas métricas de fluxo preservadas');
+       assert.ok(flowRects[0].right<=flowRects[1].left-2 || flowRects[0].bottom<=flowRects[1].top-2,
+         name+': entradas e saídas se sobrepõem em '+width+'px: '+JSON.stringify(flowRects));
+       const resultBox=await page.locator('.meg-home .flow .meg-home-flow-result strong').boundingBox();
+       const panelBox=await page.locator('.meg-home .flow').boundingBox();
+       assert.ok(resultBox&&panelBox&&resultBox.x+resultBox.width<=panelBox.x+panelBox.width+1,
+         name+': resultado projetado sai do painel mobile');
+     }
+     if(width<640){
        const touchTargets=await page.locator('.meg-home-privacy, .meg-home-grid-tools, .meg-home-see-all').evaluateAll(nodes=>nodes.map(node=>({name:node.className,height:node.getBoundingClientRect().height,width:node.getBoundingClientRect().width})));
        assert.ok(touchTargets.every(item=>item.height>=47.5&&item.width>=47.5),'alvos de toque >=48px: '+name+' '+JSON.stringify(touchTargets));
      }
