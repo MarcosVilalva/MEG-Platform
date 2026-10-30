@@ -86,7 +86,6 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const reveal=(node:HTMLElement|null)=>node?.scrollIntoView({behavior:'smooth',block:'start'});
  const focusMovements=(mode:'all'|'income'|'expense')=>{setMovementMode(mode);reveal(movementSection.current)};
  const focusPending=()=>reveal(dueSection.current);
- const focusCards=()=>reveal(cardsSection.current);
  const focusBenefit=()=>reveal(benefitSection.current);
  const selectedCard=data.cards[cardIndex]??null;
  const stepCard=(direction:number)=>{setCardIndex(i=>Math.max(0,Math.min(data.cards.length-1,i+direction)));setCardExpanded(false)};
