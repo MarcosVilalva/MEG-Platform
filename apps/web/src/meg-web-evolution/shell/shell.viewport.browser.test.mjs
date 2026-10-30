@@ -10,7 +10,7 @@ import {
   createMeasureSidebarResponsive,
 } from './shell.viewport.measurements.mjs';
 
-const appUrl = process.env.MEG_WEB_EVOLUTION_URL || 'http://127.0.0.1:4173/web-evolution.html';
+const appUrl = process.env.MEG_WEB_EVOLUTION_URL || 'http://127.0.0.1:4173/web-evolution-shell-harness.html';
 const viewports = [
   { width: 1366, height: 600 },
   { width: 1366, height: 768 },
