@@ -6,6 +6,7 @@ import {DataGrid} from '../datagrid/DataGrid';
 import type {DataGridColumn} from '../datagrid/types';
 import {HomeChart,type CashflowDay} from './HomeChart';
 import {HomeGlyph,type HomeIconName} from './HomeGlyph';
+import {CardBrandMark} from './CardBrandMark';
 import './home-dashboard.css';
 
 export type HomeFinancialData={
@@ -80,11 +81,13 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const movementSection=useRef<HTMLElement|null>(null);
  const dueSection=useRef<HTMLElement|null>(null);
  const cardsSection=useRef<HTMLElement|null>(null);
+ const benefitSection=useRef<HTMLElement|null>(null);
  const flowSection=useRef<HTMLElement|null>(null);
  const reveal=(node:HTMLElement|null)=>node?.scrollIntoView({behavior:'smooth',block:'start'});
  const focusMovements=(mode:'all'|'income'|'expense')=>{setMovementMode(mode);reveal(movementSection.current)};
  const focusPending=()=>reveal(dueSection.current);
  const focusCards=()=>reveal(cardsSection.current);
+ const focusBenefit=()=>reveal(benefitSection.current);
  const selectedCard=data.cards[cardIndex]??null;
  const stepCard=(direction:number)=>{setCardIndex(i=>Math.max(0,Math.min(data.cards.length-1,i+direction)));setCardExpanded(false)};
 
@@ -131,7 +134,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   {label:'Receitas',value:data.summary?.income,note:'Total no período',icon:'income',kind:'income',action:'lancamentos'},
   {label:'Despesas',value:data.summary?.expense,note:'Total no período',icon:'expense',kind:'expense',action:'lancamentos'},
   {label:'Pendências previstas',value:data.summary?.pendingAmount,note:data.summary?.pendingCount==null?'Sem leitura disponível':String(data.summary.pendingCount)+' registros',icon:'clock',kind:'pending',action:'pendentes'},
-  {label:'Cartões',value:null,note:String(data.cards.length)+' cadastrados · consultar faturas',icon:'card',kind:'cards',action:'cartoes'}
+  {label:'Benefício',value:data.benefit?.balance,note:'Saldo separado das contas',icon:'gift',kind:'benefit',action:'beneficios'}
  ];
  const quick:{title:string;desc:string;icon:HomeIconName;action:Action;kind:string}[]=[
   {title:'Novo lançamento',desc:'Registrar movimentação',icon:'plus',action:'novo',kind:'mint'},
@@ -144,64 +147,65 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
   {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso">×</button></div>}
   <section className="pano-hero" aria-label="Visão financeira">
-   <div className="pano-hero-intro"><span className="pano-eyebrow"><HomeGlyph name="sparkle" size={14}/> VISÃO GERAL · {period}</span>
-    <h1>Seu dinheiro. Seu próximo passo.</h1><p>Acompanhe os números que orientam suas decisões.</p>
-    <div className="pano-hero-insight"><span>Resultado realizado no mês</span><strong><Money value={data.summary?.realizedResult} hidden={hidden}/></strong></div>
+   <div className="pano-hero-intro">
+    <span className="pano-eyebrow"><HomeGlyph name="sparkle" size={15}/> MEG FINANÇAS · {period}</span>
+    <h1>Seu dinheiro,<br/><em>mais inteligente.</em></h1>
+    <p>Mais controle, clareza e melhores decisões para o seu amanhã.</p>
    </div>
    <div className="pano-balance" aria-label="Saldo disponível monetário">
     <div className="pano-balance-top"><span><HomeGlyph name="wallet" size={19}/> Saldo disponível</span><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={18}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
-    <div className="pano-balance-bottom"><span>{data.available?'Saldo monetário em '+dateString(data.available.date):'Saldo atual indisponível até ativação da leitura canônica'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver detalhes <HomeGlyph name="arrow" size={15}/></button></div>
+    <div className="pano-balance-bottom"><span>{data.available?'Saldo monetário em '+dateString(data.available.date):'Saldo monetário indisponível nesta prévia'}</span><button type="button" onClick={()=>focusMovements('all')}>Detalhes <HomeGlyph name="arrow" size={15}/></button></div>
    </div>
+  </section>
+  <section className="pano-overview" aria-label="Indicadores financeiros">
+   {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>s.kind==='income'?focusMovements('income'):s.kind==='expense'?focusMovements('expense'):s.kind==='pending'?focusPending():focusBenefit()} aria-label={s.label+': '+format(s.value,hidden)+'. Abrir detalhes'}>
+    <span className="pano-stat-head"><span className="pano-stat-icon"><HomeGlyph name={s.icon} size={24}/></span><HomeGlyph name="arrow" size={16}/></span>
+    <span className="pano-stat-label">{s.label}</span>
+    <strong>{format(s.value,hidden)}</strong>
+    <small>{s.note}</small>
+   </button>)}
   </section>
   <section className="pano-finance-block" aria-label="Leitura gerencial do mês">
    <section ref={flowSection} className="pano-panel pano-flow">
     <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro" meta={period}/>
-     <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros"><HomeGlyph name="arrow" size={18}/></button>
+     <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros">Ver relatórios <HomeGlyph name="arrow" size={16}/></button>
     </div>
     <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
     <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
-    <p className="pano-flow-footnote">Entradas e saídas diárias · Linha azul: resultado do dia</p>
+    <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
    </section>
-   <div className="pano-stats">
-    {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>s.kind==='income'?focusMovements('income'):s.kind==='expense'?focusMovements('expense'):s.kind==='pending'?focusPending():focusCards()} aria-label={s.label+': '+(s.kind==='cards'?data.cards.length+' cartões':format(s.value,hidden))+'. Abrir detalhes'}>
-     <span className="pano-stat-icon"><HomeGlyph name={s.icon} size={23}/></span>
-     <span className="pano-stat-label">{s.label}</span>
-     <strong>{s.value==null&&s.kind==='cards'?String(data.cards.length):format(s.value,hidden)}</strong>
-     <small>{s.note}</small>
-    </button>)}
-   </div>
+   <section ref={cardsSection} className="pano-panel pano-cards">
+    <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all" onClick={()=>move('cartoes')}>Ver todos <HomeGlyph name="arrow" size={14}/></button></div>
+    {selectedCard?<>
+      <div className="pano-card-stage" aria-label={'Cartão '+(cardIndex+1)+' de '+data.cards.length}>
+       {data.cards.length>1&&<button type="button" className="pano-card-peek is-prev" disabled={cardIndex===0} onClick={()=>stepCard(-1)} aria-label="Cartão anterior"><HomeGlyph name="card" size={18}/></button>}
+       <button type="button" className={'pano-credit-card pano-plastic-tone-'+(cardIndex%3)} onClick={()=>setCardExpanded(v=>!v)} aria-expanded={cardExpanded} aria-label={'Ver detalhes do cartão '+selectedCard.name}>
+        <span className="pano-credit-card-top"><HomeGlyph name="card" size={24}/><CardBrandMark brand={selectedCard.brand}/></span>
+        <span className="pano-credit-card-name">{selectedCard.name}</span>
+        <span className="pano-credit-card-meta">{selectedCard.lastFour?'••••  '+selectedCard.lastFour:'Cartão cadastrado'}</span>
+        <span className="pano-credit-card-bottom"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></span>
+       </button>
+       {data.cards.length>1&&<button type="button" className="pano-card-peek is-next" disabled={cardIndex===data.cards.length-1} onClick={()=>stepCard(1)} aria-label="Próximo cartão"><HomeGlyph name="card" size={18}/></button>}
+      </div>
+      <div className="pano-card-nav"><button type="button" aria-label="Cartão anterior" disabled={cardIndex===0} onClick={()=>stepCard(-1)}><HomeGlyph name="arrow" size={19}/></button><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===cardIndex?'is-current':''} onClick={()=>{setCardIndex(i);setCardExpanded(false)}} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===cardIndex?'true':undefined}/>)}</span><button type="button" aria-label="Próximo cartão" disabled={cardIndex===data.cards.length-1} onClick={()=>stepCard(1)}><HomeGlyph name="arrow" size={19}/></button></div>
+      {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
+       {selectedCard.availableLimit!=null&&<span>Limite disponível <Money hidden={hidden} value={selectedCard.availableLimit}/></span>}
+       {selectedCard.creditLimit!=null&&<span>Limite cadastrado <Money hidden={hidden} value={selectedCard.creditLimit}/></span>}
+       {selectedCard.dueDay!=null&&<span>Dia do vencimento <strong>{selectedCard.dueDay}</strong></span>}
+       <button type="button" onClick={()=>move('cartoes')}>Abrir módulo de cartões <HomeGlyph name="arrow" size={15}/></button>
+      </div>}
+     </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
+   </section>
   </section>
   <div className="pano-mid">
-   <section className="pano-panel pano-benefits">
+   <section ref={benefitSection} className="pano-panel pano-benefits">
     <PanelTitle icon="gift" title="Benefícios" meta="Saldo separado das contas monetárias"/>
     <button type="button" className="pano-benefit-card" onClick={()=>move('beneficios')} aria-label="Abrir módulo de benefícios">
      <div className="pano-benefit-card-copy"><span className="pano-eyebrow">BENEFÍCIO</span><h3>Alimentação</h3><span>Saldo do benefício</span><strong><Money hidden={hidden} value={data.benefit?.balance}/></strong><span className="pano-benefit-callout">Ver benefício <HomeGlyph name="arrow" size={15}/></span></div>
      <div className="pano-benefit-visual" aria-hidden="true"/>
     </button>
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
-   </section>
-   <section ref={cardsSection} className="pano-panel pano-cards">
-    <div className="pano-carousel-head"><PanelTitle icon="card" title="Seus cartões"/><span>{data.cards.length?String(cardIndex+1)+' / '+data.cards.length:'Nenhum cartão'}</span></div>
-    {selectedCard?<>
-      <button type="button" className="pano-credit-card" onClick={()=>setCardExpanded(v=>!v)} aria-expanded={cardExpanded} aria-label={'Ver detalhes do cartão '+selectedCard.name}>
-       <span className="pano-credit-card-top"><HomeGlyph name="card" size={22}/><HomeGlyph name="sparkle" size={18}/></span>
-       <span className="pano-credit-card-name">{selectedCard.name}</span>
-       <span className="pano-credit-card-meta">{selectedCard.lastFour?'•••• '+selectedCard.lastFour:'Cartão de crédito'}</span>
-       <span className="pano-credit-card-bottom"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></span>
-      </button>
-      {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
-        {selectedCard.availableLimit!=null&&<span>Limite disponível <Money hidden={hidden} value={selectedCard.availableLimit}/></span>}
-        {selectedCard.creditLimit!=null&&<span>Limite cadastrado <Money hidden={hidden} value={selectedCard.creditLimit}/></span>}
-        {selectedCard.dueDay!=null&&<span>Dia de vencimento <strong>{selectedCard.dueDay}</strong></span>}
-        <button type="button" onClick={()=>move('cartoes')}>Abrir cartões <HomeGlyph name="arrow" size={15}/></button>
-      </div>}
-      <div className="pano-card-nav">
-       <button type="button" aria-label="Cartão anterior" disabled={cardIndex===0} onClick={()=>stepCard(-1)}><HomeGlyph name="arrow" size={17}/></button>
-       <span>{selectedCard.issuer||selectedCard.brand||'Cartão cadastrado'}</span>
-       <button type="button" aria-label="Próximo cartão" disabled={cardIndex===data.cards.length-1} onClick={()=>stepCard(1)}><HomeGlyph name="arrow" size={17}/></button>
-      </div>
-     </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
    <section className="pano-panel pano-actions">
     <PanelTitle icon="sparkle" title="Ações rápidas"/>
