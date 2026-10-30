@@ -1259,3 +1259,14 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Evidência inicial:** workflow \`41050062978\` no SHA \`0f48f118e3ec2d8006bc79b73fe01a699eb35ed0\` concluiu **success**; capturas reais em sete tamanhos foram inspecionadas. Fundação do mesmo SHA falhou em teste legado de Shell, que esperava Shell visível sem autenticação. Foi criado harness técnico exclusivo para testar o Shell existente, sem modificar autenticação. Verificar novos gates do SHA vigente, não presumir verde.
 - **Proteções:** API financeira não teve fórmulas alteradas; apenas endpoint protegido de leitura. Android, componentes visuais da Etapa 05, sidebar, tokens globais e DataGrid permanecem preservados. PR #651 Draft; não merge.
 - **Pendências críticas:** confirmar Foundation com harness, testar fluxo autenticado com a nova rota de saldo publicada na API autorizada, conferir capturas inferiores das tabelas, validar responsividade e aprovação visual explícita do usuário. Nenhuma tela futura autorizada.
+
+
+### Home 06 | Revisão pós-capturas, DataGrids, mobile e leitura futura (30/10/2026)
+
+- Artefato de captura visual \`41051561294\`, SHA \`d65ed5623eb5a6811c902fbadace84151e6d4991\`, concluído com **success**. Inspeção efetiva das capturas \`desktop-1672.png\`, \`desktop-1672-bottom.png\`, \`mobile-390.png\`, \`mobile-390-bottom.png\`.
+- Corrigido o viewport do DataGrid **somente dentro do CSS isolado da Home**, mantendo componente central inalterado. Cabeçalhos, linhas, ferramentas e paginação apareceram no desktop.
+- Corrigida a rolagem da Home em tela de 390px com estilos escopados à Home, sem alterar o Shell: captura mobile inferior passou a mostrar cards de vencimento e rodapé do DataGrid; teste automatizado agora exige scroll efetivo e linhas nos grids.
+- Filtro de últimas movimentações deixou de misturar eventos planejados e futuros com lançamentos realizados; próximos compromissos consultam também eventos planejados do mês seguinte pela API autorizada (\`/finance/events/month?month=\`), mantendo Payable separado e sem calcular saldos/status na UI.
+- **Gates:** novo workflow Home Panorama tinha sucesso no commit \`d65ed562\`; atualização funcional \`b8ec0f531c138944c4243e40f16a1d28f87e4389\` disparou nova execução, que ainda não estava concluída ao registrar esta nota. Foundation geral mantém falhas de baseline/screenshot do DataGrid em execução anterior; não afirmar verde.
+- **Render:** serviço de preview \`meg-home-06-panorama-clean\` publica por auto-deploy da PR #651. Somente oferecer link sem cache após verificar explicitamente o SHA do deploy em status live.
+- A **implementação ainda não está visualmente homologada** pelo usuário; não fazer merge da PR #651 nem avançar para telas futuras.
