@@ -131,6 +131,8 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
     <h1 className="meg-home-sr-title">Visão geral das finanças</h1>
     {previewOnly&&<div className="meg-home-preview-warning" role="note">PRÉVIA VISUAL · Valores de demonstração · Sem conexão com contas reais</div>}
     <div className="meg-home-dash">
+      <div className="meg-home-panorama">
+        <div className="meg-home-panorama-intro"><span className="meg-home-panorama-kicker">MEG FINANÇAS · VISÃO GERAL</span><h2>Sua vida financeira, com clareza.</h2><p>Contas, compromissos e movimentações em um só lugar.</p></div>
       <HomeCard className="balance" data-panel="saldo" aria-labelledby="meg-home-available-balance">
         <div className="meg-home-hero-visual" aria-hidden="true">
 
@@ -146,6 +148,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
           <HomeButton className="meg-home-hero-details" variant="outline" onClick={()=>go('lancamentos')}>Ver detalhes <Icon name="arrow" size={16}/></HomeButton>
         </div>
       </HomeCard>
+      </div>
 
       <HomeCard className="flow" data-panel="saldo">
         <div className="meg-home-panel-heading"><span className="meg-home-heading-icon"><Icon name="flow" size={21}/></span><h2>Fluxo do mês</h2><span className="meg-home-flow-caption">{periodTitle}</span></div>
@@ -166,7 +169,7 @@ function HomeView({snapshot,previewOnly=false,onNavigate,searchQuery=''}:{snapsh
 
       <HomeCard className="benefits" data-panel="operacoes" aria-labelledby="meg-benefit-title">
         <div className="meg-home-benefit-body">
-          <div className="meg-home-benefit-intro"><span className="meg-home-heading-icon"><Icon name="gift" size={23}/></span><div><h2 id="meg-benefit-title">Benefícios Verocard</h2><p>Seu saldo e benefícios em um só lugar</p></div></div>
+          <div className="meg-home-benefit-intro"><span className="meg-home-heading-icon"><Icon name="gift" size={23}/></span><div><h2 id="meg-benefit-title">Benefícios</h2><p>Conta benefício separada do saldo monetário</p></div></div>
           <div className="meg-home-benefit-finances"><span className="meg-home-benefit-finances-label">Saldo do benefício</span><strong className="meg-home-benefit-balance">{showMoney(benefit?.balance)}</strong></div>
           <div className="meg-home-benefit-monthly">
             <div><Icon name="up" size={17}/><span>Créditos do mês<strong>{showMoney(benefit?.credits)}</strong></span></div>
