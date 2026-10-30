@@ -1362,3 +1362,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Preservados: modelos de leitura da API, saldo monetário e benefício segregados, privacidade, filtros, fatura canônica, navegação cíclica de cartões com swipe e teclado, estado vazio, DataGrid compartilhado e Shell.
 - Proporções móveis estruturalmente empilhadas em 1024/640, sem breakpoints improvisados. Verificações Playwright adicionais de horizontalidade do KPI, centro do cartão, cartões adjacentes e geometria da área superior.
 - Limite técnico: fotografia via CDN ainda não está vendorizada; integração autenticada real não foi validada; teste Home Panorama e Foundation do SHA devem ser verificados, assim como preview Render *live* antes de validar visualmente. PR #651 Draft, sem merge, usuário ainda não aprovou Home.
+
+
+### Home 06 | Inspeção de captura do SHA 3792647 e correção geométrica
+- Home Panorama no SHA `3792647e8b51a63c5fdee48d0a532c04d41e018d` apresentou SUCCESS; Render também confirmou `live`. Inspeção visual humana das capturas reais 1672px e 390px identificou **cartão central cortado verticalmente no desktop**, além de cartões adjacentes demasiado largos com aparência de painéis, apesar de teste automatizado verde. A tela permanece NÃO HOMOLOGADA.
+- Ajuste na mesma estrutura limpa: estágio recebe altura mínima suficiente para cartão com proporção física 1,72; cartão principal limitado a 20rem desktop; vizinhos recebem proporção física 1,72 e sobreposição controlada; variante responsiva mantém cartão inteiro.
+- Playwright agora verifica a visibilidade integral da face do cartão (top/bottom) e proporção geométrica dos cartões adjacentes em cada viewport, além dos testes cíclicos/financeiros existentes. Não houve mudança financeira nem no Android, Shell, auth ou DataGrid.

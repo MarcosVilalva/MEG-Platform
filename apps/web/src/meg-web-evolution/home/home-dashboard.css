@@ -34,19 +34,19 @@
 .pano-cards{display:flex;flex-direction:column;min-width:0;min-height:17.25rem;gap:.16rem;padding:.62rem .77rem .58rem;border-color:#2aa99591;background:linear-gradient(130deg,#062e35,#05212a)}
 .pano-carousel-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-height:2.3rem}
 .pano-view-all,.pano-flow-open{display:inline-flex;align-items:center;gap:.32rem;justify-content:center;min-height:2.25rem;padding:.32rem .53rem;border:1px solid #238a8379;border-radius:.42rem;background:#07545a66;color:#a0f9e4;font-size:.7rem;font-weight:750;white-space:nowrap}
-.pano-card-stage{position:relative;isolation:isolate;display:flex;flex:1;align-items:center;justify-content:center;min-width:0;min-height:11.3rem;overflow:hidden;margin:.18rem 0;border-radius:.56rem;touch-action:pan-y;outline-offset:2px}
+.pano-card-stage{position:relative;isolation:isolate;display:flex;flex:1;align-items:center;justify-content:center;min-width:0;min-height:13rem;overflow:hidden;margin:.18rem 0;border-radius:.56rem;touch-action:pan-y;outline-offset:2px}
 .pano-card-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,#051d29d8,#03303881 48%,#071a25d6),url("https://images.unsplash.com/photo-1699982758974-0703b87f052d?auto=format&fit=crop&w=1600&q=82&fm=webp") center/cover no-repeat;filter:saturate(.68)}
 .pano-card-stage::after{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 50% 90%,#00e0b71c,transparent 67%);pointer-events:none}
 .pano-credit-card,.pano-card-peek{color:#fff;position:absolute;isolation:isolate;overflow:hidden;text-align:left;border:1px solid #bdfff585;background:#063644}
-.pano-credit-card{z-index:3;display:flex;flex-direction:column;justify-content:space-between;gap:.2rem;aspect-ratio:1.72/1;width:min(64%,23rem);min-height:0;padding:.8rem 1rem;border-radius:.76rem;box-shadow:0 10px 25px #001118e3,0 0 18px #17e6cb19,inset 0 1px 1px #ffffff46;transform:translateZ(0);transition:box-shadow .18s,border-color .18s}
+.pano-credit-card{z-index:3;display:flex;flex-direction:column;justify-content:space-between;gap:.2rem;aspect-ratio:1.72/1;width:min(62%,20rem);min-height:0;padding:.8rem 1rem;border-radius:.76rem;box-shadow:0 10px 25px #001118e3,0 0 18px #17e6cb19,inset 0 1px 1px #ffffff46;transform:translateZ(0);transition:box-shadow .18s,border-color .18s}
 .pano-credit-card::before,.pano-card-peek::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(112deg,#031b2fcf,#04344cb7 55%,#007f8090),url("https://images.unsplash.com/photo-1591963372472-1fdb7539a42e?auto=format&fit=crop&w=1300&q=86&fm=webp") center/cover no-repeat}
 .pano-credit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(128deg,#ffffff17,transparent 44%,#c0ffff0e 57%,transparent 75%),linear-gradient(0deg,#001627a4,transparent 55%);pointer-events:none}
 .pano-credit-card.pano-plastic-tone-1::before,.pano-card-peek.pano-peek-tone-1::before{filter:hue-rotate(33deg) saturate(1.2)}
 .pano-credit-card.pano-plastic-tone-2::before,.pano-card-peek.pano-peek-tone-2::before{filter:hue-rotate(-32deg) saturate(.84)}
 .pano-credit-card:hover{border-color:#befff2;box-shadow:0 12px 29px #000e18ef,0 0 18px #10dfbe3f}
-.pano-card-peek{z-index:2;top:50%;width:55%;height:80%;min-width:3rem;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:.3rem;padding:.75rem .45rem;border-color:#529aa48f;border-radius:.75rem;box-shadow:0 9px 20px #00131db0;filter:brightness(.78);transform:translateY(-50%) scale(.92)}
-.pano-card-peek.is-prev{left:-4.5%}
-.pano-card-peek.is-next{right:-4.5%}
+.pano-card-peek{z-index:2;top:50%;width:35%;height:auto;aspect-ratio:1.72/1;min-width:3rem;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:.3rem;padding:.75rem .45rem;border-color:#529aa48f;border-radius:.75rem;box-shadow:0 9px 20px #00131db0;filter:brightness(.78);transform:translateY(-50%) scale(.92)}
+.pano-card-peek.is-prev{left:9%}
+.pano-card-peek.is-next{right:9%}
 .pano-card-peek:hover{filter:brightness(.95);border-color:#78eddf}
 .pano-card-peek-brand{display:flex;align-items:center;justify-content:center;min-height:1.8rem;max-width:100%;transform:scale(.86)}
 .pano-card-peek-name{font-size:.6rem;line-height:1.1;max-width:100%;font-weight:800;word-break:break-word;text-align:center}
@@ -153,7 +153,7 @@
  .pano-spotlight{grid-template-columns:minmax(0,1fr)}
  .pano-hero{min-height:10rem}
  .pano-spotlight .pano-cards{min-height:16.5rem}
- .pano-card-stage{min-height:11.5rem}
+ .pano-card-stage{min-height:12.6rem}
  .pano-finance-block{grid-template-columns:minmax(0,1fr)}
  .pano-mid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
  .pano-tables{grid-template-columns:minmax(0,1fr)}
@@ -188,9 +188,9 @@
  .pano-credit-card-bottom>span{font-size:.56rem}
  .pano-card-chip{width:1.75rem;height:1.36rem}
  .pano-card-contactless{width:.74rem;height:.86rem}
- .pano-card-peek{height:75%;padding:.38rem .25rem;border-radius:.55rem}
- .pano-card-peek.is-prev{left:-7%}
- .pano-card-peek.is-next{right:-7%}
+ .pano-card-peek{width:40%;height:auto;aspect-ratio:1.72/1;padding:.38rem .25rem;border-radius:.55rem}
+ .pano-card-peek.is-prev{left:3%}
+ .pano-card-peek.is-next{right:3%}
  .pano-card-peek-name{font-size:.51rem}
  .pano-card-amount strong{font-size:1.04rem}
  .pano-card-nav>span:not(.pano-card-indicator){display:none}

@@ -55,9 +55,11 @@ try{
    const centered=Boolean(center&&stage&&Math.abs((center.left+center.width/2)-(stage.left+stage.width/2))<=3);
    const peeks=[...document.querySelectorAll('.pano-card-peek')].map(x=>x.getBoundingClientRect());
    const attached=Boolean(center&&stage&&peeks.every(p=>Math.min(center.right,p.right)-Math.max(center.left,p.left)>0));
-   return {valueInsideRight,tightCards,centered,attached,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
+   const cardNotClipped=Boolean(center&&stage&&center.top>=stage.top+1&&center.bottom<=stage.bottom-1&&center.left>=stage.left-1&&center.right<=stage.right+1);
+   const physicalNeighbors=peeks.every(p=>Math.abs(p.width/p.height-1.72)<.1);
+   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
   });
-  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached)failed=true;
+  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors)failed=true;
   console.log(name+' COMPOSITION',JSON.stringify(layout));
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
