@@ -14,6 +14,7 @@ export type HomeFinancialData={
  benefit:{month:string;balance:number;credits:number;used:number}|null;
  available:{date:string;available:number;scope:'monetary'}|null;
  transactions:Array<{id:string;date:string;description:string;status:string;type:string;amount:number;signedAmount:number;categoryId?:string|null;accountId?:string|null}>;
+ followingTransactions?:HomeFinancialData['transactions'];
  payables:Array<{id:string;description:string;dueDate:string;status:string;openAmount:number;categoryId?:string|null}>;
  accounts:Array<{id:string;name:string;type?:string}>;
  categories:Array<{id:string;name:string}>;
@@ -28,7 +29,9 @@ const format=(n:number|null|undefined,hidden:boolean)=>hidden?'R$ ••••�
 const dateString=(s:string)=>/^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
 const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,available:null,transactions:[],payables:[],accounts:[],categories:[],cards:[]};
 async function readHome(month:string):Promise<HomeFinancialData>{
- const [summary,cashflow,benefit,events,payables,cards,accounts,categories,available]=await Promise.all([
+ const following=new Date(month+'-01T12:00:00Z');following.setUTCMonth(following.getUTCMonth()+1);
+ const followingMonth=following.toISOString().slice(0,7);
+ const [summary,cashflow,benefit,events,payables,cards,accounts,categories,available,followingEvents]=await Promise.all([
   authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
@@ -38,7 +41,8 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   authenticatedRequest<unknown>('/finance/accounts',{cache:'no-store'}),
   authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
   // Rota nova, canônica; até ser implantada na API retorna ausente, nunca estimado.
-  authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null)
+  authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
+  authenticatedRequest<unknown>('/finance/events/month?month='+followingMonth,{cache:'no-store'}).catch(()=>[])
  ]);
  const adapted=composeMegApiSnapshot([
   fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
@@ -50,6 +54,7 @@ async function readHome(month:string):Promise<HomeFinancialData>{
  return {
   summary,cashflow,benefit,available,
   transactions:adapted.transactions||[],
+  followingTransactions:(fromFinancialEvents(followingEvents) as HomeFinancialData).transactions||[],
   payables:adapted.payables||[],
   accounts:adapted.accounts||[],
   categories:adapted.categories||[],
@@ -72,21 +77,21 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const categories=useMemo(()=>new Map(data.categories.map(c=>[c.id,c.name])),[data.categories]);
  const accounts=useMemo(()=>new Map(data.accounts.map(a=>[a.id,a.name])),[data.accounts]);
  const movements=useMemo<Record<string,unknown>[]>(()=>data.transactions
-  .filter(t=>t.status!=='cancelled')
+  .filter(t=>t.status!=='cancelled'&&t.status!=='planned'&&t.date<=dateNow())
   .slice().sort((a,b)=>b.date.localeCompare(a.date))
   .slice(0,8).map(t=>({id:t.id,date:t.date,description:t.description,
    category:t.categoryId?categories.get(t.categoryId)||'Sem categoria':'Sem categoria',
    account:t.accountId?accounts.get(t.accountId)||'—':'—',
    value:t.amount,amount:t.signedAmount,status:t.status})),[data.transactions,categories,accounts]);
  const commitments=useMemo<Record<string,unknown>[]>(()=>{
-  const planned=data.transactions.filter(t=>t.status==='planned'&&t.date>=dateNow()&&t.signedAmount<0)
+  const planned=[...data.transactions,...(data.followingTransactions||[])].filter(t=>t.status==='planned'&&t.date>=dateNow()&&t.signedAmount<0)
    .map(t=>({id:'event:'+t.id,date:t.date,description:t.description,
     source:'Lançamento previsto',value:t.amount,status:'Previsto'}));
   const payables=data.payables.filter(p=>p.status!=='paid'&&p.status!=='cancelled'&&p.openAmount>0)
    .map(p=>({id:'payable:'+p.id,date:p.dueDate,description:p.description,
     source:'Conta a pagar',value:p.openAmount,status:p.status==='partial'?'Parcial':'A pagar'}));
   return [...planned,...payables].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).slice(0,8);
- },[data.transactions,data.payables]);
+ },[data.transactions,data.followingTransactions,data.payables]);
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'date',label:'Data',type:'date',width:98,sortable:true,filterable:true},
   {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true},
