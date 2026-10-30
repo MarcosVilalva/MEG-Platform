@@ -1307,3 +1307,21 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 **Arquivos alterados/criados:** HomeDashboard.tsx, home-dashboard.css, CardBrandMark.tsx (novo), preview.fixture.ts, scripts/meg-home-06-panorama-viewport.mjs, docs/MEG-HOME-06-VISUAL-ASSETS.md, presente checkpoint.
 
 **Gates ainda pendentes neste registro:** build atual e screenshots reais; conferência de filtros/carrossel em sete viewports; resultado do Foundation geral; Render publicar exato SHA em status live; comparação visual e aprovação explícita do usuário no navegador. PR #651 permanece Draft e **não pode ser mesclada**.
+
+
+## 30/10/2026 | Vídeo 13-09-45.mp4 | Autonomia operacional da Home 06
+
+**Decisão explícita do usuário:** daqui para frente ele enviará vídeos para avaliação e delegará à assistência as decisões de composição, correção, implementação e refinamento da Home 06. NÃO solicitar escolhas intermediárias repetidas. Continuar exigindo aprovação visual explícita antes de chamar uma tela de homologada. Respeitar gates financeiros/Android congelado. O usuário solicitou ainda alerta antecipado se o chat se alongar e checkpoint antes de transição de conversa.
+
+**Vídeo real analisado:** `13-09-45.mp4`, duração ~46,8 s, captura desktop 1920×1080 da prévia pública no navegador. Foi revisada sequência de topo, carrossel, navegação e rolagem até ambos os DataGrids.
+
+**Evidências e decisões desta rodada:**
+1. O carrossel principal muda de cartão e exibe bandeira; porém os *peeks* laterais eram retângulos genéricos com ícone, sem identidade dos outros cartões. Substituídos por cartões adjacentes visuais com o próprio nome e bandeira provenientes de `data.cards[cardIndex ± 1]`, textura fotográfica, sem inventar registros ou marca. Nenhum card adjacente quando não houver registro.
+2. O clique em ação ainda não implementada exibia barra informativa **no fluxo normal** acima do hero, deslocando toda a página (confirmado em ~11–18s). Aviso foi convertido em toast `position: fixed`, sem deslocamento geométrico e com botão fechar, deixando claro que o módulo ainda está indisponível nesta etapa.
+3. Os DataGrids da Home foram inspecionados no vídeo na parte inferior: toolbar recolhida por padrão, cabeçalhos, linhas, rodapé/paginação visíveis. **Preservados**, sem alteração no DataGrid central e sem novos overrides desnecessários.
+
+**Arquivos desta revisão:** `apps/web/src/meg-web-evolution/home/HomeDashboard.tsx`, `home-dashboard.css`, `scripts/meg-home-06-panorama-viewport.mjs`, este checkpoint. O teste agora confere identidade real do próximo cartão e ausência de layout shift após toast. Preview e API não devem ser divulgados como homologados sem confirmar CI do SHA atual e deploy Render live.
+
+**Escopo e bloqueios:** PR #651 Draft; sem merge; sem edição de Android, API financeira, autenticação, Shell, topbar, DataGrid nem telas futuras. Home ainda sem homologação visual. Não tratar dados da prévia como dados financeiros reais.
+
+**Continuidade entre chats:** consultar este checkpoint e `docs/MEG-WEB-HOME-REINICIO-20261030.md`. A etapa autorizada permanece **Home 06**, e o próximo chat deve continuar exclusivamente nela. O vídeo seguinte passa a ser evidência direta para diagnóstico e decisões autônomas.
