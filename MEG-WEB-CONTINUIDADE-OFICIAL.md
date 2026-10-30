@@ -1270,3 +1270,20 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Gates:** novo workflow Home Panorama tinha sucesso no commit \`d65ed562\`; atualização funcional \`b8ec0f531c138944c4243e40f16a1d28f87e4389\` disparou nova execução, que ainda não estava concluída ao registrar esta nota. Foundation geral mantém falhas de baseline/screenshot do DataGrid em execução anterior; não afirmar verde.
 - **Render:** serviço de preview \`meg-home-06-panorama-clean\` publica por auto-deploy da PR #651. Somente oferecer link sem cache após verificar explicitamente o SHA do deploy em status live.
 - A **implementação ainda não está visualmente homologada** pelo usuário; não fazer merge da PR #651 nem avançar para telas futuras.
+
+
+## 30/10/2026 | Home 06 | Refino visual e interações após avaliação do usuário
+
+**Retorno do usuário:** a nova Home da PR #651 melhorou bastante, mas o usuário pediu maior refinamento de alinhamentos/proporções, ocultação opcional de filtros nos grids, redução dos espaços vazios, abandono da fotografia genérica do hero, ações em cards e carrossel compacto de cartões. Autorizou seguir com essas sugestões. A Home implementada **não foi homologada**.
+
+**Mudanças entregues na mesma PR #651, ainda Draft:**
+
+- HomeDashboard.tsx: hero executivo reduzido sem paisagem; saldo monetário e resultado realizado em áreas distintas. Gráfico mantém séries financeiras, com maior área útil. Cards de Receitas/Despesas filtram movimentações na própria Home; Pendências rola até compromissos; Cartões rola até carrossel. Botão Ver detalhes do saldo rola até movimentações da Home.
+- Carrossel com cartões reais fornecidos pela API, anterior/próximo, fatura aberta e detalhes expansíveis como limite e dia de vencimento somente se constarem na autoridade canônica. Sem soma financeira local, sem logos de bandeira inventados. Fixture isolada de prévia contém 3 cartões claramente fictícios.
+- home-dashboard.css: composição compacta reescrita na folha isolada, sem pilha de CSS legado. Hero dark teal abstrato substitui foto de montanhas. Relação ECharts/KPIs 8/4 e bloco Benefícios/Cartões/Ações 4/3/5. Foto de alimentos apenas no benefício.
+- DataGrid homologado não foi editado. Toggle Mostrar/Ocultar filtros na Home esconde área primária de filtros/ordenação, preservando busca, seletor de colunas, XLS/PDF e contagem de filtros ativos. Estados independentes para os dois DataGrids.
+- Script scripts/meg-home-06-panorama-viewport.mjs acrescentou testes de filtros, mudança de cartão, expansão de detalhes e seleção do KPI Receitas, além de sete capturas de desktop/tablet/celular, sem overflow e com rolagem mobile.
+- Workflow Home Panorama #41055360810: success, SHA 4d9851d0cc303b1bcf99f2ddb1fcfd486a47abf7. Evidências reais do navegador arquivadas no GitHub Actions; verificadas capturas desktop/mobile, incluindo rodapé.
+- Mudança posterior: CTA Ver detalhes do saldo usa a própria Home, SHA 2b7b3876d375300705d4fa91655979b5d52b9568. Os checks dessa nova cabeça exigem confirmação separada.
+
+**Proteções e pendências:** sidebar, topbar, autenticação, DataGrid, API de regras financeiras e Android não foram alterados nesta rodada. PR #651 segue Draft sem merge. Endpoint home-available criado anteriormente ainda depende de deploy da API para retornar saldo real. Verificar Foundation do SHA final, Render em status live com commit exato e recolher aprovação visual explícita da nova Home. Navegação para telas futuras ainda usa aviso, não simula funcionalidades inexistentes.
