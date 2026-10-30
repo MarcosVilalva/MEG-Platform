@@ -224,7 +224,7 @@
   .meg-home-dash{grid-template-columns:minmax(0,1fr);gap:.7rem}
   .meg-home .balance,.meg-home .flow,.meg-home .benefits,.meg-home .quick,.meg-home .recent,.meg-home .upcoming,.meg-home .meg-home-kpi{grid-column:1;min-height:0}
   .meg-home .balance{min-height:14rem;padding:.95rem .8rem}
-  .meg-home-hero-icon{flex-basis:2.7rem;width:2.7rem;height:2.7rem}
+  .meg-home-hero-icon{flex-basis:3rem;width:3rem;height:3rem}
   .meg-home-hero-heading{gap:.47rem}
   .meg-home-hero-heading h2{font-size:1rem}
   .meg-home-hero-copy{max-width:100%}
@@ -232,6 +232,14 @@
   .meg-home-hero-meta,.meg-home-hero-details{margin-left:0}
   
   .meg-home .flow{min-height:16rem}
+  .meg-home .flow .meg-home-panel-heading h2{white-space:nowrap;font-size:.91rem}
+  .meg-home .flow .meg-home-flow-caption{display:none}
+  .meg-home-flow-totals{grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem .5rem}
+  .meg-home-flow-stat{min-width:0;padding-right:0}
+  .meg-home-flow-stat-copy strong{font-size:clamp(.86rem,3.7vw,1.02rem)}
+  .meg-home-flow-result{grid-column:1/-1;border-top:1px solid rgba(79,173,167,.24);padding-top:.5rem}
+  .meg-home-flow-result>span{display:flex;align-items:baseline;justify-content:space-between;gap:.55rem;flex-wrap:wrap}
+  .meg-home-flow-result strong{font-size:1.08rem}
   .meg-home-flow-stat-icon{display:none}
   .meg-home-flow-stat-copy strong,.meg-home-flow-result strong{font-size:.92rem}
   .meg-home-flow-totals{gap:.28rem}
