@@ -1,0 +1,56 @@
+name: MEG Home 06 - Hero Mountain HD asset
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'meg-web-evolution/06-home-visual-*'
+    paths:
+      - 'scripts/meg-web-home-06.hero-photo.mjs'
+      - '.github/workflows/meg-web-home-06-hero-photo.yml'
+permissions:
+  contents: write
+concurrency:
+  group: meg-home-hero-photo-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  hero-photo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install image encoder without touching app dependencies
+        run: npm install --prefix /tmp/meg-home-photo --no-save --audit=false --fund=false sharp@0.35.5
+      - name: Download licensed original and generate 1x/2x WebP
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 4 --retry-all-errors --connect-timeout 12 --max-time 90 \
+            'https://images.unsplash.com/photo-1646641222646-38d313dc9aa6?auto=format&fit=crop&w=3200&q=88' \
+            -o /tmp/meg-hero-mountains-source
+          MEG_SHARP_MODULE=/tmp/meg-home-photo/node_modules/sharp \
+          MEG_HOME_PHOTO_SOURCE=/tmp/meg-hero-mountains-source \
+            node scripts/meg-web-home-06.hero-photo.mjs
+      - name: Commit only generated hero photos to Home branch
+        shell: bash
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/web/public/meg-web-evolution/home/meg-hero-mountains-1600.webp \
+                  apps/web/public/meg-web-evolution/home/meg-hero-mountains-2560.webp
+          if git diff --cached --quiet; then
+            echo 'Assets already up to date.'
+            exit 0
+          fi
+          git commit -m 'assets(home): publicar montanhas fotográficas locais em WebP HD e 2x'
+          git fetch origin "$BRANCH"
+          git rebase "origin/$BRANCH"
+          git push origin "HEAD:$BRANCH"
