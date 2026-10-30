@@ -1218,3 +1218,201 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Bloco visual de autenticação fechado:** Telas 01 Carregamento, 02 Login, 03 Criar Conta e 04 Recuperar Senha estão **aprovadas visualmente pelo usuário em suas revisões de referência**. Simetria, grade, alinhamento e destaque da logo MEG são regras permanentes para próximas telas. Qualquer mudança posterior nessas telas exige nova validação visual específica.
 - **Limites técnicos não dispensados:** aprovação visual **não** homologa efetivo envio da senha temporária, autenticação, cadastro, integração com backend, segurança de permissões, acesso a banco, responsividade E2E em todos os dispositivos ou testes financeiros. No Render, o modo `previewOnly` continua sem envio de e-mail ou chamada à API de recuperação.
 - **Estado do projeto:** PR #649 **Draft**, sem merge; `main` e Android congelado intocados; DataGrid e regras de negócio financeiras preservadas. Nenhum avanço automático à Home ou telas posteriores neste chat. Continuar por chat/etapa autorizada, começando pela etapa seguinte definida no Prompt Master e no checkpoint aplicável, após seus gates.
+
+
+---
+
+## 30/10/2026 — Recomeço oficial da Home 06, sem herança visual reprovada
+
+**Decisão explícita atual, prevalente para a Home:** o print escolhido permanece como norte de identidade, cor e composição, **sem obrigação de reprodução pixel a pixel**. Estão autorizadas melhorias criativas comprováveis em hierarquia gerencial, gráfico, proporções, acessibilidade e responsividade. Essa flexibilização se aplica somente à Home 06; a prioridade das regras financeiras e a proteção das demais telas aprovadas permanecem.
+
+**Base limpa autorizada:** branch `meg-web-evolution/06-home-reinicio-20261030`, criada a partir da cabeça da PR #649 (`7d80367c078ba5816014baedaa1ac0a94dc4e2d8`). Verificado que `apps/web/src/meg-web-evolution/` nessa origem inclui `auth/`, `components/`, `datagrid/`, `shell/`, `styles/` e `main.tsx`, mas **não inclui `home/`**. A PR #650 está visualmente reprovada e NÃO faz parte da base nova. Não mesclar a #650.
+
+**Visual validado pelo usuário:** carregamento inicial, Login, Criar Conta, recuperação/alteração de senha, carregamento pós-login, sidebar/topbar (busca e período) e DataGrid. A validação visual não substitui homologação funcional.
+
+**Nova diretriz:** construção visual limpa bloco por bloco. Fotos e assets reais HD para cenas decorativas, DOM/SVG/ECharts para dados, textos, botões e gráficos. Rótulo de benefício genérico (`Benefício Alimentação` no caso pessoal), sem impor a marca Verocard ao produto comercial; preservar vínculos de domínio existentes.
+
+**Auditoria preliminar:** `phoenix/`, `web-next/`, `mobile/`, `legacy-*.js` e previews antigos presentes no repositório/Render. A presença de testes/entradas antigas impede exclusão generalizada sem mapa de dependências. Nada foi removido da main, API, Android ou Render.
+
+**Banco:** Supabase `meg-financas` contém esquema financeiro e dados exploratórios somente leitura associados ao cadastro do administrador configurado. Render não listou PostgreSQL próprio, mas hospeda APIs e previews. A conexão da API de produção com esse banco ainda não foi comprovada. Métricas de análise não autorizam valores fixos na UI.
+
+**Documentação completa:** `docs/MEG-WEB-HOME-REINICIO-20261030.md` (auditoria inicial, direção visual e plano de isolamento/limpeza).
+
+**Status:** Etapa Home 06 em REDEFINIÇÃO, nova apresentação ainda não implementada e não homologada; PR #650 Draft sem merge. Prioridade: especificação visual em componentes novos, validação no navegador e publicação de prévia comprovada. Não avançar para outras telas.
+
+**PR de trabalho nova:** [#651](https://github.com/MarcosVilalva/MEG-Platform/pull/651), Draft, base PR #649; aberta em 30/10/2026 para a reconstrução limpa da Home. **PR #650 continua rejeitada e fora da base.**
+
+
+## 30/10/2026 | Home 06 clean-room implementada inicialmente na PR #651
+
+**Este checkpoint substitui o estado anterior "sem Home implementada", mas NÃO constitui homologação visual ou funcional.**
+
+- Home criada exclusivamente em \`apps/web/src/meg-web-evolution/home/\`: \`HomeDashboard.tsx\`, \`HomeChart.tsx\`, \`HomeGlyph.tsx\`, \`home-dashboard.css\` e módulo separado de prévia. Nenhum import de Home CSS/JSX da PR #650.
+- O \`main.tsx\` da nova Web foi conectado ao \`HomeDashboard\` **somente após sessão autenticada**; Loading, Login, Criar Conta, Recuperação de Senha, Shell/sidebar, topbar e DataGrid compartilhado foram mantidos.
+- Hero com foto verdadeira HD WebP e CSS dark teal isolado; benefício alimentação tem outra foto verdadeira, sem branding Verocard. Origens/licenças em \`docs/MEG-HOME-06-VISUAL-ASSETS.md\`. Servidas pelo CDN na revisão inicial, não são assets WebP locais.
+- Gráfico ECharts com barras de \`cashflow.days.income\` e \`expense\` e linha de \`cashflow.days.net\`, tooltip BRL, vazio/privacidade e zero tratamento financeiro no cliente.
+- APIs existentes: summary, cashflow, benefício, events, accounts, categories, cards e payables. **Novo endpoint de leitura** \`GET /finance/home-available?date=YYYY-MM-DD\` chama exclusivamente a função canônica \`monetaryBalanceAt\` e respeita autorização do workspace. Até publicar API correspondente, saldo disponível apresenta indisponibilidade, sem estimativa.
+- Cards: receitas, despesas, despesas previstas (não confundidas com Payable) e quantidade de cartões. Benefícios fora do saldo monetário. Próximos compromissos combinam *linhas de leitura* identificadas como evento previsto ou payable, sem somar ou alterar status.
+- Navegação para telas ainda não implementadas responde com aviso explícito, sem forçar rota falsa. Integrações das outras etapas permanecem pendentes.
+- **Prévia pública isolada:** \`apps/web/home-06-panorama.html\`, fixture explicitamente fictícia (não importada no fluxo autenticado); Render \`https://meg-home-06-panorama-clean.onrender.com\`. Verificar SHA implantado antes de enviar link de validação.
+- Testes criados: \`scripts/meg-home-06-panorama-viewport.mjs\`, workflow \`.github/workflows/meg-home-06-panorama.yml\`; sete viewports, privacidade, gráfico, screenshots de topo e rodapé.
+- **Evidência inicial:** workflow \`41050062978\` no SHA \`0f48f118e3ec2d8006bc79b73fe01a699eb35ed0\` concluiu **success**; capturas reais em sete tamanhos foram inspecionadas. Fundação do mesmo SHA falhou em teste legado de Shell, que esperava Shell visível sem autenticação. Foi criado harness técnico exclusivo para testar o Shell existente, sem modificar autenticação. Verificar novos gates do SHA vigente, não presumir verde.
+- **Proteções:** API financeira não teve fórmulas alteradas; apenas endpoint protegido de leitura. Android, componentes visuais da Etapa 05, sidebar, tokens globais e DataGrid permanecem preservados. PR #651 Draft; não merge.
+- **Pendências críticas:** confirmar Foundation com harness, testar fluxo autenticado com a nova rota de saldo publicada na API autorizada, conferir capturas inferiores das tabelas, validar responsividade e aprovação visual explícita do usuário. Nenhuma tela futura autorizada.
+
+
+### Home 06 | Revisão pós-capturas, DataGrids, mobile e leitura futura (30/10/2026)
+
+- Artefato de captura visual \`41051561294\`, SHA \`d65ed5623eb5a6811c902fbadace84151e6d4991\`, concluído com **success**. Inspeção efetiva das capturas \`desktop-1672.png\`, \`desktop-1672-bottom.png\`, \`mobile-390.png\`, \`mobile-390-bottom.png\`.
+- Corrigido o viewport do DataGrid **somente dentro do CSS isolado da Home**, mantendo componente central inalterado. Cabeçalhos, linhas, ferramentas e paginação apareceram no desktop.
+- Corrigida a rolagem da Home em tela de 390px com estilos escopados à Home, sem alterar o Shell: captura mobile inferior passou a mostrar cards de vencimento e rodapé do DataGrid; teste automatizado agora exige scroll efetivo e linhas nos grids.
+- Filtro de últimas movimentações deixou de misturar eventos planejados e futuros com lançamentos realizados; próximos compromissos consultam também eventos planejados do mês seguinte pela API autorizada (\`/finance/events/month?month=\`), mantendo Payable separado e sem calcular saldos/status na UI.
+- **Gates:** novo workflow Home Panorama tinha sucesso no commit \`d65ed562\`; atualização funcional \`b8ec0f531c138944c4243e40f16a1d28f87e4389\` disparou nova execução, que ainda não estava concluída ao registrar esta nota. Foundation geral mantém falhas de baseline/screenshot do DataGrid em execução anterior; não afirmar verde.
+- **Render:** serviço de preview \`meg-home-06-panorama-clean\` publica por auto-deploy da PR #651. Somente oferecer link sem cache após verificar explicitamente o SHA do deploy em status live.
+- A **implementação ainda não está visualmente homologada** pelo usuário; não fazer merge da PR #651 nem avançar para telas futuras.
+
+
+## 30/10/2026 | Home 06 | Refino visual e interações após avaliação do usuário
+
+**Retorno do usuário:** a nova Home da PR #651 melhorou bastante, mas o usuário pediu maior refinamento de alinhamentos/proporções, ocultação opcional de filtros nos grids, redução dos espaços vazios, abandono da fotografia genérica do hero, ações em cards e carrossel compacto de cartões. Autorizou seguir com essas sugestões. A Home implementada **não foi homologada**.
+
+**Mudanças entregues na mesma PR #651, ainda Draft:**
+
+- HomeDashboard.tsx: hero executivo reduzido sem paisagem; saldo monetário e resultado realizado em áreas distintas. Gráfico mantém séries financeiras, com maior área útil. Cards de Receitas/Despesas filtram movimentações na própria Home; Pendências rola até compromissos; Cartões rola até carrossel. Botão Ver detalhes do saldo rola até movimentações da Home.
+- Carrossel com cartões reais fornecidos pela API, anterior/próximo, fatura aberta e detalhes expansíveis como limite e dia de vencimento somente se constarem na autoridade canônica. Sem soma financeira local, sem logos de bandeira inventados. Fixture isolada de prévia contém 3 cartões claramente fictícios.
+- home-dashboard.css: composição compacta reescrita na folha isolada, sem pilha de CSS legado. Hero dark teal abstrato substitui foto de montanhas. Relação ECharts/KPIs 8/4 e bloco Benefícios/Cartões/Ações 4/3/5. Foto de alimentos apenas no benefício.
+- DataGrid homologado não foi editado. Toggle Mostrar/Ocultar filtros na Home esconde área primária de filtros/ordenação, preservando busca, seletor de colunas, XLS/PDF e contagem de filtros ativos. Estados independentes para os dois DataGrids.
+- Script scripts/meg-home-06-panorama-viewport.mjs acrescentou testes de filtros, mudança de cartão, expansão de detalhes e seleção do KPI Receitas, além de sete capturas de desktop/tablet/celular, sem overflow e com rolagem mobile.
+- Workflow Home Panorama #41055360810: success, SHA 4d9851d0cc303b1bcf99f2ddb1fcfd486a47abf7. Evidências reais do navegador arquivadas no GitHub Actions; verificadas capturas desktop/mobile, incluindo rodapé.
+- Mudança posterior: CTA Ver detalhes do saldo usa a própria Home, SHA 2b7b3876d375300705d4fa91655979b5d52b9568. Os checks dessa nova cabeça exigem confirmação separada.
+
+**Proteções e pendências:** sidebar, topbar, autenticação, DataGrid, API de regras financeiras e Android não foram alterados nesta rodada. PR #651 segue Draft sem merge. Endpoint home-available criado anteriormente ainda depende de deploy da API para retornar saldo real. Verificar Foundation do SHA final, Render em status live com commit exato e recolher aprovação visual explícita da nova Home. Navegação para telas futuras ainda usa aviso, não simula funcionalidades inexistentes.
+
+
+## 30/10/2026 | Home 06 | Nova direção fotográfica aprovada para implementação
+
+**Autorização explícita:** após mostrar a imagem "Painel Financeiro Futurista MEG.png" o usuário a aprovou como direção de qualidade, com adaptação funcional ao MEG, e solicitou implementação. A imagem é referência de composição/impacto, não screenshot de interface pronta. **A Home implementada ainda não foi homologada.**
+
+**Escopo:** PR #651 Draft, somente Home 06. Não importar JSX/CSS de Home rejeitada (#650), não alterar Android, autenticação, Shell, sidebar, topbar, DataGrid compartilhado nem cálculos financeiros.
+
+**Implementado nesta rodada:**
+- Hero panorâmico com fotografia REAL de montanhas sob céu turquesa, WebP HD da Unsplash (autoria/licença no arquivo docs/MEG-HOME-06-VISUAL-ASSETS.md). Títulos/valores/ações são DOM. Saldo monetário continua vindo da API canônica e pode aparecer como indisponível antes do deploy da rota.
+- Quatro KPIs em faixa própria: Receitas, Despesas, Benefício e Pendências previstas. Valores exclusivamente de summary/benefit-summary; nenhum percentual inventado. Cada KPI foca a seção adequada. Não criar módulos inexistentes.
+- Gráfico ECharts central com barras income/expense e linha net canônicas por dia, com acesso aos relatórios quando o módulo existir.
+- Carrossel "Meus cartões" ao lado do gráfico: cartão visual com FOTO real abstrata de luz azul em alta resolução, SVG de bandeiras Visa/Mastercard/Elo/Amex apenas quando brand do cadastro corresponde, sem inventar bandeira pelo nome do banco; previews usam nomes/bandeiras fictícios claramente rotulados. Navegação e detalhes de fatura/limite/dia do cartão mediante API.
+- Benefício Alimentação mantém foto REAL de mercado; saldo separado das contas monetárias e conteúdo clicável com aviso quando tela futura ainda não foi construída.
+- Nos dois DataGrids homologados, a área COMPLETA de ferramentas `.meg-datagrid-toolbar` agora vem recolhida e é ocultada por inteiro por padrão, sem faixa vazia; ação "Mostrar/Ocultar filtros" é independente por grid, mas não perde estado/persistência de filtros.
+- Layout reconstruído na folha de estilo da própria Home, sem CSS do protótipo rejeitado. Breakpoints 640/1024, sem scroll horizontal esperado.
+
+**Arquivos alterados/criados:** HomeDashboard.tsx, home-dashboard.css, CardBrandMark.tsx (novo), preview.fixture.ts, scripts/meg-home-06-panorama-viewport.mjs, docs/MEG-HOME-06-VISUAL-ASSETS.md, presente checkpoint.
+
+**Gates ainda pendentes neste registro:** build atual e screenshots reais; conferência de filtros/carrossel em sete viewports; resultado do Foundation geral; Render publicar exato SHA em status live; comparação visual e aprovação explícita do usuário no navegador. PR #651 permanece Draft e **não pode ser mesclada**.
+
+
+## 30/10/2026 | Vídeo 13-09-45.mp4 | Autonomia operacional da Home 06
+
+**Decisão explícita do usuário:** daqui para frente ele enviará vídeos para avaliação e delegará à assistência as decisões de composição, correção, implementação e refinamento da Home 06. NÃO solicitar escolhas intermediárias repetidas. Continuar exigindo aprovação visual explícita antes de chamar uma tela de homologada. Respeitar gates financeiros/Android congelado. O usuário solicitou ainda alerta antecipado se o chat se alongar e checkpoint antes de transição de conversa.
+
+**Vídeo real analisado:** `13-09-45.mp4`, duração ~46,8 s, captura desktop 1920×1080 da prévia pública no navegador. Foi revisada sequência de topo, carrossel, navegação e rolagem até ambos os DataGrids.
+
+**Evidências e decisões desta rodada:**
+1. O carrossel principal muda de cartão e exibe bandeira; porém os *peeks* laterais eram retângulos genéricos com ícone, sem identidade dos outros cartões. Substituídos por cartões adjacentes visuais com o próprio nome e bandeira provenientes de `data.cards[cardIndex ± 1]`, textura fotográfica, sem inventar registros ou marca. Nenhum card adjacente quando não houver registro.
+2. O clique em ação ainda não implementada exibia barra informativa **no fluxo normal** acima do hero, deslocando toda a página (confirmado em ~11–18s). Aviso foi convertido em toast `position: fixed`, sem deslocamento geométrico e com botão fechar, deixando claro que o módulo ainda está indisponível nesta etapa.
+3. Os DataGrids da Home foram inspecionados no vídeo na parte inferior: toolbar recolhida por padrão, cabeçalhos, linhas, rodapé/paginação visíveis. **Preservados**, sem alteração no DataGrid central e sem novos overrides desnecessários.
+
+**Arquivos desta revisão:** `apps/web/src/meg-web-evolution/home/HomeDashboard.tsx`, `home-dashboard.css`, `scripts/meg-home-06-panorama-viewport.mjs`, este checkpoint. O teste agora confere identidade real do próximo cartão e ausência de layout shift após toast. Preview e API não devem ser divulgados como homologados sem confirmar CI do SHA atual e deploy Render live.
+
+**Escopo e bloqueios:** PR #651 Draft; sem merge; sem edição de Android, API financeira, autenticação, Shell, topbar, DataGrid nem telas futuras. Home ainda sem homologação visual. Não tratar dados da prévia como dados financeiros reais.
+
+**Continuidade entre chats:** consultar este checkpoint e `docs/MEG-WEB-HOME-REINICIO-20261030.md`. A etapa autorizada permanece **Home 06**, e o próximo chat deve continuar exclusivamente nela. O vídeo seguinte passa a ser evidência direta para diagnóstico e decisões autônomas.
+
+
+## 30/10/2026 | Continuação Home 06 | Cartões e saldo, PR #651 (aguardando validação)
+
+- Nova direção explícita do usuário: dar protagonismo aos cartões, material fotográfico real e sensação física; eliminar o container artificial do saldo disponível. Autonomia para correções intermediárias, mas sem homologar sem aprovação visual expressa.
+- A versão atual mantém fotografias reais HD já licenciadas (montanha, luz azul, alimentos) e acrescenta fotografia de pedra preta sob o carrossel. Cartões aumentados, com textura fotográfica, chip/ícone de aproximação decorativos, efeitos de luz e sombra e fatura em linha de informação fora do cartão. Os dados, bandeiras e quantidades continuam sendo lidos da API, nunca inventados no fluxo autenticado.
+- Saldo disponível redesenhado como dado monetário principal diretamente sobre fotografia panorâmica, sem card/container translúcido independente. Controle de privacidade e acesso a movimentações preservados. Indisponibilidade da rota canônica continua explicitada, sem cálculo alternativo.
+- `14-13-34.mp4` foi citado como evidência; o arquivo binário ainda não está acessível no chat atual ou nos anexos localizados. Não declarar análise quadro a quadro desse vídeo nem aprovação visual.
+- Mudança restrita a JSX/CSS da Home e documentação/checkpoint; proteger Android, Shell, topbar, autenticação, DataGrid e cálculos financeiros. Commit/gates/Render devem ser registrados pelo SHA efetivo; PR segue Draft e sem merge.
+
+
+## 30/10/2026 | Home 06 | Correção de proporção, indicadores e loop infinito
+
+- Vídeo recebido e efetivamente inspecionado: `14-48-11.mp4` (20,715 s, desktop 1920x1080). Foi observado desperdício vertical no hero, cartões de Receita/Despesa com ícones isolados acima do rótulo e carrossel que trava na primeira/última posição.
+- Pesquisa nas conversas e documentação histórica confirmou contrato funcional de carrossel cíclico/infinito, cartão central, anterior/posterior, enquadramento correto e mobile responsivo. Referências visuais antigas não foram promovidas a padrão da nova Web.
+- JSX da Home: rótulo e ícone dos 4 KPIs agora compartilham uma linha, notas repetidas de Receitas/Despesas removidas; hero reduzido, chamada visual redundante removida; saldo monetário permanece canônico.
+- Carrossel: índice módulo N; anterior do primeiro é o último, próximo do último é o primeiro; navegação circular por botões, cartões laterais e indicadores; setas só desabilitam para 0/1 cartão; para 2 cartões evita mostrar duas prévias do mesmo registro; teclado setas esquerda/direita e swipe horizontal em touchscreen; animação lateral com `prefers-reduced-motion` respeitado. Nenhuma clonagem de registros financeiros.
+- Teste Playwright reforçado para detectar travamento de ponta, validação de identidade dos peeks e alinhamento vertical título/ícone dos indicadores.
+- Proteções: PR #651 Draft, sem merge; não modificar Android, finanças centrais, API, Shell, autenticação e DataGrid central. Gates, screenshots reais e Render SHA-live precisam ser conferidos e validação visual explícita continua pendente.
+
+
+## 30/10/2026 | Home 06 | Revisão de proporções após reprovação visual
+- Usuário reprovou novamente o preview da Home, apesar de correção técnica do carrossel. **Não homologar.**
+- Diagnóstico pela captura real Playwright do SHA `ffd6299d`: hero com grande área fotográfica sem conteúdo; gráfico relegado a 5/12 e carrossel a 7/12; cartão central superdimensionado; no mobile o título e a área do período da visualização sobrepostos. A aparência foi considerada insatisfatória, ainda que Home Panorama tenha passado.
+- Correção estrutural apenas no CSS isolado da Home: relação visual do gráfico/carrossel invertida para 7/5, cartão principal em escala menor com peeks adjacentes, altura do hero reduzida, KPIs limpos, atalhos menos altos e seções Benefícios/Ações em 6/6. Removidos estilos de elementos não usados. Retirada a legenda supérflua do hero e o período duplicado do título do gráfico.
+- Teste de viewport passou a medir eventual sobreposição real entre título e ação do gráfico. Carrossel cíclico da rodada anterior preservado.
+- Gates devem ser verificados no HEAD da revisão e as capturas devem ser examinadas antes de apresentar prévia para avaliação. PR #651 continua Draft, sem merge.
+- No HEAD anterior `ffd6299d`, a suíte Home Panorama passou, mas a Foundation geral falhou em regressões/baselines visuais do DataGrid e testes da toolbar. Essa falha não autoriza mexer no DataGrid desta etapa.
+
+
+## 30/10/2026 | Home 06 | Reconstrução de layout aprovada para execução, ainda sem homologação
+- O usuário reprovou visualmente as composições anteriores. A instrução "Continue" autoriza reconstrução apenas da camada visual da **Home 06**, após confronto com o modelo financeiro `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`. Nenhuma nova entidade/campo/regra financeira permitida.
+- Problema raiz: cartão esticado artificialmente ao lado do gráfico e saldos/KPIs com quantidade inadequada de espaço vazio; vários CSS de correção acumulados. A nova Home usa folha CSS reescrita de forma isolada, sem reaproveitar estilos rejeitados da PR #650.
+- Nova estrutura: `pano-spotlight` desktop com saldo fotográfico e carrossel de cartão real lado a lado em grade 4/6; indicadores compactos numa linha, cada valor à direita do ícone; segunda faixa com gráfico financeiro e coluna de Benefícios/Ações rápidas; DataGrids mantidos no fim.
+- Preservados: modelos de leitura da API, saldo monetário e benefício segregados, privacidade, filtros, fatura canônica, navegação cíclica de cartões com swipe e teclado, estado vazio, DataGrid compartilhado e Shell.
+- Proporções móveis estruturalmente empilhadas em 1024/640, sem breakpoints improvisados. Verificações Playwright adicionais de horizontalidade do KPI, centro do cartão, cartões adjacentes e geometria da área superior.
+- Limite técnico: fotografia via CDN ainda não está vendorizada; integração autenticada real não foi validada; teste Home Panorama e Foundation do SHA devem ser verificados, assim como preview Render *live* antes de validar visualmente. PR #651 Draft, sem merge, usuário ainda não aprovou Home.
+
+
+### Home 06 | Inspeção de captura do SHA 3792647 e correção geométrica
+- Home Panorama no SHA `3792647e8b51a63c5fdee48d0a532c04d41e018d` apresentou SUCCESS; Render também confirmou `live`. Inspeção visual humana das capturas reais 1672px e 390px identificou **cartão central cortado verticalmente no desktop**, além de cartões adjacentes demasiado largos com aparência de painéis, apesar de teste automatizado verde. A tela permanece NÃO HOMOLOGADA.
+- Ajuste na mesma estrutura limpa: estágio recebe altura mínima suficiente para cartão com proporção física 1,72; cartão principal limitado a 20rem desktop; vizinhos recebem proporção física 1,72 e sobreposição controlada; variante responsiva mantém cartão inteiro.
+- Playwright agora verifica a visibilidade integral da face do cartão (top/bottom) e proporção geométrica dos cartões adjacentes em cada viewport, além dos testes cíclicos/financeiros existentes. Não houve mudança financeira nem no Android, Shell, auth ou DataGrid.
+
+
+## 30/10/2026 | Home 06 | Auditoria explícita de responsividade após vídeo 16-31-44.mp4
+
+- Usuário novamente **reprovou** visualmente a Home 06, perguntando onde estão as regras de responsividade. Vídeo `16-31-44.mp4` realmente examinado no chat: 14,817 segundos, vídeo de navegador desktop 1920x1080 (frames revisados entre início, navegação circular e rolagem até os DataGrids). Evidência: carrossel de cartões laterais gigantes, cartão físico central pequeno perante o espaço útil e conjunto visual não coerente. **O vídeo não demonstra diretamente viewport mobile**.
+- Regras obrigatórias reforçadas: mobile-first, apenas 640px e 1024px para quebras principais; conteúdo dimensionado pelo espaço, não esticado; zero rolagem horizontal da página; nenhuma sobreposição, truncamento funcional ou elemento inacessível; DataGrid adaptável e controles de toque >=42px visíveis.
+- Auditoria encontrou CSS anterior desktop-first, `height:100dvh;max-height:100dvh` imposto ao body do Shell na Home mobile e controles dos dots com área de 16px. CSS da Home corrigido para defaults de celular com progressão `min-width:640px` e `min-width:1024px`; body da Home utiliza altura herdada `100%` do Shell já aprovado para preservar scroll interno sem reaplicar uma altura fixa em dvh; nenhum CSS compartilhado alterado.
+- Nova estrutura `pano-financial-column`: saldo e KPIs 2x2 formam **coluna esquerda** na largura desktop, cartões ocupam **coluna direita**; em tablet/celular empilhamento estrutural. Carrossel limitado a palco de até 43rem de largura e cards na proporção física 1,72; parou de esticar vizinhos conforme largura arbitrária da página. Setas, dots e controle de privacidade têm alvos >=44 CSS px.
+- Teste Playwright ampliado para 1920px e 360px, scroll real do conteúdo, ausência de overflow horizontal do `.meg-main`, geometria do scroll, escalas visuais dos cartões e alvos de toque. Teste verde não implica aprovação visual; capturas da nova revisão devem ser inspecionadas antes de apresentar como validação.
+- Não editar Android, API financeira, auth, Shell, sidebar ou DataGrid; nenhum campo, entidade ou regra financeira criada. PR #651 permanece Draft, sem merge; sem homologação.
+
+
+### Correção imediata de captura: números quebrados em 320px e coluna insuficiente em 1024px
+- Após revisão efetiva das capturas no commit `eed6285`: em 320px, indicadores quebravam último dígito de valores monetários; em 1024px a coluna de 4/6 com sidebar expandida espremia saldo e KPIs, quebrando seus valores. **Testes gerais tinham passado, mas a regressão visual era real.**
+- Fix sem terceiro breakpoint: grid de KPIs usa `repeat(auto-fit,minmax(min(100%,10.5rem),1fr))` no mobile; em 320px um card por linha, em 390px dois. Para desktop ≥1024, área superior usa `auto-fit` com trilhas mínimas de 31,5rem, de modo que a sidebar existente determine quantas colunas cabem sem quebra. Valores monetários ganham `white-space:nowrap` com tamanhos tipográficos compatíveis.
+- Teste Playwright passa a falhar quando `strong` de moeda ocupa duas linhas. Autonomia financeira e UX não alteradas; continua pendente captura visual de novo HEAD, CI/Render e validação expressa.
+
+
+### 30/10/2026 | Gate após correção 47acfa: falso negativo de geometria, sem nova regra
+- Capturas finais do SHA `47acfa825a44e23b47a9b6d70d6604fd5bde827e` foram efetivamente revisadas: em 320px os números de KPI não quebram; em 1024px o saldo/KPIs empilham sobre o carrossel sem cortes ou overflow. Outros 7 viewports passaram métricas e interações.
+- Workflow Home Panorama saiu como failure **por assert antigo `tightCards` em 1024px**, que exigia mesma linha entre saldo e cartão sempre que `innerWidth>=1024`, mesmo quando CSS `auto-fit` detecta largura insuficiente da área do Shell. Não era falha funcional observada da Home, mas falso negativo no teste.
+- Corrigido teste para consultar as colunas reais computadas do grid: em uma coluna exige empilhamento com gap <=32px, em duas exige alinhamento no topo e ausência de sobreposição. Sem alteração visual, API, Android, Shell ou DataGrid neste commit. Novo gate precisa passar antes de liberar link de validação do SHA final.
+
+
+### Correção de harness após workflow #41117909227
+- Workflow Home Panorama do SHA `f9295434` falhou antes das capturas por **SyntaxError: Identifier 'spotlight' has already been declared**. Auditoria do script também identificou variável de retorno `tracks/isStacked` no contexto incorreto. Ambas as falhas são do teste e foram corrigidas sem alterar a Home.
+- As capturas reais do SHA `47acfa` já mostraram números íntegros em 320px e empilhamento seguro em 1024px. O único motivo confirmado da falha do SHA `47acfa` era o teste antigo que exigia cards alinhados horizontalmente em todos os desktops. Revalidar no próximo SHA, sem chamar a tela homologada.
+
+
+### Gate Home 06 | CSS Grid auto-fit e colunas vazias
+- SHA `b28128a2`: workflow visual executou nove viewports e interações; falha isolada `tightCards=false` somente em 1920px. Causa do script: CSS `repeat(auto-fit,...)` pode retornar também trilha colapsada `0px` no `gridTemplateColumns`, que foi contada como terceira coluna fictícia. A captura desktop confirmou somente duas colunas ocupadas, sem corte.
+- Teste corrigido para contar somente trilhas reais `>1px`. Nenhuma mudança no código de Home/financeiro; conferir novo gate final antes de proclamar sucesso.
+
+
+## 30/10/2026 | Home 06 | Evidência 17-01-12.mp4 e correção de largura efetiva
+- Vídeo de **17,203 segundos**, captura de navegador desktop 1920x1080, inspecionado quadro a quadro por amostragem (16 quadros). A imagem mostra a segunda faixa com `Benefícios` e `Ações rápidas` ocupando apenas parte estreita da coluna direita, deixando faixa vazia extensa, mesmo em viewport largo. No vídeo também é possível verificar que a navegação circular de cartões opera; isto NÃO prova aprovação visual.
+- Causa reproduzida por leitura do CSS do HEAD `c44cfd`: no breakpoint ≥1024px `.pano-mid{display:flex;flex-direction:column}` herda do estilo base `align-items:start`; filhos `.pano-benefits` e `.pano-actions` encolhem para largura intrínseca em lugar de preencher a coluna definida pelo grid exterior. Corretivo: `align-items:stretch` e `width:100%;align-self:stretch` na camada exclusivamente da Home.
+- A lista de cinco ações rápidas agora usa colunas automáticas com mínimo útil de `6.4rem`, em vez de cinco colunas forçadas dentro de 5/12 de largura em 1024px. Mantidos somente breakpoints 640/1024px e todos os botões/fluxos existentes.
+- Playwright verifica largura efetiva da coluna de Benefícios/Ações em relação às trilhas reais, além da largura de cada ação rápida (mínimo 88px) nos nove viewports. Finanças, Android, Shell, autenticação, DataGrid inalterados. Requer gate técnico e visual da PR #651 em Draft, sem merge nem homologação.
+
+
+## 30/10/2026 | Continuidade Home 06 e auditoria de autodeploy Render
+- Direção explícita do usuário: **manter o funcionamento automático** do Render, corrigir desperdício de build e erros de verificação. Não suspender automaticamente os ambientes importantes.
+- Checagem de PR #651 no SHA `9e188d6b`: Home Panorama falhou antes da execução por duplicação de `const panels`; corrigido no script com `midPanels`, sem alterar tela. Workflow Home agora inclui `node --check` antes do npm ci e reporta corretamente nove resoluções.
+- Build Render segue bloqueado por consumo de 500/500 minutos de pipeline; último deploy comprovado live `c44cfd37`. A nova revisão de testes/documentação usa `[skip render]` para não provocar build desnecessário. CI GitHub Actions permanece automático.
+- Foundation anterior falhou em testes de toolbar e screenshots do DataGrid compartilhado. **Não atualizar snapshots automaticamente nem tocar no DataGrid em uma etapa da Home.**
+- Auditoria operacional e roteiro de filtros seguros para autodeploy: `docs/MEG-RENDER-PUBLICACAO-AUTOMATICA-AUDITORIA-20261030.md`. Conector Render não oferece update de filtros em serviços já existentes. Nenhuma alteração de produção no Render, API ou banco.
+- Home 06 sem homologação, PR Draft e sem merge. Próximos gates requerem conclusão e inspeção visual de screenshots gerados pelo novo SHA.

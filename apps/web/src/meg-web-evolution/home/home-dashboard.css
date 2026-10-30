@@ -1,0 +1,208 @@
+/* MEG Web Evolution | Home 06 | reconstrução estrutural isolada.
+   Autoridade financeira na API; estilos apenas na Home, sem tocar no Shell ou no DataGrid. */
+.meg-shell:has(.pano-root) .meg-main{display:block;min-width:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1b7775 transparent}
+.pano-root{--p-line:rgba(41,189,171,.31);--p-muted:#9cbcbf;color:#effcf9;min-width:0;width:100%;box-sizing:border-box;padding:.44rem .42rem 1rem;background:#03191d;font-family:Inter,system-ui,sans-serif}
+.pano-root *,.pano-root *::before,.pano-root *::after{box-sizing:border-box}
+.pano-root button{font:inherit;cursor:pointer}
+.pano-root button:focus-visible,.pano-card-stage:focus-visible{outline:2px solid #a6ffe6;outline-offset:2px}
+.pano-root svg{flex-shrink:0}
+.pano-root h2,.pano-root h3{font-family:Manrope,Inter,system-ui,sans-serif;letter-spacing:-.025em}
+.pano-preview-banner{border:1px solid #aa8743;background:#48381b64;color:#ffe9c1;border-radius:.36rem;padding:.33rem .6rem;font-size:.68rem;margin-bottom:.5rem}
+.pano-error{display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;padding:.65rem .8rem;border:1px solid #ae854d;border-radius:.54rem;background:#3e311f;color:#f5deb5;font-size:.78rem}
+.pano-notice{position:fixed;z-index:1100;inset:auto .9rem .9rem auto;display:flex;align-items:center;gap:.65rem;width:min(28rem,calc(100vw - 2rem));padding:.7rem .8rem;border:1px solid #9adbc177;border-radius:.65rem;background:#06353ef2;color:#eafff9;box-shadow:0 14px 36px #001314cf;font-size:.76rem;backdrop-filter:blur(14px)}
+.pano-notice span{flex:1}
+.pano-notice button,.pano-error button{min-height:2.3rem;padding:.2rem .6rem;border:1px solid currentColor;border-radius:.4rem;background:transparent;color:inherit;margin-left:auto}
+.pano-loading{padding:2rem;color:#a1c7c3}
+.pano-panel{min-width:0;border:1px solid var(--p-line);border-radius:.77rem;background:linear-gradient(145deg,#052c32,#042129);padding:.76rem .83rem;box-shadow:inset 0 1px #bdfffa08,0 5px 18px #00131632}
+.pano-panel-title{display:flex;align-items:center;justify-content:space-between;min-width:0;gap:.5rem}
+.pano-panel-title h2{display:flex;align-items:center;gap:.45rem;margin:0;min-width:0;font-size:.94rem;line-height:1.3;font-weight:800}
+.pano-panel-title h2 svg{color:#43ebc9}
+.pano-panel-title>span{font-size:.67rem;color:#a0c7c7;text-align:right}
+.pano-financial-column{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:0;align-content:start}
+.pano-spotlight{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:.5rem;min-width:0}
+.pano-hero{position:relative;isolation:isolate;display:flex;min-width:0;min-height:8.5rem;align-items:flex-start;justify-content:center;flex-direction:column;padding:.85rem;border:1px solid #2aac9b70;border-radius:.7rem;overflow:hidden;background:#052c30}
+.pano-hero::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#031b23ec 0%,#03242cc9 51%,#042c3780 100%),url("https://images.unsplash.com/photo-1604240400568-c50e9a0f518f?auto=format&fit=crop&w=1800&q=85&fm=webp") 58% center/cover no-repeat}
+.pano-hero::after{content:"";z-index:-1;position:absolute;inset:0;background:linear-gradient(0deg,#001d2260,transparent 60%);pointer-events:none}
+.pano-balance{display:flex;flex-direction:column;align-items:flex-start;gap:.56rem;min-width:0;width:100%;text-shadow:0 2px 12px #00191b}
+.pano-balance-top{display:flex;align-items:center;gap:.5rem;min-width:0;font-size:.82rem;font-weight:770;color:#f2fffc}
+.pano-balance-top>span{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+.pano-balance-scope{font-size:.58rem;letter-spacing:.075em;font-weight:800;color:#8ef0d8}
+.pano-balance-top button{display:grid;place-items:center;width:2.75rem;height:2.75rem;flex:0 0 2.75rem;background:#07484c9c;border:1px solid #63c6b56d;border-radius:50%;color:#d4fff8}
+.pano-balance>strong{font-size:clamp(1.75rem,7.6vw,3.4rem);font-weight:850;line-height:1.12;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:100%}
+.pano-balance-bottom{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem .85rem}
+.pano-balance-bottom>span{color:#b3d7d6;font-size:.69rem}
+.pano-balance-bottom button{display:inline-flex;align-items:center;gap:.32rem;min-height:2.35rem;border:0;border-bottom:1px solid #62d5c58c;padding:.25rem 0;border-radius:0;background:transparent;color:#7df2d9;font-size:.72rem;font-weight:750}
+.pano-cards{display:flex;flex-direction:column;min-width:0;gap:.16rem;padding:.62rem .65rem .57rem;border-color:#2aa99591;background:linear-gradient(130deg,#062e35,#05212a)}
+.pano-carousel-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-height:2.3rem}
+.pano-view-all,.pano-flow-open{display:inline-flex;align-items:center;gap:.32rem;justify-content:center;min-height:2.75rem;padding:.32rem .56rem;border:1px solid #238a8379;border-radius:.42rem;background:#07545a66;color:#a0f9e4;font-size:.71rem;font-weight:750;white-space:nowrap}
+.pano-card-stage{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%;max-width:43rem;min-width:0;min-height:clamp(10.5rem,52vw,12rem);overflow:hidden;margin:.22rem auto .28rem;border-radius:.56rem;touch-action:pan-y;outline-offset:2px}
+.pano-card-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,#051d29d8,#03303881 48%,#071a25d6),url("https://images.unsplash.com/photo-1699982758974-0703b87f052d?auto=format&fit=crop&w=1600&q=82&fm=webp") center/cover no-repeat;filter:saturate(.68)}
+.pano-card-stage::after{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 50% 90%,#00e0b71c,transparent 67%);pointer-events:none}
+.pano-credit-card,.pano-card-peek{color:#fff;position:absolute;isolation:isolate;overflow:hidden;text-align:left;border:1px solid #bdfff585;background:#063644}
+.pano-credit-card{z-index:3;display:flex;flex-direction:column;justify-content:space-between;gap:.16rem;aspect-ratio:1.72/1;width:min(62%,20rem);min-height:0;padding:.5rem .55rem;border-radius:.62rem;box-shadow:0 10px 25px #001118e3,0 0 18px #17e6cb19,inset 0 1px 1px #ffffff46;transform:translateZ(0);transition:box-shadow .18s,border-color .18s}
+.pano-credit-card::before,.pano-card-peek::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(112deg,#031b2fcf,#04344cb7 55%,#007f8090),url("https://images.unsplash.com/photo-1591963372472-1fdb7539a42e?auto=format&fit=crop&w=1300&q=86&fm=webp") center/cover no-repeat}
+.pano-credit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(128deg,#ffffff17,transparent 44%,#c0ffff0e 57%,transparent 75%),linear-gradient(0deg,#001627a4,transparent 55%);pointer-events:none}
+.pano-credit-card.pano-plastic-tone-1::before,.pano-card-peek.pano-peek-tone-1::before{filter:hue-rotate(33deg) saturate(1.2)}
+.pano-credit-card.pano-plastic-tone-2::before,.pano-card-peek.pano-peek-tone-2::before{filter:hue-rotate(-32deg) saturate(.84)}
+.pano-credit-card:hover{border-color:#befff2;box-shadow:0 12px 29px #000e18ef,0 0 18px #10dfbe3f}
+.pano-card-peek{z-index:2;top:50%;width:38%;height:auto;aspect-ratio:1.72/1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:.3rem;padding:.38rem .25rem;border-color:#529aa48f;border-radius:.55rem;box-shadow:0 9px 20px #00131db0;filter:brightness(.78);transform:translateY(-50%) scale(.92)}
+.pano-card-peek.is-prev{left:3%}
+.pano-card-peek.is-next{right:3%}
+.pano-card-peek:hover{filter:brightness(.95);border-color:#78eddf}
+.pano-card-peek-brand{display:flex;align-items:center;justify-content:center;min-height:1.8rem;max-width:100%;transform:scale(.86)}
+.pano-card-peek-name{font-size:.53rem;line-height:1.18;max-width:100%;font-weight:800;word-break:break-word;text-align:center}
+.pano-credit-card-top,.pano-credit-card-bottom{display:flex;justify-content:space-between;align-items:center;gap:.36rem}
+.pano-credit-card-top{align-items:flex-start;min-height:1.5rem;color:#e6ffff}
+.pano-credit-card-name{font-size:clamp(.77rem,2.8vw,1rem);font-weight:850;line-height:1.14;overflow-wrap:anywhere;text-shadow:0 1px 5px #00141e}
+.pano-credit-card-meta{font-size:clamp(.55rem,2vw,.67rem);letter-spacing:.025em;color:#d1e8ea}
+.pano-credit-card-bottom{margin-top:auto}
+.pano-credit-card-bottom>span{font-size:clamp(.55rem,2vw,.69rem);color:#e1f7f6;line-height:1.2;letter-spacing:.03em}
+.pano-card-hardware{display:flex;align-items:center;gap:.32rem}
+.pano-card-chip{width:2.35rem;height:1.72rem;filter:drop-shadow(0 1px 2px #001622)}
+.pano-card-contactless{width:.96rem;height:1.12rem;opacity:.85}
+.pano-card-kind{font-size:.53rem!important;color:#c5e9e3!important;font-weight:800;letter-spacing:.12em!important}
+.pano-scheme{flex-shrink:0;max-width:65px}
+.pano-scheme-elo{font-size:1.3rem;font-weight:900;color:#fff}
+.pano-scheme-amex{background:#2b6bae;padding:.17rem;font-size:.65rem;font-weight:900;color:white;border-radius:.2rem}
+.pano-scheme-unavailable{font-size:.72rem;letter-spacing:.13em;font-weight:800;color:#d4fffa}
+.pano-card-amount{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.22rem .4rem;margin-top:.06rem;padding:.4rem .15rem .3rem;border-top:1px solid #3f8d8760;color:#b0cece;font-size:.73rem}
+.pano-card-amount strong{color:#f4fffd;font-size:1.09rem;letter-spacing:-.022em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pano-card-nav{display:flex;align-items:center;justify-content:space-between;gap:.32rem;min-height:2.75rem}
+.pano-card-nav>button{display:grid;place-items:center;width:2.75rem;height:2.75rem;flex:0 0 2.75rem;padding:0;border:1px solid #368f8d8b;border-radius:50%;background:#07434b;color:#baffef}
+.pano-card-nav>button:first-child svg{transform:rotate(180deg)}
+.pano-card-nav>button:disabled{opacity:.35;cursor:default}
+.pano-card-nav>span:not(.pano-card-indicator){display:none;min-width:0;flex:1;text-align:center;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:.67rem;color:#a4caca}
+.pano-card-indicator{display:flex;align-items:center;gap:0;justify-content:center;max-width:min(100%,12rem);overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+.pano-card-indicator button{width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;flex:0 0 2.75rem;display:grid;place-items:center;padding:0;border:0;background:transparent}
+.pano-card-indicator::-webkit-scrollbar{display:none}
+.pano-card-indicator button::after{content:"";display:block;width:.3rem;height:.3rem;background:#376f7b;border-radius:50%}
+.pano-card-indicator button.is-current::after{background:#49f1cd;box-shadow:0 0 8px #49f1cd}
+.pano-card-details{display:flex;flex-direction:column;gap:.3rem;padding:.5rem .65rem;border:1px solid #3a9e9a66;border-radius:.5rem;background:#042d35}
+.pano-card-details>span{display:flex;justify-content:space-between;gap:.5rem;font-size:.7rem;color:#bbd3d5}
+.pano-card-details>span strong{color:#fff}
+.pano-card-details>button,.pano-card-empty button{min-height:2.35rem;border:1px solid #39a99b;border-radius:.42rem;background:#0d5155;color:#a5ffea}
+.pano-card-empty{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.45rem;flex:1;color:#a9d1ce;font-size:.73rem}
+@keyframes pano-card-next{from{opacity:.65;translate:12% 0;scale:.94}to{opacity:1;translate:0 0;scale:1}}
+@keyframes pano-card-prev{from{opacity:.65;translate:-12% 0;scale:.94}to{opacity:1;translate:0 0;scale:1}}
+.pano-credit-card.is-arriving-next{animation:pano-card-next .28s ease-out both}
+.pano-credit-card.is-arriving-prev{animation:pano-card-prev .28s ease-out both}
+.pano-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));align-items:stretch;gap:.38rem;margin-top:.46rem;min-width:0}
+.pano-stat{min-width:0;min-height:5rem;display:flex;align-items:center;justify-content:flex-start;padding:.49rem .45rem;text-align:left;border:1px solid #238f888a;border-radius:.64rem;background:linear-gradient(145deg,#062e34,#04242c);color:#f6fffc;transition:border-color .16s,background .16s}
+.pano-stat:hover{background:#0b3940;border-color:#37dabb}
+.pano-stat-head{display:flex;align-items:center;gap:.43rem;min-width:0;width:100%}
+.pano-stat-icon{display:grid;place-items:center;width:2rem;height:2rem;flex:0 0 2rem;background:#0a5850;color:#49efc9;border-radius:.48rem}
+.pano-stat.is-expense .pano-stat-icon{background:#4e2736;color:#ff8d9c}
+.pano-stat.is-pending .pano-stat-icon{background:#554024;color:#ffd28d}
+.pano-stat.is-benefit .pano-stat-icon{background:#0b5a52;color:#9cffe3}
+.pano-stat-copy{display:flex;flex-direction:column;justify-content:center;gap:.16rem;min-width:0;flex:1}
+.pano-stat-label{font-size:clamp(.65rem,2.7vw,.76rem);line-height:1.18;font-weight:760;color:#badbd7}
+.pano-stat strong{width:100%;font-size:clamp(.86rem,3.25vw,1.08rem);font-weight:850;letter-spacing:-.02em;line-height:1.16;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pano-stat small{font-size:.59rem;line-height:1.2;color:#a8c9c3}
+.pano-finance-block{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem;min-width:0;align-items:start;margin-top:.5rem}
+.pano-flow{display:flex;flex-direction:column;min-width:0;min-height:0}
+.pano-flow-head{display:flex;align-items:center;justify-content:space-between;gap:.45rem;flex-wrap:wrap}
+.pano-flow-head>.pano-panel-title{flex:1 1 9rem}
+.pano-flow-balance{display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;margin:.38rem 0 .2rem}
+.pano-flow-balance>span{font-size:.7rem;color:#a4cbc9}
+.pano-flow-balance strong{color:#52efc9;font-size:1.02rem;font-weight:850;font-variant-numeric:tabular-nums}
+.pano-chart{width:100%;height:12rem;min-height:11rem;flex:1}
+.pano-chart-placeholder{flex:1;min-height:13rem;display:grid;place-items:center;color:#b1d3d1;text-align:center;padding:.6rem;font-size:.73rem}
+.pano-flow-footnote{margin:.2rem 0 0;font-size:.67rem;line-height:1.3;color:#90b7b5}
+.pano-chart-key{display:inline-block;width:.34rem;height:.34rem;border-radius:50%;background:#4fe9c4}
+.pano-chart-key.is-expense{background:#ff889c}
+.pano-mid{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;align-items:stretch;gap:.5rem}
+.pano-benefits,.pano-actions{min-width:0;width:100%;align-self:stretch}
+.pano-benefits>.pano-panel-title>span{font-size:.6rem;line-height:1.15;max-width:11rem}
+.pano-benefit-card{position:relative;isolation:isolate;display:flex;align-items:stretch;width:100%;min-height:7rem;margin-top:.5rem;padding:0;overflow:hidden;border-radius:.6rem;border:1px solid #55d6b47a;background:#064138;color:white;text-align:left}
+.pano-benefit-card::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#03242cf7 0%,#06483fbd 53%,#04483d19),url("https://images.unsplash.com/photo-1705140643816-2bb76d7ddeb1?auto=format&fit=crop&w=1250&q=84&fm=webp") right 45%/cover no-repeat}
+.pano-benefit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(0deg,#02282285,transparent 54%);pointer-events:none}
+.pano-benefit-card:hover{border-color:#9af7d5}
+.pano-benefit-card-copy{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.15rem;min-width:0;padding:.56rem .7rem;text-shadow:0 1px 7px #001f27}
+.pano-eyebrow{font-size:.59rem;font-weight:830;letter-spacing:.08em;color:#7df0da}
+.pano-benefit-card-copy h3{font-size:.95rem;margin:0;font-weight:830}
+.pano-benefit-card-copy>span:not(.pano-eyebrow):not(.pano-benefit-callout){font-size:.61rem;color:#c8e5df}
+.pano-benefit-card-copy strong{font-size:1.34rem;line-height:1.1;font-weight:870;font-variant-numeric:tabular-nums}
+.pano-benefit-callout{display:inline-flex;align-items:center;gap:.25rem;font-size:.62rem;font-weight:770;color:#8effe0}
+.pano-benefit-visual{margin-left:auto;width:30%;flex:0 0 30%}
+.pano-benefit-details{display:flex;justify-content:space-between;gap:.5rem;margin-top:.4rem;flex-wrap:wrap}
+.pano-benefit-details>span{display:flex;gap:.28rem;align-items:baseline;color:#a3c4c1;font-size:.65rem}
+.pano-benefit-details strong{font-size:.75rem;font-weight:850;color:#fff}
+.pano-action-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,6.4rem),1fr));gap:.4rem;margin-top:.45rem;min-width:0;width:100%}
+.pano-action{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.32rem;min-height:5.1rem;min-width:0;padding:.4rem .35rem;border:1px solid #278d888a;border-radius:.55rem;text-align:center;background:#073640;color:#f0faf8}
+.pano-action:hover{background:#0a4951;border-color:#3be0c9}
+.pano-action-icon{display:grid;place-items:center;flex:0 0 2rem;width:2rem;height:2rem;border-radius:.52rem;background:#25e3c1;color:#053a39}
+.pano-action.is-blue .pano-action-icon{background:#246dc9;color:white}
+.pano-action.is-violet .pano-action-icon{background:#7352c5;color:white}
+.pano-action.is-amber .pano-action-icon{background:#a98331;color:white}
+.pano-action.is-slate .pano-action-icon{background:#3b647d;color:white}
+.pano-action strong{font-size:.7rem;line-height:1.22;font-weight:800;overflow-wrap:anywhere}
+.pano-action small{display:none}
+.pano-tables{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem;margin-top:.5rem}
+.pano-grid{min-width:0;overflow:visible}
+.pano-grid-heading{display:flex;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}
+.pano-grid-heading>.pano-panel-title h2{font-size:.86rem}
+.pano-grid-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.35rem}
+.pano-grid-actions button{display:inline-flex;align-items:center;justify-content:center;gap:.25rem;min-height:2.75rem;padding:.27rem .5rem;border:1px solid #299e966d;border-radius:.42rem;background:#063e46;color:#70f6df;font-size:.69rem}
+.pano-grid:not(.is-filters-open) .meg-datagrid-toolbar{display:none}
+.pano-grid .meg-datagrid{min-width:0;border-color:#24686858!important;background:transparent!important;box-shadow:none!important}
+.pano-grid .meg-datagrid__viewport{flex:0 0 auto;min-height:8rem;height:auto;max-height:none;overflow:auto}
+.pano-grid .meg-datagrid-table,.pano-grid .meg-datagrid-table td{font-size:.71rem}
+.pano-grid .meg-datagrid-table th{background:#082b31!important}
+.pano-status{display:inline-flex;padding:.2rem .4rem;border:1px solid #c58b3860;border-radius:99px;background:#503e253a;color:#ffdb98;font-size:.68rem;white-space:nowrap}
+.pano-positive{color:#4cf2b9}
+.pano-negative{color:#ff8897}
+
+/* Etapa 06: mobile-first, somente os dois breakpoints oficiais. */
+.meg-shell:has(.pano-root) .meg-shell-body{height:100%;min-height:0;max-height:none}
+.meg-shell:has(.pano-root) .meg-main{min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+.pano-grid-heading{flex-wrap:wrap}
+.pano-grid-actions{margin-left:auto}
+.pano-panel-title>span{white-space:normal}
+.pano-credit-card .pano-scheme{max-width:3.6rem}
+.pano-root button{touch-action:manipulation}
+.pano-grid .meg-datagrid-cards{min-width:0}
+@media(min-width:640px){
+ .pano-root{padding:.6rem .7rem 1.15rem}
+ .pano-hero{min-height:10rem;padding:1rem 1.15rem}
+ .pano-balance{gap:.65rem}
+ .pano-balance>strong{font-size:clamp(2.6rem,4.1vw,3.45rem)}
+ .pano-overview{gap:.5rem;margin-top:.5rem}
+ .pano-stat{padding:.6rem .7rem;min-height:5.2rem}
+ .pano-stat-icon{width:2.3rem;height:2.3rem;flex-basis:2.3rem}
+ .pano-stat-label{font-size:.76rem}
+ .pano-stat strong{font-size:clamp(1.05rem,1.6vw,1.3rem)}
+ .pano-spotlight{gap:.6rem}
+ .pano-cards{padding:.72rem .8rem}
+ .pano-card-stage{min-height:13rem}
+ .pano-credit-card{width:min(58%,21rem);padding:.75rem .9rem}
+ .pano-credit-card-name{font-size:1.05rem}
+ .pano-card-peek{width:37%;padding:.6rem .4rem}
+ .pano-card-peek.is-prev{left:4%}
+ .pano-card-peek.is-next{right:4%}
+ .pano-card-amount strong{font-size:1.2rem}
+ .pano-card-nav>span:not(.pano-card-indicator){display:block}
+ .pano-chart{height:14rem;min-height:13rem}
+ .pano-finance-block{gap:.6rem;margin-top:.6rem}
+ .pano-mid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .pano-action-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,6.4rem),1fr))}
+ .pano-tables{gap:.6rem;margin-top:.6rem}
+ .pano-grid-heading{flex-wrap:nowrap}
+}
+@media(min-width:1024px){
+ .pano-root{padding:.7rem .8rem 1.2rem}
+ .pano-spotlight{grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));gap:.62rem;align-items:stretch}
+ .pano-financial-column{grid-template-rows:auto auto;gap:0}
+ .pano-hero{min-height:10rem;padding:1rem 1.15rem}
+ .pano-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:.46rem;margin-top:.46rem}
+ .pano-stat{min-height:4.9rem}
+ .pano-cards{min-height:0}
+ .pano-card-stage{min-height:13rem}
+ .pano-finance-block{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:.6rem}
+ .pano-mid{display:flex;flex-direction:column;align-items:stretch;gap:.6rem}
+ .pano-tables{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .pano-action-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,6.4rem),1fr));gap:.4rem}
+ .pano-action{min-height:5.3rem;padding:.38rem .2rem}
+ .pano-action strong{font-size:.62rem}
+ .pano-chart{height:14rem;min-height:13rem}
+}
+@media(prefers-reduced-motion:reduce){.pano-root *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
