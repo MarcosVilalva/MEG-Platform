@@ -51,7 +51,7 @@ try{
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
    return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
-    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,tracks,isStacked,
+    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,wrappedAmounts,
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   const layout=await page.evaluate(()=>{
@@ -64,8 +64,8 @@ try{
     return Boolean(icon&&amount&&amount.left>=icon.right-1);
    });
    const financialColumn=document.querySelector('.pano-financial-column')?.getBoundingClientRect();
-   const spotlight=document.querySelector('.pano-spotlight');
-   const tracks=spotlight?getComputedStyle(spotlight).gridTemplateColumns.trim().split(/\s+/).length:0;
+   const spotlightEl=document.querySelector('.pano-spotlight');
+   const tracks=spotlightEl?getComputedStyle(spotlightEl).gridTemplateColumns.trim().split(/\s+/).length:0;
    const isStacked=tracks===1;
    const tightCards=Boolean(cards&&hero&&financialColumn&&(isStacked
     ? cards.top>=financialColumn.bottom-2&&cards.top-financialColumn.bottom<=32&&Math.abs(cards.left-financialColumn.left)<=3

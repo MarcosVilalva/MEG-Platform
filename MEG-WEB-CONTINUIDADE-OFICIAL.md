@@ -1390,3 +1390,8 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Capturas finais do SHA `47acfa825a44e23b47a9b6d70d6604fd5bde827e` foram efetivamente revisadas: em 320px os números de KPI não quebram; em 1024px o saldo/KPIs empilham sobre o carrossel sem cortes ou overflow. Outros 7 viewports passaram métricas e interações.
 - Workflow Home Panorama saiu como failure **por assert antigo `tightCards` em 1024px**, que exigia mesma linha entre saldo e cartão sempre que `innerWidth>=1024`, mesmo quando CSS `auto-fit` detecta largura insuficiente da área do Shell. Não era falha funcional observada da Home, mas falso negativo no teste.
 - Corrigido teste para consultar as colunas reais computadas do grid: em uma coluna exige empilhamento com gap <=32px, em duas exige alinhamento no topo e ausência de sobreposição. Sem alteração visual, API, Android, Shell ou DataGrid neste commit. Novo gate precisa passar antes de liberar link de validação do SHA final.
+
+
+### Correção de harness após workflow #41117909227
+- Workflow Home Panorama do SHA `f9295434` falhou antes das capturas por **SyntaxError: Identifier 'spotlight' has already been declared**. Auditoria do script também identificou variável de retorno `tracks/isStacked` no contexto incorreto. Ambas as falhas são do teste e foram corrigidas sem alterar a Home.
+- As capturas reais do SHA `47acfa` já mostraram números íntegros em 320px e empilhamento seguro em 1024px. O único motivo confirmado da falha do SHA `47acfa` era o teste antigo que exigia cards alinhados horizontalmente em todos os desktops. Revalidar no próximo SHA, sem chamar a tela homologada.
