@@ -1557,3 +1557,14 @@ Usuário determinou que a Home exiba também o saldo do benefício. Alterações
 - **Preservação obrigatória:** Shell/sidebar, autenticação, DataGrid compartilhado, fonte única e adaptadores, contratos/autoridades financeiras e Android. Reutilizar regras e interfaces de dados estáveis não significa reaproveitar UI antiga.
 - **Validação incremental real:** hero, KPIs, fluxo, benefícios, ações e tabelas, com captura de navegador nas larguras necessárias, antes de declarar a Home implementada. Nunca equiparar testes verdes a homologação visual.
 - **Status:** a imagem escolhida continua homologada como referência, mas a implementação da PR #650 foi reprovada; PR deve permanecer Draft e sem merge. Esta atualização é documental, sem reconstrução realizada nesta rodada.
+
+
+## Home 06 | Nova implementação isolada, sem reaproveitamento visual (29/10/2026)
+
+- Usuário autorizou continuar após reprovar a Home anterior e exigir reconstrução de cada componente visual do zero.
+- `HomeScreen.tsx` substituiu integralmente o JSX visual reprovado. Preserva somente tipos de contrato, chamadas autenticadas às APIs, adaptadores financeiros, navegação e DataGrid; novo layout com hero panorâmico, saldo monetário, quatro KPIs, Fluxo ECharts, Benefícios separados, cinco atalhos e dois DataGrids.
+- `home-clean.css` **novo**, escrito do zero, é a única folha de estilos importada pelo novo HomeScreen. `home.css` permanece no repositório por histórico, porém não é importado pela nova Home. Não há empilhamento de overrides antigos.
+- Gráfico `HomeCashflowChart.tsx` usa `cashflow.days` canônico (`income`, `expense`, `net`) com barras e linha, sem inventar rentabilidade. Asset fotográfico HD já licenciado foi preservado como recurso estático, não como CSS legado.
+- Commit inicial da nova base: `47169f333d3ad8eb215eca3a4207d2bbfa315007`; nova folha de estilos `1addadac38eb8bc167deada907e3c50594e83b11`.
+- **Estado:** a nova implementação ainda não foi homologada visualmente. Gates Foundation, Home Visual/Build, Graphic Independence e Preflight do último commit estavam em execução na verificação. Não há confirmação de publicação SHA exato no Render. PR #650 Draft, sem merge.
+- **Próximo passo:** inspecionar resultados e capturas da execução real; corrigir somente defeitos comprovados, sem recuperar a folha de estilos rejeitada. Android, API financeira, auth, Shell e DataGrid preservados.
