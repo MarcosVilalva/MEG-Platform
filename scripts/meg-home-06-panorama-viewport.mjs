@@ -41,6 +41,9 @@ try{
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
   await page.waitForTimeout(250);
+  const scroll=await page.locator('.meg-main').evaluate(element=>({top:element.scrollTop,client:element.clientHeight,content:element.scrollHeight}));
+  console.log(name+' vertical-scroll',JSON.stringify(scroll));
+  if(width<=639 && (scroll.content<=scroll.client+120 || scroll.top<100))failed=true;
   await page.screenshot({path:join(dir,name+'-bottom.png')});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=0});
   const safe=result.overflow<=1&&result.clip<=1&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
