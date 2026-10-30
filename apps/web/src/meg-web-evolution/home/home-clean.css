@@ -1,0 +1,66 @@
+/* HOME 06 | construção visual limpa, sem importação da folha rejeitada.
+   Apenas componentes de apresentação, nenhuma regra monetária. */
+.meg-shell:has(.hc-home) .meg-main{display:block;min-width:0;overflow-x:hidden;overflow-y:auto}
+.hc-home{--hc-edge:rgba(36,193,182,.28);--hc-bg:#02232a;--hc-text:#f0fffc;--hc-muted:#a9ceca;box-sizing:border-box;width:100%;min-width:0;padding:1rem 1.15rem 1.7rem;color:var(--hc-text);font-family:Inter,system-ui,sans-serif;background:radial-gradient(ellipse at 70% 0%,rgba(0,111,101,.15),transparent 50%),#02191d}
+.hc-home *,.hc-home *::before,.hc-home *::after{box-sizing:border-box}
+.hc-home button{font:inherit;cursor:pointer}
+.hc-home button:focus-visible{outline:2px solid #5bffdd;outline-offset:3px}
+.hc-layout{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:.8rem}
+.hc-layout>*{min-width:0}
+.hc-preview{padding:.45rem .75rem;color:#ffe3ad;border:1px solid #a78449;border-radius:.5rem;background:#3a301d;margin-bottom:.75rem;font-size:.76rem}
+.hc-panorama{grid-column:1/-1;position:relative;isolation:isolate;min-height:15.4rem;display:flex;align-items:flex-end;padding:1.2rem;overflow:hidden;border:1px solid var(--hc-edge);border-radius:1rem;background:#042930}
+.hc-panorama::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(0,30,38,.67),rgba(0,33,41,.10)),image-set(url("/meg-web-evolution/home/meg-hero-mountains-1600.webp") 1x,url("/meg-web-evolution/home/meg-hero-mountains-2560.webp") 2x);background-position:center,center 50%;background-size:cover}
+.hc-panorama::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#001d2726,transparent 45%,#001b2a55)}
+.hc-panorama-intro{position:absolute;top:1.2rem;left:1.4rem;right:1rem;text-shadow:0 2px 8px #00181b}
+.hc-eyebrow{font-size:.67rem;color:#73fce1;font-weight:800;letter-spacing:.11em}
+.hc-panorama-intro h1{margin:.3rem 0;font-size:clamp(1.1rem,2vw,1.65rem);line-height:1.15;letter-spacing:-.035em}
+.hc-panorama-intro p{font-size:.81rem;margin:0;color:#d6ebe8}
+.hc-balance{width:min(100%,31rem);margin-top:5.6rem;padding:.85rem 1rem;background:rgba(0,32,40,.74);border:1px solid rgba(132,255,229,.35);border-radius:.85rem;backdrop-filter:blur(16px);box-shadow:0 12px 32px #00141c88;display:flex;flex-direction:column;gap:.22rem}
+.hc-balance-head{display:flex;align-items:center;justify-content:space-between;font-size:.9rem;font-weight:750}
+.hc-balance-head button{display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:.6rem;border:1px solid #2da99b77;background:#063f42;color:#a3fff1}
+.hc-balance>strong{font-size:clamp(2rem,4vw,2.95rem);font-variant-numeric:tabular-nums;letter-spacing:-.05em;line-height:1.08}
+.hc-balance small{font-size:.72rem;color:#c0e3da}
+.hc-detail{display:flex;align-items:center;gap:.45rem;align-self:flex-start;padding:.4rem .1rem;color:#64f8dc;border:0;background:transparent;font-size:.75rem;font-weight:700}
+.hc-finance{grid-column:1/-1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:.8rem}
+.hc-stats{grid-column:span 6;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;min-width:0}
+.hc-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:.55rem;min-width:0;min-height:14.5rem;text-align:left;padding:1rem .75rem;background:linear-gradient(150deg,#063b42,#02252f);border:1px solid var(--hc-edge);border-radius:.82rem;color:inherit}
+.hc-stat:hover,.hc-action-grid button:hover{border-color:#46f6d4;background-color:#0b4850}
+.hc-stat-icon{display:grid;place-items:center;width:2.75rem;height:2.75rem;border-radius:50%;background:#025c58;color:#61f4d2}
+.hc-red .hc-stat-icon{background:#5a2933;color:#ff899a}.hc-blue .hc-stat-icon{background:#103c78;color:#84bdff}.hc-amber .hc-stat-icon{background:#514022;color:#fbd38b}
+.hc-stat-label{font-size:.76rem;color:#c0d7d5;font-weight:700}
+.hc-stat strong{font-size:clamp(.91rem,1.25vw,1.25rem);letter-spacing:-.025em;line-height:1.2;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.hc-stat small{font-size:.67rem;color:#96c5bf}
+.hc-panel{min-width:0;overflow:hidden;border:1px solid var(--hc-edge);border-radius:.88rem;background:linear-gradient(155deg,#043139,#021f28);padding:.9rem}
+.hc-flow{grid-column:span 6;display:flex;flex-direction:column;min-height:14.5rem}
+.hc-heading{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-width:0;margin-bottom:.7rem}
+.hc-heading h2{display:flex;align-items:center;gap:.5rem;min-width:0;margin:0;font-size:.94rem;line-height:1.25;font-weight:800}
+.hc-heading h2 svg{color:#4fefd2;flex-shrink:0}
+.hc-heading>span{font-size:.7rem;color:#b5d7d3}
+.hc-heading button{display:flex;align-items:center;gap:.3rem;padding:.35rem;color:#66e9d7;border:0;background:none;font-size:.69rem;white-space:nowrap}
+.hc-flow-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;padding-bottom:.45rem;border-bottom:1px solid #2fb6b630}
+.hc-flow-numbers>div{display:flex;flex-direction:column;gap:.24rem;min-width:0}
+.hc-flow-numbers span{font-size:.68rem;color:#b4d4d0}
+.hc-flow-numbers b{font-size:clamp(.82rem,1.15vw,1.06rem);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.hc-positive{color:#37e7b8!important}.hc-negative{color:#ff7585!important}
+.hc-flow .meg-home-flow-chart{flex:1;position:relative;min-height:8rem}
+.hc-flow .meg-home-flow-canvas{position:absolute;inset:0;width:100%;height:100%}
+.hc-flow .meg-home-flow-empty{font-size:.77rem;color:#a6c9c3}
+.hc-benefit,.hc-actions,.hc-table{grid-column:span 6}
+.hc-benefit-main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}
+.hc-benefit-main>div{display:flex;flex-direction:column;gap:.35rem;padding:.75rem;min-width:0;border:1px solid #238f8d4c;border-radius:.7rem;background:#073a40}
+.hc-benefit-main span{font-size:.72rem;color:#c1e4df}.hc-benefit-main strong{font-size:clamp(.9rem,1.5vw,1.2rem);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.hc-benefit-main small{font-size:.66rem;color:#90d8d0}
+.hc-action-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.5rem}
+.hc-action-grid button{min-height:6.25rem;padding:.65rem .3rem;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.6rem;border-radius:.7rem;border:1px solid #259b9670;background:#043840;color:#edfffc;font-size:.7rem;font-weight:700;overflow-wrap:anywhere}
+.hc-action-grid button span{display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:50%;color:#023537;background:#2ae5c4}
+.hc-action-grid button:nth-child(2) span{color:#fff;background:#2468d8}.hc-action-grid button:nth-child(3) span{color:#fff;background:#7854c7}.hc-action-grid button:nth-child(4) span{color:#fff;background:#95712b}.hc-action-grid button:nth-child(5) span{color:#e3edff;background:#395c72}
+.hc-table{min-height:17rem;overflow:visible}
+.hc-table .meg-datagrid{background:transparent!important;border:none!important;box-shadow:none!important}
+.hc-table .meg-datagrid__viewport{max-height:none;height:auto;overflow:visible}
+.hc-table .meg-datagrid-table{font-size:.73rem}
+.hc-table .meg-datagrid-table th{background:#082d34!important;font-size:.71rem}
+.hc-table .meg-datagrid-table td{font-size:.72rem}
+.hc-status{display:inline-flex;border-radius:99px;padding:.18rem .4rem;background:#58421c;color:#f6d48c;font-size:.69rem}
+@media(max-width:1290px) and (min-width:1024px){.hc-stats{grid-column:1/-1}.hc-flow{grid-column:1/-1;min-height:17rem}.hc-stat{min-height:8.5rem}}
+@media(max-width:1023px){.hc-finance{grid-template-columns:repeat(2,minmax(0,1fr))}.hc-stats,.hc-flow{grid-column:1/-1}.hc-stat{min-height:9rem}}
+@media(max-width:639px){.hc-home{padding:.55rem}.hc-layout{gap:.6rem}.hc-panorama{padding:.7rem;min-height:19rem}.hc-panorama-intro{top:1rem;left:.9rem}.hc-balance{margin-top:5.6rem;width:100%}.hc-finance{gap:.6rem}.hc-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hc-stat{min-height:9rem}.hc-flow-numbers{grid-template-columns:repeat(2,minmax(0,1fr))}.hc-flow-numbers>div:last-child{grid-column:1/-1}.hc-benefit,.hc-actions,.hc-table{grid-column:1/-1}.hc-benefit-main{grid-template-columns:minmax(0,1fr)}.hc-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hc-table .meg-datagrid-cards{min-width:0}.hc-stat strong{font-size:1.04rem}}
+@media(prefers-reduced-motion:reduce){.hc-home *{transition:none!important;animation:none!important}}
