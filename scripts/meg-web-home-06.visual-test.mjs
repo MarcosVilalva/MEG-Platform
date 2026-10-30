@@ -45,6 +45,29 @@ try {
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
    assert.ok(balanceSize>=31,'saldo visualmente protagonista '+name+': '+balanceSize);
    assert.equal(await page.locator('.meg-home-quick-action').count(),5,'5 ações funcionais '+name);
+   const iconGeometry=await page.evaluate(()=>{
+     const bounds=selector=>[...document.querySelectorAll(selector)].map(el=>{
+       const r=el.getBoundingClientRect();
+       return {width:r.width,height:r.height,top:r.top};
+     });
+     return {kpi:bounds('.meg-home-kpi-icon'),quick:bounds('.meg-home-quick-icon'),section:bounds('.meg-home-heading-icon')};
+   });
+   assert.equal(iconGeometry.kpi.length,4,'quatro ícones de KPI '+name);
+   assert.equal(iconGeometry.quick.length,5,'cinco ícones de ação '+name);
+   for(const [group,entries] of Object.entries(iconGeometry)){
+     assert.ok(entries.every(b=>Math.abs(b.width-b.height)<1.2),name+': ícone '+group+' não é quadrado '+JSON.stringify(entries));
+     assert.ok(Math.max(...entries.map(x=>x.height))-Math.min(...entries.map(x=>x.height))<1.2,name+': ícones '+group+' com tamanhos divergentes');
+   }
+   const graphic=await page.evaluate(()=>({
+     background:getComputedStyle(document.querySelector('.meg-home-hero-visual')).backgroundImage,
+     sizing:getComputedStyle(document.querySelector('.meg-home-hero-visual')).backgroundSize,
+     oldFake:document.querySelectorAll('.meg-home-hero-led').length,
+     chartCanvas:document.querySelectorAll('.meg-home-flow-chart canvas').length,
+   }));
+   assert.ok(graphic.background.includes('meg-hero-mountains-2560.webp'),name+': foto HD local não aplicada');
+   assert.equal(graphic.oldFake,0,name+': gráfico decorativo do saldo não removido');
+   assert.ok(graphic.chartCanvas>0,name+': gráfico ECharts não desenhou no canvas');
+
    const balanceToggle=page.getByRole('button',{name:'Ocultar saldos'});
    await balanceToggle.click();
    assert.equal(await page.locator('.meg-home-hero-balance').innerText(),'R$ •••••');
