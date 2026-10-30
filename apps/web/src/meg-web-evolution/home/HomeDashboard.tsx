@@ -18,7 +18,7 @@ export type HomeFinancialData={
  payables:Array<{id:string;description:string;dueDate:string;status:string;openAmount:number;categoryId?:string|null}>;
  accounts:Array<{id:string;name:string;type?:string}>;
  categories:Array<{id:string;name:string}>;
- cards:Array<{id:string;name:string;statementAmount?:number;payableStatementAmount?:number}>;
+ cards:Array<{id:string;name:string;issuer?:string|null;brand?:string|null;lastFour?:string|null;creditLimit?:number;availableLimit?:number;usedLimit?:number;statementAmount?:number;payableStatementAmount?:number;dueDay?:number|null;isActive?:boolean}>;
 };
 type Action='novo'|'transferencia'|'pendentes'|'cartoes'|'lancamentos'|'beneficios'|'relatorios'|'metas';
 type Props={previewData?:HomeFinancialData;onNavigate?:(target:Action)=>void;month?:string};
@@ -70,6 +70,24 @@ function Money({value,hidden,className=''}:{value:number|null|undefined;hidden:b
 function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;month:string;preview:boolean;onNavigate?:Props['onNavigate']}){
  const [hidden,setHidden]=useState(false);
  const [notice,setNotice]=useState<string|null>(null);
+ const [movementMode,setMovementMode]=useState<'all'|'income'|'expense'>('all');
+ const [showMovementFilters,setShowMovementFilters]=useState(false);
+ const [showDueFilters,setShowDueFilters]=useState(false);
+ const [movementFiltersCount,setMovementFiltersCount]=useState(0);
+ const [dueFiltersCount,setDueFiltersCount]=useState(0);
+ const [cardIndex,setCardIndex]=useState(0);
+ const [cardExpanded,setCardExpanded]=useState(false);
+ const movementSection=useRef<HTMLElement|null>(null);
+ const dueSection=useRef<HTMLElement|null>(null);
+ const cardsSection=useRef<HTMLElement|null>(null);
+ const flowSection=useRef<HTMLElement|null>(null);
+ const reveal=(node:HTMLElement|null)=>node?.scrollIntoView({behavior:'smooth',block:'start'});
+ const focusMovements=(mode:'income'|'expense')=>{setMovementMode(mode);reveal(movementSection.current)};
+ const focusPending=()=>reveal(dueSection.current);
+ const focusCards=()=>reveal(cardsSection.current);
+ const selectedCard=data.cards[cardIndex]??null;
+ const stepCard=(direction:number)=>{setCardIndex(i=>Math.max(0,Math.min(data.cards.length-1,i+direction)));setCardExpanded(false)};
+
  const move=(target:Action)=>{
   if(onNavigate)onNavigate(target);
   else setNotice('A navegação para esta função será ativada quando a tela correspondente for implementada.');
@@ -77,12 +95,12 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const categories=useMemo(()=>new Map(data.categories.map(c=>[c.id,c.name])),[data.categories]);
  const accounts=useMemo(()=>new Map(data.accounts.map(a=>[a.id,a.name])),[data.accounts]);
  const movements=useMemo<Record<string,unknown>[]>(()=>data.transactions
-  .filter(t=>t.status!=='cancelled'&&t.status!=='planned'&&t.date<=dateNow())
+  .filter(t=>t.status!=='cancelled'&&t.status!=='planned'&&t.date<=dateNow()&&(movementMode==='all'||t.type===movementMode))
   .slice().sort((a,b)=>b.date.localeCompare(a.date))
   .slice(0,8).map(t=>({id:t.id,date:t.date,description:t.description,
    category:t.categoryId?categories.get(t.categoryId)||'Sem categoria':'Sem categoria',
    account:t.accountId?accounts.get(t.accountId)||'—':'—',
-   value:t.amount,amount:t.signedAmount,status:t.status})),[data.transactions,categories,accounts]);
+   value:t.amount,amount:t.signedAmount,status:t.status})),[data.transactions,categories,accounts,movementMode]);
  const commitments=useMemo<Record<string,unknown>[]>(()=>{
   const planned=[...data.transactions,...(data.followingTransactions||[])].filter(t=>t.status==='planned'&&t.date>=dateNow()&&t.signedAmount<0)
    .map(t=>({id:'event:'+t.id,date:t.date,description:t.description,
@@ -126,7 +144,10 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
   {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso">×</button></div>}
   <section className="pano-hero" aria-label="Visão financeira">
-   <div className="pano-hero-intro"><span className="pano-eyebrow">SEU PANORAMA FINANCEIRO</span><h1>O controle começa com uma boa visão.</h1><p>Veja o que importa e decida seu próximo passo.</p></div>
+   <div className="pano-hero-intro"><span className="pano-eyebrow"><HomeGlyph name="sparkle" size={14}/> VISÃO GERAL · {period}</span>
+    <h1>Seu dinheiro. Seu próximo passo.</h1><p>Acompanhe os números que orientam suas decisões.</p>
+    <div className="pano-hero-insight"><span>Resultado realizado no mês</span><strong><Money value={data.summary?.realizedResult} hidden={hidden}/></strong></div>
+   </div>
    <div className="pano-balance" aria-label="Saldo disponível monetário">
     <div className="pano-balance-top"><span><HomeGlyph name="wallet" size={19}/> Saldo disponível</span><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={18}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
@@ -134,18 +155,16 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    </div>
   </section>
   <section className="pano-finance-block" aria-label="Leitura gerencial do mês">
-   <section className="pano-panel pano-flow">
-    <PanelTitle icon="chart" title="Fluxo financeiro" meta={period}/>
-    <div className="pano-flow-summary">
-     <div><span><i className="pano-dot is-income"/> Entradas</span><Money value={data.summary?.income} hidden={hidden}/></div>
-     <div><span><i className="pano-dot is-expense"/> Saídas</span><Money value={data.summary?.expense} hidden={hidden}/></div>
-     <div><span><i className="pano-dot is-result"/> Resultado projetado</span><Money value={data.summary?.projectedResult} hidden={hidden}/></div>
+   <section ref={flowSection} className="pano-panel pano-flow">
+    <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro" meta={period}/>
+     <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros"><HomeGlyph name="arrow" size={18}/></button>
     </div>
+    <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
     <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
-    <p className="pano-flow-footnote">Comparação diária fornecida pela camada financeira do MEG. Linha: resultado líquido do dia.</p>
+    <p className="pano-flow-footnote">Entradas e saídas diárias · Linha azul: resultado do dia</p>
    </section>
    <div className="pano-stats">
-    {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>move(s.action)}>
+    {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>s.kind==='income'?focusMovements('income'):s.kind==='expense'?focusMovements('expense'):s.kind==='pending'?focusPending():focusCards()} aria-label={s.label+': '+(s.kind==='cards'?data.cards.length+' cartões':format(s.value,hidden))+'. Abrir detalhes'}>
      <span className="pano-stat-icon"><HomeGlyph name={s.icon} size={23}/></span>
      <span className="pano-stat-label">{s.label}</span>
      <strong>{s.value==null&&s.kind==='cards'?String(data.cards.length):format(s.value,hidden)}</strong>
