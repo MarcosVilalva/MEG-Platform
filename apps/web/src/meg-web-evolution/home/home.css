@@ -61,7 +61,7 @@
     linear-gradient(180deg,rgba(0,42,42,.19),rgba(0,16,24,.7)),
     url("https://images.unsplash.com/photo-1490237251747-4557595144b4?auto=format&fit=crop&w=1600&q=78");
   background-position:center,center,center 52%;background-size:cover;
-  filter:saturate(.85) contrast(1.17);
+  filter:brightness(1.22) saturate(1.14) contrast(1.13);
 }
 .meg-home-hero-visual::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 80% 10%,rgba(27,251,219,.18),transparent 49%)}
 .meg-home-hero-led{position:absolute;right:-2%;bottom:-5%;width:76%;height:100%;opacity:.83}
@@ -234,7 +234,7 @@
   .meg-home-flow-stat-copy strong,.meg-home-flow-result strong{font-size:.92rem}
   .meg-home-flow-totals{gap:.28rem}
   .meg-home-flow-chart{min-height:8rem}
-  .meg-home .meg-home-kpi{min-height:5.9rem;padding:.68rem .7rem}
+  .meg-home .meg-home-kpi{min-height:6.2rem;padding:.68rem .7rem}
   .meg-home-kpi-copy strong{font-size:1.25rem}
   .meg-home .benefits{padding:.8rem}
   .meg-home-benefit-body{width:100%;gap:.65rem}
