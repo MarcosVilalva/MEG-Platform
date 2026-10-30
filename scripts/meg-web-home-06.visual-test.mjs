@@ -36,11 +36,12 @@ try {
    assert.equal((await page.locator('.meg-profile-name').textContent())?.trim(),'Marcos de Andrade Vilalva','identificação demonstrativa do print oficial '+name);
    assert.equal(await page.locator('.meg-home-flow-distribution').count(),1,'fluxo visual com totais da autoridade '+name);
    assert.match(await page.locator('.meg-home-flow-result').innerText(),/Resultado projetado/i,'projectedResult nunca identificado como saldo '+name);
-   assert.equal(await page.locator('.meg-home-atlas .meg-home-intro h1').innerText(),'Sua vida financeira, com clareza.','cabeçalho ATLAS '+name);
-   assert.equal(await page.locator('.meg-home-risk-rail .meg-home-kpi').count(),4,'painel lateral de quatro indicadores '+name);
-   assert.equal(await page.locator('.meg-home-ledger > section').count(),2,'dois DataGrids com largura total '+name);
-   assert.equal(await page.locator('.meg-home img').count(),0,'nenhuma imagem cenográfica dependente de download '+name);
-   assert.equal(await page.locator('.meg-home-wallet-photo,.meg-home-balance-art,.meg-home-benefit-card').count(),0,'assets antigos removidos do DOM '+name);
+   assert.equal(await page.locator('.meg-home-reference-screen').count(),1,'Home orientada à imagem enviada '+name);
+   assert.equal(await page.locator('.meg-home-flow-chart').count(),1,'gráfico de fluxo com fonte canônica '+name);
+   assert.equal(await page.locator('.meg-home-hero-visual').count(),1,'imagem real dedicada ao saldo '+name);
+   assert.equal(await page.locator('.meg-home-vero-card').count(),1,'cartão visual sem números fictícios '+name);
+   assert.equal(await page.locator('.meg-home img').count(),0,'dados e ícones não embutidos em imagens rasterizadas '+name);
+   assert.equal(await page.locator('.meg-home-wallet-photo,.meg-home-balance-art,.meg-home-benefit-card').count(),0,'artes anteriores não reutilizadas '+name);
    const balanceSize=await page.locator('.meg-home-hero-balance').evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
    assert.ok(balanceSize>=31,'saldo visualmente protagonista '+name+': '+balanceSize);
    assert.equal(await page.locator('.meg-home-quick-action').count(),5,'5 ações funcionais '+name);
@@ -70,33 +71,26 @@ try {
      shell:document.querySelector('.meg-shell')?.getBoundingClientRect().toJSON(),
      grid:document.querySelector('.meg-home-dash')?.getBoundingClientRect().toJSON(),
    }));
-   // ATLAS: Saldo e Fluxo dentro do MESMO núcleo financeiro;
-   // indicadores ao lado no desktop, abaixo em tablet/mobile.
-   const stage=await page.evaluate(()=>{
-     const rect=selector=>{
-       const {left,right,top,bottom,width,height}=document.querySelector(selector).getBoundingClientRect();
-       return {left,right,top,bottom,width,height};
-     };
-     return {
-       overview:rect('.meg-home-overview'),
-       primary:rect('.meg-home-primary'),
-       balance:rect('.meg-home .balance'),
-       flow:rect('.meg-home .flow'),
-       rail:rect('.meg-home-risk-rail'),
-       ledger:rect('.meg-home-ledger'),
-       recent:rect('.meg-home .recent'),
-       upcoming:rect('.meg-home .upcoming')
-     };
+   // Contrato visual da imagem atual: Saldo 7/12 e Fluxo 5/12,
+   // KPIs em quatro colunas, Benefícios/Ações e duas tabelas 6/6.
+   const layout=await page.evaluate(()=>{
+     const bounds=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+     return {balance:bounds('.meg-home .balance'),flow:bounds('.meg-home .flow'),benefits:bounds('.meg-home .benefits'),quick:bounds('.meg-home .quick'),recent:bounds('.meg-home .recent'),upcoming:bounds('.meg-home .upcoming'),kpi:[...document.querySelectorAll('.meg-home-kpi')].map(x=>{const r=x.getBoundingClientRect();return {top:r.top,left:r.left,bottom:r.bottom,height:r.height};})};
    });
-   assert.ok(stage.flow.top>=stage.balance.bottom-1,name+': faixa Fluxo deve suceder saldo dentro do núcleo '+JSON.stringify(stage));
-   assert.ok(stage.primary.right>=stage.balance.right-1&&stage.primary.right>=stage.flow.right-1,name+': painéis internos fora do núcleo '+JSON.stringify(stage));
    if(width>=1024){
-     assert.ok(stage.rail.left>=stage.primary.right-1,name+': indicadores devem ocupar coluna lateral '+JSON.stringify(stage));
-     assert.ok(Math.abs(stage.rail.top-stage.primary.top)<=2,name+': topo da rail desalinhado '+JSON.stringify(stage));
+     assert.ok(Math.abs(layout.balance.top-layout.flow.top)<=2,name+': Saldo e Fluxo não compartilham a primeira linha');
+     assert.ok(layout.flow.left>=layout.balance.right-1,name+': Saldo e Fluxo colidem');
+     const ratio=layout.balance.width/layout.flow.width;
+     assert.ok(ratio>=1.15&&ratio<=1.65,name+': proporção principal 7/5 incorreta '+ratio);
+     assert.ok(Math.max(...layout.kpi.map(x=>x.top))-Math.min(...layout.kpi.map(x=>x.top))<=2,name+': KPIs não estão na mesma linha');
+     if(width>=1280){
+       assert.ok(Math.abs(layout.benefits.top-layout.quick.top)<=2,name+': faixa Verocard/Ações desalinhada');
+       assert.ok(Math.abs(layout.recent.top-layout.upcoming.top)<=2,name+': DataGrids não compartilham a última linha');
+     }
    }else{
-     assert.ok(stage.rail.top>=stage.primary.bottom-1,name+': indicadores sobrepostos ao núcleo em tablet/mobile '+JSON.stringify(stage));
+     assert.ok(layout.flow.top>=layout.balance.bottom-1,name+': Saldo/Fluxo se sobrepõem no tablet/mobile');
+     assert.ok(layout.upcoming.top>=layout.recent.bottom-1,name+': DataGrids se sobrepõem no tablet/mobile');
    }
-   assert.ok(stage.upcoming.top>=stage.recent.bottom-1,name+': tabelas full width em sequência '+JSON.stringify(stage));
    assert.ok(stats.documentWidth<=stats.viewport+1,name+': rolagem horizontal: '+JSON.stringify(stats));
    assert.ok(stats.documentHeight<=stats.viewportHeight+1,name+': overflow externo: '+JSON.stringify(stats));
    // Rolagem vertical natural é permitida, mas nenhum painel pode
