@@ -1218,3 +1218,24 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Bloco visual de autenticação fechado:** Telas 01 Carregamento, 02 Login, 03 Criar Conta e 04 Recuperar Senha estão **aprovadas visualmente pelo usuário em suas revisões de referência**. Simetria, grade, alinhamento e destaque da logo MEG são regras permanentes para próximas telas. Qualquer mudança posterior nessas telas exige nova validação visual específica.
 - **Limites técnicos não dispensados:** aprovação visual **não** homologa efetivo envio da senha temporária, autenticação, cadastro, integração com backend, segurança de permissões, acesso a banco, responsividade E2E em todos os dispositivos ou testes financeiros. No Render, o modo `previewOnly` continua sem envio de e-mail ou chamada à API de recuperação.
 - **Estado do projeto:** PR #649 **Draft**, sem merge; `main` e Android congelado intocados; DataGrid e regras de negócio financeiras preservadas. Nenhum avanço automático à Home ou telas posteriores neste chat. Continuar por chat/etapa autorizada, começando pela etapa seguinte definida no Prompt Master e no checkpoint aplicável, após seus gates.
+
+
+---
+
+## 30/10/2026 — Recomeço oficial da Home 06, sem herança visual reprovada
+
+**Decisão explícita atual, prevalente para a Home:** o print escolhido permanece como norte de identidade, cor e composição, **sem obrigação de reprodução pixel a pixel**. Estão autorizadas melhorias criativas comprováveis em hierarquia gerencial, gráfico, proporções, acessibilidade e responsividade. Essa flexibilização se aplica somente à Home 06; a prioridade das regras financeiras e a proteção das demais telas aprovadas permanecem.
+
+**Base limpa autorizada:** branch `meg-web-evolution/06-home-reinicio-20261030`, criada a partir da cabeça da PR #649 (`7d80367c078ba5816014baedaa1ac0a94dc4e2d8`). Verificado que `apps/web/src/meg-web-evolution/` nessa origem inclui `auth/`, `components/`, `datagrid/`, `shell/`, `styles/` e `main.tsx`, mas **não inclui `home/`**. A PR #650 está visualmente reprovada e NÃO faz parte da base nova. Não mesclar a #650.
+
+**Visual validado pelo usuário:** carregamento inicial, Login, Criar Conta, recuperação/alteração de senha, carregamento pós-login, sidebar/topbar (busca e período) e DataGrid. A validação visual não substitui homologação funcional.
+
+**Nova diretriz:** construção visual limpa bloco por bloco. Fotos e assets reais HD para cenas decorativas, DOM/SVG/ECharts para dados, textos, botões e gráficos. Rótulo de benefício genérico (`Benefício Alimentação` no caso pessoal), sem impor a marca Verocard ao produto comercial; preservar vínculos de domínio existentes.
+
+**Auditoria preliminar:** `phoenix/`, `web-next/`, `mobile/`, `legacy-*.js` e previews antigos presentes no repositório/Render. A presença de testes/entradas antigas impede exclusão generalizada sem mapa de dependências. Nada foi removido da main, API, Android ou Render.
+
+**Banco:** Supabase `meg-financas` contém esquema financeiro e dados exploratórios somente leitura associados ao cadastro do administrador configurado. Render não listou PostgreSQL próprio, mas hospeda APIs e previews. A conexão da API de produção com esse banco ainda não foi comprovada. Métricas de análise não autorizam valores fixos na UI.
+
+**Documentação completa:** `docs/MEG-WEB-HOME-REINICIO-20261030.md` (auditoria inicial, direção visual e plano de isolamento/limpeza).
+
+**Status:** Etapa Home 06 em REDEFINIÇÃO, nova apresentação ainda não implementada e não homologada; PR #650 Draft sem merge. Prioridade: especificação visual em componentes novos, validação no navegador e publicação de prévia comprovada. Não avançar para outras telas.
