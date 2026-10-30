@@ -86,3 +86,7 @@ A Home deve permitir reconhecer situação financeira e próximo passo em poucos
 - Resolver homologação funcional de autenticação/recuperação quando chegar a respectiva etapa de revisão; não misturar com a Home.
 
 **Regra final:** somente telas com aprovação visual explícita podem virar fundação visual. Regras financeiras continuam soberanas, inclusive quando seu módulo histórico ainda for necessário.
+
+
+## Refinamento dos cartões e do looping (30/10/2026)
+Vídeo `14-48-11.mp4` e pesquisa de decisões históricas reforçam uso obrigatório de carrossel circular real: card central, anterior/seguinte, wrap em ambas as extremidades, sem cópia de entidades financeiras. Navegação de teclado e gesto horizontal complementam botões; uma única entrada não cria peeks falsos. Indicadores compactos passam a reunir ícone e rótulo na mesma linha; hero sem headline redundante libera altura para o conteúdo de decisão. Esta revisão é candidata não homologada.

@@ -1334,3 +1334,13 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Saldo disponível redesenhado como dado monetário principal diretamente sobre fotografia panorâmica, sem card/container translúcido independente. Controle de privacidade e acesso a movimentações preservados. Indisponibilidade da rota canônica continua explicitada, sem cálculo alternativo.
 - `14-13-34.mp4` foi citado como evidência; o arquivo binário ainda não está acessível no chat atual ou nos anexos localizados. Não declarar análise quadro a quadro desse vídeo nem aprovação visual.
 - Mudança restrita a JSX/CSS da Home e documentação/checkpoint; proteger Android, Shell, topbar, autenticação, DataGrid e cálculos financeiros. Commit/gates/Render devem ser registrados pelo SHA efetivo; PR segue Draft e sem merge.
+
+
+## 30/10/2026 | Home 06 | Correção de proporção, indicadores e loop infinito
+
+- Vídeo recebido e efetivamente inspecionado: `14-48-11.mp4` (20,715 s, desktop 1920x1080). Foi observado desperdício vertical no hero, cartões de Receita/Despesa com ícones isolados acima do rótulo e carrossel que trava na primeira/última posição.
+- Pesquisa nas conversas e documentação histórica confirmou contrato funcional de carrossel cíclico/infinito, cartão central, anterior/posterior, enquadramento correto e mobile responsivo. Referências visuais antigas não foram promovidas a padrão da nova Web.
+- JSX da Home: rótulo e ícone dos 4 KPIs agora compartilham uma linha, notas repetidas de Receitas/Despesas removidas; hero reduzido, chamada visual redundante removida; saldo monetário permanece canônico.
+- Carrossel: índice módulo N; anterior do primeiro é o último, próximo do último é o primeiro; navegação circular por botões, cartões laterais e indicadores; setas só desabilitam para 0/1 cartão; para 2 cartões evita mostrar duas prévias do mesmo registro; teclado setas esquerda/direita e swipe horizontal em touchscreen; animação lateral com `prefers-reduced-motion` respeitado. Nenhuma clonagem de registros financeiros.
+- Teste Playwright reforçado para detectar travamento de ponta, validação de identidade dos peeks e alinhamento vertical título/ícone dos indicadores.
+- Proteções: PR #651 Draft, sem merge; não modificar Android, finanças centrais, API, Shell, autenticação e DataGrid central. Gates, screenshots reais e Render SHA-live precisam ser conferidos e validação visual explícita continua pendente.

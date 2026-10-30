@@ -78,6 +78,10 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const [dueFiltersCount,setDueFiltersCount]=useState(0);
  const [cardIndex,setCardIndex]=useState(0);
  const [cardExpanded,setCardExpanded]=useState(false);
+ const [cardDirection,setCardDirection]=useState<'next'|'prev'>('next');
+ const [cardMotionKey,setCardMotionKey]=useState(0);
+ const touchStartX=useRef<number|null>(null);
+ const ignoreCardClick=useRef(false);
  const movementSection=useRef<HTMLElement|null>(null);
  const dueSection=useRef<HTMLElement|null>(null);
  const cardsSection=useRef<HTMLElement|null>(null);
@@ -87,10 +91,27 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const focusMovements=(mode:'all'|'income'|'expense')=>{setMovementMode(mode);reveal(movementSection.current)};
  const focusPending=()=>reveal(dueSection.current);
  const focusBenefit=()=>reveal(benefitSection.current);
- const selectedCard=data.cards[cardIndex]??null;
- const previousCard=data.cards[cardIndex-1]??null;
- const nextCard=data.cards[cardIndex+1]??null;
- const stepCard=(direction:number)=>{setCardIndex(i=>Math.max(0,Math.min(data.cards.length-1,i+direction)));setCardExpanded(false)};
+ // Índice circular: nunca bloqueia nas extremidades. Não duplica registros financeiros.
+ const cardCount=data.cards.length;
+ const activeCardIndex=cardCount?((cardIndex%cardCount)+cardCount)%cardCount:0;
+ const selectedCard=cardCount?data.cards[activeCardIndex]:null;
+ // Para dois cartões, exibir somente um vizinho, não duas cópias idênticas.
+ const previousCard=cardCount>2?data.cards[(activeCardIndex-1+cardCount)%cardCount]:null;
+ const nextCard=cardCount>1?data.cards[(activeCardIndex+1)%cardCount]:null;
+ const stepCard=(direction:number)=>{
+  if(cardCount<2)return;
+  setCardDirection(direction<0?'prev':'next');
+  setCardMotionKey(v=>v+1);
+  setCardIndex(i=>((i+direction)%cardCount+cardCount)%cardCount);
+  setCardExpanded(false);
+ };
+ const showCard=(index:number)=>{
+  if(cardCount<2||index===activeCardIndex)return;
+  setCardDirection(index<activeCardIndex?'prev':'next');
+  setCardMotionKey(v=>v+1);
+  setCardIndex(index);
+  setCardExpanded(false);
+ };
 
  const move=(target:Action)=>{
   if(onNavigate)onNavigate(target);
@@ -135,8 +156,8 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
  const stats:{label:string;value:number|null|undefined;note:string;icon:HomeIconName;kind:string;action:Action}[]=[
-  {label:'Receitas',value:data.summary?.income,note:'Total no período',icon:'income',kind:'income',action:'lancamentos'},
-  {label:'Despesas',value:data.summary?.expense,note:'Total no período',icon:'expense',kind:'expense',action:'lancamentos'},
+  {label:'Receitas',value:data.summary?.income,note:'',icon:'income',kind:'income',action:'lancamentos'},
+  {label:'Despesas',value:data.summary?.expense,note:'',icon:'expense',kind:'expense',action:'lancamentos'},
   {label:'Pendências previstas',value:data.summary?.pendingAmount,note:data.summary?.pendingCount==null?'Sem leitura disponível':String(data.summary.pendingCount)+' registros',icon:'clock',kind:'pending',action:'pendentes'},
   {label:'Benefício',value:data.benefit?.balance,note:'Saldo separado das contas',icon:'gift',kind:'benefit',action:'beneficios'}
  ];
@@ -156,18 +177,17 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
     <div className="pano-balance-bottom"><span>{data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
    </div>
-   <div className="pano-hero-intro">
-    <span className="pano-eyebrow"><HomeGlyph name="sparkle" size={15}/> MEG FINANÇAS · {period}</span>
-    <h1>Seu panorama<br/><em>financeiro.</em></h1>
-    <p>Entradas, despesas e decisões em uma só visão.</p>
-   </div>
+   <span className="pano-hero-caption"><HomeGlyph name="sparkle" size={15}/> VISÃO FINANCEIRA · {period}</span>
   </section>
   <section className="pano-overview" aria-label="Indicadores financeiros">
    {stats.map(s=><button key={s.label} className={'pano-stat is-'+s.kind} type="button" onClick={()=>s.kind==='income'?focusMovements('income'):s.kind==='expense'?focusMovements('expense'):s.kind==='pending'?focusPending():focusBenefit()} aria-label={s.label+': '+format(s.value,hidden)+'. Abrir detalhes'}>
-    <span className="pano-stat-head"><span className="pano-stat-icon"><HomeGlyph name={s.icon} size={24}/></span><HomeGlyph name="arrow" size={16}/></span>
-    <span className="pano-stat-label">{s.label}</span>
+    <span className="pano-stat-head">
+     <span className="pano-stat-icon"><HomeGlyph name={s.icon} size={19}/></span>
+     <span className="pano-stat-label">{s.label}</span>
+     <HomeGlyph name="arrow" size={15}/>
+    </span>
     <strong>{format(s.value,hidden)}</strong>
-    <small>{s.note}</small>
+    {s.note&&<small>{s.note}</small>}
    </button>)}
   </section>
   <section className="pano-finance-block" aria-label="Leitura gerencial do mês">
@@ -182,12 +202,15 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    <section ref={cardsSection} className="pano-panel pano-cards">
     <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all" onClick={()=>move('cartoes')}>Ver todos <HomeGlyph name="arrow" size={14}/></button></div>
     {selectedCard?<>
-      <div className="pano-card-stage" aria-label={'Cartão '+(cardIndex+1)+' de '+data.cards.length}>
-       {previousCard&&<button type="button" className={'pano-card-peek is-prev pano-peek-tone-'+((cardIndex-1)%3)} onClick={()=>stepCard(-1)} aria-label={'Cartão anterior: '+previousCard.name}>
+      <div className="pano-card-stage" aria-label={'Cartão '+(activeCardIndex+1)+' de '+cardCount} tabIndex={cardCount>1?0:undefined}
+       onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();stepCard(event.key==='ArrowLeft'?-1:1)}}}
+       onTouchStart={event=>{touchStartX.current=event.touches[0]?.clientX??null}}
+       onTouchEnd={event=>{const initial=touchStartX.current;touchStartX.current=null;if(initial==null)return;const moved=(event.changedTouches[0]?.clientX??initial)-initial;if(Math.abs(moved)>=45){ignoreCardClick.current=true;stepCard(moved<0?1:-1);window.setTimeout(()=>{ignoreCardClick.current=false},450)}}}>
+       {previousCard&&<button type="button" className={'pano-card-peek is-prev pano-peek-tone-'+((activeCardIndex-1+cardCount)%3)} onClick={()=>stepCard(-1)} aria-label={'Cartão anterior: '+previousCard.name}>
         <span className="pano-card-peek-brand"><CardBrandMark brand={previousCard.brand}/></span>
         <span className="pano-card-peek-name">{previousCard.name}</span>
        </button>}
-       <button type="button" className={'pano-credit-card pano-plastic-tone-'+(cardIndex%3)} onClick={()=>setCardExpanded(v=>!v)} aria-expanded={cardExpanded} aria-label={'Ver detalhes do cartão '+selectedCard.name}>
+       <button key={selectedCard.id+'-'+cardMotionKey} type="button" className={'pano-credit-card pano-plastic-tone-'+(activeCardIndex%3)+' is-arriving-'+cardDirection} onClick={()=>{if(ignoreCardClick.current)return;setCardExpanded(v=>!v)}} aria-expanded={cardExpanded} aria-label={'Ver detalhes do cartão '+selectedCard.name}>
         <span className="pano-credit-card-top"><span className="pano-card-hardware" aria-hidden="true">
          <svg className="pano-card-chip" viewBox="0 0 52 39" fill="none"><rect x="1" y="1" width="50" height="37" rx="8" fill="#CBBDA2" stroke="#EEE6D4" strokeWidth="1.5"/><path d="M17 1v37M35 1v37M1 14h16m18 0h16M1 25h16m18 0h16M17 14h18v11H17z" stroke="#8A8779" strokeWidth="1.4"/><path d="M22 14v11m8-11v11" stroke="#9F9C8D"/></svg>
          <svg className="pano-card-contactless" viewBox="0 0 32 32" fill="none"><path d="M9 12a8 8 0 0 1 0 8M14 8a14 14 0 0 1 0 16M19 4a20 20 0 0 1 0 24" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round"/></svg>
@@ -196,13 +219,13 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
         <span className="pano-credit-card-meta">{selectedCard.issuer||'Cartão cadastrado'}</span>
         <span className="pano-credit-card-bottom"><span>{selectedCard.lastFour?'••••  '+selectedCard.lastFour:'Cartão cadastrado'}</span><span className="pano-card-kind">CRÉDITO</span></span>
        </button>
-       {nextCard&&<button type="button" className={'pano-card-peek is-next pano-peek-tone-'+((cardIndex+1)%3)} onClick={()=>stepCard(1)} aria-label={'Próximo cartão: '+nextCard.name}>
+       {nextCard&&<button type="button" className={'pano-card-peek is-next pano-peek-tone-'+((activeCardIndex+1)%3)} onClick={()=>stepCard(1)} aria-label={'Próximo cartão: '+nextCard.name}>
         <span className="pano-card-peek-brand"><CardBrandMark brand={nextCard.brand}/></span>
         <span className="pano-card-peek-name">{nextCard.name}</span>
        </button>}
       </div>
       <div className="pano-card-amount"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></div>
-      <div className="pano-card-nav"><button type="button" aria-label="Cartão anterior" disabled={cardIndex===0} onClick={()=>stepCard(-1)}><HomeGlyph name="arrow" size={19}/></button><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===cardIndex?'is-current':''} onClick={()=>{setCardIndex(i);setCardExpanded(false)}} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===cardIndex?'true':undefined}/>)}</span><button type="button" aria-label="Próximo cartão" disabled={cardIndex===data.cards.length-1} onClick={()=>stepCard(1)}><HomeGlyph name="arrow" size={19}/></button></div>
+      <div className="pano-card-nav"><button type="button" aria-label="Cartão anterior" disabled={cardCount<2} onClick={()=>stepCard(-1)}><HomeGlyph name="arrow" size={19}/></button><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===activeCardIndex?'is-current':''} onClick={()=>showCard(i)} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===activeCardIndex?'true':undefined}/>)}</span><button type="button" aria-label="Próximo cartão" disabled={cardCount<2} onClick={()=>stepCard(1)}><HomeGlyph name="arrow" size={19}/></button></div>
       {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
        {selectedCard.availableLimit!=null&&<span>Limite disponível <Money hidden={hidden} value={selectedCard.availableLimit}/></span>}
        {selectedCard.creditLimit!=null&&<span>Limite cadastrado <Money hidden={hidden} value={selectedCard.creditLimit}/></span>}

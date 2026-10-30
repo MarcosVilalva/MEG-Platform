@@ -70,12 +70,33 @@ try{
    const schemeAfter=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
    await page.locator('.pano-credit-card').click();
    const details=await page.getByRole('region',{name:'Detalhes do cartão'}).isVisible();
+   // Loop real: último > primeiro e primeiro > último; os previews também acompanham.
+   const firstName=itemBefore;
+   await page.getByRole('button',{name:'Próximo cartão',exact:true}).click();
+   const lastName=await page.locator('.pano-credit-card-name').textContent();
+   const lastNextPreview=await page.locator('.pano-card-peek.is-next .pano-card-peek-name').textContent();
+   const lastNavEnabled=await page.getByRole('button',{name:'Próximo cartão',exact:true}).isEnabled();
+   await page.getByRole('button',{name:'Próximo cartão',exact:true}).click();
+   const afterWrapName=await page.locator('.pano-credit-card-name').textContent();
+   const firstPrevPreview=await page.locator('.pano-card-peek.is-prev .pano-card-peek-name').textContent();
+   await page.getByRole('button',{name:'Cartão anterior',exact:true}).click();
+   const afterReverseWrapName=await page.locator('.pano-credit-card-name').textContent();
+   const firstPrevEnabled=await page.getByRole('button',{name:'Cartão anterior',exact:true}).isEnabled();
+   const circularLoop=lastNextPreview===firstName&&lastNavEnabled&&afterWrapName===firstName&&firstPrevPreview===lastName&&afterReverseWrapName===lastName&&firstPrevEnabled;
+   const geometry=await page.locator('.pano-stat').evaluateAll(nodes=>nodes.map(node=>{
+    const head=node.querySelector('.pano-stat-head')?.getBoundingClientRect();
+    const label=node.querySelector('.pano-stat-label')?.getBoundingClientRect();
+    const icon=node.querySelector('.pano-stat-icon')?.getBoundingClientRect();
+    const box=node.getBoundingClientRect();
+    return {height:box.height,aligned:head&&label&&icon?Math.abs((label.top+label.height/2)-(icon.top+icon.height/2))<5:false};
+   }));
+   const compactKpis=geometry.every(g=>g.aligned&&g.height<=125);
    await page.locator('.pano-stat.is-income').click();
    const incomeFocused=await page.getByText('Últimas receitas').isVisible();
    await page.getByRole('button',{name:'Limpar seleção'}).click();
    const restored=await page.getByText('Últimas movimentações').isVisible();
-   const passed=initiallyHidden&&filterOpen&&filterClosed&&nextCardPreview===itemAfter&&noticeVisible&&noLayoutShift&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&incomeFocused&&restored;
-   console.log('INTERACTIONS',JSON.stringify({initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,nextCardPreview,noticeVisible,noLayoutShift,details,incomeFocused,restored,passed}));
+   const passed=initiallyHidden&&filterOpen&&filterClosed&&nextCardPreview===itemAfter&&noticeVisible&&noLayoutShift&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&circularLoop&&compactKpis&&incomeFocused&&restored;
+   console.log('INTERACTIONS',JSON.stringify({initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,nextCardPreview,noticeVisible,noLayoutShift,details,circularLoop,compactKpis,geometry,incomeFocused,restored,passed}));
    if(!passed)failed=true;
   }
   if(name==='mobile-390'){
