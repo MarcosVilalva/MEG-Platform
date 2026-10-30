@@ -1287,3 +1287,23 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Mudança posterior: CTA Ver detalhes do saldo usa a própria Home, SHA 2b7b3876d375300705d4fa91655979b5d52b9568. Os checks dessa nova cabeça exigem confirmação separada.
 
 **Proteções e pendências:** sidebar, topbar, autenticação, DataGrid, API de regras financeiras e Android não foram alterados nesta rodada. PR #651 segue Draft sem merge. Endpoint home-available criado anteriormente ainda depende de deploy da API para retornar saldo real. Verificar Foundation do SHA final, Render em status live com commit exato e recolher aprovação visual explícita da nova Home. Navegação para telas futuras ainda usa aviso, não simula funcionalidades inexistentes.
+
+
+## 30/10/2026 | Home 06 | Nova direção fotográfica aprovada para implementação
+
+**Autorização explícita:** após mostrar a imagem "Painel Financeiro Futurista MEG.png" o usuário a aprovou como direção de qualidade, com adaptação funcional ao MEG, e solicitou implementação. A imagem é referência de composição/impacto, não screenshot de interface pronta. **A Home implementada ainda não foi homologada.**
+
+**Escopo:** PR #651 Draft, somente Home 06. Não importar JSX/CSS de Home rejeitada (#650), não alterar Android, autenticação, Shell, sidebar, topbar, DataGrid compartilhado nem cálculos financeiros.
+
+**Implementado nesta rodada:**
+- Hero panorâmico com fotografia REAL de montanhas sob céu turquesa, WebP HD da Unsplash (autoria/licença no arquivo docs/MEG-HOME-06-VISUAL-ASSETS.md). Títulos/valores/ações são DOM. Saldo monetário continua vindo da API canônica e pode aparecer como indisponível antes do deploy da rota.
+- Quatro KPIs em faixa própria: Receitas, Despesas, Benefício e Pendências previstas. Valores exclusivamente de summary/benefit-summary; nenhum percentual inventado. Cada KPI foca a seção adequada. Não criar módulos inexistentes.
+- Gráfico ECharts central com barras income/expense e linha net canônicas por dia, com acesso aos relatórios quando o módulo existir.
+- Carrossel "Meus cartões" ao lado do gráfico: cartão visual com FOTO real abstrata de luz azul em alta resolução, SVG de bandeiras Visa/Mastercard/Elo/Amex apenas quando brand do cadastro corresponde, sem inventar bandeira pelo nome do banco; previews usam nomes/bandeiras fictícios claramente rotulados. Navegação e detalhes de fatura/limite/dia do cartão mediante API.
+- Benefício Alimentação mantém foto REAL de mercado; saldo separado das contas monetárias e conteúdo clicável com aviso quando tela futura ainda não foi construída.
+- Nos dois DataGrids homologados, a área COMPLETA de ferramentas `.meg-datagrid-toolbar` agora vem recolhida e é ocultada por inteiro por padrão, sem faixa vazia; ação "Mostrar/Ocultar filtros" é independente por grid, mas não perde estado/persistência de filtros.
+- Layout reconstruído na folha de estilo da própria Home, sem CSS do protótipo rejeitado. Breakpoints 640/1024, sem scroll horizontal esperado.
+
+**Arquivos alterados/criados:** HomeDashboard.tsx, home-dashboard.css, CardBrandMark.tsx (novo), preview.fixture.ts, scripts/meg-home-06-panorama-viewport.mjs, docs/MEG-HOME-06-VISUAL-ASSETS.md, presente checkpoint.
+
+**Gates ainda pendentes neste registro:** build atual e screenshots reais; conferência de filtros/carrossel em sete viewports; resultado do Foundation geral; Render publicar exato SHA em status live; comparação visual e aprovação explícita do usuário no navegador. PR #651 permanece Draft e **não pode ser mesclada**.
