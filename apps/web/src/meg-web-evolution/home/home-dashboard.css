@@ -88,7 +88,7 @@
 .pano-grid-heading>.pano-panel-title h2{font-size:.93rem;white-space:normal}
 .pano-grid-heading>button{display:flex;align-items:center;gap:.26rem;min-height:2.55rem;background:#03404980;color:#5cffe1;border:1px solid #1c8d885e;padding:.3rem .5rem;border-radius:.5rem;font-size:.69rem;white-space:nowrap}
 .pano-grid .meg-datagrid{min-width:0;border-color:#155d6050!important;background:transparent!important;box-shadow:none!important}
-.pano-grid .meg-datagrid__viewport{height:auto;max-height:none;min-height:0}
+.pano-grid .meg-datagrid__viewport{flex:0 0 auto;height:auto;max-height:none;min-height:8rem;overflow:auto}
 .pano-grid .meg-datagrid-table{font-size:.73rem}
 .pano-grid .meg-datagrid-table th{background:#082f36!important}
 .pano-grid .meg-datagrid-table td{font-size:.73rem}
