@@ -1,7 +1,7 @@
 /**
  * Auditoria de assets da Home 06 baseada na imagem atual do usuário.
- * Fonte licenciada: Benjamin Cole, One Cold Night, Unsplash (licença Unsplash).
- * https://unsplash.com/photos/DDhET-updco
+ * Fonte licenciada: 志远 杨 (@yangzhiyuan), Misty mountains shrouded in blue twilight fog, Unsplash (licença Unsplash).
+ * https://unsplash.com/photos/kzH-sVU5pqs
  *
  * A auditoria visual da página e o carregamento em produção são gates separados.
  * Nenhuma arte deve conter valores financeiros pintados na própria imagem.
@@ -16,7 +16,7 @@ const css=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/home.cs
 const chart=readFileSync(resolve(root,'apps/web/src/meg-web-evolution/home/HomeCashflowChart.tsx'),'utf8');
 const bad=['meg-home-wallet-photo','wallet-official-02.webp','meg-balance-scene-hd.webp','meg-home-atlas','meg-home-studio'];
 const violations=bad.filter(token=>jsx.includes(token)||css.includes(token));
-if(!css.includes('https://unsplash.com/photos/DDhET-updco')||!css.includes('images.unsplash.com/photo-1490237251747-4557595144b4'))violations.push('crédito e foto licenciada ausentes');
+if(!css.includes('https://unsplash.com/photos/kzH-sVU5pqs')||!css.includes('images.unsplash.com/photo-1758637689971-fe6124e7cabd'))violations.push('crédito e foto licenciada ausentes');
 if(!chart.includes('d.income')||!chart.includes('d.expense'))violations.push('chart sem dados canônicos');
 const url=process.env.MEG_HOME_PREVIEW_URL;
 const display=[];
@@ -33,7 +33,7 @@ if(url){
     const result=await page.evaluate(()=>{
      const home=document.querySelector('.meg-home-reference-screen');
      const hero=document.querySelector('.meg-home-hero-visual');
-     return {stylePhoto:getComputedStyle(hero).backgroundImage.includes('images.unsplash.com/photo-1490237251747-4557595144b4'),
+     return {stylePhoto:getComputedStyle(hero).backgroundImage.includes('images.unsplash.com/photo-1758637689971-fe6124e7cabd'),
       imageTags:home.querySelectorAll('img').length,
       chart:home.querySelectorAll('.meg-home-flow-chart').length,
       overflow:home.scrollWidth>home.clientWidth+1};
@@ -44,11 +44,11 @@ if(url){
  }finally{await browser.close()}
 }
 const issues=violations.length+display.filter(x=>!x.passed).length;
-const report={kind:'MEG_HOME_LICENSED_ASSET_AUDIT',credit:'Benjamin Cole / Unsplash',url:'https://unsplash.com/photos/DDhET-updco',violations,display,issues,visualApproved:false};
+const report={kind:'MEG_HOME_LICENSED_ASSET_AUDIT',credit:'志远 杨 / Unsplash',url:'https://unsplash.com/photos/kzH-sVU5pqs',violations,display,issues,visualApproved:false};
 writeFileSync(resolve(output,'report.json'),JSON.stringify(report,null,2)+'\n');
 writeFileSync(resolve(output,'report.md'),[
  '# MEG Home | Auditoria da referência visual',
- '','Foto de Benjamin Cole (Unsplash License). Link: https://unsplash.com/photos/DDhET-updco',
+ '','Foto de Benjamin Cole (Unsplash License). Link: https://unsplash.com/photos/kzH-sVU5pqs',
  'O gráfico usa apenas dias de caixa da API canônica. Icons SVG são renderizados no DOM.',
  '','| Tela | Foto atribuída | Gráfico | Sem overflow | Status |',
  '|---|---|---|---|---|',
