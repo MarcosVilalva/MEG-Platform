@@ -199,6 +199,7 @@ export function fromCanonicalReadModels(payload = {}) {
       cashflow: payload.cashflow ?? null,
       analytics: payload.analytics ?? null,
       benefitSummary: payload.benefitSummary ?? null,
+      homeOverview: payload.homeOverview ?? null,
     },
   });
 }

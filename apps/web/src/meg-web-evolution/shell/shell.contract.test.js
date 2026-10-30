@@ -89,8 +89,8 @@ assert.equal(source.includes('.meg-sidebar-control'), false, 'old sidebar footer
 assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar toggle must not exist');
 
 assert.match(source, /aria-label="Navegação principal"/);
-assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
-assert.match(source, /Marcos de Andrade Vilalva/);
+assert.match(source, /Buscar na Home: movimentações e vencimentos/, 'busca restrita aos dados realmente consultados');
+assert.match(source, /userName/, 'identidade deve vir da sessão autenticada');
 assert.equal(source.includes('meg-sidebar-lockup.svg'), false);
 assert.equal(source.includes('meg-finance-symbol-transparent.svg'), false);
 assert.equal(source.includes('meg-brand-mark'), false);
@@ -118,7 +118,11 @@ assert.match(source, /\.meg-topbar-actions\s*\{[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period\s*\{[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*white-space:\s*nowrap/);
 
-assert.match(source, /Outubro&nbsp;de&nbsp;2026/);
+assert.doesNotMatch(source, /Outubro&nbsp;de&nbsp;2026/, 'período não pode ser demonstrativo fixo');
+assert.match(source, /onMonthChange/, 'competência deve executar callback real');
+assert.match(source, /onSearchChange/, 'busca deve estar conectada');
+assert.match(source, /onLogout/, 'saída deve estar conectada');
+assert.doesNotMatch(source, /Marcos de Andrade Vilalva/, 'nome do usuário não pode ser fixo');
 assert.match(source, /\.meg-period\s*\{[\s\S]*width:\s*max-content;[\s\S]*min-width:\s*11\.75rem;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*display:\s*inline-block;[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
 
@@ -150,7 +154,7 @@ assert.match(source, /container-name:\s*meg-shell-body/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
-assert.match(source, /aria-label="Buscar"/);
+assert.match(source, /aria-label="Buscar movimentações e vencimentos da Home"/);
 
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav,[\s\S]*flex:\s*1\s+1\s+auto;[\s\S]*min-height:\s*0;[\s\S]*justify-content:\s*space-evenly;[\s\S]*gap:\s*clamp\(2px, \.8vh, 6px\)/);
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav-item,[\s\S]*height:\s*clamp\(34px, 6\.2vh, 42px\)/);

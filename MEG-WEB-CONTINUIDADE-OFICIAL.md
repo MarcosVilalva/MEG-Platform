@@ -1218,3 +1218,353 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Bloco visual de autenticação fechado:** Telas 01 Carregamento, 02 Login, 03 Criar Conta e 04 Recuperar Senha estão **aprovadas visualmente pelo usuário em suas revisões de referência**. Simetria, grade, alinhamento e destaque da logo MEG são regras permanentes para próximas telas. Qualquer mudança posterior nessas telas exige nova validação visual específica.
 - **Limites técnicos não dispensados:** aprovação visual **não** homologa efetivo envio da senha temporária, autenticação, cadastro, integração com backend, segurança de permissões, acesso a banco, responsividade E2E em todos os dispositivos ou testes financeiros. No Render, o modo `previewOnly` continua sem envio de e-mail ou chamada à API de recuperação.
 - **Estado do projeto:** PR #649 **Draft**, sem merge; `main` e Android congelado intocados; DataGrid e regras de negócio financeiras preservadas. Nenhum avanço automático à Home ou telas posteriores neste chat. Continuar por chat/etapa autorizada, começando pela etapa seguinte definida no Prompt Master e no checkpoint aplicável, após seus gates.
+
+
+## Etapa 06 · Home · primeira candidata visual isolada (27/10/2026, horário de São Paulo)
+
+- **Autorização expressa neste chat:** \`VAMOS SEGUIR\` depois do aceite visual das Telas 01–04.
+- **Branch:** \`meg-web-evolution/06-home-visual-20261027\`, criada a partir do head aprovado da PR #649 \`7d80367c078ba5816014baedaa1ac0a94dc4e2d8\`.
+- **PR empilhada:** [#650](https://github.com/MarcosVilalva/MEG-Platform/pull/650), Draft, base \`meg-web-evolution/07-revisao-visual-loading-20261027\`, sem merge. PR #649 mantém a autenticação e telas aprovadas na base.
+- **Home implementada:** \`apps/web/src/meg-web-evolution/home/HomeScreen.tsx\` e \`home.css\`. Grid desktop soberano 7/5, KPIs 3/3/3/3, 6/6, 6/6; mobile-first com breakpoints 640/1024, sem rolagem horizontal da página. Paisagem decorativa SVG independente de cálculo.
+- **DataGrid existente preservado:** tabela de últimas movimentações e próximos vencimentos usa \`DataGrid.tsx\` original, sem modificá-lo. No contexto restrito da Home, as ferramentas ficam recolhidas por padrão para apresentar linhas; o botão de ferramentas permite reabrir filtros, exportação e paginação.
+- **Fonte canônica real:** \`authenticatedRequest\` de \`/finance/summary\`, \`/finance/cashflow\`, \`/finance/analytics\`, \`/finance/events/month\`, \`/payables\`, \`/cards\`, \`/finance/categories\`. Respostas passam pelos adaptadores da fonte única de dados \`src/evolution/data/\`. A Home não recria saldo, fatura, parcelas nem status. KPI sem autoridade de total agregado permanece indisponível em produção.
+- **Prévia estritamente demonstrativa:** \`apps/web/home-visual.html\`, \`home-visual/entry.jsx\`, \`home-visual/fixture.js\`; a fixture usa \`createMegDataSource\`, cifras ilustrativas da referência oficial e aviso visível de que **não são dados reais**. Não chama API, não faz login, não envia credenciais e não importa banco.
+- **Integração:** \`apps/web/src/meg-web-evolution/main.tsx\` exibe Home após validação real da sessão. \`apps/web/vite.config.ts\` inclui a entrada de prévia isolada com CSP.
+- **Teste isolado novo:** \`scripts/meg-web-home-06.visual-test.mjs\` e \`.github/workflows/meg-web-home-06-visual.yml\`; build Web e capturas reais em 1672×941, 1366×768, 1366×600, 768×1024, 390×844, 320×700 e 2560×1440.
+- **Gate isolado Home:** [Actions #40611991402](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/40611991402) **SUCCESS** em \`7c0e928a3e5326839796e89ee315b51e6075b7c2\`. Capturas: [artifact #12782479268](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/40611991402/artifacts/12782479268).
+- **Gate global Foundation:** [Actions #40611991429](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/40611991429) **FAILURE**, reproduzindo bloqueio em \`shell.viewport.browser.test.mjs\` (a validação aguarda Shell enquanto a entrada protegida exige sessão); falhas similares já atingiam o SHA-base #649. Não mascarar nem declarar o gate global verde. Investigar e aprovar correção isolada antes de qualquer merge.
+- **Render:** nesta rodada não houve deploy de preview público porque o workspace Render não foi selecionado/autorizado para alterações; não oferecer URL pública como se a Home estivesse hospedada.
+- **Estado de aprovação:** Home **NÃO APROVADA** visualmente, nem homologada funcionalmente. Capturas e build são evidências técnicas, não aceite humano. O aviso demonstrativo aparece somente na prévia visual e não em produção.
+- **Pendências reais:** comparação visual explícita com o print oficial; homologação de dados reais e métricas agregadas de pendências/faturas/contas pagas; navegação das ações para telas futuras, atualização real de notificações, filtro de período global, acessibilidade E2E, preview público sem cache, investigação do gate Foundation. Preservar PR #649, Android e regras financeiras; não iniciar Lançamentos antes do aceite da Home.
+
+
+## Home 06 - Render e assets (27/10/2026)
+PR #650 Draft: artes WebP incorporadas, preview independente no Render `meg-home-06-visual`. Sem acesso a dados reais. Home ainda não aprovada. Gate Foundation pendente. PR #649, Android e main preservados.
+
+
+## Home 06 - MEG Panorama (candidata visual, 27/10/2026)
+
+Após o pedido `siga`, a proposta MEG Panorama foi implementada na branch da PR #650. O CSS da Home foi refeito em camada limpa, preservando o grid soberano 7/5, quatro KPIs e duas linhas 6/6. Saldo recebeu controle acessível para mostrar/ocultar valores e acesso a movimentações; gráfico diário teve escala visual centralizada e suporte a toque/teclado; Verocard ganhou composição e CTA próprios; DataGrid, Shell, Android e autenticação aprovada não foram alterados. O preview demonstrativo segue em `meg-home-06-visual.onrender.com/home-visual.html`, com auto-deploy; não utiliza API, credenciais ou banco. A PR continua Draft. Não há aprovação visual da Home, nem autorização de merge. Gates e última publicação devem ser conferidos pelo SHA da revisão.
+
+
+## Home 06 - saldo de benefícios obrigatório (28/10/2026)
+
+Usuário determinou que a Home exiba também o saldo do benefício. Alterações isoladas na PR #650 Draft: `HomeScreen.tsx` lê `GET /finance/benefit-summary?month=YYYY-MM`, incorpora `benefitSummary` à fonte única por `fromCanonicalReadModels`, apresenta saldo de benefícios, créditos e valor utilizado do mês no painel Verocard; saldo bancário permanece separado. A privacidade do ícone de olho oculta ambos os saldos. O endpoint atualmente resume todas as contas de benefício e os eventos Verocard classificados pela política financeira existente, com saldo apurado até o fim do mês consultado; não equivale a saldo por cartão nem comprova saldo bancário atual. Na prévia estática, o saldo do benefício aparece mascarado sem número inventado. A grade de estabelecimentos decorativa foi removida para acomodar os dados reais. Arquivos: `HomeScreen.tsx`, `home.css`, `scripts/meg-web-home-06.visual-test.mjs`. **Home segue NÃO aprovada visualmente**, sem merge, com pendências de homologação real do saldo, refino global da Home, layout e gate Foundation. Não alterar Android ou telas 01-04 aprovadas.
+
+## Home 06 · reconstrução visual autorizada em 28/10/2026
+
+- Usuário autorizou implementar a imagem proposta nesta conversa. A implementação NÃO representa aprovação visual final, nem autoriza merge.
+- Composição nova: grid 12 colunas (7/5, quatro cards 3/12, dois 6/12, dois 6/12); cinco atalhos simétricos; DataGrid original e Shell intactos; arte WebP separada dos dados.
+- HomeScreen.tsx e home.css reconstruídos, sem reaproveitar CSS visual anterior; mock da prévia atualizado e identificado como FICTÍCIO.
+- Fonte única data.js/api-adapter.js recebe readModels.homeOverview.
+- Rota autenticada de somente leitura GET /finance/home-overview: saldo usa monetaryBalanceAt já canônico; cartões usam listCards, contas usam listPayables. A função projectHomeMetrics apenas agrega campos de serviços de domínio em centavos e conta registros, sem mutar regras financeiras.
+- Lançamentos pendentes usam summary.pendingAmount; indicador de contas quitadas mostra quantidade, NÃO inventa valor pago. Contas quitadas referem-se a registros com vencimento no período, sem comprovar data efetiva do pagamento.
+- Saldo dos benefícios vem de GET /finance/benefit-summary, sempre SEPARADO do monetário. Vencimentos usam /payables/open, inclusive outros meses.
+- Contrato financeiro home-overview-read.contract.test.ts, build da API com geração Prisma, build Web e capturas Playwright no gate próprio.
+- Android, PR #649, Login e recuperação aprovados, shell, DataGrid e regras de negócios originais preservados.
+- Render estático independente: https://meg-home-06-visual.onrender.com/home-visual.html. Gerar link com cache-busting após verificar deploy atual.
+- Pendências: aprovação visual EXPLÍCITA, integração real de navegação e seleção de período, homologação financeira com credenciais e dados reais, gate global Foundation. PR #650 permanece Draft, sem merge.
+
+## Home 06 · Correção de direção visual após rejeição expressa (28/10/2026)
+
+- Usuário REJEITOU a Home anterior como genérica e sem o padrão visual do trabalho anterior. Não registrar a Home como aprovada.
+- Referência visual vigente da Home: print oficial de 03/10/2026, com linha de saldo/fluxo, 4 KPIs, Benefícios/4 ações, 2 DataGrids. A imagem de 28/10 usada anteriormente foi apenas candidata não aprovada.
+- Camada home.css novamente reconstruída de forma integral, não como acúmulo de patches; removido cabeçalho redundante Visão geral para trazer os grids de volta à área útil.
+- HomeFinanceVisuals.tsx novo: SVGs de receita, alimentação, transporte, moradia, entretenimento, saúde, cartão, transferência, benefício etc. Os SVGs servem exclusivamente à apresentação das categorias já classificadas no catálogo. Não aplicam regras financeiras nem mudam IDs/status.
+- HomeScreen.tsx: duas tabelas preservam DataGrid original e ganharam células com SVGs, categorias coloridas e valores semânticos. Quatro atalhos em igual dimensão, como na referência. Nenhum total é calculado pela Home.
+- Benefício usa o saldo canônico separado de contas monetárias; artes WebP seguem isoladas e reaproveitam apenas o conjunto de imagens oficial atual.
+- Gate próprio Home: build API com Prisma, contrato financeiro, build Web e sete viewports; teste também verifica quatro atalhos, SVGs financeiros e badges. Validar SHA exato e Render LIVE, sem declarar gate Foundation aprovado.
+- PR #650 permanece Draft; nenhum merge, Android intocado, telas de autenticação 01-04 preservadas. Aprovação visual explícita PENDENTE.
+
+## Home 06 · revisão focal do card Saldo após vídeo (28/10/2026)
+
+- Usuário avaliou a evolução como parcial e rejeitou principalmente o card Saldo disponível. Vídeo enviado nesta conversa `20-11-08.mp4` evidenciou valor pequeno, arte escura e linha quase reta disputando espaço com os textos.
+- Escopo autorizado desta rodada: APENAS card de saldo e fixture da prévia visual. PR #650 continua Draft, sem merge; Home NÃO aprovada visualmente.
+- `HomeScreen.tsx`: identidade editorial do card reconstruída (ícone carteira oficial, título alinhado, valor monetário predominante, data de apuração, privacidade e acesso às movimentações). SVG de evolução/colunas com volume 3D desenha exclusivamente valores `cashflow.days[].realizedBalance` recebidos da autoridade canônica. Nenhum saldo ou regra de negócio calculado na tela.
+- `home.css`: composição limpa do saldo, iluminação e montanhas WebP existentes, gráfico concentrado à direita, máscara de proteção para valores e CTA, responsividade em 640/1024 mantida.
+- `home-visual/fixture.js`: saldos diários demonstrativos não lineares, informados como fictícios, para inspeção do gráfico; não tocar banco ou persistência.
+- `scripts/meg-web-home-06.visual-test.mjs`: checar presença de ícone principal, traçado do gráfico e tamanho mínimo da tipografia em sete viewports.
+- Preservados: Shell, DataGrid, SVGs financeiros das linhas, demais cards, benefícios, políticas financeiras, contas, API e Android. Gate Foundation segue bloqueador independente; gates isolados e Render não substituem aceite visual.
+- Preview Render em `https://meg-home-06-visual.onrender.com/home-visual.html`, validar SHA mais recente e abrir URL com cache-busting. Nenhuma próxima tela autorizada.
+
+## Checkpoint Home 06 | imagem oficial 02 e requisito de tela única (28/10/2026)
+
+- **Autorização do usuário:** a **SEGUNDA** imagem gerada e apresentada nesta conversa, identificada pelo PNG original 1536×1024, é a **nova referência soberana da Home**. Substitui a antiga `Tela principal.png` **somente para esta tela**. Documento de especificação: `docs/MEG-WEB-HOME-REFERENCIA-VISUAL-OFICIAL-02-20261028.md` e tabela oficial atualizada em `docs/MEG-WEB-REFERENCIAS-OFICIAIS-20261027.md`.
+- **Regra nova do usuário:** toda a Home deve caber em **uma tela desktop sem rolagem vertical/horizontal**, preservando o Shell, os 4 grupos de conteúdo, os dois DataGrids e botões legíveis. Testar browser real em 1366×768 e 1672×941, com zoom 100%; não mascarar overflow nem cortar conteúdos para forçar sucesso.
+- **Mobile:** a impossibilidade material de mostrar toda a composição desktop legível em 320×700 sem rolagem exige adaptação funcional específica, como painéis navegáveis, que ainda não foi aprovada. Não afirmar que todos os breakpoints cumprem simultaneamente o requisito.
+- **Conteúdo oficial da imagem:** saldo com imagem real de carteira, fluxo mensal sem estatísticas inventadas, 4 KPIs simétricos, Benefícios Verocard com saldo separado e sem ofertas/descontos, **5 ações rápidas alinhadas**, 2 tabelas DataGrid com ícones semânticos. Contratos financeiros têm prioridade sobre números que aparecem no mockup.
+- **Situação:** apenas a REFERÊNCIA VISUAL está escolhida; a Home atual na PR #650 **continua rejeitada/não aprovada**, branch isolada, PR Draft sem merge. Android, telas 01–04 aprovadas, DataGrid e regras financeiras não alterados nesta decisão. Não iniciar tela posterior.
+- **Próxima implementação autorizada por esta decisão:** reconstrução/adequação da Home à nova imagem, com arte em assets separados, testes de viewport e preview sem cache. Não confundir o commit documental com publicação de uma Home nova.
+
+## Home 06 · Implementação da imagem oficial 02 (28/10/2026)
+
+- Aprovada como **referência**, não como tela final: `MEG_HOME_REFERENCIA_VISUAL_02_20261028.png`, documentada em `docs/MEG-WEB-HOME-REFERENCIA-VISUAL-OFICIAL-02-20261028.md`.
+- **Escopo implementado na PR #650 Draft:** nova versão de `HomeScreen.tsx`, `home.css`, asset `apps/web/public/meg-web-evolution/home/wallet-official-02.webp` extraído somente da zona artística da imagem 02 e testes em `scripts/meg-web-home-06.visual-test.mjs`.
+- Saldo monetário é componente React, com controle de privacidade e data de referência; removido gráfico 3D SVG e montanhas do card. Benefícios permanecem totalmente separados no painel Verocard; nenhuma oferta ou desconto comercial foi incluído.
+- Cinco botões simétricos: Novo lançamento, Transferência, Pagar conta, Relatórios, Configurar metas. Quatro KPIs e duas tabelas continuam consumindo autoridades e DataGrid preexistentes.
+- **Desktop:** distribuição de quatro linhas em altura proporcional ao viewport, incluindo cinco linhas por tabela, sem rolagem externa; objetivo de verificação em 1366×768 e 1672×941 com navegador real. CSS de Home e topbar **somente com Home montada**, preservando CSS das demais telas.
+- **Mobile/tablet:** quatro abas internas `Resumo`, `Contas`, `Ações` e `Listas`, tornando todo o conteúdo acessível sem reduzir tipografia nem adicionar rolagem à página. Essa é uma **adaptação funcional proposta**, ainda sujeita à aprovação visual específica do usuário.
+- Prévia exclusivamente ilustrativa no Render independente `meg-home-06-visual`; conteúdo fictício identificado. A arte da carteira é um recorte da imagem oficial, não uma screenshot de tela inteira nem campos clicáveis rasterizados.
+- Testes: build API, contratos financeiros, build Web, sete viewports, assets, simetria dos cinco atalhos, privacidade dos saldos, abas e critérios de não rolagem desktop. Verificar resultado no SHA final, sem equiparar CI a validação visual.
+- **NÃO APROVADA** visualmente; PR #650 ainda em Draft, sem merge. Gate geral Foundation pendente. Android, telas 01-04 e DataGrid mantidos sem alteração.
+
+
+## Home 06 | rejeição do encaixe sem rolagem (28/10/2026)
+
+- O usuário enviou o vídeo `21-00-46.mp4` mostrando a Home publicada em 1366×768 e declarou que a solução "não foi boa ideia".
+- **Feedback visual explícito:** versão compactada/reprovada, com título do saldo cortado, CTA parcialmente escondido, tipografia excessivamente reduzida e tabelas exibindo apenas três linhas. O gate de não rolagem não equivale a preservação da integridade visual ou dos dados.
+- **Não aprovar a tela atual, não fazer merge da PR #650.** O requisito de 'nenhuma rolagem vertical' precisa de reavaliação: proposta de permitir rolagem vertical natural sem rolagem horizontal, sem cortar painéis, mantendo a identidade da referência oficial 02 e regras financeiras existentes. Essa proposta ainda não substitui formalmente a decisão do usuário até sua concordância explícita.
+- Nenhuma regra financeira, tela anterior ou Android deve ser alterada por causa deste feedback. Corrigir estrutura limpa em vez de empilhar remendos de altura fixa/overflow oculto.
+
+## Home 06 | Reestruturação com rolagem vertical natural após rejeição (28/10/2026)
+
+- O usuário solicitou "continue" após a proposta de abandonar a compressão artificial que cortou título, botão e linhas das tabelas no vídeo `21-00-46.mp4`. Esta autorização vale para **refazer a Home**, não para aprová-la.
+- **Nova decisão operacional aplicada à candidata**: manter **zero rolagem horizontal da página**, permitir rolagem vertical da área principal (`.meg-main`) quando necessário, sem ocultar linhas nem controles. Os testes de 1366×768/1672×941 deixam de considerar ausência de scroll vertical como sinal de qualidade. A referência **visual** oficial 02 permanece soberana; seu texto anterior sobre ausência de scroll fica superado por esta correção de usabilidade da Home.
+- `apps/web/src/meg-web-evolution/home/home.css`: reconstruído integralmente, grades de 12 colunas no desktop, alturas mínimas legíveis em lugar de quatro linhas espremidas; SVG semântico nas células, carteira e Verocard em WebP; tabelas com viewport livre e cinco registros visíveis no desktop. Menu, cabeçalho e componentes das outras telas não alterados.
+- `apps/web/src/meg-web-evolution/home/HomeScreen.tsx`: removida a navegação por quatro abas mobile que não tinha aprovação; os quatro grupos e os dois DataGrids voltam ao fluxo vertical natural, responsivo, sem reduzir tipografia.
+- `scripts/meg-web-home-06.visual-test.mjs`: passa a testar largura sem overflow, altura adequada dos cards, simetria de KPIs e atalhos, todas as colunas e linhas das tabelas, acesso aos painéis no celular e duas capturas (topo/parte inferior) por viewport.
+- Nenhuma alteração em saldos, serviços, regras financeiras, DataGrid global, autenticação aprovada ou Android. A PR #650 continua Draft, sem merge, e a Home NÃO está aprovada visualmente.
+- O usuário deverá validar tanto o topo quanto a parte inferior pelo Render publicado no SHA exato, com link sem cache. O gate Foundation continua bloqueador independente.
+
+## Home 06 | Piloto Taste Skill v2 iniciado (29/10/2026)
+
+- O usuário aprovou começar a experiência com Taste Skill na PR #650. Revisão da ferramenta confirmou que `redesign-existing-projects` foi aposentado; método aplicável a dashboard financeiro é `design-taste-frontend` com `references/app-screens.md`, usando `--app`.
+- Documento de auditoria e prioridades: `docs/MEG-WEB-HOME-06-TASTE-AUDITORIA-20261029.md`.
+- Workflow isolado `.github/workflows/meg-web-home-06-taste-audit.yml`: obtém somente no runner a revisão pinada `12af471f627f866411b4bd785b19646d3672784c` do Taste Skill e roda `lint.mjs --app` + `inspect.mjs --app` contra a prévia, gerando relatório e capturas de 1366/768/390 px.
+- Este piloto é **diagnóstico e não bloqueador**. Não incorporar código, dados ou tokens do plugin ao produto nem reinterpretar a imagem oficial 02. Onde o guia genérico conflitar com os prints e regras MEG, a regra interna prevalece.
+- **Sem alterações nesta rodada** em `HomeScreen.tsx`, `home.css`, DataGrid, Shell, API, Android e telas 01–04. Nenhuma tela foi visualmente aprovada. PR #650 segue Draft e sem merge; gate geral Foundation ainda requer correção independente.
+- Próximo passo estrito: avaliar relatório de auditoria, escolher os 3 achados reais prioritários e implementar correções de uma só vez, comparando screenshots antes/depois e publicando um preview sem cache somente quando existir commit visual novo.
+
+## Home 06 | Resultados do piloto Taste Skill (29/10/2026)
+
+- Confirmado: `design-taste-frontend` v2.1.5, módulo app, auditado no GitHub Actions da PR #650, run `40916502984`. Tool externa baixada somente no runner no commit imutável `12af471f627f866411b4bd785b19646d3672784c`; não instalada como dependência do runtime.
+- Saída: 6 FAIL e 2 WARN **do Taste**, sem equivalência com gate oficial. Detalhes em `docs/MEG-WEB-HOME-06-TASTE-AUDITORIA-20261029.md`.
+- Mudanças seguras aplicadas ao visual da Home: `h1` acessível sem alterar composição visível, bordas dos painéis discretizadas, text-shadow decorativo removido do saldo. **Não alterados** saldos, cards, benefício, regras financeiras, DataGrid, Shell, Android ou autenticação aprovada.
+- Exceções justificadas: gradientes da imagem oficial 02 e ícones coloridos dos cards/atalhos não podem ser suprimidos por padrão externo; a referência soberana prevalece. Texto `XLS/PDF` em 7px identificado pelo checker fica como investigação, sem intervenção global no DataGrid.
+- Inspector de terceiro mede parte visível e pode não enxergar a rolagem interna de `.meg-main`; usar Playwright específico para conferir tabelas completas. **Home não aprovada**, PR Draft sem merge, gate Foundation independente.
+
+## Home 06 | Integração funcional autenticada e validação (29/10/2026)
+
+- Usuário determinou deixar a Home **real e funcional**, empregando o Taste Skill apenas como auditor, mantendo a referência visual oficial 02.
+- **HomeScreen.tsx**: agora aceita competência e consulta real via `authenticatedRequest`; saldos permanecem exclusivamente em `home-overview` e `benefit-summary`. Busca no cabeçalho filtra descrições, categorias e contas efetivamente carregadas nas tabelas. Em troca de competência, o snapshot anterior é invalidado e respostas assíncronas antigas não podem sobrescrever a nova, evitando exibição de saldos de mês errado.
+- **AppShell.tsx**: removidos usuário e competência fixos; nome é retirado da sessão autenticada; período tem seletor `type=month`; busca controlada; saída aciona logout. O botão Novo lançamento, menu e ações para telas futuras respondem com aviso explícito de indisponibilidade, sem navegação fictícia ou mutação financeira.
+- **main.tsx**: conecta a sessão, logout, seleção de competência, busca e aviso de ações não implantadas ao Shell e à Home real. Não utiliza os módulos visuais históricos; não avança etapas posteriores.
+- **home.css**: somente ajustes locais para seletor de período, aviso de seção ainda não disponível e posição mobile; identidade visual oficial 02 preservada.
+- **shell.contract.test.js**: testes antes baseados em usuário e busca fictícios foram convertidos para exigir propriedades reais; **scripts/meg-web-home-06.authenticated.test.mjs**: teste browser da entrada `web-evolution.html` autenticada, com respostas HTTP simuladas, exige leitura das rotas canônicas, troca de competência, busca, privacidade, mensagem de funcionalidade futura e logout. O workflow da Home agora executa também esse teste.
+- **Divisão crítica:** `home-visual.html` segue prévia *pública estática, com valores fictícios*, e `web-evolution.html` é a entrada *autenticada* da nova Web. Nenhuma homologação com dados bancários/contas reais ocorreu. A API da PR ainda depende dos gates e deploy seguro antes de teste de integração com contas reais; não se pode afirmar que a prévia demonstra isso.
+- **Pendências reais:** integração e aceitação das telas futuras (Novo Lançamento, Transferência, Pagamentos, Relatórios, Metas), autenticação ponta a ponta contra servidor com dados verdadeiros, validação visual expressa, gate Foundation e publicação segura quando autorizada. PR #650 continua **Draft e sem merge**. Android, regras financeiras, DataGrid e telas 01–04 permanecem sem alterações.
+
+
+## Home 06 | Auditoria de arte em alta resolução, ferramentas GitHub (29/10/2026)
+
+- Usuário rejeitou o aspecto amador/desfocado da Home e autorizou pesquisar e integrar ferramentas GitHub, preservando a imagem oficial 02.
+- Diagnóstico factual: wallet-official-02.webp tem **224×185 pixels, 2.706 bytes**, e verocard-oficial-panorama.webp tem **204×131 pixels, 2.038 bytes**. São recortes extremamente pequenos da composição; o navegador os amplia, causando falta de definição. A referência visual oficial 02 é uma screenshot de 1536×1024, NÃO deve ser reaproveitada como fonte fotográfica HD de elementos isolados.
+- Ferramentas confirmadas: **Sharp** para metadados/processamento de fontes originais grandes e **Playwright** para medidas reais em DPR 2; aproveitar Playwright existente. vite-imagetools fica candidato após termos fontes HD, pois não recupera nitidez de recortes. Pixelmatch já coberto por Playwright. Penpot opcional adiado. Upscayl não é solução padrão por desfoque de origem/necessidade de GPU.
+- Integração feita nesta PR: scripts/meg-web-home-06.asset-quality.mjs e .github/workflows/meg-web-home-06-image-quality.yml. O runner instala Sharp 0.35.5 isoladamente e mede os dois assets no browser em 1366×768, 1920×1080 e 390×844, DPR 2. Relatório JSON/Markdown no artefato meg-home-06-image-quality-report. Detalhes em docs/MEG-WEB-HOME-06-ASSETS-ALTA-RESOLUCAO-20261029.md.
+- Execução inicial GitHub Actions 40934290470: **oito falhas de qualidade dos assets** (duas fontes de baixa resolução mais densidade insuficiente nas resoluções testadas). A etapa de auditoria está continue-on-error apenas enquanto não houver substitutos, portanto o workflow verde NÃO indica aprovação de imagens. O log indica exit code 1 no diagnóstico.
+- **PENDÊNCIA CRÍTICA:** produzir ou obter imagens de carteira/cartão ORIGINAIS e NÍTIDAS em alta resolução, respeitando composição e identidade da imagem oficial 02; gerar WebP/AVIF para mobile/desktop com Sharp, sem upscale dos recortes. Confirmar marca/logotipo pelos originais oficiais. Só então tornar o gate bloqueador e publicar nova Home.
+- **Sem mudança nas imagens da tela nesta rodada**: não afirmar que o desfoque foi resolvido ou que a Home teve melhora visual. Esta entrega foi uma auditoria e integração de ferramentas para impedir recorrência.
+- Nenhum saldo, API, pagamento, benefício, DataGrid, Shell, Android ou tela de autenticação foi alterado. A PR #650 segue **Draft, sem merge**; aprovação visual e homologação com contas reais permanecem pendentes.
+
+- **Correção posterior no mesmo ciclo:** o workflow de auditoria de imagem foi promovido de não bloqueador para **gate bloqueador** (commit 1596f0f2). Com as miniaturas atuais, o resultado esperado é falha. Isso impede aceitar qualidade baixa como se fosse aprovada. O relatório continua publicado pelo passo always().
+
+
+## Home 06 | Substituição efetiva dos assets HD (29/10/2026)
+
+- O usuário autorizou continuar a reconstrução, priorizando a nitidez real das imagens. O visual oficial da Home continua sendo a imagem 02. Home NÃO aprovada.
+- Criado script de geração isolado: scripts/meg-web-home-06.build-hd-assets.mjs. Fonte fotográfica da carteira: Aleksandrs Karevs, Pexels 15440419, licença Pexels Free. O enquadramento e o tratamento de luz são adaptados à composição dark-teal. O cartão do painel Verocard é **ilustração demonstrativa construída em vetor e renderizada em WebP**, não a fotografia de cartão físico emitido. Nenhum número financeiro está dentro das imagens.
+- Criado workflow .github/workflows/meg-web-home-06-build-hd-assets.yml, limitado à branch isolada, com Sharp pinado no runner, controle de tamanho/resolução, commit de somente dois arquivos WebP e push por github-actions[bot].
+- **Commit de assets gerados:** ec13a618b7e2760445e52351d9030fee70676a86. Carteira: 1800×1000 px (289.862 bytes). Cartão: 1800×1040 px (69.628 bytes). A etapa de geração de HD foi concluída com sucesso na execução GitHub 40937871970.
+- IMPORTANTE: **não é uma fotografia oficial da marca MEG ou cartão Verocard**. Deve ser conferida esteticamente contra a referência 02, principalmente textura/fundo da carteira, logotipo do cartão, perspectiva, luz e cores. Se o usuário rejeitar a composição, voltar à elaboração dos assets sem mexer nas regras ou no grid.
+- Os assets antigos de 224×185 e 204×131 px foram substituídos no código da PR; não existe necessidade de CSS para esticá-los artificialmente.
+- O pipeline de qualidade de imagens continua **bloqueador**, precisa passar no novo SHA (não declarar aprovado só pela presença de dimensões grandes). A compilação Home e Foundation devem ser reexecutadas sobre o SHA novo. Render deve publicar o mesmo SHA e oferecer URL sem cache.
+- PR #650 permanece Draft, sem merge; Android, regras financeiras, autenticação e DataGrid preservados. Nenhuma tela futura iniciada.
+
+
+## Home 06 | Refinamento do Fluxo e revisão final HD (29/10/2026)
+
+- Carteira e Verocard HD continuam na branch. Gate de resolução aprovado no SHA bb7aed6c com densidade DPR2 adequada. A fonte da carteira é fotografia licenciada da Pexels, com perspectiva diferente da imagem oficial 02, sujeita à validação.
+- home.css refinado: iluminação frio/teal, enquadramento maior da carteira e equilíbrio da arte Verocard. Nenhuma regra financeira alterada.
+- HomeScreen.tsx: removido o gráfico SVG de fluxo diário oculto; substituído por barra visual horizontal de entradas e saídas, usando exclusivamente totais já apurados pelo read model. CSS flex-grow define geometria, não calcula saldo, resultados ou status. Quando os dois valores são zero, não há barra.
+- scripts/meg-web-home-06.visual-test.mjs: passou a exigir a barra proporcional na prévia.
+- Correção de compilação: a primeira remoção do gráfico apagou acidentalmente definições locais de SectionHeading e colunas DataGrid, causando TS2304 no preflight. Essas definições foram restauradas no commit d57b6b21, antes de qualquer merge. É obrigatório passar build final depois dessa correção.
+- Home sem aprovação visual. PR #650 Draft sem merge. Foundation e homologação autenticada com contas reais permanecem independentes.
+
+
+### Home 06 · Refinamento artístico da referência oficial 02 (29/10/2026)
+
+- Confirmação do usuário no chat 06: **a última imagem selecionada é a imagem oficial 02**, carteira MEG e cartão Verocard. A seleção de referência **não** constitui homologação da Home implementada.
+- A inspeção dos novos assets de 1800 px demonstrou divergência de identidade: a fotografia da carteira não continha a marca MEG; o cartão vetorial exibia uma palavra VEROCARD gigantesca não presente no modelo escolhido.
+- Atualizado `scripts/meg-web-home-06.build-hd-assets.mjs` na PR #650 para usar o **SVG oficial** `apps/web/public/brand/logo-meg-financas.svg` como marca nativa das duas artes HD, com iluminação teal da carteira, novo enquadramento gráfico do cartão, reflexos e composição mais próxima da imagem 02. Não utilizar pixels ampliados do screenshot.
+- O workflow isolado de geração de imagens é acionado pelo script e deve materializar os dois WebPs. **Não declarar as artes ou a Home aprovadas sem confirmação de geração, inspeção das capturas e avaliação visual explícita.**
+- Preservados: autoridade financeira, saldo de benefício separado, DataGrid, Shell autenticado, Android e telas 01–04. PR #650 continua Draft e merge bloqueado se qualquer gate estiver vermelho.
+- Pendentes: confirmar novo commit de binários e deploy do SHA correspondente, executar auditoria de densidade, conferir alinhamentos desktop/mobile e obter aprovação visual.
+
+
+### Home 06 | refinamento de hierarquia, profundidade e responsividade (29/10/2026)
+
+- **Autorização:** o usuário autorizou outra rodada visual na Home com base apenas na referência oficial 02. Isso não equivale a homologação da tela nem autorização de merge.
+- **React Home:** HomeScreen.tsx reorganizado em dois indicadores de Fluxo do mês com ícones destacados, distribuição proporcional aos totais canônicos e rótulo visual Outras pendências. Saldo e resultado continuam exclusivos da API; benefício separado do dinheiro.
+- **CSS Home:** home.css foi reconstruído por seções substituídas na origem, sem empilhar overrides. Hero, Fluxo, KPIs com setas, Verocard com perspectiva, cinco atalhos e DataGrid real receberam refinamento e hierarquia. Rolar verticalmente na área principal continua permitido; rolagem horizontal externa proibida.
+- **Shell:** AppShell.tsx recebeu propriedade opcional homeContext, somente chamada na Home real e prévia. Saudação usa usuário autenticado e data de execução, calculada com new Date() no fuso São Paulo; aparece apenas com espaço suficiente no container. Busca, período, menu e demais telas não mudaram.
+- **Prévia:** home-visual/entry.jsx usa identidade e mês do print oficial apenas na fixture; busca demonstrativa funciona e comandos de telas futuras exibem aviso de indisponibilidade. Sem autenticação ou banco nesta prévia.
+- **Responsividade:** breakpoints 640/1024; exceção de DataGrids 1024-1279. Em 320 px, apenas uma coluna, controles das tabelas no fluxo normal e alvos de toque de 48 px. Fonte do saldo mobile corrigida após falha factual inicial de 30,4 px.
+- **Testes:** script visual estendido com verificações de cabeçalho, Fluxo, setas e toque mobile. Workflow visual passou no SHA 3eab3b908ce65941e97a7ba8a7902e3167e2326b; novos gates do SHA final continuam por conferir.
+- **Proteções:** API financeira, regras de negócio, DataGrid reutilizável, Android e autenticação 01-04 preservados. Mudança opcional do Shell só é habilitada na Home.
+- **Pendências:** validar gates finais, confirmar o deploy do mesmo SHA em Render, inspecionar capturas desktop/mobile e receber aprovação visual expressa. PR #650 continua Draft; sem merge.
+
+
+### Home 06 | rodada de correções após crítica do vídeo (29/10/2026)
+
+- O usuário autorizou prosseguir **somente na Home 06** após análise visual do vídeo `18-03-10.mp4`. A referência soberana permanece a imagem oficial 02 (arquivo original de 1536×1024). A Home implementada segue **NÃO aprovada**, PR #650 em Draft, sem merge.
+- **Autoridade financeira:** `summary.projectedResult` foi confirmado em `apps/api/src/modules/finance/read-model.ts` e `financial-policy.ts` como resultado projetado, não saldo bancário. O texto da Home foi corrigido de «Saldo do período» para **«Resultado projetado»**, sem alteração de cálculo, valor, API ou writer.
+- **Vencimentos:** o endpoint `GET /payables/open` já ordena por `dueDate asc`. A Home também ordena ascendente, com desempate por ID; o estado antigo do DataGrid armazenado na chave `meg-home-due` podia sobrescrever essa ordem por descrição. Foi adotada chave nova `meg-home-due-chronological-v3`, preservando ordenação, filtros, exportação e persistência posteriores do DataGrid. A apresentação inicial é cronológica e os testes foram ampliados para exigir 28/10/2026 na fixture.
+- **Coluna Conta sem dados:** o contrato atual de pendências não contém conta de pagamento vinculada antes da baixa; não usar bancos fictícios. Na Home, a coluna de vencimentos passou a **Situação**, tradução estritamente textual de `Payable.status` (`open` → A pagar; `partial` → Parcial; fallback exibe status bruto). Nenhum vencimento, atraso ou pagamento é classificado localmente. A coluna Conta das movimentações continua intacta.
+- **Card Contas pagas:** eliminação da repetição de «12 contas» na legenda quando a autoridade só disponibiliza o quantitativo, sem inventar valor monetário.
+- **Visual:** `home.css` recebeu composição de Verocard separando arte dos valores, incluindo mobile empilhado com cartão visual independente; ações rápidas receberam alturas e tipografia mais equilibradas. Shell, DataGrid global, Android, telas de autenticação e motor financeiro preservados.
+- **Carteira HD:** tentativa inicial de destaque por foto mascarada revelou madeira e cortes no objeto; imagem não considerada aprovada. O gerador `scripts/meg-web-home-06.build-hd-assets.mjs` passou a atenuar o fundo marrom, usar logotipo SVG oficial e incluir margem transparente antes da rotação para corrigir bordas. Exige nova inspeção real das imagens geradas.
+- **Workflow HD:** commit simultâneo na branch causou rejeição de push, sem perda de alterações. `.github/workflows/meg-web-home-06-build-hd-assets.yml` agora serializa a geração por ref e faz `git fetch`/`git rebase` antes do push, sem `force`.
+- **Testes adicionados:** `scripts/meg-web-home-06.visual-test.mjs` exige rótulo de resultado, cronologia e situação canônica; `scripts/meg-web-home-06.authenticated.test.mjs` exige distinção entre resultado projetado e saldo do benefício. Ainda é preciso confirmar gates completos sobre SHA final com binários.
+- **Pendências reais:** inspeção final da arte da carteira e Verocard contra referência original; concluir gates, investigar falha Foundation se persistir (no passado houve sobreposição busca/período a 900×700), confirmar Render no SHA exato e capturas; aprovação visual explícita do usuário. Nenhuma tela posterior autorizada.
+
+
+#### Complemento operacional HD: geração final da rodada
+
+- A geração do script de wallet HD encontrou primeiro conflito de push quando a branch mudou em paralelo; o workflow passou a fazer fetch/rebase, sem force. Em tentativa posterior o gate rejeitou arte 1115×901 fora do envelope máximo de 1100px; escala ajustada no script.
+- O workflow de geração HD da correção de escala (run 40956768180) concluiu com **success**, materializando a nova carteira na branch por commit automático. Confirmar o SHA da PR após o commit do bot, não reutilizar o SHA do script.
+- Inspeção da arte resultante: a marca MEG ficou legível e inteira e a mesa de madeira perdeu destaque, mas a borda do recorte fotográfico continua perceptível na parte inferior/direita. **Divergência estética permanece** e deve ser mostrada para aprovação explícita antes de qualquer merge.
+- Variação visual está limitada a Home. A coluna Situação utiliza status retornado pela API, a nomenclatura Resultado projetado foi corrigida sem regras locais e a ordem inicial de vencimentos é cronológica por data.
+- Os gates Home Visual and Build, Foundation e confirmação Render **não são declarados concluídos** sem consulta do último SHA com binários; estado Draft permanece obrigatório.
+
+## Home 06 | reconstrução limpa da camada visual baseada na referência oficial 02 (29/10/2026)
+
+- O usuário rejeitou o protótipo ORBIT por fugir do layout aprovado e autorizou uma reconstrução visual respeitando somente a **imagem oficial 02**. ORBIT não foi incorporado ao código. A imagem soberana permanece a especificada por `docs/MEG-WEB-HOME-REFERENCIA-VISUAL-OFICIAL-02-20261028.md`.
+- `apps/web/src/meg-web-evolution/home/home.css` foi **substituído integralmente**, sem empilhar novas regras sobre a folha de estilos rejeitada. Preserva grade 7/5, quatro KPIs simétricos, benefícios e cinco ações rápidas, dois DataGrids oficiais, rolagem vertical interna e responsividade 640/1024 com necessidade técnica 1024–1279 nos DataGrids.
+- A nova apresentação aprimora hierarquia, contraste, proporções, alvos de toque e espaço de leitura. Não altera nem duplica saldos, cálculos, datas, status, pagamentos, transferência, fatura ou fonte única.
+- `scripts/meg-web-home-06.build-hd-assets.mjs` foi reconstruído. Agora compõe os dois assets de 1800px **sem fotografias genéricas externas, sem upscale de miniaturas ou recorte irregular**: couro procedural, costuras e sombras da carteira, cartão de benefício vetorial e logotipo SVG canônico do repositório. O cartão é ilustrativo e não substitui emissão física Verocard.
+- A primeira geração de imagem foi bloqueada pelo requisito de tamanho físico do asset; foi adotado WebP sem perdas para preservar detalhe. Em seguida foi detectado recorte vertical da carteira na captura em 1672×941. A correção separou resize/rotação em etapas Sharp independentes para respeitar a geometria e ajustou a posição/escala. O workflow de geração concluiu com sucesso após a correção.
+- **Divergência estética real:** a nova carteira é uma representação gráfica de couro, **não uma fotografia** como a imagem oficial 02. A reprodução visual completa permanece pendente de confirmação do usuário; não classificar como tela aprovada. A composição física e a linguagem da referência ainda exigem julgamento visual.
+- `HomeScreen.tsx`, integração autenticada, Shell, DataGrid reutilizável, backend, regras financeiras, telas 01–04 e Android **não foram alterados funcionalmente** nesta rodada. As correções anteriores de `Resultado projetado`, vencimentos cronológicos e `Situação` continuam preservadas.
+- A PR #650 permanece **Draft, sem merge**. Gate visual Home, Foundation, fonte HD e preflight devem ser conferidos no SHA final com assets. Foundation já apresentava falhas independentes da Home em snapshots do DataGrid; não substituir esse diagnóstico por sucesso de build.
+- **Pendências:** comprovar preview Render do SHA final (workspace Render não selecionado nesta sessão), inspecionar screenshots desktop/tablet/320/390, conferir status de todos os gates, comparar com o PNG original e colher aprovação visual explícita. Não avançar para próximas telas.
+
+## Home 06 | substituição IMPLEMENTADA da carteira por cena HD com marca MEG (29/10/2026)
+
+- Contexto: usuário rejeitou mockup que não era implementado; autorizou expressamente **tirar a carteira** e usar uma imagem de alta definição atrás do saldo com logo MEG. Essa adaptação está aprovada como diretriz de implementação, não homologação visual da Home.
+- `HomeScreen.tsx`: substituído `img.meg-home-wallet-photo` por `img.meg-home-balance-art` com URL `/meg-web-evolution/home/meg-balance-scene-hd.webp`. Valor do saldo, privacidade e botão de detalhes permanecem funcionais e não são rasterizados.
+- `home.css`: apresentação do hero usa a nova cena em 100% da área, gradiente do texto e composição oficial em 7/5. Todo restante do layout oficial 02 preservado.
+- `scripts/meg-web-home-06.build-hd-assets.mjs`: removida geração de carteira, substituída por imagem HD 2400×1200 construída em Sharp/SVG, fundo dark teal, gráficos abstratos luminosos e logo do SVG canônico `public/brand/logo-meg-financas.svg`. Gráficos de fundo são exclusivamente decorativos, sem simular ganhos, métricas ou cálculos financeiros.
+- Binário gerado e commitado por workflow em `apps/web/public/meg-web-evolution/home/meg-balance-scene-hd.webp`; arquivo antigo `wallet-official-02.webp` removido do branch (não apenas oculto via CSS). Verocard atual mantido.
+- `scripts/meg-web-home-06.asset-quality.mjs`: verifica novo arquivo, fonte mínima 2000×1100 e densidade Retina nos viewports oficiais.
+- `scripts/meg-web-home-06.visual-test.mjs`: exige nova cena, valida URL e ausência da classe de carteira antiga, mantendo controles e DataGrids.
+- `.github/workflows/meg-web-home-06-build-hd-assets.yml`: gera novo asset, remove binário antigo em commit sem force e usa fetch/rebase; build isolado da Home continua exigido.
+- Proibido chamar tela pronta antes de verificar screenshot, green gates do último SHA e aprovação explícita. Base da PR #650 permanece Draft, sem merge. O Android, APIs financeiras, transferências, faturas, saldos e DataGrid compartilhado não foram alterados nesta tarefa.
+- **Pendências:** conferir captura do último SHA com asset gerado, execução final de `Home 06 - Visual and Build` e `Foundation`, validar publicação exata no Render e aprovação visual. Falhas anteriores do Foundation relacionadas a contratos de viewport do DataGrid são independentes da nova arte e não devem ser ignoradas.
+
+
+## Home 06 | validação objetiva do Bloco Saldo + Fluxo após rejeição estética (29/10/2026)
+
+
+- O usuário expressou forte desgaste com a evolução visual e pediu **uma entrega sólida**, não outra promessa ou dashboard diferente. **Home continua a única prioridade**; referência oficial 02 continua soberana.
+- Implementação limitada ao painel de saldo. O gerador `scripts/meg-web-home-06.build-hd-assets.mjs` deixa de desenhar barras ascendentes/linha de rentabilidade fictícia; gera cenário ambiental de vidro/iluminação teal com SVG canônico MEG, em 2400 × 1200 pixels, sem alterar os dados React.
+- Bloco de saldo e Fluxo permanecem no padrão de duas colunas da imagem oficial. `scripts/meg-web-home-06.visual-test.mjs` agora exige geometria da primeira linha (alinhamento, altura equivalente, ausência de colisão, proporção 7/5 com tolerância) e empilhamento tablet/mobile sem sobreposição.
+- O workflow de geração de assets HD (run 40967482789) concluiu com sucesso e publicou o WebP na branch. O teste Home Visual and Build (run 40967722914) concluiu **success**, incluindo capturas reais nos oito tamanhos e contrato 7/5. Arte do saldo fotografada e revisada na captura `desktop-oficial.png` e `mobile.png` do artifact `12938966448`.
+- Inspeção visual: nova cena está mais discreta, sem rentabilidade simulada e com leitura do saldo preservada. Ainda **não** reproduz a riqueza fotográfica da referência oficial. Portanto **não homologar Home**.
+- Preservados APIs, auth, operações financeiras, cálculo de saldos, status, domínio de benefícios, card Verocard, DataGrid compartilhado e Android.
+- PR #650 permanece Draft, sem merge. **Foundation e Preflight do SHA `15764e3fcb42083aad66d9328f0bf0485ced5633` estavam em execução** quando registrado; não declarar verde. Render continua sem comprovação do SHA implantado.
+- Próxima decisão: só considerar esse bloco aprovado mediante avaliação visual explícita do usuário; seguir para demais cards da Home somente depois de consolidar o primeiro bloco, sem alterar layout ou identidade.
+
+
+## Home 06 | Reinício visual funcional STUDIO a pedido explícito do usuário (29/10/2026)
+
+
+- **Decisão atual e prevalente:** após sucessivas rejeições, o usuário revogou a exigência de copiar o layout 02 para a Home e determinou **começar um layout totalmente novo mantendo a paleta dark teal/turquesa**. Novas imagens geradas de dashboards também foram expressamente rejeitadas. Trabalhar apenas na Home 06, não em telas futuras. A imagem 02 permanece como histórico, não como restrição de layout da Home nesta nova tentativa.
+- **Implementação real STUDIO:** `apps/web/src/meg-web-evolution/home/HomeScreen.tsx` ganhou título editorial visível, hierarquia sem imagens cenográficas, marca textual discreta e removeu carteira e cartão ilustrativo. Preserva adaptação da fonte de dados, eventos, privacy toggle, ações de navegação e DataGrid. Não acrescenta nenhum número ou status inventado.
+- `apps/web/src/meg-web-evolution/home/home.css` foi **reescrito do zero** (não CSS emendado): modo escuro sóbrio, teal como foco, saldo/fluxo 8/4 no desktop largo, quatro KPIs contidos, cinco ações úteis à esquerda (7/12), benefícios financeiros à direita (5/12), dois DataGrids 6/6, conteúdo empilhado em 640 e 1024, tablet e celular sem scroll horizontal.
+- `scripts/meg-web-home-06.visual-test.mjs` não exige mais assets antigos nem proporção 7/5: protege a versão nova, saldo e benefícios com privacy, Fluxo canônico, cronologia, status, navegação/ações, ausência de imagens artificiais e proporção 8/4 (7/5 técnica entre 1024 e 1279) / empilhamento mobile.
+- `scripts/meg-web-home-06.asset-quality.mjs` e `.github/workflows/meg-web-home-06-image-quality.yml` agora fiscalizam **independência gráfica da interface** em 1366, 1920, 390, inclusive ausência de imagens decorativas e URLs de fundo, em vez de obrigar as imagens rejeitadas. Checkpoint não implica deploy.
+- **Autoridades preservadas:** `financial-policy.ts`, `monetary-protection.ts`, `opening-balance.ts`, `read-model.ts`, `event-mutation.ts`, `benefit-event-mutation.ts`, `transfer-service.ts`, `payables/service.ts`, cartão e faturas canônicas; sem alterações na API financeira ou Android. Componentes Shell e DataGrid globais intocados.
+- **Pendências críticas:** testar build, capturas reais de todos viewports, investigar Foundation se vermelho, analisar visualmente captura e pedir aprovação visual **explícita** antes de merge. Manter PR #650 **Draft**. Render só pode ser apresentado como publicado no SHA exato quando verificado por deploy; `?v=` não comprova publicação.
+
+## Home 06 | ATLAS: novo layout funcional, não derivado do STUDIO (29/10/2026)
+
+- Após o usuário **rejeitar explicitamente** o STUDIO e pedir novo layout, esta etapa mudou apenas a apresentação da Home 06 para a abordagem **ATLAS**. Não considerar aprovada: deve ser avaliada visualmente pelo usuário.
+- `HomeScreen.tsx`: DOM reorganizado de forma real, não apenas cores/CSS: `meg-home-overview` com **núcleo financeiro integrado Saldo+Fluxo** à esquerda e **quatro KPIs de navegação** em rail 2x2 à direita; `meg-home-operations` com cinco ações e resumo do Verocard; `meg-home-ledger` com dois DataGrids de **largura total** em sequência. Sem imagens cenográficas e sem métricas inventadas.
+- `home.css`: **substituição integral** por linguagem dark teal, turquesa em destaques, tipografia legível e hierarquia mais limpa; sem CSS antigo ou imagens fotográficas. Layout realmente diferente da imagem 02 e do STUDIO. Breakpoints principais 640px e 1024px.
+- `scripts/meg-web-home-06.visual-test.mjs`: contratos atualizados para verificar Fluxo abaixo do Saldo dentro do núcleo, KPI rail lado a lado no desktop, empilhamento tablet/mobile, DataGrids full width e nenhum corte/scroll horizontal. Outros testes de privacidade, domínio, ações e data permanecem.
+- `scripts/meg-web-home-06.asset-quality.mjs`: auditoria gráfica aponta para `.meg-home-atlas`, sem imagens cenográficas. Nenhuma alteração em API, leitura financeira, Shell global, DataGrid central, Android ou outras telas.
+- **Pendências:** capturas da aplicação real e revisão, gates Foundation/Preflight, prova do deploy exato no Render e **aprovação visual explícita**. PR #650 deve permanecer em Draft, sem merge.
+
+
+## HOME 06 - DECISÃO VIGENTE: ATLAS REPROVADA VISUALMENTE (29/10/2026)
+
+- O usuário examinou a captura real da Home ATLAS e declarou expressamente: **"pior de todas até agora"**. **ATLAS REPROVADA.** Nenhuma tela Home foi homologada; não tratar ATLAS, STUDIO, ORBIT ou quaisquer propostas rejeitadas como referência visual ou layout aceito.
+- O pedido atual permanece focado **somente na Home**, com paleta MEG dark teal/turquesa e preservação integral das regras financeiras canônicas. A qualidade visual é uma pendência crítica e não pode ser compensada por CI verde, imagens geradas ou versões superficiais de CSS.
+- Bloquear merge da PR #650 enquanto não existir nova proposta aprovada explicitamente. Manter PR **Draft**. Não avançar para outras telas. Nenhuma migração do Android.
+- **Não recomeçar outra refação automática baseada na ATLAS.** O próximo trabalho deve definir a experiência de informação da Home e só depois reconstruir a apresentação limpa em isolamento, com captura real e revisão visual. Não inferir aprovação ou publicação em Render apenas por URL sem cache.
+
+
+## HOME 06 | Implementação da referência Tela principal(1).png com primitivas shadcn locais e ECharts (29/10/2026)
+
+- **Diretriz atual:** o usuário anexou `Tela principal(1).png` (1672×941), autorizou usar componentes `shadcn/ui` selecionados, e exigiu fidelidade na área interna da Home, com sidebar existente intocada. Esta imagem substitui as experiências rejeitadas ATLAS/STUDIO/ORBIT como fonte visual da Home. **Ainda NÃO homologada visualmente.**
+- **Camada React:** `apps/web/src/meg-web-evolution/home/HomeScreen.tsx` foi reestruturado para Saldo+Fluxo 7/5, quatro KPIs, Benefícios Verocard/Ações rápidas, dois DataGrids na última linha 6/6. Valores preservados de `/finance/summary`, `cashflow`, `benefit-summary`, `home-overview`, `payables` e `cards`, passando pela fonte única `api-adapter.js`.
+- **Biblioteca:** `HomePrimitives.tsx` contém Card/Button locais adaptados à composição shadcn/ui (licença MIT) com CSS isolado. **Não foi instalado Tailwind global nem executado shadcn init**, para não alterar Shell/sidebar nem criar segunda arquitetura de estilos. O componente existente DataGrid permaneceu intacto.
+- **Gráfico real:** `HomeCashflowChart.tsx` usa ECharts 6, já dependência do app, e exibe `cashflow.days` (income/expense) sem criar regras de saldo ou totais. Tooltip de datas e valores reais, estado vazio e proteção de visibilidade; sem valores de gráfico fictícios no modo autenticado.
+- **Arte de saldo:** `home.css` foi integralmente substituído por CSS escopado à Home. Foto real e licenciada de 志远 杨 (@yangzhiyuan), Unsplash `https://unsplash.com/photos/kzH-sVU5pqs`, servida otimizada `w=1600&q=78`, com crédito na origem do código. O traço SVG decorativo atrás do saldo **não representa desempenho nem afirma rentabilidade**.
+- **Adaptações de negócio que NÃO são falhas:** percentuais genéricos e promoções Verocard ilustrativas do print NÃO foram inventados; exibem-se somente leitura de saldo/benefício/entradas/saídas/contagens canônicas. Quinto atalho "Pagar conta" preservado (a referência mostra quatro) e quinta coluna "Situação"/"Conta" dos DataGrids é preservada quando funcional.
+- `scripts/meg-web-home-06.visual-test.mjs` protege a geometria da referência, controles, privacidade, ações, DataGrids, responsividade e zero overflow; `scripts/meg-web-home-06.asset-quality.mjs` verifica fonte fotográfica, ECharts canônico e CSS sem assets rejeitados.
+- **Evidência:** workflow Home 06 Visual and Build run **40978103328** no SHA `0272746f9b6cf24a8368ff6bf6aa1842acb11d27` terminou **success**; capturas reais geradas para oito tamanhos, incluindo `desktop-oficial.png`, `mobile.png`; artifact GitHub **12943641370**. Auditoria de assets run **40978103363** também **success**.
+- **Gates restantes:** Foundation run **40978103274** e Visual Preflight run **40978110132** ainda estavam em execução na consulta. Não declarar verdes. Publicação no Render do SHA exato ainda sem evidência. A PR #650 permanece **Draft**, **não mesclar**, e a Home segue aguardando aprovação visual expressa.
+
+## HOME 06 | Refinamento de simetria, ícones Lucide, fotografia HD local e gráfico legível (29/10/2026)
+
+- Solicitação atual do usuário: corrigir **simetria interna**, tornar ícones **modernos e robustos**, trocar imagem de Saldo por fotografia **HD responsiva sem distorção**, modernizar gráfico para leitura fácil. **Não mudar a composição 7/5 da Home oficial atual.**
+- `HomeIcons.tsx` **criado** com linguagem SVG Lucide (licença ISC, atribuição no fonte), traços consistentes de 2,25 e nomes conservados para ícones funcionais da Home. O ícone local anterior em `HomeScreen.tsx` foi substituído. Sidebar/Shell não receberam alterações.
+- `home.css` refinado para proporções iguais entre ícones de KPIs, headings e atalhos (variáveis de tamanho), botões operacionais simétricos, foco visual e foto WebP local carregada por `image-set(1x,2x)` + `cover` sem deformação geométrica. **A representação fictícia de rentabilidade (SVG de barras e linha) foi retirada do Saldo**, preservando o texto financeiro real e o botão de privacidade.
+- Foto de montanhas e lago © **Francesco Ungaro**, licença Unsplash, original `https://unsplash.com/photos/a-mountain-range-with-a-body-of-water-in-the-foreground-VrpZtXxwyvE`. Arquivos criados por `scripts/meg-web-home-06.hero-photo.mjs` e `.github/workflows/meg-web-home-06-hero-photo.yml`: `apps/web/public/meg-web-evolution/home/meg-hero-mountains-1600.webp` (1600 × 700) e `meg-hero-mountains-2560.webp` (2560 × 1120). Workflow 40981710261 **success** e commit automático de asset `a524c84a344161da3cf29df9acdb010d1d84d473`.
+- `HomeCashflowChart.tsx` redesenhado em ECharts: barras **agrupadas** de entradas e saídas (ambas positivas para comparação visual), bordas arredondadas, legenda clara, tooltip em BRL, eixo discreto e respeito à ocultação de saldos. Séries derivadas somente de `cashflow.days` canônico; não recalcula saldos, faturas ou transferências.
+- Captura real do navegador em 1672 × 941, 390 × 844 e 320 × 700 revisada. Identificada uma colisão em 320px; `home.css` corrigido para Fluxo mobile em duas colunas com Resultado projetado na linha seguinte, e `scripts/meg-web-home-06.visual-test.mjs` passou a exigir **ícones simétricos, WebP 2x, canvas ECharts e ausência de colisão numérica em mobile**.
+- Validação: `MEG Web Evolution Home 06 - Visual and Build` workflow **40982543990**, SHA `a169ecf43c3c01e7c90d51ca3adf998e8932cd32`, **success**, com capturas reais nos oito viewports (artefato **12945861504**). Auditoria de assets **40982513220** sobre o mesmo conjunto visual antes da última modificação apenas nos testes, **success**.
+- Preservados: fonte financeira API, eventos, conta/benefício Verocard, 4 KPIs funcionais, 5 atalhos, DataGrid compartilhado, auth, Shell/sidebar global, todas demais telas e Android.
+- **Gate:** Home NÃO HOMOLOGADA. PR #650 permanece Draft, sem merge. Foundation e Preflight do SHA testado ainda em andamento na última consulta. Render do SHA exato não foi comprovado implantado; parâmetro `?v=` é apenas cache-buster. A aprovação visual do usuário é obrigatória.
+
+
+## Home 06 | Referência visual aprovada em 29/10/2026
+
+- **Aprovação explícita do usuário:** após apresentar a proposta dark teal de dashboard com fotografia panorâmica de montanhas e lago, card de saldo translúcido, quatro indicadores, gráfico moderno de fluxo, área de benefícios, ações rápidas e dois DataGrids, o usuário declarou "essa e boa", perguntou sobre a implementação e confirmou **"homologado"**.
+- **Escopo da homologação:** somente a **imagem/conceito visual escolhido** para orientar a próxima implementação da Home 06. **Não é homologação da Home React atualmente publicada**, nem validação funcional, financeira, responsiva ou autorização de merge.
+- **Diretriz vigente:** manter paleta MEG dark teal/turquesa; reconstruir a apresentação isoladamente e comparar com a imagem aprovada, preservando Shell/sidebar, autenticação, DataGrid, APIs, autoridades financeiras e Android. Gráfico interativo pode consumir ECharts com séries reais de `/finance/cashflow`, sem inventar rentabilidade ou totais.
+- **Atenções de negócio:** saldo monetário não inclui saldo Verocard; percentuais comparativos, saldos de contas, descontos promocionais e números da arte são ilustrativos, e só aparecem em produção se disponibilizados pelas autoridades canônicas.
+- **Gates:** PR #650 permanece Draft, sem merge. Última inspeção antes deste registro apontou `MEG Web Evolution Foundation` com falha em `Validate Web Evolution viewport contracts`; corrigir e revalidar. Ainda é necessária a aprovação explícita da implementação real em desktop e mobile, com preview publicado no SHA exato e link sem cache.
+
+
+## Home 06 | Primeira implementação da imagem homologada (29/10/2026)
+
+- Após aprovação explícita da imagem, a branch isolada da PR #650 recebeu primeira implementação real no React.
+- `HomeScreen.tsx`: introduzida região `.meg-home-panorama` com cabeçalho contextual interno e saldo monetário em card translúcido; a área Verocard sinaliza expressamente a separação do saldo monetário. Dados/autenticação/navegação/DataGrid preservados.
+- `home.css`: refinamento escopado da Home com foto HD local já licenciada, composição panorâmica, indicadores em cards, Fluxo e painéis operacionais, breakpoints mobile/tablet. Shell e sidebar não alterados.
+- `HomeCashflowChart.tsx`: preserva barras das séries canônicas `cashflow.days.income` e `expense`; acrescenta linha de `cashflow.days.net` (resultado **diário**), com tooltip baseado apenas nos três campos canônicos. Não simula rendimento.
+- **Atenção:** proposta aprovada é referência visual; implementação ainda **não homologada**, nem possui comprovação de fidelidade. Testes de geometria antigos 7/5 podem precisar adaptação à nova estrutura aprovada (hero panorâmico em linha própria). Não modificar gates financeiros para forçar aprovação.
+- **Gates:** CI de `7b36055da286ec8590221fb16638e1858d544eda` iniciou automaticamente; resultados e deploy SHA exato ainda não comprovados neste registro. PR Draft, merge bloqueado.
+- **Pendências:** validar logs/artefatos da execução, corrigir falhas, comparar screenshots reais 1672×941, 1366×768, 390×844 e 320×700; revisão funcional de autenticação e dados reais; fornecer preview Render com SHA verificado e aguardar aprovação visual da implementação.
+
+
+## Home 06 | Regra de reconstrução limpa após reprovação visual (29/10/2026)
+
+- Usuário rejeitou a implementação apresentada no vídeo `22-29-55.mp4` e identificou como causa o reaproveitamento de JSX/CSS visual antigo e o acúmulo de reescritas/remendos sobre uma base ruim.
+- **Determinação explícita:** quando a interface visual não ficar boa, **descartar integralmente a implementação visual reprovada e criar cada componente visual do zero**, sem reaproveitar JSX/CSS/estrutura visual rejeitada nem empilhar substituições ou overrides na mesma folha.
+- Na próxima rodada da Home, partir de arquivos/estrutura de apresentação novos e isolados, criados a partir da imagem homologada, e remover/desativar a apresentação reprovada somente após validar a substituição. A fotografia pode ser um asset oficial HD; gráficos devem ser ECharts/SVG funcionais; textos e valores no DOM e autoridade financeira na API.
+- **Preservação obrigatória:** Shell/sidebar, autenticação, DataGrid compartilhado, fonte única e adaptadores, contratos/autoridades financeiras e Android. Reutilizar regras e interfaces de dados estáveis não significa reaproveitar UI antiga.
+- **Validação incremental real:** hero, KPIs, fluxo, benefícios, ações e tabelas, com captura de navegador nas larguras necessárias, antes de declarar a Home implementada. Nunca equiparar testes verdes a homologação visual.
+- **Status:** a imagem escolhida continua homologada como referência, mas a implementação da PR #650 foi reprovada; PR deve permanecer Draft e sem merge. Esta atualização é documental, sem reconstrução realizada nesta rodada.
+
+
+## Home 06 | Nova implementação isolada, sem reaproveitamento visual (29/10/2026)
+
+- Usuário autorizou continuar após reprovar a Home anterior e exigir reconstrução de cada componente visual do zero.
+- `HomeScreen.tsx` substituiu integralmente o JSX visual reprovado. Preserva somente tipos de contrato, chamadas autenticadas às APIs, adaptadores financeiros, navegação e DataGrid; novo layout com hero panorâmico, saldo monetário, quatro KPIs, Fluxo ECharts, Benefícios separados, cinco atalhos e dois DataGrids.
+- `home-clean.css` **novo**, escrito do zero, é a única folha de estilos importada pelo novo HomeScreen. `home.css` permanece no repositório por histórico, porém não é importado pela nova Home. Não há empilhamento de overrides antigos.
+- Gráfico `HomeCashflowChart.tsx` usa `cashflow.days` canônico (`income`, `expense`, `net`) com barras e linha, sem inventar rentabilidade. Asset fotográfico HD já licenciado foi preservado como recurso estático, não como CSS legado.
+- Commit inicial da nova base: `47169f333d3ad8eb215eca3a4207d2bbfa315007`; nova folha de estilos `1addadac38eb8bc167deada907e3c50594e83b11`.
+- **Estado:** a nova implementação ainda não foi homologada visualmente. Gates Foundation, Home Visual/Build, Graphic Independence e Preflight do último commit estavam em execução na verificação. Não há confirmação de publicação SHA exato no Render. PR #650 Draft, sem merge.
+- **Próximo passo:** inspecionar resultados e capturas da execução real; corrigir somente defeitos comprovados, sem recuperar a folha de estilos rejeitada. Android, API financeira, auth, Shell e DataGrid preservados.

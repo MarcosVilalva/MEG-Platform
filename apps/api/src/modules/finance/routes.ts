@@ -11,6 +11,7 @@ import {
   updateFinancialEvent
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
+import { getCanonicalHomeOverview } from './home-overview-read';
 import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './phoenix-read';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
@@ -243,6 +244,16 @@ export async function financeRoutes(app: FastifyInstance) {
       date: parsed.data.date,
       available,
     };
+  });
+
+  // Read-only dashboard projection: no write logic or financial-rule changes.
+  app.get('/home-overview', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      month: monthSchema,
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    return getCanonicalHomeOverview(request.user.sub, parsed.data.month, parsed.data.date);
   });
 
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
