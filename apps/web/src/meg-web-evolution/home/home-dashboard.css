@@ -110,6 +110,10 @@
  .pano-hero{min-height:16rem}
 }
 @media(max-width:639px){
+ /* O Shell aprovado usa display:block no mobile; limitar a altura do body
+    da Home permite que apenas seu conteúdo vertical role corretamente. */
+ .meg-shell:has(.pano-root) .meg-shell-body{height:100dvh;max-height:100dvh;min-height:0}
+ .meg-shell:has(.pano-root) .meg-main{min-height:0;overflow-y:auto;overscroll-behavior:contain}
  .pano-root{padding:.5rem .45rem 1rem}
  .pano-hero{min-height:18rem;padding:.65rem;border-radius:.75rem}
  .pano-hero-intro{top:1.05rem;left:.85rem}
