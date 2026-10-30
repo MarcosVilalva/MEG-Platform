@@ -1241,3 +1241,21 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 **Status:** Etapa Home 06 em REDEFINIÇÃO, nova apresentação ainda não implementada e não homologada; PR #650 Draft sem merge. Prioridade: especificação visual em componentes novos, validação no navegador e publicação de prévia comprovada. Não avançar para outras telas.
 
 **PR de trabalho nova:** [#651](https://github.com/MarcosVilalva/MEG-Platform/pull/651), Draft, base PR #649; aberta em 30/10/2026 para a reconstrução limpa da Home. **PR #650 continua rejeitada e fora da base.**
+
+
+## 30/10/2026 | Home 06 clean-room implementada inicialmente na PR #651
+
+**Este checkpoint substitui o estado anterior "sem Home implementada", mas NÃO constitui homologação visual ou funcional.**
+
+- Home criada exclusivamente em \`apps/web/src/meg-web-evolution/home/\`: \`HomeDashboard.tsx\`, \`HomeChart.tsx\`, \`HomeGlyph.tsx\`, \`home-dashboard.css\` e módulo separado de prévia. Nenhum import de Home CSS/JSX da PR #650.
+- O \`main.tsx\` da nova Web foi conectado ao \`HomeDashboard\` **somente após sessão autenticada**; Loading, Login, Criar Conta, Recuperação de Senha, Shell/sidebar, topbar e DataGrid compartilhado foram mantidos.
+- Hero com foto verdadeira HD WebP e CSS dark teal isolado; benefício alimentação tem outra foto verdadeira, sem branding Verocard. Origens/licenças em \`docs/MEG-HOME-06-VISUAL-ASSETS.md\`. Servidas pelo CDN na revisão inicial, não são assets WebP locais.
+- Gráfico ECharts com barras de \`cashflow.days.income\` e \`expense\` e linha de \`cashflow.days.net\`, tooltip BRL, vazio/privacidade e zero tratamento financeiro no cliente.
+- APIs existentes: summary, cashflow, benefício, events, accounts, categories, cards e payables. **Novo endpoint de leitura** \`GET /finance/home-available?date=YYYY-MM-DD\` chama exclusivamente a função canônica \`monetaryBalanceAt\` e respeita autorização do workspace. Até publicar API correspondente, saldo disponível apresenta indisponibilidade, sem estimativa.
+- Cards: receitas, despesas, despesas previstas (não confundidas com Payable) e quantidade de cartões. Benefícios fora do saldo monetário. Próximos compromissos combinam *linhas de leitura* identificadas como evento previsto ou payable, sem somar ou alterar status.
+- Navegação para telas ainda não implementadas responde com aviso explícito, sem forçar rota falsa. Integrações das outras etapas permanecem pendentes.
+- **Prévia pública isolada:** \`apps/web/home-06-panorama.html\`, fixture explicitamente fictícia (não importada no fluxo autenticado); Render \`https://meg-home-06-panorama-clean.onrender.com\`. Verificar SHA implantado antes de enviar link de validação.
+- Testes criados: \`scripts/meg-home-06-panorama-viewport.mjs\`, workflow \`.github/workflows/meg-home-06-panorama.yml\`; sete viewports, privacidade, gráfico, screenshots de topo e rodapé.
+- **Evidência inicial:** workflow \`41050062978\` no SHA \`0f48f118e3ec2d8006bc79b73fe01a699eb35ed0\` concluiu **success**; capturas reais em sete tamanhos foram inspecionadas. Fundação do mesmo SHA falhou em teste legado de Shell, que esperava Shell visível sem autenticação. Foi criado harness técnico exclusivo para testar o Shell existente, sem modificar autenticação. Verificar novos gates do SHA vigente, não presumir verde.
+- **Proteções:** API financeira não teve fórmulas alteradas; apenas endpoint protegido de leitura. Android, componentes visuais da Etapa 05, sidebar, tokens globais e DataGrid permanecem preservados. PR #651 Draft; não merge.
+- **Pendências críticas:** confirmar Foundation com harness, testar fluxo autenticado com a nova rota de saldo publicada na API autorizada, conferir capturas inferiores das tabelas, validar responsividade e aprovação visual explícita do usuário. Nenhuma tela futura autorizada.
