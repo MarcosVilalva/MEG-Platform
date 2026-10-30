@@ -1,8 +1,8 @@
 /* MEG Web Evolution | Home 06 | reprodução da imagem Tela principal(1).png
    Componentes Card/Button adaptados localmente do padrão shadcn/ui (MIT).
    A imagem da sidebar NÃO é recriada ou modificada nesta folha.
-   Foto hero: Benjamin Cole, "One Cold Night", Unsplash, licença Unsplash.
-   Fonte: https://unsplash.com/photos/DDhET-updco
+   Foto hero: 志远 杨 (@yangzhiyuan), "Misty mountains shrouded in blue twilight fog", Unsplash, licença Unsplash.
+   Fonte: https://unsplash.com/photos/kzH-sVU5pqs
    URL otimizada 1600px, auto=format, qualidade 78; a fotografia é fundo
    decorativo SEM valores financeiros. Valores são texto React da API.
    Breakpoints principais: 640px e 1024px. */
@@ -57,11 +57,11 @@
 .meg-home .balance{display:flex;align-items:center;padding:1.42rem 1.4rem;background:#002a30;border-color:#0e8884}
 .meg-home-hero-visual{position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(90deg,rgba(0,37,43,.89) 0%,rgba(0,36,43,.72) 38%,rgba(0,42,44,.19) 100%),
-    linear-gradient(180deg,rgba(0,42,42,.19),rgba(0,16,24,.7)),
-    url("https://images.unsplash.com/photo-1490237251747-4557595144b4?auto=format&fit=crop&w=1600&q=78");
+    linear-gradient(90deg,rgba(0,37,43,.86) 0%,rgba(0,36,43,.63) 38%,rgba(0,42,44,.14) 100%),
+    linear-gradient(180deg,rgba(0,42,42,.06),rgba(0,16,24,.29)),
+    url("https://images.unsplash.com/photo-1758637689971-fe6124e7cabd?auto=format&fit=crop&w=1600&q=78");
   background-position:center,center,center 52%;background-size:cover;
-  filter:brightness(1.22) saturate(1.14) contrast(1.13);
+  filter:brightness(1.12) saturate(1.28) contrast(1.1);
 }
 .meg-home-hero-visual::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 80% 10%,rgba(27,251,219,.18),transparent 49%)}
 .meg-home-hero-led{position:absolute;right:-2%;bottom:-5%;width:76%;height:100%;opacity:.83}
