@@ -49,6 +49,26 @@ try{
   const safe=result.overflow<=1&&result.clip<=1&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
   console.log(name,JSON.stringify({...result,errors,pass:safe}));
   if(!safe)failed=true;
+  if(name==='desktop-1672'){
+   const filterButton=page.getByRole('button',{name:'Mostrar filtros das movimentações'});
+   const initiallyHidden=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar__primary').evaluate(el=>getComputedStyle(el).display==='none');
+   await filterButton.click();
+   const filterOpen=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar__primary').evaluate(el=>getComputedStyle(el).display!=='none');
+   await page.getByRole('button',{name:'Ocultar filtros das movimentações'}).click();
+   const filterClosed=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar__primary').evaluate(el=>getComputedStyle(el).display==='none');
+   const itemBefore=await page.locator('.pano-credit-card-name').textContent();
+   await page.getByRole('button',{name:'Próximo cartão'}).click();
+   const itemAfter=await page.locator('.pano-credit-card-name').textContent();
+   await page.locator('.pano-credit-card').click();
+   const details=await page.getByRole('region',{name:'Detalhes do cartão'}).isVisible();
+   await page.locator('.pano-stat.is-income').click();
+   const incomeFocused=await page.getByText('Últimas receitas').isVisible();
+   await page.getByRole('button',{name:'Limpar seleção'}).click();
+   const restored=await page.getByText('Últimas movimentações').isVisible();
+   const passed=initiallyHidden&&filterOpen&&filterClosed&&itemBefore!==itemAfter&&details&&incomeFocused&&restored;
+   console.log('INTERACTIONS',JSON.stringify({initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,details,incomeFocused,restored,passed}));
+   if(!passed)failed=true;
+  }
   if(name==='mobile-390'){
    await page.getByRole('button',{name:'Ocultar valores'}).click();
    const privacy=await page.locator('.pano-chart-placeholder').count()===1;
