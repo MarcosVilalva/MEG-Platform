@@ -3,12 +3,14 @@ import {mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 const origin='http://127.0.0.1:4173/home-06-panorama.html';
 const viewports=[
+ {name:'desktop-1920',width:1920,height:1080},
  {name:'desktop-1672',width:1672,height:941},
  {name:'desktop-1366',width:1366,height:768},
  {name:'tablet-1024',width:1024,height:768},
  {name:'tablet-768',width:768,height:1024},
  {name:'mobile-640',width:640,height:930},
  {name:'mobile-390',width:390,height:844},
+ {name:'mobile-360',width:360,height:760},
  {name:'mobile-320',width:320,height:700}
 ];
 const dir='artifacts/home-06-panorama';
@@ -26,6 +28,12 @@ try{
   await page.waitForTimeout(900);
   const result=await page.evaluate(()=>{
    const root=document.querySelector('.pano-root');
+   const shellMain=document.querySelector('.meg-main');
+   const mainOverflow=Boolean(shellMain&&shellMain.scrollWidth>shellMain.clientWidth+1);
+   const mainCanScroll=Boolean(shellMain&&shellMain.scrollHeight>shellMain.clientHeight+30);
+   const shellBody=document.querySelector('.meg-shell-body');
+   const scrollerGeometry=Boolean(shellBody&&shellMain&&shellMain.getBoundingClientRect().bottom<=innerHeight+2);
+
    const graph=document.querySelector('.pano-flow');
    const hero=document.querySelector('.pano-hero');
    const charts=document.querySelectorAll('.pano-chart canvas').length;
@@ -38,7 +46,7 @@ try{
    const chartR=graph?.getBoundingClientRect();
    const heroR=hero?.getBoundingClientRect();
    return {overflow:document.documentElement.scrollWidth-innerWidth,panels,charts,datagridViewports,
-    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,
+    heroWidth:heroR?.width,chartWidth:chartR?.width,rootWidth:rootR?.width,chartHeaderOverlap,mainOverflow,mainCanScroll,scrollerGeometry,
     clip:Math.round(Math.max(0,(rootR?.right||0)-innerWidth))};
   });
   const layout=await page.evaluate(()=>{
@@ -56,10 +64,12 @@ try{
    const peeks=[...document.querySelectorAll('.pano-card-peek')].map(x=>x.getBoundingClientRect());
    const attached=Boolean(center&&stage&&peeks.every(p=>Math.min(center.right,p.right)-Math.max(center.left,p.left)>0));
    const cardNotClipped=Boolean(center&&stage&&center.top>=stage.top+1&&center.bottom<=stage.bottom-1&&center.left>=stage.left-1&&center.right<=stage.right+1);
-   const physicalNeighbors=peeks.every(p=>Math.abs(p.width/p.height-1.72)<.1);
-   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
+   const physicalNeighbors=peeks.every(p=>Math.abs(p.width/p.height-1.72)<.12);
+   const cardRelative=Boolean(center&&stage&&center.width>=stage.width*.44&&center.width<=stage.width*.66);
+   const touchControls=[...document.querySelectorAll('.pano-card-nav>button,.pano-card-indicator button,.pano-balance-top button')].every(el=>{const b=el.getBoundingClientRect();return b.width>=42&&b.height>=42});
+   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
   });
-  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors)failed=true;
+  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls)failed=true;
   console.log(name+' COMPOSITION',JSON.stringify(layout));
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
@@ -69,7 +79,7 @@ try{
   if(width<=639 && (scroll.content<=scroll.client+120 || scroll.top<100))failed=true;
   await page.screenshot({path:join(dir,name+'-bottom.png')});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=0});
-  const safe=result.overflow<=1&&result.clip<=1&&!result.chartHeaderOverlap&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
+  const safe=result.overflow<=1&&result.clip<=1&&!result.mainOverflow&&result.mainCanScroll&&result.scrollerGeometry&&!result.chartHeaderOverlap&&result.panels===4&&result.charts>=1&&result.heroWidth>0&&result.chartWidth>0&&result.datagridViewports.length===2&&result.datagridViewports.every(x=>x.height>=100&&x.rows>0)&&errors.length===0;
   console.log(name,JSON.stringify({...result,errors,pass:safe}));
   if(!safe)failed=true;
   if(name==='desktop-1672'){

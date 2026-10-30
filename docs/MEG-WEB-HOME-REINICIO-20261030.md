@@ -98,3 +98,7 @@ A captura Playwright da versão `ffd6299d` demonstrou desproporção do carrosse
 
 ## Reconstrução estrutural da faixa superior em 30/10/2026
 A proposta anterior de aumentar/diminuir `min-height` por remendos de CSS foi descartada após reprovação. A Home da PR #651 recebe uma estrutura separada por responsabilidade: `pano-spotlight` (saldo monetário + cartões reais, na proporção 4/6 desktop), `pano-overview` (indicadores lidos da API, valor à direita do ícone) e `pano-finance-block` (fluxo diário + Benefícios/Ações). Imagens continuam reais/documentadas, sem valores embutidos. Loop circular do carrossel permanece. A mudança é exclusivamente visual, sem alteração das entidades, contratos financeiros e das telas homologadas. Permanece pendente aprovação visual.
+
+
+### Responsividade auditada após vídeo de 30/10/2026
+A versão anterior foi reprovada pelo usuário. `16-31-44.mp4` mostra navegador em desktop e carrossel de proporções ruins. O requisito é mobile-first com `640px` e `1024px` somente. A nova revisão impede alturas artificiais no body da Home, diminui palco de cartões e reposiciona KPIs ao lado do saldo no desktop em duas linhas 2x2; em tablet e celular a leitura empilha naturalmente. Controles de carrossel recebem 44px de alvo. Os DataGrids e a camada financeira permanecem intactos.
