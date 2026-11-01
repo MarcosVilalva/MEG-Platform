@@ -77,6 +77,7 @@ try{
    });
    const financialColumn=document.querySelector('.pano-financial-column')?.getBoundingClientRect();
    const lastStat=document.querySelector('.pano-overview')?.getBoundingClientRect();
+   const flowPanel=rect('.pano-flow'),midPanel=rect('.pano-mid');
    const actionRects=[...document.querySelectorAll('.pano-action-list>.pano-action')].map(el=>el.getBoundingClientRect());
    const spotlightEl=document.querySelector('.pano-spotlight');
    // auto-fit pode expor trilhas colapsadas "0px": não são colunas visuais.
@@ -86,6 +87,7 @@ try{
     ? cards.top>=financialColumn.bottom-2&&cards.top-financialColumn.bottom<=32&&Math.abs(cards.left-financialColumn.left)<=3
     : tracks===2&&Math.abs(cards.top-financialColumn.top)<=3&&cards.left>=financialColumn.right-2));
    const columnBalanced=Boolean(isStacked||(!isStacked&&lastStat&&cards&&Math.abs(lastStat.bottom-cards.bottom)<=8));
+   const financeRowBalanced=Boolean(flowPanel&&midPanel&&Math.abs(flowPanel.bottom-midPanel.bottom)<=8);
    const quickActionsBalanced=Boolean(isStacked||(
     actionRects.length===5&&
     Math.abs(actionRects[0].top-actionRects[1].top)<3&&
@@ -102,9 +104,9 @@ try{
    const physicalNeighbors=peeks.every(p=>Math.abs(p.width/p.height-1.72)<.12);
    const cardRelative=Boolean(center&&stage&&center.width>=stage.width*.44&&center.width<=stage.width*.66);
    const touchControls=[...document.querySelectorAll('.pano-card-nav>button,.pano-card-indicator button,.pano-balance-top button')].every(el=>{const b=el.getBoundingClientRect();return b.width>=42&&b.height>=42});
-   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,columnBalanced,quickActionsBalanced,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
+   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,columnBalanced,quickActionsBalanced,financeRowBalanced,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
   });
-  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls||!layout.columnBalanced||!layout.quickActionsBalanced)failed=true;
+  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls||!layout.columnBalanced||!layout.quickActionsBalanced||!layout.financeRowBalanced)failed=true;
   console.log(name+' COMPOSITION',JSON.stringify(layout));
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
