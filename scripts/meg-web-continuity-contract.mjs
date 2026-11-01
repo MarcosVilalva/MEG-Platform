@@ -37,6 +37,7 @@ for (const path of ['docs/MEG_CURRENT_STATE.md','docs/MEG_WEB_MASTER_SPEC.md']) 
 
 // Git blob SHA garante cópia literal dos registros anteriores, sem perda de conteúdo.
 const archived = {
+  'docs/historico/AGENTS-MAIN-ATE-2026-11-01.md': '0a8b2364f0ad8f6a88802c7da18e85233e59e88c',
   'docs/historico/MEG-WEB-CONTINUIDADE-MAIN-ATE-2026-11-01.md': '0b48f59cad5896b2226dcd70e4250dde4ef67956',
   'docs/historico/MEG-WEB-CONTINUIDADE-HOME06-ATE-2026-11-01.md': '1a6b2557c7e8e2bb23e86e3dbf580fe583ea8e7c',
   'docs/historico/AGENTS-HOME06-ATE-2026-11-01.md': 'd09fab0cd6522b2533bd97dec229bc78c17cfab1'

@@ -58,6 +58,10 @@ Detalhes exaustivos vão ao histórico versionado com data, tópico e vínculo �
 
 Não alterar `android/**` ou `apps/web/src/mobile/**`. Não modificar API financeira, banco, operações atômicas e gates para caber em um desenho visual. Não misturar dados reais nos mocks de preview. Revalidar impacto cruzado quando alteração atingir arquivos protegidos. Nenhum merge por autonomia genérica substitui a autorização visual necessária. Se o deploy falhar, informar exatamente o último commit `live`; não divulgar URL antiga como se fosse revisão nova.
 
+### Segurança permanente do projeto Evolution
+
+Conforme o hardening registrado em 05/10/2026 para o Supabase `meg-evolution`, **manter RLS nas tabelas `public`** e não restaurar permissões de tabela, sequência ou função para `anon`/`authenticated` sem decisão arquitetural expressa. Não criar policies permissivas apenas para silenciar avisos. A Evolution API usa PostgreSQL diretamente, por `DATABASE_CONNECTION_URI`, conforme o histórico; **verificar a configuração atual antes de operar**. Em mudanças da API ou persistência, revalidar conexão e Security Advisor. O rollback histórico `docs/security/evolution-supabase-hardening-rollback-20261005.sql` não deve ser aplicado sem falha comprovada causada pelo hardening. Preservar segredos, isolamento e testes de autorização.
+
 ## 8. Checklist de revisão documental
 
 - [ ] Fontes atuais identificadas e sem conflito não resolvido

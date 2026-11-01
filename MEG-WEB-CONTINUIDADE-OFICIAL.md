@@ -57,6 +57,8 @@ Pendências verificadas:
 3. Filtros de build do Render ainda não aplicados aos serviços ativos; consumo e publicação devem ser reconferidos.
 4. Governança desta revisão deve ser revisada em PR **separada**, sem avançar telas, mexer na API ou causar deploy desnecessário.
 
+**Governança documental separada:** [PR #652](https://github.com/MarcosVilalva/MEG-Platform/pull/652), branch `docs/meg-governanca-continuidade-20261101`, base `main`, **Draft e sem merge**. Este resumo novo ainda precisa ser sincronizado com a PR #651 após aprovação da governança; não substituir por diário antigo.
+
 ## 6. Modelo para o próximo checkpoint
 
 Atualizar **este quadro**, substituindo os valores desatualizados, sem acrescentar diários contínuos. Registrar: data da verificação; etapa; tela; branch/PR/SHA; CI; Render/live; aceites explícitos; arquivos tocados; divergências; pendências e próxima ação. Detalhes históricos vão a `docs/historico/` em registros versionados, não ao topo operativo.
