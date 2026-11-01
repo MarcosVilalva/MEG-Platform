@@ -87,7 +87,9 @@ try{
     ? cards.top>=financialColumn.bottom-2&&cards.top-financialColumn.bottom<=32&&Math.abs(cards.left-financialColumn.left)<=3
     : tracks===2&&Math.abs(cards.top-financialColumn.top)<=3&&cards.left>=financialColumn.right-2));
    const columnBalanced=Boolean(isStacked||(!isStacked&&lastStat&&cards&&Math.abs(lastStat.bottom-cards.bottom)<=8));
-   const financeRowBalanced=Boolean(flowPanel&&midPanel&&Math.abs(flowPanel.bottom-midPanel.bottom)<=8);
+   const financeEl=document.querySelector('.pano-finance-block');
+   const financeColumns=financeEl?getComputedStyle(financeEl).gridTemplateColumns.trim().split(/\s+/).map(Number.parseFloat).filter(n=>Number.isFinite(n)&&n>1).length:0;
+   const financeRowBalanced=Boolean(financeColumns<=1||(flowPanel&&midPanel&&Math.abs(flowPanel.bottom-midPanel.bottom)<=8));
    const quickActionsBalanced=Boolean(isStacked||(
     actionRects.length===5&&
     Math.abs(actionRects[0].top-actionRects[1].top)<3&&
