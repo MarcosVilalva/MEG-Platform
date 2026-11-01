@@ -1,0 +1,42 @@
+name: MEG Continuidade Documental
+on:
+  push:
+    branches:
+      - 'docs/meg-governanca-continuidade-20261101'
+    paths:
+      - 'AGENTS.md'
+      - 'MEG-WEB-CONTINUIDADE-OFICIAL.md'
+      - 'docs/MEG-WEB-PROTOCOLO-DE-CONTINUIDADE.md'
+      - 'docs/MEG-WEB-REFERENCIAS-OFICIAIS-20261027.md'
+      - 'docs/MEG_CURRENT_STATE.md'
+      - 'docs/MEG_WEB_MASTER_SPEC.md'
+      - 'docs/historico/**'
+      - 'scripts/meg-web-continuity-contract.mjs'
+      - '.github/workflows/meg-web-continuity.yml'
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - 'MEG-WEB-CONTINUIDADE-OFICIAL.md'
+      - 'docs/MEG-WEB-PROTOCOLO-DE-CONTINUIDADE.md'
+      - 'docs/MEG-WEB-REFERENCIAS-OFICIAIS-20261027.md'
+      - 'docs/MEG_CURRENT_STATE.md'
+      - 'docs/MEG_WEB_MASTER_SPEC.md'
+      - 'docs/historico/**'
+      - 'scripts/meg-web-continuity-contract.mjs'
+      - '.github/workflows/meg-web-continuity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-continuity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verificar sintaxe
+        run: node --check scripts/meg-web-continuity-contract.mjs
+      - name: Auditar contrato e preservar arquivos históricos
+        run: node scripts/meg-web-continuity-contract.mjs

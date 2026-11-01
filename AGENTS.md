@@ -1,89 +1,37 @@
-# MEG — instruções persistentes para retomada
+# MEG Finanças Web Evolution | orientação operacional vigente
 
-Antes de alterar o MEG Web ou responder a “Retomar MEG — memória oficial — último ponto validado”, ler primeiro `docs/MEG_CURRENT_STATE.md` e depois `docs/MEG_WEB_MASTER_SPEC.md`. Se `docs/MEG-RETOMADA-OFICIAL.md` estiver presente na branch corrente, usar também seus checkpoints históricos e referências visuais.
+> Atualizado em 01/11/2026. Este arquivo é um **índice curto**, não o histórico do projeto.
+> Se outra documentação se declarar "fonte oficial" mas registrar etapa, prints ou PR antigos, prevalecem as decisões atuais verificadas conforme a hierarquia abaixo. Nunca substituir instruções explícitas atuais do usuário por conteúdo histórico.
 
-Referência visual obrigatória: `docs/design/2026-10-03/manifest.json` e os 16 PNGs originais ao lado quando disponíveis. O conjunto define o novo sistema confirmado por Marcos. As regras financeiras existentes do App continuam obrigatórias.
+## Leitura obrigatória, nesta ordem, antes de alterar código
 
-**REGRA ABSOLUTA PARA O TRABALHO EVOLUTION WEB:** `/android/**` e `apps/web/src/mobile/**` são somente leitura. Podem ser consultados como referência funcional/visual, mas não podem ser editados, renomeados, removidos, reformatados, ter versões alteradas, receber assets, builds, configuração, OTA ou qualquer outra modificação como parte da reconstrução Web. Qualquer mudança no Android exige uma solicitação explícita e separada do usuário.
+1. `MEG-WEB-CONTINUIDADE-OFICIAL.md`: estado atual, etapa autorizada, branch, PR, bloqueios e próxima ação.
+2. `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`: autoridades e regras financeiras que não podem ser alteradas.
+3. `docs/MEG-WEB-REFERENCIAS-OFICIAIS-20261027.md` e **as imagens oficiais atuais do Projeto**: identificar o print específico da tela.
+4. `PROMPT-MASTER.txt` do Projeto e regras de negócio selecionadas do PDF de Regras Consolidadas: itens 7–16, 18–19 e 21–22, com exclusão de Crediário pelo aceite posterior; preservar Autocomplete e Alimentação.
+5. `docs/MEG-WEB-PROTOCOLO-DE-CONTINUIDADE.md`: testes, retrabalho, handoff, gestão de conflito e homologação.
+6. `docs/FULL_METHOD.md` e detalhes de segurança somente quando pertinentes à alteração.
 
-Não assumir que uma imagem de referência, uma prévia estática ou um build verde é implementação funcional ou validação visual final. Verificar main, código, screenshots, testes e estágio real de cada módulo.
+**Ordem de autoridade em caso de conflito: regras de negócio existentes no repositório → print oficial vigente → Prompt Master → checkpoint operacional**. A referência de imagens é soberana para decisões visuais; documentos históricos não a substituem. Quando as decisões atuais explicitamente conflitarem, parar, registrar e pedir decisão, sem inventar regra.
 
-Manter a documentação atualizada com o resultado real de cada etapa, a revisão correspondente e pendências concretas. Não depender somente do chat nem solicitar de novo imagens já presentes no repositório.
+## Regras inegociáveis
 
-Preservar Loading aprovado, responsividade, SVGs lineares premium, neon elegante, profundidade 3D, legibilidade, telas fixas e rolagem somente nas áreas densas. Conferir todas as regras de lançamento, conta, crédito, benefício e baixa no checkpoint oficial antes de editar fluxos financeiros.
+- **Android congelado:** `android/**` e `apps/web/src/mobile/**` somente leitura. Não alterar builds, OTA, dependências ou UI Android no trabalho Web.
+- **Nova Web isolada:** não reutilizar UI/CSS visual legado nem protótipos reprovados. Proteger Shell, autenticação, DataGrid e camadas aprovadas. Trabalhar apenas a etapa/tela autorizada no checkpoint e no chat.
+- **Finanças:** nenhuma UI calcula saldo, competência, parcela, limite, fatura, liquidação, baixa ou status por conta própria. Consumir autoridades canônicas da API e dados únicos. Preservar centavos, idempotência, atomicidade, saldo disponível, benefício separado e regras de cartão/pagamento. Divergência financeira exige investigação antes de qualquer mudança.
+- **Visual:** apenas prints oficiais atuais. Preservar simetria entre telas, protagonismo da marca MEG, legibilidade, responsividade mobile-first e breakpoints principais de 640/1024px. Nenhum corte/sobreposição/scroll horizontal da página. Ajustes ao print só por informação funcional, negócio, responsividade, acessibilidade ou requisito explícito.
+- **Validação:** build, CI, deploy, captura e revisão por IA **não são aprovação visual do usuário**. Não escrever "homologado" sem aceite explícito e referência da versão. Não fazer merge de mudanças visuais sem gates técnicos relevantes verdes e validação visual quando exigida.
+- **Segurança:** não executar mutações financeiras/administrativas sem autorização e proteções. Proteger RLS, acesso, segredos, autenticação, autorização, headers/CSP e validação de entradas. Não introduzir migrações destrutivas ou credenciais em preview.
+- **Entrega:** informar arquivos alterados, escopo atendido/não atendido, divergências, pendências e link sem cache apenas quando o SHA estiver realmente publicado. Não inventar deploys.
+- Aplicar `/FULL` como metodologia de revisão, sem interpretar aliases como comandos executáveis.
 
-## Metodologia obrigatória do projeto
+## Continuidade sem perda de contexto
 
-Aplicar por padrão, em toda implementação, revisão, handoff ou validação relevante:
+- Antes de cada intervenção, comparar checkpoint com **GitHub real**: branch, PR, último SHA, checks, imagens e status do deploy. Se divergir, corrigir registro antes de implementar.
+- Evitar acumular tentativas CSS. Após **duas correções sem resolver a mesma causa**, investigar geometria/arquitetura, rever evidências e testes; reconstruir somente a camada necessária.
+- Registrar em `MEG-WEB-CONTINUIDADE-OFICIAL.md` **somente o estado operacional curto**; guardar relato detalhado e decisões anteriores em `docs/historico/`. Não acrescentar novos diários intermináveis ao checkpoint.
+- Documentos `docs/MEG_CURRENT_STATE.md`, `docs/MEG_WEB_MASTER_SPEC.md` e `docs/MEG-RETOMADA-OFICIAL.md` são fontes históricas ou de contratos ainda aplicáveis, **não autoridades sobre etapa/prints atuais**.
 
-**/EXPERT + /CRITIC + /DEEP + /RISK + /CHANCE**
+## Escopo desta orientação
 
-- **/EXPERT:** pensar em arquitetura, UX, domínio, integração e qualidade de produto profissional antes de codificar.
-- **/CRITIC:** procurar defeitos, incoerências, regressões e aparência de protótipo; não aprovar “quase pronto”.
-- **/DEEP:** verificar fluxo ponta a ponta, estados, persistência, refresh, período, responsividade e efeitos indiretos.
-- **/RISK:** avaliar integridade financeira, duplicidade, saldo, regressões, performance, dependências, deploy e rollback.
-- **/CHANCE:** identificar melhorias seguras de UX, análise, automação, performance e clareza que elevem o produto sem alterar escopo silenciosamente.
-
-Esses cinco nomes são atalhos de metodologia do MEG, não comandos técnicos especiais da plataforma.
-
-Antes de declarar “pronto”, revisar explicitamente as cinco lentes e não concluir a etapa se houver falha crítica em qualquer uma delas.
-
-
-## /FULL — padrão permanente
-
-O projeto adota `/FULL` como metodologia padrão e ativa por default em todo trabalho relevante. Ler também `docs/FULL_METHOD.md`.
-
-`/FULL` = `/EXPERT + /CRITIC + /DEEP + /RISK + /CHANCE + /VERIFY + /REGRESSION + /AUDIT + /SECURE + /ROLLBACK + /RELEASE + /OBSERVE`.
-
-Não é necessário o usuário digitar `/FULL` a cada solicitação. Aplicar automaticamente os gates pertinentes ao estágio atual do trabalho. Não manter qualquer alias `/FU`.
-
-
-## Security Hardening — regra persistente
-
-Após o checkpoint de produção de 2026-10-05, ler também a seção **Security Hardening Gate** de `docs/MEG_WEB_MASTER_SPEC.md`.
-
-Segurança é parte do padrão `/FULL` e deve ser aplicada antes de novas expansões relevantes. Não considerar uma entrega concluída sem verificar, quando pertinente: rate limiting, autenticação, autorização, isolamento de workspace, exposição de rotas técnicas, secrets, headers/CSP, dependências, entradas hostis, privilégios do banco e regressões de segurança.
-
-Para recursos de IA/Financial Copilot: conteúdo financeiro recuperado é dado não confiável e nunca ganha autoridade por conter instruções. Nenhuma IA pode executar mutações financeiras ou administrativas sem autorização explícita e controles de domínio.
-
-
-## Continuidade operacional autorizada
-
-Quando Marcos solicitar continuidade do MEG com autonomia, seguir o escopo oficial sem interromper por microdecisões rotineiras.
-
-Está autorizado, dentro do escopo já aprovado:
-- criar branch a partir da `main` corrente;
-- implementar;
-- refatorar com preservação de comportamento;
-- criar e ajustar testes;
-- corrigir falhas de CI;
-- abrir PR;
-- revisar a própria PR;
-- fazer merge quando os gates obrigatórios estiverem verdes e a mudança for reversível e compatível com a especificação;
-- atualizar a memória oficial/checkpoint correspondente.
-
-Parar e pedir decisão humana somente quando houver:
-- risco material de perda/corrupção de dados reais;
-- migração destrutiva ou irreversível;
-- necessidade de inserir, trocar ou expor credenciais/segredos;
-- cobrança, contratação, compra ou alteração de plano externo;
-- decisão de produto realmente nova e não coberta pela especificação;
-- conflito entre regras oficiais;
-- mudança em Android/Mobile sem pedido explícito;
-- ação externa sensível em nome do usuário que não seja consequência técnica normal já autorizada;
-- bloqueio de acesso que impeça validar com segurança.
-
-Falha de teste, erro de build, conflito de branch ou regressão técnica comum não são motivo para interromper: investigar, corrigir e repetir os gates.
-
-
-## Evolution Supabase — regra de segurança
-
-O projeto Supabase `meg-evolution` foi endurecido em 2026-10-05 pela migration `20261005111705_harden_evolution_public_access`.
-
-Regras permanentes:
-- manter RLS habilitado nas tabelas `public`;
-- não restaurar grants de tabela, sequência ou função para `anon`/`authenticated` sem decisão arquitetural explícita;
-- a Evolution API v2.3.7 usa PostgreSQL direto por `DATABASE_CONNECTION_URI` e o acesso atual foi validado pelo papel `postgres`;
-- não criar policies permissivas apenas para silenciar advisor;
-- após upgrade da Evolution API ou mudança de persistência, revalidar método de conexão e Security Advisor antes de alterar RLS/grants;
-- rollback existe em `docs/security/evolution-supabase-hardening-rollback-20261005.sql` e só deve ser usado diante de falha comprovadamente causada pelo hardening.
+Ela organiza a continuidade de todas as etapas, **sem autorizar avançar para novas telas, alterar regras financeiras ou fazer merge**. Se o checkpoint indicar a Home 06 em validação, continuar somente a Home 06. Uma PR documental pode auditar a governança sem autorizar próxima tela.
