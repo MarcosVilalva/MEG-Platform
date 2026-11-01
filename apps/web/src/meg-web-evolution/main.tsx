@@ -8,6 +8,7 @@ import { LoginScreen } from './auth/LoginScreen';
 import { CreateAccountScreen } from './auth/CreateAccountScreen';
 import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
 import { LoadingScreen } from './auth/LoadingScreen';
+import { HomeDashboard } from './home/HomeDashboard';
 
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
@@ -125,7 +126,7 @@ function AuthGateway() {
 
   if (session) return (
     <AppShell>
-      <section className="meg-shell-stage" aria-label="Área de conteúdo da nova Web" />
+      <HomeDashboard />
     </AppShell>
   );
 

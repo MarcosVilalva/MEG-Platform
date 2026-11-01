@@ -1,0 +1,10 @@
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import {AppShell} from '../shell/AppShell';
+import {HomeDashboard} from './HomeDashboard';
+import {homePreviewFixture} from './preview.fixture';
+const root=document.getElementById('meg-home06-preview-root');
+if(!root)throw Error('MEG_HOME06_PREVIEW_ROOT_MISSING');
+createRoot(root).render(<React.StrictMode><AppShell><HomeDashboard previewData={homePreviewFixture} month="2026-10"/></AppShell></React.StrictMode>);

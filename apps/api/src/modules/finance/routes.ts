@@ -27,7 +27,7 @@ import {
 } from './catalog-mutation';
 import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
-import { isMonetaryAccountType, monetaryAccountBalanceAt } from './monetary-protection';
+import { isMonetaryAccountType, monetaryAccountBalanceAt, monetaryBalanceAt } from './monetary-protection';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -219,6 +219,16 @@ export async function financeRoutes(app: FastifyInstance) {
     };
   });
 
+
+  // Home 06: leitura do saldo monetário consolidado na data informada.
+  // Usa EXCLUSIVAMENTE o cálculo canônico, sem somar contas na camada web.
+  app.get('/home-available', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const available = await monetaryBalanceAt(prisma, dataOwnerId, parsed.data.date);
+    return { date: parsed.data.date, available, scope: 'monetary' as const };
+  });
 
   app.get('/monetary-balance', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({
