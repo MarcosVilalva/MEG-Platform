@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - 'meg-web-evolution/06-home-reinicio-20261030'
+      - 'meg-web-evolution/06-home-refino-design-20261101'
   workflow_dispatch:
 permissions:
   contents: read

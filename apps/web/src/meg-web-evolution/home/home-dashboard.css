@@ -191,7 +191,7 @@
 @media(min-width:1024px){
  .pano-root{padding:.7rem .8rem 1.2rem}
  .pano-spotlight{grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));gap:.62rem;align-items:stretch}
- .pano-financial-column{grid-template-rows:auto auto;gap:0}
+ .pano-financial-column{grid-template-rows:minmax(0,1fr) auto;gap:0;align-content:stretch}
  .pano-hero{min-height:10rem;padding:1rem 1.15rem}
  .pano-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:.46rem;margin-top:.46rem}
  .pano-stat{min-height:4.9rem}
@@ -200,8 +200,9 @@
  .pano-finance-block{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:.6rem}
  .pano-mid{display:flex;flex-direction:column;align-items:stretch;gap:.6rem}
  .pano-tables{grid-template-columns:repeat(2,minmax(0,1fr))}
- .pano-action-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,6.4rem),1fr));gap:.4rem}
- .pano-action{min-height:5.3rem;padding:.38rem .2rem}
+ .pano-action-list{grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem}
+ .pano-action{grid-column:span 2;min-height:5.3rem;padding:.38rem .2rem}
+ .pano-action:nth-last-child(-n+2){grid-column:span 3}
  .pano-action strong{font-size:.62rem}
  .pano-chart{height:14rem;min-height:13rem}
 }

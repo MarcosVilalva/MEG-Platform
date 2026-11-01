@@ -1,0 +1,18 @@
+# MEG Home 06 | DESIGN.md da experiência de refino
+
+Referência visual soberana: print oficial `Tela principal.png` e as decisões atuais do MEG Web Evolution. Referência de retorno pré-confirmada: `25b167f38c9a302cf83ba079227ab7887fb6870a` registrada em `docs/MEG-HOME06-PRECONFIRMACAO-20261101.md`.
+
+## Ajustes delimitados pela análise do vídeo 11-39-22.mp4
+
+1. Eliminar espaço vazio abaixo do painel de indicadores, alongando apenas o saldo para alinhar o final da coluna financeira ao fim dos cartões em duas colunas reais.
+2. Reorganizar as cinco ações rápidas desktop em 3 + 2, sem perder nenhuma ação; duas na segunda linha ocupando metade da largura cada.
+3. Preservar cores dark teal/turquesa, logotipo, imagens, tipografia, carrossel circular, estados, benefícios, fluxo financeiro e ambas as instâncias do DataGrid.
+4. Mobile-first, breakpoints principais 640 e 1024px, sem rolagem horizontal, cortes nem sobreposição. Não introduzir dados financeiros na UI.
+
+## Ferramentas e limites
+
+Taste Skill pode apoiar crítica e inspeção, mas **não está comprovadamente instalado** neste repositório. Refero e catálogos de DESIGN.md ajudam na documentação, mas não substituem os prints. Cult UI/ShaderGradient não são incorporados neste experimento, para evitar novos frameworks e regressões sem justificativa. Nunca utilizar estilos de terceiros como referência visual principal.
+
+## Gate
+
+Nove resoluções Playwright. Quando há 2 colunas superiores, diferença entre base dos KPIs e base do painel dos cartões <= 8px; 5 ações visíveis, distribuídas 3 + 2 em desktop. Conferir capturas lado a lado com baseline, preservar a PR #651 Draft sem homologação e não tocar em Android, API financeira, Shell ou DataGrid.
