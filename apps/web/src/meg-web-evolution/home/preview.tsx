@@ -5,6 +5,10 @@ import '../styles/base.css';
 import {AppShell} from '../shell/AppShell';
 import {HomeDashboard} from './HomeDashboard';
 import {homePreviewFixture} from './preview.fixture';
+import './preview-style-variants.css';
+// Apenas prévia: parâmetros visuais jamais alteram dados ou regras financeiras.
+const styleParam=new URLSearchParams(window.location.search).get('estilo');
+if(styleParam==='a'||styleParam==='b')document.documentElement.dataset.megHomeStyle=styleParam;
 const root=document.getElementById('meg-home06-preview-root');
 if(!root)throw Error('MEG_HOME06_PREVIEW_ROOT_MISSING');
 createRoot(root).render(<React.StrictMode><AppShell><HomeDashboard previewData={homePreviewFixture} month="2026-10"/></AppShell></React.StrictMode>);

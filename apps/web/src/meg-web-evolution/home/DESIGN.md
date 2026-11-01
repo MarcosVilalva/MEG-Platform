@@ -17,3 +17,10 @@ Taste Skill pode apoiar crítica e inspeção, mas **não está comprovadamente 
 ## Gate
 
 Nove resoluções Playwright. Quando há 2 colunas superiores, diferença entre base dos KPIs e base do painel dos cartões <= 8px; igualar rodapés de Fluxo financeiro e Benefícios/Ações rápidas <= 8px; 5 ações visíveis, distribuídas 3 + 2 em desktop. Conferir capturas lado a lado com baseline, preservar a PR #651 Draft sem homologação e não tocar em Android, API financeira, Shell ou DataGrid.
+
+## Experimento A/B sobre a Home real (01/11/2026)
+- Baseline pré-confirmado SHA `25b167f`; nenhum número, componente ou organização inventado.
+- `?estilo=a` é acabamento Neon elegante teal; `?estilo=b` é Neon premium teal com brilho mais forte.
+- Variações existem somente no `preview.tsx` e `preview-style-variants.css`, não no bundle da Home real.
+- O teste captura A/B em 1672 e 390px e preserva os nove viewports padrão. Ambos continuam sem aceite visual expresso; não publicar no Render sem decisão do usuário.
+- As imagens genéricas A/B produzidas na conversa anterior foram rejeitadas e não servem de referência.

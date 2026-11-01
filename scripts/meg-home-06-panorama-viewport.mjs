@@ -178,5 +178,32 @@ try{
   }
   await page.close();
  }
+
+// Capturas experimentais, sem substituir as nove resoluções do contrato principal.
+for(const estilo of ['a','b']){
+ for(const {name,width,height} of [{name:'desktop-1672',width:1672,height:941},{name:'mobile-390',width:390,height:844}]){
+  const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
+  try{
+   const errors=[];
+   page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(origin+'?estilo='+estilo,{waitUntil:'domcontentloaded',timeout:30000});
+   await page.locator('.pano-stat').first().waitFor({state:'visible'});
+   await page.waitForTimeout(700);
+   const v=await page.evaluate(()=>({
+    style:document.documentElement.dataset.megHomeStyle,
+    overflow:document.documentElement.scrollWidth-innerWidth,
+    actions:document.querySelectorAll('.pano-action').length,
+    kpis:document.querySelectorAll('.pano-stat').length,
+    grids:document.querySelectorAll('.pano-grid .meg-datagrid').length,
+    cards:document.querySelectorAll('.pano-credit-card').length,
+    balance:document.querySelector('.pano-balance>strong')?.textContent?.trim()
+   }));
+   const valid=v.style===estilo&&v.overflow<=1&&v.actions===5&&v.kpis===4&&v.grids===2&&v.cards===1&&Boolean(v.balance)&&errors.length===0;
+   console.log('PREVIEW VARIANT',JSON.stringify({estilo,name,valid,...v,errors}));
+   if(!valid)failed=true;
+   await page.screenshot({path:join(dir,'comparativo-'+estilo+'-'+name+'.png'),fullPage:true});
+  }finally{await page.close()}
+ }
+}
 }finally{await browser.close()}
 if(failed)process.exitCode=1;
