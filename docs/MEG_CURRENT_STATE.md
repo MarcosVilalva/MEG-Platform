@@ -1,3 +1,7 @@
+> [!WARNING]
+> **DOCUMENTO HISTÓRICO (base de 05/10/2026).** Seus contratos técnicos e registros de segurança continuam úteis quando não conflitarem com as autoridades atuais. **Ele não define a etapa, a branch, o print oficial ou o estado da PR vigente.**
+> Para retomar o projeto, ler primeiro `/AGENTS.md` e `/MEG-WEB-CONTINUIDADE-OFICIAL.md`. Nenhuma referência visual antiga pode substituir as imagens oficiais atuais do Projeto.
+
 # MEG — estado operacional corrente
 
 > Fonte curta para retomadas rápidas. A especificação completa continua em `docs/MEG_WEB_MASTER_SPEC.md`.
