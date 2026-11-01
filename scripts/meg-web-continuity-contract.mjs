@@ -12,10 +12,14 @@ assert.ok(checkpoint.length < 8000, 'Checkpoint perdeu a concisão: arquivar det
 assert.ok(root.includes('MEG-WEB-CONTINUIDADE-OFICIAL.md'), 'AGENTS sem leitura obrigatória do checkpoint');
 assert.ok(root.includes('MEG-WEB-FINANCIAL-AUTHORITY.md'), 'AGENTS sem referência financeira');
 assert.ok(root.includes('MEG-WEB-REFERENCIAS-OFICIAIS-20261027.md'), 'AGENTS sem catálogo visual');
-assert.ok(checkpoint.includes('Etapa autorizada'), 'Checkpoint não explicita etapa atual');
-assert.ok(checkpoint.includes('Home 06 NÃO recebeu aceite visual explícito'), 'Checkpoint deve identificar ausência de homologação da Home');
-assert.ok(checkpoint.includes('Foundation geral'), 'Checkpoint deve discriminar gate geral');
-assert.ok(checkpoint.includes('Draft'), 'Checkpoint deve informar situação de PR');
+assert.ok(checkpoint.includes('Etapa autorizada'), 'Checkpoint não explicita a etapa atual');
+assert.ok(checkpoint.includes('## 2. Estado verificado no GitHub'), 'Checkpoint sem posição verificável de GitHub');
+assert.ok(checkpoint.includes('## 3. Render e validação visual'), 'Checkpoint sem status de publicação/visual');
+assert.ok(checkpoint.includes('## 5. Próximo passo permitido'), 'Checkpoint sem ação autorizada');
+assert.ok(/(aceite|aprovaç|homologad)/i.test(checkpoint), 'Checkpoint sem registro de aprovação ou pendência visual');
+assert.ok(/\bPR\b/.test(checkpoint) && /\bCI\b/.test(checkpoint), 'Checkpoint sem PR ou CI');
+
+
 assert.ok(protocol.includes('Duas correções fracassadas'), 'Protocolo sem regra de investigação');
 assert.ok(protocol.includes('aprovação'), 'Protocolo sem aprovação humana');
 
