@@ -1,5 +1,8 @@
 # MEG WEB — CONTINUIDADE OFICIAL
 
+> **03/11/2026 | Home 06 PR #653:** refinamento autorizado de ícones locais dos dois DataGrids e navegação lateral centralizada no palco dos cartões; PR #651 pré-confirmada permanece imutável. Sem aceite visual do novo refinamento. Publicar prévia isolada e validar antes de qualquer merge.
+
+
 > **ATUALIZAÇÃO DE 01/11/2026 | Home 06: PRÉ-CONFIRMAÇÃO VISUAL, NÃO HOMOLOGAÇÃO.** O usuário declarou que o preview publicado melhorou bastante e autorizou guardar esta revisão como marco seguro de comparação. Versão de código `25b167f38c9a302cf83ba079227ab7887fb6870a`, confirmada `live` no Render em 01/11/2026; teste Home Panorama verde (run `41132153131`); Foundation geral permanece com falhas. Este aceite **não** autoriza merge, não homologa a Home e não dispensa validação visual futura. Melhorias devem partir da mesma base e ocorrer isoladamente. Evidência e escopo: `docs/MEG-HOME06-PRECONFIRMACAO-20261101.md`. O novo checkpoint compacto está em PR #652 (ainda Draft) e deve incorporar este registro antes de seu merge.\n\n
 > [!IMPORTANT]
 > **AVISO OPERACIONAL ENTRE CHATS**

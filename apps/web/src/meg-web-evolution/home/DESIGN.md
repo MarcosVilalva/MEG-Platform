@@ -24,3 +24,9 @@ Nove resoluções Playwright. Quando há 2 colunas superiores, diferença entre 
 - Variações existem somente no `preview.tsx` e `preview-style-variants.css`, não no bundle da Home real.
 - O teste captura A/B em 1672 e 390px e preserva os nove viewports padrão. Ambos continuam sem aceite visual expresso; não publicar no Render sem decisão do usuário.
 - As imagens genéricas A/B produzidas na conversa anterior foram rejeitadas e não servem de referência.
+
+## 03/11/2026 | Refinos locais de cartões e grids
+- Solicitação expressa: SVGs melhores nos DataGrids da Home, cartão principal mais destacado e setas centralizadas verticalmente sobre o palco.
+- Duas setas semanticamente rotuladas e alvos 44px no palco; indicadores permanecem abaixo; manter swipe, navegação por teclado e índice circular.
+- HomeGlyph acrescenta ícones locais; sort, filtro por coluna e paginação são refinados pelo CSS escopado .pano-grid sem alterar datagrid/** compartilhado.
+- Teste verifica setas sobre o palco e SVGs nos dois DataGrids nos nove viewports. Status: candidato sem aceite visual explícito, baseline PR651 preservado.

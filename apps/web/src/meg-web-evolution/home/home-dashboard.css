@@ -207,3 +207,32 @@
  .pano-chart{height:auto;min-height:13rem;flex:1 1 auto}
 }
 @media(prefers-reduced-motion:reduce){.pano-root *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+
+/* Etapa 06 | exclusivamente Home: controle centralizado verticalmente no palco.
+   Preserva carrossel circular, pontos de paginação e DataGrid compartilhado. */
+.pano-card-stage{background:radial-gradient(ellipse at 50% 75%,#0c9c9730,transparent 63%)}
+.pano-credit-card{border-color:#bafff2aa;box-shadow:0 15px 35px #00131be5,0 0 25px #23e7cf31,inset 0 1px 1px #ffffff50}
+.pano-card-control{position:absolute;z-index:6;top:50%;display:grid;place-items:center;width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;padding:0;border:1px solid #70e5d2b0;border-radius:50%;background:linear-gradient(145deg,#0c555fcc,#063039ec);color:#d7fff6;box-shadow:0 0 0 1px #07313980,0 7px 17px #00191abc,0 0 14px #24cfb53b;backdrop-filter:blur(10px);transform:translateY(-50%);transition:background .16s,border-color .16s,box-shadow .16s}
+.pano-card-control.is-prev{left:.35rem}
+.pano-card-control.is-next{right:.35rem}
+.pano-card-control:hover:not(:disabled){background:#0d6b70;border-color:#b0fff0;box-shadow:0 0 0 1px #18dcbda0,0 0 20px #27e1c37a,0 8px 19px #00171de0}
+.pano-card-control:disabled{opacity:.35;cursor:default;box-shadow:none}
+.pano-card-nav{justify-content:center;gap:.4rem;min-height:2.75rem}
+.pano-card-nav>span:not(.pano-card-indicator){flex:0 1 auto}
+.pano-card-indicator{margin-inline:auto}
+/* Os botões e SVGs do DataGrid recebem tratamento SOMENTE dentro da Home. */
+.pano-grid .pano-panel-title h2 svg{color:#70f5db;filter:drop-shadow(0 0 6px #1cf1c94d);stroke-width:2.05}
+.pano-grid-actions button{gap:.38rem;border-color:#398e89b8;background:linear-gradient(145deg,#08434b,#062b35);color:#abffed;font-weight:750}
+.pano-grid-actions button svg{color:#61e6d4;stroke-width:2.1}
+.pano-grid-actions button:hover,.pano-grid-actions button[aria-expanded=true]{border-color:#5ff1d7;background:#0b555d;box-shadow:0 0 12px #13d8b127}
+.pano-grid .meg-datagrid-sort-button{color:#72cfcb;transition:color .16s,background .16s}
+.pano-grid .meg-datagrid-sort-button svg{stroke-width:2.2;filter:drop-shadow(0 0 3px #10cbbd33)}
+.pano-grid .meg-datagrid-sort-button:hover{color:#aefff0;background:#0e494e}
+.pano-grid .meg-datagrid-filter-button{color:#75d6ce;border-radius:.3rem;transition:color .16s,background .16s}
+.pano-grid .meg-datagrid-filter-button svg{stroke-width:2.1}
+.pano-grid .meg-datagrid-filter-button:hover,.pano-grid .meg-datagrid-filter-button.is-active{color:#b5fff0;background:#0c595b}
+.pano-grid .meg-datagrid-pagination button{border:1px solid #287b797f;border-radius:.46rem;background:#062d35;color:#a6f9e7;transition:background .16s,border-color .16s,box-shadow .16s}
+.pano-grid .meg-datagrid-pagination button:not(:disabled):hover{background:#0e5059;border-color:#62e7d0;box-shadow:0 0 10px #16cfb32b}
+.pano-grid .meg-datagrid-pagination button svg{stroke-width:2.35}
+@media(prefers-reduced-motion:reduce){.pano-card-control,.pano-grid .meg-datagrid-sort-button,.pano-grid .meg-datagrid-filter-button,.pano-grid .meg-datagrid-pagination button{transition:none!important}}
