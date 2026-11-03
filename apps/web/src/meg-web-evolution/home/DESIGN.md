@@ -47,3 +47,10 @@ O workflow .github/workflows/meg-home-06-taste.yml usa os scripts originais da v
 - [Taste Skill #41725054984](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054984): sucesso na execução do diagnóstico. Achados 7 FAIL/3 WARN → 6 FAIL/3 WARN. O `no-title` sumiu e o `tiny-text` caiu de 21 para 4 (as quatro são texto vetorial XLS/PDF do DataGrid global, não texto comum da Home). Demais alertas genéricos de neon/bordas persistem por identidade oficial.
 - [Foundation #41725054928](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054928): falha em 4 testes de toolbar do DataGrid global, 600–760px; mesma classe conhecida, fora do escopo e não corrigida artificialmente.
 - Prévia validável **não homologada**, PR #653 Draft/sem merge; Tailwind não introduzido.
+
+## 03/11/2026 | Ajuste após avaliação do usuário: ícones compactos e Categoria
+- Feedback explícito: ícones dos cinco Acessos rápidos ocupam muito espaço; DataGrid de movimentações não apresenta SVG no valor da Categoria.
+- Caixas dos ícones compactadas de 32 para 26,4px; traço SVG de 22 para 17px. Cards mantêm tamanho de toque acima de 44px e grid 3+2 em desktop.
+- Categoria recebe ícone semântico pequeno (15px) + nome na **célula renderizada somente pela Home**. Coluna passa de 112 para 146px, evitando rótulo cortado; dados originais continuam strings para ordenação, filtro, CSV, XLS e PDF.
+- Ícones conhecidos: supermercado=cesta; receitas=seta de receita; saúde=cruz; casa=casa; transporte e combustível=carro. Fallback genérico=etiqueta para categorias não mapeadas, sem inventar categorias nem classificações.
+- Sem mudanças no DataGrid global, Android, API ou cálculos. Playwright passa a exigir categoria com SVG e caixas de ações pequenas em 9 viewports. Prévia isolada necessária para revisão; sem homologação automática.

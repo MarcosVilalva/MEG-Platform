@@ -128,9 +128,9 @@
 .pano-benefit-details>span{display:flex;gap:.28rem;align-items:baseline;color:#b6d6d1;font-size:.71rem}
 .pano-benefit-details strong{font-size:.75rem;font-weight:850;color:#fff}
 .pano-action-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,6.4rem),1fr));gap:.4rem;margin-top:.45rem;min-width:0;width:100%}
-.pano-action{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.32rem;min-height:5.1rem;min-width:0;padding:.4rem .35rem;border:1px solid #278d888a;border-radius:.55rem;text-align:center;background:#073640;color:#f0faf8}
+.pano-action{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.22rem;min-height:4.45rem;min-width:0;padding:.3rem .3rem;border:1px solid #278d888a;border-radius:.55rem;text-align:center;background:#073640;color:#f0faf8}
 .pano-action:hover{background:#0a4951;border-color:#3be0c9}
-.pano-action-icon{display:grid;place-items:center;flex:0 0 2rem;width:2rem;height:2rem;border-radius:.52rem;background:#25e3c1;color:#053a39}
+.pano-action-icon{display:grid;place-items:center;flex:0 0 1.65rem;width:1.65rem;height:1.65rem;border-radius:.4rem;background:#25e3c1;color:#053a39}
 .pano-action.is-blue .pano-action-icon{background:#246dc9;color:white}
 .pano-action.is-violet .pano-action-icon{background:#7352c5;color:white}
 .pano-action.is-amber .pano-action-icon{background:#a98331;color:white}
@@ -148,6 +148,10 @@
 .pano-grid .meg-datagrid__viewport{flex:0 0 auto;min-height:8rem;height:auto;max-height:none;overflow:auto}
 .pano-grid .meg-datagrid-table,.pano-grid .meg-datagrid-table td{font-size:.71rem}
 .pano-grid .meg-datagrid-table th{background:#082b31!important;font-size:.72rem}
+.pano-category{display:inline-flex;align-items:center;gap:.35rem;min-width:0;max-width:100%;vertical-align:middle;color:#d6f1ed}
+.pano-category-svg{display:block;flex:0 0 15px;color:#6fe7d3;stroke-width:1.85}
+.pano-category-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:inherit}
+.pano-grid .meg-datagrid-card-row .pano-category{max-width:100%}
 .pano-status{display:inline-flex;padding:.2rem .4rem;border:1px solid #c58b3860;border-radius:99px;background:#503e253a;color:#ffdb98;font-size:.72rem;white-space:nowrap}
 .pano-positive{color:#4cf2b9}
 .pano-negative{color:#ff8897}
@@ -201,7 +205,7 @@
  .pano-mid{display:flex;flex-direction:column;align-items:stretch;gap:.6rem}
  .pano-tables{grid-template-columns:repeat(2,minmax(0,1fr))}
  .pano-action-list{grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem}
- .pano-action{grid-column:span 2;min-height:5.3rem;padding:.38rem .2rem}
+ .pano-action{grid-column:span 2;min-height:4.55rem;padding:.32rem .2rem}
  .pano-action:nth-last-child(-n+2){grid-column:span 3}
  .pano-action strong{font-size:.72rem}
  .pano-chart{height:auto;min-height:13rem;flex:1 1 auto}

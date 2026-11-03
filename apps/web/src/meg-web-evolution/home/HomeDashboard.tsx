@@ -62,6 +62,14 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   cards:adapted.cards||[]
  };
 }
+// Apenas iconografia da categoria existente. Sem classificação financeira ou mutação de dados.
+function categoryGlyph(label:string):HomeIconName{
+ const normalized=label.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+ const known:Record<string,HomeIconName>={
+  supermercado:'basket',receitas:'income',saude:'medical',casa:'house',transporte:'car',combustivel:'car'
+ };
+ return known[normalized]||'tag';
+}
 function PanelTitle({icon,title,meta}:{icon:HomeIconName;title:string;meta?:string}){
  return <div className="pano-panel-title"><h2><HomeGlyph name={icon} size={19}/>{title}</h2>{meta&&<span>{meta}</span>}</div>;
 }
@@ -141,7 +149,11 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'date',label:'Data',type:'date',width:98,sortable:true,filterable:true},
   {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true},
-  {key:'category',label:'Categoria',type:'text',width:112,sortable:true,filterable:true},
+  {key:'category',label:'Categoria',type:'text',width:146,sortable:true,filterable:true,
+    render:v=>{const label=String(v??'Sem categoria');return <span className="pano-category" title={label}>
+      <HomeGlyph name={categoryGlyph(label)} size={15} className="pano-category-svg"/>
+      <span className="pano-category-text">{label}</span>
+     </span>;}},
   {key:'account',label:'Conta',type:'text',width:112,sortable:true,filterable:true},
   {key:'value',label:'Valor',type:'currency',width:114,sortable:true,filterable:true,
    render:(v,row)=><strong className={Number(row.amount)<0?'pano-negative':'pano-positive'}>{Number(row.amount)<0?'− ':'+ '}{format(Number(v),hidden)}</strong>}
@@ -252,7 +264,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    <section className="pano-panel pano-actions">
     <PanelTitle icon="sparkle" title="Ações rápidas"/>
     <div className="pano-action-list">{quick.map(a=><button className={'pano-action is-'+a.kind} key={a.title} type="button" onClick={()=>move(a.action)}>
-      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={22}/></span><strong>{a.title}</strong><small>{a.desc}</small>
+      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={17}/></span><strong>{a.title}</strong><small>{a.desc}</small>
      </button>)}</div>
    </section>
   </div>

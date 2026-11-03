@@ -90,6 +90,14 @@ try{
    const financeEl=document.querySelector('.pano-finance-block');
    const financeColumns=financeEl?getComputedStyle(financeEl).gridTemplateColumns.trim().split(/\s+/).map(Number.parseFloat).filter(n=>Number.isFinite(n)&&n>1).length:0;
    const financeRowBalanced=Boolean(financeColumns<=1||(flowPanel&&midPanel&&Math.abs(flowPanel.bottom-midPanel.bottom)<=8));
+   const compactActionIcons=Boolean(actionRects.length===5&&[...document.querySelectorAll('.pano-action-icon')].every(el=>{
+    const b=el.getBoundingClientRect(),s=el.querySelector('svg')?.getBoundingClientRect();
+    return b.width<=30&&b.height<=30&&Boolean(s&&s.width<=19&&s.height<=19);
+   }));
+   const categoryCells=[...document.querySelectorAll('.pano-grid:first-child .pano-category')];
+   const categoryIcons=categoryCells.length>=1&&categoryCells.every(el=>
+    Boolean(el.querySelector('svg.pano-category-svg')&&el.querySelector('.pano-category-text')?.textContent?.trim())
+   );
    const quickActionsBalanced=Boolean(isStacked||(
     actionRects.length===5&&
     Math.abs(actionRects[0].top-actionRects[1].top)<3&&
@@ -115,9 +123,9 @@ try{
    const cardControls=[...document.querySelectorAll('.pano-card-stage>.pano-card-control')].map(el=>el.getBoundingClientRect());
    const navOnCard=Boolean(stage&&cardControls.length===2&&cardControls.every(b=>Math.abs((b.top+b.bottom)/2-(stage.top+stage.bottom)/2)<=3&&b.top>=stage.top&&b.bottom<=stage.bottom)&&cardControls[0].left<stage.left+stage.width*.19&&cardControls[1].right>stage.right-stage.width*.19);
    const gridDecorated=document.querySelectorAll('.pano-grid-heading .pano-panel-title svg').length===2&&document.querySelectorAll('.pano-grid-actions button svg').length>=2;
-   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,semanticHeading,microtextLegible,microtextMin:Math.min(...sampled.map(x=>x.font)),navOnCard,gridDecorated,columnBalanced,quickActionsBalanced,financeRowBalanced,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
+   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,semanticHeading,microtextLegible,microtextMin:Math.min(...sampled.map(x=>x.font)),navOnCard,gridDecorated,compactActionIcons,categoryIcons,columnBalanced,quickActionsBalanced,financeRowBalanced,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
   });
-  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls||!layout.semanticHeading||!layout.microtextLegible||!layout.navOnCard||!layout.gridDecorated||!layout.columnBalanced||!layout.quickActionsBalanced||!layout.financeRowBalanced)failed=true;
+  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls||!layout.semanticHeading||!layout.microtextLegible||!layout.navOnCard||!layout.gridDecorated||!layout.compactActionIcons||!layout.categoryIcons||!layout.columnBalanced||!layout.quickActionsBalanced||!layout.financeRowBalanced)failed=true;
   console.log(name+' COMPOSITION',JSON.stringify(layout));
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
