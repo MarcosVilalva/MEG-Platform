@@ -1,5 +1,8 @@
 # MEG WEB — CONTINUIDADE OFICIAL
 
+> **03/11/2026 | RESULTADO da segunda rodada da Home #653:** commit visual `cf8d46de34a5cfa54e3fed6f82c0e6504d1c7e9a` **live no Render** (serviço isolado `meg-home-06-refino-pr653`); Home Panorama #41725054926 **SUCCESS** (9 larguras); Taste Skill #41725054984 **SUCCESS de execução, não de critérios** (microtextos 21 → 4 vetoriais SVG XLS/PDF, h1 corrigido); Foundation #41725054928 **FAILURE** na toolbar do DataGrid global a 600–760px, não alterar em Home. PR #653 segue Draft e **sem homologação visual**; baseline PR #651 preservado. Tailwind não introduzido.
+
+
 > **03/11/2026 | Home 06 PR #653, refinamento após Taste Skill:** microtipografia, contraste local e h1 sem novo bloco visual, sem Tailwind ou mudanças financeiras. Aguardando testes, publicação e validação visual explícita. PR #651 pré-confirmada preservada.
 
 

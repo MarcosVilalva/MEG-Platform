@@ -12,7 +12,7 @@ Referência visual soberana: print oficial `Tela principal.png` e as decisões a
 
 ## Ferramentas e limites
 
-Taste Skill pode apoiar crítica e inspeção, mas **não está comprovadamente instalado** neste repositório. Refero e catálogos de DESIGN.md ajudam na documentação, mas não substituem os prints. Cult UI/ShaderGradient não são incorporados neste experimento, para evitar novos frameworks e regressões sem justificativa. Nunca utilizar estilos de terceiros como referência visual principal.
+Taste Skill v2.1.5 foi integrado e executado no **GitHub Actions**, de forma temporária e consultiva; não foi instalado no notebook. A avaliação não substitui os prints oficiais. Refero e catálogos de DESIGN.md ajudam na documentação, mas não substituem os prints. Cult UI/ShaderGradient não são incorporados neste experimento, para evitar novos frameworks e regressões sem justificativa. Nunca utilizar estilos de terceiros como referência visual principal.
 
 ## Gate
 
@@ -40,3 +40,10 @@ O workflow .github/workflows/meg-home-06-taste.yml usa os scripts originais da v
 - Convertido o rótulo de saldo existente em h1 sem criar cabeçalho novo. Aumentadas fontes nos próprios seletores CSS da Home: escopo de contas, cartão, KPIs, benefícios, ações, nota do gráfico e títulos de tabela. Preservado o layout dark teal/neon e a geometria principal.
 - Teste Playwright das nove larguras reforçado com h1 unico e limite inferior 11px nos 13 grupos críticos; mantém testes das setas, carrossel e DataGrid. Nenhum cálculo financeiro alterado.
 - Esta mudança precisa de build publicado, captura comparativa e aprovação visual explícita. CI verde não homologa tela.
+
+## 03/11/2026 | Evidências finais da rodada de legibilidade
+- Home visual no SHA `cf8d46de34a5cfa54e3fed6f82c0e6504d1c7e9a`, deploy isolado `live` no Render.
+- [Home Panorama #41725054926](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054926): sucesso em nove resoluções, incluindo h1, microtipografia, carrossel e grids.
+- [Taste Skill #41725054984](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054984): sucesso na execução do diagnóstico. Achados 7 FAIL/3 WARN → 6 FAIL/3 WARN. O `no-title` sumiu e o `tiny-text` caiu de 21 para 4 (as quatro são texto vetorial XLS/PDF do DataGrid global, não texto comum da Home). Demais alertas genéricos de neon/bordas persistem por identidade oficial.
+- [Foundation #41725054928](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054928): falha em 4 testes de toolbar do DataGrid global, 600–760px; mesma classe conhecida, fora do escopo e não corrigida artificialmente.
+- Prévia validável **não homologada**, PR #653 Draft/sem merge; Tailwind não introduzido.

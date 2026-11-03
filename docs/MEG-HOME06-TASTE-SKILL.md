@@ -27,3 +27,24 @@ Esse comando local não foi executado por este workflow.
 - Fonte: execução Taste Skill #41721922540 (7 FAIL, 3 WARN, incluindo 21 textos <11px e no-title). Advertências sobre neon e gradientes não prevalecem contra o padrão oficial.
 - Alteração proposta: aumentar fontes pequenas, melhorar contraste e adicionar h1 sem criar nova seção. Retestar no Taste Skill e Playwright, comparar screenshots antes/depois.
 - Adoção de Tailwind CSS foi avaliada e adiada: React 19/Vite 6 atuais comportam a UI sem alterar dependências, e o Preflight global poderia afetar Shell e DataGrid.
+
+## Resultado mensurado no refino de 03/11/2026
+
+**SHA visual:** `cf8d46de34a5cfa54e3fed6f82c0e6504d1c7e9a`.
+
+| Critério | Antes | Depois |
+|---|---:|---:|
+| Trechos com texto inferior a 11px apontados pelo Taste | 21 | 4 |
+| H1 semântico ausente | Sim | Não |
+| Falhas de critério Taste | 7 | 6 |
+| Avisos de critério Taste | 3 | 3 |
+
+Os quatro trechos remanescentes são os rótulos vetoriais `XLS` e `PDF` existentes **dentro dos desenhos SVG de exportação do DataGrid compartilhado** (dois grids). Eles não são textos do conteúdo financeiro e seu tamanho não deve ser ampliado por override imprudente na Home. Os demais achados do Taste discordam de escolhas dark teal/neon oficialmente aprovadas como direção visual e permanecem sob análise.
+
+O [Home Panorama #41725054926](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054926) passou com nove viewports; o [Taste #41725054984](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054984) executou e forneceu capturas, não sendo gate visual de homologação.
+
+O [Foundation #41725054928](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41725054928) falhou em quatro checagens de toolbar do DataGrid compartilhado a 600, 660, 720 e 760px. **Não alterar o componente compartilhado dentro desta etapa nem marcar os gates como verdes**.
+
+Prévia isolada do commit visual, confirmada live no Render: https://meg-home-06-refino-pr653.onrender.com/home-06-panorama.html?v=cf8d46de34a5cfa54e3fed6f82c0e6504d1c7e9a
+
+Sem aprovação visual explícita do usuário para esta revisão. PR permanece Draft, sem merge. Tailwind v4 foi avaliado e não instalado.
