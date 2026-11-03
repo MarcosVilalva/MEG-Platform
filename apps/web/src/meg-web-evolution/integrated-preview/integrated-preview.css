@@ -311,3 +311,8 @@ body { background: #00151b; color: #ebfffb; overflow-x: clip; }
     font-size:clamp(.64rem,1.2vw,.77rem);
   }
 }
+
+/* O controle demonstrativo não deve cobrir os cartões na Home mobile/tablet. */
+@media(max-width:1023px) {
+  .meg-integrated-preview__restart {display:none;}
+}

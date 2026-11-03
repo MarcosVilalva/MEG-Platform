@@ -75,6 +75,9 @@ try {
       };
     });
     const homeProblems=[];
+    const restartVisible=await page.locator('.meg-integrated-preview__restart').isVisible();
+    if(width<1024 && restartVisible) homeProblems.push('controle demonstrativo cobre a Home compacta');
+
     if(home.documentWidth>width+1)homeProblems.push('rolagem horizontal no documento Home');
     if(home.mainScrollWidth>home.mainWidth+2)homeProblems.push('rolagem horizontal na Home');
     if(home.titleCount!==1)homeProblems.push('hierarquia h1 incorreta');

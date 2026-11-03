@@ -1439,3 +1439,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Novo Lançamento: tipografia, alinhamento das colunas, margens e texto dos quatro cards refinados somente na prévia; código/estilos e imagens da PR #648 continuam íntegros.
 - Verificar build, nove resoluções, integridade da Home, responsividade/legibilidade, navegação e ausência de gravação/API em CI. Publicar no serviço estático isolado Render **somente após o resultado técnico**.
 - Status de aprovação: **nenhuma tela nova validada por esta integração**. Home #651 segue pré-confirmada, Home #653 e esta composição continuam candidatas.
+
+## 03/11/2026 | PR #654 | Revisão integrada do candidato visual
+- A última Home da PR #653 foi copiada para a prévia #654, sem tocar na PR #651 pré-confirmada nem na #653 original. Arquivos copiados por SHA: HomeDashboard.tsx, HomeGlyph.tsx e home-dashboard.css.
+- Refinos somente na prévia: imagem local hero.webp no saldo, glows moderados no saldo e cartões, cinco ações rápidas menores em disposição desktop 3+2. Nenhuma alteração financeira, API, autenticação, Android, Shell ou DataGrid.
+- Novo Lançamento: proporção/textos refinados; tablet 640–1023 empilhado, desktop em duas colunas, mobile vertical.
+- Workflow #41741985134: SUCCESS, 19 resultados, Home e Novo Lançamento em nove resoluções, fluxo demonstrativo Login → Carregamento → Home → Novo → Voltar, sem API nem rolagem horizontal.
+- Inspeção de screenshots revelou botão demonstrativo Rever sequência sobre o cartão mobile. Ajuste isolado: ocultar esse controle não funcional em larguras menores que 1024px. Logout real continua preservado.
+- Render publicou a revisão anterior d41712fc6658e6cd1f5faa1e536e1062ad914144, deploy dep-dbl75e5ckfvc73cl1ekg LIVE. Revisão atual requer checar novo SHA no CI/Render.
+- Status: PR #654 Draft, sem merge. Home #653 ainda candidata; nenhuma homologação visual nova.
