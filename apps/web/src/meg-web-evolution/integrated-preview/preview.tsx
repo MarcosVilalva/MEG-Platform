@@ -17,7 +17,7 @@ import './integrated-preview.css';
 
 /**
  * PREVIA VISUAL ISOLADA, SEM API:
- * - Telas 01-04 da PR #649, Home pre-confirmada da PR #651;
+ * - Telas 01-04 da PR #649, Home refinada da PR #653 (ainda candidata, nao homologada);
  * - Escolha do Novo Lancamento da PR #648, com os arquivos e WebPs originais.
  * Nunca envia credenciais, grava transacoes ou substitui o gateway real.
  */

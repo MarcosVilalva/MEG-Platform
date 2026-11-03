@@ -27,3 +27,9 @@ Percurso padrão: carregamento ilustrativo → login visual → clicar "Entrar e
 - Transferência/Benefício permanecem desabilitados no componente de origem.
 - Botão de Novo do Shell é capturado somente pelo container de preview, sem modificar AppShell.
 - Não realizar merge/deploy até gates e validação visual expressa.
+
+
+## Revisão visual conjunta (03/11/2026)
+Última Home da PR #653 aplicada à PR #654 como candidato, sem alterar a PR #651. Complemento visual isolado reforça o cartão principal, utiliza imagem local no saldo, compacta os acessos rápidos e melhora a simetria/responsividade do seletor de Novo Lançamento. Android, gravações financeiras, API, Shell, DataGrid e componentes de autenticação não foram alterados.
+
+**Gates:** verificar build, sequência navegável, capturas em nove resoluções e status Render/SHA exato antes de encaminhar. A prévia **não é homologação**.

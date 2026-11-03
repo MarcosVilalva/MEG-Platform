@@ -53,3 +53,212 @@ body { background: #00151b; color: #ebfffb; overflow-x: clip; }
  .meg-integrated-preview__restart { bottom: .5rem; left: .5rem; }
 }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; } }
+
+
+/* 03/11 · Refino isolado das telas reais: a PR #653 fornece a Home mais
+   recente; esta camada compõe efeitos de palco sem alterar valores,
+   componente de cartão, grids, estados, navegação ou tokens globais. */
+.meg-integrated-preview .pano-root {
+  background:
+    radial-gradient(ellipse at 82% 5%, rgba(8, 133, 138, .16), transparent 48%),
+    linear-gradient(180deg,#03191e,#021318 96%);
+}
+.meg-integrated-preview .pano-panel {
+  border-color: rgba(57,188,177,.42);
+  box-shadow: inset 0 1px 0 rgba(179,255,243,.07),
+    0 8px 25px rgba(0,13,19,.37);
+}
+.meg-integrated-preview .pano-hero {
+  border-color: rgba(68,235,220,.66);
+  box-shadow: inset 0 0 22px rgba(8,225,204,.10),
+    0 0 22px rgba(4,218,209,.13),0 10px 29px rgba(0,8,15,.37);
+}
+.meg-integrated-preview .pano-hero::before {
+  background:
+    linear-gradient(90deg,rgba(0,19,27,.94) 0%,rgba(0,28,36,.81) 54%,rgba(0,51,61,.31) 100%),
+    url('/meg-assets/hero.webp') center/cover no-repeat;
+}
+.meg-integrated-preview .pano-hero::after {
+  background:
+    radial-gradient(ellipse at 88% -8%,rgba(15,244,235,.26),transparent 58%),
+    linear-gradient(0deg,rgba(1,18,28,.36),transparent 52%);
+}
+.meg-integrated-preview .pano-cards {
+  border-color:rgba(41,231,214,.63);
+  background:radial-gradient(ellipse at 56% 9%,rgba(14,152,170,.15),transparent 66%),
+    linear-gradient(140deg,#06343c,#021c29 85%);
+  box-shadow:inset 0 1px rgba(212,255,247,.15),
+    0 0 27px rgba(19,221,208,.16),0 12px 30px rgba(0,8,17,.49);
+}
+.meg-integrated-preview .pano-card-stage {
+  border:1px solid rgba(68,218,209,.23);
+  background:radial-gradient(ellipse at 50% 78%,rgba(9,182,185,.23),transparent 64%);
+}
+.meg-integrated-preview .pano-card-stage::after {
+  background:radial-gradient(ellipse at 50% 73%,rgba(23,238,211,.24),transparent 62%);
+}
+.meg-integrated-preview .pano-credit-card {
+  border-color:rgba(195,255,249,.83);
+  box-shadow:0 15px 35px rgba(0,9,19,.92),
+    0 0 29px rgba(24,238,213,.31),
+    inset 0 1px 0 rgba(255,255,255,.4);
+}
+.meg-integrated-preview .pano-credit-card::after {
+  background:
+    linear-gradient(125deg,rgba(232,255,254,.19),transparent 31%,
+      rgba(196,255,253,.10) 47%,transparent 64%),
+    linear-gradient(0deg,rgba(0,16,29,.67),transparent 55%);
+}
+.meg-integrated-preview .pano-credit-card:hover,
+.meg-integrated-preview .pano-credit-card:focus-visible {
+  border-color:#d0fff8;
+  box-shadow:0 15px 35px rgba(0,8,20,.94),0 0 35px rgba(37,244,218,.39);
+}
+.meg-integrated-preview .pano-card-peek {
+  filter:brightness(.8);
+  border-color:rgba(128,219,229,.55);
+}
+.meg-integrated-preview .pano-actions {
+  background:
+    radial-gradient(ellipse at 10% -10%,rgba(12,196,184,.12),transparent 62%),
+    linear-gradient(150deg,#07363d,#04232c 82%);
+}
+.meg-integrated-preview .pano-action-list {
+  gap:.3rem;
+  margin-top:.37rem;
+}
+.meg-integrated-preview .pano-action {
+  min-height:3.45rem;
+  gap:.13rem;
+  padding:.26rem .22rem;
+  border-color:rgba(62,188,176,.53);
+  background:linear-gradient(156deg,#0a4147,#052d35);
+  box-shadow:inset 0 1px 0 rgba(197,255,250,.09),0 3px 9px rgba(0,18,25,.29);
+  transition:border-color .16s,background .16s,box-shadow .16s;
+}
+.meg-integrated-preview .pano-action-icon {
+  flex-basis:1.52rem;width:1.52rem;height:1.52rem;
+  border-radius:.4rem;
+}
+.meg-integrated-preview .pano-action strong {
+  font-size:clamp(.7rem,.8vw,.78rem);
+  line-height:1.2;
+}
+.meg-integrated-preview .pano-action:hover,
+.meg-integrated-preview .pano-action:focus-visible {
+  border-color:rgba(137,255,236,.95);
+  background:linear-gradient(156deg,#0c535a,#06343e);
+  box-shadow:0 0 14px rgba(32,227,213,.16),0 5px 15px rgba(0,16,23,.44);
+}
+.meg-integrated-preview .pano-benefit-card {
+  box-shadow:inset 0 1px rgba(171,255,240,.12),0 0 15px rgba(9,165,135,.13);
+}
+.meg-integrated-preview .pano-flow {
+  box-shadow:inset 0 1px rgba(192,255,245,.06),0 8px 20px rgba(0,9,18,.34);
+}
+
+/* Novo Lançamento: texto legível, dois eixos proporcionais e altura
+   disponível na viewport, sem escalar o conteúdo ou esconder controles. */
+.meg-integrated-preview__choice-overlay .meg-new-launch.is-choose {
+  width:min(100%,92rem);
+  padding:clamp(.6rem,1.1vw,1rem);
+}
+.meg-integrated-preview__choice-overlay .meg-choice__body {
+  grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);
+  gap:clamp(.5rem,1vw,.85rem);
+}
+.meg-integrated-preview__choice-overlay .meg-choice__hero-copy {
+  padding:clamp(.85rem,1.75vw,1.6rem);
+}
+.meg-integrated-preview__choice-overlay .meg-choice__hero h3 {
+  margin:clamp(.35rem,2.4vh,1.6rem) 0 clamp(.35rem,1.25vh,.75rem);
+  font-size:clamp(1.85rem,2.95vw,3.1rem);
+  line-height:1.07;
+}
+.meg-integrated-preview__choice-overlay .meg-choice__hero p {
+  max-width:34ch;
+  font-size:clamp(.85rem,1.04vw,1.04rem);
+  line-height:1.38;
+}
+.meg-integrated-preview__choice-overlay .meg-choice__option-text {
+  margin-left:clamp(5rem,29%,17rem);
+  max-width:65%;
+  gap:.12rem;
+}
+.meg-integrated-preview__choice-overlay .meg-choice__option-text strong {
+  line-height:1.12;
+}
+.meg-integrated-preview__choice-overlay .meg-choice__option-text small {
+  line-height:1.3;
+}
+.meg-integrated-preview__choice-overlay .meg-choice__footer {
+  gap:.15rem;
+}
+.meg-integrated-preview__choice-overlay .meg-choice__feature-copy strong {
+  line-height:1.3;
+}
+.meg-integrated-preview__choice-overlay .meg-choice__feature-copy small {
+  line-height:1.32;
+}
+@media(min-width:1024px) {
+  .meg-integrated-preview .pano-action-list {
+    max-width:32rem;
+    margin-left:auto;
+    margin-right:auto;
+    gap:.28rem;
+  }
+  .meg-integrated-preview .pano-action { min-height:3.4rem; }
+}
+@media(min-width:640px) and (max-width:1023px) {
+  .meg-integrated-preview__choice-overlay .meg-choice__body {
+    grid-template-columns:minmax(0,.73fr) minmax(0,1.27fr);
+    gap:.5rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__hero-copy {padding:.75rem;}
+  .meg-integrated-preview__choice-overlay .meg-choice__hero h3 {
+    font-size:clamp(1.65rem,2.75vw,2.15rem);
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__hero p {
+    font-size:.8rem;line-height:1.3;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option-text {
+    margin-left:24%;max-width:68%;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option-text strong {
+    font-size:clamp(1.14rem,1.8vw,1.42rem);
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__tag {
+    font-size:.66rem;
+  }
+}
+@media(max-width:639px) {
+  .meg-integrated-preview__choice-overlay .meg-new-launch.is-choose {
+    width:100%;
+    padding:.45rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__body {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(0,.95fr) minmax(0,3.4fr);
+    gap:.32rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__hero-copy {padding:.43rem .55rem;}
+  .meg-integrated-preview__choice-overlay .meg-choice__hero h3 {
+    font-size:clamp(1.25rem,5vw,1.52rem);
+    margin:.08rem 0 .15rem;
+    line-height:1.08;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__hero p {display:none;}
+  .meg-integrated-preview__choice-overlay .meg-choice__option-text {
+    margin-left:30%;max-width:60%;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option-text strong {
+    font-size:clamp(1.03rem,3.3vw,1.18rem);
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option-text small {
+    font-size:.69rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__tag {font-size:.61rem;}
+}
+@media(prefers-reduced-motion:reduce) {
+ .meg-integrated-preview .pano-action {transition:none;}
+}

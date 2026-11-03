@@ -1430,3 +1430,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Android, API financeira, banco, Shell, DataGrid e componentes já existentes foram mantidos sem alterações.
 - **Pendências:** build, testes de responsividade/fluxo, preview publicado sem cache, aprovação visual explícita e revisão de integração operacional antes de qualquer merge.
 - Documentação: `docs/MEG-08-PREVIEW-COMPONENTES-REAIS.md`.
+
+
+## 03/11/2026 | Refino da integração a pedido do usuário
+- A Home de código foi atualizada pelo conteúdo da PR **#653** (HEAD \`814c128\`), incluindo correção de categoria/ícone, melhor leitura, cartões e ajustes de simetria. A PR #653 é a candidata mais recente, **não** uma homologação final.
+- Três arquivos copiados por SHA da PR #653: \`HomeDashboard.tsx\`, \`HomeGlyph.tsx\`, \`home-dashboard.css\`, apenas para a branch isolada da prévia.
+- Acabamento visual no CSS **escopado da prévia**: luz teal suave, imagem fotográfica local do Novo Lançamento no saldo, cartão principal em destaque, ações rápidas menores e próximas, mantendo a grade 3+2 e alvos de clique.
+- Novo Lançamento: tipografia, alinhamento das colunas, margens e texto dos quatro cards refinados somente na prévia; código/estilos e imagens da PR #648 continuam íntegros.
+- Verificar build, nove resoluções, integridade da Home, responsividade/legibilidade, navegação e ausência de gravação/API em CI. Publicar no serviço estático isolado Render **somente após o resultado técnico**.
+- Status de aprovação: **nenhuma tela nova validada por esta integração**. Home #651 segue pré-confirmada, Home #653 e esta composição continuam candidatas.
