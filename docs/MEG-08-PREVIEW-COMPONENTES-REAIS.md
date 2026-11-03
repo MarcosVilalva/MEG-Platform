@@ -33,3 +33,9 @@ Percurso padrão: carregamento ilustrativo → login visual → clicar "Entrar e
 Última Home da PR #653 aplicada à PR #654 como candidato, sem alterar a PR #651. Complemento visual isolado reforça o cartão principal, utiliza imagem local no saldo, compacta os acessos rápidos e melhora a simetria/responsividade do seletor de Novo Lançamento. Android, gravações financeiras, API, Shell, DataGrid e componentes de autenticação não foram alterados.
 
 **Gates:** verificar build, sequência navegável, capturas em nove resoluções e status Render/SHA exato antes de encaminhar. A prévia **não é homologação**.
+
+
+## Correção estrutural de tablet e qualidade da Home
+Capturas de 640×900 e 768×1024 revelaram texto muito estreito e interferência visual com fotos. Para 640–1023, hero e opções são empilhados de forma proporcional; a coluna dupla continua no desktop ≥1024. Os atributos informativos do rodapé permanecem com título, sem descrições excessivamente estreitas.
+
+O teste integrado foi estendido: nove viewports para Home e nove para Novo Lançamento, com medição de overflow, cinco atalhos/ícones de até 29px, alvos >=44px, grade 3+2 desktop, presença dos dois DataGrids, ícone de categoria, imagem local e palco de cartões sem corte. Capturas da Home no topo e ao final da rolagem. Falha de teste bloqueia status aprovado.

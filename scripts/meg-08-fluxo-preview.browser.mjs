@@ -50,6 +50,54 @@ try {
     await page.screenshot({path:resolve(output,'novo-'+width+'x'+height+'.png'),fullPage:true});
     results.push({screen:'novo',width,height,metrics:m,problems});
     if (problems.length) {failures++; console.error(width+'x'+height+': '+problems.join('; '));}
+
+    // Home real da PR #653 + acabamento isolado: validar os mesmos 9 viewports.
+    await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
+    await page.locator('.pano-actions').waitFor();
+    const home = await page.evaluate(() => {
+      const main=document.querySelector('.meg-main');
+      const root=document.querySelector('.pano-root');
+      const stage=root?.querySelector('.pano-card-stage');
+      const card=root?.querySelector('.pano-credit-card');
+      const rect=n=>{const r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height,width:r.width}};
+      return {
+        documentWidth: document.documentElement.scrollWidth,
+        mainWidth:main?.clientWidth||0,
+        mainScrollWidth:main?.scrollWidth||0,
+        titleCount:root?.querySelectorAll('h1').length||0,
+        actions:[...root.querySelectorAll('.pano-action')].map(rect),
+        actionIcons:[...root.querySelectorAll('.pano-action-icon')].map(rect),
+        stage:stage?rect(stage):null,
+        card:card?rect(card):null,
+        categoryIcons:root.querySelectorAll('.pano-category svg').length,
+        grids:root.querySelectorAll('.meg-datagrid').length,
+        heroArt:getComputedStyle(root.querySelector('.pano-hero'),'::before').backgroundImage,
+      };
+    });
+    const homeProblems=[];
+    if(home.documentWidth>width+1)homeProblems.push('rolagem horizontal no documento Home');
+    if(home.mainScrollWidth>home.mainWidth+2)homeProblems.push('rolagem horizontal na Home');
+    if(home.titleCount!==1)homeProblems.push('hierarquia h1 incorreta');
+    if(home.actions.length!==5)homeProblems.push('cinco acessos rapidos nao visiveis');
+    if(home.actions.some(x=>x.height<44))homeProblems.push('alvo de acesso rapido menor que 44px');
+    if(home.actionIcons.some(x=>x.width>29))homeProblems.push('icone de acesso rapido grande');
+    if(home.grids!==2)homeProblems.push('DataGrids de Home ausentes');
+    if(home.categoryIcons<1)homeProblems.push('SVG de categoria ausente');
+    if(!home.heroArt.includes('hero.webp'))homeProblems.push('arte local neon de saldo ausente');
+    if(home.stage&&home.card && (home.card.top<home.stage.top-2 ||home.card.bottom>home.stage.bottom+2))
+      homeProblems.push('cartao central cortado no palco');
+    if(width>=1024&&home.actions.length===5){
+      const [a,b,c,d,e]=home.actions;
+      if(Math.abs(a.top-b.top)>3||Math.abs(b.top-c.top)>3||Math.abs(d.top-e.top)>3||d.top<=c.top+5)
+        homeProblems.push('acoes nao distribuidas em 3+2');
+    }
+    await page.screenshot({path:resolve(output,'home-'+width+'x'+height+'.png'),fullPage:true});
+    if([390,640,768,1024,1366,1672,1920].includes(width)) {
+      await page.evaluate(()=>{const main=document.querySelector('.meg-main');if(main)main.scrollTop=main.scrollHeight});
+      await page.screenshot({path:resolve(output,'home-'+width+'x'+height+'-bottom.png'),fullPage:true});
+    }
+    results.push({screen:'home',width,height,metrics:home,problems:homeProblems});
+    if(homeProblems.length){failures++;console.error('Home '+width+'x'+height+': '+homeProblems.join('; '));}
     await page.close();
   }
   const page = await browser.newPage({viewport:{width:1366,height:768}});

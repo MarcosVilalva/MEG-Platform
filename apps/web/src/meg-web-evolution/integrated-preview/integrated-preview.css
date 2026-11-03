@@ -262,3 +262,52 @@ body { background: #00151b; color: #ebfffb; overflow-x: clip; }
 @media(prefers-reduced-motion:reduce) {
  .meg-integrated-preview .pano-action {transition:none;}
 }
+
+
+/* Tablet 640–1023: o layout de duas colunas deixava o título, a
+   imagem e as tags disputando 250px. Empilhar as regiões é estrutural,
+   não reduzir tudo ou cortar conteúdo. Mantém o desktop ≥1024 intacto. */
+@media(min-width:640px) and (max-width:1023px) {
+  .meg-integrated-preview__choice-overlay .meg-choice__body {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(0,.92fr) minmax(0,3.25fr);
+    gap:.42rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__hero-copy {
+    padding:clamp(.55rem,1.5vw,.95rem) clamp(.8rem,1.8vw,1.2rem);
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__hero h3 {
+    max-width:26ch;
+    margin:0 0 .32rem;
+    font-size:clamp(1.48rem,2.6vw,1.95rem);
+    line-height:1.06;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__hero p {
+    max-width:54ch;
+    font-size:clamp(.75rem,1.25vw,.88rem);
+    line-height:1.29;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option-text {
+    margin-left:31%;
+    max-width:60%;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__options {gap:.42rem;}
+  .meg-integrated-preview__choice-overlay .meg-choice__option {
+    padding:.35rem .85rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option-text strong {
+    font-size:clamp(1.14rem,1.95vw,1.45rem);
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__feature-copy small {
+    display:none;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__footer {
+    padding:.23rem .32rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__feature {
+    justify-content:center;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__feature-copy strong {
+    font-size:clamp(.64rem,1.2vw,.77rem);
+  }
+}
