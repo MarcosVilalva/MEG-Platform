@@ -1417,3 +1417,16 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Foundation anterior falhou em testes de toolbar e screenshots do DataGrid compartilhado. **Não atualizar snapshots automaticamente nem tocar no DataGrid em uma etapa da Home.**
 - Auditoria operacional e roteiro de filtros seguros para autodeploy: `docs/MEG-RENDER-PUBLICACAO-AUTOMATICA-AUDITORIA-20261030.md`. Conector Render não oferece update de filtros em serviços já existentes. Nenhuma alteração de produção no Render, API ou banco.
 - Home 06 sem homologação, PR Draft e sem merge. Próximos gates requerem conclusão e inspeção visual de screenshots gerados pelo novo SHA.
+
+
+## Etapa 08 — Prévia integrada de componentes reais (03/11/2026)
+
+- Solicitação: visualizar a sequência Carregamento → Login → Carregamento inicial → Home → Novo Lançamento, utilizando as telas **realmente implementadas**, não uma montagem de imagens.
+- PR isolada: **#654** (`preview/08-fluxo-componentes-reais-20261103`), base na **PR #651**. Permanece **Draft, sem merge e sem publicação comprovada**.
+- Fontes: autenticação/Loading da PR #649, Home e AppShell pré-confirmados na PR #651, seletor da PR #648 com arquivos e WebPs originais copiados por SHA. A PR #653 continua experimento, sem aprovação.
+- Entrada própria: `apps/web/fluxo-integrado-08.html`; configuração `apps/web/vite.fluxo-integrado-08.config.ts`; composição em `apps/web/src/meg-web-evolution/integrated-preview/`.
+- O Login permanece `previewOnly`, carregamento é ilustrativo e a Home utiliza `homePreviewFixture`. Não há autenticação real, API, mutação, gravação ou migração de dados.
+- Apenas o seletor do Novo Lançamento é apresentado; formulário protegido de Despesa/Receita, Benefício e Transferência não são ativados nesta prévia.
+- Android, API financeira, banco, Shell, DataGrid e componentes já existentes foram mantidos sem alterações.
+- **Pendências:** build, testes de responsividade/fluxo, preview publicado sem cache, aprovação visual explícita e revisão de integração operacional antes de qualquer merge.
+- Documentação: `docs/MEG-08-PREVIEW-COMPONENTES-REAIS.md`.
