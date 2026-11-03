@@ -175,7 +175,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
    <div className="pano-balance" aria-label="Saldo disponível monetário">
-    <div className="pano-balance-top"><span>Saldo disponível <span className="pano-balance-scope">CONTAS MONETÁRIAS</span></span><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={19}/></button></div>
+    <div className="pano-balance-top"><h1>Saldo disponível <span className="pano-balance-scope">CONTAS MONETÁRIAS</span></h1><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={19}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
     <div className="pano-balance-bottom"><span>{data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
    </div>

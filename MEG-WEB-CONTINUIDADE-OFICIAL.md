@@ -1,5 +1,8 @@
 # MEG WEB — CONTINUIDADE OFICIAL
 
+> **03/11/2026 | Home 06 PR #653, refinamento após Taste Skill:** microtipografia, contraste local e h1 sem novo bloco visual, sem Tailwind ou mudanças financeiras. Aguardando testes, publicação e validação visual explícita. PR #651 pré-confirmada preservada.
+
+
 > **03/11/2026 | Home 06 PR #653:** refinamento autorizado de ícones locais dos dois DataGrids e navegação lateral centralizada no palco dos cartões; PR #651 pré-confirmada permanece imutável. Sem aceite visual do novo refinamento. Publicar prévia isolada e validar antes de qualquer merge.
 
 

@@ -22,3 +22,8 @@ Para instalar no notebook separadamente, o comando oficial é:
 npx.cmd skills add https://github.com/Leonxlnx/taste-skill --skill design-taste-frontend
 ```
 Esse comando local não foi executado por este workflow.
+
+## 03/11/2026 | Tratamento dos achados (segunda rodada)
+- Fonte: execução Taste Skill #41721922540 (7 FAIL, 3 WARN, incluindo 21 textos <11px e no-title). Advertências sobre neon e gradientes não prevalecem contra o padrão oficial.
+- Alteração proposta: aumentar fontes pequenas, melhorar contraste e adicionar h1 sem criar nova seção. Retestar no Taste Skill e Playwright, comparar screenshots antes/depois.
+- Adoção de Tailwind CSS foi avaliada e adiada: React 19/Vite 6 atuais comportam a UI sem alterar dependências, e o Preflight global poderia afetar Shell e DataGrid.

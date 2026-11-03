@@ -34,3 +34,9 @@ Nove resoluções Playwright. Quando há 2 colunas superiores, diferença entre 
 ## 03/11/2026 | Taste Skill em auditoria automatizada
 
 O workflow .github/workflows/meg-home-06-taste.yml usa os scripts originais da versão 2.1.5 do Taste Skill, fixados por SHA, no modo --app, para inspecionar a Home existente em 1672/1024/390px. É ferramenta auxiliar, nunca autoridade superior aos prints oficiais, à pré-confirmação nem às regras financeiras. Ver docs/MEG-HOME06-TASTE-SKILL.md. A execução deve ser comprovada por run e artefato da CI.
+
+## 03/11/2026 | Segunda rodada após Taste Skill
+- Usuario autorizou refinamento efetivo sem Tailwind. Relatorio Taste oficial anterior mostrou 21 textos abaixo de 11px e ausência de h1.
+- Convertido o rótulo de saldo existente em h1 sem criar cabeçalho novo. Aumentadas fontes nos próprios seletores CSS da Home: escopo de contas, cartão, KPIs, benefícios, ações, nota do gráfico e títulos de tabela. Preservado o layout dark teal/neon e a geometria principal.
+- Teste Playwright das nove larguras reforçado com h1 unico e limite inferior 11px nos 13 grupos críticos; mantém testes das setas, carrossel e DataGrid. Nenhum cálculo financeiro alterado.
+- Esta mudança precisa de build publicado, captura comparativa e aprovação visual explícita. CI verde não homologa tela.

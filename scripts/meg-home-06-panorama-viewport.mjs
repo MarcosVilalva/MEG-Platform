@@ -106,12 +106,18 @@ try{
    const physicalNeighbors=peeks.every(p=>Math.abs(p.width/p.height-1.72)<.12);
    const cardRelative=Boolean(center&&stage&&center.width>=stage.width*.44&&center.width<=stage.width*.66);
    const touchControls=[...document.querySelectorAll('.pano-card-control,.pano-card-indicator button,.pano-balance-top button')].every(el=>{const b=el.getBoundingClientRect();return b.width>=42&&b.height>=42});
+   const balanceHeading=document.querySelectorAll('.pano-root h1');
+   const semanticHeading=balanceHeading.length===1&&balanceHeading[0].textContent?.includes('Saldo disponível');
+   const readableSelectors=['.pano-balance-scope','.pano-stat small','.pano-stat-label','.pano-credit-card-meta','.pano-card-kind','.pano-card-peek-name','.pano-benefits>.pano-panel-title>span','.pano-eyebrow','.pano-benefit-callout','.pano-benefit-details>span','.pano-action strong','.pano-flow-footnote','.pano-grid .meg-datagrid-table th'];
+   const sampled=readableSelectors.flatMap(selector=>[...document.querySelectorAll(selector)].filter(el=>el.getClientRects().length>0).map(el=>({selector,font:parseFloat(getComputedStyle(el).fontSize)})));
+   const microtextLegible=sampled.length>=12&&sampled.every(x=>x.font>=10.95);
+
    const cardControls=[...document.querySelectorAll('.pano-card-stage>.pano-card-control')].map(el=>el.getBoundingClientRect());
    const navOnCard=Boolean(stage&&cardControls.length===2&&cardControls.every(b=>Math.abs((b.top+b.bottom)/2-(stage.top+stage.bottom)/2)<=3&&b.top>=stage.top&&b.bottom<=stage.bottom)&&cardControls[0].left<stage.left+stage.width*.19&&cardControls[1].right>stage.right-stage.width*.19);
    const gridDecorated=document.querySelectorAll('.pano-grid-heading .pano-panel-title svg').length===2&&document.querySelectorAll('.pano-grid-actions button svg').length>=2;
-   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,navOnCard,gridDecorated,columnBalanced,quickActionsBalanced,financeRowBalanced,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
+   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,semanticHeading,microtextLegible,microtextMin:Math.min(...sampled.map(x=>x.font)),navOnCard,gridDecorated,columnBalanced,quickActionsBalanced,financeRowBalanced,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
   });
-  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls||!layout.navOnCard||!layout.gridDecorated||!layout.columnBalanced||!layout.quickActionsBalanced||!layout.financeRowBalanced)failed=true;
+  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls||!layout.semanticHeading||!layout.microtextLegible||!layout.navOnCard||!layout.gridDecorated||!layout.columnBalanced||!layout.quickActionsBalanced||!layout.financeRowBalanced)failed=true;
   console.log(name+' COMPOSITION',JSON.stringify(layout));
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
