@@ -1,5 +1,8 @@
 # MEG WEB — CONTINUIDADE OFICIAL
 
+> **03/11/2026 | Home 06 PR #653, refinamento de ações e Categoria, NÃO HOMOLOGADO:** UI do commit `c836c0ec4c66a7891224b35dd275d4fd454f7601` publicada **live** no Render `meg-home-06-refino-pr653`. Ações rápidas com SVG 17px/caixa 26,4px; Categoria com SVG 15px + texto existente, coluna 146px e cabeçalho Data recuperado por padding local. [Home Panorama #41729608826](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41729608826) **SUCCESS** 9 viewports; [Taste #41729608536](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41729608536) **SUCCESS apenas de execução**; [Foundation #41729608451](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41729608451) pendente na última verificação. PR #653 Draft sem merge; manter baseline da PR #651 e DataGrid compartilhado intactos. **Não avançar para Lançamentos sem autorização de etapa após revisão visual.**
+
+
 > **03/11/2026 | Ajuste de Home 06 PR #653 autorizado:** reduzir ícones das Ações rápidas e exibir SVG discreto junto ao nome da Categoria no DataGrid de movimentações. Alterações apenas na Home; preserve PR #651 pré-confirmada, DataGrid global, Android e regras financeiras. Aguardar CI, preview isolado e validação visual antes de qualquer merge.
 
 
