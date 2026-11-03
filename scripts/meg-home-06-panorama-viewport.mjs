@@ -76,6 +76,9 @@ try{
     return Boolean(icon&&amount&&amount.left>=icon.right-1);
    });
    const financialColumn=document.querySelector('.pano-financial-column')?.getBoundingClientRect();
+   const lastStat=document.querySelector('.pano-overview')?.getBoundingClientRect();
+   const flowPanel=rect('.pano-flow'),midPanel=rect('.pano-mid');
+   const actionRects=[...document.querySelectorAll('.pano-action-list>.pano-action')].map(el=>el.getBoundingClientRect());
    const spotlightEl=document.querySelector('.pano-spotlight');
    // auto-fit pode expor trilhas colapsadas "0px": não são colunas visuais.
    const tracks=spotlightEl?getComputedStyle(spotlightEl).gridTemplateColumns.trim().split(/\s+/).map(s=>parseFloat(s)).filter(n=>Number.isFinite(n)&&n>1).length:0;
@@ -83,6 +86,26 @@ try{
    const tightCards=Boolean(cards&&hero&&financialColumn&&(isStacked
     ? cards.top>=financialColumn.bottom-2&&cards.top-financialColumn.bottom<=32&&Math.abs(cards.left-financialColumn.left)<=3
     : tracks===2&&Math.abs(cards.top-financialColumn.top)<=3&&cards.left>=financialColumn.right-2));
+   const columnBalanced=Boolean(isStacked||(!isStacked&&lastStat&&cards&&Math.abs(lastStat.bottom-cards.bottom)<=8));
+   const financeEl=document.querySelector('.pano-finance-block');
+   const financeColumns=financeEl?getComputedStyle(financeEl).gridTemplateColumns.trim().split(/\s+/).map(Number.parseFloat).filter(n=>Number.isFinite(n)&&n>1).length:0;
+   const financeRowBalanced=Boolean(financeColumns<=1||(flowPanel&&midPanel&&Math.abs(flowPanel.bottom-midPanel.bottom)<=8));
+   const compactActionIcons=Boolean(actionRects.length===5&&[...document.querySelectorAll('.pano-action-icon')].every(el=>{
+    const b=el.getBoundingClientRect(),s=el.querySelector('svg')?.getBoundingClientRect();
+    return b.width<=30&&b.height<=30&&Boolean(s&&s.width<=19&&s.height<=19);
+   }));
+   const categoryCells=[...document.querySelectorAll('.pano-grid:first-child .pano-category')];
+   const categoryIcons=categoryCells.length>=1&&categoryCells.every(el=>
+    Boolean(el.querySelector('svg.pano-category-svg')&&el.querySelector('.pano-category-text')?.textContent?.trim())
+   );
+   const quickActionsBalanced=Boolean(isStacked||(
+    actionRects.length===5&&
+    Math.abs(actionRects[0].top-actionRects[1].top)<3&&
+    Math.abs(actionRects[1].top-actionRects[2].top)<3&&
+    Math.abs(actionRects[3].top-actionRects[4].top)<3&&
+    actionRects[3].top>actionRects[0].top+40&&
+    actionRects[3].width>actionRects[0].width
+   ));
    const center=rect('.pano-credit-card'),stage=rect('.pano-card-stage');
    const centered=Boolean(center&&stage&&Math.abs((center.left+center.width/2)-(stage.left+stage.width/2))<=3);
    const peeks=[...document.querySelectorAll('.pano-card-peek')].map(x=>x.getBoundingClientRect());
@@ -90,10 +113,19 @@ try{
    const cardNotClipped=Boolean(center&&stage&&center.top>=stage.top+1&&center.bottom<=stage.bottom-1&&center.left>=stage.left-1&&center.right<=stage.right+1);
    const physicalNeighbors=peeks.every(p=>Math.abs(p.width/p.height-1.72)<.12);
    const cardRelative=Boolean(center&&stage&&center.width>=stage.width*.44&&center.width<=stage.width*.66);
-   const touchControls=[...document.querySelectorAll('.pano-card-nav>button,.pano-card-indicator button,.pano-balance-top button')].every(el=>{const b=el.getBoundingClientRect();return b.width>=42&&b.height>=42});
-   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
+   const touchControls=[...document.querySelectorAll('.pano-card-control,.pano-card-indicator button,.pano-balance-top button')].every(el=>{const b=el.getBoundingClientRect();return b.width>=42&&b.height>=42});
+   const balanceHeading=document.querySelectorAll('.pano-root h1');
+   const semanticHeading=balanceHeading.length===1&&balanceHeading[0].textContent?.includes('Saldo disponível');
+   const readableSelectors=['.pano-balance-scope','.pano-stat small','.pano-stat-label','.pano-credit-card-meta','.pano-card-kind','.pano-card-peek-name','.pano-benefits>.pano-panel-title>span','.pano-eyebrow','.pano-benefit-callout','.pano-benefit-details>span','.pano-action strong','.pano-flow-footnote','.pano-grid .meg-datagrid-table th'];
+   const sampled=readableSelectors.flatMap(selector=>[...document.querySelectorAll(selector)].filter(el=>el.getClientRects().length>0).map(el=>({selector,font:parseFloat(getComputedStyle(el).fontSize)})));
+   const microtextLegible=sampled.length>=12&&sampled.every(x=>x.font>=10.95);
+
+   const cardControls=[...document.querySelectorAll('.pano-card-stage>.pano-card-control')].map(el=>el.getBoundingClientRect());
+   const navOnCard=Boolean(stage&&cardControls.length===2&&cardControls.every(b=>Math.abs((b.top+b.bottom)/2-(stage.top+stage.bottom)/2)<=3&&b.top>=stage.top&&b.bottom<=stage.bottom)&&cardControls[0].left<stage.left+stage.width*.19&&cardControls[1].right>stage.right-stage.width*.19);
+   const gridDecorated=document.querySelectorAll('.pano-grid-heading .pano-panel-title svg').length===2&&document.querySelectorAll('.pano-grid-actions button svg').length>=2;
+   return {valueInsideRight,tightCards,centered,attached,cardNotClipped,physicalNeighbors,cardRelative,touchControls,semanticHeading,microtextLegible,microtextMin:Math.min(...sampled.map(x=>x.font)),navOnCard,gridDecorated,compactActionIcons,categoryIcons,columnBalanced,quickActionsBalanced,financeRowBalanced,spotlightWidth:spotlight?.width,heroHeight:hero?.height,cardsHeight:cards?.height};
   });
-  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls)failed=true;
+  if(!layout.valueInsideRight||!layout.tightCards||!layout.centered||!layout.attached||!layout.cardNotClipped||!layout.physicalNeighbors||!layout.cardRelative||!layout.touchControls||!layout.semanticHeading||!layout.microtextLegible||!layout.navOnCard||!layout.gridDecorated||!layout.compactActionIcons||!layout.categoryIcons||!layout.columnBalanced||!layout.quickActionsBalanced||!layout.financeRowBalanced)failed=true;
   console.log(name+' COMPOSITION',JSON.stringify(layout));
   await page.screenshot({path:join(dir,name+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate((element)=>{element.scrollTop=element.scrollHeight});
@@ -108,6 +140,10 @@ try{
   if(!safe)failed=true;
   if(name==='desktop-1672'){
    const filterButton=page.getByRole('button',{name:'Mostrar filtros das movimentações'});
+    const headerReadable=await page.locator('.pano-grid').first().locator('thead th').evaluateAll(ths=>{
+     const span=(i)=>ths[i]?.querySelector('.meg-datagrid-sort-button span');
+     return [0,2].every(i=>{const el=span(i);return Boolean(el&&el.clientWidth>0&&el.scrollWidth<=el.clientWidth+1);});
+    });
    const initiallyHidden=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar').evaluate(el=>getComputedStyle(el).display==='none');
    await filterButton.click();
    const filterOpen=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar').evaluate(el=>getComputedStyle(el).display!=='none');
@@ -122,7 +158,7 @@ try{
    const nextCardPreview=await page.locator('.pano-card-peek.is-next .pano-card-peek-name').textContent();
    const itemBefore=await page.locator('.pano-credit-card-name').textContent();
    const schemeBefore=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
-   await page.locator('.pano-card-nav').getByRole('button',{name:'Próximo cartão'}).click();
+   await page.locator('.pano-card-stage').getByRole('button',{name:'Próximo cartão',exact:true}).click();
    const itemAfter=await page.locator('.pano-credit-card-name').textContent();
    const schemeAfter=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
    await page.locator('.pano-credit-card').click();
@@ -151,8 +187,8 @@ try{
    const incomeFocused=await page.getByText('Últimas receitas').isVisible();
    await page.getByRole('button',{name:'Limpar seleção'}).click();
    const restored=await page.getByText('Últimas movimentações').isVisible();
-   const passed=initiallyHidden&&filterOpen&&filterClosed&&nextCardPreview===itemAfter&&noticeVisible&&noLayoutShift&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&circularLoop&&compactKpis&&incomeFocused&&restored;
-   console.log('INTERACTIONS',JSON.stringify({initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,nextCardPreview,noticeVisible,noLayoutShift,details,circularLoop,compactKpis,geometry,incomeFocused,restored,passed}));
+   const passed=headerReadable&&initiallyHidden&&filterOpen&&filterClosed&&nextCardPreview===itemAfter&&noticeVisible&&noLayoutShift&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&circularLoop&&compactKpis&&incomeFocused&&restored;
+   console.log('INTERACTIONS',JSON.stringify({headerReadable,initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,nextCardPreview,noticeVisible,noLayoutShift,details,circularLoop,compactKpis,geometry,incomeFocused,restored,passed}));
    if(!passed)failed=true;
   }
   if(name==='mobile-390'){
@@ -163,5 +199,32 @@ try{
   }
   await page.close();
  }
+
+// Capturas experimentais, sem substituir as nove resoluções do contrato principal.
+for(const estilo of ['a','b']){
+ for(const {name,width,height} of [{name:'desktop-1672',width:1672,height:941},{name:'mobile-390',width:390,height:844}]){
+  const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
+  try{
+   const errors=[];
+   page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(origin+'?estilo='+estilo,{waitUntil:'domcontentloaded',timeout:30000});
+   await page.locator('.pano-stat').first().waitFor({state:'visible'});
+   await page.waitForTimeout(700);
+   const v=await page.evaluate(()=>({
+    style:document.documentElement.dataset.megHomeStyle,
+    overflow:document.documentElement.scrollWidth-innerWidth,
+    actions:document.querySelectorAll('.pano-action').length,
+    kpis:document.querySelectorAll('.pano-stat').length,
+    grids:document.querySelectorAll('.pano-grid .meg-datagrid').length,
+    cards:document.querySelectorAll('.pano-credit-card').length,
+    balance:document.querySelector('.pano-balance>strong')?.textContent?.trim()
+   }));
+   const valid=v.style===estilo&&v.overflow<=1&&v.actions===5&&v.kpis===4&&v.grids===2&&v.cards===1&&Boolean(v.balance)&&errors.length===0;
+   console.log('PREVIEW VARIANT',JSON.stringify({estilo,name,valid,...v,errors}));
+   if(!valid)failed=true;
+   await page.screenshot({path:join(dir,'comparativo-'+estilo+'-'+name+'.png'),fullPage:true});
+  }finally{await page.close()}
+ }
+}
 }finally{await browser.close()}
 if(failed)process.exitCode=1;

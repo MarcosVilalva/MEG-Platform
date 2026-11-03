@@ -1,0 +1,78 @@
+name: MEG Home 06 Taste Skill (auditoria consultiva)
+on:
+  push:
+    branches:
+      - 'meg-web-evolution/06-home-refino-design-20261101'
+    paths:
+      - '.github/workflows/meg-home-06-taste.yml'
+      - 'apps/web/src/meg-web-evolution/home/**'
+      - 'docs/MEG-HOME06-TASTE-SKILL.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  taste-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TASTE_SHA: 12af471f627f866411b4bd785b19646d3672784c
+      CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Obter Taste Skill oficial pinado
+        run: |
+          set -euo pipefail
+          mkdir -p .taste-skill/vendor .agents/skills
+          git -C .taste-skill/vendor init
+          git -C .taste-skill/vendor remote add origin https://github.com/Leonxlnx/taste-skill.git
+          git -C .taste-skill/vendor fetch --depth 1 origin "$TASTE_SHA"
+          git -C .taste-skill/vendor checkout --detach FETCH_HEAD
+          test "$(git -C .taste-skill/vendor rev-parse HEAD)" = "$TASTE_SHA"
+          test -f .taste-skill/vendor/skills/taste-skill/SKILL.md
+          test -f .taste-skill/vendor/skills/taste-skill/references/app-screens.md
+          ln -s ../../.taste-skill/vendor/skills/taste-skill .agents/skills/design-taste-frontend
+          node --check .taste-skill/vendor/skills/taste-skill/scripts/inspect.mjs
+      - name: Build real da Home com fixture isolada
+        run: |
+          npm ci --audit=false
+          cd apps/web
+          npx vite build --config vite.home-06-panorama.config.ts
+      - name: Inspecao oficial Taste Skill para app (nao bloqueante)
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/taste-home06/inspecao
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory apps/web/dist-home-06-panorama > /tmp/meg-taste-server.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/home-06-panorama.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/home-06-panorama.html > /dev/null
+          node .taste-skill/vendor/skills/taste-skill/scripts/lint.mjs apps/web/src/meg-web-evolution/home --app --json > artifacts/taste-home06/lint.json 2>artifacts/taste-home06/lint-errors.log || true
+          node .taste-skill/vendor/skills/taste-skill/scripts/inspect.mjs http://127.0.0.1:4173/home-06-panorama.html --app --widths 1672,1024,390 --out artifacts/taste-home06/inspecao --json > artifacts/taste-home06/inspect-output.json 2>artifacts/taste-home06/inspect-errors.log || true
+          test -s artifacts/taste-home06/inspecao/report.json
+      - name: Resumo da auditoria consultiva
+        if: always()
+        run: |
+          if test -s artifacts/taste-home06/inspecao/report.json; then
+            node -e "const f=require('./artifacts/taste-home06/inspecao/report.json');const g=f.findings||[]; console.log('Taste app -- FAIL: '+g.filter(x=>x.level==='FAIL').length+'; WARN: '+g.filter(x=>x.level==='WARN').length)"
+            echo '## MEG Home 06 | Taste Skill oficial' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Auditoria consultiva com Node 22, Chrome e modo app. Identidade visual oficial e regras financeiras prevalecem. Relatorio e capturas no artefato.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Taste nao gerou relatorio; confira logs.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Guardar relatorio, capturas e logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home06-taste-review
+          path: artifacts/taste-home06/
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,5 +1,20 @@
 # MEG WEB — CONTINUIDADE OFICIAL
 
+> **03/11/2026 | Home 06 PR #653, refinamento de ações e Categoria, NÃO HOMOLOGADO:** UI do commit `c836c0ec4c66a7891224b35dd275d4fd454f7601` publicada **live** no Render `meg-home-06-refino-pr653`. Ações rápidas com SVG 17px/caixa 26,4px; Categoria com SVG 15px + texto existente, coluna 146px e cabeçalho Data recuperado por padding local. [Home Panorama #41729608826](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41729608826) **SUCCESS** 9 viewports; [Taste #41729608536](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41729608536) **SUCCESS apenas de execução**; [Foundation #41729608451](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41729608451) pendente na última verificação. PR #653 Draft sem merge; manter baseline da PR #651 e DataGrid compartilhado intactos. **Não avançar para Lançamentos sem autorização de etapa após revisão visual.**
+
+
+> **03/11/2026 | Ajuste de Home 06 PR #653 autorizado:** reduzir ícones das Ações rápidas e exibir SVG discreto junto ao nome da Categoria no DataGrid de movimentações. Alterações apenas na Home; preserve PR #651 pré-confirmada, DataGrid global, Android e regras financeiras. Aguardar CI, preview isolado e validação visual antes de qualquer merge.
+
+
+> **03/11/2026 | RESULTADO da segunda rodada da Home #653:** commit visual `cf8d46de34a5cfa54e3fed6f82c0e6504d1c7e9a` **live no Render** (serviço isolado `meg-home-06-refino-pr653`); Home Panorama #41725054926 **SUCCESS** (9 larguras); Taste Skill #41725054984 **SUCCESS de execução, não de critérios** (microtextos 21 → 4 vetoriais SVG XLS/PDF, h1 corrigido); Foundation #41725054928 **FAILURE** na toolbar do DataGrid global a 600–760px, não alterar em Home. PR #653 segue Draft e **sem homologação visual**; baseline PR #651 preservado. Tailwind não introduzido.
+
+
+> **03/11/2026 | Home 06 PR #653, refinamento após Taste Skill:** microtipografia, contraste local e h1 sem novo bloco visual, sem Tailwind ou mudanças financeiras. Aguardando testes, publicação e validação visual explícita. PR #651 pré-confirmada preservada.
+
+
+> **03/11/2026 | Home 06 PR #653:** refinamento autorizado de ícones locais dos dois DataGrids e navegação lateral centralizada no palco dos cartões; PR #651 pré-confirmada permanece imutável. Sem aceite visual do novo refinamento. Publicar prévia isolada e validar antes de qualquer merge.
+
+
 > **ATUALIZAÇÃO DE 01/11/2026 | Home 06: PRÉ-CONFIRMAÇÃO VISUAL, NÃO HOMOLOGAÇÃO.** O usuário declarou que o preview publicado melhorou bastante e autorizou guardar esta revisão como marco seguro de comparação. Versão de código `25b167f38c9a302cf83ba079227ab7887fb6870a`, confirmada `live` no Render em 01/11/2026; teste Home Panorama verde (run `41132153131`); Foundation geral permanece com falhas. Este aceite **não** autoriza merge, não homologa a Home e não dispensa validação visual futura. Melhorias devem partir da mesma base e ocorrer isoladamente. Evidência e escopo: `docs/MEG-HOME06-PRECONFIRMACAO-20261101.md`. O novo checkpoint compacto está em PR #652 (ainda Draft) e deve incorporar este registro antes de seu merge.\n\n
 > [!IMPORTANT]
 > **AVISO OPERACIONAL ENTRE CHATS**
