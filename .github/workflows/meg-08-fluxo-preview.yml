@@ -1,0 +1,47 @@
+name: MEG Etapa 08 - Fluxo Real Integrado Preview
+on:
+  push:
+    branches:
+      - 'preview/08-fluxo-componentes-reais-20261103'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview-real-components:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verificar sintaxe do navegador antes do build
+        run: node --check scripts/meg-08-fluxo-preview.browser.mjs
+      - name: Instalar dependencias
+        run: npm ci --audit=false
+      - name: Compilar apenas a previa isolada da Etapa 08
+        run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Preparar Playwright para evidencias
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Conferir 9 viewports e fluxo sem API
+        shell: bash
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4173 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg08-preview.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null
+          node scripts/meg-08-fluxo-preview.browser.mjs
+      - name: Publicar capturas e resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg08-componentes-reais
+          path: artifacts/meg08-integrado/
+          if-no-files-found: warn
