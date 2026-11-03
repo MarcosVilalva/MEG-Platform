@@ -140,7 +140,7 @@ try{
    const nextCardPreview=await page.locator('.pano-card-peek.is-next .pano-card-peek-name').textContent();
    const itemBefore=await page.locator('.pano-credit-card-name').textContent();
    const schemeBefore=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
-   await page.locator('.pano-card-nav').getByRole('button',{name:'Próximo cartão'}).click();
+   await page.locator('.pano-card-stage').getByRole('button',{name:'Próximo cartão',exact:true}).click();
    const itemAfter=await page.locator('.pano-credit-card-name').textContent();
    const schemeAfter=await page.locator('.pano-credit-card .pano-scheme').getAttribute('aria-label');
    await page.locator('.pano-credit-card').click();
