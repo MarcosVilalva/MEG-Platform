@@ -30,3 +30,7 @@ Nove resoluções Playwright. Quando há 2 colunas superiores, diferença entre 
 - Duas setas semanticamente rotuladas e alvos 44px no palco; indicadores permanecem abaixo; manter swipe, navegação por teclado e índice circular.
 - HomeGlyph acrescenta ícones locais; sort, filtro por coluna e paginação são refinados pelo CSS escopado .pano-grid sem alterar datagrid/** compartilhado.
 - Teste verifica setas sobre o palco e SVGs nos dois DataGrids nos nove viewports. Status: candidato sem aceite visual explícito, baseline PR651 preservado.
+
+## 03/11/2026 | Taste Skill em auditoria automatizada
+
+O workflow .github/workflows/meg-home-06-taste.yml usa os scripts originais da versão 2.1.5 do Taste Skill, fixados por SHA, no modo --app, para inspecionar a Home existente em 1672/1024/390px. É ferramenta auxiliar, nunca autoridade superior aos prints oficiais, à pré-confirmação nem às regras financeiras. Ver docs/MEG-HOME06-TASTE-SKILL.md. A execução deve ser comprovada por run e artefato da CI.
