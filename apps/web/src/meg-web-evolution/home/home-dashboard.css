@@ -148,6 +148,9 @@
 .pano-grid .meg-datagrid__viewport{flex:0 0 auto;min-height:8rem;height:auto;max-height:none;overflow:auto}
 .pano-grid .meg-datagrid-table,.pano-grid .meg-datagrid-table td{font-size:.71rem}
 .pano-grid .meg-datagrid-table th{background:#082b31!important;font-size:.72rem}
+/* Retém os alvos de filtro da grade; recupera largura de texto para Data e Categoria. */
+.pano-grid .meg-datagrid-sort-button{padding-left:.35rem;padding-right:.12rem;gap:.15rem}
+.pano-grid .meg-datagrid-filter-button{margin-right:.03rem}
 .pano-category{display:inline-flex;align-items:center;gap:.35rem;min-width:0;max-width:100%;vertical-align:middle;color:#d6f1ed}
 .pano-category-svg{display:block;flex:0 0 15px;color:#6fe7d3;stroke-width:1.85}
 .pano-category-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:inherit}

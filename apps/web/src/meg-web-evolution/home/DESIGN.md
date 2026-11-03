@@ -54,3 +54,6 @@ O workflow .github/workflows/meg-home-06-taste.yml usa os scripts originais da v
 - Categoria recebe ícone semântico pequeno (15px) + nome na **célula renderizada somente pela Home**. Coluna passa de 112 para 146px, evitando rótulo cortado; dados originais continuam strings para ordenação, filtro, CSV, XLS e PDF.
 - Ícones conhecidos: supermercado=cesta; receitas=seta de receita; saúde=cruz; casa=casa; transporte e combustível=carro. Fallback genérico=etiqueta para categorias não mapeadas, sem inventar categorias nem classificações.
 - Sem mudanças no DataGrid global, Android, API ou cálculos. Playwright passa a exigir categoria com SVG e caixas de ações pequenas em 9 viewports. Prévia isolada necessária para revisão; sem homologação automática.
+
+### Ajuste local de cabeçalhos
+Ao ampliar Categoria para caber SVG + texto, o botão de ordenação passou a truncar o rótulo Data a 1672px. Corrigido **localmente** o padding do botão sort do grid (sem reduzir o tamanho clicável do filtro) e o Playwright passa a verificar a leitura integral de Data e Categoria no desktop. Se não passar, a PR continua sem merge e exige nova análise geométrica.

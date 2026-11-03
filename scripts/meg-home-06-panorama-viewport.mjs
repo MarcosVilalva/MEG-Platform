@@ -140,6 +140,10 @@ try{
   if(!safe)failed=true;
   if(name==='desktop-1672'){
    const filterButton=page.getByRole('button',{name:'Mostrar filtros das movimentações'});
+    const headerReadable=await page.locator('.pano-grid').first().locator('thead th').evaluateAll(ths=>{
+     const span=(i)=>ths[i]?.querySelector('.meg-datagrid-sort-button span');
+     return [0,2].every(i=>{const el=span(i);return Boolean(el&&el.clientWidth>0&&el.scrollWidth<=el.clientWidth+1);});
+    });
    const initiallyHidden=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar').evaluate(el=>getComputedStyle(el).display==='none');
    await filterButton.click();
    const filterOpen=await page.locator('.pano-grid').first().locator('.meg-datagrid-toolbar').evaluate(el=>getComputedStyle(el).display!=='none');
@@ -183,8 +187,8 @@ try{
    const incomeFocused=await page.getByText('Últimas receitas').isVisible();
    await page.getByRole('button',{name:'Limpar seleção'}).click();
    const restored=await page.getByText('Últimas movimentações').isVisible();
-   const passed=initiallyHidden&&filterOpen&&filterClosed&&nextCardPreview===itemAfter&&noticeVisible&&noLayoutShift&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&circularLoop&&compactKpis&&incomeFocused&&restored;
-   console.log('INTERACTIONS',JSON.stringify({initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,nextCardPreview,noticeVisible,noLayoutShift,details,circularLoop,compactKpis,geometry,incomeFocused,restored,passed}));
+   const passed=headerReadable&&initiallyHidden&&filterOpen&&filterClosed&&nextCardPreview===itemAfter&&noticeVisible&&noLayoutShift&&itemBefore!==itemAfter&&schemeBefore==='Visa'&&schemeAfter==='Mastercard'&&details&&circularLoop&&compactKpis&&incomeFocused&&restored;
+   console.log('INTERACTIONS',JSON.stringify({headerReadable,initiallyHidden,filterOpen,filterClosed,itemBefore,itemAfter,schemeBefore,schemeAfter,nextCardPreview,noticeVisible,noLayoutShift,details,circularLoop,compactKpis,geometry,incomeFocused,restored,passed}));
    if(!passed)failed=true;
   }
   if(name==='mobile-390'){
