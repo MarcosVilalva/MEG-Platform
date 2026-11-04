@@ -8,6 +8,7 @@
  background:linear-gradient(100deg,rgba(9,183,170,.28),rgba(15,85,91,.34));
  border-color:#14e3c8;color:#eafffa;box-shadow:0 0 1rem #00e5cf28,inset 0 0 1rem #14e3c826;
 }
+.meg-integrated-preview[data-preview-view="launches"] .meg-topbar-new{display:none}
 .meg-integrated-preview[data-preview-view="launches"] .meg-main{min-width:0}
 .meg-l09{--l09-line:rgba(23,215,202,.37);--l09-surface:linear-gradient(150deg,rgba(3,39,45,.92),rgba(2,19,28,.97));display:flex;flex-direction:column;gap:.78rem;min-width:0;width:100%;max-width:134rem;margin:0 auto;padding:.9rem 1.1rem 1.5rem;color:#edfdf9}
 .meg-l09 button,.meg-l09 input,.meg-l09 select{font:inherit}
