@@ -31,3 +31,9 @@
 - Ajustes isolados na Home: o CSS esconde `.meg-topbar-new` somente quando `data-preview-view=home`, preservando o Shell compartilhado e todas as outras telas.
 - A possibilidade de **escolher/reordenar os atalhos nas Configurações** fica registrada como funcionalidade diferencial futura, sem salvar preferências agora nem inventar comportamento. Critérios: opções permitidas pelo roteador e permissões atuais; fallback padrão, responsividade, manutenção de atalhos essenciais e testes de navegação.
 - A ilustração representa direção estética. **Aprovação do desenho não substitui inspeção da implementação**. PR #655 Draft até CI + Render + validação humana da Home renderizada.
+
+
+## 04/11/2026 | Gate responsivo corrigido
+- No primeiro CI da imagem 02 (`41817103792`), o navegador encontrou o cartão principal cortado em **640×900 e 768×1024**; build havia passado, mas o gate visual falhou.
+- Causa localizada: cartão ampliado a 69%/máximo 23rem com aspect ratio 1.72:1 e palco limitado a 12rem no tablet. Corrigida apenas altura mínima do palco de 640px a 1023px, sem escala artificial nem mexer no objeto cartão.
+- Reexecutar 9 viewports, fluxo e comparação; não homologar enquanto o CI não estiver verde.

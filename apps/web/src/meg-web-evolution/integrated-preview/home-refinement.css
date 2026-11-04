@@ -421,6 +421,11 @@
   }
 }
 @media(min-width:640px) and (max-width:1023px){
+  /* No tablet o palco precisa acomodar a proporção real 1.72:1 do
+     cartão ampliado. Evita cortar 11px em cima e embaixo. */
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-stage{
+    min-height:clamp(14.5rem,34vw,16rem);
+  }
   .meg-integrated-preview[data-preview-view="home"] .pano-card-summary{
     grid-template-columns:minmax(0,1.2fr) auto minmax(0,1fr);
   }

@@ -1526,3 +1526,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Futuro, não implementado:** configuração dos botões de Acesso rápido por usuário dentro de Configurações. Não alterar dados persistentes, permissões ou criar preferências até a etapa adequada.
 - Este refinamento visual será submetido a novo CI/comparativo e novo Render. A seleção **Novo Lançamento homologada** permanece intacta. Android/API/finanças/DataGrid sem alterações.
 - O aceite da ilustração confirma a **proposta**, não homologa automaticamente a Home renderizada. PR #655 Draft, sem merge.
+
+
+## 04/11/2026 | Gate responsivo corrigido
+- No primeiro CI da imagem 02 (`41817103792`), o navegador encontrou o cartão principal cortado em **640×900 e 768×1024**; build havia passado, mas o gate visual falhou.
+- Causa localizada: cartão ampliado a 69%/máximo 23rem com aspect ratio 1.72:1 e palco limitado a 12rem no tablet. Corrigida apenas altura mínima do palco de 640px a 1023px, sem escala artificial nem mexer no objeto cartão.
+- Reexecutar 9 viewports, fluxo e comparação; não homologar enquanto o CI não estiver verde.
