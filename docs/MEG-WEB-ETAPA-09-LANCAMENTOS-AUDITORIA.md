@@ -59,6 +59,15 @@ A matriz abaixo usa as linhas auditadas e registradas em `docs/MEG-WEB-AUDITORIA
 - Teste de navegador atualizado para validar estado inicial fechado, abertura independente, recolhimento, seleção, largura integral da grade, ausência de mutação/API, filtros e responsividade em oito resoluções.
 - **Preservação:** não houve alteração de Home, Novo Lançamento, Android, API, camada financeira, nem implementação de writers. PR #656 permanece Draft. Requer CI, inspeção de capturas e aprovação visual explícita.
 
+## 04/11/2026 | Homologação visual formal pelo usuário
+- O usuário aprovou explicitamente o resultado com “linduuu aprovado, caso tenha algo acrescentar”.
+- **Versão visual homologada e congelada:** `61970409b834da102a5b6351d64a1e4776963678`, PR #656, somente Lançamentos. Preview `https://meg-lancamentos-09-pr.onrender.com/fluxo-integrado-08.html?tela=lancamentos&v=61970409b834da102a5b6351d64a1e4776963678`.
+- Critérios aprovados: DataGrid em largura integral e viewport vertical ampliado, 25 registros por página inicialmente, distribuição e detalhes fechados no estado inicial, abertura independente e leitura móvel sem modal.
+- Gate técnico [#41921287908](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41921287908): **success** para o mesmo SHA, com testes financeiros e browser nos oito tamanhos previstos. Preview Render do SHA homologado estava `live`.
+- **Nenhuma modificação visual posterior é autorizada por essa aprovação**. A homologação não implica operações financeiras prontas, acesso a registros reais, produção ou merge.
+- **Próximos itens mandatórios na própria Etapa 09:** leitura autenticada e paginada de `GET /finance/events`; coerência de revisão/snapshot versus PR #646; status/categoria/forma de pagamento somente segundo contratos verificáveis; read model canônico de totais filtrados; testes de regressão financeira e responsividade. Não duplicar regras de saldos no componente.
+- PR continua Draft e sem merge; **Etapa 09 NÃO ENCERRADA**.
+
 ## Checklist
 - [x] Auditoria prévia das autoridades, funcionalidades e conflitos.
 - [x] Branch e PR isoladas; Home/Novo/Android/API/financial-policy intocados.
@@ -67,9 +76,10 @@ A matriz abaixo usa as linhas auditadas e registradas em `docs/MEG-WEB-AUDITORIA
 - [x] Mocks somente do conjunto já existente, declarados como demonstração.
 - [x] Edição, exclusão, baixa e gravação protegidas/desabilitadas.
 - [x] Render próprio criado sem substituir previews homologados.
-- [ ] Resultado final do CI da branch (consultar GitHub Actions; testes podem estar em execução).
-- [ ] Revisão de screenshots em 390/768/1024/1366/1920/2560, alturas compactas e zoom 125%.
-- [ ] Validação visual **explícita** pelo usuário.
+- [x] Gate técnico da versão visual `61970409` concluído com sucesso no run #41921287908.
+- [x] Capturas de CI revisadas e Playwright em oito resoluções (390/768/1024/1366/1920/2560, alturas compactas).
+- [ ] Simulação de zoom 125% (não declarada concluída).
+- [x] Validação visual **explícita** pelo usuário para SHA `61970409` (somente escopo visual).
 - [ ] Contrato operacional de leitura consistente com revision/snapshot.
 - [ ] Totais financeiros canônicos reagindo a todos os filtros.
 - [ ] Operações financeiras protegidas e integrações API.
