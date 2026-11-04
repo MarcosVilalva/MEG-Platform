@@ -145,7 +145,7 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
         <Icon name="chart" width={19}/><span className="meg-l09-toggle-title">Distribuição no período</span><span className="meg-l09-mini">Por quantidade</span><Icon name="chevronDown" width={19} className="meg-l09-panel-chevron"/>
        </button>
       </div>
-      {distributionOpen&&<div id="meg-l09-distribution-content" className="meg-l09-panel-content"><DemoBreakdown rows={shownRows}/></div>}
+      <div id="meg-l09-distribution-content" className="meg-l09-panel-content" hidden={!distributionOpen}>{distributionOpen&&<DemoBreakdown rows={shownRows}/>}</div>
      </section>
      <section ref={detailsPanelRef} className={'meg-l09-panel meg-l09-details '+(detailsOpen?'is-open':'is-collapsed')} aria-label="Lançamento selecionado">
       <div className="meg-l09-panel-title">
@@ -153,7 +153,7 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
         <Icon name="list" width={19}/><span className="meg-l09-toggle-title">Lançamento selecionado</span><Icon name="chevronDown" width={19} className="meg-l09-panel-chevron"/>
        </button>
       </div>
-      {detailsOpen&&<div id="meg-l09-details-content" className="meg-l09-panel-content">
+      <div id="meg-l09-details-content" className="meg-l09-panel-content" hidden={!detailsOpen}>
        <div className="meg-l09-detail-actions"><button type="button" onClick={()=>setShowNotes(value=>!value)} aria-pressed={showNotes}>{showNotes?'Ocultar observações':'Mostrar observações'}</button><button type="button" disabled title="Editar depende de integração financeira protegida" className="meg-l09-edit">Editar</button></div>
        {chosen?<div className="meg-l09-detail-body">
         <div className="meg-l09-selected-head"><span aria-hidden="true" className="meg-l09-detail-illustration"><Icon name="list" width={25}/></span><div><strong>{chosen.description}</strong><span>{chosen.category}</span></div><strong className={chosen.signedAmount>=0?'is-positive':'is-negative'}>{currency(chosen.signedAmount)}</strong></div>
@@ -168,7 +168,7 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
         </dl>
         <p className="meg-l09-hint">Edição, exclusão e baixa indisponíveis na prévia, sem acesso ao writer financeiro.</p>
        </div>:<p className="meg-l09-empty">Nenhum lançamento selecionado.</p>}
-      </div>}
+      </div>
      </section>
     </aside>
     <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos">
