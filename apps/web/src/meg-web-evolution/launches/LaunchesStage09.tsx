@@ -45,7 +45,7 @@ function sourceRows(source:HomeFinancialData):Row[]{
   };
  }).sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
 }
-function DemoBreakdown({rows}:{rows:Row[]}){
+function DemoBreakdown({rows,mode}:{rows:Row[];mode:'preview'|'live'}){
  // Contagem de itens de despesa, não cálculo de gasto nem saldo.
  const segments=useMemo(()=>{
   const counts=new Map<string,number>();
@@ -68,7 +68,7 @@ function DemoBreakdown({rows}:{rows:Row[]}){
     {segments.length?segments.map(s=><div className="meg-l09-legend-item" key={s.category}><span className="meg-l09-swatch" style={{background:s.color}}/><span title={s.category}>{s.category}</span><strong>{s.count}</strong><small>{s.percent.toFixed(0)}%</small></div>):<p>Sem despesas nesta seleção.</p>}
    </div>
   </div>
-  <p className="meg-l09-hint">Distribuição por quantidade de registros, não por valores ou saldo financeiro.</p>
+  <p className="meg-l09-hint">{mode==='preview'?'Prévia: distribuição pela quantidade de registros. Valores financeiros dependem do read model canônico.':'Distribuição por quantidade de registros, não por valores ou saldo financeiro.'}</p>
  </>;
 }
 export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh}:Props){
@@ -153,7 +153,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
         <Icon name="chart" width={19}/><span className="meg-l09-toggle-title">Distribuição no período</span><span className="meg-l09-mini">Por quantidade</span><Icon name="chevronDown" width={19} className="meg-l09-panel-chevron"/>
        </button>
       </div>
-      <div id="meg-l09-distribution-content" className="meg-l09-panel-content" hidden={!distributionOpen}>{distributionOpen&&<DemoBreakdown rows={shownRows}/>}</div>
+      <div id="meg-l09-distribution-content" className="meg-l09-panel-content" hidden={!distributionOpen}>{distributionOpen&&<DemoBreakdown rows={shownRows} mode={mode}/>}</div>
      </section>
      <section ref={detailsPanelRef} className={'meg-l09-panel meg-l09-details '+(detailsOpen?'is-open':'is-collapsed')} aria-label="Lançamento selecionado">
       <div className="meg-l09-panel-title">
@@ -174,7 +174,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
          <div><dt>Status</dt><dd>{shortStatus[chosen.status]||chosen.status}</dd></div>
          {showNotes&&<div><dt>Observações</dt><dd>{chosen.notes||'Sem observações cadastradas'}</dd></div>}
         </dl>
-        <p className="meg-l09-hint">Edição, exclusão e baixa indisponíveis nesta etapa; nenhuma operação financeira é executada.</p>
+        <p className="meg-l09-hint">{mode==='preview'?'Edição, exclusão e baixa indisponíveis na prévia, sem acesso ao writer financeiro.':'Edição, exclusão e baixa indisponíveis nesta etapa; nenhuma operação financeira é executada.'}</p>
        </div>:<p className="meg-l09-empty">Nenhum lançamento selecionado.</p>}
       </div>
      </section>
