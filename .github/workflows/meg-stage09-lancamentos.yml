@@ -18,6 +18,8 @@ jobs:
           cache: npm
       - name: Instalar dependências
         run: npm ci --audit=false
+      - name: Gerar cliente Prisma para executar contratos financeiros
+        run: npm run db:generate
       - name: Testes financeiros existentes e infraestrutura de dados
         run: |
           npm run test:finance
