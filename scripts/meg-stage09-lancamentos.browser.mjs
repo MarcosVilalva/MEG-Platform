@@ -7,6 +7,8 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.PL
 const results=[];let errors=0;
 for(const [width,height] of sizes){
  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
+ page.setDefaultTimeout(8000);
+ console.log('Verificando viewport '+width+'x'+height);
  const calls=[];page.on('request',r=>{if(/\/api\//.test(new URL(r.url()).pathname))calls.push(r.url())});
  const issues=[];
  try{
@@ -31,9 +33,12 @@ for(const [width,height] of sizes){
   const search=page.getByPlaceholder('Buscar lançamentos...');
   await search.fill('Supermercado');
   const n=await page.locator('.meg-l09-grid-summary').textContent();
-  if(!/1 de 11 registros/.test(n||''))issues.push('filtro de busca nao funcionou: '+n);
+  // A busca inclui descrição, categoria, conta e forma de pagamento.
+  // Os dois mercados da fixture compartilham a categoria Supermercado.
+  if(!/2 de 11 registros/.test(n||''))issues.push('filtro de busca nao funcionou: '+n);
   await search.fill('');
-  await page.getByRole('button',{name:'Detalhes de Supermercado'}).first().click();
+  const detailButton=page.locator('.meg-datagrid-card-row:visible .meg-l09-open-row:visible, .meg-datagrid-table:visible .meg-l09-open-row:visible').filter({hasText:'Supermercado'}).first();
+  await detailButton.click({timeout:8000});
   if(width<640){if(!(await page.locator('.meg-l09-details.is-mobile-open').isVisible()))issues.push('detalhe mobile nao abriu');
    await page.getByRole('button',{name:'Fechar detalhes'}).last().click();}
   await page.screenshot({path:resolve(out,'lancamentos-interacao-'+width+'x'+height+'.png'),fullPage:true});
