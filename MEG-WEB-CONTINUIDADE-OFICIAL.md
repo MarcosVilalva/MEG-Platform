@@ -1562,3 +1562,10 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Responsividade real a verificar**: 320, 390, 640, 768, 1024, 1366, 1920 e 2560px, com alturas compactas e simulação de zoom 125%; áreas de toque, scroll horizontal, títulos/cabeçalhos, gráfico e diferença antes/depois. Isso é proposta de implementação, não aprovação visual.
 - **Notificação da prévia**: o aviso após clicar Despesa pode sobrepor modal, mas a escolha Novo Lançamento foi homologada; tratar mudança da experiência do modal separadamente em etapa autorizada, preservando a tela aprovada.
 - Sem mudanças em autenticação, Shell compartilhado, DataGrid, API, banco, Android ou design homologado do Novo Lançamento. PR #655 Draft e merge bloqueado até gates e aprovação visual da Home.
+
+
+## 04/11/2026 | Testes adicionais para a revisão de responsividade
+- Redimensionamentos do gráfico com Canvas presente e altura suficiente; geometria e largura das tabelas; títulos Vencimento/Situação não devem ser truncados no modo tabela quando visíveis.
+- Cenários de janela com altura reduzida 390×667, 1366×600 e 1920×650; simulação de zoom de layout 125% em 1366×768 e 1920×1080. Zoom é cenário de CSS, não substitui teste manual com Chrome/Windows.
+- Larguras iniciais do DataGrid **somente na Home** calibradas para 669px e 660px no desktop, sem alterar as colunas nem o DataGrid central. Continua possível arrastar largura e usar os controles próprios da grade.
+- Sem mudança de fórmulas, filtros, totais, status e operações financeiras. Comparação real de capturas permanece obrigatória.

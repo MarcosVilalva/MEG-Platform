@@ -41,6 +41,15 @@ async function measure(page){
     titleCount:root?.querySelectorAll('h1').length||0,
     kpis:all('.pano-stat').length,
     statRects:all('.pano-stat').map(rect),
+    chart:one('.pano-chart')?rect(one('.pano-chart')):null,
+    chartCanvasPresent:!!one('.pano-chart canvas'),
+    benefitPanel:one('.pano-benefits')?rect(one('.pano-benefits')):null,
+    tablePanels:all('.pano-tables>.pano-grid').map(rect),
+    tableScroll:all('.pano-grid .meg-datagrid__viewport').map(x=>({
+      width:x.clientWidth,scrollWidth:x.scrollWidth
+    })),
+    tableHeadings:all('.pano-grid .meg-datagrid-table th .meg-datagrid-sort-button>span:first-child')
+      .map(x=>({label:x.textContent?.trim(),width:x.clientWidth,scroll:x.scrollWidth})),
     grids:all('.pano-grid .meg-datagrid').length,
     actions:buttons.map(b=>({
       title:b.querySelector('strong')?.textContent?.trim(),
@@ -94,6 +103,20 @@ try {
   if(changed.mainScrollWidth>changed.mainWidth+2)problems.push('rolagem horizontal indevida na Home');
   if(changed.titleCount!==1||changed.kpis!==4||changed.grids!==2)
     problems.push('estrutura obrigatoria: 1 titulo, 4 KPIs, 2 DataGrids');
+  if(!changed.chart || changed.chart.height<170 || !changed.chartCanvasPresent)
+    problems.push('gráfico financeiro ilegível ou ausente');
+  if(!changed.benefitPanel || changed.benefitPanel.height<150)
+    problems.push('painel de benefícios comprimido');
+  if(width>=1024 && changed.tablePanels.length===2){
+    const [a,b]=changed.tablePanels;
+    if(Math.abs(a.top-b.top)<3 && Math.min(a.width,b.width)<680)
+      problems.push('tabelas lado a lado sem largura para cabeçalhos');
+    for(const heading of changed.tableHeadings.filter(x=>['Vencimento','Situação'].includes(x.label))){
+      if(heading.scroll>heading.width+2)
+        problems.push('cabeçalho '+heading.label+' ainda truncado');
+    }
+  }
+
   if(width>=640 && changed.statRects.length===4){
     const [a,b,c,d]=changed.statRects;
     if(Math.abs(a.top-b.top)>3||Math.abs(c.top-d.top)>3||c.top<a.bottom+3)
@@ -158,6 +181,30 @@ try {
   if(problems.length){errors++;console.error('Home '+width+'x'+height+': '+problems.join(', '));}
   await page.close();
  }
+
+ // Verificações complementares: altura reduzida e zoom visual (sem alterar
+ // dados ou imprimir uma falsa aprovação da experiência de navegador).
+ for(const [width,height,zoom] of [
+   [390,667,1],[1366,600,1],[1920,650,1],[1366,768,1.25],[1920,1080,1.25]
+ ]){
+   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
+   await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
+   await page.locator('.pano-actions').waitFor();
+   if(zoom!==1)await page.evaluate(z=>{document.documentElement.style.zoom=String(z);},zoom);
+   const m=await measure(page);
+   const problems=[];
+   if(m.documentWidth>width+2)problems.push('rolagem horizontal com altura/zoom');
+   if(m.actions.length!==4)problems.push('atalhos desaparecem com altura/zoom');
+   if(!m.topPlusVisible)problems.push('Novo lançamento do topo não visível');
+   if(!m.chart||m.chart.height<165)problems.push('gráfico comprimido com altura/zoom');
+   if(m.cardStage&&m.activeCard&&m.activeCard.bottom>m.cardStage.bottom+3)
+     problems.push('cartão cortado com altura/zoom');
+   results.push({screen:'home-altura-ou-zoom',width,height,zoom,metrics:m,problems});
+   if(problems.length){errors++;console.error('Adicional '+width+'x'+height+' / '+zoom+': '+problems.join(', '));}
+   await page.screenshot({path:resolve(out,'home-altura-zoom-'+width+'x'+height+'-z'+Math.round(zoom*100)+'.png'),fullPage:true});
+   await page.close();
+ }
+
  const page=await browser.newPage({viewport:{width:1366,height:768}});
  await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
  await page.locator('.pano-actions').waitFor();
