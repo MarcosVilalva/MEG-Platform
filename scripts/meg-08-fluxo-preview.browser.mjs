@@ -87,6 +87,13 @@ try {
     const benefitVisual=await benefit.locator('.meg-choice__option-photo').evaluate(el=>getComputedStyle(el).backgroundImage);
     if(!benefitVisual.includes('benefit-generic-groceries.webp'))
       problems.push('arte generica de compras nao carregada no seletor');
+    const artwork=await page.evaluate(async ()=>{
+      const img=new Image();img.src='/meg-assets/benefit-generic-groceries.webp';
+      try{await img.decode();return {width:img.naturalWidth,height:img.naturalHeight};}
+      catch{return null;}
+    });
+    if(!artwork || artwork.width!==560 || artwork.height!==115)
+      problems.push('WebP do beneficio ausente, invalido ou com dimensoes inesperadas');
     if(/verocard|ticket|alelo|sodexo/i.test(benefitVisual))
       problems.push('imagem do seletor generico vinculada a operadora');
     if (requests.length) problems.push('requisição indevida à API: '+requests.join(','));
