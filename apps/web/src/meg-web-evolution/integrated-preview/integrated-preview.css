@@ -1,0 +1,134 @@
+/* Entrada isolada de composição React do MEG Web Evolution.
+   Apenas layout global do preview e acabamento da Home PR #653.
+   Estilos da escolha estão em choice-refinement.css, sem patch em cascata. */
+*{box-sizing:border-box}
+html,body,#meg-fluxo-integrado-root{margin:0;width:100%;min-width:0;min-height:100%}
+body{background:#00151b;color:#ebfffb;overflow-x:clip}
+.meg-integrated-preview{min-width:0;min-height:100dvh}
+.meg-integrated-preview__sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.meg-integrated-preview__demo-login{
+  position:fixed;z-index:300;right:max(.65rem,env(safe-area-inset-right));
+  bottom:max(.65rem,env(safe-area-inset-bottom));max-width:min(23rem,calc(100vw - 1.3rem));
+  min-height:3rem;padding:.65rem 1.1rem;border:1px solid #24faeb;border-radius:.75rem;
+  background:#032a32;color:#e6fffa;font-weight:750;box-shadow:0 0 1.5rem #00e8d83b;cursor:pointer
+}
+.meg-integrated-preview__demo-login:focus-visible,
+.meg-integrated-preview__restart:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.meg-integrated-preview__notice{
+ position:fixed;z-index:400;right:1rem;bottom:1rem;display:flex;align-items:center;gap:1rem;
+ max-width:min(32rem,calc(100vw - 2rem));padding:.7rem .8rem;border:1px solid #22e9d8;
+ border-radius:.7rem;color:#effffb;background:#052831;box-shadow:0 0 1rem #001319
+}
+.meg-integrated-preview__notice button{
+ flex:0 0 2.4rem;min-height:2.4rem;border:1px solid #0cb0a6;border-radius:.5rem;
+ background:transparent;color:white;cursor:pointer
+}
+.meg-integrated-preview__restart{
+ position:fixed;z-index:15;bottom:1rem;left:1rem;min-height:3rem;
+ padding:.55rem .85rem;border:1px solid #168c88;border-radius:.65rem;
+ background:#02232b;color:white;cursor:pointer
+}
+@media(max-width:1023px){.meg-integrated-preview__restart{display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
+
+/* 03/11 · Refino isolado das telas reais: a PR #653 fornece a Home mais
+   recente; esta camada compõe efeitos de palco sem alterar valores,
+   componente de cartão, grids, estados, navegação ou tokens globais. */
+.meg-integrated-preview .pano-root {
+  background:
+    radial-gradient(ellipse at 82% 5%, rgba(8, 133, 138, .16), transparent 48%),
+    linear-gradient(180deg,#03191e,#021318 96%);
+}
+.meg-integrated-preview .pano-panel {
+  border-color: rgba(57,188,177,.42);
+  box-shadow: inset 0 1px 0 rgba(179,255,243,.07),
+    0 8px 25px rgba(0,13,19,.37);
+}
+.meg-integrated-preview .pano-hero {
+  border-color: rgba(68,235,220,.66);
+  box-shadow: inset 0 0 22px rgba(8,225,204,.10),
+    0 0 22px rgba(4,218,209,.13),0 10px 29px rgba(0,8,15,.37);
+}
+.meg-integrated-preview .pano-hero::before {
+  background:
+    linear-gradient(90deg,rgba(0,19,27,.94) 0%,rgba(0,28,36,.81) 54%,rgba(0,51,61,.31) 100%),
+    url('/meg-assets/hero.webp') center/cover no-repeat;
+}
+.meg-integrated-preview .pano-hero::after {
+  background:
+    radial-gradient(ellipse at 88% -8%,rgba(15,244,235,.26),transparent 58%),
+    linear-gradient(0deg,rgba(1,18,28,.36),transparent 52%);
+}
+.meg-integrated-preview .pano-cards {
+  border-color:rgba(41,231,214,.63);
+  background:radial-gradient(ellipse at 56% 9%,rgba(14,152,170,.15),transparent 66%),
+    linear-gradient(140deg,#06343c,#021c29 85%);
+  box-shadow:inset 0 1px rgba(212,255,247,.15),
+    0 0 27px rgba(19,221,208,.16),0 12px 30px rgba(0,8,17,.49);
+}
+.meg-integrated-preview .pano-card-stage {
+  border:1px solid rgba(68,218,209,.23);
+  background:radial-gradient(ellipse at 50% 78%,rgba(9,182,185,.23),transparent 64%);
+}
+.meg-integrated-preview .pano-card-stage::after {
+  background:radial-gradient(ellipse at 50% 73%,rgba(23,238,211,.24),transparent 62%);
+}
+.meg-integrated-preview .pano-credit-card {
+  border-color:rgba(195,255,249,.83);
+  box-shadow:0 15px 35px rgba(0,9,19,.92),
+    0 0 29px rgba(24,238,213,.31),
+    inset 0 1px 0 rgba(255,255,255,.4);
+}
+.meg-integrated-preview .pano-credit-card::after {
+  background:
+    linear-gradient(125deg,rgba(232,255,254,.19),transparent 31%,
+      rgba(196,255,253,.10) 47%,transparent 64%),
+    linear-gradient(0deg,rgba(0,16,29,.67),transparent 55%);
+}
+.meg-integrated-preview .pano-credit-card:hover,
+.meg-integrated-preview .pano-credit-card:focus-visible {
+  border-color:#d0fff8;
+  box-shadow:0 15px 35px rgba(0,8,20,.94),0 0 35px rgba(37,244,218,.39);
+}
+.meg-integrated-preview .pano-card-peek {
+  filter:brightness(.8);
+  border-color:rgba(128,219,229,.55);
+}
+.meg-integrated-preview .pano-actions {
+  background:
+    radial-gradient(ellipse at 10% -10%,rgba(12,196,184,.12),transparent 62%),
+    linear-gradient(150deg,#07363d,#04232c 82%);
+}
+.meg-integrated-preview .pano-action-list {
+  gap:.3rem;
+  margin-top:.37rem;
+}
+.meg-integrated-preview .pano-action {
+  min-height:3.45rem;
+  gap:.13rem;
+  padding:.26rem .22rem;
+  border-color:rgba(62,188,176,.53);
+  background:linear-gradient(156deg,#0a4147,#052d35);
+  box-shadow:inset 0 1px 0 rgba(197,255,250,.09),0 3px 9px rgba(0,18,25,.29);
+  transition:border-color .16s,background .16s,box-shadow .16s;
+}
+.meg-integrated-preview .pano-action-icon {
+  flex-basis:1.52rem;width:1.52rem;height:1.52rem;
+  border-radius:.4rem;
+}
+.meg-integrated-preview .pano-action strong {
+  font-size:clamp(.7rem,.8vw,.78rem);
+  line-height:1.2;
+}
+.meg-integrated-preview .pano-action:hover,
+.meg-integrated-preview .pano-action:focus-visible {
+  border-color:rgba(137,255,236,.95);
+  background:linear-gradient(156deg,#0c535a,#06343e);
+  box-shadow:0 0 14px rgba(32,227,213,.16),0 5px 15px rgba(0,16,23,.44);
+}
+.meg-integrated-preview .pano-benefit-card {
+  box-shadow:inset 0 1px rgba(171,255,240,.12),0 0 15px rgba(9,165,135,.13);
+}
+.meg-integrated-preview .pano-flow {
+  box-shadow:inset 0 1px rgba(192,255,245,.06),0 8px 20px rgba(0,9,18,.34);
+}

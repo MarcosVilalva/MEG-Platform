@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 
-export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload';
+export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload'|'chevronLeft'|'chevronRight'|'filter'|'activity'|'calendarClock'|'basket'|'medical'|'house'|'car'|'tag';
 const shapes:Record<HomeIconName,ReactNode>={
  wallet:<><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18M16 14h2"/></>,
  eye:<><path d="M2 12s3.7-6.5 10-6.5S22 12 22 12s-3.7 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.7"/></>,
@@ -22,7 +22,17 @@ const shapes:Record<HomeIconName,ReactNode>={
  shopping:<><path d="M4 9h16l-1.5 12h-13L4 9ZM9 10V6a3 3 0 0 1 6 0v4"/></>,
  layers:<><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></>,
  alert:<><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></>,
- reload:<><path d="M20 11a8 8 0 1 0-2 5.5M20 4v7h-7"/></>
+ reload:<><path d="M20 11a8 8 0 1 0-2 5.5M20 4v7h-7"/></>,
+ chevronLeft:<><path d="m14.5 5.5-6.5 6.5 6.5 6.5"/><path d="M9 12h10" opacity=".5"/></>,
+ chevronRight:<><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/><path d="M15 12H5" opacity=".5"/></>,
+ filter:<><path d="M4 5.5h16l-6.3 7.1v5.5l-3.4 1.5v-7L4 5.5Z"/><path d="M8 4h8" opacity=".55"/></>,
+ activity:<><path d="M3 6.5h7M3 12h7M3 17.5h7"/><rect x="12" y="3.5" width="9" height="17" rx="2"/><path d="M14.3 12h1.2l1.2-3 1.1 5 1-2h.6"/></>,
+ calendarClock:<><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M7.5 2.5v4M16.5 2.5v4M3 9h18"/><circle cx="14.5" cy="15" r="3.25"/><path d="M14.5 13.25V15l1.25.85"/></>,
+ basket:<><path d="M3 10h18l-2 10H5L3 10Z"/><path d="m8 10 4-7 4 7M9 13v4M15 13v4"/></>,
+ medical:<><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z"/></>,
+ house:<><path d="m3 11 9-8 9 8v9h-7v-6h-4v6H3v-9Z"/></>,
+ car:<><rect x="3" y="9" width="18" height="10" rx="2"/><path d="m5 9 2-5h10l2 5M7 19v2M17 19v2M6 13h2M16 13h2"/></>,
+ tag:<><path d="M3 4h10l8 8-9 9-9-9V4Z"/><circle cx="8" cy="9" r="1"/></>
 };
 export function HomeGlyph({name,size=20,className=''}:{name:HomeIconName;size?:number;className?:string}){
  return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{shapes[name]}</svg>;

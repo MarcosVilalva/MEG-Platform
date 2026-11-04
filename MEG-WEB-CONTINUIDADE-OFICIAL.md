@@ -1417,3 +1417,96 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Foundation anterior falhou em testes de toolbar e screenshots do DataGrid compartilhado. **Não atualizar snapshots automaticamente nem tocar no DataGrid em uma etapa da Home.**
 - Auditoria operacional e roteiro de filtros seguros para autodeploy: `docs/MEG-RENDER-PUBLICACAO-AUTOMATICA-AUDITORIA-20261030.md`. Conector Render não oferece update de filtros em serviços já existentes. Nenhuma alteração de produção no Render, API ou banco.
 - Home 06 sem homologação, PR Draft e sem merge. Próximos gates requerem conclusão e inspeção visual de screenshots gerados pelo novo SHA.
+
+
+## Etapa 08 — Prévia integrada de componentes reais (03/11/2026)
+
+- Solicitação: visualizar a sequência Carregamento → Login → Carregamento inicial → Home → Novo Lançamento, utilizando as telas **realmente implementadas**, não uma montagem de imagens.
+- PR isolada: **#654** (`preview/08-fluxo-componentes-reais-20261103`), base na **PR #651**. Permanece **Draft, sem merge e sem publicação comprovada**.
+- Fontes: autenticação/Loading da PR #649, Home e AppShell pré-confirmados na PR #651, seletor da PR #648 com arquivos e WebPs originais copiados por SHA. A PR #653 continua experimento, sem aprovação.
+- Entrada própria: `apps/web/fluxo-integrado-08.html`; configuração `apps/web/vite.fluxo-integrado-08.config.ts`; composição em `apps/web/src/meg-web-evolution/integrated-preview/`.
+- O Login permanece `previewOnly`, carregamento é ilustrativo e a Home utiliza `homePreviewFixture`. Não há autenticação real, API, mutação, gravação ou migração de dados.
+- Apenas o seletor do Novo Lançamento é apresentado; formulário protegido de Despesa/Receita, Benefício e Transferência não são ativados nesta prévia.
+- Android, API financeira, banco, Shell, DataGrid e componentes já existentes foram mantidos sem alterações.
+- **Pendências:** build, testes de responsividade/fluxo, preview publicado sem cache, aprovação visual explícita e revisão de integração operacional antes de qualquer merge.
+- Documentação: `docs/MEG-08-PREVIEW-COMPONENTES-REAIS.md`.
+
+
+## 03/11/2026 | Refino da integração a pedido do usuário
+- A Home de código foi atualizada pelo conteúdo da PR **#653** (HEAD \`814c128\`), incluindo correção de categoria/ícone, melhor leitura, cartões e ajustes de simetria. A PR #653 é a candidata mais recente, **não** uma homologação final.
+- Três arquivos copiados por SHA da PR #653: \`HomeDashboard.tsx\`, \`HomeGlyph.tsx\`, \`home-dashboard.css\`, apenas para a branch isolada da prévia.
+- Acabamento visual no CSS **escopado da prévia**: luz teal suave, imagem fotográfica local do Novo Lançamento no saldo, cartão principal em destaque, ações rápidas menores e próximas, mantendo a grade 3+2 e alvos de clique.
+- Novo Lançamento: tipografia, alinhamento das colunas, margens e texto dos quatro cards refinados somente na prévia; código/estilos e imagens da PR #648 continuam íntegros.
+- Verificar build, nove resoluções, integridade da Home, responsividade/legibilidade, navegação e ausência de gravação/API em CI. Publicar no serviço estático isolado Render **somente após o resultado técnico**.
+- Status de aprovação: **nenhuma tela nova validada por esta integração**. Home #651 segue pré-confirmada, Home #653 e esta composição continuam candidatas.
+
+## 03/11/2026 | PR #654 | Revisão integrada do candidato visual
+- A última Home da PR #653 foi copiada para a prévia #654, sem tocar na PR #651 pré-confirmada nem na #653 original. Arquivos copiados por SHA: HomeDashboard.tsx, HomeGlyph.tsx e home-dashboard.css.
+- Refinos somente na prévia: imagem local hero.webp no saldo, glows moderados no saldo e cartões, cinco ações rápidas menores em disposição desktop 3+2. Nenhuma alteração financeira, API, autenticação, Android, Shell ou DataGrid.
+- Novo Lançamento: proporção/textos refinados; tablet 640–1023 empilhado, desktop em duas colunas, mobile vertical.
+- Workflow #41741985134: SUCCESS, 19 resultados, Home e Novo Lançamento em nove resoluções, fluxo demonstrativo Login → Carregamento → Home → Novo → Voltar, sem API nem rolagem horizontal.
+- Inspeção de screenshots revelou botão demonstrativo Rever sequência sobre o cartão mobile. Ajuste isolado: ocultar esse controle não funcional em larguras menores que 1024px. Logout real continua preservado.
+- Render publicou a revisão anterior d41712fc6658e6cd1f5faa1e536e1062ad914144, deploy dep-dbl75e5ckfvc73cl1ekg LIVE. Revisão atual requer checar novo SHA no CI/Render.
+- Status: PR #654 Draft, sem merge. Home #653 ainda candidata; nenhuma homologação visual nova.
+
+
+## 04/11/2026 | Continuidade visual isolada, Etapa 08 Novo Lançamento
+- Usuário autorizou seguir refinamento tela a tela, iniciando no seletor de Novo Lançamento; Home refinada vem depois, Loading/Login/Carregamento inicial só após validação de cada tela.
+- Seleção preserva as decisões do projeto e os tipos ativos e indisponíveis do componente canônico PR #648, sem operações financeiras.
+- Refino estrutural local ao preview PR #654: stylesheet exclusivo `choice-refinement.css`, ícones SVG de ação e footer, crop da imagem com foco inferior e cartões sem distorção. Elimina overrides de escolha acumulados em `integrated-preview.css`.
+- Testes de captura e publicação Render serão obrigatórios antes de envio para validação humana. PR #654 Draft, sem merge, Home original e Android inalterados.
+
+
+- Revisão de QA (04/11/2026): teste de geometria de alinhamento, crop cover e hero com foco inferior; cenário de alturas compactas; smoke de autenticação em desktop/mobile, sem API. Tipografia auxiliar do rodapé aumentada. Prévia PR #654 ainda Draft e não homologada.
+
+
+## 04/11/2026 | Ajuste localizado das extremidades das imagens
+- Print do usuário mostrou nas quatro opções um limite vertical escuro entre a parte fotográfica e a região de texto, além de recorte marcado na borda esquerda.
+- Correção restrita ao CSS de `choice-refinement.css`: máscara progressiva (inclusive borda inicial e final) nos WebPs de Despesa, Receita, Transferência e Benefício, com cobertura `cover` preservada e escurecimento gradual atrás de texto e chips. Variação equivalente no mobile.
+- Mantidos posicionamento central dos ícones e grade estruturada, textos, estados disponíveis/indisponíveis, Home, fluxo real, API e Android. Nenhuma imagem oficial foi editada ou substituída.
+- Incluída verificação automatizada da máscara das quatro opções. Requer screenshot/CI/Render, e aprovação visual explícita para validar.
+
+
+## 04/11/2026 | Correção específica, faixa preta interna dos quatro banners
+- O usuário ampliou a imagem e apontou a faixa vertical interna, logo após a borda arredondada colorida, antes de começar a foto. Revisão anterior interpretou erroneamente como transição em sentido geral.
+- Causa efetiva no CSS de preview: `mask-image: linear-gradient(... transparent 0%, #000 2.5%, ...)`, que apagava a extremidade esquerda da imagem e expunha o fundo preto em uma tira perceptível.
+- Correção: a imagem agora inicia opaca desde `0%` e permanece assim até `30%`; a dissolução é preservada apenas em direção à região do texto. `overflow:hidden` e `border-radius` nativos dos quatro cards mantêm o recorte exato na moldura. A fotografia não sofre distorção.
+- Nova verificação automatizada proíbe início transparente do `mask-image`. Sem mudança no hero, Home, fontes visuais oficiais, funcionalidades financeiras, API, Android ou componentes de outras etapas.
+- A tela permanece candidata à validação visual humana; PR #654 em Draft sem merge.
+
+
+## 04/11/2026 | Correção final da moldura duplicada embutida nas WebPs
+- A captura após retirar o início transparente revelou **dois contornos**: borda CSS do card e borda interna já rasterizada no asset oficial. O problema é geométrico, não uma emenda a resolver com mais sombras.
+- Ajuste apenas nos fundos fotográficos, com pequena sangria `inset:-10px -15px` nos banners e `-6px -9px` no hero; os cantos arredondados do contêiner HTML permanecem como única moldura visível. Não altera arte-fonte, proporção da imagem ou posição de textos e ícones.
+- Playwright adiciona verificação da sangria e capturas recortadas dos quatro banners em desktop/mobile. Inspeção manual deve confirmar que o contorno interno sumiu; CI não equivale a validação visual humana.
+
+
+## 04/11/2026 | DECISÃO FUNCIONAL APROVADA: Verocard = Cartão benefício pré-pago
+- Aprovada explicitamente pelo usuário a apresentação do Verocard como **cartão alimentação pré-pago**, inclusive futuro carrossel de Cartões, sem modelá-lo como cartão de crédito.
+- **Preservar** o item 12 das Regras Consolidadas: Alimentação = Conta Benefício + Verocard + Pago, com vínculos automáticos e sem interferência no saldo monetário. Escrita exclusiva de benefício em `apps/api/src/modules/finance/benefit-event-mutation.ts`.
+- Recarga aumenta saldo de benefício; despesa reduz com proteção de saldo. Não gerar fatura/limite/parcelas, nem salário/recarga duplicados. Carrossel somente projeção de leitura da mesma fonte.
+- **Nesta etapa:** ajustar apenas a comunicação visual do seletor de Novo Lançamento em PR #654, mantendo Benefício desabilitado na prévia. Implementações reais de Cartões/Home/Despesas/Benefícios ficam pendentes de suas respectivas etapas e gates.
+- Registro detalhado: `docs/MEG-WEB-VEROCARD-PRE-PAGO-DECISAO-20261104.md`.
+- Imagem local de Verocard é uma representação ilustrativa, não um cartão físico verificado. Aprovação visual e eventual substituição do asset oficial permanecem pendentes. PR #654 Draft, Android intacto.
+
+## QA de largura mínima (04/11/2026)
+- A rodada `41801006263` compilou, mas o Playwright encontrou **1 falha em 320×640**: o novo texto/chips de Verocard faziam três chips quebrar para duas linhas, deslocando o centro do cadeado em 3,95px. Não foi erro de regra financeira.
+- Ajuste estrutural e localizado ao card Benefício em mobile: três chips compactos em uma linha, mantendo informações e cadeado alinhado. Não ocultar controles nem reduzir área de toque do card.
+- Repete CI/Render no novo commit; revisão anterior com falha não deve ser considerada tecnicamente aprovada.
+
+## 04/11/2026 | CORREÇÃO DE ESCOPO APROVADA: Benefício genérico, operadora por cadastro
+- Usuário esclareceu que o MEG é produto de uso geral: Verocard é exemplo particular; outra pessoa poderá ter Ticket, Alelo, VR ou outro emissor. **O card genérico Benefício no Novo Lançamento NÃO pode mostrar marca/operadora fixa**.
+- A imagem específica do cartão pertence ao **cadastro real do cartão e ao carrossel de Cartões**, com identificação/asset conforme a instância cadastrada. Sem marca cadastrada ou asset confirmado, usar representação genérica.
+- Nova referência: `docs/MEG-WEB-BENEFICIOS-MULTIOPERADORA-DECISAO-20261104.md`. Ela **complementa e corrige o escopo** da decisão anterior de Verocard pré-pago: regra particular ainda válida, mas não universal.
+- Prévia PR #654: subtítulo genérico, ilustração de cesta/mercado + cartão sem marca; mantém Saldo/Recarga/Consumo, Benefício indisponível, demais cards e o resto da Home intactos. Asset `apps/web/public/meg-assets/benefit-generic-groceries.webp`.
+- **Lacuna técnica identificada:** domínio atual exige Verocard no `financial-policy.ts` e no writer `benefit-event-mutation.ts`. Suporte operacional multioperadora **ainda não existe**; não alterar writer, nem inferir suporte universal a partir da revisão visual.
+- Testes, deploy Render e validação visual humana continuam exigidos antes de merge. Android congelado.
+
+## 04/11/2026 | VALIDAÇÃO VISUAL EXPLÍCITA — Seletor Novo Lançamento (Etapa 08)
+
+- Usuário declarou **“Excelente, por mim validado”** após a prévia Render da tela com Benefício genérico (cesta de compras/alimentação, sem marca fixa) e carrossel/cartão específico reservado ao cadastro futuro.
+- **Escopo aprovado:** composição e apresentação visual da tela **Novo Lançamento — seleção dos quatro tipos** em desktop e mobile, incluindo imagens, chips, tipografia, ícones, alinhamentos, responsividade e card **Benefício genérico**.
+- **Revisão visual aprovada:** commit `28a2bd0f3b550c87958e78805f0ca1739e8adf62`, CI `41804115634` (SUCCESS), Render `dep-dblf925bedkc73a8abjg` (LIVE no mesmo SHA). Link histórico sem cache: https://meg-fluxo-08-integrado-pr654.onrender.com/fluxo-integrado-08.html?tela=novo&v=28a2bd0f3b550c87958e78805f0ca1739e8adf62
+- **Congelamento visual:** não alterar esta tela por iniciativa própria. Sugestões em outras telas podem ser propostas como estudos, sem mudar a tela aprovada, os assets oficiais nem seu enquadramento.
+- **Aprovação NÃO abrange:** formulário financeiro operacional, gravação na API, habilitação de Transferência/Benefício, Home, carregamento/login/cadastro/recuperação, aplicação global da identidade visual, carrossel de Cartões, regra multioperadora da API, merge ou produção.
+- PR #654 permanece em Draft, sem merge. Android congelado; regras de negócio e autoridade financeira seguem intactas. Avançar apenas pela etapa/tela autorizada em chat próprio. Próximas propostas visuais para Home/autenticação são estudos pendentes de aprovação, não substituem os prints oficiais.

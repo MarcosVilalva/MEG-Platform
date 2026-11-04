@@ -62,6 +62,14 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   cards:adapted.cards||[]
  };
 }
+// Apenas iconografia da categoria existente. Sem classificação financeira ou mutação de dados.
+function categoryGlyph(label:string):HomeIconName{
+ const normalized=label.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+ const known:Record<string,HomeIconName>={
+  supermercado:'basket',receitas:'income',saude:'medical',casa:'house',transporte:'car',combustivel:'car'
+ };
+ return known[normalized]||'tag';
+}
 function PanelTitle({icon,title,meta}:{icon:HomeIconName;title:string;meta?:string}){
  return <div className="pano-panel-title"><h2><HomeGlyph name={icon} size={19}/>{title}</h2>{meta&&<span>{meta}</span>}</div>;
 }
@@ -141,7 +149,11 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'date',label:'Data',type:'date',width:98,sortable:true,filterable:true},
   {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true},
-  {key:'category',label:'Categoria',type:'text',width:112,sortable:true,filterable:true},
+  {key:'category',label:'Categoria',type:'text',width:146,sortable:true,filterable:true,
+    render:v=>{const label=String(v??'Sem categoria');return <span className="pano-category" title={label}>
+      <HomeGlyph name={categoryGlyph(label)} size={15} className="pano-category-svg"/>
+      <span className="pano-category-text">{label}</span>
+     </span>;}},
   {key:'account',label:'Conta',type:'text',width:112,sortable:true,filterable:true},
   {key:'value',label:'Valor',type:'currency',width:114,sortable:true,filterable:true,
    render:(v,row)=><strong className={Number(row.amount)<0?'pano-negative':'pano-positive'}>{Number(row.amount)<0?'− ':'+ '}{format(Number(v),hidden)}</strong>}
@@ -175,7 +187,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
    <div className="pano-balance" aria-label="Saldo disponível monetário">
-    <div className="pano-balance-top"><span>Saldo disponível <span className="pano-balance-scope">CONTAS MONETÁRIAS</span></span><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={19}/></button></div>
+    <div className="pano-balance-top"><h1>Saldo disponível <span className="pano-balance-scope">CONTAS MONETÁRIAS</span></h1><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={19}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
     <div className="pano-balance-bottom"><span>{data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
    </div>
@@ -217,9 +229,11 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
         <span className="pano-card-peek-brand"><CardBrandMark brand={nextCard.brand}/></span>
         <span className="pano-card-peek-name">{nextCard.name}</span>
        </button>}
+       <button type="button" className="pano-card-control is-prev" aria-label="Cartão anterior" disabled={cardCount<2} onClick={()=>stepCard(-1)}><HomeGlyph name="chevronLeft" size={23}/></button>
+       <button type="button" className="pano-card-control is-next" aria-label="Próximo cartão" disabled={cardCount<2} onClick={()=>stepCard(1)}><HomeGlyph name="chevronRight" size={23}/></button>
       </div>
       <div className="pano-card-amount"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></div>
-      <div className="pano-card-nav"><button type="button" aria-label="Cartão anterior" disabled={cardCount<2} onClick={()=>stepCard(-1)}><HomeGlyph name="arrow" size={19}/></button><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===activeCardIndex?'is-current':''} onClick={()=>showCard(i)} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===activeCardIndex?'true':undefined}/>)}</span><button type="button" aria-label="Próximo cartão" disabled={cardCount<2} onClick={()=>stepCard(1)}><HomeGlyph name="arrow" size={19}/></button></div>
+      <div className="pano-card-nav"><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===activeCardIndex?'is-current':''} onClick={()=>showCard(i)} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===activeCardIndex?'true':undefined}/>)}</span></div>
       {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
        {selectedCard.availableLimit!=null&&<span>Limite disponível <Money hidden={hidden} value={selectedCard.availableLimit}/></span>}
        {selectedCard.creditLimit!=null&&<span>Limite cadastrado <Money hidden={hidden} value={selectedCard.creditLimit}/></span>}
@@ -250,21 +264,21 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    <section className="pano-panel pano-actions">
     <PanelTitle icon="sparkle" title="Ações rápidas"/>
     <div className="pano-action-list">{quick.map(a=><button className={'pano-action is-'+a.kind} key={a.title} type="button" onClick={()=>move(a.action)}>
-      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={22}/></span><strong>{a.title}</strong><small>{a.desc}</small>
+      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={17}/></span><strong>{a.title}</strong><small>{a.desc}</small>
      </button>)}</div>
    </section>
   </div>
   </div>
   <div className="pano-tables">
-   <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="layers" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
+   <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
      <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" onClick={()=>setMovementMode('all')}>Limpar seleção</button>}
       <button type="button" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters} aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'}>
-       {showMovementFilters?'Ocultar filtros':'Mostrar filtros'}{movementFiltersCount>0?' ('+movementFiltersCount+')':''}
+       <HomeGlyph name="filter" size={15}/>{showMovementFilters?'Ocultar filtros':'Mostrar filtros'}{movementFiltersCount>0?' ('+movementFiltersCount+')':''}
       </button></div></div>
      <DataGrid data={movements} columns={movementColumns} pageSize={5} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
-   <section ref={dueSection} className={'pano-panel pano-grid '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendar" title="Próximos compromissos"/>
+   <section ref={dueSection} className={'pano-panel pano-grid '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
      <div className="pano-grid-actions"><button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
-      {showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
+      <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
      <DataGrid data={commitments} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
   </div>
  </div>;
