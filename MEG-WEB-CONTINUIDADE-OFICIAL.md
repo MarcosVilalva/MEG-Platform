@@ -1501,3 +1501,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Prévia PR #654: subtítulo genérico, ilustração de cesta/mercado + cartão sem marca; mantém Saldo/Recarga/Consumo, Benefício indisponível, demais cards e o resto da Home intactos. Asset `apps/web/public/meg-assets/benefit-generic-groceries.webp`.
 - **Lacuna técnica identificada:** domínio atual exige Verocard no `financial-policy.ts` e no writer `benefit-event-mutation.ts`. Suporte operacional multioperadora **ainda não existe**; não alterar writer, nem inferir suporte universal a partir da revisão visual.
 - Testes, deploy Render e validação visual humana continuam exigidos antes de merge. Android congelado.
+
+## 04/11/2026 | VALIDAÇÃO VISUAL EXPLÍCITA — Seletor Novo Lançamento (Etapa 08)
+
+- Usuário declarou **“Excelente, por mim validado”** após a prévia Render da tela com Benefício genérico (cesta de compras/alimentação, sem marca fixa) e carrossel/cartão específico reservado ao cadastro futuro.
+- **Escopo aprovado:** composição e apresentação visual da tela **Novo Lançamento — seleção dos quatro tipos** em desktop e mobile, incluindo imagens, chips, tipografia, ícones, alinhamentos, responsividade e card **Benefício genérico**.
+- **Revisão visual aprovada:** commit `28a2bd0f3b550c87958e78805f0ca1739e8adf62`, CI `41804115634` (SUCCESS), Render `dep-dblf925bedkc73a8abjg` (LIVE no mesmo SHA). Link histórico sem cache: https://meg-fluxo-08-integrado-pr654.onrender.com/fluxo-integrado-08.html?tela=novo&v=28a2bd0f3b550c87958e78805f0ca1739e8adf62
+- **Congelamento visual:** não alterar esta tela por iniciativa própria. Sugestões em outras telas podem ser propostas como estudos, sem mudar a tela aprovada, os assets oficiais nem seu enquadramento.
+- **Aprovação NÃO abrange:** formulário financeiro operacional, gravação na API, habilitação de Transferência/Benefício, Home, carregamento/login/cadastro/recuperação, aplicação global da identidade visual, carrossel de Cartões, regra multioperadora da API, merge ou produção.
+- PR #654 permanece em Draft, sem merge. Android congelado; regras de negócio e autoridade financeira seguem intactas. Avançar apenas pela etapa/tela autorizada em chat próprio. Próximas propostas visuais para Home/autenticação são estudos pendentes de aprovação, não substituem os prints oficiais.

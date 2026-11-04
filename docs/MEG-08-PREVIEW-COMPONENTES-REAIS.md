@@ -91,3 +91,12 @@ O teste integrado foi estendido: nove viewports para Home e nove para Novo Lanç
 - A comunicação visual da escolha foi neutralizada a pedido do usuário para uso comercial futuro. Subtítulo: `Usar ou recarregar cartão benefício`; imagem autoral de cesta de compras/alimentos e cartão pré-pago **sem marca**.
 - **Não** confundir identificação genérica da tela com implementação financeira multioperadora. O writer atual ainda está restrito ao método Verocard, conforme autoridade existente. Benefício segue desabilitado na prévia, sem API/gravação.
 - Arquivos da Etapa 08: `LaunchTypePicker.tsx`, `choice-refinement.css`, arte `benefit-generic-groceries.webp`, testes, checkpoint e decisões. Home/Cartões/API/Android intactos.
+
+## 04/11/2026 | VALIDAÇÃO VISUAL EXPLÍCITA — Seletor Novo Lançamento (Etapa 08)
+
+- Usuário declarou **“Excelente, por mim validado”** após a prévia Render da tela com Benefício genérico (cesta de compras/alimentação, sem marca fixa) e carrossel/cartão específico reservado ao cadastro futuro.
+- **Escopo aprovado:** composição e apresentação visual da tela **Novo Lançamento — seleção dos quatro tipos** em desktop e mobile, incluindo imagens, chips, tipografia, ícones, alinhamentos, responsividade e card **Benefício genérico**.
+- **Revisão visual aprovada:** commit `28a2bd0f3b550c87958e78805f0ca1739e8adf62`, CI `41804115634` (SUCCESS), Render `dep-dblf925bedkc73a8abjg` (LIVE no mesmo SHA). Link histórico sem cache: https://meg-fluxo-08-integrado-pr654.onrender.com/fluxo-integrado-08.html?tela=novo&v=28a2bd0f3b550c87958e78805f0ca1739e8adf62
+- **Congelamento visual:** não alterar esta tela por iniciativa própria. Sugestões em outras telas podem ser propostas como estudos, sem mudar a tela aprovada, os assets oficiais nem seu enquadramento.
+- **Aprovação NÃO abrange:** formulário financeiro operacional, gravação na API, habilitação de Transferência/Benefício, Home, carregamento/login/cadastro/recuperação, aplicação global da identidade visual, carrossel de Cartões, regra multioperadora da API, merge ou produção.
+- PR #654 permanece em Draft, sem merge. Android congelado; regras de negócio e autoridade financeira seguem intactas. Avançar apenas pela etapa/tela autorizada em chat próprio. Próximas propostas visuais para Home/autenticação são estudos pendentes de aprovação, não substituem os prints oficiais.
