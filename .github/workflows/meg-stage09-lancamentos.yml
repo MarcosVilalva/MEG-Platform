@@ -33,6 +33,8 @@ jobs:
         run: cd apps/web && npx tsc -b
       - name: Compilar preview isolado
         run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Compilar entrada Web autenticada sem publicar em produção
+        run: cd apps/web && npx vite build --base /
       - name: Preparar navegador
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
       - name: Testar renderização e filtros em oito viewports
@@ -47,10 +49,24 @@ jobs:
             sleep 1
           done
           node scripts/meg-stage09-lancamentos.browser.mjs
+      - name: Testar historico autenticado paginado e consistencia sem API real
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4174 --directory apps/web/dist >/tmp/meg-stage09-auth.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4174/web-evolution.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage09-operational.browser.mjs
       - name: Guardar capturas e relatório
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: meg-stage09-lancamentos
-          path: artifacts/meg-stage09-lancamentos/
+          path: |
+            artifacts/meg-stage09-lancamentos/
+            artifacts/meg-stage09-operational/
           if-no-files-found: warn
