@@ -232,8 +232,19 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
        <button type="button" className="pano-card-control is-prev" aria-label="Cartão anterior" disabled={cardCount<2} onClick={()=>stepCard(-1)}><HomeGlyph name="chevronLeft" size={23}/></button>
        <button type="button" className="pano-card-control is-next" aria-label="Próximo cartão" disabled={cardCount<2} onClick={()=>stepCard(1)}><HomeGlyph name="chevronRight" size={23}/></button>
       </div>
-      <div className="pano-card-amount"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></div>
-      <div className="pano-card-nav"><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===activeCardIndex?'is-current':''} onClick={()=>showCard(i)} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===activeCardIndex?'true':undefined}/>)}</span></div>
+      <div className="pano-card-summary" aria-label={'Resumo do cartão '+selectedCard.name}>
+       <div className="pano-card-summary-info">
+        <span className="pano-card-summary-icon" aria-hidden="true"><HomeGlyph name="card" size={21}/></span>
+        <div className="pano-card-summary-copy">
+         <strong title={selectedCard.name}>{selectedCard.name}</strong>
+         <span>{selectedCard.issuer||'Cartão cadastrado'} <span aria-hidden="true">·</span> Crédito</span>
+        </div>
+       </div>
+       <div className="pano-card-nav" aria-label="Selecionar cartão">
+        <span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===activeCardIndex?'is-current':''} onClick={()=>showCard(i)} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===activeCardIndex?'true':undefined}/>)}</span>
+       </div>
+       <div className="pano-card-amount"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></div>
+      </div>
       {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
        {selectedCard.availableLimit!=null&&<span>Limite disponível <Money hidden={hidden} value={selectedCard.availableLimit}/></span>}
        {selectedCard.creditLimit!=null&&<span>Limite cadastrado <Money hidden={hidden} value={selectedCard.creditLimit}/></span>}

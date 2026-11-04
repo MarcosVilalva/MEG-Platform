@@ -22,3 +22,12 @@
 - Render isolado e link sem cache após CI. Aprovação humana não é substituída por CI.
 
 **Pendência:** aprovação da Home; integração operacional real fora do escopo.
+
+
+## 04/11/2026 | Aprovação da proposta imagem 02 com cinco atalhos
+- Usuário escolheu a **segunda proposta ilustrada** como direção para cartões e acessos rápidos, e explicitou que **Novo lançamento deve continuar no painel**, retirando apenas o ícone redundante do topo da Home.
+- Confirmada a grade **3+2 de cinco ações** na Home. Para telas estreitas a disposição se adapta, preservando rótulos e alvos de toque.
+- **Cartão central com mais destaque**, mantendo carrossel circular. A faixa inferior agrupa **nome do cartão e emissor**, os **indicadores** e a **fatura em aberto já recebida da API**. Nenhum valor é recalculado na tela.
+- Ajustes isolados na Home: o CSS esconde `.meg-topbar-new` somente quando `data-preview-view=home`, preservando o Shell compartilhado e todas as outras telas.
+- A possibilidade de **escolher/reordenar os atalhos nas Configurações** fica registrada como funcionalidade diferencial futura, sem salvar preferências agora nem inventar comportamento. Critérios: opções permitidas pelo roteador e permissões atuais; fallback padrão, responsividade, manutenção de atalhos essenciais e testes de navegação.
+- A ilustração representa direção estética. **Aprovação do desenho não substitui inspeção da implementação**. PR #655 Draft até CI + Render + validação humana da Home renderizada.

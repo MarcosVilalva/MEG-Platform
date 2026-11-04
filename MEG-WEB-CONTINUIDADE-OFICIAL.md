@@ -1518,3 +1518,11 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Proposta: contorno e iluminação mais consistentes em saldo e cartões, cards secundários com contraste um pouco maior, acessos rápidos menores e próximos, texto mais legível. Grids, campos, dados, navegação, controles e regras continuam os mesmos.
 - Home ainda **NÃO homologada**. Exige compilação, testes, screenshots de antes/depois nas mesmas resoluções, Render separado sem cache e aprovação visual explícita.
 - Não alterar Android, API financeira, DataGrid, autenticação ou a escolha de Novo Lançamento.
+
+
+## 04/11/2026 | Home PR #655 | Imagem 02 aprovada como direção + atalhos configuráveis futuros
+- Usuário escolheu **imagem 02** da proposta do carrossel e acessos rápidos; correção explícita: deixar **os cinco botões** (Novo lançamento, Transferência, Pagar conta, Relatórios, Configurações) no painel Ações rápidas, retirar apenas **Novo lançamento (+) duplicado no cabeçalho** na Home.
+- Implementação desta branch: cartão central valorizado, resumo de cartão em faixa estruturada usando os mesmos campos canônicos de cartões (nome, emissor, payableStatementAmount), indicadores do carrossel preservados. Atalhos em grade 3+2 no desktop e disposição responsiva nos menores viewports; o topo não exibe o CTA duplicado somente na Home.
+- **Futuro, não implementado:** configuração dos botões de Acesso rápido por usuário dentro de Configurações. Não alterar dados persistentes, permissões ou criar preferências até a etapa adequada.
+- Este refinamento visual será submetido a novo CI/comparativo e novo Render. A seleção **Novo Lançamento homologada** permanece intacta. Android/API/finanças/DataGrid sem alterações.
+- O aceite da ilustração confirma a **proposta**, não homologa automaticamente a Home renderizada. PR #655 Draft, sem merge.

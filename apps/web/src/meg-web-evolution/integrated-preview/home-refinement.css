@@ -235,3 +235,221 @@
     transition:none!important;
   }
 }
+
+
+/* =============================================================
+   04/11/2026 | Home proposta aprovada (referência: imagem 02).
+   Cinco atalhos reais: 3+2. Um único CTA de Novo lançamento
+   no painel; o "+" do topo é redundante somente nesta Home.
+   Não altera sidebar, Shell compartilhado ou Novo Lançamento.
+   ============================================================= */
+.meg-integrated-preview[data-preview-view="home"] .meg-topbar-new{
+  display:none!important;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-cards{
+  gap:.38rem;
+  padding:clamp(.68rem,.9vw,.95rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-carousel-head{
+  margin-bottom:.06rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-stage{
+  max-width:100%;
+  min-height:clamp(12rem,21vw,15rem);
+  border:1px solid rgba(57,179,178,.34);
+  border-radius:.72rem;
+  margin:.1rem auto .08rem;
+  background:radial-gradient(ellipse at 50% 70%,rgba(24,182,190,.15),transparent 72%);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-stage::before{
+  filter:saturate(.55) brightness(.78);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-credit-card{
+  width:min(69%,23rem);
+  border-radius:.75rem;
+  padding:clamp(.55rem,1vw,.8rem);
+  box-shadow:0 18px 37px rgba(0,8,21,.85),
+    0 0 27px rgba(30,235,212,.27),inset 0 1px rgba(255,255,255,.4);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek{
+  width:35%;
+  filter:brightness(.75);
+  opacity:.85;
+  transform:translateY(-50%) scale(.91);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek.is-prev{left:4%}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek.is-next{right:4%}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-control{
+  border-color:rgba(105,238,220,.83);
+  background:linear-gradient(145deg,#08565f,#04363a);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
+  min-width:0;
+  gap:clamp(.3rem,.8vw,.6rem);
+  margin-top:.17rem;
+  padding:.52rem clamp(.5rem,1.15vw,.88rem);
+  border:1px solid rgba(44,177,168,.48);
+  border-radius:.62rem;
+  background:linear-gradient(100deg,rgba(3,49,58,.82),rgba(4,35,46,.90));
+  box-shadow:inset 0 1px 0 rgba(183,255,251,.07);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-info{
+  display:flex;align-items:center;gap:.48rem;min-width:0;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-icon{
+  display:grid;place-items:center;
+  flex:0 0 2.45rem;width:2.45rem;height:2.45rem;
+  border:1px solid rgba(44,220,205,.48);
+  border-radius:.52rem;
+  background:rgba(7,91,99,.68);color:#5cfae4;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-copy{
+  min-width:0;display:flex;flex-direction:column;gap:.18rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-copy strong{
+  font-size:clamp(.78rem,1.02vw,.97rem);
+  font-weight:800;
+  line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-copy>span{
+  font-size:clamp(.65rem,.78vw,.76rem);
+  color:#a7d4d2;
+  line-height:1.28;overflow-wrap:anywhere;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-nav{
+  min-height:2.75rem;
+  justify-content:center;
+  margin:0;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-indicator{margin:0}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-indicator button::after{
+  width:.38rem;height:.38rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-indicator button.is-current::after{
+  background:#42fbe0;
+  box-shadow:0 0 11px #42fbe09c;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-amount{
+  min-width:0;display:flex;flex-direction:column;align-items:flex-end;
+  justify-content:center;flex-wrap:nowrap;gap:.16rem;
+  margin:0;padding:0 0 0 clamp(.35rem,1vw,.8rem);
+  border-top:0;border-left:1px solid rgba(51,183,172,.46);
+  text-align:right;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-amount>span{
+  font-size:clamp(.65rem,.78vw,.76rem);
+  color:#c1dfdf;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-amount strong{
+  color:#63f8e5;
+  font-size:clamp(.94rem,1.4vw,1.35rem);
+  font-variant-numeric:tabular-nums;
+  line-height:1.2;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-actions{
+  padding:.67rem .7rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action-list{
+  max-width:100%;
+  margin-top:.43rem;
+  gap:.3rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action{
+  display:grid;
+  grid-template-columns:1.85rem minmax(0,1fr);
+  grid-template-rows:auto auto;
+  column-gap:clamp(.3rem,.55vw,.52rem);
+  align-content:center;align-items:center;
+  justify-items:start;
+  min-height:3.62rem;
+  padding:.43rem .45rem;
+  text-align:left;
+  border-radius:.67rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action-icon{
+  grid-column:1;grid-row:1 / span 2;
+  width:1.85rem;height:1.85rem;flex-basis:1.85rem;
+  border-radius:.46rem;
+  box-shadow:0 0 12px rgba(41,217,215,.1);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action strong{
+  grid-column:2;grid-row:1;
+  width:100%;font-size:clamp(.72rem,.85vw,.84rem);
+  line-height:1.22;overflow-wrap:break-word;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action small{
+  grid-column:2;grid-row:2;
+  display:none;
+  font-size:.68rem;line-height:1.2;
+  color:#aedcd8;
+}
+/* Apenas dois pontos principais de reorganização, 640 e 1024. */
+@media(max-width:639px){
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-summary{
+    grid-template-columns:minmax(0,1fr) auto;
+    row-gap:.15rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-summary-info{
+    grid-column:1;grid-row:1;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-amount{
+    grid-column:1;grid-row:2;align-items:flex-start;
+    padding:0;border:0;text-align:left;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-nav{
+    grid-column:2;grid-row:1 / span 2;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-stage{
+    min-height:clamp(10.8rem,52vw,13.5rem);
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-credit-card{
+    width:min(69%,19.5rem);
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action{
+    grid-column:auto;
+    min-height:3.55rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action:last-child{
+    grid-column:1 / -1;
+  }
+}
+@media(min-width:640px) and (max-width:1023px){
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-summary{
+    grid-template-columns:minmax(0,1.2fr) auto minmax(0,1fr);
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action-list{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action{
+    grid-column:auto;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action:nth-last-child(-n+2){
+    grid-column:span 1;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action:nth-child(4){
+    grid-column:1 / span 1;
+  }
+}
+@media(min-width:1024px){
+  .meg-integrated-preview[data-preview-view="home"] .pano-action-list{
+    max-width:35rem;
+    grid-template-columns:repeat(6,minmax(0,1fr));
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action{
+    grid-column:span 2;
+    min-height:3.5rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action:nth-last-child(-n+2){
+    grid-column:span 3;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action strong{
+    font-size:clamp(.7rem,.77vw,.82rem);
+  }
+}

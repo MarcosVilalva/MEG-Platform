@@ -25,6 +25,10 @@ async function measure(page){
   };
   const buttons=all('.pano-action');
   const stage=one('.pano-card-stage');
+  const summary=one('.pano-card-summary');
+  const summaryName=one('.pano-card-summary-copy strong');
+  const topPlus=one('.meg-topbar-new');
+  const summaryCard=one('.pano-card-amount');
   const active=one('.pano-credit-card');
   const main=one('.meg-main');
   const panel=one('.pano-actions');
@@ -47,6 +51,12 @@ async function measure(page){
     activeCard:active?rect(active):null,
     cardCount:all('.pano-credit-card').length,
     cardButtons:all('.pano-card-control').length,
+    summary:summary?rect(summary):null,
+    summaryName:summaryName?.textContent?.trim(),
+    summaryValue:summaryCard?.querySelector('strong')?.textContent?.trim(),
+    summaryText:summaryCard?.querySelector('span')?.textContent?.trim(),
+    topPlusVisible:!!topPlus&&getComputedStyle(topPlus).display!=='none',
+
     copy:all('.pano-stat strong').map(e=>e.textContent?.trim()),
     previewStatus:one('.pano-preview-banner')?.textContent?.trim()
   };
@@ -83,6 +93,13 @@ try {
     problems.push('dados/rótulos financeiros mudaram durante refino CSS');
   if(changed.actions.some(x=>x.height<44))problems.push('area de toque menor que 44px');
   if(changed.actions.some(x=>x.width<45))problems.push('atalho muito estreito');
+  if(changed.topPlusVisible)problems.push('botao Novo Lancamento duplicado no cabeçalho');
+  if(!changed.summary||!changed.summaryName||changed.summaryText!=='Fatura em aberto')
+    problems.push('rodape do cartao sem resumo canonico');
+  if(changed.summary?.right>width+2)problems.push('resumo do cartao transborda a tela');
+  if(changed.cardStage&&changed.summary && changed.summary.top<changed.cardStage.bottom-3)
+    problems.push('resumo e palco de cartoes sobrepostos');
+
   if(!changed.activeCard||changed.cardCount!==1||changed.cardButtons!==2)problems.push('carrossel alterado');
   if(changed.cardStage && changed.activeCard &&
       (changed.activeCard.top<changed.cardStage.top-2 ||
@@ -95,16 +112,12 @@ try {
       Math.abs(d.top-e.top)>3|| d.top<=a.top+7)
       problems.push('grade de acesso rápido 3+2 perdida');
   }
-  // Cosmetic-only: the visual candidate may NOT change the geometry
-  // of financial cards, KPIs or grids.
-  if(baseline.activeCard&&changed.activeCard){
-    if(Math.abs(baseline.activeCard.width-changed.activeCard.width)>1.5)
-      problems.push('dimensão do cartão principal alterada');
-  }
-  if(baseline.cardStage&&changed.cardStage){
-    if(Math.abs(baseline.cardStage.height-changed.cardStage.height)>1.5)
-      problems.push('altura do palco alterada');
-  }
+  // O novo tamanho do cartão foi aprovado como proposta visual, mas
+  // nunca pode cortar controles ou deslocar os KPIs/DataGrids.
+  if(baseline.activeCard && changed.activeCard
+    && changed.activeCard.width<baseline.activeCard.width-2)
+    problems.push('cartão principal diminuiu em vez de ganhar destaque');
+  if(changed.summary?.height<44)problems.push('faixa de resumo excessivamente comprimida');
   results.push({screen:'home',width,height,baseline,changed,problems});
   if(problems.length){errors++;console.error('Home '+width+'x'+height+': '+problems.join(', '));}
   await page.close();
@@ -116,6 +129,8 @@ try {
  await page.locator('.pano-card-control.is-next').click();
  const after=await page.locator('.pano-credit-card').innerText();
  if(before===after)throw Error('carrossel nao navegou');
+ // Cabeçalho escondido apenas na Home: atalho central continua navegável.
+ if(await page.locator('.meg-topbar-new').isVisible())throw Error('Topo duplicado na Home');
  await page.locator('.pano-action').filter({hasText:'Novo lançamento'}).click();
  await page.locator('[data-testid="new-launch-types"]').waitFor();
  if(await page.locator('.meg-choice__option').count()!==4)throw Error('Novo Lançamento mudou');
