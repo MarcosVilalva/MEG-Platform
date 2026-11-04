@@ -45,7 +45,11 @@
 .meg-l09-filters input::placeholder{color:#b9d1d0}
 .meg-l09-filters input[type="date"]{padding-inline:.3rem;font-size:.69rem;color-scheme:dark}
 .meg-l09-grid-panel{min-width:0;border:1px solid var(--l09-line);border-radius:.75rem;overflow:hidden;background:linear-gradient(165deg,#031e25,#02151f)}
-.meg-l09-grid-panel .meg-datagrid{max-width:100%;min-width:0}
+.meg-l09-grid-panel .meg-datagrid{max-width:100%;min-width:0;height:auto}
+/* A grade compartilha flex-basis:0 do harness, que exige pai com altura. Aqui
+ * o pai e fluido: usar base intrinseca com rolagem apenas nas linhas. */
+.meg-l09-grid-panel .meg-datagrid__viewport{flex:0 1 auto;min-height:15rem;max-height:clamp(18rem,calc(100dvh - 24rem),42rem);overflow-y:auto}
+
 .meg-l09-grid-panel .meg-datagrid-row{cursor:default}
 .meg-l09-open-row{width:100%;display:block;border:0;text-align:left;padding:.4rem 0;background:transparent;color:#f3fffd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meg-l09-open-row:hover{text-decoration:underline;text-decoration-color:#16e8ca}
