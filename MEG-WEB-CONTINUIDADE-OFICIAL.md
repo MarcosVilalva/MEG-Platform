@@ -1510,3 +1510,116 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Congelamento visual:** não alterar esta tela por iniciativa própria. Sugestões em outras telas podem ser propostas como estudos, sem mudar a tela aprovada, os assets oficiais nem seu enquadramento.
 - **Aprovação NÃO abrange:** formulário financeiro operacional, gravação na API, habilitação de Transferência/Benefício, Home, carregamento/login/cadastro/recuperação, aplicação global da identidade visual, carrossel de Cartões, regra multioperadora da API, merge ou produção.
 - PR #654 permanece em Draft, sem merge. Android congelado; regras de negócio e autoridade financeira seguem intactas. Avançar apenas pela etapa/tela autorizada em chat próprio. Próximas propostas visuais para Home/autenticação são estudos pendentes de aprovação, não substituem os prints oficiais.
+
+## 04/11/2026 | Home: candidato de acabamento preservando layout validado
+- Após homologar visualmente **Novo Lançamento** no SHA `28a2bd0f3b550c87958e78805f0ca1739e8adf62`, o usuário autorizou iniciar refinamentos na Home, **sem redesenhar** ou perder a base da PR #653.
+- Nova branch independente `preview/06-home-refino-preservado-20261104` derivada da PR #654 no SHA documental `75f48ac2e215b34f7bd17cdd74744a2f1733641e`; a PR #654 original e seu Render ficam preservados.
+- O acabamento pré-existente da Home foi **movido**, sem mudança, da folha global de prévia para `integrated-preview/home-refinement.css`. Novos ajustes da Home são escopados a `[data-preview-view="home"]`, evitando qualquer mudança na seleção Novo Lançamento aprovada.
+- Proposta: contorno e iluminação mais consistentes em saldo e cartões, cards secundários com contraste um pouco maior, acessos rápidos menores e próximos, texto mais legível. Grids, campos, dados, navegação, controles e regras continuam os mesmos.
+- Home ainda **NÃO homologada**. Exige compilação, testes, screenshots de antes/depois nas mesmas resoluções, Render separado sem cache e aprovação visual explícita.
+- Não alterar Android, API financeira, DataGrid, autenticação ou a escolha de Novo Lançamento.
+
+
+## 04/11/2026 | Home PR #655 | Imagem 02 aprovada como direção + atalhos configuráveis futuros
+- Usuário escolheu **imagem 02** da proposta do carrossel e acessos rápidos; correção explícita: deixar **os cinco botões** (Novo lançamento, Transferência, Pagar conta, Relatórios, Configurações) no painel Ações rápidas, retirar apenas **Novo lançamento (+) duplicado no cabeçalho** na Home.
+- Implementação desta branch: cartão central valorizado, resumo de cartão em faixa estruturada usando os mesmos campos canônicos de cartões (nome, emissor, payableStatementAmount), indicadores do carrossel preservados. Atalhos em grade 3+2 no desktop e disposição responsiva nos menores viewports; o topo não exibe o CTA duplicado somente na Home.
+- **Futuro, não implementado:** configuração dos botões de Acesso rápido por usuário dentro de Configurações. Não alterar dados persistentes, permissões ou criar preferências até a etapa adequada.
+- Este refinamento visual será submetido a novo CI/comparativo e novo Render. A seleção **Novo Lançamento homologada** permanece intacta. Android/API/finanças/DataGrid sem alterações.
+- O aceite da ilustração confirma a **proposta**, não homologa automaticamente a Home renderizada. PR #655 Draft, sem merge.
+
+
+## 04/11/2026 | Gate responsivo corrigido
+- No primeiro CI da imagem 02 (`41817103792`), o navegador encontrou o cartão principal cortado em **640×900 e 768×1024**; build havia passado, mas o gate visual falhou.
+- Causa localizada: cartão ampliado a 69%/máximo 23rem com aspect ratio 1.72:1 e palco limitado a 12rem no tablet. Corrigida apenas altura mínima do palco de 640px a 1023px, sem escala artificial nem mexer no objeto cartão.
+- Reexecutar 9 viewports, fluxo e comparação; não homologar enquanto o CI não estiver verde.
+
+
+## 04/11/2026 | CORREÇÃO DO ESCOPO DA HOME, IMAGEM 01
+- O usuário corrigiu a interpretação anterior: imagem **01** é a referência, a imagem **02** corresponde ao estado errado. O **Novo lançamento (+)** permanece no cabeçalho junto à busca e sai de **Ações rápidas**, que terá **exatamente quatro cartões**: Transferência, Pagar conta, Relatórios e Configurações.
+- Ações rápidas agora têm faixa de largura completa logo abaixo de Meus cartões / área principal, com 4 colunas no desktop, 2 em tablet e 1 no celular. Descrições presentes conforme referência.
+- Monitor wide: a Home deixa de preencher indiscriminadamente toda largura e passa a usar composição centralizada até 93rem; colunas estáveis a partir de 1024px e cartões proporcionais. **Não é zoom/transform nem só aumento de CSS**.
+- Testes: 320, 360, 390, 640, 768, 1024, 1366, 1672, 1920 e 2560px, incluindo checagem de largura máxima e centralização, 4 atalhos e seus textos, botão + no topo, carrossel e fluxo do Novo Lançamento.
+- Preferências futuras de atalhos em Configurações seguem **não implementadas**. Nenhum dado financeiro, benefício, writer, Android, DataGrid ou visual do Novo Lançamento homologado foi alterado.
+- PR #655 Draft; nova versão requer CI verde, Render LIVE e validação visual humana antes de considerar a Home homologada.
+
+
+## 04/11/2026 | Gate responsivo adicional no desktop
+- Workflow `41827321615`: build concluído, mas QA apontou duas falhas: regra legada `nth-last-child(-n+2)` aplicava `grid-column:span 3` aos últimos atalhos, quebrando a linha de quatro; em 1024px as colunas fixas comprimiam o cartão em vez de destacá-lo.
+- Correção pontual **na mesma folha consolidada**: `grid-column:auto` nos quatro botões da faixa e auto-fit com largura mínima útil de 31.5rem na região de saldo/cartões, evitando forçar duas colunas no limite de 1024px. Sem introduzir novo breakpoint.
+- Repetir CI (10 viewports incluindo wide 2560px), Render e inspecionar capturas. A Home segue candidata, não homologada.
+
+## 04/11/2026 | Correção de inspeção visual em tablet
+- O CI `41827695566` concluiu **SUCCESS** (10 larguras + fluxo). A inspeção das capturas revelou, porém, em 768px uma distribuição **3+1** dos quatro KPIs, com área vazia. Isto não era capturado pelo teste antigo.
+- Corrigido em CSS isolado: a partir de 640px os indicadores usam `repeat(2,minmax(0,1fr))`, mantendo a grade existente em desktop e evitando quebra assimétrica em tablet.
+- O navegador passa a medir geometricamente as duas linhas de KPIs, rejeitando regressão 3+1. Nenhum valor, cálculo, fonte de dados ou componente financeiro alterado. Exige nova CI/Render e avaliação visual final.
+
+
+## 04/11/2026 | Rodada específica de responsividade e legibilidade (gravação 11:24)
+- A gravação do usuário mostrou texto pequeno no gráfico e cabeçalhos das tabelas comprimidos, sobretudo em desktop. O vídeo não comprova responsividade entre todas as larguras. Ajustes aprovados para avaliação **somente na Home**, sem redesenho e sem mexer nos quatro atalhos da imagem 01.
+- **Fluxo financeiro**: o ECharts passa a adaptar legenda, fontes, densidade de datas e área de plotagem à largura do painel via ResizeObserver. Séries e valores continuam provenientes da autoridade financeira; zero recálculos de negócio.
+- **Próximos compromissos/Últimas movimentações**: as duas tabelas só são colocadas lado a lado quando cada uma possui largura útil; caso contrário ocupam uma linha inteira. Larguras iniciais das colunas da Home foram calibradas para Vencimento, Situação e Categoria; DataGrid compartilhado não modificado.
+- **Proporções**: a região Fluxo/Benefícios agora muda de uma para duas colunas por auto-fit e largura mínima, sem forçar 7/5 em 1024px. Gráfico e texto auxiliares mais legíveis; a imagem de benefício mantém cover, sem distorção.
+- **Responsividade real a verificar**: 320, 390, 640, 768, 1024, 1366, 1920 e 2560px, com alturas compactas e simulação de zoom 125%; áreas de toque, scroll horizontal, títulos/cabeçalhos, gráfico e diferença antes/depois. Isso é proposta de implementação, não aprovação visual.
+- **Notificação da prévia**: o aviso após clicar Despesa pode sobrepor modal, mas a escolha Novo Lançamento foi homologada; tratar mudança da experiência do modal separadamente em etapa autorizada, preservando a tela aprovada.
+- Sem mudanças em autenticação, Shell compartilhado, DataGrid, API, banco, Android ou design homologado do Novo Lançamento. PR #655 Draft e merge bloqueado até gates e aprovação visual da Home.
+
+
+## 04/11/2026 | Testes adicionais para a revisão de responsividade
+- Redimensionamentos do gráfico com Canvas presente e altura suficiente; geometria e largura das tabelas; títulos Vencimento/Situação não devem ser truncados no modo tabela quando visíveis.
+- Cenários de janela com altura reduzida 390×667, 1366×600 e 1920×650; simulação de zoom de layout 125% em 1366×768 e 1920×1080. Zoom é cenário de CSS, não substitui teste manual com Chrome/Windows.
+- Larguras iniciais do DataGrid **somente na Home** calibradas para 669px e 660px no desktop, sem alterar as colunas nem o DataGrid central. Continua possível arrastar largura e usar os controles próprios da grade.
+- Sem mudança de fórmulas, filtros, totais, status e operações financeiras. Comparação real de capturas permanece obrigatória.
+
+
+## 04/11/2026 | Resultado do QA e correção de cabeçalhos
+- Primeiro gate ampliado `41854794010`: todas as larguras, alturas compactas, zoom e gráfico foram medidos; **4 falhas de legibilidade** localizadas no título **Vencimento** (1024, 1672, 1920, 2560px). Os dados não estavam ausentes; o rótulo do botão era truncado em até 18px.
+- Ajustada a distribuição de larguras, preservando os cinco campos do DataGrid e o total de **660px**: Vencimento 150, Descrição 155, Origem 119, Valor 112, Situação 124. Nenhuma alteração no DataGrid compartilhado, ordenação, filtros, valores ou API.
+- Teste existente mede `scrollWidth` e `clientWidth` dos rótulos para rejeitar títulos cortados. Reexecutar CI e confirmar Render no mesmo SHA.
+
+
+## 04/11/2026 | Inspeção visual das capturas, valores financeiros
+- CI `41855333315`: **SUCCESS**, 16 cenários, zero falhas; títulos Vencimento e Situação passaram sem truncamento em todas as larguras.
+- Inspeção da captura inferior em 1920px identificou, porém, o valor `+ R$ 3.250,...` cortado na tabela de movimentações. **Não é aceitável ocultar parte de valor monetário**.
+- Larguras da tabela de Movimentações realocadas, preservando o total de 669px: Data 105, Descrição 165, Categoria 145, Conta 114 e **Valor 140px**. Controles de filtro, ordenação, resize e conteúdo financeiro são preservados.
+- Descrição/Conta/Origem longas mantêm texto integral no atributo `title`, visível no hover, sem alterar dados. Texto curto continua íntegro. Adicionado teste geométrico para identificar cortes de números em `strong` dentro de DataGrids desktop.
+- Reexecutar CI, capturas e deploy Render do novo SHA. Home ainda **não homologada visualmente**.
+
+
+## 04/11/2026 | Correção estrutural dos espaços laterais e verticais na Home
+- **Diagnóstico confirmado no JSX:** o container `pano-finance-block` agrupava Fluxo e Benefícios, enquanto `pano-tables` vinha depois para ambos os DataGrids. A altura do gráfico fazia a tabela Próximos compromissos aguardar o fim da outra coluna, produzindo o vazio relatado pelo usuário.
+- **Reconstrução limpa do trecho da Home**: agora há duas colunas independentes, `is-primary` = Fluxo financeiro → Últimas movimentações e `is-secondary` = Benefícios → Próximos compromissos. O espaçamento segue um gap regular, não a altura do gráfico vizinho.
+- Em mobile/tablet (até 1023px), caixas genéricas usam `display:contents` e CSS `order` para preservar a leitura Fluxo → Benefícios → Movimentações → Compromissos; nenhuma informação foi removida.
+- Para o grande vão lateral do wide, limite da Home passa de 93rem (1488px) para 134rem (2144px), com `margin-inline:auto`. O carrossel segue com limite de largura próprio e não é ampliado artificialmente.
+- Testes medirão os vãos em ambas as colunas, a ordem de leitura móvel, a largura do container e a preservação de quatro atalhos e dos valores. Esta revisão é **candidata**, não homologada. CI, capturas e Render devem corresponder ao mesmo commit.
+- Não foram alterados DataGrid compartilhado, fórmulas, APIs, banco, Android, Shell, nem Novo Lançamento homologado.
+
+
+## 04/11/2026 | Correção da única regressão mobile detectada
+- CI `41873483519`: compilação verde e novas verificações geométricas sem falhas em nove larguras, exceto **scroll horizontal interno em 320px**. Captura `resultados.json` mostrou `mainScrollWidth=422px` para `mainWidth=320px`, enquanto as duas seções DataGrid tinham largura computada de `402.47px` e o container raiz apenas `296px`.
+- Causa real: o layout mobile usa `display:contents` para preservar a ordem de leitura e o pai flex permanecia com `align-items:start`, fazendo os DataGrids assumirem a largura intrínseca. Correção: `align-items:stretch` no pai flex e `width/max-width:100%` nas seções DataGrid; a rolagem de tabelas continua **dentro do DataGrid**, sem rolagem da página.
+- Teste de navegador passa a medir explicitamente o `right` de cada painel contra o `right` da Home em mobile/tablet. Repetir CI e Render; não homologar automaticamente.
+
+
+## 04/11/2026 | Alinhamento inferior dos dois DataGrids, conforme imagem do usuário
+- O usuário esclareceu que não quer mostrar mais registros, e sim **preencher o espaço vazio abaixo de Próximos compromissos**, fazendo os dois DataGrids terminarem alinhados visualmente.
+- Mantida a estrutura em duas colunas independentes que elimina o vão entre Benefícios e Compromissos. Em desktop com duas colunas, o grid externo usa `align-items:stretch` e os painéis DataGrid crescem até a base comum.
+- O DataGrid da direita mantém **somente os quatro compromissos existentes** e expande a altura da tabela para distribuir essas linhas reais. Não cria informação, não recalcula valores, não muda a paginação, a ordenação ou os filtros.
+- Em 1024px quando só couber uma coluna, tablet e celular, o comportamento natural continua, sem altura fixa. CSS limitado à Home da PR #655 e ao `@media(min-width:1024px)`.
+- Novo gate geométrico compara a posição inferior dos dois rodapés (tolerância de 5px), preservação da quantidade de linhas reais, responsividade e valores. Nenhuma tela homologada ou regra financeira foi alterada.
+- Revisão ainda **não homologada visualmente**. Exigir CI verde, Render LIVE no mesmo SHA e aprovação humana.
+
+
+## 04/11/2026 | HOMOLOGAÇÃO VISUAL EXPLÍCITA DA HOME — PR #655
+- Usuário declarou **“BOA, PARA MIM TA VALIDADO”** após inspecionar a Home no Render, incluindo o **alinhamento inferior dos dois DataGrids**, que eliminou o espaço vazio abaixo de Próximos compromissos.
+- **Versão visual aprovada:** `dd0a472eee736558c224268c5bca096bc2d58187` da branch `preview/06-home-refino-preservado-20261104`; preview: https://meg-home-06-refino-pr655.onrender.com/fluxo-integrado-08.html?tela=home&v=dd0a472eee736558c224268c5bca096bc2d58187
+- **Escopo exato:** Home visual na prévia, composição para telas responsivas, saldo/indicadores, carrossel de cartões, gráfico, Benefícios, quatro Ações rápidas (Transferência, Pagar conta, Relatórios e Configurações), botão Novo lançamento no topo, duas tabelas com rodapés alinhados no desktop e comportamento natural no mobile.
+- **Congelamento:** não redesenhar nem alterar o visual aprovado sem solicitação explícita; novas correções estruturais devem preservar a composição. A homologação visual **não cobre** API operacional, integração de lançamentos financeiros, pagamentos, transferências, cartões de benefício multioperadora, demais telas ou produção.
+- **Gate técnico do último código:** workflow `41879282835` ainda **em andamento** na consulta desta aprovação; status não deve ser declarado verde sem resultado conclusivo. PR #655 **Draft, sem merge** até passar CI, testes, gates e checagem do commit.
+- **Próxima prioridade recomendada:** concluir gate técnico da Home e avançar para a próxima etapa autorizada pelo Prompt Master, **Lançamentos**, em chat/PR próprios. Correções globais no Shell e personalização futura de Ações rápidas em Configurações ficam registradas, mas não avançar prematuramente.
+- Android congelado, DataGrid compartilhado e regras financeiras centrais preservados; Novo Lançamento (seletor) permanece homologado visualmente de forma independente.
+
+
+## 04/11/2026 | GATE TÉCNICO CONCLUÍDO APÓS HOMOLOGAÇÃO VISUAL HOME
+- **Confirmação posterior à aprovação do usuário:** workflow [41879282835](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41879282835) alcançou status `completed` e conclusão **`success`** para o SHA visual `dd0a472eee736558c224268c5bca096bc2d58187`.
+- A Home desse commit já estava **homologada visualmente pelo usuário**. A PR #655, contudo, permanece **OPEN / Draft / não mesclada**, e nenhuma publicação de produção foi autorizada. O SHA atual da branch no momento do registro anterior era `5ab6f2f888a741a2477ee73d6534de5e0349fd5e`, contendo apenas documentação após o commit visual.
+- **Continuidade:** revalidar os checks obrigatórios e a cadeia de dependências de PRs antes de qualquer merge; preservar a versão visual aprovada. A próxima etapa/tela a tratar, em chat próprio, é **Lançamentos**, após leitura deste checkpoint e da autoridade financeira. Não alterar o Android nem antecipar funções.

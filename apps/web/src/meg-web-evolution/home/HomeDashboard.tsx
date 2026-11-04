@@ -147,23 +147,27 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   return [...planned,...payables].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).slice(0,8);
  },[data.transactions,data.followingTransactions,data.payables]);
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Data',type:'date',width:98,sortable:true,filterable:true},
-  {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true},
-  {key:'category',label:'Categoria',type:'text',width:146,sortable:true,filterable:true,
+  {key:'date',label:'Data',type:'date',width:105,sortable:true,filterable:true},
+  {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true,
+    render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
+  {key:'category',label:'Categoria',type:'text',width:145,sortable:true,filterable:true,
     render:v=>{const label=String(v??'Sem categoria');return <span className="pano-category" title={label}>
       <HomeGlyph name={categoryGlyph(label)} size={15} className="pano-category-svg"/>
       <span className="pano-category-text">{label}</span>
      </span>;}},
-  {key:'account',label:'Conta',type:'text',width:112,sortable:true,filterable:true},
-  {key:'value',label:'Valor',type:'currency',width:114,sortable:true,filterable:true,
+  {key:'account',label:'Conta',type:'text',width:114,sortable:true,filterable:true,
+    render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
+  {key:'value',label:'Valor',type:'currency',width:140,sortable:true,filterable:true,
    render:(v,row)=><strong className={Number(row.amount)<0?'pano-negative':'pano-positive'}>{Number(row.amount)<0?'− ':'+ '}{format(Number(v),hidden)}</strong>}
  ];
  const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',width:106,sortable:true,filterable:true},
-  {key:'description',label:'Descrição',type:'text',width:160,sortable:true,filterable:true},
-  {key:'source',label:'Origem',type:'text',width:130,sortable:true,filterable:true},
+  {key:'date',label:'Vencimento',type:'date',width:150,sortable:true,filterable:true},
+  {key:'description',label:'Descrição',type:'text',width:155,sortable:true,filterable:true,
+    render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
+  {key:'source',label:'Origem',type:'text',width:119,sortable:true,filterable:true,
+    render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
-  {key:'status',label:'Situação',type:'text',width:94,sortable:true,filterable:true,
+  {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
    render:v=><span className="pano-status">{String(v??'—')}</span>}
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
@@ -173,12 +177,12 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   {label:'Pendências previstas',value:data.summary?.pendingAmount,note:data.summary?.pendingCount==null?'Sem leitura disponível':String(data.summary.pendingCount)+' registros',icon:'clock',kind:'pending',action:'pendentes'},
   {label:'Benefício',value:data.benefit?.balance,note:'Saldo separado das contas',icon:'gift',kind:'benefit',action:'beneficios'}
  ];
+ // Home: Novo Lançamento fica no topo; 4 atalhos aprovados na imagem 01.
  const quick:{title:string;desc:string;icon:HomeIconName;action:Action;kind:string}[]=[
-  {title:'Novo lançamento',desc:'Registrar movimentação',icon:'plus',action:'novo',kind:'mint'},
-  {title:'Transferência',desc:'Entre suas contas',icon:'transfer',action:'transferencia',kind:'blue'},
-  {title:'Pagar conta',desc:'Consultar compromissos',icon:'receipt',action:'pendentes',kind:'violet'},
-  {title:'Relatórios',desc:'Análises financeiras',icon:'chart',action:'relatorios',kind:'amber'},
-  {title:'Configurações',desc:'Preferências do MEG',icon:'settings',action:'metas',kind:'slate'}
+  {title:'Transferência',desc:'Mover entre contas',icon:'transfer',action:'transferencia',kind:'blue'},
+  {title:'Pagar conta',desc:'Contas e boletos',icon:'receipt',action:'pendentes',kind:'violet'},
+  {title:'Relatórios',desc:'Extratos e análises',icon:'chart',action:'relatorios',kind:'amber'},
+  {title:'Configurações',desc:'Preferências do sistema',icon:'settings',action:'metas',kind:'slate'}
  ];
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
@@ -232,8 +236,19 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
        <button type="button" className="pano-card-control is-prev" aria-label="Cartão anterior" disabled={cardCount<2} onClick={()=>stepCard(-1)}><HomeGlyph name="chevronLeft" size={23}/></button>
        <button type="button" className="pano-card-control is-next" aria-label="Próximo cartão" disabled={cardCount<2} onClick={()=>stepCard(1)}><HomeGlyph name="chevronRight" size={23}/></button>
       </div>
-      <div className="pano-card-amount"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></div>
-      <div className="pano-card-nav"><span>{selectedCard.issuer||'Cartão cadastrado'}</span><span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===activeCardIndex?'is-current':''} onClick={()=>showCard(i)} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===activeCardIndex?'true':undefined}/>)}</span></div>
+      <div className="pano-card-summary" aria-label={'Resumo do cartão '+selectedCard.name}>
+       <div className="pano-card-summary-info">
+        <span className="pano-card-summary-icon" aria-hidden="true"><HomeGlyph name="card" size={21}/></span>
+        <div className="pano-card-summary-copy">
+         <strong title={selectedCard.name}>{selectedCard.name}</strong>
+         <span>{selectedCard.issuer||'Cartão cadastrado'} <span aria-hidden="true">·</span> Crédito</span>
+        </div>
+       </div>
+       <div className="pano-card-nav" aria-label="Selecionar cartão">
+        <span className="pano-card-indicator">{data.cards.map((card,i)=><button type="button" key={card.id} className={i===activeCardIndex?'is-current':''} onClick={()=>showCard(i)} aria-label={'Mostrar cartão '+(i+1)} aria-current={i===activeCardIndex?'true':undefined}/>)}</span>
+       </div>
+       <div className="pano-card-amount"><span>Fatura em aberto</span><strong><Money hidden={hidden} value={selectedCard.payableStatementAmount}/></strong></div>
+      </div>
       {cardExpanded&&<div className="pano-card-details" role="region" aria-label="Detalhes do cartão">
        {selectedCard.availableLimit!=null&&<span>Limite disponível <Money hidden={hidden} value={selectedCard.availableLimit}/></span>}
        {selectedCard.creditLimit!=null&&<span>Limite cadastrado <Money hidden={hidden} value={selectedCard.creditLimit}/></span>}
@@ -243,8 +258,17 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
      </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
   </div>
+  {/* Quatro atalhos em seção própria, após os cartões, conforme imagem 01. */}
+   <section className="pano-panel pano-actions">
+    <PanelTitle icon="sparkle" title="Ações rápidas"/>
+    <div className="pano-action-list">{quick.map(a=><button className={'pano-action is-'+a.kind} key={a.title} type="button" onClick={()=>move(a.action)}>
+      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={17}/></span><strong>{a.title}</strong><small>{a.desc}</small>
+     </button>)}</div>
+   </section>
+
   <div className="pano-finance-block" aria-label="Leitura gerencial do mês">
-   <section ref={flowSection} className="pano-panel pano-flow">
+   <div className="pano-finance-column is-primary">
+    <section ref={flowSection} className="pano-panel pano-flow">
     <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro"/>
      <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros">Ver relatórios <HomeGlyph name="arrow" size={16}/></button>
     </div>
@@ -252,8 +276,15 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
     <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
    </section>
-  <div className="pano-mid">
-   <section ref={benefitSection} className="pano-panel pano-benefits">
+    <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
+     <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" onClick={()=>setMovementMode('all')}>Limpar seleção</button>}
+      <button type="button" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters} aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'}>
+       <HomeGlyph name="filter" size={15}/>{showMovementFilters?'Ocultar filtros':'Mostrar filtros'}{movementFiltersCount>0?' ('+movementFiltersCount+')':''}
+      </button></div></div>
+     <DataGrid data={movements} columns={movementColumns} pageSize={5} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
+   </div>
+   <div className="pano-finance-column is-secondary">
+    <section ref={benefitSection} className="pano-panel pano-benefits">
     <PanelTitle icon="gift" title="Benefícios" meta="Saldo separado das contas monetárias"/>
     <button type="button" className="pano-benefit-card" onClick={()=>move('beneficios')} aria-label="Abrir módulo de benefícios">
      <div className="pano-benefit-card-copy"><span className="pano-eyebrow">BENEFÍCIO</span><h3>Alimentação</h3><span>Saldo do benefício</span><strong><Money hidden={hidden} value={data.benefit?.balance}/></strong><span className="pano-benefit-callout">Ver benefício <HomeGlyph name="arrow" size={15}/></span></div>
@@ -261,25 +292,11 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     </button>
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
-   <section className="pano-panel pano-actions">
-    <PanelTitle icon="sparkle" title="Ações rápidas"/>
-    <div className="pano-action-list">{quick.map(a=><button className={'pano-action is-'+a.kind} key={a.title} type="button" onClick={()=>move(a.action)}>
-      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={17}/></span><strong>{a.title}</strong><small>{a.desc}</small>
-     </button>)}</div>
-   </section>
-  </div>
-  </div>
-  <div className="pano-tables">
-   <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
-     <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" onClick={()=>setMovementMode('all')}>Limpar seleção</button>}
-      <button type="button" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters} aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'}>
-       <HomeGlyph name="filter" size={15}/>{showMovementFilters?'Ocultar filtros':'Mostrar filtros'}{movementFiltersCount>0?' ('+movementFiltersCount+')':''}
-      </button></div></div>
-     <DataGrid data={movements} columns={movementColumns} pageSize={5} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
-   <section ref={dueSection} className={'pano-panel pano-grid '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
+    <section ref={dueSection} className={'pano-panel pano-grid '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
      <div className="pano-grid-actions"><button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
       <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
      <DataGrid data={commitments} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
+   </div>
   </div>
  </div>;
 }

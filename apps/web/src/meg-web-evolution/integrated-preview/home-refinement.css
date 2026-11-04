@@ -1,0 +1,436 @@
+/* 03/11 · Refino isolado das telas reais: a PR #653 fornece a Home mais
+   recente; esta camada compõe efeitos de palco sem alterar valores,
+   componente de cartão, grids, estados, navegação ou tokens globais. */
+.meg-integrated-preview .pano-root {
+  background:
+    radial-gradient(ellipse at 82% 5%, rgba(8, 133, 138, .16), transparent 48%),
+    linear-gradient(180deg,#03191e,#021318 96%);
+}
+.meg-integrated-preview .pano-panel {
+  border-color: rgba(57,188,177,.42);
+  box-shadow: inset 0 1px 0 rgba(179,255,243,.07),
+    0 8px 25px rgba(0,13,19,.37);
+}
+.meg-integrated-preview .pano-hero {
+  border-color: rgba(68,235,220,.66);
+  box-shadow: inset 0 0 22px rgba(8,225,204,.10),
+    0 0 22px rgba(4,218,209,.13),0 10px 29px rgba(0,8,15,.37);
+}
+.meg-integrated-preview .pano-hero::before {
+  background:
+    linear-gradient(90deg,rgba(0,19,27,.94) 0%,rgba(0,28,36,.81) 54%,rgba(0,51,61,.31) 100%),
+    url('/meg-assets/hero.webp') center/cover no-repeat;
+}
+.meg-integrated-preview .pano-hero::after {
+  background:
+    radial-gradient(ellipse at 88% -8%,rgba(15,244,235,.26),transparent 58%),
+    linear-gradient(0deg,rgba(1,18,28,.36),transparent 52%);
+}
+.meg-integrated-preview .pano-cards {
+  border-color:rgba(41,231,214,.63);
+  background:radial-gradient(ellipse at 56% 9%,rgba(14,152,170,.15),transparent 66%),
+    linear-gradient(140deg,#06343c,#021c29 85%);
+  box-shadow:inset 0 1px rgba(212,255,247,.15),
+    0 0 27px rgba(19,221,208,.16),0 12px 30px rgba(0,8,17,.49);
+}
+.meg-integrated-preview .pano-card-stage {
+  border:1px solid rgba(68,218,209,.23);
+  background:radial-gradient(ellipse at 50% 78%,rgba(9,182,185,.23),transparent 64%);
+}
+.meg-integrated-preview .pano-card-stage::after {
+  background:radial-gradient(ellipse at 50% 73%,rgba(23,238,211,.24),transparent 62%);
+}
+.meg-integrated-preview .pano-credit-card {
+  border-color:rgba(195,255,249,.83);
+  box-shadow:0 15px 35px rgba(0,9,19,.92),
+    0 0 29px rgba(24,238,213,.31),
+    inset 0 1px 0 rgba(255,255,255,.4);
+}
+.meg-integrated-preview .pano-credit-card::after {
+  background:
+    linear-gradient(125deg,rgba(232,255,254,.19),transparent 31%,
+      rgba(196,255,253,.10) 47%,transparent 64%),
+    linear-gradient(0deg,rgba(0,16,29,.67),transparent 55%);
+}
+.meg-integrated-preview .pano-credit-card:hover,
+.meg-integrated-preview .pano-credit-card:focus-visible {
+  border-color:#d0fff8;
+  box-shadow:0 15px 35px rgba(0,8,20,.94),0 0 35px rgba(37,244,218,.39);
+}
+.meg-integrated-preview .pano-card-peek {
+  filter:brightness(.8);
+  border-color:rgba(128,219,229,.55);
+}
+.meg-integrated-preview .pano-actions {
+  background:
+    radial-gradient(ellipse at 10% -10%,rgba(12,196,184,.12),transparent 62%),
+    linear-gradient(150deg,#07363d,#04232c 82%);
+}
+.meg-integrated-preview .pano-action-list {
+  gap:.3rem;
+  margin-top:.37rem;
+}
+.meg-integrated-preview .pano-action {
+  min-height:3.45rem;
+  gap:.13rem;
+  padding:.26rem .22rem;
+  border-color:rgba(62,188,176,.53);
+  background:linear-gradient(156deg,#0a4147,#052d35);
+  box-shadow:inset 0 1px 0 rgba(197,255,250,.09),0 3px 9px rgba(0,18,25,.29);
+  transition:border-color .16s,background .16s,box-shadow .16s;
+}
+.meg-integrated-preview .pano-action-icon {
+  flex-basis:1.52rem;width:1.52rem;height:1.52rem;
+  border-radius:.4rem;
+}
+.meg-integrated-preview .pano-action strong {
+  font-size:clamp(.7rem,.8vw,.78rem);
+  line-height:1.2;
+}
+.meg-integrated-preview .pano-action:hover,
+.meg-integrated-preview .pano-action:focus-visible {
+  border-color:rgba(137,255,236,.95);
+  background:linear-gradient(156deg,#0c535a,#06343e);
+  box-shadow:0 0 14px rgba(32,227,213,.16),0 5px 15px rgba(0,16,23,.44);
+}
+.meg-integrated-preview .pano-benefit-card {
+  box-shadow:inset 0 1px rgba(171,255,240,.12),0 0 15px rgba(9,165,135,.13);
+}
+.meg-integrated-preview .pano-flow {
+  box-shadow:inset 0 1px rgba(192,255,245,.06),0 8px 20px rgba(0,9,18,.34);
+}
+
+/* HOME 06 / IMAGEM 01: acabamento somente nesta tela.
+   Faixa full-width de quatro atalhos, "+" do topo preservado.
+   No wide, a largura útil é limitada, não esticada. */
+.meg-integrated-preview[data-preview-view="home"] .pano-root {
+  width:100%;
+  /* O limite antigo (93rem) produzia uma faixa vazia larga ao lado da
+     sidebar. Usar a largura útil até 134rem sem aumentar o cartão/plástico. */
+  max-width:134rem;
+  margin-inline:auto;
+  padding-inline:clamp(.5rem,1.2vw,1rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-panel {
+  border-color:rgba(62,193,183,.55);
+  box-shadow:inset 0 1px 0 rgba(200,255,249,.085),0 8px 23px rgba(0,12,18,.34);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-hero {
+  border-color:rgba(73,224,209,.7);
+  box-shadow:inset 0 1px rgba(214,255,247,.14),0 0 16px rgba(18,212,199,.12);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-hero::before {
+  background:linear-gradient(90deg,rgba(0,19,27,.96),rgba(0,28,36,.82) 55%,rgba(0,45,58,.34)),
+    url('/meg-assets/hero.webp') center/cover no-repeat;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-spotlight,
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-block,
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column {min-width:0}
+/* Duas colunas verticais independentes. O gráfico alto não empurra a
+   tabela da outra coluna; a distância é determinada somente pelo gap. */
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
+  display:grid;grid-template-columns:minmax(0,1fr);
+  align-items:start;gap:clamp(.55rem,.9vw,.85rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column {
+  display:flex;flex-direction:column;align-items:stretch;
+  min-width:0;gap:clamp(.55rem,.9vw,.85rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid{
+  min-width:0;
+}
+/* O benefício cresce de acordo com seu conteúdo, não com a altura do gráfico. */
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column .pano-benefits{
+  flex:0 0 auto;align-self:stretch;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column .pano-benefit-card{
+  flex:0 0 auto;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-cards {
+  gap:.48rem;
+  padding:clamp(.68rem,1.2vw,.98rem);
+  border-color:rgba(47,230,211,.74);
+  background:radial-gradient(ellipse at 52% 15%,rgba(7,138,157,.13),transparent 66%),
+    linear-gradient(135deg,#06333b,#031e27);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-stage {
+  width:100%;
+  max-width:43rem;
+  min-height:clamp(13rem,25vw,15rem);
+  margin:.08rem auto;
+  border:1px solid rgba(67,206,203,.34);
+  border-radius:.8rem;
+  background:radial-gradient(ellipse at 50% 73%,rgba(14,172,171,.16),transparent 70%);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-stage::before {filter:brightness(.78) saturate(.67)}
+.meg-integrated-preview[data-preview-view="home"] .pano-credit-card {
+  width:min(69%,23rem);
+  padding:clamp(.6rem,1vw,.83rem);
+  border:1px solid rgba(207,255,248,.93);
+  border-radius:.77rem;
+  box-shadow:0 18px 38px rgba(0,7,20,.88),0 0 26px rgba(31,229,207,.29),
+    inset 0 1px 0 rgba(255,255,255,.37);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek {
+  width:35%;opacity:.85;filter:brightness(.76);
+  transform:translateY(-50%) scale(.91);
+  border-color:rgba(128,219,219,.57);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek.is-prev {left:4%}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek.is-next {right:4%}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-control {
+  border-color:rgba(102,239,221,.83);
+  background:linear-gradient(145deg,#08545b,#042e34);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-control:focus-visible,
+.meg-integrated-preview[data-preview-view="home"] .pano-action:focus-visible {
+  outline:2px solid #c7fff2;outline-offset:2px;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary {
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;gap:clamp(.35rem,.9vw,.85rem);
+  margin-top:.1rem;min-width:0;
+  padding:.55rem clamp(.5rem,1.1vw,.9rem);
+  border:1px solid rgba(51,193,185,.57);
+  border-radius:.7rem;
+  background:linear-gradient(110deg,rgba(3,55,61,.92),rgba(3,31,43,.91));
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-info {
+  display:flex;align-items:center;gap:.53rem;min-width:0;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-icon {
+  display:grid;place-items:center;flex:0 0 2.45rem;
+  width:2.45rem;height:2.45rem;border:1px solid rgba(59,221,212,.45);
+  border-radius:.52rem;background:rgba(7,87,95,.68);color:#59ffe7;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-copy {
+  display:flex;flex-direction:column;gap:.16rem;min-width:0;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-copy strong {
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(.8rem,1vw,1rem);line-height:1.15;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-summary-copy>span {
+  color:#b0dcd7;font-size:clamp(.68rem,.85vw,.8rem);line-height:1.24;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-nav {justify-content:center;min-height:2.75rem;margin:0}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-indicator {margin:0}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-indicator button.is-current::after {
+  background:#39f8e1;box-shadow:0 0 10px #3afde0a8;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-amount {
+  display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+  flex-wrap:nowrap;gap:.17rem;min-width:0;
+  margin:0;padding:0 0 0 clamp(.4rem,.85vw,.85rem);
+  border:0;border-left:1px solid rgba(56,194,177,.52);text-align:right;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-amount>span {
+  color:#bbdbd8;font-size:clamp(.66rem,.83vw,.78rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-amount strong {
+  color:#52f9e6;font-variant-numeric:tabular-nums;
+  font-size:clamp(1rem,1.5vw,1.38rem);line-height:1.18;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-actions {
+  width:100%;margin-top:clamp(.5rem,.85vw,.75rem);
+  padding:clamp(.72rem,1.15vw,1rem);
+  background:radial-gradient(ellipse at 5% 0%,rgba(16,178,174,.12),transparent 58%),
+    linear-gradient(145deg,#063038,#04232b);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-actions>.pano-panel-title::after {
+  content:"";min-width:0;flex:1 1 auto;height:2px;
+  background:linear-gradient(90deg,#1df1db75,transparent 95%);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action-list {
+  display:grid;grid-template-columns:minmax(0,1fr);
+  width:100%;max-width:none;margin-top:.6rem;
+  gap:clamp(.4rem,.85vw,.7rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action {
+  display:grid;grid-template-columns:2.65rem minmax(0,1fr);
+  grid-template-rows:auto auto;column-gap:.6rem;
+  align-content:center;align-items:center;justify-items:start;
+  min-width:0;min-height:4.25rem;
+  /* Anula span 3 da grade legada 3+2. Aqui são EXATAMENTE 4 cards. */
+  grid-column:auto;
+  padding:.5rem .65rem;
+  border:1px solid rgba(49,214,211,.69);border-radius:.9rem;
+  background:linear-gradient(140deg,#06414b,#04242d);
+  box-shadow:inset 0 1px rgba(207,255,250,.12),0 4px 13px rgba(0,14,23,.2);
+  text-align:left;transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action.is-blue {border-color:#20c4ee}
+.meg-integrated-preview[data-preview-view="home"] .pano-action.is-violet {border-color:#9262ed}
+.meg-integrated-preview[data-preview-view="home"] .pano-action.is-amber {border-color:#e4aa2b}
+.meg-integrated-preview[data-preview-view="home"] .pano-action.is-slate {border-color:#64bacb}
+.meg-integrated-preview[data-preview-view="home"] .pano-action-icon {
+  grid-column:1;grid-row:1/span 2;
+  width:2.65rem;height:2.65rem;flex-basis:2.65rem;
+  border-radius:.65rem;box-shadow:0 0 15px rgba(19,222,206,.16);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action-icon svg {
+  width:1.45rem;height:1.45rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action strong {
+  grid-column:2;grid-row:1;
+  font-size:clamp(.76rem,.95vw,1.04rem);font-weight:800;line-height:1.2;
+  overflow-wrap:break-word;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action small {
+  grid-column:2;grid-row:2;display:block;
+  color:#c7e8e5;font-size:clamp(.67rem,.77vw,.77rem);line-height:1.24;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action:hover,
+.meg-integrated-preview[data-preview-view="home"] .pano-action:focus-visible {
+  border-color:#bcfff1;
+  background:linear-gradient(145deg,#08545d,#05323c);
+  box-shadow:0 0 20px rgba(17,229,207,.17),0 5px 18px rgba(0,13,20,.32);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-benefits {
+  display:flex;flex-direction:column;min-height:0;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-benefit-card {
+  /* A imagem mantém cover; altura cresce apenas com conteúdo e espaço útil. */
+  flex:1 1 auto;min-height:clamp(11rem,15vw,15rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-flow {
+  min-width:0;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-chart {
+  min-height:clamp(14rem,18vw,18rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-flow-footnote {
+  font-size:clamp(.75rem,.84vw,.83rem);
+  color:#b3d3cf;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-flow-balance>span {
+  font-size:clamp(.75rem,.83vw,.83rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid-heading h2{
+  font-size:clamp(.88rem,1vw,1rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-table th {
+  font-size:.78rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-table,
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-table td{
+  font-size:.76rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid__viewport{
+  min-width:0;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-card-row dt,
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-card-row dd{
+  font-size:clamp(.76rem,.84vw,.84rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .pano-category-text {
+  overflow-wrap:normal;
+  text-overflow:ellipsis;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .pano-cell-text {
+  display:block;min-width:0;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+@media(min-width:640px) {
+  /* Com 4 indicadores, evitar distribuição 3+1 e coluna vazia em tablet. */
+  .meg-integrated-preview[data-preview-view="home"] .pano-overview {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action-list {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-stage {
+    min-height:clamp(14.5rem,33vw,16rem);
+  }
+}
+@media(min-width:1024px) {
+  .meg-integrated-preview[data-preview-view="home"] .pano-spotlight {
+    /* Só abre 2 colunas quando ambas comportarem o cartão real.
+       Em 1024px, usa uma coluna sem comprimir nem cortar. */
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));
+    gap:clamp(.52rem,.9vw,.75rem);align-items:stretch;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
+    /* Duas colunas só quando há largura real. Na mesma linha, a altura
+       é compartilhada, permitindo que ambos os DataGrids terminem juntos. */
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,34rem),1fr));
+    align-items:stretch;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column{
+    align-self:stretch;
+    min-height:0;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid{
+    display:flex;
+    flex-direction:column;
+    flex:1 1 auto;
+    min-height:0;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid>.meg-datagrid{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid .meg-datagrid__viewport{
+    flex:1 1 auto;
+    height:auto;
+    min-height:8rem;
+    max-height:none;
+  }
+  /* Somente o grid de Compromissos distribui suas linhas existentes
+     para ocupar a área útil. Sem linhas falsas e com rodapé na base. */
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-secondary>.pano-grid .meg-datagrid-table{
+    height:100%;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action-list {
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-stage {
+    min-height:clamp(13.5rem,17vw,15.6rem);
+  }
+}
+@media(max-width:1023px) {
+  /* Preserva a ordem de leitura histórica no mobile/tablet:
+     Fluxo > Benefícios > Movimentações > Compromissos.
+     display:contents remove somente caixas genéricas, não os painéis. */
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
+    display:flex;flex-direction:column;align-items:stretch;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column{
+    display:contents;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid{
+    width:100%;max-width:100%;min-width:0;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-flow{order:1}
+  .meg-integrated-preview[data-preview-view="home"] .pano-benefits{order:2}
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-primary>.pano-grid{order:3}
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-secondary>.pano-grid{order:4}
+}
+@media(max-width:639px) {
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-summary {
+    grid-template-columns:minmax(0,1fr) auto;row-gap:.2rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-summary-info {
+    grid-column:1;grid-row:1;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-amount {
+    grid-column:1;grid-row:2;align-items:flex-start;padding:0;border:0;text-align:left;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-nav {
+    grid-column:2;grid-row:1/span 2;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-stage {
+    min-height:clamp(10.8rem,52vw,13.5rem);
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-credit-card {
+    width:min(69%,19.5rem);
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  .meg-integrated-preview[data-preview-view="home"] .pano-action {transition:none}
+}

@@ -14,6 +14,7 @@ import {LaunchTypePicker} from '../launches/LaunchTypePicker';
 import '../launches/new-launch.css';
 
 import './integrated-preview.css';
+import './home-refinement.css';
 import './choice-refinement.css';
 
 /**
