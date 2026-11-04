@@ -82,6 +82,9 @@ for(const [width,height] of [[1366,768],[390,844]]){
   const query=page.getByPlaceholder('Buscar lançamentos...');
   await query.fill('Teste Operacional 101');
   await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor();
+  await page.getByRole('button',{name:'Atualizar consulta'}).click();
+  await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
+  if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
   await query.fill('');
   historyRequests=0;mutation=true;
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
