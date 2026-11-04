@@ -50,6 +50,15 @@ A matriz abaixo usa as linhas auditadas e registradas em `docs/MEG-WEB-AUDITORIA
 - `scripts/meg-stage09-lancamentos.browser.mjs` + `.github/workflows/meg-stage09-lancamentos.yml`: contratos de build, Prisma, financeiros, core, fonte única, DataGrid, geometria e capturas em oito resoluções.
 - Preview próprio Render: `https://meg-lancamentos-09-pr.onrender.com/fluxo-integrado-08.html?tela=lancamentos`.
 
+## 04/11/2026 | Ajuste de ergonomia aprovado: DataGrid prioritário
+- O usuário solicitou painéis auxiliares **recolhidos por padrão**, com expansão/recolhimento **independente**, para ampliar o DataGrid. Essa autorização NÃO homologa o resultado visual.
+- Os dois painéis ("Distribuição no período" e "Lançamento selecionado") saíram da coluna lateral permanente e passaram a uma faixa de accordions acima da grade; mesmo quando abertos, a tabela continua em **100% da largura disponível**.
+- Botões nativos com `aria-expanded`, `aria-controls`, `hidden` e foco por teclado. No mobile, os detalhes expandidos aparecem na própria página, sem modal que cubra a grade.
+- Clicar em uma descrição ou ação da linha revela o detalhamento do ID selecionado e desloca a área de conteúdo até o painel. Não aciona edição.
+- A altura máxima da área rolável do DataGrid aumentou de `clamp(18rem, 100dvh - 24rem, 42rem)` para `clamp(22rem, 100dvh - 13rem, 64rem)` em desktop, limitada ao viewport e sem scroll horizontal da página; na faixa mobile, até `52rem`. A paginação padrão passou de 12 para **25 registros**. Preferências persistidas do usuário continuam sujeitas ao contrato do DataGrid.
+- Teste de navegador atualizado para validar estado inicial fechado, abertura independente, recolhimento, seleção, largura integral da grade, ausência de mutação/API, filtros e responsividade em oito resoluções.
+- **Preservação:** não houve alteração de Home, Novo Lançamento, Android, API, camada financeira, nem implementação de writers. PR #656 permanece Draft. Requer CI, inspeção de capturas e aprovação visual explícita.
+
 ## Checklist
 - [x] Auditoria prévia das autoridades, funcionalidades e conflitos.
 - [x] Branch e PR isoladas; Home/Novo/Android/API/financial-policy intocados.
