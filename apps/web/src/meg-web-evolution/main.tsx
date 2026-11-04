@@ -127,7 +127,12 @@ function AuthGateway() {
   }
 
   if (session) return (
-    <AppShell activeSection={section} onNavigate={setSection}>
+    <AppShell
+      activeSection={section}
+      onNavigate={setSection}
+      profileName={session.user.name}
+      periodLabel={new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'America/Sao_Paulo'}).format(new Date()).replace(/^./,letter=>letter.toLocaleUpperCase('pt-BR'))}
+    >
       {section==='launches'
         ? <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={()=>setSection('home')}/>
         : <HomeDashboard />}
