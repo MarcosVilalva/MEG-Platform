@@ -81,3 +81,8 @@ O teste integrado foi estendido: nove viewports para Home e nove para Novo Lanç
 - Comunicação da opção Benefício atualizada para `Verocard Alimentação · cartão pré-pago`, chips Saldo/Recarga/Consumo, **mantendo opção desabilitada** enquanto a API não for integrada nesta tela.
 - A ilustração local `verocard-alimentacao-v659.svg` substitui a imagem genérica de benefício nesta prévia, como representação visual provisória. Não afirmar que reproduz a frente do cartão físico atual.
 - Criada decisão financeira/documental; Home, Cards, API e saldo não são modificados. Mais detalhes em `docs/MEG-WEB-VEROCARD-PRE-PAGO-DECISAO-20261104.md`.
+
+## QA de largura mínima (04/11/2026)
+- A rodada `41801006263` compilou, mas o Playwright encontrou **1 falha em 320×640**: o novo texto/chips de Verocard faziam três chips quebrar para duas linhas, deslocando o centro do cadeado em 3,95px. Não foi erro de regra financeira.
+- Ajuste estrutural e localizado ao card Benefício em mobile: três chips compactos em uma linha, mantendo informações e cadeado alinhado. Não ocultar controles nem reduzir área de toque do card.
+- Repete CI/Render no novo commit; revisão anterior com falha não deve ser considerada tecnicamente aprovada.

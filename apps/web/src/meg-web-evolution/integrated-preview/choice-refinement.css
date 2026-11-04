@@ -399,6 +399,19 @@
   .meg-integrated-preview__choice-overlay .meg-choice__tag-icon{
     width:.68rem;height:.68rem
   }
+  /* O Verocard tem três chips; sem esta compactação, em 320px os chips
+     quebravam duas linhas e deslocavam o cadeado do centro do card.
+     Todos os chips continuam legíveis e o card mantém a altura. */
+  .meg-integrated-preview__choice-overlay .meg-choice__option.is-benefit .meg-choice__tags{
+    flex-wrap:nowrap;gap:.1rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option.is-benefit .meg-choice__tag{
+    min-height:1.12rem;padding:.055rem .17rem;
+    gap:.1rem;font-size:.53rem;
+  }
+  .meg-integrated-preview__choice-overlay .meg-choice__option.is-benefit .meg-choice__tag-icon{
+    width:.58rem;height:.58rem;
+  }
   .meg-integrated-preview__choice-overlay .meg-choice__tag.is-future{
     display:none
   }
