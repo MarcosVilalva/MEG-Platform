@@ -26,7 +26,7 @@ const options: LaunchOption[] = [
     enabled: false,
   },
   {
-    id: 'benefit', title: 'Benefício', subtitle: 'Verocard Alimentação · cartão pré-pago',
+    id: 'benefit', title: 'Benefício', subtitle: 'Usar ou recarregar cartão benefício',
     tags: [{ label: 'Saldo' }, { label: 'Recarga' }, { label: 'Consumo' }],
     enabled: false,
   },

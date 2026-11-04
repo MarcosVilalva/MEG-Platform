@@ -1493,3 +1493,11 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - A rodada `41801006263` compilou, mas o Playwright encontrou **1 falha em 320×640**: o novo texto/chips de Verocard faziam três chips quebrar para duas linhas, deslocando o centro do cadeado em 3,95px. Não foi erro de regra financeira.
 - Ajuste estrutural e localizado ao card Benefício em mobile: três chips compactos em uma linha, mantendo informações e cadeado alinhado. Não ocultar controles nem reduzir área de toque do card.
 - Repete CI/Render no novo commit; revisão anterior com falha não deve ser considerada tecnicamente aprovada.
+
+## 04/11/2026 | CORREÇÃO DE ESCOPO APROVADA: Benefício genérico, operadora por cadastro
+- Usuário esclareceu que o MEG é produto de uso geral: Verocard é exemplo particular; outra pessoa poderá ter Ticket, Alelo, VR ou outro emissor. **O card genérico Benefício no Novo Lançamento NÃO pode mostrar marca/operadora fixa**.
+- A imagem específica do cartão pertence ao **cadastro real do cartão e ao carrossel de Cartões**, com identificação/asset conforme a instância cadastrada. Sem marca cadastrada ou asset confirmado, usar representação genérica.
+- Nova referência: `docs/MEG-WEB-BENEFICIOS-MULTIOPERADORA-DECISAO-20261104.md`. Ela **complementa e corrige o escopo** da decisão anterior de Verocard pré-pago: regra particular ainda válida, mas não universal.
+- Prévia PR #654: subtítulo genérico, ilustração de cesta/mercado + cartão sem marca; mantém Saldo/Recarga/Consumo, Benefício indisponível, demais cards e o resto da Home intactos. Asset `apps/web/public/meg-assets/benefit-generic-groceries.webp`.
+- **Lacuna técnica identificada:** domínio atual exige Verocard no `financial-policy.ts` e no writer `benefit-event-mutation.ts`. Suporte operacional multioperadora **ainda não existe**; não alterar writer, nem inferir suporte universal a partir da revisão visual.
+- Testes, deploy Render e validação visual humana continuam exigidos antes de merge. Android congelado.

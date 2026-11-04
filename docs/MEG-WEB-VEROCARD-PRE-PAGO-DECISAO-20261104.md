@@ -31,3 +31,6 @@ Verocard Alimentação será **apresentado como cartão** na experiência do usu
 
 ## Restrições de continuidade
 O Android permanece congelado. Não alterar `financial-policy`, `benefit-event-mutation`, cartões de crédito, contas ou migrações sem nova auditoria + testes de caracterização. Esta decisão não homologou nenhuma tela visual e não autorizou merge.
+
+## Esclarecimento de escopo aprovado depois desta decisão (04/11/2026)
+Esta decisão permanece correta **para um usuário que tenha Verocard**, mas **não define a identidade genérica do módulo Benefício**. Em uso comercial, a operadora e sua arte devem ser lidas do cadastro do cartão; Novo Lançamento usa imagem e textos genéricos. A ampliação da API para Ticket, Alelo e outros ainda requer implementação e testes. Documento prevalecente para identidade genérica: `docs/MEG-WEB-BENEFICIOS-MULTIOPERADORA-DECISAO-20261104.md`.

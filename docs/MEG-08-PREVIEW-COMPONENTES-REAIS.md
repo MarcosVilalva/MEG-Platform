@@ -86,3 +86,8 @@ O teste integrado foi estendido: nove viewports para Home e nove para Novo Lanç
 - A rodada `41801006263` compilou, mas o Playwright encontrou **1 falha em 320×640**: o novo texto/chips de Verocard faziam três chips quebrar para duas linhas, deslocando o centro do cadeado em 3,95px. Não foi erro de regra financeira.
 - Ajuste estrutural e localizado ao card Benefício em mobile: três chips compactos em uma linha, mantendo informações e cadeado alinhado. Não ocultar controles nem reduzir área de toque do card.
 - Repete CI/Render no novo commit; revisão anterior com falha não deve ser considerada tecnicamente aprovada.
+
+## 04/11/2026 | Benefício com identidade visual genérica (substitui a personalização de Verocard)
+- A comunicação visual da escolha foi neutralizada a pedido do usuário para uso comercial futuro. Subtítulo: `Usar ou recarregar cartão benefício`; imagem autoral de cesta de compras/alimentos e cartão pré-pago **sem marca**.
+- **Não** confundir identificação genérica da tela com implementação financeira multioperadora. O writer atual ainda está restrito ao método Verocard, conforme autoridade existente. Benefício segue desabilitado na prévia, sem API/gravação.
+- Arquivos da Etapa 08: `LaunchTypePicker.tsx`, `choice-refinement.css`, arte `benefit-generic-groceries.webp`, testes, checkpoint e decisões. Home/Cartões/API/Android intactos.
