@@ -13,7 +13,11 @@ import './launches-stage09.css';
  * Totais financeiros vêm apenas do read model (summary) e ficam ocultos
  * quando os filtros deixam de representar o conjunto canônico do mês.
  */
-type Props={data:HomeFinancialData;onNew:()=>void;onHome:()=>void};
+type Props={
+ data:HomeFinancialData;onNew:()=>void;onHome:()=>void;
+ mode?:'preview'|'live';periodMonth?:string;userId?:string;
+ exportUserName?:string;onRefresh?:()=>void;
+};
 type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
  paymentMethod:string;status:string;type:string;signedAmount:number;
@@ -64,16 +68,18 @@ function DemoBreakdown({rows}:{rows:Row[]}){
     {segments.length?segments.map(s=><div className="meg-l09-legend-item" key={s.category}><span className="meg-l09-swatch" style={{background:s.color}}/><span title={s.category}>{s.category}</span><strong>{s.count}</strong><small>{s.percent.toFixed(0)}%</small></div>):<p>Sem despesas nesta seleção.</p>}
    </div>
   </div>
-  <p className="meg-l09-hint">Prévia: distribuição pela quantidade de registros. Valores financeiros dependem do read model canônico.</p>
+  <p className="meg-l09-hint">Distribuição por quantidade de registros, não por valores ou saldo financeiro.</p>
  </>;
 }
-export function LaunchesStage09({data,onNew,onHome}:Props){
+export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh}:Props){
+ const startOfMonth=periodMonth+'-01';
+ const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
  const [search,setSearch]=useState('');
  const [kind,setKind]=useState('all');
  const [category,setCategory]=useState('all');
  const [account,setAccount]=useState('all');
- const [start,setStart]=useState('2026-10-01');
- const [end,setEnd]=useState('2026-10-31');
+ const [start,setStart]=useState(startOfMonth);
+ const [end,setEnd]=useState(endOfMonth);
  const [advanced,setAdvanced]=useState<DataGridFilterState>({});
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const [distributionOpen,setDistributionOpen]=useState(false);
@@ -110,25 +116,27 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
- const filtered=Boolean(search||kind!=='all'||category!=='all'||account!=='all'||start!=='2026-10-01'||end!=='2026-10-31'||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
- const summary=!filtered&&data.summary?.month==='2026-10'?data.summary:null;
+ const filtered=Boolean(search||kind!=='all'||category!=='all'||account!=='all'||start!==startOfMonth||end!==endOfMonth||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
+ const summary=!filtered&&data.summary?.month===periodMonth?data.summary:null;
  const blank=summary===null;
  const stats=[
-  {name:'Total no período',value:summary?.projectedResult,tag:'Resultado canônico',variant:'total'},
+  {name:mode==='live'?'Resultado projetado':'Total no período',value:summary?.projectedResult,tag:'Resultado canônico',variant:'total'},
   {name:'Entradas',value:summary?.income,tag:'Resumo da API / fixture',variant:'income'},
   {name:'Saídas',value:summary?.expense,tag:'Resumo da API / fixture',variant:'expense'},
-  {name:'Saldo no período',value:summary?.projectedResult,tag:'Resultado do período',variant:'balance'}
+  {name:mode==='live'?'Resultado realizado':'Saldo no período',value:mode==='live'?summary?.realizedResult:summary?.projectedResult,tag:mode==='live'?'Consolidado pela API':'Resultado do período',variant:'balance'}
  ];
  return <section className="meg-l09" aria-label="Lançamentos financeiros">
   <header className="meg-l09-hero">
    <div><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
-   <button type="button" className="meg-l09-add" onClick={onNew}><Icon name="plus" width={19}/>Novo lançamento</button>
+   <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'} title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><Icon name="plus" width={19}/>Novo lançamento</button>
   </header>
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
    <span className="meg-l09-stat-icon" aria-hidden="true">{s.variant==='income'?'↓':s.variant==='expense'?'↑':s.variant==='balance'?'◉':'▣'}</span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
-  <p className="meg-l09-preview-warning" role="note">Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.</p>
+  <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado, consultado integralmente e conferido em duas leituras. Os indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. A tela não altera lançamentos.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
+   {mode==='live'&&onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
+  </p>
   <div className="meg-l09-workspace">
    <div className="meg-l09-left">
     <form className="meg-l09-filters" onSubmit={event=>event.preventDefault()} role="search">
@@ -166,17 +174,18 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
          <div><dt>Status</dt><dd>{shortStatus[chosen.status]||chosen.status}</dd></div>
          {showNotes&&<div><dt>Observações</dt><dd>{chosen.notes||'Sem observações cadastradas'}</dd></div>}
         </dl>
-        <p className="meg-l09-hint">Edição, exclusão e baixa indisponíveis na prévia, sem acesso ao writer financeiro.</p>
+        <p className="meg-l09-hint">Edição, exclusão e baixa indisponíveis nesta etapa; nenhuma operação financeira é executada.</p>
        </div>:<p className="meg-l09-empty">Nenhum lançamento selecionado.</p>}
       </div>
      </section>
     </aside>
     <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos">
      <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable
-      rowKey="id" persistenceKey="stage09-launches-demo-only" ariaLabel="Lançamentos do período"
-      footerAggregates={false} onFilterChange={onGridFilter} exportPeriod="Demonstração visual" />
+      rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
+      footerAggregates={false} onFilterChange={onGridFilter} exportUserName={mode==='live'?exportUserName:undefined}
+      exportPeriod={mode==='live'?'Histórico autorizado — '+periodMonth:'Demonstração visual'} />
     </section>
-    <div className="meg-l09-grid-summary">{shownRows.length} de {allRows.length} registros da amostra de demonstração. Ordem cronológica, sem agrupamento por categoria.</div>
+    <div className="meg-l09-grid-summary">{shownRows.length} de {allRows.length} registros {mode==='live'?'do histórico autorizado':'da amostra de demonstração'}. Ordem cronológica, sem agrupamento por categoria.</div>
    </div>
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><Icon name="chevronLeft" width={18}/>Voltar à Home</button>
