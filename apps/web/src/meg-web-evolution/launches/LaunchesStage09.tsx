@@ -1,4 +1,4 @@
-import {useCallback,useMemo,useState} from 'react';
+import {useCallback,useMemo,useRef,useState} from 'react';
 import {DataGrid} from '../datagrid/DataGrid';
 import {applyFilters} from '../datagrid/core';
 import type {DataGridColumn,DataGridFilterState} from '../datagrid/types';
@@ -55,8 +55,7 @@ function DemoBreakdown({rows}:{rows:Row[]}){
   });
  },[rows]);
  const image=segments.length?'conic-gradient('+segments.map(s=>`${s.color} ${s.start}% ${s.start+s.percent}%`).join(', ')+')':'conic-gradient(#12353d 0 100%)';
- return <section className="meg-l09-panel meg-l09-distribution" aria-label="Distribuição no período">
-  <div className="meg-l09-panel-title"><h2><span aria-hidden="true">◫</span>Distribuição no período</h2><span className="meg-l09-mini">Por quantidade</span></div>
+ return <>
   <div className="meg-l09-distribution-body">
    <div className="meg-l09-donut" style={{background:image}} role="img" aria-label={segments.length?segments.map(s=>s.category+': '+s.count+' lançamento(s)').join('; '):'Sem despesas no filtro'}>
     <div className="meg-l09-donut-hole"><strong>{rows.filter(row=>row.type==='expense').length}</strong><small>despesas</small></div>
@@ -66,7 +65,7 @@ function DemoBreakdown({rows}:{rows:Row[]}){
    </div>
   </div>
   <p className="meg-l09-hint">Prévia: distribuição pela quantidade de registros. Valores financeiros dependem do read model canônico.</p>
- </section>;
+ </>;
 }
 export function LaunchesStage09({data,onNew,onHome}:Props){
  const [search,setSearch]=useState('');
@@ -77,7 +76,15 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
  const [end,setEnd]=useState('2026-10-31');
  const [advanced,setAdvanced]=useState<DataGridFilterState>({});
  const [selectedId,setSelectedId]=useState<string|null>(null);
- const [mobileDetails,setMobileDetails]=useState(false);
+ const [distributionOpen,setDistributionOpen]=useState(false);
+ const [detailsOpen,setDetailsOpen]=useState(false);
+ const detailsPanelRef=useRef<HTMLElement|null>(null);
+ const openDetails=useCallback((id:string)=>{
+  setSelectedId(id);
+  setDetailsOpen(true);
+  // Seleção revela detalhes sem modal e sem nova rota.
+  window.requestAnimationFrame(()=>detailsPanelRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
+ },[]);
  const [showNotes,setShowNotes]=useState(false);
  const allRows=useMemo(()=>sourceRows(data),[data]);
  const rows=useMemo(()=>allRows.filter(row=>
@@ -90,7 +97,7 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
  const columns=useMemo<DataGridColumn<Row>[]>(()=>[
   {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
   {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
-   render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>{setSelectedId(row.id);setMobileDetails(true)}} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
+   render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
   {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
    render:(_value,row)=><span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')}>{row.category}</span>},
   {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
@@ -98,8 +105,8 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
    render:(_value,row)=><strong className={'meg-l09-money '+(row.signedAmount>=0?'is-positive':'is-negative')}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>},
   {key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
-   render:(_value,row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>{setSelectedId(row.id);setMobileDetails(true)}}>•••</button>},
- ],[]);
+   render:(_value,row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>},
+ ],[openDetails]);
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
@@ -131,34 +138,47 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
       <label><span className="sr-only">Conta</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
       <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><Icon name="calendar" width={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
+    <aside className="meg-l09-right" aria-label="Painéis complementares da grade">
+     <section className={'meg-l09-panel meg-l09-distribution '+(distributionOpen?'is-open':'is-collapsed')} aria-label="Distribuição no período">
+      <div className="meg-l09-panel-title">
+       <button type="button" className="meg-l09-panel-toggle" aria-controls="meg-l09-distribution-content" aria-expanded={distributionOpen} aria-label={distributionOpen?'Recolher gráfico de distribuição':'Expandir gráfico de distribuição'} onClick={()=>setDistributionOpen(open=>!open)}>
+        <Icon name="chart" width={19}/><span className="meg-l09-toggle-title">Distribuição no período</span><span className="meg-l09-mini">Por quantidade</span><Icon name="chevronDown" width={19} className="meg-l09-panel-chevron"/>
+       </button>
+      </div>
+      {distributionOpen&&<div id="meg-l09-distribution-content" className="meg-l09-panel-content"><DemoBreakdown rows={shownRows}/></div>}
+     </section>
+     <section ref={detailsPanelRef} className={'meg-l09-panel meg-l09-details '+(detailsOpen?'is-open':'is-collapsed')} aria-label="Lançamento selecionado">
+      <div className="meg-l09-panel-title">
+       <button type="button" className="meg-l09-panel-toggle" aria-controls="meg-l09-details-content" aria-expanded={detailsOpen} aria-label={detailsOpen?'Recolher detalhes do lançamento':'Expandir detalhes do lançamento'} onClick={()=>setDetailsOpen(open=>!open)}>
+        <Icon name="list" width={19}/><span className="meg-l09-toggle-title">Lançamento selecionado</span><Icon name="chevronDown" width={19} className="meg-l09-panel-chevron"/>
+       </button>
+      </div>
+      {detailsOpen&&<div id="meg-l09-details-content" className="meg-l09-panel-content">
+       <div className="meg-l09-detail-actions"><button type="button" onClick={()=>setShowNotes(value=>!value)} aria-pressed={showNotes}>{showNotes?'Ocultar observações':'Mostrar observações'}</button><button type="button" disabled title="Editar depende de integração financeira protegida" className="meg-l09-edit">Editar</button></div>
+       {chosen?<div className="meg-l09-detail-body">
+        <div className="meg-l09-selected-head"><span aria-hidden="true" className="meg-l09-detail-illustration"><Icon name="list" width={25}/></span><div><strong>{chosen.description}</strong><span>{chosen.category}</span></div><strong className={chosen.signedAmount>=0?'is-positive':'is-negative'}>{currency(chosen.signedAmount)}</strong></div>
+        <dl>
+         <div><dt>Data</dt><dd>{dateFmt(chosen.date)}</dd></div>
+         <div><dt>Conta / Cartão</dt><dd>{chosen.account}</dd></div>
+         <div><dt>Forma de pagamento</dt><dd>{chosen.paymentMethod}</dd></div>
+         <div><dt>Categoria</dt><dd>{chosen.category}</dd></div>
+         <div><dt>Tipo</dt><dd>{shortType[chosen.type]||chosen.type}</dd></div>
+         <div><dt>Status</dt><dd>{shortStatus[chosen.status]||chosen.status}</dd></div>
+         {showNotes&&<div><dt>Observações</dt><dd>{chosen.notes||'Sem observações cadastradas'}</dd></div>}
+        </dl>
+        <p className="meg-l09-hint">Edição, exclusão e baixa indisponíveis na prévia, sem acesso ao writer financeiro.</p>
+       </div>:<p className="meg-l09-empty">Nenhum lançamento selecionado.</p>}
+      </div>}
+     </section>
+    </aside>
     <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos">
-     <DataGrid<Row> data={rows} columns={columns} pageSize={12} selectable
+     <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable
       rowKey="id" persistenceKey="stage09-launches-demo-only" ariaLabel="Lançamentos do período"
       footerAggregates={false} onFilterChange={onGridFilter} exportPeriod="Demonstração visual" />
     </section>
     <div className="meg-l09-grid-summary">{shownRows.length} de {allRows.length} registros da amostra de demonstração. Ordem cronológica, sem agrupamento por categoria.</div>
    </div>
-   <aside className="meg-l09-right">
-    <DemoBreakdown rows={shownRows}/>
-    <section className={'meg-l09-panel meg-l09-details '+(mobileDetails?'is-mobile-open':'')} aria-label="Lançamento selecionado">
-     <div className="meg-l09-panel-title"><h2><Icon name="list" width={20}/>Lançamento selecionado</h2><div className="meg-l09-detail-actions"><button type="button" onClick={()=>setShowNotes(v=>!v)} aria-label="Alternar observações">•••</button><button type="button" disabled title="Editar depende de integração financeira protegida" className="meg-l09-edit">Editar</button><button type="button" className="meg-l09-mobile-close" aria-label="Fechar detalhes" onClick={()=>setMobileDetails(false)}>×</button></div></div>
-     {chosen?<div className="meg-l09-detail-body">
-      <div className="meg-l09-selected-head"><span aria-hidden="true" className="meg-l09-detail-illustration"><Icon name="list" width={25}/></span><div><strong>{chosen.description}</strong><span>{chosen.category}</span></div><strong className={chosen.signedAmount>=0?'is-positive':'is-negative'}>{currency(chosen.signedAmount)}</strong></div>
-      <dl>
-       <div><dt>Data</dt><dd>{dateFmt(chosen.date)}</dd></div>
-       <div><dt>Conta / Cartão</dt><dd>{chosen.account}</dd></div>
-       <div><dt>Forma de pagamento</dt><dd>{chosen.paymentMethod}</dd></div>
-       <div><dt>Categoria</dt><dd>{chosen.category}</dd></div>
-       <div><dt>Tipo</dt><dd>{shortType[chosen.type]||chosen.type}</dd></div>
-       <div><dt>Status</dt><dd>{shortStatus[chosen.status]||chosen.status}</dd></div>
-       {showNotes&&<div><dt>Observações</dt><dd>{chosen.notes||'Sem observações cadastradas'}</dd></div>}
-      </dl>
-      <p className="meg-l09-hint">Edição, exclusão e baixa indisponíveis na prévia, sem acesso ao writer financeiro.</p>
-     </div>:<p className="meg-l09-empty">Nenhum lançamento selecionado.</p>}
-    </section>
-   </aside>
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><Icon name="chevronLeft" width={18}/>Voltar à Home</button>
-  {mobileDetails&&<button type="button" aria-label="Fechar detalhes" className="meg-l09-mobile-scrim" onClick={()=>setMobileDetails(false)}/>}
  </section>;
 }
