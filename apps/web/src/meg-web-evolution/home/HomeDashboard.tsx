@@ -159,11 +159,11 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
    render:(v,row)=><strong className={Number(row.amount)<0?'pano-negative':'pano-positive'}>{Number(row.amount)<0?'− ':'+ '}{format(Number(v),hidden)}</strong>}
  ];
  const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',width:125,sortable:true,filterable:true},
-  {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true},
-  {key:'source',label:'Origem',type:'text',width:137,sortable:true,filterable:true},
-  {key:'value',label:'Valor',type:'currency',width:115,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
-  {key:'status',label:'Situação',type:'text',width:118,sortable:true,filterable:true,
+  {key:'date',label:'Vencimento',type:'date',width:150,sortable:true,filterable:true},
+  {key:'description',label:'Descrição',type:'text',width:155,sortable:true,filterable:true},
+  {key:'source',label:'Origem',type:'text',width:119,sortable:true,filterable:true},
+  {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
+  {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
    render:v=><span className="pano-status">{String(v??'—')}</span>}
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
