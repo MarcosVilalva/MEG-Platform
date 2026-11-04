@@ -75,6 +75,7 @@
 .meg-l09-panel.is-open .meg-l09-panel-chevron{transform:rotate(180deg)}
 .meg-l09-mini{flex:none;border:1px solid #147e83;border-radius:.5rem;padding:.3rem .48rem;color:#bedfdc;font-size:.67rem;white-space:nowrap;font-weight:500}
 .meg-l09-panel-content{min-width:0;border-top:1px solid rgba(23,215,202,.22);padding:.85rem .18rem .35rem}
+.meg-l09-panel-content[hidden]{display:none}
 .meg-l09-distribution-body{display:grid;grid-template-columns:minmax(6.7rem, .85fr) minmax(0,1.15fr);gap:.75rem;align-items:center}
 .meg-l09-donut{width:100%;max-width:13rem;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;margin-inline:auto;box-shadow:0 0 1.4rem #14e3c81d}
 .meg-l09-donut-hole{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;background:#031f28;border-radius:50%;width:65%;aspect-ratio:1;border:1px solid #103b44;text-align:center}
