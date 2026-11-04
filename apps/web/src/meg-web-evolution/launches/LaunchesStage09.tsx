@@ -129,8 +129,8 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const blank=summary===null;
  const stats=[
   {name:mode==='live'?'Resultado projetado':'Total no período',value:summary?.projectedResult,tag:'Resultado canônico',variant:'total'},
-  {name:'Entradas',value:summary?.income,tag:'Resumo da API / fixture',variant:'income'},
-  {name:'Saídas',value:summary?.expense,tag:'Resumo da API / fixture',variant:'expense'},
+  {name:'Entradas',value:summary?.income,tag:mode==='live'?'Resumo da API':'Resumo da API / fixture',variant:'income'},
+  {name:'Saídas',value:summary?.expense,tag:mode==='live'?'Resumo da API':'Resumo da API / fixture',variant:'expense'},
   {name:mode==='live'?'Resultado realizado':'Saldo no período',value:mode==='live'?summary?.realizedResult:summary?.projectedResult,tag:mode==='live'?'Consolidado pela API':'Resultado do período',variant:'balance'}
  ];
  return <section className="meg-l09" aria-label="Lançamentos financeiros">
