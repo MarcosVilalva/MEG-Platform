@@ -55,3 +55,10 @@ O teste integrado foi estendido: nove viewports para Home e nove para Novo Lanç
 - Três resoluções de altura compacta (320×568, 390×667, 1366×600) e 8 verificações de rota de Login/Cadastro/Recuperação/Carregamento inicial em 390×844 e 1366×768.
 - Rodapé descritivo ajustado para legibilidade mínima de aproximadamente 11px.
 - Nenhuma tela adicional é homologada pelos testes. Validar capturas e publicar somente após CI.
+
+
+## 04/11/2026 | Ajuste localizado das extremidades das imagens
+- Print do usuário mostrou nas quatro opções um limite vertical escuro entre a parte fotográfica e a região de texto, além de recorte marcado na borda esquerda.
+- Correção restrita ao CSS de `choice-refinement.css`: máscara progressiva (inclusive borda inicial e final) nos WebPs de Despesa, Receita, Transferência e Benefício, com cobertura `cover` preservada e escurecimento gradual atrás de texto e chips. Variação equivalente no mobile.
+- Mantidos posicionamento central dos ícones e grade estruturada, textos, estados disponíveis/indisponíveis, Home, fluxo real, API e Android. Nenhuma imagem oficial foi editada ou substituída.
+- Incluída verificação automatizada da máscara das quatro opções. Requer screenshot/CI/Render, e aprovação visual explícita para validar.

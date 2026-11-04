@@ -44,7 +44,9 @@ try {
           const photo=getComputedStyle(card.querySelector('.meg-choice__option-photo'));
           return {
             centerY:r.top+r.height/2,actionCenterY:action.top+action.height/2,
-            textRight:copy.right,actionLeft:action.left,backgroundSize:photo.backgroundSize
+            textRight:copy.right,actionLeft:action.left,
+            backgroundSize:photo.backgroundSize,
+            maskImage:photo.maskImage || photo.webkitMaskImage
           };
         }),
         heroPhoto:getComputedStyle(document.querySelector('.meg-choice__hero-photo')).backgroundPosition};
@@ -62,6 +64,8 @@ try {
       if(m.optionDetails.some(x=>Math.abs(x.centerY-x.actionCenterY)>2))problems.push('ícone não centralizado');
       if(m.optionDetails.some(x=>x.textRight>x.actionLeft-2))problems.push('texto invade ação');
       if(m.optionDetails.some(x=>x.backgroundSize!=='cover'))problems.push('foto distorcida');
+      if(m.optionDetails.some(x=>!x.maskImage?.includes('linear-gradient')))
+        problems.push('foto sem dissolução suave nas extremidades');
     }
     if(m.heroPhoto!=='50% 100%')problems.push('imagem hero sem foco inferior');
     if (requests.length) problems.push('requisição indevida à API: '+requests.join(','));
