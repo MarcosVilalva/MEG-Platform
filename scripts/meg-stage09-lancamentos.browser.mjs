@@ -21,20 +21,39 @@ for(const [width,height] of sizes){
     container:rect(root),kpis:document.querySelectorAll('.meg-l09-stat').length,
     panels:document.querySelectorAll('.meg-l09-panel').length,
     grid:!!document.querySelector('.meg-l09-grid-panel .meg-datagrid'),
+    gridWidth:document.querySelector('.meg-l09-grid-panel')?.getBoundingClientRect().width||0,
+    workspaceWidth:document.querySelector('.meg-l09-left')?.getBoundingClientRect().width||0,
     viewportHeight:document.querySelector('.meg-l09-grid-panel .meg-datagrid__viewport')?.getBoundingClientRect().height||0,
+    graphsCollapsed:document.querySelector('[aria-label="Expandir gráfico de distribuição"]')?.getAttribute('aria-expanded')==='false',
+    detailsCollapsed:document.querySelector('[aria-label="Expandir detalhes do lançamento"]')?.getAttribute('aria-expanded')==='false',
     visibleDataRows:window.innerWidth>=1024
       ?document.querySelectorAll('.meg-l09-grid-panel .meg-datagrid-table tbody tr:not(.meg-datagrid-spacer)').length
       :document.querySelectorAll('.meg-l09-grid-panel .meg-datagrid-card-row').length,
-    editorDisabled:document.querySelector('.meg-l09-edit')?.disabled===true,
+    editorDisabled:true, // Testado após expandir detalhes: botão não existe fechado.
     dates:[...document.querySelectorAll('input[type="date"]')].map(x=>x.value)};
   });
   if(measurement.documentWidth>width+2)issues.push('scroll horizontal do documento');
   if(measurement.mainScrollWidth>measurement.mainClientWidth+2)issues.push('scroll horizontal da area principal');
   if(measurement.kpis!==4||measurement.panels!==2||!measurement.grid)issues.push('componentes ausentes');
   if(measurement.viewportHeight<120||measurement.visibleDataRows<1)issues.push('DataGrid sem linhas visiveis');
+  if(!measurement.graphsCollapsed||!measurement.detailsCollapsed)issues.push('paineis nao iniciaram recolhidos');
+  if(measurement.gridWidth<measurement.workspaceWidth-3)issues.push('grade nao ocupa a largura toda');
   if(!measurement.editorDisabled)issues.push('edicao desbloqueada na previa');
   if(calls.length)issues.push('requisições de API nao autorizadas na previa');
   await page.screenshot({path:resolve(out,'lancamentos-'+width+'x'+height+'.png'),fullPage:true});
+  const chartToggle=page.getByRole('button',{name:'Expandir gráfico de distribuição'});
+  await chartToggle.click();
+  if(!(await page.locator('#meg-l09-distribution-content').isVisible()))issues.push('grafico nao expandiu');
+  if(!(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).isVisible()))issues.push('paineis nao independentes');
+  await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).click();
+  if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('detalhes nao expandiram');
+  if(!(await page.locator('.meg-l09-edit').isDisabled()))issues.push('edicao da previa desbloqueada');
+  await page.screenshot({path:resolve(out,'lancamentos-paineis-abertos-'+width+'x'+height+'.png'),fullPage:true});
+  await page.getByRole('button',{name:'Recolher gráfico de distribuição'}).click();
+  if(await page.locator('#meg-l09-distribution-content').count())issues.push('grafico nao recolheu');
+  if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('recolher grafico afetou detalhes');
+  await page.getByRole('button',{name:'Recolher detalhes do lançamento'}).click();
+  if(await page.locator('#meg-l09-details-content').count())issues.push('detalhes nao recolheram');
   const search=page.getByPlaceholder('Buscar lançamentos...');
   await search.fill('Supermercado');
   const n=await page.locator('.meg-l09-grid-summary').textContent();
@@ -42,10 +61,12 @@ for(const [width,height] of sizes){
   // Os dois mercados da fixture compartilham a categoria Supermercado.
   if(!/2 de 11 registros/.test(n||''))issues.push('filtro de busca nao funcionou: '+n);
   await search.fill('');
-  const detailButton=page.locator('.meg-datagrid-card-row:visible .meg-l09-open-row:visible, .meg-datagrid-table:visible .meg-l09-open-row:visible').filter({hasText:'Supermercado'}).first();
+  const detailButton=page.locator('.meg-datagrid-card-row:visible .meg-l09-open-row:visible, .meg-datagrid-table:visible .meg-l09-open-row:visible').filter({hasText:'Farmácia'}).first();
   await detailButton.click({timeout:8000});
-  if(width<640){if(!(await page.locator('.meg-l09-details.is-mobile-open').isVisible()))issues.push('detalhe mobile nao abriu');
-   await page.getByRole('button',{name:'Fechar detalhes'}).last().click();}
+  if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('selecao nao expandiu detalhes');
+  if(!/Farmácia/.test(await page.locator('.meg-l09-selected-head').textContent()||''))issues.push('selecionado incorreto');
+  await page.getByRole('button',{name:'Recolher detalhes do lançamento'}).click();
+  if(await page.locator('#meg-l09-details-content').count())issues.push('detalhes nao recolheram apos selecao');
   await page.screenshot({path:resolve(out,'lancamentos-interacao-'+width+'x'+height+'.png'),fullPage:true});
   results.push({width,height,measurement,issues});
  }catch(e){issues.push(String(e));results.push({width,height,issues});}
