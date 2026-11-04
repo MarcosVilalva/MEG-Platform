@@ -26,8 +26,8 @@ const options: LaunchOption[] = [
     enabled: false,
   },
   {
-    id: 'benefit', title: 'Benefício', subtitle: 'Usar ou recarregar Verocard',
-    tags: [{ label: 'Saldo' }, { label: 'Consumo' }],
+    id: 'benefit', title: 'Benefício', subtitle: 'Verocard Alimentação · cartão pré-pago',
+    tags: [{ label: 'Saldo' }, { label: 'Recarga' }, { label: 'Consumo' }],
     enabled: false,
   },
 ];
@@ -42,7 +42,7 @@ const features = [
 function ChoiceTagGlyph({label}: {label:string}) {
   const isCard = label === 'Cartão' || label === 'Saldo';
   const isBank = label === 'Conta' || label === 'Entre contas';
-  const isFlow = label === 'Recorrência' || label === 'Origem e destino';
+  const isFlow = label === 'Recorrência' || label === 'Origem e destino' || label === 'Recarga';
   return <svg className="meg-choice__tag-icon" viewBox="0 0 24 24"
     aria-hidden="true" focusable="false" fill="none" stroke="currentColor"
     strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">

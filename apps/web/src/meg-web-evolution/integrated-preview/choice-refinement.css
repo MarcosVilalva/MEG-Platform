@@ -174,7 +174,14 @@
   background-image:url('/meg-assets/transfer.webp');background-position:35% 52%
 }
 .meg-integrated-preview__choice-overlay .meg-choice__option.is-benefit .meg-choice__option-photo{
-  background-image:url('/meg-assets/benefit.webp');background-position:40% 50%
+  /* Identidade do Verocard Alimentação com a arte local existente.
+     O cartão é visual; esta área não modela crédito nem fatura. */
+  background-image:url('/assets/cards/verocard-alimentacao-v659.svg'),
+    radial-gradient(ellipse at 17% 40%,#ac851e90 0%,#76531f50 30%,transparent 67%),
+    linear-gradient(112deg,#715916,#3d351e 43%,#0b252b 100%);
+  background-size:auto 106%,cover,cover;
+  background-position:2% 50%,center,center;
+  background-repeat:no-repeat
 }
 .meg-integrated-preview__choice-overlay .meg-choice__option::before{
   content:"";position:absolute;inset:0;z-index:1;pointer-events:none;

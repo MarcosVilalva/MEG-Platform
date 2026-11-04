@@ -1479,3 +1479,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - A captura após retirar o início transparente revelou **dois contornos**: borda CSS do card e borda interna já rasterizada no asset oficial. O problema é geométrico, não uma emenda a resolver com mais sombras.
 - Ajuste apenas nos fundos fotográficos, com pequena sangria `inset:-10px -15px` nos banners e `-6px -9px` no hero; os cantos arredondados do contêiner HTML permanecem como única moldura visível. Não altera arte-fonte, proporção da imagem ou posição de textos e ícones.
 - Playwright adiciona verificação da sangria e capturas recortadas dos quatro banners em desktop/mobile. Inspeção manual deve confirmar que o contorno interno sumiu; CI não equivale a validação visual humana.
+
+
+## 04/11/2026 | DECISÃO FUNCIONAL APROVADA: Verocard = Cartão benefício pré-pago
+- Aprovada explicitamente pelo usuário a apresentação do Verocard como **cartão alimentação pré-pago**, inclusive futuro carrossel de Cartões, sem modelá-lo como cartão de crédito.
+- **Preservar** o item 12 das Regras Consolidadas: Alimentação = Conta Benefício + Verocard + Pago, com vínculos automáticos e sem interferência no saldo monetário. Escrita exclusiva de benefício em `apps/api/src/modules/finance/benefit-event-mutation.ts`.
+- Recarga aumenta saldo de benefício; despesa reduz com proteção de saldo. Não gerar fatura/limite/parcelas, nem salário/recarga duplicados. Carrossel somente projeção de leitura da mesma fonte.
+- **Nesta etapa:** ajustar apenas a comunicação visual do seletor de Novo Lançamento em PR #654, mantendo Benefício desabilitado na prévia. Implementações reais de Cartões/Home/Despesas/Benefícios ficam pendentes de suas respectivas etapas e gates.
+- Registro detalhado: `docs/MEG-WEB-VEROCARD-PRE-PAGO-DECISAO-20261104.md`.
+- Imagem local de Verocard é uma representação ilustrativa, não um cartão físico verificado. Aprovação visual e eventual substituição do asset oficial permanecem pendentes. PR #654 Draft, Android intacto.

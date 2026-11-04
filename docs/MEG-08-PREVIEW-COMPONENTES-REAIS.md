@@ -76,3 +76,8 @@ O teste integrado foi estendido: nove viewports para Home e nove para Novo Lanç
 - A captura após retirar o início transparente revelou **dois contornos**: borda CSS do card e borda interna já rasterizada no asset oficial. O problema é geométrico, não uma emenda a resolver com mais sombras.
 - Ajuste apenas nos fundos fotográficos, com pequena sangria `inset:-10px -15px` nos banners e `-6px -9px` no hero; os cantos arredondados do contêiner HTML permanecem como única moldura visível. Não altera arte-fonte, proporção da imagem ou posição de textos e ícones.
 - Playwright adiciona verificação da sangria e capturas recortadas dos quatro banners em desktop/mobile. Inspeção manual deve confirmar que o contorno interno sumiu; CI não equivale a validação visual humana.
+
+## 04/11/2026 | Verocard como cartão benefício (decisão aprovada)
+- Comunicação da opção Benefício atualizada para `Verocard Alimentação · cartão pré-pago`, chips Saldo/Recarga/Consumo, **mantendo opção desabilitada** enquanto a API não for integrada nesta tela.
+- A ilustração local `verocard-alimentacao-v659.svg` substitui a imagem genérica de benefício nesta prévia, como representação visual provisória. Não afirmar que reproduz a frente do cartão físico atual.
+- Criada decisão financeira/documental; Home, Cards, API e saldo não são modificados. Mais detalhes em `docs/MEG-WEB-VEROCARD-PRE-PAGO-DECISAO-20261104.md`.

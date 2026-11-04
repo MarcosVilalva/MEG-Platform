@@ -65,7 +65,10 @@ try {
     else {
       if(m.optionDetails.some(x=>Math.abs(x.centerY-x.actionCenterY)>2))problems.push('ícone não centralizado');
       if(m.optionDetails.some(x=>x.textRight>x.actionLeft-2))problems.push('texto invade ação');
-      if(m.optionDetails.some(x=>x.backgroundSize!=='cover'))problems.push('foto distorcida');
+      if(m.optionDetails.some((x,i)=>i!==3&&x.backgroundSize!=='cover'))
+        problems.push('foto de receita/despesa/transferencia distorcida');
+      if(!m.optionDetails[3].backgroundSize.includes('auto 106%'))
+        problems.push('cartao Verocard ilustrado em escala incorreta');
       if(m.optionDetails.some(x=>!(parseFloat(x.photoLeft)<-8&&parseFloat(x.photoTop)<-5)))
         problems.push('sangria insuficiente: moldura gravada no WebP aparece como borda dupla');
       if(m.optionDetails.some(x=>!x.maskImage?.includes('linear-gradient')))
@@ -76,6 +79,13 @@ try {
         problems.push('máscara torna transparente a ponta esquerda da imagem');
     }
     if(m.heroPhoto!=='50% 100%')problems.push('imagem hero sem foco inferior');
+    const benefit = await page.locator('.meg-choice__option.is-benefit');
+    if(!(await benefit.isDisabled()))problems.push('beneficio habilitado sem writer protegido');
+    if(!(await benefit.innerText()).includes('cartão pré-pago'))
+      problems.push('identificacao Verocard pre-pago ausente');
+    const benefitVisual=await benefit.locator('.meg-choice__option-photo').evaluate(el=>getComputedStyle(el).backgroundImage);
+    if(!benefitVisual.includes('verocard-alimentacao-v659.svg'))
+      problems.push('cartao Verocard visual não carregado no seletor');
     if (requests.length) problems.push('requisição indevida à API: '+requests.join(','));
     await page.screenshot({path:resolve(output,'novo-'+width+'x'+height+'.png'),fullPage:true});
     if(width===1366 || width===390){

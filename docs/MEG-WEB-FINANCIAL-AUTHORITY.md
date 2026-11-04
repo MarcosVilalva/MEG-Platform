@@ -46,3 +46,7 @@ Nenhuma tela, modal, KPI, gráfico ou DataGrid pode recriar regra financeira loc
 - A camada `apps/api/src/modules/notifications/canonical-source.ts` é adaptadora de leitura e não executa mutações financeiras.
 - Se a leitura canônica falhar, a notificação deve falhar em vez de divulgar um saldo legado potencialmente incorreto.
 - O Android permanece congelado. O deploy só ocorre após a integração de PR com CI aprovada.
+
+## Decisão de interface: Verocard Cartão Benefício Pré-pago (04/11/2026)
+
+Aprovada a **presença visual** do Verocard Alimentação no carrossel de Cartões, como **benefício pré-pago**. **Não** cadastrar como `CreditCard`, não gerar faturas/limites/parcelas e não redirecionar sua movimentação ao writer de cartões ou ao escritor monetário. Despesa Alimentação conserva `Conta Benefício + Verocard + Pago`, conforme regra consolidada, e usa exclusivamente a autoridade `benefit-event-mutation.ts`. Recarga/consumo devem ler o mesmo saldo canônico. A integração funcional fica para a etapa apropriada. Detalhes: `docs/MEG-WEB-VEROCARD-PRE-PAGO-DECISAO-20261104.md`.
