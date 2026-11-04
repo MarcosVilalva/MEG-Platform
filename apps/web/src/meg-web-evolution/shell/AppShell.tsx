@@ -279,7 +279,7 @@ export function AppShell({ children, activeSection='home', onNavigate, periodLab
           <div className="meg-topbar-actions">
             <button type="button" className="meg-period">
               <Icon name="calendar" />
-              <span>{periodLabel||'Outubro de 2026'}</span>
+              <span>{periodLabel ?? <>Outubro&nbsp;de&nbsp;2026</>}</span>
               <Icon name="chevronDown" />
             </button>
 
