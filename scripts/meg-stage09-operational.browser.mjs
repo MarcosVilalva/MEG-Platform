@@ -67,6 +67,7 @@ for(const [width,height] of [[1366,768],[390,844]]){
  try{
   await page.goto('http://127.0.0.1:4174/web-evolution.html',{waitUntil:'domcontentloaded'});
   await page.locator('.meg-sidebar .meg-nav-item[aria-label="Lançamentos"]').waitFor();
+  if(!/Usuário de Teste/.test(await page.locator('.meg-profile-name').textContent()||''))issues.push('Perfil exibiu identidade fixa de demonstracao');
   if(width<640)await page.getByRole('button',{name:'Abrir menu'}).click();
   await page.locator('.meg-sidebar .meg-nav-item[aria-label="Lançamentos"]').click();
   const sum=page.locator('.meg-l09-grid-summary');
