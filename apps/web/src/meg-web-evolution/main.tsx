@@ -9,6 +9,7 @@ import { CreateAccountScreen } from './auth/CreateAccountScreen';
 import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
 import { LoadingScreen } from './auth/LoadingScreen';
 import { HomeDashboard } from './home/HomeDashboard';
+import { OperationalLaunches } from './launches/OperationalLaunches';
 
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
@@ -19,6 +20,7 @@ function currentAuthDestination(): AuthDestination {
 
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [section, setSection] = useState<'home' | 'launches'>('home');
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
@@ -125,8 +127,10 @@ function AuthGateway() {
   }
 
   if (session) return (
-    <AppShell>
-      <HomeDashboard />
+    <AppShell activeSection={section} onNavigate={setSection}>
+      {section==='launches'
+        ? <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={()=>setSection('home')}/>
+        : <HomeDashboard />}
     </AppShell>
   );
 
