@@ -24,7 +24,10 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export type ShellSection = 'home'|'launches';
+export function AppShell({ children, activeSection='home', onNavigate }: {
+ children: ReactNode;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -103,8 +106,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           {navigation.map(([icon, label], index) => (
             <button
               key={label}
-              className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`}
+              className={`meg-nav-item ${(activeSection==='home' ? index===0 : index===1) ? 'is-active' : ''}`}
               type="button"
+              aria-current={(activeSection==='home' ? index===0 : index===1)?'page':undefined}
+              onClick={()=>{
+                if (!onNavigate) return; // A prévia mantém sua própria navegação, sem alterações.
+                if (index===0 || index===1){setDrawerOpen(false);onNavigate(index===0?'home':'launches')}
+              }}
               aria-label={label}
               data-tooltip={label}
               onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, label, 'right')}
