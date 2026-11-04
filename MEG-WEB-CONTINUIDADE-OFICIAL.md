@@ -1455,3 +1455,6 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Seleção preserva as decisões do projeto e os tipos ativos e indisponíveis do componente canônico PR #648, sem operações financeiras.
 - Refino estrutural local ao preview PR #654: stylesheet exclusivo `choice-refinement.css`, ícones SVG de ação e footer, crop da imagem com foco inferior e cartões sem distorção. Elimina overrides de escolha acumulados em `integrated-preview.css`.
 - Testes de captura e publicação Render serão obrigatórios antes de envio para validação humana. PR #654 Draft, sem merge, Home original e Android inalterados.
+
+
+- Revisão de QA (04/11/2026): teste de geometria de alinhamento, crop cover e hero com foco inferior; cenário de alturas compactas; smoke de autenticação em desktop/mobile, sem API. Tipografia auxiliar do rodapé aumentada. Prévia PR #654 ainda Draft e não homologada.

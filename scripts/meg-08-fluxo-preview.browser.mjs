@@ -36,7 +36,18 @@ try {
       };
       return {viewport:window.innerWidth,documentWidth:root.scrollWidth,
         dialog:dialog?rect(dialog):null,footer:footer?rect(footer):null,
-        cards:[...document.querySelectorAll('.meg-choice__option')].map(rect)};
+        cards:[...document.querySelectorAll('.meg-choice__option')].map(rect),
+        optionDetails:[...document.querySelectorAll('.meg-choice__option')].map(card=>{
+          const r=card.getBoundingClientRect();
+          const action=card.querySelector('.meg-choice__option-next').getBoundingClientRect();
+          const copy=card.querySelector('.meg-choice__option-text').getBoundingClientRect();
+          const photo=getComputedStyle(card.querySelector('.meg-choice__option-photo'));
+          return {
+            centerY:r.top+r.height/2,actionCenterY:action.top+action.height/2,
+            textRight:copy.right,actionLeft:action.left,backgroundSize:photo.backgroundSize
+          };
+        }),
+        heroPhoto:getComputedStyle(document.querySelector('.meg-choice__hero-photo')).backgroundPosition};
     });
     const problems = [];
     if (m.documentWidth > m.viewport+1) problems.push('rolagem horizontal da página');
@@ -46,6 +57,13 @@ try {
       if (m.footer.bottom > height+1 || m.footer.top < 0) problems.push('botão Voltar cortado');
       if (m.cards.some(x=>x.height < 30 || x.width < 80)) problems.push('cards comprimidos');
     }
+    if(m.optionDetails?.length!==4)problems.push('alinhamento sem quatro opções');
+    else {
+      if(m.optionDetails.some(x=>Math.abs(x.centerY-x.actionCenterY)>2))problems.push('ícone não centralizado');
+      if(m.optionDetails.some(x=>x.textRight>x.actionLeft-2))problems.push('texto invade ação');
+      if(m.optionDetails.some(x=>x.backgroundSize!=='cover'))problems.push('foto distorcida');
+    }
+    if(m.heroPhoto!=='50% 100%')problems.push('imagem hero sem foco inferior');
     if (requests.length) problems.push('requisição indevida à API: '+requests.join(','));
     await page.screenshot({path:resolve(output,'novo-'+width+'x'+height+'.png'),fullPage:true});
     results.push({screen:'novo',width,height,metrics:m,problems});
@@ -103,6 +121,52 @@ try {
     if(homeProblems.length){failures++;console.error('Home '+width+'x'+height+': '+homeProblems.join('; '));}
     await page.close();
   }
+
+  // Cenários de altura baixa e acessibilidade do rodapé com rolagem.
+  for(const [width,height] of [[320,568],[390,667],[1366,600]]){
+    const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
+    await page.goto(base+'/fluxo-integrado-08.html?tela=novo',{waitUntil:'networkidle'});
+    const met=await page.evaluate(()=>{
+      const dialog=document.querySelector('.meg-new-launch.is-choose');
+      const cards=[...document.querySelectorAll('.meg-choice__option')];
+      const foot=document.querySelector('.meg-choice__back-action');
+      return {doc:document.documentElement.scrollWidth,view:innerWidth,
+        cards:cards.length,footerBottom:foot.getBoundingClientRect().bottom,
+        scroll:dialog.scrollHeight>dialog.clientHeight,overflow:getComputedStyle(dialog).overflowY};
+    });
+    const probs=[];
+    if(met.doc>width+1)probs.push('scroll horizontal');
+    if(met.cards!==4)probs.push('opções ausentes');
+    if(met.footerBottom>height+1&&(!met.scroll||met.overflow==='hidden'))
+      probs.push('CTA indisponível');
+    await page.screenshot({path:resolve(output,'novo-altura-'+width+'x'+height+'.png'),fullPage:true});
+    results.push({screen:'novo-altura',width,height,metrics:met,problems:probs});
+    if(probs.length)failures++;
+    await page.close();
+  }
+  // Telas de autenticação são originais da PR #649; teste de integração sem escrita.
+  for(const [width,height] of [[390,844],[1366,768]]){
+    for(const screen of ['login','cadastro','recuperar-senha','carregamento-inicial']){
+      const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
+      const api=[];
+      page.on('request',r=>{if(/\/api\//.test(new URL(r.url()).pathname))api.push(r.url());});
+      await page.goto(base+'/fluxo-integrado-08.html?tela='+screen,{waitUntil:'domcontentloaded'});
+      await page.locator('[data-preview-view]').waitFor();
+      const met=await page.evaluate(()=>({
+        width:document.documentElement.scrollWidth,
+        viewport:innerWidth,main:!!document.querySelector('main')
+      }));
+      const probs=[];
+      if(met.width>width+1)probs.push('scroll horizontal');
+      if(!met.main&&screen!=='carregamento-inicial')probs.push('main ausente');
+      if(api.length)probs.push('requisição API indevida');
+      await page.screenshot({path:resolve(output,'auth-'+screen+'-'+width+'x'+height+'.png'),fullPage:true});
+      results.push({screen:'auth-'+screen,width,height,metrics:met,problems:probs});
+      if(probs.length)failures++;
+      await page.close();
+    }
+  }
+
   const page = await browser.newPage({viewport:{width:1366,height:768}});
   await page.goto(base+'/fluxo-integrado-08.html?tela=login',{waitUntil:'networkidle'});
   await page.locator('[data-meg-login="visual-preview"]').waitFor();

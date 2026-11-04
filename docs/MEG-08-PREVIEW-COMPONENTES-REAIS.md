@@ -48,3 +48,10 @@ O teste integrado foi estendido: nove viewports para Home e nove para Novo Lanç
 - Preservados títulos e tipos, estados ativo/inativo, marcação das funcionalidades futuras, bloqueios de Transferência/Benefício e callback de Despesa/Receita, sem autenticação nem gravação.
 - Breakpoints principais 640/1024, reorganização estrutural para tablet/mobile, alt. reduzida com rolagem acessível quando necessária. Home permaneceu com os mesmos componentes e CSS visual da rodada anterior.
 - **Pendente:** rodar Playwright, verificar capturas em nove larguras e alturas compactas, confirmar mesmo SHA LIVE no Render, submeter a revisão visual. Não declarar homologação.
+
+
+## QA extra de geometria e rotas (04/11/2026)
+- Validação de centro vertical das setas/cadeados dos quatro tipos (tolerância 2px), sem invasão do texto na ação. Fotos dos banners com cover e imagem principal focada no rodapé para destacar moedas.
+- Três resoluções de altura compacta (320×568, 390×667, 1366×600) e 8 verificações de rota de Login/Cadastro/Recuperação/Carregamento inicial em 390×844 e 1366×768.
+- Rodapé descritivo ajustado para legibilidade mínima de aproximadamente 11px.
+- Nenhuma tela adicional é homologada pelos testes. Validar capturas e publicar somente após CI.
