@@ -96,7 +96,7 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
   <button type="button" className="meg-l09-back" onClick={onHome}>Voltar à Home</button>
  </section>;
  return <LaunchesStage09
-  key={userId} data={data} mode="live" periodMonth={month}
+  key={userId} data={data} mode="live" periodMonth={month} userId={userId}
   exportUserName={userName} onRefresh={reload}
   onNew={()=>{}} onHome={onHome}
  />;
