@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 const base=process.env.MEG_PREVIEW_URL||'http://127.0.0.1:4173';
 const out=resolve('artifacts/meg-home-refino-06');
 mkdirSync(out,{recursive:true});
-const sizes=[[320,640],[360,800],[390,844],[640,900],[768,1024],[1024,768],[1366,768],[1672,941],[1920,1080]];
+const sizes=[[320,640],[360,800],[390,844],[640,900],[768,1024],[1024,768],[1366,768],[1672,941],[1920,1080],[2560,1440]];
 const browser=await chromium.launch({
   headless:true,
   executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',
@@ -51,6 +51,12 @@ async function measure(page){
     activeCard:active?rect(active):null,
     cardCount:all('.pano-credit-card').length,
     cardButtons:all('.pano-card-control').length,
+    rootRect:root?rect(root):null,
+    mainRect:main?rect(main):null,
+    cardPanelRect:one('.pano-cards')?rect(one('.pano-cards')):null,
+    actionsPanelRect:panel?rect(panel):null,
+    financePanelRect:one('.pano-finance-block')?rect(one('.pano-finance-block')):null,
+    descriptions:all('.pano-action small').map(el=>el.textContent?.trim()),
     summary:summary?rect(summary):null,
     summaryName:summaryName?.textContent?.trim(),
     summaryValue:summaryCard?.querySelector('strong')?.textContent?.trim(),
@@ -87,13 +93,30 @@ try {
   if(changed.mainScrollWidth>changed.mainWidth+2)problems.push('rolagem horizontal indevida na Home');
   if(changed.titleCount!==1||changed.kpis!==4||changed.grids!==2)
     problems.push('estrutura obrigatoria: 1 titulo, 4 KPIs, 2 DataGrids');
-  if(changed.actions.length!==5 || changed.actions.some(x=>!x.title||x.iconCount!==1))
-    problems.push('atalhos não preservados');
+  const desired=['Transferência','Pagar conta','Relatórios','Configurações'];
+  if(changed.actions.length!==4 || changed.actions.some(x=>!x.title||x.iconCount!==1))
+    problems.push('quatro atalhos não preservados');
+  if(changed.actions.map(x=>x.title).join('|')!==desired.join('|'))
+    problems.push('atalhos não seguem imagem 01');
+  if(changed.descriptions.length!==4 || changed.descriptions.some(x=>!x))
+    problems.push('descrição de atalhos ausente');
   if(byName(baseline)!==byName(changed) || JSON.stringify(baseline.copy)!==JSON.stringify(changed.copy))
     problems.push('dados/rótulos financeiros mudaram durante refino CSS');
   if(changed.actions.some(x=>x.height<44))problems.push('area de toque menor que 44px');
   if(changed.actions.some(x=>x.width<45))problems.push('atalho muito estreito');
-  if(changed.topPlusVisible)problems.push('botao Novo Lancamento duplicado no cabeçalho');
+  if(!changed.topPlusVisible)problems.push('botão Novo Lançamento do topo oculto');
+  if(changed.actions.some(x=>x.title==='Novo lançamento'))
+    problems.push('Novo lançamento ainda duplicado nas ações');
+  if(changed.cardPanelRect && changed.actionsPanelRect && changed.financePanelRect
+    && !(changed.actionsPanelRect.top>=changed.cardPanelRect.bottom-2
+      && changed.financePanelRect.top>=changed.actionsPanelRect.bottom-2))
+    problems.push('Ações rápidas fora da ordem da imagem 01');
+  if(width>=1672 && changed.rootRect && changed.mainRect){
+    if(changed.rootRect.width>1535)problems.push('Home ainda esticada no wide');
+    const left=changed.rootRect.left-changed.mainRect.left;
+    const right=changed.mainRect.right-changed.rootRect.right;
+    if(Math.abs(left-right)>36)problems.push('Home não centralizada no wide');
+  }
   if(!changed.summary||!changed.summaryName||changed.summaryText!=='Fatura em aberto')
     problems.push('rodape do cartao sem resumo canonico');
   if(changed.summary?.right>width+2)problems.push('resumo do cartao transborda a tela');
@@ -106,11 +129,18 @@ try {
       changed.activeCard.bottom>changed.cardStage.bottom+2))
     problems.push('cartão central cortado no palco');
   if(api.length)problems.push('requisições API em modo visual');
-  if(width>=1024 && changed.actions.length===5){
-    const [a,b,c,d,e]=changed.actions;
-    if(Math.abs(a.top-b.top)>3||Math.abs(b.top-c.top)>3 ||
-      Math.abs(d.top-e.top)>3|| d.top<=a.top+7)
-      problems.push('grade de acesso rápido 3+2 perdida');
+  if(width>=1024 && changed.actions.length===4){
+    const tops=changed.actions.map(x=>x.top);
+    if(Math.max(...tops)-Math.min(...tops)>3)
+      problems.push('quatro atalhos não estão na mesma linha no desktop');
+  } else if(width>=640 && changed.actions.length===4){
+    const [a,b,c,d]=changed.actions;
+    if(Math.abs(a.top-b.top)>3||Math.abs(c.top-d.top)>3||c.top<=a.top+5)
+      problems.push('tablet não está em grade 2x2');
+  } else if(changed.actions.length===4){
+    const [a,b,c,d]=changed.actions;
+    if(!(b.top>a.top+5&&c.top>b.top+5&&d.top>c.top+5))
+      problems.push('mobile não empilha os quatro atalhos');
   }
   // O novo tamanho do cartão foi aprovado como proposta visual, mas
   // nunca pode cortar controles ou deslocar os KPIs/DataGrids.
@@ -129,9 +159,11 @@ try {
  await page.locator('.pano-card-control.is-next').click();
  const after=await page.locator('.pano-credit-card').innerText();
  if(before===after)throw Error('carrossel nao navegou');
- // Cabeçalho escondido apenas na Home: atalho central continua navegável.
- if(await page.locator('.meg-topbar-new').isVisible())throw Error('Topo duplicado na Home');
- await page.locator('.pano-action').filter({hasText:'Novo lançamento'}).click();
+ // Novo Lançamento deve permanecer no cabeçalho, sem duplicação no painel.
+ if(!(await page.locator('.meg-topbar-new').isVisible()))throw Error('Novo lançamento no topo não visível');
+ if(await page.locator('.pano-action').filter({hasText:'Novo lançamento'}).count())
+   throw Error('Novo lançamento duplicado nas ações');
+ await page.locator('.meg-topbar-new').click();
  await page.locator('[data-testid="new-launch-types"]').waitFor();
  if(await page.locator('.meg-choice__option').count()!==4)throw Error('Novo Lançamento mudou');
  await page.screenshot({path:resolve(out,'novo-lancamento-protegido.png'),fullPage:true});
