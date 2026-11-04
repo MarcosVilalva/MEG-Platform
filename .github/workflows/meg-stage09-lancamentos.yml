@@ -1,8 +1,8 @@
 name: MEG Web Etapa 09 - Lançamentos isolados
 on:
-  push:
+  pull_request:
     branches:
-      - 'preview/09-lancamentos-20261104'
+      - 'preview/06-home-refino-preservado-20261104'
   workflow_dispatch:
 permissions:
   contents: read
