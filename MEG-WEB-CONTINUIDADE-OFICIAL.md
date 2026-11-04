@@ -1448,3 +1448,10 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Inspeção de screenshots revelou botão demonstrativo Rever sequência sobre o cartão mobile. Ajuste isolado: ocultar esse controle não funcional em larguras menores que 1024px. Logout real continua preservado.
 - Render publicou a revisão anterior d41712fc6658e6cd1f5faa1e536e1062ad914144, deploy dep-dbl75e5ckfvc73cl1ekg LIVE. Revisão atual requer checar novo SHA no CI/Render.
 - Status: PR #654 Draft, sem merge. Home #653 ainda candidata; nenhuma homologação visual nova.
+
+
+## 04/11/2026 | Continuidade visual isolada, Etapa 08 Novo Lançamento
+- Usuário autorizou seguir refinamento tela a tela, iniciando no seletor de Novo Lançamento; Home refinada vem depois, Loading/Login/Carregamento inicial só após validação de cada tela.
+- Seleção preserva as decisões do projeto e os tipos ativos e indisponíveis do componente canônico PR #648, sem operações financeiras.
+- Refino estrutural local ao preview PR #654: stylesheet exclusivo `choice-refinement.css`, ícones SVG de ação e footer, crop da imagem com foco inferior e cartões sem distorção. Elimina overrides de escolha acumulados em `integrated-preview.css`.
+- Testes de captura e publicação Render serão obrigatórios antes de envio para validação humana. PR #654 Draft, sem merge, Home original e Android inalterados.

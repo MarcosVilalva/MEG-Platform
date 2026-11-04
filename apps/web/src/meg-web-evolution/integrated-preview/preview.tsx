@@ -12,8 +12,9 @@ import {HomeDashboard} from '../home/HomeDashboard';
 import {homePreviewFixture} from '../home/preview.fixture';
 import {LaunchTypePicker} from '../launches/LaunchTypePicker';
 import '../launches/new-launch.css';
-import '../launches/launch-type-picker.css';
+
 import './integrated-preview.css';
+import './choice-refinement.css';
 
 /**
  * PREVIA VISUAL ISOLADA, SEM API:
@@ -121,7 +122,7 @@ function FlowPreview() {
             <h2 id="meg-integrated-new-title">Novo lançamento</h2>
             <p>Escolha o tipo de lançamento e siga com um formulário inteligente para Web.</p>
           </div>
-          <button className="meg-new-launch__close" aria-label="Fechar novo lançamento" type="button" onClick={goHome}>×</button>
+          <button className="meg-new-launch__close" aria-label="Fechar novo lançamento" type="button" onClick={goHome}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 5 19 19M19 5 5 19"/></svg></button>
         </header>
         <LaunchTypePicker
           onChoose={type => setNotice(type === 'expense'

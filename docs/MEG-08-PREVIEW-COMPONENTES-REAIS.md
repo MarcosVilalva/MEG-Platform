@@ -39,3 +39,12 @@ Percurso padrão: carregamento ilustrativo → login visual → clicar "Entrar e
 Capturas de 640×900 e 768×1024 revelaram texto muito estreito e interferência visual com fotos. Para 640–1023, hero e opções são empilhados de forma proporcional; a coluna dupla continua no desktop ≥1024. Os atributos informativos do rodapé permanecem com título, sem descrições excessivamente estreitas.
 
 O teste integrado foi estendido: nove viewports para Home e nove para Novo Lançamento, com medição de overflow, cinco atalhos/ícones de até 29px, alvos >=44px, grade 3+2 desktop, presença dos dois DataGrids, ícone de categoria, imagem local e palco de cartões sem corte. Capturas da Home no topo e ao final da rolagem. Falha de teste bloqueia status aprovado.
+
+
+## 04/11/2026 | Etapa de refino 1, Novo Lançamento
+- Feedback visual explícito do usuário: deformação/crop das imagens, moedas não aparentes no fundo, ícones dos cards fora do eixo visual, desalinhamento do rodapé e diferenças tablet/desktop.
+- Troca restrita ao preview integrado da PR #654; original da PR #648 inalterado. A folha antiga de opções deixa de ser importada **apenas** nessa entrada e foi substituída por `integrated-preview/choice-refinement.css` autossuficiente, sem acumular CSS de remendos.
+- O seletor usa CSS Grid com colunas reais para arte, copy e ação; imagens WebP em `background-size:cover` com focos controlados; hero com foco inferior para preservar moedas; SVGs de ação, tags e rodapé alinhados.
+- Preservados títulos e tipos, estados ativo/inativo, marcação das funcionalidades futuras, bloqueios de Transferência/Benefício e callback de Despesa/Receita, sem autenticação nem gravação.
+- Breakpoints principais 640/1024, reorganização estrutural para tablet/mobile, alt. reduzida com rolagem acessível quando necessária. Home permaneceu com os mesmos componentes e CSS visual da rodada anterior.
+- **Pendente:** rodar Playwright, verificar capturas em nove larguras e alturas compactas, confirmar mesmo SHA LIVE no Render, submeter a revisão visual. Não declarar homologação.

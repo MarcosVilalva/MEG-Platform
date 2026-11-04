@@ -1,9 +1,6 @@
-/**
- * PR #648. Seletor de Novo Lançamento.
- * Arte em imagens WebP, controles nativos e sem mutação financeira nesta etapa.
- * Os arquivos reais são instalados em apps/web/public/meg-assets e não contêm
- * texto de interface, valores bancários nem ações clicáveis.
- */
+/** Prévia isolada PR #654: versão refinada a partir da PR #648.
+ * Quatro tipos e seus estados financeiros preservados.
+ * SVGs, alinhamento e imagem continuam decorativos, sem gravação. */
 type EnabledLaunchType = 'expense' | 'income';
 type LaunchOption = {
   id: EnabledLaunchType | 'transfer' | 'benefit';
@@ -40,6 +37,39 @@ const features = [
   ['Responsivo para Web', 'Mais espaço e organização.'],
 ] as const;
 
+
+// SVGs decorativos específicos desta etapa; nunca representam dado financeiro.
+function ChoiceTagGlyph({label}: {label:string}) {
+  const isCard = label === 'Cartão' || label === 'Saldo';
+  const isBank = label === 'Conta' || label === 'Entre contas';
+  const isFlow = label === 'Recorrência' || label === 'Origem e destino';
+  return <svg className="meg-choice__tag-icon" viewBox="0 0 24 24"
+    aria-hidden="true" focusable="false" fill="none" stroke="currentColor"
+    strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    {isCard ? <><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></> :
+      isBank ? <><path d="M3 9 12 4l9 5M4 9h16M6 10v9m6-9v9m6-9v9M3 20h18"/></> :
+      isFlow ? <><path d="M4 8h14l-3-3M20 16H6l3 3M18 8l-3 3M6 16l3-3"/></> :
+      <><path d="M3 18h18M6 15l4-5 3 2 5-6"/></>}
+  </svg>;
+}
+function ChoiceActionGlyph({available}: {available:boolean}) {
+  return <svg className="meg-choice__action-glyph" viewBox="0 0 24 24"
+    aria-hidden="true" focusable="false" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    {available ? <path d="m9 5 7 7-7 7"/> :
+      <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></>}
+  </svg>;
+}
+function ChoiceFeatureGlyph({index}: {index:number}) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+    fill="none" stroke="currentColor" strokeWidth="1.75"
+    strokeLinecap="round" strokeLinejoin="round">
+    {index === 0 ? <><rect x="3" y="4.5" width="18" height="13" rx="2"/><path d="M8 21h8m-4-3.5V21"/></> :
+      index === 1 ? <><path d="m4 18 5-12 5 12M6 14h6m4 3h5m-2.5-9v9"/></> :
+      <><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9h17m-11 0v11"/></>}
+  </svg>;
+}
+
 export function LaunchTypePicker({
   onChoose, onBack,
 }: { onChoose: (type: EnabledLaunchType) => void; onBack: () => void }) {
@@ -73,14 +103,14 @@ export function LaunchTypePicker({
                     <span className={'meg-choice__tag' + (tag.future ? ' is-future' : '')}
                       key={tag.label}
                       title={tag.future ? 'Recurso específico ainda não habilitado neste formulário' : undefined}>
-                      {tag.label}
+                      <ChoiceTagGlyph label={tag.label}/>{tag.label}
                     </span>
                   ))}
                   {!option.enabled && <span className="meg-choice__tag is-unavailable">Indisponível</span>}
                 </span>
               </span>
               <span className="meg-choice__option-next" aria-hidden="true">
-                <span className={option.enabled ? 'meg-choice__chevron' : 'meg-choice__padlock'}/>
+                <ChoiceActionGlyph available={option.enabled}/>
               </span>
             </button>
           ))}
@@ -89,12 +119,12 @@ export function LaunchTypePicker({
       <footer className="meg-choice__footer" aria-label="Informações sobre a experiência Web">
         {features.map(([title, description], index) => (
           <div className="meg-choice__feature" key={title}>
-            <span className="meg-choice__feature-icon" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+            <span className="meg-choice__feature-icon" aria-hidden="true"><ChoiceFeatureGlyph index={index}/></span>
             <span className="meg-choice__feature-copy"><strong>{title}</strong><small>{description}</small></span>
           </div>
         ))}
         <button type="button" className="meg-choice__back-action" onClick={onBack}>
-          <span aria-hidden="true" className="meg-choice__back-arrow">✓</span>
+          <span aria-hidden="true" className="meg-choice__back-arrow"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 12 5 5L20 6"/></svg></span>
           Voltar
         </button>
       </footer>
