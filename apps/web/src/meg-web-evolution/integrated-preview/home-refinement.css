@@ -268,7 +268,44 @@
   display:flex;flex-direction:column;min-height:0;
 }
 .meg-integrated-preview[data-preview-view="home"] .pano-benefit-card {
-  flex:1 1 auto;min-height:10rem;
+  /* A imagem mantém cover; altura cresce apenas com conteúdo e espaço útil. */
+  flex:1 1 auto;min-height:clamp(11rem,15vw,15rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-flow {
+  min-width:0;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-chart {
+  min-height:clamp(14rem,18vw,18rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-flow-footnote {
+  font-size:clamp(.75rem,.84vw,.83rem);
+  color:#b3d3cf;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-flow-balance>span {
+  font-size:clamp(.75rem,.83vw,.83rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid-heading h2{
+  font-size:clamp(.88rem,1vw,1rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-table th {
+  font-size:.78rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-table,
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-table td{
+  font-size:.76rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid__viewport{
+  min-width:0;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-card-row dt,
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .meg-datagrid-card-row dd{
+  font-size:clamp(.76rem,.84vw,.84rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .pano-category-text {
+  overflow-wrap:normal;
+  text-overflow:ellipsis;
 }
 @media(min-width:640px) {
   /* Com 4 indicadores, evitar distribuição 3+1 e coluna vazia em tablet. */
@@ -291,8 +328,15 @@
     gap:clamp(.52rem,.9vw,.75rem);align-items:stretch;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
-    display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+    /* Reorganiza quando a largura útil não acomoda dois painéis legíveis. */
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,33rem),1fr));
     gap:clamp(.52rem,.9vw,.75rem);align-items:stretch;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-tables {
+    /* Duas tabelas só lado a lado quando cada uma comporta suas colunas.
+       Os DataGrids compartilhados e seus estados não são modificados. */
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,43rem),1fr));
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-action-list {
     grid-template-columns:repeat(4,minmax(0,1fr));

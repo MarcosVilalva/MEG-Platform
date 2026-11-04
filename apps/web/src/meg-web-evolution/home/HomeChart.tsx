@@ -21,17 +21,17 @@ export function HomeChart({days,hidden}:{days:CashflowDay[];hidden:boolean}){
    animationDuration:300,backgroundColor:'transparent',
    textStyle:{fontFamily:'Inter, system-ui, sans-serif',color:'#d2e6e4'},
    grid:{left:14,right:45,top:35,bottom:26,containLabel:false},
-   legend:{show:true,right:4,top:1,itemWidth:9,itemHeight:9,itemGap:13,icon:'roundRect',
-    data:['Entradas','Saídas','Resultado diário'],textStyle:{color:'#a4c9c5',fontSize:10}},
+   legend:{show:true,right:8,top:1,itemWidth:11,itemHeight:10,itemGap:15,icon:'roundRect',
+    data:['Entradas','Saídas','Resultado diário'],textStyle:{color:'#b6d6d2',fontSize:12}},
    xAxis:{type:'category',data:valid.map(d=>day(d.date)),axisTick:{show:false},
-    axisLine:{lineStyle:{color:'#35666a'}},axisLabel:{color:'#9ebebc',fontSize:10,hideOverlap:true,
+    axisLine:{lineStyle:{color:'#35666a'}},axisLabel:{color:'#b4d4cf',fontSize:12,hideOverlap:true,
     interval:Math.max(0,Math.ceil(valid.length/8)-1)}},
    yAxis:{type:'value',scale:true,splitNumber:4,position:'right',
-    axisLabel:{color:'#93b6b5',fontSize:10,formatter:(n:number)=>compact.format(n)},
+    axisLabel:{color:'#b4d2cf',fontSize:12,formatter:(n:number)=>compact.format(n)},
     axisLine:{show:false},axisTick:{show:false},splitLine:{lineStyle:{color:'rgba(93,155,157,.13)',type:'dashed'}}},
    tooltip:{trigger:'axis',confine:true,appendToBody:false,backgroundColor:'#052b32',borderColor:'#218b85',borderWidth:1,
     axisPointer:{type:'line',lineStyle:{color:'#75fce2',type:'dashed'}},
-    textStyle:{fontSize:11,color:'#eefefa'},
+    textStyle:{fontSize:12,color:'#eefefa'},
     formatter:(params:unknown)=>{
      const arr=Array.isArray(params)?params as Array<{dataIndex:number}>:[];
      const idx=arr[0]?.dataIndex;
@@ -52,7 +52,25 @@ export function HomeChart({days,hidden}:{days:CashflowDay[];hidden:boolean}){
      itemStyle:{color:'#a6deff'},emphasis:{focus:'series',scale:true},z:5}
    ]
   },{notMerge:true});
-  const ob=new ResizeObserver(()=>chart.resize());
+  // O gráfico mantém todas as séries/valores. Somente tipografia,
+  // legenda e quantidade de datas mudam conforme a largura real do painel.
+  const fit=()=>{
+   if(!element.current)return;
+   chart.resize();
+   const width=element.current.clientWidth;
+   const compact=width<560;
+   const maxTicks=width<400?4:width<620?6:9;
+   chart.setOption({
+    grid:{left:12,right:55,top:compact?18:39,bottom:31,containLabel:false},
+    legend:{show:!compact,right:8,top:1,
+     textStyle:{fontSize:width<760?11:12,color:'#b6d6d2'}},
+    xAxis:{axisLabel:{fontSize:width<440?11:12,
+     interval:Math.max(0,Math.ceil(valid.length/maxTicks)-1)}},
+    yAxis:{axisLabel:{fontSize:width<440?11:12}}
+   });
+  };
+  fit();
+  const ob=new ResizeObserver(fit);
   ob.observe(element.current);
   return ()=>{ob.disconnect();chart.dispose()};
  },[days,hidden]);

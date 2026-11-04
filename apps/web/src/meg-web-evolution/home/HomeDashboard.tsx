@@ -147,23 +147,23 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   return [...planned,...payables].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).slice(0,8);
  },[data.transactions,data.followingTransactions,data.payables]);
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Data',type:'date',width:98,sortable:true,filterable:true},
-  {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true},
-  {key:'category',label:'Categoria',type:'text',width:146,sortable:true,filterable:true,
+  {key:'date',label:'Data',type:'date',width:118,sortable:true,filterable:true},
+  {key:'description',label:'Descrição',type:'text',width:180,sortable:true,filterable:true},
+  {key:'category',label:'Categoria',type:'text',width:162,sortable:true,filterable:true,
     render:v=>{const label=String(v??'Sem categoria');return <span className="pano-category" title={label}>
       <HomeGlyph name={categoryGlyph(label)} size={15} className="pano-category-svg"/>
       <span className="pano-category-text">{label}</span>
      </span>;}},
-  {key:'account',label:'Conta',type:'text',width:112,sortable:true,filterable:true},
-  {key:'value',label:'Valor',type:'currency',width:114,sortable:true,filterable:true,
+  {key:'account',label:'Conta',type:'text',width:130,sortable:true,filterable:true},
+  {key:'value',label:'Valor',type:'currency',width:118,sortable:true,filterable:true,
    render:(v,row)=><strong className={Number(row.amount)<0?'pano-negative':'pano-positive'}>{Number(row.amount)<0?'− ':'+ '}{format(Number(v),hidden)}</strong>}
  ];
  const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',width:106,sortable:true,filterable:true},
-  {key:'description',label:'Descrição',type:'text',width:160,sortable:true,filterable:true},
-  {key:'source',label:'Origem',type:'text',width:130,sortable:true,filterable:true},
-  {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
-  {key:'status',label:'Situação',type:'text',width:94,sortable:true,filterable:true,
+  {key:'date',label:'Vencimento',type:'date',width:132,sortable:true,filterable:true},
+  {key:'description',label:'Descrição',type:'text',width:175,sortable:true,filterable:true},
+  {key:'source',label:'Origem',type:'text',width:145,sortable:true,filterable:true},
+  {key:'value',label:'Valor',type:'currency',width:118,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
+  {key:'status',label:'Situação',type:'text',width:122,sortable:true,filterable:true,
    render:v=><span className="pano-status">{String(v??'—')}</span>}
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
