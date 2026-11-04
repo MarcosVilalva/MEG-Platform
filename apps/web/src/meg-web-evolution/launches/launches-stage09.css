@@ -1,0 +1,142 @@
+/* Etapa 09: camada visual exclusivamente para a tela Lançamentos.
+ * Home (#655), seletor Novo (#654), Shell e DataGrid compartilhados intactos.
+ */
+.meg-integrated-preview[data-preview-view="launches"] .meg-nav-item.is-active:not([aria-label="Lançamentos"]){
+ background:transparent;border-color:transparent;box-shadow:none;color:var(--meg-muted)
+}
+.meg-integrated-preview[data-preview-view="launches"] .meg-nav-item[aria-label="Lançamentos"]{
+ background:linear-gradient(100deg,rgba(9,183,170,.28),rgba(15,85,91,.34));
+ border-color:#14e3c8;color:#eafffa;box-shadow:0 0 1rem #00e5cf28,inset 0 0 1rem #14e3c826;
+}
+.meg-integrated-preview[data-preview-view="launches"] .meg-main{min-width:0}
+.meg-l09{--l09-line:rgba(23,215,202,.37);--l09-surface:linear-gradient(150deg,rgba(3,39,45,.92),rgba(2,19,28,.97));display:flex;flex-direction:column;gap:.78rem;min-width:0;width:100%;max-width:134rem;margin:0 auto;padding:.9rem 1.1rem 1.5rem;color:#edfdf9}
+.meg-l09 button,.meg-l09 input,.meg-l09 select{font:inherit}
+.meg-l09 button{cursor:pointer}
+.meg-l09 button:disabled{cursor:not-allowed;opacity:.46}
+.meg-l09 button:focus-visible,.meg-l09 input:focus-visible,.meg-l09 select:focus-visible{outline:2px solid #60fff0;outline-offset:2px}
+.meg-l09-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:7.2rem;padding:1rem 1.3rem;border:1px solid var(--l09-line);border-radius:.9rem;overflow:hidden;background:linear-gradient(90deg,rgba(0,10,18,.96) 2%,rgba(0,29,40,.83) 55%,rgba(0,63,64,.36)),url('/meg-assets/hero.webp') center 43%/cover}
+.meg-l09-hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(0deg,rgba(0,19,25,.6),transparent 50%),radial-gradient(ellipse at 81% 9%,rgba(0,243,215,.18),transparent 52%)}
+.meg-l09-hero>div{min-width:0}
+.meg-l09-hero h1{margin:.15rem 0 .12rem;font-size:clamp(1.7rem,3.2vw,3.1rem);font-weight:800;letter-spacing:-.045em;line-height:1.08;text-shadow:0 2px 8px #000b}
+.meg-l09-hero p{margin:.25rem 0 0;color:#d1eeeb;font-size:clamp(.79rem,1.15vw,1rem)}
+.meg-l09-eyebrow{font-size:.57rem;letter-spacing:.23em;color:#52ead7;font-weight:800}
+.meg-l09-add{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;flex:none;min-height:3rem;border:1px solid #56ffee;border-radius:.65rem;background:linear-gradient(110deg,#0cf0d0,#21d6af);box-shadow:0 0 1.45rem #00e2d343;color:#032325;font-weight:800!important;padding:.72rem 1.15rem}
+.meg-l09-add svg{flex:none}
+.meg-l09-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.meg-l09-stat{display:flex;align-items:center;gap:.8rem;min-width:0;min-height:5.3rem;padding:.78rem .93rem;border:1px solid var(--l09-line);border-radius:.85rem;background:var(--l09-surface);box-shadow:inset 0 1px #83fff011}
+.meg-l09-stat-icon{display:grid;place-items:center;flex:0 0 2.8rem;height:2.8rem;border:1px solid #08beb4;border-radius:.7rem;background:linear-gradient(150deg,#085361,#032b39);color:#2bffed;font-size:1.65rem;font-weight:650;box-shadow:0 0 12px #05eace25}
+.meg-l09-stat.is-income .meg-l09-stat-icon{background:#074b39;border-color:#098d5c;color:#21ec97}
+.meg-l09-stat.is-expense .meg-l09-stat-icon{background:#52222d;border-color:#ac4d57;color:#ff6b73}
+.meg-l09-stat.is-balance .meg-l09-stat-icon{background:#493c12;border-color:#ad871e;color:#ffd63e}
+.meg-l09-stat h2{margin:0;font-size:.82rem;font-weight:500;color:#f2fffe}
+.meg-l09-stat strong{display:block;margin:.12rem 0;font-size:clamp(1.04rem,1.68vw,1.65rem);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.04em;white-space:nowrap}
+.meg-l09-stat.is-balance strong{color:#1df8ce}
+.meg-l09-stat small{display:block;min-width:0;font-size:.64rem;color:#8caeae}
+.meg-l09-preview-warning{margin:0;color:#8eb2b1;font-size:.71rem;line-height:1.3}
+.meg-l09-workspace{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(19rem,.96fr);gap:.78rem;min-width:0;align-items:start}
+.meg-l09-left,.meg-l09-right{min-width:0;display:flex;flex-direction:column;gap:.72rem}
+.meg-l09-filters{display:grid;grid-template-columns:minmax(12rem,1.8fr) repeat(3,minmax(7rem,1fr)) repeat(2,minmax(7rem,1fr));gap:.45rem;min-width:0}
+.meg-l09-filters label{position:relative;display:flex;align-items:center;min-width:0;height:2.8rem;border:1px solid var(--l09-line);border-radius:.58rem;background:rgba(0,25,33,.92);color:#e0f7f4;overflow:hidden}
+.meg-l09-filters .meg-l09-search{gap:.4rem;padding-left:.7rem}
+.meg-l09-filters label>svg{color:#d0f8f4;flex:none}
+.meg-l09-filters input,.meg-l09-filters select{display:block;width:100%;min-width:0;height:100%;border:0;outline:none;background:transparent;color:inherit;font-size:.77rem;padding:.55rem .54rem}
+.meg-l09-filters option{background:#05252f;color:#e8fffa}
+.meg-l09-filters input::placeholder{color:#b9d1d0}
+.meg-l09-filters input[type="date"]{padding-inline:.3rem;font-size:.69rem;color-scheme:dark}
+.meg-l09-grid-panel{min-width:0;border:1px solid var(--l09-line);border-radius:.75rem;overflow:hidden;background:linear-gradient(165deg,#031e25,#02151f)}
+.meg-l09-grid-panel .meg-datagrid{max-width:100%;min-width:0}
+.meg-l09-grid-panel .meg-datagrid-row{cursor:default}
+.meg-l09-open-row{width:100%;display:block;border:0;text-align:left;padding:.4rem 0;background:transparent;color:#f3fffd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-l09-open-row:hover{text-decoration:underline;text-decoration-color:#16e8ca}
+.meg-l09-chip{display:inline-flex;max-width:100%;padding:.28rem .55rem;border-radius:999px;background:#253c4a;color:#e4f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.77rem}
+.meg-l09-chip.is-income{background:#0b493f;color:#b6ffe4}
+.meg-l09-chip.is-food{background:#67501b;color:#ffe694}
+.meg-l09-money{font-size:.81rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.meg-l09 .is-negative{color:#ff656d}
+.meg-l09 .is-positive{color:#1af2bc}
+.meg-l09-row-menu{min-width:2.4rem;min-height:2.4rem;border:0;color:#d9fffc;background:none;letter-spacing:2px}
+.meg-l09-grid-summary{color:#92b1b0;font-size:.72rem;min-height:1.2rem}
+.meg-l09-panel{min-width:0;border:1px solid var(--l09-line);border-radius:.78rem;background:var(--l09-surface);padding:.82rem .85rem;box-shadow:inset 0 1px #b2fff014}
+.meg-l09-panel-title{display:flex;justify-content:space-between;align-items:center;gap:.5rem;min-height:1.8rem;margin-bottom:.8rem}
+.meg-l09-panel-title h2{display:flex;align-items:center;gap:.48rem;margin:0;font-size:.95rem;line-height:1.25;font-weight:700}
+.meg-l09-panel-title h2 svg,.meg-l09-panel-title h2>span{color:#16f3d9}
+.meg-l09-mini{border:1px solid #147e83;border-radius:.5rem;padding:.35rem .48rem;color:#bedfdc;font-size:.67rem;white-space:nowrap}
+.meg-l09-distribution-body{display:grid;grid-template-columns:minmax(6.7rem, .85fr) minmax(0,1.15fr);gap:.75rem;align-items:center}
+.meg-l09-donut{width:100%;max-width:13rem;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;margin-inline:auto;box-shadow:0 0 1.4rem #14e3c81d}
+.meg-l09-donut-hole{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;background:#031f28;border-radius:50%;width:65%;aspect-ratio:1;border:1px solid #103b44;text-align:center}
+.meg-l09-donut-hole strong{font-size:clamp(1rem,2vw,1.55rem);font-weight:800;font-variant-numeric:tabular-nums}
+.meg-l09-donut-hole small{font-size:.73rem;color:#b9d1d0}
+.meg-l09-legend{min-width:0;display:flex;flex-direction:column;gap:.48rem}
+.meg-l09-legend-item{display:grid;grid-template-columns:.7rem minmax(0,1fr) auto auto;gap:.38rem;align-items:center;font-size:.72rem}
+.meg-l09-legend-item>span:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-l09-legend-item strong{font-variant-numeric:tabular-nums}
+.meg-l09-legend-item small{color:#bfd1d3}
+.meg-l09-swatch{width:.65rem;height:.65rem;border-radius:50%}
+.meg-l09-hint{margin:.7rem 0 0;color:#87adae;font-size:.65rem;line-height:1.4}
+.meg-l09-detail-actions{display:flex;align-items:center;gap:.35rem}
+.meg-l09-detail-actions button{min-width:2rem;min-height:2rem;border:1px solid #177a82;border-radius:.5rem;background:rgba(4,34,44,.75);color:#b8f8ef;font-weight:650}
+.meg-l09-detail-actions .meg-l09-edit{padding:.3rem .65rem;color:#22f1d8}
+.meg-l09-detail-actions .meg-l09-mobile-close{display:none}
+.meg-l09-selected-head{display:grid;grid-template-columns:2.8rem minmax(0,1fr) auto;gap:.65rem;align-items:center;padding:.4rem 0 .75rem;border-bottom:1px solid #12525b}
+.meg-l09-detail-illustration{display:grid;place-items:center;width:2.8rem;height:2.8rem;border-radius:.6rem;background:#135359;color:#d8fffa}
+.meg-l09-selected-head>div{min-width:0;display:flex;flex-direction:column;gap:.3rem}
+.meg-l09-selected-head>div>strong{font-size:.83rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg-l09-selected-head>div>span{align-self:start;background:#6d561c;color:#fbe4a3;border-radius:999px;padding:.22rem .6rem;font-size:.7rem}
+.meg-l09-selected-head>strong{font-size:.87rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.meg-l09-detail-body dl{display:flex;flex-direction:column;gap:.57rem;margin:.77rem 0 0}
+.meg-l09-detail-body dl>div{display:grid;grid-template-columns:minmax(6rem,1fr) minmax(0,1.15fr);gap:.3rem;font-size:.73rem}
+.meg-l09-detail-body dt{color:#b4d5d5}
+.meg-l09-detail-body dd{min-width:0;margin:0;text-align:left;overflow-wrap:anywhere}
+.meg-l09-empty{color:#aacaca;font-size:.85rem}
+.meg-l09-back{align-self:start;display:flex;align-items:center;gap:.24rem;border:none;background:transparent;color:#a6d7d2;min-height:2.7rem;padding:0 .3rem;font-size:.78rem}
+.meg-l09-back:hover{color:#21ebd4}
+.meg-l09-mobile-scrim{display:none}
+@media(min-width:1024px) and (max-width:1500px){
+ .meg-l09-workspace{grid-template-columns:minmax(0,1fr) minmax(17rem,.37fr)}
+ .meg-l09-filters{grid-template-columns:minmax(12rem,1.7fr) repeat(3,minmax(6.9rem,1fr));}
+ .meg-l09-filters .meg-l09-date{grid-column:span 2}
+ .meg-l09-distribution-body{grid-template-columns:1fr}
+ .meg-l09-donut{max-width:9.5rem}
+}
+@media(max-width:1023px){
+ .meg-l09{padding:.75rem;gap:.75rem}
+ .meg-l09-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .meg-l09-workspace{grid-template-columns:minmax(0,1fr)}
+ .meg-l09-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .meg-l09-filters .meg-l09-search{grid-column:span 3}
+ .meg-l09-right{display:grid;grid-template-columns:minmax(0,1fr)}
+ .meg-l09-distribution-body{grid-template-columns:minmax(0,.4fr) minmax(0,.6fr)}
+ .meg-l09-donut{max-width:11rem}
+}
+@media(max-width:639px){
+ .meg-l09{padding:.62rem;gap:.64rem}
+ .meg-l09-hero{padding:.85rem;align-items:flex-start;flex-direction:column;min-height:0;gap:.6rem}
+ .meg-l09-hero h1{font-size:1.9rem}
+ .meg-l09-hero p{font-size:.79rem}
+ .meg-l09-add{min-height:2.8rem;align-self:stretch;font-size:.82rem;padding:.45rem .8rem}
+ .meg-l09-stats{gap:.48rem}
+ .meg-l09-stat{gap:.4rem;padding:.6rem;min-height:5rem}
+ .meg-l09-stat-icon{flex-basis:2.15rem;height:2.15rem;font-size:1.35rem}
+ .meg-l09-stat h2{font-size:.7rem}
+ .meg-l09-stat strong{font-size:clamp(.98rem,3.6vw,1.24rem);white-space:normal;overflow-wrap:anywhere}
+ .meg-l09-stat small{font-size:.58rem}
+ .meg-l09-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .meg-l09-filters .meg-l09-search{grid-column:span 2}
+ .meg-l09-filters label{height:2.8rem}
+ .meg-l09-filters label:nth-child(4){grid-column:span 2}
+ .meg-l09-filters input,.meg-l09-filters select{font-size:.73rem}
+ .meg-l09-distribution-body{grid-template-columns:minmax(0,.45fr) minmax(0,.55fr)}
+ .meg-l09-donut{max-width:8.8rem}
+ .meg-l09-panel{padding:.7rem}
+ .meg-l09-panel-title h2{font-size:.85rem}
+ .meg-l09-details{display:none}
+ .meg-l09-details.is-mobile-open{display:block;position:fixed;z-index:202;inset:auto 0 0 0;max-height:86dvh;border-radius:1.15rem 1.15rem 0 0;overflow-y:auto;box-shadow:0 -2rem 3rem #0009;background:#04232a;padding:1rem}
+ .meg-l09-mobile-scrim{position:fixed;inset:0;z-index:201;background:#0009;border:0;display:block}
+ .meg-l09-detail-actions .meg-l09-mobile-close{display:block}
+}
+@media(max-width:359px){
+ .meg-l09-legend-item{grid-template-columns:.65rem minmax(0,1fr) auto}
+ .meg-l09-legend-item small{display:none}
+ .meg-l09-stat-icon{display:none}
+}
+@media(prefers-reduced-motion:reduce){.meg-l09 *{animation:none!important;transition:none!important}}
