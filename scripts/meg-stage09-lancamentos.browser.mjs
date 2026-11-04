@@ -21,12 +21,17 @@ for(const [width,height] of sizes){
     container:rect(root),kpis:document.querySelectorAll('.meg-l09-stat').length,
     panels:document.querySelectorAll('.meg-l09-panel').length,
     grid:!!document.querySelector('.meg-l09-grid-panel .meg-datagrid'),
+    viewportHeight:document.querySelector('.meg-l09-grid-panel .meg-datagrid__viewport')?.getBoundingClientRect().height||0,
+    visibleDataRows:window.innerWidth>=1024
+      ?document.querySelectorAll('.meg-l09-grid-panel .meg-datagrid-table tbody tr:not(.meg-datagrid-spacer)').length
+      :document.querySelectorAll('.meg-l09-grid-panel .meg-datagrid-card-row').length,
     editorDisabled:document.querySelector('.meg-l09-edit')?.disabled===true,
     dates:[...document.querySelectorAll('input[type="date"]')].map(x=>x.value)};
   });
   if(measurement.documentWidth>width+2)issues.push('scroll horizontal do documento');
   if(measurement.mainScrollWidth>measurement.mainClientWidth+2)issues.push('scroll horizontal da area principal');
   if(measurement.kpis!==4||measurement.panels!==2||!measurement.grid)issues.push('componentes ausentes');
+  if(measurement.viewportHeight<120||measurement.visibleDataRows<1)issues.push('DataGrid sem linhas visiveis');
   if(!measurement.editorDisabled)issues.push('edicao desbloqueada na previa');
   if(calls.length)issues.push('requisições de API nao autorizadas na previa');
   await page.screenshot({path:resolve(out,'lancamentos-'+width+'x'+height+'.png'),fullPage:true});
