@@ -40,6 +40,7 @@ async function measure(page){
     mainWidth:main?.clientWidth||0,
     titleCount:root?.querySelectorAll('h1').length||0,
     kpis:all('.pano-stat').length,
+    statRects:all('.pano-stat').map(rect),
     grids:all('.pano-grid .meg-datagrid').length,
     actions:buttons.map(b=>({
       title:b.querySelector('strong')?.textContent?.trim(),
@@ -93,6 +94,11 @@ try {
   if(changed.mainScrollWidth>changed.mainWidth+2)problems.push('rolagem horizontal indevida na Home');
   if(changed.titleCount!==1||changed.kpis!==4||changed.grids!==2)
     problems.push('estrutura obrigatoria: 1 titulo, 4 KPIs, 2 DataGrids');
+  if(width>=640 && changed.statRects.length===4){
+    const [a,b,c,d]=changed.statRects;
+    if(Math.abs(a.top-b.top)>3||Math.abs(c.top-d.top)>3||c.top<a.bottom+3)
+      problems.push('quatro indicadores não estão distribuídos em 2x2');
+  }
   const desired=['Transferência','Pagar conta','Relatórios','Configurações'];
   if(changed.actions.length!==4 || changed.actions.some(x=>!x.title||x.iconCount!==1))
     problems.push('quatro atalhos não preservados');
