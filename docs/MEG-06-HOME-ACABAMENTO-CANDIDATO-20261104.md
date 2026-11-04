@@ -112,3 +112,13 @@
 - Em 1024px quando só couber uma coluna, tablet e celular, o comportamento natural continua, sem altura fixa. CSS limitado à Home da PR #655 e ao `@media(min-width:1024px)`.
 - Novo gate geométrico compara a posição inferior dos dois rodapés (tolerância de 5px), preservação da quantidade de linhas reais, responsividade e valores. Nenhuma tela homologada ou regra financeira foi alterada.
 - Revisão ainda **não homologada visualmente**. Exigir CI verde, Render LIVE no mesmo SHA e aprovação humana.
+
+
+## 04/11/2026 | HOMOLOGAÇÃO VISUAL EXPLÍCITA DA HOME — PR #655
+- Usuário declarou **“BOA, PARA MIM TA VALIDADO”** após inspecionar a Home no Render, incluindo o **alinhamento inferior dos dois DataGrids**, que eliminou o espaço vazio abaixo de Próximos compromissos.
+- **Versão visual aprovada:** `dd0a472eee736558c224268c5bca096bc2d58187` da branch `preview/06-home-refino-preservado-20261104`; preview: https://meg-home-06-refino-pr655.onrender.com/fluxo-integrado-08.html?tela=home&v=dd0a472eee736558c224268c5bca096bc2d58187
+- **Escopo exato:** Home visual na prévia, composição para telas responsivas, saldo/indicadores, carrossel de cartões, gráfico, Benefícios, quatro Ações rápidas (Transferência, Pagar conta, Relatórios e Configurações), botão Novo lançamento no topo, duas tabelas com rodapés alinhados no desktop e comportamento natural no mobile.
+- **Congelamento:** não redesenhar nem alterar o visual aprovado sem solicitação explícita; novas correções estruturais devem preservar a composição. A homologação visual **não cobre** API operacional, integração de lançamentos financeiros, pagamentos, transferências, cartões de benefício multioperadora, demais telas ou produção.
+- **Gate técnico do último código:** workflow `41879282835` ainda **em andamento** na consulta desta aprovação; status não deve ser declarado verde sem resultado conclusivo. PR #655 **Draft, sem merge** até passar CI, testes, gates e checagem do commit.
+- **Próxima prioridade recomendada:** concluir gate técnico da Home e avançar para a próxima etapa autorizada pelo Prompt Master, **Lançamentos**, em chat/PR próprios. Correções globais no Shell e personalização futura de Ações rápidas em Configurações ficam registradas, mas não avançar prematuramente.
+- Android congelado, DataGrid compartilhado e regras financeiras centrais preservados; Novo Lançamento (seletor) permanece homologado visualmente de forma independente.
