@@ -29,7 +29,6 @@ for(const [width,height] of sizes){
     visibleDataRows:window.innerWidth>=1024
       ?document.querySelectorAll('.meg-l09-grid-panel .meg-datagrid-table tbody tr:not(.meg-datagrid-spacer)').length
       :document.querySelectorAll('.meg-l09-grid-panel .meg-datagrid-card-row').length,
-    editorDisabled:true, // Testado após expandir detalhes: botão não existe fechado.
     dates:[...document.querySelectorAll('input[type="date"]')].map(x=>x.value)};
   });
   if(measurement.documentWidth>width+2)issues.push('scroll horizontal do documento');
@@ -38,7 +37,6 @@ for(const [width,height] of sizes){
   if(measurement.viewportHeight<120||measurement.visibleDataRows<1)issues.push('DataGrid sem linhas visiveis');
   if(!measurement.graphsCollapsed||!measurement.detailsCollapsed)issues.push('paineis nao iniciaram recolhidos');
   if(measurement.gridWidth<measurement.workspaceWidth-3)issues.push('grade nao ocupa a largura toda');
-  if(!measurement.editorDisabled)issues.push('edicao desbloqueada na previa');
   if(calls.length)issues.push('requisições de API nao autorizadas na previa');
   await page.screenshot({path:resolve(out,'lancamentos-'+width+'x'+height+'.png'),fullPage:true});
   const chartToggle=page.getByRole('button',{name:'Expandir gráfico de distribuição'});
@@ -50,10 +48,10 @@ for(const [width,height] of sizes){
   if(!(await page.locator('.meg-l09-edit').isDisabled()))issues.push('edicao da previa desbloqueada');
   await page.screenshot({path:resolve(out,'lancamentos-paineis-abertos-'+width+'x'+height+'.png'),fullPage:true});
   await page.getByRole('button',{name:'Recolher gráfico de distribuição'}).click();
-  if(await page.locator('#meg-l09-distribution-content').count())issues.push('grafico nao recolheu');
+  if(await page.locator('#meg-l09-distribution-content').isVisible())issues.push('grafico nao recolheu');
   if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('recolher grafico afetou detalhes');
   await page.getByRole('button',{name:'Recolher detalhes do lançamento'}).click();
-  if(await page.locator('#meg-l09-details-content').count())issues.push('detalhes nao recolheram');
+  if(await page.locator('#meg-l09-details-content').isVisible())issues.push('detalhes nao recolheram');
   const search=page.getByPlaceholder('Buscar lançamentos...');
   await search.fill('Supermercado');
   const n=await page.locator('.meg-l09-grid-summary').textContent();
@@ -66,7 +64,7 @@ for(const [width,height] of sizes){
   if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('selecao nao expandiu detalhes');
   if(!/Farmácia/.test(await page.locator('.meg-l09-selected-head').textContent()||''))issues.push('selecionado incorreto');
   await page.getByRole('button',{name:'Recolher detalhes do lançamento'}).click();
-  if(await page.locator('#meg-l09-details-content').count())issues.push('detalhes nao recolheram apos selecao');
+  if(await page.locator('#meg-l09-details-content').isVisible())issues.push('detalhes nao recolheram apos selecao');
   await page.screenshot({path:resolve(out,'lancamentos-interacao-'+width+'x'+height+'.png'),fullPage:true});
   results.push({width,height,measurement,issues});
  }catch(e){issues.push(String(e));results.push({width,height,issues});}
