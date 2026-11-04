@@ -70,7 +70,9 @@
   background:#032b37
 }
 .meg-integrated-preview__choice-overlay .meg-choice__hero-photo{
-  position:absolute;inset:0;z-index:0;
+  /* A arte original inclui um filete de moldura: sangria discreta
+     fica por baixo do recorte arredondado do painel, sem segundo contorno. */
+  position:absolute;inset:-6px -9px;z-index:0;
   background-image:url('/meg-assets/hero.webp');
   background-size:cover;background-position:50% 100%;background-repeat:no-repeat;
   pointer-events:none;transform:none
@@ -145,7 +147,9 @@
   outline:2px solid #abfff3;outline-offset:2px
 }
 .meg-integrated-preview__choice-overlay .meg-choice__option-photo{
-  position:absolute;inset:0;z-index:0;pointer-events:none;
+  /* Sangria no fundo fotográfico para esconder o contorno arredondado
+     gravado no próprio WebP. O border-radius é da moldura HTML única. */
+  position:absolute;inset:-10px -15px;z-index:0;pointer-events:none;
   background-size:cover;background-position:38% center;
   background-repeat:no-repeat;transform:none;
   /* A borda arredondada do próprio card faz o recorte externo.

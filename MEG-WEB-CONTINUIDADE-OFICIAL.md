@@ -1473,3 +1473,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Correção: a imagem agora inicia opaca desde `0%` e permanece assim até `30%`; a dissolução é preservada apenas em direção à região do texto. `overflow:hidden` e `border-radius` nativos dos quatro cards mantêm o recorte exato na moldura. A fotografia não sofre distorção.
 - Nova verificação automatizada proíbe início transparente do `mask-image`. Sem mudança no hero, Home, fontes visuais oficiais, funcionalidades financeiras, API, Android ou componentes de outras etapas.
 - A tela permanece candidata à validação visual humana; PR #654 em Draft sem merge.
+
+
+## 04/11/2026 | Correção final da moldura duplicada embutida nas WebPs
+- A captura após retirar o início transparente revelou **dois contornos**: borda CSS do card e borda interna já rasterizada no asset oficial. O problema é geométrico, não uma emenda a resolver com mais sombras.
+- Ajuste apenas nos fundos fotográficos, com pequena sangria `inset:-10px -15px` nos banners e `-6px -9px` no hero; os cantos arredondados do contêiner HTML permanecem como única moldura visível. Não altera arte-fonte, proporção da imagem ou posição de textos e ícones.
+- Playwright adiciona verificação da sangria e capturas recortadas dos quatro banners em desktop/mobile. Inspeção manual deve confirmar que o contorno interno sumiu; CI não equivale a validação visual humana.
