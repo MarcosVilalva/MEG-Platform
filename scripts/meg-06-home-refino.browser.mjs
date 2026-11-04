@@ -113,6 +113,12 @@ try {
   const problems=[];
   if(changed.documentWidth>width+1)problems.push('rolagem horizontal da pagina');
   if(changed.mainScrollWidth>changed.mainWidth+2)problems.push('rolagem horizontal indevida na Home');
+  if(width<1024 && changed.rootRect){
+    for(const panel of changed.tablePanels){
+      if(panel.right>changed.rootRect.right+2)
+        problems.push('DataGrid extrapola a coluna no mobile/tablet');
+    }
+  }
   if(changed.titleCount!==1||changed.kpis!==4||changed.grids!==2)
     problems.push('estrutura obrigatoria: 1 titulo, 4 KPIs, 2 DataGrids');
   if(!changed.chart || changed.chart.height<170 || !changed.chartCanvasPresent)

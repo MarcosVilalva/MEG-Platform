@@ -371,10 +371,13 @@
      Fluxo > Benefícios > Movimentações > Compromissos.
      display:contents remove somente caixas genéricas, não os painéis. */
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
-    display:flex;flex-direction:column;
+    display:flex;flex-direction:column;align-items:stretch;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-column{
     display:contents;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid{
+    width:100%;max-width:100%;min-width:0;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-flow{order:1}
   .meg-integrated-preview[data-preview-view="home"] .pano-benefits{order:2}
