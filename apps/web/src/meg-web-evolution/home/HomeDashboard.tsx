@@ -173,12 +173,12 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   {label:'Pendências previstas',value:data.summary?.pendingAmount,note:data.summary?.pendingCount==null?'Sem leitura disponível':String(data.summary.pendingCount)+' registros',icon:'clock',kind:'pending',action:'pendentes'},
   {label:'Benefício',value:data.benefit?.balance,note:'Saldo separado das contas',icon:'gift',kind:'benefit',action:'beneficios'}
  ];
+ // Home: Novo Lançamento fica no topo; 4 atalhos aprovados na imagem 01.
  const quick:{title:string;desc:string;icon:HomeIconName;action:Action;kind:string}[]=[
-  {title:'Novo lançamento',desc:'Registrar movimentação',icon:'plus',action:'novo',kind:'mint'},
-  {title:'Transferência',desc:'Entre suas contas',icon:'transfer',action:'transferencia',kind:'blue'},
-  {title:'Pagar conta',desc:'Consultar compromissos',icon:'receipt',action:'pendentes',kind:'violet'},
-  {title:'Relatórios',desc:'Análises financeiras',icon:'chart',action:'relatorios',kind:'amber'},
-  {title:'Configurações',desc:'Preferências do MEG',icon:'settings',action:'metas',kind:'slate'}
+  {title:'Transferência',desc:'Mover entre contas',icon:'transfer',action:'transferencia',kind:'blue'},
+  {title:'Pagar conta',desc:'Contas e boletos',icon:'receipt',action:'pendentes',kind:'violet'},
+  {title:'Relatórios',desc:'Extratos e análises',icon:'chart',action:'relatorios',kind:'amber'},
+  {title:'Configurações',desc:'Preferências do sistema',icon:'settings',action:'metas',kind:'slate'}
  ];
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
@@ -254,6 +254,13 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
      </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
   </div>
+  {/* Quatro atalhos em seção própria, após os cartões, conforme imagem 01. */}
+   <section className="pano-panel pano-actions">
+    <PanelTitle icon="sparkle" title="Ações rápidas"/>
+    <div className="pano-action-list">{quick.map(a=><button className={'pano-action is-'+a.kind} key={a.title} type="button" onClick={()=>move(a.action)}>
+      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={17}/></span><strong>{a.title}</strong><small>{a.desc}</small>
+     </button>)}</div>
+   </section>
   <div className="pano-finance-block" aria-label="Leitura gerencial do mês">
    <section ref={flowSection} className="pano-panel pano-flow">
     <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro"/>
@@ -272,12 +279,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     </button>
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
-   <section className="pano-panel pano-actions">
-    <PanelTitle icon="sparkle" title="Ações rápidas"/>
-    <div className="pano-action-list">{quick.map(a=><button className={'pano-action is-'+a.kind} key={a.title} type="button" onClick={()=>move(a.action)}>
-      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={17}/></span><strong>{a.title}</strong><small>{a.desc}</small>
-     </button>)}</div>
-   </section>
+
   </div>
   </div>
   <div className="pano-tables">
