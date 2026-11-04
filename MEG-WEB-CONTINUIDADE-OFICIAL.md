@@ -1510,3 +1510,11 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Congelamento visual:** não alterar esta tela por iniciativa própria. Sugestões em outras telas podem ser propostas como estudos, sem mudar a tela aprovada, os assets oficiais nem seu enquadramento.
 - **Aprovação NÃO abrange:** formulário financeiro operacional, gravação na API, habilitação de Transferência/Benefício, Home, carregamento/login/cadastro/recuperação, aplicação global da identidade visual, carrossel de Cartões, regra multioperadora da API, merge ou produção.
 - PR #654 permanece em Draft, sem merge. Android congelado; regras de negócio e autoridade financeira seguem intactas. Avançar apenas pela etapa/tela autorizada em chat próprio. Próximas propostas visuais para Home/autenticação são estudos pendentes de aprovação, não substituem os prints oficiais.
+
+## 04/11/2026 | Home: candidato de acabamento preservando layout validado
+- Após homologar visualmente **Novo Lançamento** no SHA `28a2bd0f3b550c87958e78805f0ca1739e8adf62`, o usuário autorizou iniciar refinamentos na Home, **sem redesenhar** ou perder a base da PR #653.
+- Nova branch independente `preview/06-home-refino-preservado-20261104` derivada da PR #654 no SHA documental `75f48ac2e215b34f7bd17cdd74744a2f1733641e`; a PR #654 original e seu Render ficam preservados.
+- O acabamento pré-existente da Home foi **movido**, sem mudança, da folha global de prévia para `integrated-preview/home-refinement.css`. Novos ajustes da Home são escopados a `[data-preview-view="home"]`, evitando qualquer mudança na seleção Novo Lançamento aprovada.
+- Proposta: contorno e iluminação mais consistentes em saldo e cartões, cards secundários com contraste um pouco maior, acessos rápidos menores e próximos, texto mais legível. Grids, campos, dados, navegação, controles e regras continuam os mesmos.
+- Home ainda **NÃO homologada**. Exige compilação, testes, screenshots de antes/depois nas mesmas resoluções, Render separado sem cache e aprovação visual explícita.
+- Não alterar Android, API financeira, DataGrid, autenticação ou a escolha de Novo Lançamento.

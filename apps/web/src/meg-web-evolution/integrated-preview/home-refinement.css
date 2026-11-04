@@ -1,0 +1,237 @@
+/* 03/11 · Refino isolado das telas reais: a PR #653 fornece a Home mais
+   recente; esta camada compõe efeitos de palco sem alterar valores,
+   componente de cartão, grids, estados, navegação ou tokens globais. */
+.meg-integrated-preview .pano-root {
+  background:
+    radial-gradient(ellipse at 82% 5%, rgba(8, 133, 138, .16), transparent 48%),
+    linear-gradient(180deg,#03191e,#021318 96%);
+}
+.meg-integrated-preview .pano-panel {
+  border-color: rgba(57,188,177,.42);
+  box-shadow: inset 0 1px 0 rgba(179,255,243,.07),
+    0 8px 25px rgba(0,13,19,.37);
+}
+.meg-integrated-preview .pano-hero {
+  border-color: rgba(68,235,220,.66);
+  box-shadow: inset 0 0 22px rgba(8,225,204,.10),
+    0 0 22px rgba(4,218,209,.13),0 10px 29px rgba(0,8,15,.37);
+}
+.meg-integrated-preview .pano-hero::before {
+  background:
+    linear-gradient(90deg,rgba(0,19,27,.94) 0%,rgba(0,28,36,.81) 54%,rgba(0,51,61,.31) 100%),
+    url('/meg-assets/hero.webp') center/cover no-repeat;
+}
+.meg-integrated-preview .pano-hero::after {
+  background:
+    radial-gradient(ellipse at 88% -8%,rgba(15,244,235,.26),transparent 58%),
+    linear-gradient(0deg,rgba(1,18,28,.36),transparent 52%);
+}
+.meg-integrated-preview .pano-cards {
+  border-color:rgba(41,231,214,.63);
+  background:radial-gradient(ellipse at 56% 9%,rgba(14,152,170,.15),transparent 66%),
+    linear-gradient(140deg,#06343c,#021c29 85%);
+  box-shadow:inset 0 1px rgba(212,255,247,.15),
+    0 0 27px rgba(19,221,208,.16),0 12px 30px rgba(0,8,17,.49);
+}
+.meg-integrated-preview .pano-card-stage {
+  border:1px solid rgba(68,218,209,.23);
+  background:radial-gradient(ellipse at 50% 78%,rgba(9,182,185,.23),transparent 64%);
+}
+.meg-integrated-preview .pano-card-stage::after {
+  background:radial-gradient(ellipse at 50% 73%,rgba(23,238,211,.24),transparent 62%);
+}
+.meg-integrated-preview .pano-credit-card {
+  border-color:rgba(195,255,249,.83);
+  box-shadow:0 15px 35px rgba(0,9,19,.92),
+    0 0 29px rgba(24,238,213,.31),
+    inset 0 1px 0 rgba(255,255,255,.4);
+}
+.meg-integrated-preview .pano-credit-card::after {
+  background:
+    linear-gradient(125deg,rgba(232,255,254,.19),transparent 31%,
+      rgba(196,255,253,.10) 47%,transparent 64%),
+    linear-gradient(0deg,rgba(0,16,29,.67),transparent 55%);
+}
+.meg-integrated-preview .pano-credit-card:hover,
+.meg-integrated-preview .pano-credit-card:focus-visible {
+  border-color:#d0fff8;
+  box-shadow:0 15px 35px rgba(0,8,20,.94),0 0 35px rgba(37,244,218,.39);
+}
+.meg-integrated-preview .pano-card-peek {
+  filter:brightness(.8);
+  border-color:rgba(128,219,229,.55);
+}
+.meg-integrated-preview .pano-actions {
+  background:
+    radial-gradient(ellipse at 10% -10%,rgba(12,196,184,.12),transparent 62%),
+    linear-gradient(150deg,#07363d,#04232c 82%);
+}
+.meg-integrated-preview .pano-action-list {
+  gap:.3rem;
+  margin-top:.37rem;
+}
+.meg-integrated-preview .pano-action {
+  min-height:3.45rem;
+  gap:.13rem;
+  padding:.26rem .22rem;
+  border-color:rgba(62,188,176,.53);
+  background:linear-gradient(156deg,#0a4147,#052d35);
+  box-shadow:inset 0 1px 0 rgba(197,255,250,.09),0 3px 9px rgba(0,18,25,.29);
+  transition:border-color .16s,background .16s,box-shadow .16s;
+}
+.meg-integrated-preview .pano-action-icon {
+  flex-basis:1.52rem;width:1.52rem;height:1.52rem;
+  border-radius:.4rem;
+}
+.meg-integrated-preview .pano-action strong {
+  font-size:clamp(.7rem,.8vw,.78rem);
+  line-height:1.2;
+}
+.meg-integrated-preview .pano-action:hover,
+.meg-integrated-preview .pano-action:focus-visible {
+  border-color:rgba(137,255,236,.95);
+  background:linear-gradient(156deg,#0c535a,#06343e);
+  box-shadow:0 0 14px rgba(32,227,213,.16),0 5px 15px rgba(0,16,23,.44);
+}
+.meg-integrated-preview .pano-benefit-card {
+  box-shadow:inset 0 1px rgba(171,255,240,.12),0 0 15px rgba(9,165,135,.13);
+}
+.meg-integrated-preview .pano-flow {
+  box-shadow:inset 0 1px rgba(192,255,245,.06),0 8px 20px rgba(0,9,18,.34);
+}
+
+
+/* ==============================================
+   04/11/2026 | Candidata Home, acabamento pontual.
+   Refino exclusivo em data-preview-view=home:
+   zero alterações no layout aprovado de Novo Lançamento,
+   componentes originais da PR #653, regras ou DataGrid.
+   ============================================== */
+.meg-integrated-preview[data-preview-view="home"] .pano-panel {
+  border-color:rgba(62,184,177,.43);
+  box-shadow:inset 0 1px 0 rgba(200,255,251,.085),
+    0 8px 21px rgba(0,11,18,.35);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-hero {
+  border-color:rgba(84,222,210,.70);
+  box-shadow:inset 0 1px 0 rgba(210,255,251,.17),
+    inset 0 0 18px rgba(8,225,204,.08),
+    0 0 16px rgba(20,213,203,.12),
+    0 8px 27px rgba(0,13,18,.37);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-hero::before {
+  /* Mesma arte do Novo Lançamento; enquadramento e conteúdo mantidos. */
+  background:
+    linear-gradient(90deg,rgba(0,19,27,.95) 0%,rgba(0,28,36,.83) 53%,rgba(0,51,61,.35) 100%),
+    url('/meg-assets/hero.webp') center/cover no-repeat;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-balance>strong {
+  text-shadow:0 2px 15px rgba(0,16,20,.7);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-cards {
+  border-color:rgba(67,226,208,.77);
+  box-shadow:inset 0 1px 0 rgba(229,255,250,.18),
+    0 0 24px rgba(15,213,193,.14),
+    0 12px 30px rgba(0,8,17,.43);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-stage {
+  border-color:rgba(64,212,209,.34);
+  box-shadow:inset 0 0 24px rgba(5,175,180,.075);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-credit-card {
+  border-color:rgba(204,255,248,.92);
+  box-shadow:0 16px 31px rgba(0,6,19,.85),
+    0 0 26px rgba(26,224,208,.30),
+    inset 0 1px 0 rgba(255,255,255,.42);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek {
+  filter:brightness(.86);
+  border-color:rgba(135,217,224,.65);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek:hover,
+.meg-integrated-preview[data-preview-view="home"] .pano-card-peek:focus-visible {
+  filter:brightness(.96);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-card-control:focus-visible {
+  outline:2px solid #bafff1;outline-offset:3px;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-stat {
+  border-color:rgba(62,173,163,.53);
+  box-shadow:inset 0 1px 0 rgba(212,255,247,.06);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-panel-title h2 {
+  min-width:0;overflow-wrap:break-word;line-height:1.29;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-actions {
+  padding:.63rem .68rem;
+  background:
+    radial-gradient(ellipse at 10% 0%,rgba(13,188,176,.11),transparent 62%),
+    linear-gradient(150deg,#07333c,#04232c 82%);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action-list {
+  gap:.23rem;
+  margin:.29rem auto 0;
+  width:100%;
+  max-width:31.5rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action {
+  min-height:3.27rem;
+  padding:.22rem .23rem;
+  gap:.12rem;
+  border-color:rgba(65,185,176,.60);
+  border-radius:.48rem;
+  background:linear-gradient(151deg,#0a3e45,#052d35);
+  box-shadow:inset 0 1px 0 rgba(209,255,250,.07),
+    0 3px 9px rgba(0,15,24,.23);
+  transition:border-color .16s,background .16s,box-shadow .16s;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action-icon {
+  flex:0 0 1.43rem;width:1.43rem;height:1.43rem;
+  display:grid;place-items:center;
+  border-radius:.38rem;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action strong {
+  font-size:clamp(.74rem,.79vw,.81rem);
+  line-height:1.17;
+  font-weight:800;
+  overflow-wrap:break-word;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action:hover,
+.meg-integrated-preview[data-preview-view="home"] .pano-action:focus-visible {
+  border-color:#96fff0;
+  background:linear-gradient(145deg,#0b5056,#06333d);
+  box-shadow:0 0 13px rgba(21,224,205,.16),
+    0 5px 16px rgba(0,14,23,.39);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-action:focus-visible {
+  outline:2px solid #bcfff2;outline-offset:2px;
+}
+/* A estrutura desktop 3+2 continua a original. Sem posicionamento absoluto. */
+@media(min-width:1024px){
+  .meg-integrated-preview[data-preview-view="home"] .pano-action-list{
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:.25rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action{
+    grid-column:span 2;min-height:3.3rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action:nth-last-child(-n+2){
+    grid-column:span 3;
+  }
+}
+@media(max-width:639px){
+  .meg-integrated-preview[data-preview-view="home"] .pano-action {
+    min-height:3.38rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-action-list{
+    gap:.25rem;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-card-peek{
+    filter:brightness(.84);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .meg-integrated-preview[data-preview-view="home"] .pano-action{
+    transition:none!important;
+  }
+}
