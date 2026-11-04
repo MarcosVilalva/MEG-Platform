@@ -105,7 +105,9 @@
    No wide, a largura útil é limitada, não esticada. */
 .meg-integrated-preview[data-preview-view="home"] .pano-root {
   width:100%;
-  max-width:93rem;
+  /* O limite antigo (93rem) produzia uma faixa vazia larga ao lado da
+     sidebar. Usar a largura útil até 134rem sem aumentar o cartão/plástico. */
+  max-width:134rem;
   margin-inline:auto;
   padding-inline:clamp(.5rem,1.2vw,1rem);
 }
@@ -123,7 +125,27 @@
 }
 .meg-integrated-preview[data-preview-view="home"] .pano-spotlight,
 .meg-integrated-preview[data-preview-view="home"] .pano-finance-block,
-.meg-integrated-preview[data-preview-view="home"] .pano-tables {min-width:0}
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column {min-width:0}
+/* Duas colunas verticais independentes. O gráfico alto não empurra a
+   tabela da outra coluna; a distância é determinada somente pelo gap. */
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
+  display:grid;grid-template-columns:minmax(0,1fr);
+  align-items:start;gap:clamp(.55rem,.9vw,.85rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column {
+  display:flex;flex-direction:column;align-items:stretch;
+  min-width:0;gap:clamp(.55rem,.9vw,.85rem);
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid{
+  min-width:0;
+}
+/* O benefício cresce de acordo com seu conteúdo, não com a altura do gráfico. */
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column .pano-benefits{
+  flex:0 0 auto;align-self:stretch;
+}
+.meg-integrated-preview[data-preview-view="home"] .pano-finance-column .pano-benefit-card{
+  flex:0 0 auto;
+}
 .meg-integrated-preview[data-preview-view="home"] .pano-cards {
   gap:.48rem;
   padding:clamp(.68rem,1.2vw,.98rem);
@@ -332,15 +354,10 @@
     gap:clamp(.52rem,.9vw,.75rem);align-items:stretch;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
-    /* Reorganiza quando a largura útil não acomoda dois painéis legíveis. */
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(min(100%,33rem),1fr));
-    gap:clamp(.52rem,.9vw,.75rem);align-items:stretch;
-  }
-  .meg-integrated-preview[data-preview-view="home"] .pano-tables {
-    /* Duas tabelas só lado a lado quando cada uma comporta suas colunas.
-       Os DataGrids compartilhados e seus estados não são modificados. */
-    grid-template-columns:repeat(auto-fit,minmax(min(100%,43rem),1fr));
+    /* A partir de 1024, auto-fit só cria duas colunas quando cada lado
+       alcança largura suficiente, sem esmagar o DataGrid. */
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,34rem),1fr));
+    align-items:start;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-action-list {
     grid-template-columns:repeat(4,minmax(0,1fr));
@@ -348,6 +365,21 @@
   .meg-integrated-preview[data-preview-view="home"] .pano-card-stage {
     min-height:clamp(13.5rem,17vw,15.6rem);
   }
+}
+@media(max-width:1023px) {
+  /* Preserva a ordem de leitura histórica no mobile/tablet:
+     Fluxo > Benefícios > Movimentações > Compromissos.
+     display:contents remove somente caixas genéricas, não os painéis. */
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
+    display:flex;flex-direction:column;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column{
+    display:contents;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-flow{order:1}
+  .meg-integrated-preview[data-preview-view="home"] .pano-benefits{order:2}
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-primary>.pano-grid{order:3}
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-secondary>.pano-grid{order:4}
 }
 @media(max-width:639px) {
   .meg-integrated-preview[data-preview-view="home"] .pano-card-summary {

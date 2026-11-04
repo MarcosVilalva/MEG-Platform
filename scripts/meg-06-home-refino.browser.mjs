@@ -44,7 +44,11 @@ async function measure(page){
     chart:one('.pano-chart')?rect(one('.pano-chart')):null,
     chartCanvasPresent:!!one('.pano-chart canvas'),
     benefitPanel:one('.pano-benefits')?rect(one('.pano-benefits')):null,
-    tablePanels:all('.pano-tables>.pano-grid').map(rect),
+    tablePanels:all('.pano-finance-column>.pano-grid').map(rect),
+    flowRect:one('.pano-flow')?rect(one('.pano-flow')):null,
+    movementsRect:one('.pano-finance-column.is-primary>.pano-grid')?rect(one('.pano-finance-column.is-primary>.pano-grid')):null,
+    dueRect:one('.pano-finance-column.is-secondary>.pano-grid')?rect(one('.pano-finance-column.is-secondary>.pano-grid')):null,
+    financialColumns:all('.pano-finance-column').map(rect),
     tableScroll:all('.pano-grid .meg-datagrid__viewport').map(x=>({
       width:x.clientWidth,scrollWidth:x.scrollWidth
     })),
@@ -128,6 +132,13 @@ try {
 
   }
 
+  if(width<1024 && changed.flowRect&&changed.benefitPanel
+    && changed.movementsRect&&changed.dueRect){
+    if(!(changed.flowRect.top<changed.benefitPanel.top &&
+      changed.benefitPanel.top<changed.movementsRect.top &&
+      changed.movementsRect.top<changed.dueRect.top))
+      problems.push('ordem mobile/tablet Fluxo > Benefício > Movimentações > Compromissos alterada');
+  }
   if(width>=640 && changed.statRects.length===4){
     const [a,b,c,d]=changed.statRects;
     if(Math.abs(a.top-b.top)>3||Math.abs(c.top-d.top)>3||c.top<a.bottom+3)
@@ -152,7 +163,11 @@ try {
       && changed.financePanelRect.top>=changed.actionsPanelRect.bottom-2))
     problems.push('Ações rápidas fora da ordem da imagem 01');
   if(width>=1672 && changed.rootRect && changed.mainRect){
-    if(changed.rootRect.width>1535)problems.push('Home ainda esticada no wide');
+    if(changed.rootRect.width>2190)problems.push('Home excede largura máxima wide de 134rem');
+    if(width===1920 && changed.rootRect.left-changed.mainRect.left>56)
+      problems.push('vão lateral esquerdo excessivo em 1920px');
+    if(width===2560 && changed.rootRect.left-changed.mainRect.left>250)
+      problems.push('vão lateral esquerdo excessivo em 2560px');
     const left=changed.rootRect.left-changed.mainRect.left;
     const right=changed.mainRect.right-changed.rootRect.right;
     if(Math.abs(left-right)>36)problems.push('Home não centralizada no wide');
@@ -162,6 +177,18 @@ try {
   if(changed.summary?.right>width+2)problems.push('resumo do cartao transborda a tela');
   if(changed.cardStage&&changed.summary && changed.summary.top<changed.cardStage.bottom-3)
     problems.push('resumo e palco de cartoes sobrepostos');
+  // Independência de coluna: cada DataGrid vem logo após o painel de cima.
+  if(width>=1024 && changed.financialColumns.length===2
+    && Math.abs(changed.financialColumns[0].top-changed.financialColumns[1].top)<4) {
+    if(changed.flowRect&&changed.movementsRect){
+      const gap=changed.movementsRect.top-changed.flowRect.bottom;
+      if(gap<0||gap>30)problems.push('vão vertical acima de Movimentações: '+gap.toFixed(1)+'px');
+    }
+    if(changed.benefitPanel&&changed.dueRect){
+      const gap=changed.dueRect.top-changed.benefitPanel.bottom;
+      if(gap<0||gap>30)problems.push('vão vertical entre Benefícios e Compromissos: '+gap.toFixed(1)+'px');
+    }
+  }
 
   if(!changed.activeCard||changed.cardCount!==1||changed.cardButtons!==2)problems.push('carrossel alterado');
   if(changed.cardStage && changed.activeCard &&
