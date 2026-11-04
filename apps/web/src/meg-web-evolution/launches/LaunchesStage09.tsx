@@ -1,4 +1,4 @@
-import {useCallback,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {DataGrid} from '../datagrid/DataGrid';
 import {applyFilters} from '../datagrid/core';
 import type {DataGridColumn,DataGridFilterState} from '../datagrid/types';
@@ -13,10 +13,15 @@ import './launches-stage09.css';
  * Totais financeiros vêm apenas do read model (summary) e ficam ocultos
  * quando os filtros deixam de representar o conjunto canônico do mês.
  */
+export type LaunchesFilterPreset={
+ search:string;kind:string;category:string;account:string;start:string;end:string;
+};
 type Props={
  data:HomeFinancialData;onNew:()=>void;onHome:()=>void;
  mode?:'preview'|'live';periodMonth?:string;userId?:string;
  exportUserName?:string;onRefresh?:()=>void;
+ rememberedFilters?:Partial<LaunchesFilterPreset>;
+ onRememberFilters?:(value:LaunchesFilterPreset)=>void;
 };
 type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
@@ -71,15 +76,18 @@ function DemoBreakdown({rows,mode}:{rows:Row[];mode:'preview'|'live'}){
   <p className="meg-l09-hint">{mode==='preview'?'Prévia: distribuição pela quantidade de registros. Valores financeiros dependem do read model canônico.':'Distribuição por quantidade de registros, não por valores ou saldo financeiro.'}</p>
  </>;
 }
-export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh}:Props){
+export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
- const [search,setSearch]=useState('');
- const [kind,setKind]=useState('all');
- const [category,setCategory]=useState('all');
- const [account,setAccount]=useState('all');
- const [start,setStart]=useState(startOfMonth);
- const [end,setEnd]=useState(endOfMonth);
+ const [search,setSearch]=useState(rememberedFilters?.search??'');
+ const [kind,setKind]=useState(rememberedFilters?.kind??'all');
+ const [category,setCategory]=useState(rememberedFilters?.category??'all');
+ const [account,setAccount]=useState(rememberedFilters?.account??'all');
+ const [start,setStart]=useState(rememberedFilters?.start??startOfMonth);
+ const [end,setEnd]=useState(rememberedFilters?.end??endOfMonth);
+ useEffect(()=>{
+  if(mode==='live')onRememberFilters?.({search,kind,category,account,start,end});
+ },[search,kind,category,account,start,end,mode,onRememberFilters]);
  const [advanced,setAdvanced]=useState<DataGridFilterState>({});
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const [distributionOpen,setDistributionOpen]=useState(false);
