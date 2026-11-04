@@ -34,6 +34,8 @@
 .meg-l09-stat.is-balance strong{color:#1df8ce}
 .meg-l09-stat small{display:block;min-width:0;font-size:.64rem;color:#8caeae}
 .meg-l09-preview-warning{margin:0;color:#8eb2b1;font-size:.71rem;line-height:1.3}
+.meg-l09-refresh{display:inline-flex;align-items:center;justify-content:center;margin-left:.9rem;padding:.38rem .65rem;border:1px solid #278d8a;border-radius:.5rem;background:#06363c;color:#a5fff0;font-size:.72rem;min-height:2.3rem}
+.meg-l09-refresh:hover{background:#0a5053}
 .meg-l09-workspace{min-width:0;width:100%}
 .meg-l09-left{min-width:0;display:flex;flex-direction:column;gap:.72rem}
 .meg-l09-right{min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.72rem;align-items:start}
