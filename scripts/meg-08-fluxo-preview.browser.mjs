@@ -65,7 +65,11 @@ try {
       if(m.optionDetails.some(x=>x.textRight>x.actionLeft-2))problems.push('texto invade ação');
       if(m.optionDetails.some(x=>x.backgroundSize!=='cover'))problems.push('foto distorcida');
       if(m.optionDetails.some(x=>!x.maskImage?.includes('linear-gradient')))
-        problems.push('foto sem dissolução suave nas extremidades');
+        problems.push('foto sem dissolução suave para a área de texto');
+      // O defeito reportado era a faixa escura entre borda esquerda e foto:
+      // a máscara precisa iniciar completamente opaca, não transparente.
+      if(m.optionDetails.some(x=>/transparent 0%|rgba\(0,\s*0,\s*0,\s*0\) 0%/.test(x.maskImage||'')))
+        problems.push('máscara torna transparente a ponta esquerda da imagem');
     }
     if(m.heroPhoto!=='50% 100%')problems.push('imagem hero sem foco inferior');
     if (requests.length) problems.push('requisição indevida à API: '+requests.join(','));

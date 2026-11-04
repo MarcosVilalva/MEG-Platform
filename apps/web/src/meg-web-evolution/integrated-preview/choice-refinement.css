@@ -148,16 +148,17 @@
   position:absolute;inset:0;z-index:0;pointer-events:none;
   background-size:cover;background-position:38% center;
   background-repeat:no-repeat;transform:none;
-  /* Atenua as extremidades da arte: sem corte preto nem emenda vertical
-     onde começa o texto. A fotografia continua intacta e sem esticar. */
+  /* A borda arredondada do próprio card faz o recorte externo.
+     Não apagar a ponta esquerda da arte: isso criava uma faixa escura
+     antes da fotografia. Só dissolver gradualmente para o lado do texto. */
   -webkit-mask-image:linear-gradient(90deg,
-    transparent 0%,#000 2.5%,#000 22%,
-    rgba(0,0,0,.84) 34%,rgba(0,0,0,.46) 49%,
-    rgba(0,0,0,.16) 78%,transparent 100%);
+    #000 0%,#000 30%,
+    rgba(0,0,0,.84) 39%,rgba(0,0,0,.46) 57%,
+    rgba(0,0,0,.16) 80%,transparent 100%);
   mask-image:linear-gradient(90deg,
-    transparent 0%,#000 2.5%,#000 22%,
-    rgba(0,0,0,.84) 34%,rgba(0,0,0,.46) 49%,
-    rgba(0,0,0,.16) 78%,transparent 100%)
+    #000 0%,#000 30%,
+    rgba(0,0,0,.84) 39%,rgba(0,0,0,.46) 57%,
+    rgba(0,0,0,.16) 80%,transparent 100%)
 }
 .meg-integrated-preview__choice-overlay .meg-choice__option.is-expense .meg-choice__option-photo{
   background-image:url('/meg-assets/expense.webp');background-position:38% 50%
