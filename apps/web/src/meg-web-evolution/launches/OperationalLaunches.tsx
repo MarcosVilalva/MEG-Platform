@@ -1,9 +1,9 @@
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {authenticatedRequest} from '../../app/auth-client';
 import type {Account, Category, PaymentMethod, FinanceSummary, FinancialEvent} from '../../app/finance-client';
 import {financeClient} from '../../app/finance-client';
 import type {HomeFinancialData} from '../home/HomeDashboard';
-import {LaunchesStage09} from './LaunchesStage09';
+import {LaunchesStage09, type LaunchesFilterPreset} from './LaunchesStage09';
 import {displayMoney, readAuthorizedHistory, type HistoryProgress} from './authorized-history';
 
 const todayBrazil = () => {
@@ -54,6 +54,8 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
  const [error,setError]=useState('');
  const [progress,setProgress]=useState<HistoryProgress>({loaded:0,total:0,pass:1});
  const [version,setVersion]=useState(0);
+ const filterMemory=useRef<Partial<LaunchesFilterPreset>>({});
+ const rememberFilters=useCallback((next:LaunchesFilterPreset)=>{filterMemory.current=next},[]);
  const reload=useCallback(()=>setVersion(current=>current+1),[]);
  useEffect(()=>{
   const controller=new AbortController();
@@ -98,6 +100,7 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
  return <LaunchesStage09
   key={userId} data={data} mode="live" periodMonth={month} userId={userId}
   exportUserName={userName} onRefresh={reload}
+  rememberedFilters={filterMemory.current} onRememberFilters={rememberFilters}
   onNew={()=>{}} onHome={onHome}
  />;
 }
