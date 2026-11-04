@@ -1598,3 +1598,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - CI `41873483519`: compilação verde e novas verificações geométricas sem falhas em nove larguras, exceto **scroll horizontal interno em 320px**. Captura `resultados.json` mostrou `mainScrollWidth=422px` para `mainWidth=320px`, enquanto as duas seções DataGrid tinham largura computada de `402.47px` e o container raiz apenas `296px`.
 - Causa real: o layout mobile usa `display:contents` para preservar a ordem de leitura e o pai flex permanecia com `align-items:start`, fazendo os DataGrids assumirem a largura intrínseca. Correção: `align-items:stretch` no pai flex e `width/max-width:100%` nas seções DataGrid; a rolagem de tabelas continua **dentro do DataGrid**, sem rolagem da página.
 - Teste de navegador passa a medir explicitamente o `right` de cada painel contra o `right` da Home em mobile/tablet. Repetir CI e Render; não homologar automaticamente.
+
+
+## 04/11/2026 | Alinhamento inferior dos dois DataGrids, conforme imagem do usuário
+- O usuário esclareceu que não quer mostrar mais registros, e sim **preencher o espaço vazio abaixo de Próximos compromissos**, fazendo os dois DataGrids terminarem alinhados visualmente.
+- Mantida a estrutura em duas colunas independentes que elimina o vão entre Benefícios e Compromissos. Em desktop com duas colunas, o grid externo usa `align-items:stretch` e os painéis DataGrid crescem até a base comum.
+- O DataGrid da direita mantém **somente os quatro compromissos existentes** e expande a altura da tabela para distribuir essas linhas reais. Não cria informação, não recalcula valores, não muda a paginação, a ordenação ou os filtros.
+- Em 1024px quando só couber uma coluna, tablet e celular, o comportamento natural continua, sem altura fixa. CSS limitado à Home da PR #655 e ao `@media(min-width:1024px)`.
+- Novo gate geométrico compara a posição inferior dos dois rodapés (tolerância de 5px), preservação da quantidade de linhas reais, responsividade e valores. Nenhuma tela homologada ou regra financeira foi alterada.
+- Revisão ainda **não homologada visualmente**. Exigir CI verde, Render LIVE no mesmo SHA e aprovação humana.

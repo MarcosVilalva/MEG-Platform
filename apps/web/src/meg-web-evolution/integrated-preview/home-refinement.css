@@ -354,10 +354,37 @@
     gap:clamp(.52rem,.9vw,.75rem);align-items:stretch;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
-    /* A partir de 1024, auto-fit só cria duas colunas quando cada lado
-       alcança largura suficiente, sem esmagar o DataGrid. */
+    /* Duas colunas só quando há largura real. Na mesma linha, a altura
+       é compartilhada, permitindo que ambos os DataGrids terminem juntos. */
     grid-template-columns:repeat(auto-fit,minmax(min(100%,34rem),1fr));
-    align-items:start;
+    align-items:stretch;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column{
+    align-self:stretch;
+    min-height:0;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid{
+    display:flex;
+    flex-direction:column;
+    flex:1 1 auto;
+    min-height:0;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid>.meg-datagrid{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid .meg-datagrid__viewport{
+    flex:1 1 auto;
+    height:auto;
+    min-height:8rem;
+    max-height:none;
+  }
+  /* Somente o grid de Compromissos distribui suas linhas existentes
+     para ocupar a área útil. Sem linhas falsas e com rodapé na base. */
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-secondary>.pano-grid .meg-datagrid-table{
+    height:100%;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-action-list {
     grid-template-columns:repeat(4,minmax(0,1fr));

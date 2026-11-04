@@ -49,6 +49,9 @@ async function measure(page){
     movementsRect:one('.pano-finance-column.is-primary>.pano-grid')?rect(one('.pano-finance-column.is-primary>.pano-grid')):null,
     dueRect:one('.pano-finance-column.is-secondary>.pano-grid')?rect(one('.pano-finance-column.is-secondary>.pano-grid')):null,
     financialColumns:all('.pano-finance-column').map(rect),
+    gridFooters:all('.pano-finance-column>.pano-grid .meg-datagrid-footer').map(rect),
+    gridRealRows:all('.pano-finance-column>.pano-grid .meg-datagrid-table tbody')
+      .map(body=>[...body.querySelectorAll('tr:not(.meg-datagrid-spacer)')].length),
     tableScroll:all('.pano-grid .meg-datagrid__viewport').map(x=>({
       width:x.clientWidth,scrollWidth:x.scrollWidth
     })),
@@ -183,6 +186,18 @@ try {
   if(changed.summary?.right>width+2)problems.push('resumo do cartao transborda a tela');
   if(changed.cardStage&&changed.summary && changed.summary.top<changed.cardStage.bottom-3)
     problems.push('resumo e palco de cartoes sobrepostos');
+  // Quando as colunas estão lado a lado, ambos os grids devem
+  // terminar alinhados, sem linhas artificiais ou paginação perdida.
+  if(width>=1024 && changed.financialColumns.length===2 &&
+      Math.abs(changed.financialColumns[0].top-changed.financialColumns[1].top)<4){
+    if(changed.gridFooters.length!==2)
+      problems.push('rodapé de DataGrid ausente');
+    else if(Math.abs(changed.gridFooters[0].bottom-changed.gridFooters[1].bottom)>5)
+      problems.push('rodapés dos grids não estão alinhados: '+
+        Math.abs(changed.gridFooters[0].bottom-changed.gridFooters[1].bottom).toFixed(1)+'px');
+    if(JSON.stringify(changed.gridRealRows)!==JSON.stringify(baseline.gridRealRows))
+      problems.push('número de registros do DataGrid mudou no refinamento');
+  }
   // Independência de coluna: cada DataGrid vem logo após o painel de cima.
   if(width>=1024 && changed.financialColumns.length===2
     && Math.abs(changed.financialColumns[0].top-changed.financialColumns[1].top)<4) {
