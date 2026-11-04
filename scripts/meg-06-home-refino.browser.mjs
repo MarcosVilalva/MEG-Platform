@@ -50,6 +50,14 @@ async function measure(page){
     })),
     tableHeadings:all('.pano-grid .meg-datagrid-table th .meg-datagrid-sort-button>span:first-child')
       .map(x=>({label:x.textContent?.trim(),width:x.clientWidth,scroll:x.scrollWidth})),
+    visibleMoneyCells:all('.pano-grid .meg-datagrid-table tbody td strong').map(el=>{
+      const cell=el.closest('td');
+      const range=document.createRange();range.selectNodeContents(el);
+      const textRight=range.getBoundingClientRect().right;
+      const cellRect=cell?.getBoundingClientRect();
+      const rightPad=cell?parseFloat(getComputedStyle(cell).paddingRight)||0:0;
+      return {text:el.textContent?.trim(),overhang:cellRect?textRight-(cellRect.right-rightPad):0};
+    }),
     grids:all('.pano-grid .meg-datagrid').length,
     actions:buttons.map(b=>({
       title:b.querySelector('strong')?.textContent?.trim(),
@@ -115,6 +123,9 @@ try {
       if(heading.scroll>heading.width+2)
         problems.push('cabeçalho '+heading.label+' ainda truncado');
     }
+    if(changed.visibleMoneyCells.some(x=>x.overhang>3))
+      problems.push('valor monetário cortado na tabela');
+
   }
 
   if(width>=640 && changed.statRects.length===4){

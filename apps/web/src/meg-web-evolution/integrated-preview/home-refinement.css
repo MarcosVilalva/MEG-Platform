@@ -307,6 +307,10 @@
   overflow-wrap:normal;
   text-overflow:ellipsis;
 }
+.meg-integrated-preview[data-preview-view="home"] .pano-grid .pano-cell-text {
+  display:block;min-width:0;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 @media(min-width:640px) {
   /* Com 4 indicadores, evitar distribuição 3+1 e coluna vazia em tablet. */
   .meg-integrated-preview[data-preview-view="home"] .pano-overview {
