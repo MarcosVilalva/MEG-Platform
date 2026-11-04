@@ -25,9 +25,12 @@ function readSidebarPreference() {
 }
 
 export type ShellSection = 'home'|'launches';
-export function AppShell({ children, activeSection='home', onNavigate }: {
+export function AppShell({ children, activeSection='home', onNavigate, periodLabel, profileName }: {
  children: ReactNode;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;
+ periodLabel?:string;profileName?:string;
 }) {
+ const initials=profileName?.trim().split(/\\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
+ const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -108,7 +111,7 @@ export function AppShell({ children, activeSection='home', onNavigate }: {
               key={label}
               className={`meg-nav-item ${(activeSection==='home' ? index===0 : index===1) ? 'is-active' : ''}`}
               type="button"
-              aria-current={(activeSection==='home' ? index===0 : index===1)?'page':undefined}
+              aria-current={onNavigate && (activeSection==='home' ? index===0 : index===1)?'page':undefined}
               onClick={()=>{
                 if (!onNavigate) return; // A prévia mantém sua própria navegação, sem alterações.
                 if (index===0 || index===1){setDrawerOpen(false);onNavigate(index===0?'home':'launches')}
@@ -276,7 +279,7 @@ export function AppShell({ children, activeSection='home', onNavigate }: {
           <div className="meg-topbar-actions">
             <button type="button" className="meg-period">
               <Icon name="calendar" />
-              <span>Outubro&nbsp;de&nbsp;2026</span>
+              <span>{periodLabel||'Outubro de 2026'}</span>
               <Icon name="chevronDown" />
             </button>
 
@@ -294,8 +297,8 @@ export function AppShell({ children, activeSection='home', onNavigate }: {
             </IconButton>
 
             <button type="button" className="meg-profile">
-              <span className="meg-avatar">MV</span>
-              <span className="meg-profile-name">Marcos de Andrade Vilalva</span>
+              <span className="meg-avatar">{avatarInitials}</span>
+              <span className="meg-profile-name">{profileName||'Marcos de Andrade Vilalva'}</span>
               <Icon name="chevronDown" />
             </button>
           </div>
