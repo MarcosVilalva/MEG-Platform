@@ -114,7 +114,7 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
  ];
  return <section className="meg-l09" aria-label="Lançamentos financeiros">
   <header className="meg-l09-hero">
-   <div><span className="meg-l09-eyebrow">CENTRAL FINANCEIRA</span><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
+   <div><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
    <button type="button" className="meg-l09-add" onClick={onNew}><Icon name="plus" width={19}/>Novo lançamento</button>
   </header>
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
@@ -129,8 +129,7 @@ export function LaunchesStage09({data,onNew,onHome}:Props){
       <label><span className="sr-only">Tipo</span><select value={kind} onChange={event=>setKind(event.target.value)}><option value="all">Todos os tipos</option>{['income','expense','transfer','investment','redemption','adjustment'].map(k=><option key={k} value={k}>{shortType[k]}</option>)}</select></label>
       <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
       <label><span className="sr-only">Conta</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-      <label className="meg-l09-date"><span className="sr-only">Data inicial</span><input type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/></label>
-      <label className="meg-l09-date"><span className="sr-only">Data final</span><input type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></label>
+      <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><Icon name="calendar" width={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
     <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos">
      <DataGrid<Row> data={rows} columns={columns} pageSize={12} selectable
