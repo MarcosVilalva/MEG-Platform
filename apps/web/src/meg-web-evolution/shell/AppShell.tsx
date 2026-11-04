@@ -29,7 +29,7 @@ export function AppShell({ children, activeSection='home', onNavigate, periodLab
  children: ReactNode;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;
  periodLabel?:string;profileName?:string;
 }) {
- const initials=profileName?.trim().split(/\\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
+ const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
  const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
