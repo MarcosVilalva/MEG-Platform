@@ -122,10 +122,8 @@ function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
   return ()=>{document.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;previous?.focus();};
  },[onClose]);
 
- const main:[
-  [string,string]
- ]=[
-  ['Data',dateFmt(row.date)],['Competência',/^\\d{4}-\\d{2}$/.test(row.competence)?row.competence.slice(5,7)+'/'+row.competence.slice(0,4):readable(row.competence)],
+ const main:[string,string][]=[
+  ['Data',dateFmt(row.date)],['Competência',/^\d{4}-\d{2}$/.test(row.competence)?row.competence.slice(5,7)+'/'+row.competence.slice(0,4):readable(row.competence)],
   ['Tipo',row.typeLabel],['Status',row.statusLabel],['Categoria',row.category],
   ['Conta / Cartão',row.account],['Forma de pagamento',row.paymentMethod],
  ];
@@ -205,7 +203,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'typeLabel',label:'Tipo',type:'enum',width:145,minWidth:110,sortable:true,filterable:true},
   {key:'statusLabel',label:'Status',type:'enum',width:138,minWidth:105,sortable:true,filterable:true},
   {key:'competence',label:'Competência',type:'text',width:144,minWidth:120,sortable:true,filterable:true,
-   render:(value)=>/^\\d{4}-\\d{2}$/.test(String(value))?String(value).slice(5,7)+'/'+String(value).slice(0,4):readable(value)},
+   render:(value)=>/^\d{4}-\d{2}$/.test(String(value))?String(value).slice(5,7)+'/'+String(value).slice(0,4):readable(value)},
  ];
  return [
   ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:104,minWidth:94,sortable:false,filterable:false,
