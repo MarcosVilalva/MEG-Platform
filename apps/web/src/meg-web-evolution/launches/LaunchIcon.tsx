@@ -43,12 +43,12 @@ export type LaunchIconName=
  'education'|'leisure'|'services'|'gift'|'card'|'work'|'subscriptions'|
  'plus'|'search'|'calendar'|'chevronDown'|'chevronLeft'|'list';
 
-const phosphorGlyphs:Record<LaunchIconName,ReactNode>={
+const phosphorGlyphs={
  ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls
-};
-const tablerGlyphs:Record<LaunchIconName,ReactNode>={
+} as Record<LaunchIconName,ReactNode>;
+const tablerGlyphs={
  ...tablerKpi,...tablerCategoryA,...tablerCategoryB,...tablerControls
-};
+} as Record<LaunchIconName,ReactNode>;
 
 type Props=SVGProps<SVGSVGElement>&{name:LaunchIconName;pack?:LaunchIconPack};
 export function LaunchIcon({name,pack='phosphor',...props}:Props){
