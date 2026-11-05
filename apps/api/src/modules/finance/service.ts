@@ -113,6 +113,56 @@ export async function listFinancialEvents(userId: string, input: { page: number;
   };
 }
 
+
+/**
+ * Etapa 09 Web: um snapshot do histórico em UMA transação REPEATABLE READ.
+ * As leituras existentes /events seguem sem alterações para Android/legado.
+ *
+ * Limite explícito evita respostas excessivas/timeout em contas grandes.
+ * Acima do limite, o cliente segue com as duas passagens verificadas.
+ * Sem cálculo monetário, writer, cache de dados privados ou alteração de schema.
+ */
+export const FINANCIAL_HISTORY_SNAPSHOT_LIMIT = 5000;
+export async function getFinancialHistorySnapshot(userId: string) {
+  return prisma.$transaction(async (tx) => {
+    const where = { userId, archivedAt: null };
+    const total = await tx.financialEvent.count({ where });
+    if (total > FINANCIAL_HISTORY_SNAPSHOT_LIMIT) {
+      return {
+        kind: 'limit-exceeded' as const,
+        protocol: 'financial-history-v1' as const,
+        total,
+        limit: FINANCIAL_HISTORY_SNAPSHOT_LIMIT,
+      };
+    }
+    const items = await tx.financialEvent.findMany({
+      where,
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+      include: {
+        account: true, category: true, paymentMethod: true,
+        importedRow: { select: { rowNumber: true, rawData: true } },
+      },
+    });
+    if (items.length !== total) throw new Error('FINANCIAL_HISTORY_SNAPSHOT_INCONSISTENT');
+    return {
+      kind: 'complete' as const,
+      protocol: 'financial-history-v1' as const,
+      consistency: 'repeatable-read' as const,
+      total,
+      items: items.map(item => ({
+        ...item,
+        sourceRowNumber: item.importedRow?.rowNumber ?? null,
+        sourceDetails: sourceDetails(item.importedRow?.rawData),
+        importedRow: undefined,
+      })),
+    };
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+    maxWait: 5_000,
+    timeout: 20_000,
+  });
+}
+
 export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {
   const competence = input.competence || competenceFromDate(input.date);
   const values = financialAmountValues(input.type, input.amount);
