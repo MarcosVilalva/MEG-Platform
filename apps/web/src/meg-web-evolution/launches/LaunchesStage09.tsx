@@ -166,9 +166,9 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
    render:(_value,row)=><strong className={'meg-l09-money '+(row.signedAmount>=0?'is-positive':'is-negative')}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>},
-  ...(mode==='live'?extraColumns:[]),
   {key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
    render:(_value,row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>},
+  ...(mode==='live'?extraColumns:[]),
  ];},[openDetails,mode]);
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
