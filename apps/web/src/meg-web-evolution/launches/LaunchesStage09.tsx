@@ -134,19 +134,8 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    &&(account==='all'||row.accountId===account)
    &&(!start||row.date>=start)&&(!end||row.date<=end)
  ),[allRows,search,kind,category,account,start,end]);
- const columns=useMemo<DataGridColumn<Row>[]>(()=>[
-  {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
-  {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
-   render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
-  {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
-   render:(_value,row)=><span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
-    <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
-    <span className="meg-l09-chip-label">{row.category}</span>
-   </span>},
-  {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
-  {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
-  {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
-   render:(_value,row)=><strong className={'meg-l09-money '+(row.signedAmount>=0?'is-positive':'is-negative')}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>},
+ const columns=useMemo<DataGridColumn<Row>[]>(()=>{
+ const extraColumns:DataGridColumn<Row>[]=[
   // Campos existentes no evento e nos rótulos de origem: exibição somente
   // leitura. Status, competência e classificação NÃO são recalculados na UI.
   {key:'typeLabel',label:'Tipo',type:'enum',width:145,minWidth:110,sortable:true,filterable:true},
@@ -161,9 +150,24 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'weekday',label:'Dia da semana',type:'text',width:152,minWidth:118,sortable:true,filterable:true,render:readable},
   {key:'notes',label:'Observações',type:'text',width:235,minWidth:155,sortable:true,filterable:true,render:readable},
   {key:'historicalNotes',label:'Observações originais',type:'text',width:225,minWidth:155,sortable:true,filterable:true,render:readable},
+ ];
+ return [
+  {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
+  {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
+   render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
+  {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
+   render:(_value,row)=><span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
+    <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
+    <span className="meg-l09-chip-label">{row.category}</span>
+   </span>},
+  {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
+  {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
+  {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
+   render:(_value,row)=><strong className={'meg-l09-money '+(row.signedAmount>=0?'is-positive':'is-negative')}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>},
+  ...(mode==='live'?extraColumns:[]),
   {key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
    render:(_value,row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>},
- ],[openDetails]);
+ ];},[openDetails,mode]);
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
