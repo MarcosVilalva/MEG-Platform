@@ -41,7 +41,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   ...entries[(index%100)+1],id:'volume-'+String(index),description:'Registro sintético de volume '+String(index+1)
  }))]:entries;
  const totalText=records.length.toLocaleString('pt-BR');
- let mutation=false,historyRequests=0,nonGetRequests=0;
+ let mutation=false,historyRequests=0,snapshotRequests=0,syncChecks=0,nonGetRequests=0;
  await page.addInitScript(value=>sessionStorage.setItem('meg.auth.session',JSON.stringify(value)),session);
  await page.route('**/auth/me',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({user})}));
  await page.route('**/finance/**',async route=>{
@@ -50,7 +50,10 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   const url=new URL(req.url());
   const path=url.pathname.replace(/^\/functions\/v1\/meg-stage09-readonly-preview(?=\/)/,'');
   let body=null;
-  if(path==='/finance/sync-status')body={token:'simulated-immutable-revision',changedAt:null,mutationType:null};
+  if(path==='/finance/sync-status'){
+   syncChecks++;
+   body={token:mutation&&width!==960&&syncChecks%2===0?'simulated-updated-revision':'simulated-immutable-revision',changedAt:null,mutationType:null};
+  }
   else if(path==='/finance/summary')body={month:url.searchParams.get('month'),income:400,expense:240,projectedResult:160,realizedResult:125,pendingCount:0,pendingAmount:0};
   else if(path==='/finance/cashflow')body={month:period,days:[]};
   else if(path==='/finance/benefit-summary')body={month:period,balance:0,credits:0,used:0};
@@ -77,6 +80,16 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await new Promise(resolve=>setTimeout(resolve,40));
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items,total:records.length,page:index,pageSize:size})});
  });
+ // A API nova faz uma leitura; em 960px simular versão antiga (fallback 404).
+ await page.route('**/finance/events/history-snapshot',async route=>{
+  if(route.request().method()!=='GET')nonGetRequests++;
+  snapshotRequests++;
+  await new Promise(resolve=>setTimeout(resolve,65));
+  if(width===960)return route.fulfill({status:404,contentType:'application/json',body:'{"error":"NOT_FOUND"}'});
+  return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+   kind:'complete',protocol:'financial-history-v1',consistency:'repeatable-read',total:records.length,items:records
+  })});
+ });
  await page.route('**/cards?*',route=>route.fulfill({status:200,contentType:'application/json',body:'[]'}));
  await page.route('**/payables/open',route=>route.fulfill({status:200,contentType:'application/json',body:'[]'}));
  try{
@@ -95,14 +108,23 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
     const links=[...nav.querySelectorAll('.meg-nav-item')];
     const ys=links.map(link=>{const r=link.getBoundingClientRect();return r.top+r.height/2});
     const steps=ys.slice(1).map((y,index)=>y-ys[index]);
-    return {spread:Math.max(...steps)-Math.min(...steps),coverage:(ys[ys.length-1]-ys[0])/nav.getBoundingClientRect().height};
+    const footer=document.querySelector('.meg-sidebar-footer')?.getBoundingClientRect();
+    const art=document.querySelector('.meg-sidebar .sidebar__art');
+    return {spread:Math.max(...steps)-Math.min(...steps),
+     coverage:(ys[ys.length-1]-ys[0])/nav.getBoundingClientRect().height,
+     footerGap:footer?footer.top-ys[ys.length-1]:null,
+     artHidden:art?getComputedStyle(art).display==='none':false};
    });
-   if(spacing.spread>12||spacing.coverage<.55)issues.push('Ícones da sidebar compacta não distribuídos uniformemente: '+JSON.stringify(spacing));
+   if(spacing.spread>12||spacing.coverage<.75||spacing.artHidden!==true||
+      spacing.footerGap===null||spacing.footerGap>165)
+    issues.push('Ícones compactos não usam toda a altura útil: '+JSON.stringify(spacing));
   }
   await page.screenshot({path:resolve(output,'carregando-'+width+'x'+height+'.png'),fullPage:true});
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
-  if(historyRequests!==Math.ceil(records.length/100)*2)issues.push('Histórico não completou as duas leituras: '+historyRequests);
+  if(snapshotRequests!==1)issues.push('Histórico sem solicitação única de snapshot: '+snapshotRequests);
+  const expectedPages=width===960?Math.ceil(records.length/100)*2:0;
+  if(historyRequests!==expectedPages)issues.push('Caminho de leitura incorreto: páginas '+historyRequests+', esperado '+expectedPages);
   // Sticky local ao scroll de .meg-main, com máscara sólida e sem sombra do sistema.
   const sticky=await page.evaluate(()=>{
    const main=document.querySelector('.meg-main'),frame=document.querySelector('.meg-l09-hero-frame');
@@ -199,14 +221,14 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await query.fill('Teste Operacional 101');
   await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor();
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
-  await page.getByRole('status').filter({hasText:'Lendo os registros da primeira leitura'}).waitFor({timeout:12000});
+  await page.getByRole('status').filter({hasText:'Preparando histórico consistente na API'}).waitFor({timeout:12000});
   await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
   if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
   await query.fill('');
   historyRequests=0;mutation=true;
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
-  await page.getByRole('status').filter({hasText:'Lendo os registros da primeira leitura'}).waitFor({timeout:12000});
-  await page.getByRole('alert').filter({hasText:'O histórico mudou durante a verificação'}).waitFor({timeout:40000});
+  await page.getByRole('status').filter({hasText:'Preparando histórico consistente na API'}).waitFor({timeout:12000});
+  await page.getByRole('alert').filter({hasText:width===960?'O histórico mudou durante a verificação':'Os dados foram alterados durante a consulta'}).waitFor({timeout:40000});
   if(await page.locator('.meg-l09-grid-panel').count())issues.push('Histórico parcial foi publicado após a alteração concorrente');
   if(nonGetRequests)issues.push('Operação de escrita inesperada: '+nonGetRequests);
   await page.screenshot({path:resolve(output,'consistencia-'+width+'x'+height+'.png'),fullPage:true});
@@ -215,7 +237,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   issues.push('Diagnóstico: '+JSON.stringify({url:page.url(),historyRequests,mutation}));
   try{await page.screenshot({path:resolve(output,'falha-'+width+'x'+height+'.png'),fullPage:true})}catch{}
  }
- tests.push({width,height,historyRequests,nonGetRequests,issues});
+ tests.push({width,height,historyRequests,snapshotRequests,nonGetRequests,issues});
  await page.close();
 }
 await browser.close();
