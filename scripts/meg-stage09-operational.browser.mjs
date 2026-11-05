@@ -39,7 +39,8 @@ for(const [width,height] of [[1366,768],[390,844]]){
   const url=new URL(req.url());
   const path=url.pathname;
   let body=null;
-  if(path==='/finance/summary')body={month:url.searchParams.get('month'),income:400,expense:240,projectedResult:160,realizedResult:125,pendingCount:0,pendingAmount:0};
+  if(path==='/finance/sync-status')body={token:'simulated-immutable-revision',changedAt:null,mutationType:null};
+  else if(path==='/finance/summary')body={month:url.searchParams.get('month'),income:400,expense:240,projectedResult:160,realizedResult:125,pendingCount:0,pendingAmount:0};
   else if(path==='/finance/cashflow')body={month:period,days:[]};
   else if(path==='/finance/benefit-summary')body={month:period,balance:0,credits:0,used:0};
   else if(path==='/finance/events/month')body={items:[]};
