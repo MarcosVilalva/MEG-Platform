@@ -111,14 +111,35 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
   <button type="button" className="meg-l09-add" onClick={reload}>Tentar novamente</button>
   <button type="button" className="meg-l09-back" onClick={onHome}>Voltar à Home</button>
  </section>;
- if(!data)return <section className="meg-l09" aria-label="Carregando lançamentos">
-  <div className="meg-l09-preview-warning" role="status" aria-live="polite">
-   Consultando histórico autorizado. {progress.pass===2?'Conferindo consistência':'Lendo registros'}:
-   {' '}{progress.loaded.toLocaleString('pt-BR')} de {progress.total?progress.total.toLocaleString('pt-BR'):'...'} registros.
-   Filtros e exportações serão liberados após a verificação integral.
-  </div>
-  <button type="button" className="meg-l09-back" onClick={onHome}>Voltar à Home</button>
- </section>;
+ if(!data){
+  // Percentual de carregamento da interface, nunca indicador financeiro.
+  const fraction=progress.total>0?progress.loaded/progress.total:0;
+  const percent=Math.min(99,Math.round(((progress.pass-1)+fraction)*50));
+  return <section className="meg-l09 meg-l09-loading" aria-label="Carregando lançamentos" aria-busy="true">
+   <div className="meg-l09-loading-panel">
+    <div className="meg-l09-loading-head">
+     <div>
+      <span className="meg-l09-loading-eyebrow">HISTÓRICO FINANCEIRO AUTORIZADO</span>
+      <h1>Carregando seus lançamentos</h1>
+     </div>
+     <span className="meg-l09-loading-percent" aria-hidden="true">{percent}%</span>
+    </div>
+    <p className="meg-l09-loading-status" role="status" aria-live="polite">
+     {progress.pass===2?'Conferindo os registros da segunda leitura':'Lendo os registros da primeira leitura'}
+     {' · '}{progress.loaded.toLocaleString('pt-BR')} de {progress.total?progress.total.toLocaleString('pt-BR'):'...'} registros.
+    </p>
+    <div className="meg-l09-progress-track" role="progressbar" aria-label="Conferência do histórico" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+     <span style={{width:percent+'%'}} />
+    </div>
+    <p className="meg-l09-loading-notice">O MEG verifica o histórico completo antes de liberar filtros e exportações. Nenhum dado parcial será apresentado como definitivo.</p>
+   </div>
+   <div className="meg-l09-loading-placeholders" aria-hidden="true">
+    <div className="meg-l09-loading-stats">{[1,2,3,4].map(index=><div className="meg-l09-loading-stat" key={index}><i/><span/><strong/></div>)}</div>
+    <div className="meg-l09-loading-grid"><div className="meg-l09-loading-toolbar"/>{[1,2,3,4,5,6].map(index=><div className="meg-l09-loading-row" key={index}><span/><span/><span/><span/></div>)}</div>
+   </div>
+   <button type="button" className="meg-l09-back" onClick={onHome}>Voltar à Home</button>
+  </section>;
+ }
  return <LaunchesStage09
   key={userId} data={data} mode="live" periodMonth={month} userId={userId}
   exportUserName={userName} onRefresh={reload}
