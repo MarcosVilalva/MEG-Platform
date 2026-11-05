@@ -127,7 +127,9 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   allRows.filter(row=>!row.categoryId && row.category!=='Sem categoria').map(row=>row.category)
  )].sort((left,right)=>left.localeCompare(right,'pt-BR')),[allRows]);
  const rows=useMemo(()=>allRows.filter(row=>
-   (!search||[row.description,row.category,row.account,row.paymentMethod].some(value=>value.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))))
+   (!search||[row.description,row.category,row.account,row.paymentMethod,row.typeLabel,row.statusLabel,row.competence,
+    row.weekday,row.launchType,row.expenseClass,row.group,row.situation,row.modality,row.notes,row.historicalNotes]
+    .some(value=>value.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))))
    &&(kind==='all'||row.type===kind)
    &&(category==='all'||row.categoryId===category
     ||(category.startsWith('legacy:')&&!row.categoryId&&row.category===category.slice(7)))
