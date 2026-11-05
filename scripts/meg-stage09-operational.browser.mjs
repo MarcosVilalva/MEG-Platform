@@ -103,13 +103,29 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
   if(historyRequests!==Math.ceil(records.length/100)*2)issues.push('Histórico não completou as duas leituras: '+historyRequests);
-  const expectedColumns=['Data','Descrição','Categoria','Conta / Cartão','Forma de pagamento','Valor','Tipo','Status','Competência',
-   'Tipo original','Classificação original','Grupo original','Situação original','Modalidade original','Dia da semana','Observações','Observações originais','Ações'];
+  const expectedColumns=['Ações','Data','Descrição','Categoria','Conta / Cartão','Forma de pagamento','Valor','Tipo','Status','Competência'];
   const headings=await page.locator('.meg-l09-grid-panel .meg-datagrid-table thead').textContent()||'';
   for(const label of expectedColumns)if(!headings.includes(label))issues.push('Coluna obrigatória ausente: '+label);
   if(!(await page.locator('.meg-l09-grid-panel [aria-label="Seletor de colunas"]').count()))issues.push('Menu de visibilidade de colunas não disponível');
-  const sourceText=await page.locator('.meg-l09-grid-panel').textContent()||'';
-  for(const label of ['FIXO','CASA','REALIZADO','QUINTA','OBSERVAÇÃO ORIGINAL'])if(!sourceText.includes(label))issues.push('Campo original não recuperado: '+label);
+  for(const duplicate of ['Tipo original','Classificação original','Situação original','Observações originais']){
+   const headers=await page.locator('.meg-l09-grid-panel .meg-datagrid-table thead').innerText();
+   if(headers.includes(duplicate))issues.push('Campo de origem duplicado na grade: '+duplicate);
+  }
+  const viewButton=page.getByRole('button',{name:'Ver detalhes de Teste Operacional 001'});
+  await viewButton.click();
+  const dialog=page.getByRole('dialog',{name:'Teste Operacional 001'});
+  await dialog.waitFor();
+  if(await dialog.getAttribute('aria-modal')!=='true')issues.push('Modal sem aria-modal');
+  if(!(await dialog.getByText('Categoria Original',{exact:true}).count()))issues.push('Categoria legada ausente na ficha');
+  await dialog.getByText('Dados originais do histórico').click();
+  const originalText=await dialog.innerText();
+  for(const label of ['FIXO','CASA','REALIZADO','QUINTA','OBSERVAÇÃO ORIGINAL'])if(!originalText.includes(label))issues.push('Campo original não recuperado no modal: '+label);
+  if(!originalText.includes('Edição, exclusão e baixa permanecem indisponíveis'))issues.push('Modal de leitura não informa o bloqueio de writers');
+  await page.screenshot({path:resolve(output,'modal-'+width+'x'+height+'.png'),fullPage:true});
+  await page.keyboard.press('Escape');
+  if(await page.getByRole('dialog').count())issues.push('Modal não fecha com Escape');
+  if(!(await viewButton.isFocused()))issues.push('Foco não retornou ao botão Ver');
+  if(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).count())issues.push('Painel de detalhes permaneceu na rota autenticada');
   if(width>=1024){
    const view=page.locator('.meg-l09-grid-panel .meg-datagrid__viewport');
    const scroller=await view.evaluate(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}));
@@ -130,7 +146,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="trendDown"]').count()))issues.push('Saída sem ícone de baixa');
   if(!(await page.locator('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon="generic"]').count()))issues.push('Categoria desconhecida sem ícone neutro');
   if(!(await page.getByRole('button',{name:'Expandir gráfico de distribuição'}).isVisible()))issues.push('Gráfico não iniciou recolhido');
-  if(!(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).isVisible()))issues.push('Detalhes não iniciaram recolhidos');
+  if(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).count())issues.push('Detalhes ainda ocupam painel lateral na leitura real');
   if(!(await page.locator('.meg-l09-add').isDisabled()))issues.push('Criação foi liberada sem writer autorizado');
   if(!/R\$/.test(await page.locator('.meg-l09-stats').innerText()))issues.push('Indicadores financeiros não exibidos');
   const dims=await page.evaluate(()=>({docWidth:document.documentElement.scrollWidth,mainWidth:document.querySelector('.meg-main')?.clientWidth,mainScroll:document.querySelector('.meg-main')?.scrollWidth}));
