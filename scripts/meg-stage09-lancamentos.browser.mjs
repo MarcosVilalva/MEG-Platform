@@ -21,6 +21,9 @@ for(const [width,height] of sizes){
     container:rect(root),kpis:document.querySelectorAll('.meg-l09-stat').length,
     panels:document.querySelectorAll('.meg-l09-panel').length,
     grid:!!document.querySelector('.meg-l09-grid-panel .meg-datagrid'),
+    incomeGlyph:document.querySelector('.meg-l09-stat.is-income [data-launch-icon]')?.getAttribute('data-launch-icon'),
+    expenseGlyph:document.querySelector('.meg-l09-stat.is-expense [data-launch-icon]')?.getAttribute('data-launch-icon'),
+    categoryGlyphs:document.querySelectorAll('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon]').length,
     gridWidth:document.querySelector('.meg-l09-grid-panel')?.getBoundingClientRect().width||0,
     workspaceWidth:document.querySelector('.meg-l09-left')?.getBoundingClientRect().width||0,
     viewportHeight:document.querySelector('.meg-l09-grid-panel .meg-datagrid__viewport')?.getBoundingClientRect().height||0,
@@ -34,6 +37,8 @@ for(const [width,height] of sizes){
   if(measurement.documentWidth>width+2)issues.push('scroll horizontal do documento');
   if(measurement.mainScrollWidth>measurement.mainClientWidth+2)issues.push('scroll horizontal da area principal');
   if(measurement.kpis!==4||measurement.panels!==2||!measurement.grid)issues.push('componentes ausentes');
+  if(measurement.incomeGlyph!=='trendUp'||measurement.expenseGlyph!=='trendDown')issues.push('sentido dos icones de entrada e saida incorreto');
+  if(measurement.categoryGlyphs<1)issues.push('categorias sem icones SVG');
   if(measurement.viewportHeight<120||measurement.visibleDataRows<1)issues.push('DataGrid sem linhas visiveis');
   if(!measurement.graphsCollapsed||!measurement.detailsCollapsed)issues.push('paineis nao iniciaram recolhidos');
   if(measurement.gridWidth<measurement.workspaceWidth-3)issues.push('grade nao ocupa a largura toda');
@@ -54,11 +59,13 @@ for(const [width,height] of sizes){
   if(await page.locator('#meg-l09-details-content').isVisible())issues.push('detalhes nao recolheram');
   const search=page.getByPlaceholder('Buscar lançamentos...');
   await search.fill('Supermercado');
+  if(!(await page.locator('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon="grocery"]').count()))issues.push('categoria supermercado sem icone correspondente');
   const n=await page.locator('.meg-l09-grid-summary').textContent();
   // A busca inclui descrição, categoria, conta e forma de pagamento.
   // Os dois mercados da fixture compartilham a categoria Supermercado.
   if(!/2 de 11 registros/.test(n||''))issues.push('filtro de busca nao funcionou: '+n);
   await search.fill('');
+  if(!(await page.locator('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon="health"]').count()))issues.push('categoria saude sem icone correspondente');
   const detailButton=page.locator('.meg-datagrid-card-row:visible .meg-l09-open-row:visible, .meg-datagrid-table:visible .meg-l09-open-row:visible').filter({hasText:'Farmácia'}).first();
   await detailButton.click({timeout:8000});
   if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('selecao nao expandiu detalhes');
