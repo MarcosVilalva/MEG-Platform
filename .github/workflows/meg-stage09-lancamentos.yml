@@ -33,6 +33,14 @@ jobs:
         run: cd apps/web && npx tsc -b
       - name: Compilar preview isolado
         run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Validar publicação de acesso autenticado separado da prévia demonstrativa
+        run: |
+          test -f apps/web/dist-fluxo-integrado-08/fluxo-integrado-08.html
+          test -f apps/web/dist-fluxo-integrado-08/web-evolution.html
+          grep -rlq 'meg-platform-api.onrender.com' apps/web/dist-fluxo-integrado-08/assets/
+      - name: Diagnóstico da API de produção e CORS da prévia (sem credenciais)
+        continue-on-error: true
+        run: node scripts/meg-stage09-origin-probe.mjs
       - name: Compilar entrada Web autenticada sem publicar em produção
         run: cd apps/web && npx vite build --base /
       - name: Validar gateway de acesso aos dados reais sem alterar API nem executar writers
