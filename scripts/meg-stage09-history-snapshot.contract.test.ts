@@ -5,6 +5,7 @@ import {readSmartAuthorizedHistory} from '../apps/web/src/meg-web-evolution/laun
 const service=readFileSync(new URL('../apps/api/src/modules/finance/service.ts',import.meta.url),'utf8');
 const routes=readFileSync(new URL('../apps/api/src/modules/finance/routes.ts',import.meta.url),'utf8');
 const gateway=readFileSync(new URL('./meg-stage09-readonly-gateway.mjs',import.meta.url),'utf8');
+const operational=readFileSync(new URL('../apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx',import.meta.url),'utf8');
 const snapshot=service.split('export async function getFinancialHistorySnapshot')[1]?.split('export async function createFinancialEvent')[0];
 assert.ok(snapshot,'Snapshot precisa existir sem modificar o writer.');
 assert.match(snapshot,/prisma\.\$transaction\(async \(tx\)/);
@@ -18,6 +19,11 @@ assert.match(snapshot,/kind:\s*'limit-exceeded'/);
 assert.doesNotMatch(snapshot,/\.(?:create|createMany|update|updateMany|delete|deleteMany|upsert)\s*\(/);
 assert.match(routes,/app\.get\('\/events\/history-snapshot',\s*\{\s*preHandler:\s*app\.authorize\(\[\.\.\.readRoles\]\)/);
 assert.match(routes,/getFinancialHistorySnapshot\(dataOwnerId\)/);
+assert.match(routes,/capabilities:\s*\{\s*historySnapshotV1:\s*true\s*\}/);
+assert.match(operational,/before\.capabilities\?\.historySnapshotV1===true/);
+assert.match(operational,/readAuthorizedHistory\(fetchPage,signal/);
+assert.match(operational,/readSmartAuthorizedHistory\(/);
+
 assert.match(gateway,/events\\\/history-snapshot/);
 
 function record(index:number){
