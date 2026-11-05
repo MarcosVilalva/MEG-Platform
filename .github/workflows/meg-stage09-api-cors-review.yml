@@ -1,0 +1,30 @@
+name: MEG API Etapa 09 - testes pontuais CORS (nao substituem security gate)
+on:
+  push:
+    branches:
+      - 'fix/stage09-preview-cors-readonly-20261105'
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  cors-stage09:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar sem executar alteracoes de dependencias
+        run: npm ci --audit=false
+      - name: Gerar cliente Prisma
+        run: npm run db:generate
+      - name: Testar CORS, preflight e bloqueio de writers da origem exata
+        run: npm run test:cors
+      - name: Compilar API
+        run: npm run build:api
+      - name: Testes de caracterizacao financeira existentes
+        run: npm run test:finance
