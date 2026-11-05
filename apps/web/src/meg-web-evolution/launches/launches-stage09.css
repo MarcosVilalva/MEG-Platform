@@ -156,3 +156,63 @@
  .meg-l09-stat-icon{display:none}
 }
 @media(prefers-reduced-motion:reduce){.meg-l09 *{animation:none!important;transition:none!important}}
+
+/* Etapa 09: a leitura integral não deve parecer uma tela vazia.
+ * Skeleton sem números fictícios; a grade real só aparece após duas passagens. */
+.meg-l09-loading-panel{
+ display:flex;flex-direction:column;gap:.8rem;
+ border:1px solid var(--l09-line);border-radius:.9rem;
+ padding:clamp(1rem,2vw,1.55rem);
+ background:var(--l09-surface);
+ box-shadow:inset 0 1px #83fff013;
+}
+.meg-l09-loading-head{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.meg-l09-loading-head>div{min-width:0}
+.meg-l09-loading-eyebrow{color:#57e6d9;letter-spacing:.13em;font-size:.7rem;font-weight:700}
+.meg-l09-loading-head h1{margin:.3rem 0 0;font-weight:750;font-size:clamp(1.1rem,2vw,1.6rem);line-height:1.25}
+.meg-l09-loading-percent{font-size:clamp(1.35rem,2.5vw,2rem);font-weight:800;font-variant-numeric:tabular-nums;color:#24e8d1}
+.meg-l09-loading-status{margin:0;color:#d5f4f0;font-size:.84rem;line-height:1.55}
+.meg-l09-progress-track{height:.5rem;width:100%;border-radius:999px;overflow:hidden;background:#16434a}
+.meg-l09-progress-track>span{display:block;height:100%;background:linear-gradient(90deg,#0cbfae,#31efc8);border-radius:inherit;transition:width .15s ease}
+.meg-l09-loading-notice{margin:0;color:#9fc5c2;font-size:.74rem;line-height:1.55}
+.meg-l09-loading-placeholders{display:flex;flex-direction:column;gap:.85rem;min-width:0}
+.meg-l09-loading-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.meg-l09-loading-stat{display:flex;flex-direction:column;gap:.55rem;min-width:0;padding:1.05rem;border:1px solid rgba(23,215,202,.16);border-radius:.8rem;background:rgba(4,30,38,.55)}
+.meg-l09-loading-stat i,.meg-l09-loading-stat span,.meg-l09-loading-stat strong,.meg-l09-loading-toolbar,.meg-l09-loading-row span{
+ display:block;border-radius:.35rem;background:rgba(102,170,167,.19)
+}
+.meg-l09-loading-stat i{width:2rem;height:2rem;border-radius:.6rem}
+.meg-l09-loading-stat span{width:56%;height:.65rem}
+.meg-l09-loading-stat strong{width:78%;height:1.1rem}
+.meg-l09-loading-grid{border:1px solid rgba(23,215,202,.19);border-radius:.8rem;overflow:hidden;background:rgba(3,27,34,.75)}
+.meg-l09-loading-toolbar{height:2.7rem;margin:.85rem 1rem 1rem}
+.meg-l09-loading-row{display:grid;grid-template-columns:1fr 2fr 1.4fr 1fr;gap:1rem;padding:1rem;border-top:1px solid rgba(23,215,202,.1)}
+.meg-l09-loading-row span{height:.75rem;max-width:100%}
+.meg-l09-loading-row span:last-child{width:64%}
+@media(max-width:1023px){.meg-l09-loading-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:639px){
+ .meg-l09-loading-head{align-items:flex-start}
+ .meg-l09-loading-head h1{font-size:1.15rem}
+ .meg-l09-loading-row{grid-template-columns:1fr 1.6fr;gap:.6rem;padding:.85rem}
+ .meg-l09-loading-row span:nth-child(n+3){display:none}
+}
+
+/* Refino solicitado na sidebar compacta SOMENTE da área operacional de
+ * Lançamentos. Home e demais prévias homologadas não são afetadas. */
+@media(min-width:640px){
+ .meg-shell.is-launches-operational.is-sidebar-collapsed .meg-nav{
+  flex:1 1 0;min-height:0;display:flex;flex-direction:column;
+  justify-content:space-evenly;gap:.3rem;overflow-y:auto;
+ }
+ .meg-shell.is-launches-operational.is-sidebar-collapsed .meg-nav>.meg-nav-item{
+  flex:0 0 auto;min-height:3rem;max-height:3.25rem;height:3.15rem;
+  padding-block:0;justify-content:center;
+ }
+ .meg-shell.is-launches-operational.is-sidebar-collapsed .sidebar__art{
+  flex:0 1 auto;height:clamp(4rem,12dvh,8rem);min-height:0;margin-top:0;opacity:.38;
+ }
+}
+@media(min-width:640px) and (max-height:699px){
+ .meg-shell.is-launches-operational.is-sidebar-collapsed .sidebar__art{display:none}
+}
+@media(prefers-reduced-motion:reduce){.meg-l09-progress-track>span{transition:none}}
