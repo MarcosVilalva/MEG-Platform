@@ -114,7 +114,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
   {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
-  {key:'category',label:'Categoria',type:'enum',width:188,minWidth:152,sortable:true,filterable:true,
+  {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
    render:(_value,row)=><span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
     <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
     <span className="meg-l09-chip-label">{row.category}</span>
