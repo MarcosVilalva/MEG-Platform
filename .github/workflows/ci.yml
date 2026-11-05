@@ -348,7 +348,11 @@ jobs:
             if(j.dependencies?.zod!=='4.6.7')throw Error('Zod divergente: '+p);
           }
           const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
-          if(lock.packages?.['node_modules/zod']?.version!=='4.6.7')throw Error('Lock divergente');
+          const zodEntries=Object.entries(lock.packages||{}).filter(([key])=>key==='node_modules/zod'||key.endsWith('/node_modules/zod'));
+          if(!zodEntries.length||zodEntries.some(([,meta])=>meta.version!=='4.6.7')){
+            console.error('Entradas Zod no lock:',zodEntries.map(([key,meta])=>[key,meta.version]));
+            throw Error('Lock Zod divergente');
+          }
           NODE
           git diff --check
           git diff --stat
