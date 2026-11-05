@@ -309,3 +309,88 @@
  .meg-l09-modal-amount{flex-direction:column;align-items:flex-start;gap:.3rem}
 }
 @media(prefers-reduced-motion:reduce){.meg-l09-modal *{transition:none!important}}
+
+/* Etapa 09 UX: sticky opaco e modo foco somente na grade autenticada.
+ * A topbar é irmã da .meg-main; o topo do scrollport é 0. Sem
+ * backdrop-filter/sombra na máscara: itens rolados jamais transparecem. */
+.meg-l09.is-operational:not(.is-grid-focus) .meg-l09-hero-frame.is-sticky{
+ position:sticky;top:0;z-index:18;isolation:isolate;
+ min-width:0;margin:-.9rem -1.1rem -.45rem;
+ padding:.9rem 1.1rem .45rem;
+ background:#02191e;
+ border-bottom:1px solid rgba(22,161,157,.22);
+}
+.meg-l09-grid-focus-toolbar{
+ display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+ min-height:2.9rem;padding:.4rem .8rem;
+ background:#03252b;border-bottom:1px solid rgba(20,227,200,.20);
+}
+.meg-l09-grid-focus-toolbar>span{
+ min-width:0;display:flex;align-items:center;gap:.48rem;
+ font-size:.77rem;font-weight:700;color:#c1e9e5;
+}
+.meg-l09-grid-focus-toolbar>span svg{flex:none;color:#21e0cc}
+.meg-l09-grid-focus-button{
+ display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+ flex:none;min-height:2.4rem;padding:.37rem .72rem;
+ background:#063b40;color:#abfff0;
+ border:1px solid #218a88;border-radius:.52rem;
+ font-size:.76rem;font-weight:750;cursor:pointer;
+}
+.meg-l09-grid-focus-button:hover{background:#0a5056;border-color:#4be7d1}
+.meg-l09-grid-focus-button[aria-pressed="true"]{background:#0c5c5d;border-color:#3de2c9}
+.meg-l09-grid-focus-button:focus-visible{outline:2px solid #60fff0;outline-offset:2px}
+
+/* Ocupa somente a área útil do MEG, preservando sidebar e topbar.
+ * :has() identifica o estado desta tela sem alterar o shell compartilhado. */
+.meg-main:has(.meg-l09.is-grid-focus){overflow:hidden}
+.meg-shell-stage:has(.meg-l09.is-grid-focus){height:100%;min-height:0}
+.meg-l09.is-operational.is-grid-focus{
+ height:100%;max-width:none;min-height:0;overflow:hidden;
+ padding:.6rem .8rem;gap:.5rem;
+ background:#02191e;
+}
+.meg-l09.is-grid-focus .meg-l09-hero-frame,
+.meg-l09.is-grid-focus .meg-l09-stats,
+.meg-l09.is-grid-focus .meg-l09-preview-warning,
+.meg-l09.is-grid-focus .meg-l09-right,
+.meg-l09.is-grid-focus .meg-l09-grid-summary,
+.meg-l09.is-grid-focus .meg-l09-back{display:none}
+.meg-l09.is-grid-focus .meg-l09-workspace{
+ display:flex;flex:1 1 auto;min-width:0;min-height:0;
+}
+.meg-l09.is-grid-focus .meg-l09-left{
+ display:flex;flex:1 1 auto;min-width:0;min-height:0;
+ gap:.5rem;
+}
+.meg-l09.is-grid-focus .meg-l09-filters{flex:0 0 auto}
+.meg-l09.is-grid-focus .meg-l09-grid-panel{
+ flex:1 1 auto;min-height:0;min-width:0;
+ display:flex;flex-direction:column;
+}
+.meg-l09.is-grid-focus .meg-l09-grid-focus-toolbar{flex:0 0 auto}
+.meg-l09.is-grid-focus .meg-l09-grid-panel .meg-datagrid{
+ flex:1 1 auto;min-height:0;height:100%;
+ display:flex;flex-direction:column;
+}
+.meg-l09.is-grid-focus .meg-l09-grid-panel .meg-datagrid__viewport{
+ flex:1 1 auto;min-height:0;max-height:none;overflow:auto;
+}
+@media(max-width:1023px){
+ .meg-l09.is-operational:not(.is-grid-focus) .meg-l09-hero-frame.is-sticky{
+  margin:-.75rem -.75rem -.35rem;padding:.75rem .75rem .35rem;
+ }
+}
+@media(max-width:639px){
+ .meg-l09.is-operational:not(.is-grid-focus) .meg-l09-hero-frame.is-sticky{
+  margin:-.62rem -.62rem -.28rem;padding:.62rem .62rem .28rem;
+ }
+ .meg-l09.is-grid-focus .meg-l09-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .meg-l09-grid-focus-toolbar{padding:.35rem .5rem}
+ .meg-l09-grid-focus-toolbar>span{font-size:.68rem}
+ .meg-l09-grid-focus-button{min-height:2.7rem;padding-inline:.55rem;font-size:.72rem}
+}
+@media(max-width:359px){
+ .meg-l09-grid-focus-toolbar>span{display:none}
+ .meg-l09-grid-focus-toolbar{justify-content:flex-end}
+}
