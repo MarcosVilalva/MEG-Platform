@@ -79,6 +79,16 @@ A matriz abaixo usa as linhas auditadas e registradas em `docs/MEG-WEB-AUDITORIA
 - **Testes:** workflow da PR #656 agora compila `web-evolution.html` além da prévia, roda contratos financeiros existentes e Playwright com API **simulada em CI**: 101 registros (2 páginas), duas leituras, prevenção de escrita, erro após mudança na segunda leitura, conservação dos filtros ao atualizar, titular da sessão e responsividade desktop/mobile. O teste de browser não substitui homologação operacional em ambiente integrado.
 - **Pendências:** integração com API real em ambiente controlado, revisão/snapshot transacional no contrato para datasets extensos, resumo canônico sob filtros arbitrários, ações de escrita protegidas e eventual validação funcional explícita. Não considerar Etapa 09 encerrada nem fazer merge.
 
+## 04/11/2026 | Ajuste visual solicitado: ícones modernos e direção das entradas/saídas
+- **Pedido explícito do usuário:** revisar setas de entradas/saídas, usar pacote de ícones mais moderno e incluir ícones nas categorias do DataGrid. Esta solicitação AUTORIZA apenas este refinamento; **não homologa automaticamente** sua nova versão.
+- **Problema confirmado:** os KPIs de Entradas e Saídas usavam os caracteres `↓` e `↑`, que podem expressar sentido de movimentação de caixa, mas geravam ambiguidade como sinalizadores de desempenho financeiro.
+- **Novo padrão visual:** Entradas = `trending-up` verde (eleva), Saídas = `trending-down` vermelho (reduz); Resultado/Total = gráfico, Saldo/Resultado realizado = carteira. Os ícones são exclusivamente decorativos; as cores e os valores continuam definidos pelos campos canônicos.
+- **Pacote:** 19 SVGs oficiais curados da biblioteca **Lucide** (licença ISC), empacotados localmente em `apps/web/src/meg-web-evolution/launches/LaunchIcon.tsx`, com copyright e licença incluídos. Sem CDN, dependência npm nova, alteração de Shell/Android ou bundle global.
+- **DataGrid:** `category-icon.ts` mapeia explicitamente alguns nomes de categoria para ícones (supermercado, saúde, transporte, casa, receitas, alimentação, educação etc.). Categorias desconhecidas conservam texto e recebem `tag` neutra. **Não cria, muda ou reclassifica categorias**, nem infere natureza financeira. O valor original usado na busca/filtro/exportação permanece intocado.
+- **Layout:** `LaunchesStage09.tsx` e CSS escopado `launches-stage09.css` recebem os ícones. A largura da coluna Categoria foi ajustada de 160 para 188 px para acomodar o SVG sem ocultar prematuramente o rótulo; rolagem horizontal segue dentro da tabela. Home, seletor Novo, Android, DataGrid e Shell compartilhados permanecem intocados.
+- **QA específico:** `scripts/meg-stage09-lancamentos.browser.mjs` verifica setas dos KPIs, ícones reais de Supermercado/Saúde, SVGs no DataGrid e oito viewports. Teste operacional verifica ícone neutro para categoria desconhecida, sem mutações.
+- **Status:** refinamento **candidato à nova validação visual**. Manter o SHA visual anterior `61970409b834da102a5b6351d64a1e4776963678` como referência homologada até nova aprovação explícita; PR #656 continua Draft sem merge. **Etapa 09 não encerrada.**
+
 ## Checklist
 - [x] Auditoria prévia das autoridades, funcionalidades e conflitos.
 - [x] Branch e PR isoladas; Home/Novo/Android/API/financial-policy intocados.
