@@ -167,7 +167,8 @@ const financeServiceSource = readFileSync(new URL('./service.ts', import.meta.ur
 const historyReaderBlock = financeServiceSource.split('export async function listFinancialEvents(')[1]
   ?.split('export async function createFinancialEvent(')[0] || '';
 assert.ok(historyReaderBlock, 'Leitor oficial de histórico financeiro ausente.');
-assert.match(historyReaderBlock, /where:[\s\S]*?archivedAt:\s*null/);
+assert.match(historyReaderBlock, /const where = \{[\s\S]*?userId,[\s\S]*?archivedAt:\s*null/);
+assert.match(historyReaderBlock, /prisma\.financialEvent\.findMany\(\{\s*where,/);
 assert.match(historyReaderBlock, /skip:\s*\(input\.page - 1\) \* input\.pageSize/);
 assert.match(historyReaderBlock, /take:\s*input\.pageSize/);
 assert.match(historyReaderBlock, /orderBy:\s*\[\s*\{\s*date:\s*'desc'\s*\},\s*\{\s*createdAt:\s*'desc'\s*\},\s*\{\s*id:\s*'asc'\s*\}\s*\]/);
