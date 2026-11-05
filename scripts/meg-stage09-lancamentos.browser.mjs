@@ -5,8 +5,7 @@ const out=resolve('artifacts/meg-stage09-lancamentos');mkdirSync(out,{recursive:
 const sizes=[[390,844],[768,1024],[1024,768],[1366,768],[1920,1080],[2560,1440],[1366,600],[390,667]];
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 const results=[];let errors=0;
-const baseline=new Map();
-for(const pack of ['phosphor','tabler']){
+const pack='phosphor'; // Único padrão aprovado na Etapa 09.
 for(const [width,height] of sizes){
  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
  page.setDefaultTimeout(8000);
@@ -14,7 +13,7 @@ for(const [width,height] of sizes){
  const calls=[];page.on('request',r=>{if(/\/api\//.test(new URL(r.url()).pathname))calls.push(r.url())});
  const issues=[];
  try{
-  await page.goto('http://127.0.0.1:4173/fluxo-integrado-08.html?tela=lancamentos&icones='+pack,{waitUntil:'networkidle'});
+  await page.goto('http://127.0.0.1:4173/fluxo-integrado-08.html?tela=lancamentos',{waitUntil:'networkidle'});
   await page.locator('.meg-l09').waitFor();
   const measurement=await page.evaluate(()=>{
    const main=document.querySelector('.meg-main'),root=document.querySelector('.meg-l09');
@@ -46,15 +45,9 @@ for(const [width,height] of sizes){
   if(measurement.kpis!==4||measurement.panels!==2||!measurement.grid)issues.push('componentes ausentes');
   if(measurement.incomeGlyph!=='trendUp'||measurement.expenseGlyph!=='trendDown')issues.push('sentido dos icones de entrada e saida incorreto');
   if(measurement.pack!==pack||measurement.categoryIconPack!==pack)issues.push('pack de icones incorreto');
-  if(measurement.incomeViewBox!==(pack==='phosphor'?'0 0 256 256':'0 0 24 24'))issues.push('viewBox nao corresponde ao pack');
+  if(measurement.incomeViewBox!=='0 0 256 256')issues.push('viewBox nao corresponde ao pack');
   if(!measurement.kpiIconBox||Math.abs(measurement.kpiIconBox.width-25)>1||Math.abs(measurement.kpiIconBox.height-25)>1)issues.push('bounding box do KPI mudou');
   if(!measurement.categoryIconBox||Math.abs(measurement.categoryIconBox.width-17)>1||Math.abs(measurement.categoryIconBox.height-17)>1)issues.push('bounding box da categoria mudou');
-  const sizeKey=width+'x'+height;
-  if(pack==='phosphor')baseline.set(sizeKey,measurement);
-  else {
-   const expected=baseline.get(sizeKey);
-   if(!expected||Math.abs(expected.gridWidth-measurement.gridWidth)>1||Math.abs(expected.workspaceWidth-measurement.workspaceWidth)>1)issues.push('geometria do grid mudou entre packs');
-  }
   if(measurement.categoryGlyphs<1)issues.push('categorias sem icones SVG');
   if(measurement.viewportHeight<120||measurement.visibleDataRows<1)issues.push('DataGrid sem linhas visiveis');
   if(!measurement.graphsCollapsed||!measurement.detailsCollapsed)issues.push('paineis nao iniciaram recolhidos');
@@ -93,7 +86,6 @@ for(const [width,height] of sizes){
   results.push({pack,width,height,measurement,issues});
  }catch(e){issues.push(String(e));results.push({pack,width,height,issues});}
  errors+=issues.length;await page.close();
-}
 }
 await browser.close();writeFileSync(resolve(out,'resultados.json'),JSON.stringify(results,null,2));
 for(const r of results)console.log(r.pack+' '+r.width+'x'+r.height+': '+(r.issues.length?r.issues.join(' | '):'OK'));
