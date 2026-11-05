@@ -107,7 +107,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
    'Tipo original','Classificação original','Grupo original','Situação original','Modalidade original','Dia da semana','Observações','Observações originais','Ações'];
   const headings=await page.locator('.meg-l09-grid-panel .meg-datagrid-table thead').textContent()||'';
   for(const label of expectedColumns)if(!headings.includes(label))issues.push('Coluna obrigatória ausente: '+label);
-  if(!(await page.locator('.meg-l09-grid-panel [aria-label="Colunas"]').count()))issues.push('Menu de visibilidade de colunas não disponível');
+  if(!(await page.locator('.meg-l09-grid-panel [aria-label="Seletor de colunas"]').count()))issues.push('Menu de visibilidade de colunas não disponível');
   const sourceText=await page.locator('.meg-l09-grid-panel').textContent()||'';
   for(const label of ['FIXO','CASA','REALIZADO','QUINTA','OBSERVAÇÃO ORIGINAL'])if(!sourceText.includes(label))issues.push('Campo original não recuperado: '+label);
   if(width>=1024){
