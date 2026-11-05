@@ -43,7 +43,9 @@ jobs:
       - name: Compilar entrada Web autenticada sem publicar em produção
         run: cd apps/web && npx vite build --base /
       - name: Validar gateway de acesso aos dados reais sem alterar API nem executar writers
-        run: node --test scripts/meg-stage09-readonly-gateway.test.mjs
+        run: |
+          bash -n scripts/meg-stage09-real-local.sh
+          node --test scripts/meg-stage09-readonly-gateway.test.mjs
       - name: Preparar navegador
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
       - name: Testar renderização e filtros em oito viewports
