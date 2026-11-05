@@ -217,6 +217,9 @@ export async function financeRoutes(app: FastifyInstance) {
       changedAt: changedAtDate?.toISOString() || null,
       mutationType: catalogIsNewest ? 'CATALOG_SYNC' : latestMutation?.mutationType || null,
       catalogChangedAt: latestCatalog?.item.updatedAt.toISOString() || null,
+      // Capacidade aditiva: clientes antigos ignoram; clientes da Etapa 09
+      // só usam a nova rota após o backend anunciar suporte efetivo.
+      capabilities: { historySnapshotV1: true },
     };
   });
 
