@@ -6,7 +6,7 @@ import swaggerUi from '@fastify/swagger-ui';
 import { prisma } from '@meg/database';
 import { config } from './config';
 import { registerSecurityHeaders } from './security';
-import { isAllowedOrigin } from './cors';
+import { isAllowedOrigin, isStage09PreviewRequestAllowed } from './cors';
 import { registerAuth } from './plugins/auth';
 import { authRoutes } from './modules/auth/routes';
 import { financeRoutes } from './modules/finance/routes';
@@ -50,6 +50,15 @@ let dataRepair: { status: 'pending' | 'completed'; scanned: number; repaired: nu
 };
 
 registerSecurityHeaders(app);
+
+// A prévia Web 09 só pode consultar dados e manter sessões. Nenhum writer
+// financeiro é atendido a partir dessa origem. Regras existentes intactas
+// para Web publicada e Android; autenticação e workspace são obrigatórios.
+app.addHook('onRequest', async (request, reply) => {
+  if (!isStage09PreviewRequestAllowed(request.headers.origin, request.method, request.url)) {
+    return reply.code(405).send({ error: 'STAGE09_PREVIEW_READ_ONLY' });
+  }
+});
 
 await app.register(cors, {
   origin(origin, callback) {
