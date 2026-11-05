@@ -63,6 +63,12 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
   setData(null);setError('');setProgress({loaded:0,total:0,pass:1});
   const run=async()=>{
    try{
+    // O token cobre mudanças registradas pela API; não substitui o snapshot
+    // transacional e complementa as duas leituras integrais de registros.
+    const before=await financeClient.getSyncStatus();
+    if(typeof before.token!=='string'||!before.token){
+     throw new Error('A API não confirmou a versão dos dados financeiros.');
+    }
     const [events,summary,accounts,categories,methods]=await Promise.all([
      readAuthorizedHistory(
       (page,pageSize,s)=>financeClient.listEvents(page,pageSize,'',s),
@@ -74,7 +80,13 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
      authenticatedRequest<Category[]>('/finance/categories',{cache:'no-store',signal}),
      authenticatedRequest<PaymentMethod[]>('/finance/payment-methods',{cache:'no-store',signal}),
     ]);
-    if(!signal.aborted)setData(buildReadOnlyData(events,summary,accounts,categories,methods));
+    if(signal.aborted)return;
+    const after=await financeClient.getSyncStatus();
+    if(signal.aborted)return;
+    if(typeof after.token!=='string'||before.token!==after.token){
+     throw new Error('Os dados foram alterados durante a consulta. Atualize o histórico.');
+    }
+    setData(buildReadOnlyData(events,summary,accounts,categories,methods));
    }catch(cause){
     if(!signal.aborted)setError(cause instanceof Error?cause.message:'Não foi possível carregar o histórico financeiro.');
    }
