@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
 import {DataGrid} from '../datagrid/DataGrid';
 import {applyFilters} from '../datagrid/core';
 import type {DataGridColumn,DataGridFilterState} from '../datagrid/types';
@@ -98,6 +99,65 @@ function DemoBreakdown({rows,mode}:{rows:Row[];mode:'preview'|'live'}){
   <p className="meg-l09-hint">{mode==='preview'?'Prévia: distribuição pela quantidade de registros. Valores financeiros dependem do read model canônico.':'Distribuição por quantidade de registros, não por valores ou saldo financeiro.'}</p>
  </>;
 }
+
+/** Detalhes exclusivos da leitura operacional. Não oferece writers financeiros. */
+function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
+ const surfaceRef=useRef<HTMLElement|null>(null);
+ const closeRef=useRef<HTMLButtonElement|null>(null);
+ useEffect(()=>{
+  const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+  const previousOverflow=document.body.style.overflow;
+  document.body.style.overflow='hidden';
+  closeRef.current?.focus();
+  const onKey=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'){event.preventDefault();onClose();return;}
+   if(event.key!=='Tab')return;
+   const focusable=[...(surfaceRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])')??[])].filter(node=>node.getClientRects().length>0);
+   if(!focusable.length){event.preventDefault();surfaceRef.current?.focus();return;}
+   const first=focusable[0],last=focusable[focusable.length-1];
+   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  };
+  document.addEventListener('keydown',onKey);
+  return ()=>{document.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;previous?.focus();};
+ },[onClose]);
+
+ const main:[
+  [string,string]
+ ]=[
+  ['Data',dateFmt(row.date)],['Competência',/^\\d{4}-\\d{2}$/.test(row.competence)?row.competence.slice(5,7)+'/'+row.competence.slice(0,4):readable(row.competence)],
+  ['Tipo',row.typeLabel],['Status',row.statusLabel],['Categoria',row.category],
+  ['Conta / Cartão',row.account],['Forma de pagamento',row.paymentMethod],
+ ];
+ const original:[string,string][]=[
+  ['Tipo de lançamento original',row.launchType],['Classificação original',row.expenseClass],
+  ['Grupo original',row.group],['Situação original',row.situation],
+  ['Modalidade original',row.modality],['Dia da semana original',row.weekday],
+  ['Observações originais',row.historicalNotes]
+ ].filter(([,value])=>Boolean(value.trim()));
+ return createPortal(
+  <div className="meg-l09-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
+   <section className="meg-l09-modal" role="dialog" aria-modal="true" aria-labelledby="meg-l09-dialog-title" aria-describedby="meg-l09-dialog-description" ref={surfaceRef} tabIndex={-1}>
+    <header className="meg-l09-modal-header">
+     <div><span className="meg-l09-modal-eyebrow">CONSULTA DE LANÇAMENTO</span><h2 id="meg-l09-dialog-title">{row.description}</h2><p id="meg-l09-dialog-description">Dados autenticados da API financeira. Somente leitura.</p></div>
+     <button ref={closeRef} type="button" className="meg-l09-modal-close" onClick={onClose} aria-label="Fechar detalhes">×</button>
+    </header>
+    <div className="meg-l09-modal-scroll">
+     <div className="meg-l09-modal-amount">
+      <span>Valor do lançamento</span><strong className={row.signedAmount>=0?'is-positive':'is-negative'}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>
+     </div>
+     <dl className="meg-l09-modal-fields">{main.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+     {row.notes.trim()&&<div className="meg-l09-modal-note"><strong>Observações</strong><p>{row.notes}</p></div>}
+     {original.length>0&&<details className="meg-l09-modal-history"><summary>Dados originais do histórico <span>{original.length}</span></summary>
+      <p>Rótulos preservados da importação, sem alterar as classificações atuais.</p>
+      <dl className="meg-l09-modal-fields">{original.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+     </details>}
+    </div>
+    <footer className="meg-l09-modal-footer"><span>Edição, exclusão e baixa permanecem indisponíveis nesta etapa.</span><button type="button" onClick={onClose}>Fechar</button></footer>
+   </section>
+  </div>,document.body
+ );
+}
 export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
@@ -112,15 +172,17 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  },[search,kind,category,account,start,end,mode,onRememberFilters]);
  const [advanced,setAdvanced]=useState<DataGridFilterState>({});
  const [selectedId,setSelectedId]=useState<string|null>(null);
+ const [modalId,setModalId]=useState<string|null>(null);
  const [distributionOpen,setDistributionOpen]=useState(false);
  const [detailsOpen,setDetailsOpen]=useState(false);
  const detailsPanelRef=useRef<HTMLElement|null>(null);
+ const closeModal=useCallback(()=>setModalId(null),[]);
  const openDetails=useCallback((id:string)=>{
+  if(mode==='live'){setModalId(id);return;}
   setSelectedId(id);
   setDetailsOpen(true);
-  // Seleção revela detalhes sem modal e sem nova rota.
   window.requestAnimationFrame(()=>detailsPanelRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
- },[]);
+ },[mode]);
  const [showNotes,setShowNotes]=useState(false);
  const allRows=useMemo(()=>sourceRows(data),[data]);
  const legacyCategoryOptions=useMemo(()=>[...new Set(
@@ -138,22 +200,16 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  ),[allRows,search,kind,category,account,start,end]);
  const columns=useMemo<DataGridColumn<Row>[]>(()=>{
  const extraColumns:DataGridColumn<Row>[]=[
-  // Campos existentes no evento e nos rótulos de origem: exibição somente
-  // leitura. Status, competência e classificação NÃO são recalculados na UI.
+  // Somente campos financeiros canônicos no grid principal. Campos legados
+  // permanecem íntegros no modal, sem duplicar colunas com semântica distinta.
   {key:'typeLabel',label:'Tipo',type:'enum',width:145,minWidth:110,sortable:true,filterable:true},
   {key:'statusLabel',label:'Status',type:'enum',width:138,minWidth:105,sortable:true,filterable:true},
   {key:'competence',label:'Competência',type:'text',width:144,minWidth:120,sortable:true,filterable:true,
-   render:(value)=>/^\d{4}-\d{2}$/.test(String(value))?String(value).slice(5,7)+'/'+String(value).slice(0,4):readable(value)},
-  {key:'launchType',label:'Tipo original',type:'text',width:160,minWidth:120,sortable:true,filterable:true,render:readable},
-  {key:'expenseClass',label:'Classificação original',type:'text',width:188,minWidth:145,sortable:true,filterable:true,render:readable},
-  {key:'group',label:'Grupo original',type:'text',width:166,minWidth:125,sortable:true,filterable:true,render:readable},
-  {key:'situation',label:'Situação original',type:'text',width:158,minWidth:120,sortable:true,filterable:true,render:readable},
-  {key:'modality',label:'Modalidade original',type:'text',width:167,minWidth:125,sortable:true,filterable:true,render:readable},
-  {key:'weekday',label:'Dia da semana',type:'text',width:152,minWidth:118,sortable:true,filterable:true,render:readable},
-  {key:'notes',label:'Observações',type:'text',width:235,minWidth:155,sortable:true,filterable:true,render:readable},
-  {key:'historicalNotes',label:'Observações originais',type:'text',width:225,minWidth:155,sortable:true,filterable:true,render:readable},
+   render:(value)=>/^\\d{4}-\\d{2}$/.test(String(value))?String(value).slice(5,7)+'/'+String(value).slice(0,4):readable(value)},
  ];
  return [
+  ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:104,minWidth:94,sortable:false,filterable:false,
+   render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Abrir detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} onClick={()=>openDetails(row.id)}><LaunchIcon name="list" width={16} height={16}/><span>Ver</span></button>} as DataGridColumn<Row>]:[]),
   {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
   {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
@@ -166,13 +222,14 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
    render:(_value,row)=><strong className={'meg-l09-money '+(row.signedAmount>=0?'is-positive':'is-negative')}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>},
-  {key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
-   render:(_value,row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>},
+  ...(mode==='preview'?[{key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
+   render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>} as DataGridColumn<Row>]:[]),
   ...(mode==='live'?extraColumns:[]),
  ];},[openDetails,mode]);
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
+ const modalRow=mode==='live'?allRows.find(row=>row.id===modalId)??null:null;
  const filtered=Boolean(search||kind!=='all'||category!=='all'||account!=='all'||start!==startOfMonth||end!==endOfMonth||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
  const summary=!filtered&&data.summary?.month===periodMonth?data.summary:null;
  const blank=summary===null;
@@ -191,7 +248,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart'} width={25} height={25} strokeWidth={1.9}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
-  <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado, consultado integralmente e conferido em duas leituras. Colunas adicionais disponíveis à direita: use a rolagem horizontal da tabela ou o menu Colunas. Indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. A tela não altera lançamentos.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
+  <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado e conferido em duas leituras. Use Ver na primeira coluna para consultar os detalhes e rótulos originais. Indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. Nenhum lançamento é alterado.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
    {mode==='live'&&onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
   </p>
   <div className="meg-l09-workspace">
@@ -203,7 +260,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       <label><span className="sr-only">Conta</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
       <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
-    <aside className="meg-l09-right" aria-label="Painéis complementares da grade">
+    <aside className={'meg-l09-right '+(mode==='live'?'is-operational':'')} aria-label="Painéis complementares da grade">
      <section className={'meg-l09-panel meg-l09-distribution '+(distributionOpen?'is-open':'is-collapsed')} aria-label="Distribuição no período">
       <div className="meg-l09-panel-title">
        <button type="button" className="meg-l09-panel-toggle" aria-controls="meg-l09-distribution-content" aria-expanded={distributionOpen} aria-label={distributionOpen?'Recolher gráfico de distribuição':'Expandir gráfico de distribuição'} onClick={()=>setDistributionOpen(open=>!open)}>
@@ -212,7 +269,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       </div>
       <div id="meg-l09-distribution-content" className="meg-l09-panel-content" hidden={!distributionOpen}>{distributionOpen&&<DemoBreakdown rows={shownRows} mode={mode}/>}</div>
      </section>
-     <section ref={detailsPanelRef} className={'meg-l09-panel meg-l09-details '+(detailsOpen?'is-open':'is-collapsed')} aria-label="Lançamento selecionado">
+     {mode==='preview'&&<section ref={detailsPanelRef} className={'meg-l09-panel meg-l09-details '+(detailsOpen?'is-open':'is-collapsed')} aria-label="Lançamento selecionado">
       <div className="meg-l09-panel-title">
        <button type="button" className="meg-l09-panel-toggle" aria-controls="meg-l09-details-content" aria-expanded={detailsOpen} aria-label={detailsOpen?'Recolher detalhes do lançamento':'Expandir detalhes do lançamento'} onClick={()=>setDetailsOpen(open=>!open)}>
         <LaunchIcon name="list" width={19} height={19}/><span className="meg-l09-toggle-title">Lançamento selecionado</span><LaunchIcon name="chevronDown" width={19} height={19} className="meg-l09-panel-chevron"/>
@@ -234,11 +291,11 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
         <p className="meg-l09-hint">{mode==='preview'?'Edição, exclusão e baixa indisponíveis na prévia, sem acesso ao writer financeiro.':'Edição, exclusão e baixa indisponíveis nesta etapa; nenhuma operação financeira é executada.'}</p>
        </div>:<p className="meg-l09-empty">Nenhum lançamento selecionado.</p>}
       </div>
-     </section>
+     </section>}
     </aside>
     <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos">
      <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable
-      rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
+      rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-v2-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
       footerAggregates={false} onFilterChange={onGridFilter} exportUserName={mode==='live'?exportUserName:undefined}
       exportPeriod={mode==='live'?'Histórico autorizado — '+periodMonth:'Demonstração visual'} />
     </section>
@@ -246,5 +303,6 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    </div>
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><LaunchIcon name="chevronLeft" width={18} height={18}/>Voltar à Home</button>
+  {modalRow&&<LaunchDetailModal row={modalRow} onClose={closeModal}/>}
  </section>;
 }
