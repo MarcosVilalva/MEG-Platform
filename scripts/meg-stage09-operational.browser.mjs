@@ -31,6 +31,11 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
  page.setDefaultTimeout(20000);
  const issues=[];
+ // Reprodução sintética do volume observado na conta real, sem dados privados.
+ const records=width===960?[...entries,...Array.from({length:3630},(_,index)=>({
+  ...entries[(index%100)+1],id:'volume-'+String(index),description:'Registro sintético de volume '+String(index+1)
+ }))]:entries;
+ const totalText=records.length.toLocaleString('pt-BR');
  let mutation=false,historyRequests=0,nonGetRequests=0;
  await page.addInitScript(value=>sessionStorage.setItem('meg.auth.session',JSON.stringify(value)),session);
  await page.route('**/auth/me',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({user})}));
@@ -58,14 +63,14 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   historyRequests++;
   const query=new URL(req.url()).searchParams;
   const index=Number(query.get('page')||1),size=Number(query.get('pageSize')||50);
-  const items=entries.slice((index-1)*size,index*size).map((row,j)=>
+  const items=records.slice((index-1)*size,index*size).map((row,j)=>
    mutation && historyRequests>=3 && index===1 && j===0
     ? {...row,description:'Alterado entre leituras'}
     : row);
   // Latência determinística mantém o estado de loading observável e impede
   // que o teste aceite o grid antigo como resposta da nova consulta.
   await new Promise(resolve=>setTimeout(resolve,40));
-  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items,total:entries.length,page:index,pageSize:size})});
+  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items,total:records.length,page:index,pageSize:size})});
  });
  await page.route('**/cards?*',route=>route.fulfill({status:200,contentType:'application/json',body:'[]'}));
  await page.route('**/payables/open',route=>route.fulfill({status:200,contentType:'application/json',body:'[]'}));
@@ -91,15 +96,15 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   }
   await page.screenshot({path:resolve(output,'carregando-'+width+'x'+height+'.png'),fullPage:true});
   const sum=page.locator('.meg-l09-grid-summary');
-  await sum.filter({hasText:'101 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
-  if(historyRequests!==4)issues.push('Histórico não lido duas vezes em duas páginas: '+historyRequests);
+  await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
+  if(historyRequests!==Math.ceil(records.length/100)*2)issues.push('Histórico não completou as duas leituras: '+historyRequests);
   if(!(await page.getByText('Categoria Original',{exact:true}).count()))issues.push('Categoria original não exibida');
   if(!(await page.getByText('Forma Original',{exact:true}).count()))issues.push('Forma original de pagamento não exibida');
   const categoryFilter=page.locator('.meg-l09-filters select').nth(1);
   await categoryFilter.selectOption('legacy:Categoria Original');
-  await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor();
+  await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor();
   await categoryFilter.selectOption('all');
-  await sum.filter({hasText:'101 de 101 registros do histórico autorizado'}).waitFor();
+  await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor();
   if(!(await page.locator('.meg-l09[data-icon-pack="phosphor"] .meg-l09-stat.is-income [data-launch-pack="phosphor"]').count()))issues.push('Phosphor nao foi adotado como padrao autenticado');
   if(!(await page.locator('.meg-l09-stat.is-income [data-launch-icon="trendUp"]').count()))issues.push('Entrada sem ícone de alta');
   if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="trendDown"]').count()))issues.push('Saída sem ícone de baixa');
@@ -113,10 +118,10 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await page.screenshot({path:resolve(output,'operacional-'+width+'x'+height+'.png'),fullPage:true});
   const query=page.getByPlaceholder('Buscar lançamentos...');
   await query.fill('Teste Operacional 101');
-  await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor();
+  await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor();
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
   await page.getByRole('status').filter({hasText:'Lendo os registros da primeira leitura'}).waitFor({timeout:12000});
-  await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
+  await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
   if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
   await query.fill('');
   historyRequests=0;mutation=true;
