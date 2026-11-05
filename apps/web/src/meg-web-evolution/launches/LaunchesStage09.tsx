@@ -172,6 +172,31 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const [modalId,setModalId]=useState<string|null>(null);
  const [distributionOpen,setDistributionOpen]=useState(false);
+ const [gridFocus,setGridFocus]=useState(false);
+ const focusScrollRef=useRef(0);
+ const wasGridFocused=useRef(false);
+ useEffect(()=>{
+  if(mode!=='live')return;
+  const main=document.querySelector<HTMLElement>('.meg-main');
+  if(!main)return;
+  if(gridFocus){
+   focusScrollRef.current=main.scrollTop;
+   wasGridFocused.current=true;
+   main.scrollTop=0;
+  }else if(wasGridFocused.current){
+   wasGridFocused.current=false;
+   const position=focusScrollRef.current;
+   requestAnimationFrame(()=>{if(main.isConnected)main.scrollTop=position;});
+  }
+ },[gridFocus,mode]);
+ useEffect(()=>{
+  if(!gridFocus||mode!=='live')return;
+  const onKey=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'&&!modalId){event.preventDefault();setGridFocus(false);}
+  };
+  document.addEventListener('keydown',onKey);
+  return ()=>document.removeEventListener('keydown',onKey);
+ },[gridFocus,mode,modalId]);
  const [detailsOpen,setDetailsOpen]=useState(false);
  const detailsPanelRef=useRef<HTMLElement|null>(null);
  const closeModal=useCallback(()=>setModalId(null),[]);
@@ -237,11 +262,13 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {name:'Saídas',value:summary?.expense,tag:mode==='live'?'Resumo da API':'Resumo da API / fixture',variant:'expense'},
   {name:mode==='live'?'Resultado realizado':'Saldo no período',value:mode==='live'?summary?.realizedResult:summary?.projectedResult,tag:mode==='live'?'Consolidado pela API':'Resultado do período',variant:'balance'}
  ];
- return <section className="meg-l09" aria-label="Lançamentos financeiros" data-icon-pack="phosphor">
+ return <section className={'meg-l09'+(mode==='live'?' is-operational':'')+(gridFocus&&mode==='live'?' is-grid-focus':'')} aria-label="Lançamentos financeiros" data-icon-pack="phosphor">
+  <div className={'meg-l09-hero-frame'+(mode==='live'?' is-sticky':'')}>
   <header className="meg-l09-hero">
    <div><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
    <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'} title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
   </header>
+  </div>
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
    <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart'} width={25} height={25} strokeWidth={1.9}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
@@ -291,7 +318,15 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       </div>
      </section>}
     </aside>
-    <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos">
+    <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos" id="meg-l09-grid-region">
+     {mode==='live'&&<div className="meg-l09-grid-focus-toolbar">
+      <span aria-hidden="true"><LaunchIcon name="list" width={17} height={17}/> Grade de lançamentos</span>
+      <button type="button" className="meg-l09-grid-focus-button" onClick={()=>setGridFocus(value=>!value)}
+       aria-pressed={gridFocus} aria-controls="meg-l09-grid-region" aria-label={gridFocus?'Restaurar tamanho da tabela':'Maximizar tabela na área útil do sistema'}
+       title={gridFocus?'Restaurar visualização normal (Esc)':'Maximizar tabela na área útil'}>
+       <LaunchIcon name="list" width={18} height={18}/>{gridFocus?'Restaurar visualização':'Maximizar tabela'}
+      </button>
+     </div>}
      <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable
       rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-v2-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
       footerAggregates={false} onFilterChange={onGridFilter} exportUserName={mode==='live'?exportUserName:undefined}
