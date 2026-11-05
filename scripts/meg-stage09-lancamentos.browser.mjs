@@ -5,14 +5,16 @@ const out=resolve('artifacts/meg-stage09-lancamentos');mkdirSync(out,{recursive:
 const sizes=[[390,844],[768,1024],[1024,768],[1366,768],[1920,1080],[2560,1440],[1366,600],[390,667]];
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 const results=[];let errors=0;
+const baseline=new Map();
+for(const pack of ['phosphor','tabler']){
 for(const [width,height] of sizes){
  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
  page.setDefaultTimeout(8000);
- console.log('Verificando viewport '+width+'x'+height);
+ console.log('Verificando '+pack+' no viewport '+width+'x'+height);
  const calls=[];page.on('request',r=>{if(/\/api\//.test(new URL(r.url()).pathname))calls.push(r.url())});
  const issues=[];
  try{
-  await page.goto('http://127.0.0.1:4173/fluxo-integrado-08.html?tela=lancamentos',{waitUntil:'networkidle'});
+  await page.goto('http://127.0.0.1:4173/fluxo-integrado-08.html?tela=lancamentos&icones='+pack,{waitUntil:'networkidle'});
   await page.locator('.meg-l09').waitFor();
   const measurement=await page.evaluate(()=>{
    const main=document.querySelector('.meg-main'),root=document.querySelector('.meg-l09');
@@ -21,6 +23,11 @@ for(const [width,height] of sizes){
     container:rect(root),kpis:document.querySelectorAll('.meg-l09-stat').length,
     panels:document.querySelectorAll('.meg-l09-panel').length,
     grid:!!document.querySelector('.meg-l09-grid-panel .meg-datagrid'),
+    pack:document.querySelector('.meg-l09')?.getAttribute('data-icon-pack'),
+    kpiIconBox:(()=>{const x=document.querySelector('.meg-l09-stat.is-income [data-launch-icon]')?.getBoundingClientRect();return x?{width:x.width,height:x.height}:null})(),
+    categoryIconBox:(()=>{const x=document.querySelector('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon]')?.getBoundingClientRect();return x?{width:x.width,height:x.height}:null})(),
+    categoryIconPack:document.querySelector('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon]')?.getAttribute('data-launch-pack'),
+    incomeViewBox:document.querySelector('.meg-l09-stat.is-income [data-launch-icon]')?.getAttribute('viewBox'),
     incomeGlyph:document.querySelector('.meg-l09-stat.is-income [data-launch-icon]')?.getAttribute('data-launch-icon'),
     expenseGlyph:document.querySelector('.meg-l09-stat.is-expense [data-launch-icon]')?.getAttribute('data-launch-icon'),
     categoryGlyphs:document.querySelectorAll('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon]').length,
@@ -38,12 +45,22 @@ for(const [width,height] of sizes){
   if(measurement.mainScrollWidth>measurement.mainClientWidth+2)issues.push('scroll horizontal da area principal');
   if(measurement.kpis!==4||measurement.panels!==2||!measurement.grid)issues.push('componentes ausentes');
   if(measurement.incomeGlyph!=='trendUp'||measurement.expenseGlyph!=='trendDown')issues.push('sentido dos icones de entrada e saida incorreto');
+  if(measurement.pack!==pack||measurement.categoryIconPack!==pack)issues.push('pack de icones incorreto');
+  if(measurement.incomeViewBox!==(pack==='phosphor'?'0 0 256 256':'0 0 24 24'))issues.push('viewBox nao corresponde ao pack');
+  if(!measurement.kpiIconBox||Math.abs(measurement.kpiIconBox.width-25)>1||Math.abs(measurement.kpiIconBox.height-25)>1)issues.push('bounding box do KPI mudou');
+  if(!measurement.categoryIconBox||Math.abs(measurement.categoryIconBox.width-17)>1||Math.abs(measurement.categoryIconBox.height-17)>1)issues.push('bounding box da categoria mudou');
+  const sizeKey=width+'x'+height;
+  if(pack==='phosphor')baseline.set(sizeKey,measurement);
+  else {
+   const expected=baseline.get(sizeKey);
+   if(!expected||Math.abs(expected.gridWidth-measurement.gridWidth)>1||Math.abs(expected.workspaceWidth-measurement.workspaceWidth)>1)issues.push('geometria do grid mudou entre packs');
+  }
   if(measurement.categoryGlyphs<1)issues.push('categorias sem icones SVG');
   if(measurement.viewportHeight<120||measurement.visibleDataRows<1)issues.push('DataGrid sem linhas visiveis');
   if(!measurement.graphsCollapsed||!measurement.detailsCollapsed)issues.push('paineis nao iniciaram recolhidos');
   if(measurement.gridWidth<measurement.workspaceWidth-3)issues.push('grade nao ocupa a largura toda');
   if(calls.length)issues.push('requisições de API nao autorizadas na previa');
-  await page.screenshot({path:resolve(out,'lancamentos-'+width+'x'+height+'.png'),fullPage:true});
+  await page.screenshot({path:resolve(out,'lancamentos-'+pack+'-'+width+'x'+height+'.png'),fullPage:true});
   const chartToggle=page.getByRole('button',{name:'Expandir gráfico de distribuição'});
   await chartToggle.click();
   if(!(await page.locator('#meg-l09-distribution-content').isVisible()))issues.push('grafico nao expandiu');
@@ -51,7 +68,7 @@ for(const [width,height] of sizes){
   await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).click();
   if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('detalhes nao expandiram');
   if(!(await page.locator('.meg-l09-edit').isDisabled()))issues.push('edicao da previa desbloqueada');
-  await page.screenshot({path:resolve(out,'lancamentos-paineis-abertos-'+width+'x'+height+'.png'),fullPage:true});
+  await page.screenshot({path:resolve(out,'lancamentos-paineis-abertos-'+pack+'-'+width+'x'+height+'.png'),fullPage:true});
   await page.getByRole('button',{name:'Recolher gráfico de distribuição'}).click();
   if(await page.locator('#meg-l09-distribution-content').isVisible())issues.push('grafico nao recolheu');
   if(!(await page.locator('#meg-l09-details-content').isVisible()))issues.push('recolher grafico afetou detalhes');
@@ -72,11 +89,12 @@ for(const [width,height] of sizes){
   if(!/Farmácia/.test(await page.locator('.meg-l09-selected-head').textContent()||''))issues.push('selecionado incorreto');
   await page.getByRole('button',{name:'Recolher detalhes do lançamento'}).click();
   if(await page.locator('#meg-l09-details-content').isVisible())issues.push('detalhes nao recolheram apos selecao');
-  await page.screenshot({path:resolve(out,'lancamentos-interacao-'+width+'x'+height+'.png'),fullPage:true});
-  results.push({width,height,measurement,issues});
- }catch(e){issues.push(String(e));results.push({width,height,issues});}
+  await page.screenshot({path:resolve(out,'lancamentos-interacao-'+pack+'-'+width+'x'+height+'.png'),fullPage:true});
+  results.push({pack,width,height,measurement,issues});
+ }catch(e){issues.push(String(e));results.push({pack,width,height,issues});}
  errors+=issues.length;await page.close();
 }
+}
 await browser.close();writeFileSync(resolve(out,'resultados.json'),JSON.stringify(results,null,2));
-for(const r of results)console.log(r.width+'x'+r.height+': '+(r.issues.length?r.issues.join(' | '):'OK'));
+for(const r of results)console.log(r.pack+' '+r.width+'x'+r.height+': '+(r.issues.length?r.issues.join(' | '):'OK'));
 if(errors)process.exit(1);
