@@ -124,7 +124,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await page.screenshot({path:resolve(output,'modal-'+width+'x'+height+'.png'),fullPage:true});
   await page.keyboard.press('Escape');
   if(await page.getByRole('dialog').count())issues.push('Modal não fecha com Escape');
-  if(!(await viewButton.isFocused()))issues.push('Foco não retornou ao botão Ver');
+  if(!(await viewButton.evaluate(el=>document.activeElement===el)))issues.push('Foco não retornou ao botão Ver');
   if(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).count())issues.push('Painel de detalhes permaneceu na rota autenticada');
   if(width>=1024){
    const view=page.locator('.meg-l09-grid-panel .meg-datagrid__viewport');
