@@ -24,6 +24,10 @@ const backend=createServer(async(req,res)=>{
  res.setHeader('Content-Type','application/json');
  if(req.url==='/ready')return res.end(JSON.stringify({status:'ready'}));
  if(req.url==='/auth/login'&&req.method==='POST')return res.end(JSON.stringify({user:{id:'test',name:'Tester'},accessToken:'test-token'}));
+ if(req.url==='/finance/events/history-snapshot'){
+  if(!req.headers.authorization){res.writeHead(401);return res.end(JSON.stringify({error:'UNAUTHORIZED'}))}
+  return res.end(JSON.stringify({kind:'complete',protocol:'financial-history-v1',consistency:'repeatable-read',items:[],total:0}));
+ }
  if(req.url?.startsWith('/finance/events')){
   if(!req.headers.authorization){res.writeHead(401);return res.end(JSON.stringify({error:'UNAUTHORIZED'}))}
   return res.end(JSON.stringify({items:[],page:1,pageSize:100,total:0}));
@@ -64,6 +68,19 @@ try{
   assert.equal(auth.status,200);
   assert.deepEqual(await auth.json(),{items:[],page:1,pageSize:100,total:0});
   assert.equal(auth.headers.get('cache-control'),'private, no-store, max-age=0');
+ });
+ await test('Snapshot autenticado passa somente por GET e continua sem writer',async()=>{
+  const unauth=await fetch(previewOrigin+'/finance/events/history-snapshot');
+  assert.equal(unauth.status,401);
+  const reply=await fetch(previewOrigin+'/finance/events/history-snapshot',{headers:{Authorization:'Bearer test-token'}});
+  assert.equal(reply.status,200);
+  assert.equal((await reply.json()).consistency,'repeatable-read');
+  assert.equal(reply.headers.get('cache-control'),'private, no-store, max-age=0');
+  const denied=await fetch(previewOrigin+'/finance/events/history-snapshot',{
+    method:'POST',headers:{'Content-Type':'application/json',Origin:previewOrigin},body:'{}',
+  });
+  assert.equal(denied.status,405);
+  assert.equal((await denied.json()).error,'FINANCIAL_WRITES_DISABLED_IN_STAGE09');
  });
  await test('Autenticação existente pode iniciar sessão; nenhum cadastro ou writer',async()=>{
   const signIn=await fetch(previewOrigin+'/auth/login',{
