@@ -15,7 +15,10 @@ const option=await fetch(base+path,{
  },signal:timeout
 });
 if(option.status!==204||option.headers.get('Access-Control-Allow-Origin')!==origin){
- throw new Error('STAGE09_EDGE_CORS_NOT_READY: '+option.status);
+ const diagnostic=(await option.text().catch(()=>'')).slice(0,500);
+ throw new Error('STAGE09_EDGE_CORS_NOT_READY: '+option.status+
+  ' sb-error-code='+(option.headers.get('sb-error-code')||'none')+
+  ' response='+diagnostic);
 }
 const denied=await fetch(base+path,{headers:{Origin:origin},signal:AbortSignal.timeout(25000)});
 if(denied.status!==401||denied.headers.get('Access-Control-Allow-Origin')!==origin){
