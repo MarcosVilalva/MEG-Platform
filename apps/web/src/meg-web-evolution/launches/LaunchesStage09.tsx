@@ -4,6 +4,8 @@ import {applyFilters} from '../datagrid/core';
 import type {DataGridColumn,DataGridFilterState} from '../datagrid/types';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import {Icon} from '../components/Icon';
+import {LaunchIcon, type LaunchIconName} from './LaunchIcon';
+import {launchCategoryIcon} from './category-icon';
 import './launches-stage09.css';
 
 /**
@@ -112,8 +114,11 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
   {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
-  {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
-   render:(_value,row)=><span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')}>{row.category}</span>},
+  {key:'category',label:'Categoria',type:'enum',width:188,minWidth:152,sortable:true,filterable:true,
+   render:(_value,row)=><span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
+    <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
+    <span className="meg-l09-chip-label">{row.category}</span>
+   </span>},
   {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
   {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
@@ -139,7 +144,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'} title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><Icon name="plus" width={19}/>Novo lançamento</button>
   </header>
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
-   <span className="meg-l09-stat-icon" aria-hidden="true">{s.variant==='income'?'↓':s.variant==='expense'?'↑':s.variant==='balance'?'◉':'▣'}</span>
+   <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart'} width={25} height={25} strokeWidth={1.9}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
   <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado, consultado integralmente e conferido em duas leituras. Os indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. A tela não altera lançamentos.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
