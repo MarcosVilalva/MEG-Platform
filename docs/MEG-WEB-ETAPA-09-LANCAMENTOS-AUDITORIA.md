@@ -98,6 +98,14 @@ A matriz abaixo usa as linhas auditadas e registradas em `docs/MEG-WEB-AUDITORIA
 - **Gates específicos:** `scripts/meg-stage09-lancamentos.browser.mjs` executa as duas variantes em oito resoluções cada (16 situações), verifica renderização, mapeamento de categorias, bounding boxes, largura da grade, filtros, panelização e ausência de API na prévia. O teste autenticado assegura Phosphor como padrão e mantém a leitura financeira read-only.
 - **Critério de decisão:** inspecionar capturas reais desktop/mobile e exigir aprovação visual explícita do usuário **antes** de promover Phosphor para as demais telas. A versão de Lançamentos aprovada previamente ainda é o SHA `61970409b834da102a5b6351d64a1e4776963678`. PR #656 **Draft e sem merge**; a Etapa 09 continua aberta.
 
+## 04/11/2026 | Phosphor escolhido e homologado como iconografia de Lançamentos
+- **Decisão explícita após ver o comparativo:** usuário respondeu **“seguir com Phosphor”** à apresentação de imagens reais e links separados Phosphor e Tabler. **Escolha e aprovação visual da iconografia Phosphor na Etapa 09**, sem afirmar homologação funcional da API ou re-homologar outras telas. O layout de Lançamentos aprovado antes permanece congelado.
+- **Linguagem visual:** SVG Phosphor Core MIT, Regular em categorias, filtros e controles; Duotone nos quatro KPIs. Boxes preservados em 16/17/19/20/25 px; coluna Categoria de 160 px; sem alteração de cor semântica, saldo, classificação, filtros, exportações e regras financeiras.
+- **Consolidação técnica:** `LaunchIcon.tsx` fica Phosphor-only; quatro módulos experimentais `tabler-*` retirados do branch ativo (a comparação anterior permanece documentada no histórico de commits e nos artefatos do GitHub Actions). `LaunchesStage09.tsx` não aceita mais alternância da iconografia; `integrated-preview/preview.tsx` não depende mais de `&icones`; testes de navegador da Etapa 09 voltam a testar oito viewports apenas da variante escolhida.
+- **Restrições da decisão:** Home, Novo Lançamento, Shell, DataGrid e demais telas homologadas **não foram editados**. A partir desta aprovação, Phosphor é **diretriz iconográfica para as etapas Web seguintes**, exigindo aplicação e validação visual controladas uma tela por vez. O Android segue congelado. Não realizar migração global neste chat, que executa apenas Etapa 09.
+- **Próximas verificações:** TypeScript, CI financeiro, build Web autenticada/preview, Playwright com dimensões e ausência de rolagem lateral, Render LIVE no SHA final e link sem cache. CI não substitui inspeção visual.
+- **Situação da Etapa 09:** iconografia escolhida, visual de Lançamentos preservado; API real, resumos financeiros filtrados, writers e homologação operacional permanecem pendentes. **PR #656 Draft, sem merge**.
+
 ## Checklist
 - [x] Auditoria prévia das autoridades, funcionalidades e conflitos.
 - [x] Branch e PR isoladas; Home/Novo/Android/API/financial-policy intocados.
