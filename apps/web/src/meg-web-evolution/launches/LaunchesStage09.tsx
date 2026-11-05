@@ -28,6 +28,13 @@ type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
  paymentMethod:string;status:string;type:string;signedAmount:number;
  notes:string;categoryId:string;accountId:string;
+ typeLabel:string;statusLabel:string;competence:string;
+ weekday:string;launchType:string;expenseClass:string;group:string;
+ situation:string;modality:string;historicalNotes:string;
+};
+type HistoryLabels={
+ weekday?:string;launchType?:string;expenseClass?:string;
+ group?:string;situation?:string;modality?:string;observations?:string;
 };
 const fmt=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 const dateFmt=(day:string)=>/^\d{4}-\d{2}-\d{2}$/.test(day)?day.slice(8)+'/'+day.slice(5,7)+'/'+day.slice(0,4):'—';
@@ -40,14 +47,28 @@ function sourceRows(source:HomeFinancialData):Row[]{
  const categories=new Map(source.categories.map(entry=>[entry.id,entry.name]));
  const accounts=new Map(source.accounts.map(entry=>[entry.id,entry.name]));
  return source.transactions.map(item=>{
-  const original=item as typeof item & {notes?:string;legacyCategoryName?:string;paymentMethod?:{name?:string};paymentMethodName?:string;sourceDetails?:{paymentMethod?:string};};
+  const original=item as typeof item & {
+   notes?:string;legacyCategoryName?:string;paymentMethod?:{name?:string};
+   paymentMethodName?:string;sourceDetails?:{paymentMethod?:string};
+   competence?:string;sourceLabels?:HistoryLabels;
+  };
   return {
    id:item.id,date:item.date.slice(0,10),description:item.description,
    category:categories.get(item.categoryId||'')||(original.legacyCategoryName?.trim()||'Sem categoria'),
    account:accounts.get(item.accountId||'')||'Sem conta',
    paymentMethod:readable(original.paymentMethod?.name||original.paymentMethodName||original.sourceDetails?.paymentMethod),
    status:item.status,type:item.type,signedAmount:item.signedAmount,
-   notes:original.notes||'',categoryId:item.categoryId||'',accountId:item.accountId||''
+   notes:original.notes||'',categoryId:item.categoryId||'',accountId:item.accountId||'',
+   typeLabel:shortType[item.type]||item.type,
+   statusLabel:shortStatus[item.status]||item.status,
+   competence:original.competence||'',
+   weekday:original.sourceLabels?.weekday||'',
+   launchType:original.sourceLabels?.launchType||'',
+   expenseClass:original.sourceLabels?.expenseClass||'',
+   group:original.sourceLabels?.group||'',
+   situation:original.sourceLabels?.situation||'',
+   modality:original.sourceLabels?.modality||'',
+   historicalNotes:original.sourceLabels?.observations||''
   };
  }).sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
 }
@@ -126,6 +147,20 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
    render:(_value,row)=><strong className={'meg-l09-money '+(row.signedAmount>=0?'is-positive':'is-negative')}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>},
+  // Campos existentes no evento e nos rótulos de origem: exibição somente
+  // leitura. Status, competência e classificação NÃO são recalculados na UI.
+  {key:'typeLabel',label:'Tipo',type:'enum',width:145,minWidth:110,sortable:true,filterable:true},
+  {key:'statusLabel',label:'Status',type:'enum',width:138,minWidth:105,sortable:true,filterable:true},
+  {key:'competence',label:'Competência',type:'text',width:144,minWidth:120,sortable:true,filterable:true,
+   render:(value)=>/^\d{4}-\d{2}$/.test(String(value))?String(value).slice(5,7)+'/'+String(value).slice(0,4):readable(value)},
+  {key:'launchType',label:'Tipo original',type:'text',width:160,minWidth:120,sortable:true,filterable:true,render:readable},
+  {key:'expenseClass',label:'Classificação original',type:'text',width:188,minWidth:145,sortable:true,filterable:true,render:readable},
+  {key:'group',label:'Grupo original',type:'text',width:166,minWidth:125,sortable:true,filterable:true,render:readable},
+  {key:'situation',label:'Situação original',type:'text',width:158,minWidth:120,sortable:true,filterable:true,render:readable},
+  {key:'modality',label:'Modalidade original',type:'text',width:167,minWidth:125,sortable:true,filterable:true,render:readable},
+  {key:'weekday',label:'Dia da semana',type:'text',width:152,minWidth:118,sortable:true,filterable:true,render:readable},
+  {key:'notes',label:'Observações',type:'text',width:235,minWidth:155,sortable:true,filterable:true,render:readable},
+  {key:'historicalNotes',label:'Observações originais',type:'text',width:225,minWidth:155,sortable:true,filterable:true,render:readable},
   {key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
    render:(_value,row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>},
  ],[openDetails]);
@@ -150,7 +185,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart'} width={25} height={25} strokeWidth={1.9}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
-  <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado, consultado integralmente e conferido em duas leituras. Os indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. A tela não altera lançamentos.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
+  <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado, consultado integralmente e conferido em duas leituras. Colunas adicionais disponíveis à direita: use a rolagem horizontal da tabela ou o menu Colunas. Indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. A tela não altera lançamentos.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
    {mode==='live'&&onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
   </p>
   <div className="meg-l09-workspace">
