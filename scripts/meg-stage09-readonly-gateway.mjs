@@ -21,7 +21,7 @@ if(!/^https:\/\/[^/]+$/.test(upstream)&&!(process.env.NODE_ENV==='test'&&/^http:
 
 const readEndpoints=[
  /^\/auth\/me$/,
- /^\/finance\/(?:events|events\/month|summary|accounts|categories|payment-methods|cashflow|benefit-summary|home-available|sync-status)$/,
+ /^\/finance\/(?:events|events\/month|events\/history-snapshot|summary|accounts|categories|payment-methods|cashflow|benefit-summary|home-available|sync-status)$/,
  /^\/cards$/,
  /^\/payables\/open$/,
 ];
