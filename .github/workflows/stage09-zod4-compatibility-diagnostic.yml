@@ -1,0 +1,49 @@
+name: MEG Stage09 - Diagnostico Zod4 sem alterar dependencias
+on:
+  push:
+    branches:
+      - 'fix/stage09-preview-cors-readonly-20261105'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-zod4:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias originais sem alterar lockfile
+        run: npm ci --audit=false
+      - name: Simular Zod 4.6.7 nos DOIS workspaces (nao commita nem publica)
+        run: |
+          npm install zod@4.6.7 --workspace apps/api --workspace apps/web --save-exact --audit=false --ignore-scripts
+          npm ls zod --all
+          git diff --stat -- package.json package-lock.json apps/api/package.json apps/web/package.json
+      - name: Cliente Prisma
+        run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+      - name: Gate de seguranca real contra advisory
+        run: node scripts/npm-security-audit.mjs --audit-level=high
+      - name: Build API compativel
+        run: npm run build:api
+      - name: Contratos de CORS e autorizacao
+        run: npm run test:cors && npm run test:security
+      - name: Caracterizacao financeira
+        run: npm run test:finance
+      - name: Build Web sem tocar no Android
+        run: npm run build:web
+      - name: Guardar proposta de lockfile e manifestos para revisao
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage09-zod4-dry-run
+          path: |
+            package-lock.json
+            apps/api/package.json
+            apps/web/package.json
+          retention-days: 5
