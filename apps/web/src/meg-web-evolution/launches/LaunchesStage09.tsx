@@ -40,10 +40,10 @@ function sourceRows(source:HomeFinancialData):Row[]{
  const categories=new Map(source.categories.map(entry=>[entry.id,entry.name]));
  const accounts=new Map(source.accounts.map(entry=>[entry.id,entry.name]));
  return source.transactions.map(item=>{
-  const original=item as typeof item & {notes?:string;paymentMethod?:{name?:string};paymentMethodName?:string;sourceDetails?:{paymentMethod?:string};};
+  const original=item as typeof item & {notes?:string;legacyCategoryName?:string;paymentMethod?:{name?:string};paymentMethodName?:string;sourceDetails?:{paymentMethod?:string};};
   return {
    id:item.id,date:item.date.slice(0,10),description:item.description,
-   category:categories.get(item.categoryId||'')||'Sem categoria',
+   category:categories.get(item.categoryId||'')||(original.legacyCategoryName?.trim()||'Sem categoria'),
    account:accounts.get(item.accountId||'')||'Sem conta',
    paymentMethod:readable(original.paymentMethod?.name||original.paymentMethodName||original.sourceDetails?.paymentMethod),
    status:item.status,type:item.type,signedAmount:item.signedAmount,
@@ -102,10 +102,14 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  },[]);
  const [showNotes,setShowNotes]=useState(false);
  const allRows=useMemo(()=>sourceRows(data),[data]);
+ const legacyCategoryOptions=useMemo(()=>[...new Set(
+  allRows.filter(row=>!row.categoryId && row.category!=='Sem categoria').map(row=>row.category)
+ )].sort((left,right)=>left.localeCompare(right,'pt-BR')),[allRows]);
  const rows=useMemo(()=>allRows.filter(row=>
    (!search||[row.description,row.category,row.account,row.paymentMethod].some(value=>value.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))))
    &&(kind==='all'||row.type===kind)
-   &&(category==='all'||row.categoryId===category)
+   &&(category==='all'||row.categoryId===category
+    ||(category.startsWith('legacy:')&&!row.categoryId&&row.category===category.slice(7)))
    &&(account==='all'||row.accountId===account)
    &&(!start||row.date>=start)&&(!end||row.date<=end)
  ),[allRows,search,kind,category,account,start,end]);
@@ -154,7 +158,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
     <form className="meg-l09-filters" onSubmit={event=>event.preventDefault()} role="search">
       <label className="meg-l09-search"><LaunchIcon name="search" width={20} height={20}/><span className="sr-only">Buscar lançamentos</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar lançamentos..."/></label>
       <label><span className="sr-only">Tipo</span><select value={kind} onChange={event=>setKind(event.target.value)}><option value="all">Todos os tipos</option>{['income','expense','transfer','investment','redemption','adjustment'].map(k=><option key={k} value={k}>{shortType[k]}</option>)}</select></label>
-      <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+      <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}{legacyCategoryOptions.length>0&&<optgroup label="Categorias do histórico">{legacyCategoryOptions.map(name=><option key={'legacy:'+name} value={'legacy:'+name}>{name}</option>)}</optgroup>}</select></label>
       <label><span className="sr-only">Conta</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
       <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
