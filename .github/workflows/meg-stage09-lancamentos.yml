@@ -84,3 +84,43 @@ jobs:
             artifacts/meg-stage09-lancamentos/
             artifacts/meg-stage09-operational/
           if-no-files-found: warn
+
+  snapshot-postgres-sintetico:
+    name: Snapshot transacional no PostgreSQL descartável (3.731 registros)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://stage09:ci_local_only@127.0.0.1:5432/meg_stage09_ci?schema=public
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: stage09
+          POSTGRES_PASSWORD: ci_local_only
+          POSTGRES_DB: meg_stage09_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stage09 -d meg_stage09_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependências e gerar Prisma
+        run: |
+          npm ci --audit=false
+          npm run db:generate
+      - name: Criar schema somente no banco efêmero deste job
+        run: |
+          case "$DATABASE_URL" in
+            *"@127.0.0.1:5432/meg_stage09_ci"*) ;;
+            *) echo "Banco não autorizado para teste"; exit 1 ;;
+          esac
+          npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Testar transação REPEATABLE READ, projeção financeira e limites
+        run: npx tsx scripts/meg-stage09-snapshot-postgres.integration.ts
