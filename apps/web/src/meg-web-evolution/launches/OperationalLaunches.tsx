@@ -4,7 +4,7 @@ import type {Account, Category, PaymentMethod, FinanceSummary, FinancialEvent} f
 import {financeClient} from '../../app/finance-client';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchesStage09, type LaunchesFilterPreset} from './LaunchesStage09';
-import {displayMoney, readAuthorizedHistory, type HistoryProgress} from './authorized-history';
+import {displayMoney, readSmartAuthorizedHistory, type HistoryProgress} from './authorized-history';
 
 const todayBrazil = () => {
  const parts = new Intl.DateTimeFormat('en-US', {
@@ -89,7 +89,7 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
  const month = todayBrazil().slice(0,7);
  const [data,setData]=useState<HomeFinancialData|null>(null);
  const [error,setError]=useState('');
- const [progress,setProgress]=useState<HistoryProgress>({loaded:0,total:0,pass:1});
+ const [progress,setProgress]=useState<HistoryProgress>({loaded:0,total:0,pass:1,mode:'snapshot'});
  const [version,setVersion]=useState(0);
  const filterMemory=useRef<Partial<LaunchesFilterPreset>>({});
  const rememberFilters=useCallback((next:LaunchesFilterPreset)=>{filterMemory.current=next},[]);
@@ -97,17 +97,19 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
  useEffect(()=>{
   const controller=new AbortController();
   const {signal}=controller;
-  setData(null);setError('');setProgress({loaded:0,total:0,pass:1});
+  setData(null);setError('');setProgress({loaded:0,total:0,pass:1,mode:'snapshot'});
   const run=async()=>{
    try{
-    // O token cobre mudanças registradas pela API; não substitui o snapshot
-    // transacional e complementa as duas leituras integrais de registros.
+    // O snapshot da API oferece consistência transacional para eventos.
+    // O token continua verificando alterações entre leituras auxiliares
+    // (resumo/catálogos); nos servidores antigos preserva-se a dupla leitura.
     const before=await financeClient.getSyncStatus();
     if(typeof before.token!=='string'||!before.token){
      throw new Error('A API não confirmou a versão dos dados financeiros.');
     }
     const [events,summary,accounts,categories,methods]=await Promise.all([
-     readAuthorizedHistory(
+     readSmartAuthorizedHistory(
+      s=>financeClient.getHistorySnapshot(s),
       (page,pageSize,s)=>financeClient.listEvents(page,pageSize,'',s),
       signal,
       p=>{if(!signal.aborted)setProgress(p)},
@@ -141,7 +143,7 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
  if(!data){
   // Percentual de carregamento da interface, nunca indicador financeiro.
   const fraction=progress.total>0?progress.loaded/progress.total:0;
-  const percent=Math.min(99,Math.round(((progress.pass-1)+fraction)*50));
+  const percent=Math.min(99,progress.mode==='snapshot'?0:Math.round(((progress.pass-1)+fraction)*50));
   return <section className="meg-l09 meg-l09-loading" aria-label="Carregando lançamentos" aria-busy="true">
    <div className="meg-l09-loading-panel">
     <div className="meg-l09-loading-head">
@@ -152,13 +154,13 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
      <span className="meg-l09-loading-percent" aria-hidden="true">{percent}%</span>
     </div>
     <p className="meg-l09-loading-status" role="status" aria-live="polite">
-     {progress.pass===2?'Conferindo os registros da segunda leitura':'Lendo os registros da primeira leitura'}
+     {progress.mode==='snapshot'?'Preparando histórico consistente na API':progress.pass===2?'Conferindo os registros da segunda leitura':'Lendo os registros da primeira leitura'}
      {' · '}{progress.loaded.toLocaleString('pt-BR')} de {progress.total?progress.total.toLocaleString('pt-BR'):'...'} registros.
     </p>
     <div className="meg-l09-progress-track" role="progressbar" aria-label="Conferência do histórico" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
      <span style={{width:percent+'%'}} />
     </div>
-    <p className="meg-l09-loading-notice">O MEG verifica o histórico completo antes de liberar filtros e exportações. Nenhum dado parcial será apresentado como definitivo.</p>
+    <p className="meg-l09-loading-notice">O MEG verifica a integridade antes de liberar filtros e exportações. Nenhum dado parcial é publicado como definitivo.</p>
    </div>
    <div className="meg-l09-loading-placeholders" aria-hidden="true">
     <div className="meg-l09-loading-stats">{[1,2,3,4].map(index=><div className="meg-l09-loading-stat" key={index}><i/><span/><strong/></div>)}</div>
