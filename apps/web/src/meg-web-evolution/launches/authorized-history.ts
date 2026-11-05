@@ -1,6 +1,6 @@
-import type {FinancialEvent, FinancialEventPage} from '../../app/finance-client';
+import type {FinancialEvent, FinancialEventPage, FinancialHistorySnapshot} from '../../app/finance-client';
 
-export type HistoryProgress = { loaded: number; total: number; pass: 1 | 2 };
+export type HistoryProgress = { loaded: number; total: number; pass: 1 | 2; mode?: 'snapshot' | 'legacy' };
 export type HistoryPageRequest = (page: number, pageSize: number, signal: AbortSignal) => Promise<FinancialEventPage>;
 const PAGE_SIZE = 100;
 const MAX_CONCURRENT_PAGES = 4;
@@ -77,6 +77,55 @@ export async function readAuthorizedHistory(
     throw new Error('O histórico mudou durante a verificação. Atualize para evitar resultados incompletos.');
   }
   return second;
+}
+
+/**
+ * Preferir snapshot REPEATABLE READ da API: uma consulta autenticada traz
+ * todas as linhas consistentes, sem duas passagens HTTP. O fallback continua
+ * estrito: somente endpoint ausente no servidor (404/405/501) ou limite
+ * explicitamente excedido. Outros erros não são ocultados.
+ */
+export async function readSmartAuthorizedHistory(
+  fetchSnapshot: (signal:AbortSignal)=>Promise<FinancialHistorySnapshot>,
+  fetchPage: HistoryPageRequest,
+  signal: AbortSignal,
+  onProgress:(progress:HistoryProgress)=>void=()=>{},
+): Promise<FinancialEvent[]> {
+  const legacy=()=>readAuthorizedHistory(fetchPage,signal,progress=>onProgress({...progress,mode:'legacy'}));
+  let snapshot:FinancialHistorySnapshot;
+  try {
+    snapshot=await fetchSnapshot(signal);
+  }catch(error){
+    if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+    const status=(error as {status?:number}|null)?.status;
+    if(status===404||status===405||status===501)return legacy();
+    throw error;
+  }
+  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+  if(!snapshot||snapshot.protocol!=='financial-history-v1') {
+    throw new Error('A API retornou um protocolo de histórico desconhecido.');
+  }
+  if(snapshot.kind==='limit-exceeded'){
+    if(!Number.isSafeInteger(snapshot.total)||!Number.isSafeInteger(snapshot.limit)||
+       snapshot.total<=snapshot.limit||snapshot.limit<=0) {
+      throw new Error('A API retornou limite de histórico inconsistente.');
+    }
+    return legacy();
+  }
+  if(snapshot.kind!=='complete'||snapshot.consistency!=='repeatable-read'||
+     !Array.isArray(snapshot.items)||!Number.isSafeInteger(snapshot.total)||
+     snapshot.total<0||snapshot.total>5000||snapshot.items.length!==snapshot.total){
+    throw new Error('A API retornou snapshot financeiro incompleto.');
+  }
+  const ids=new Set<string>();
+  for(const item of snapshot.items){
+    if(!item||typeof item.id!=='string'||!item.id||ids.has(item.id)){
+      throw new Error('O snapshot financeiro contém registros inválidos ou repetidos.');
+    }
+    ids.add(item.id);
+  }
+  onProgress({loaded:snapshot.total,total:snapshot.total,pass:2,mode:'snapshot'});
+  return snapshot.items;
 }
 
 export function displayMoney(value: string | number): number {
