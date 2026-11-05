@@ -32,6 +32,7 @@
 .meg-l09-stat h2{margin:0;font-size:.82rem;font-weight:500;color:#f2fffe}
 .meg-l09-stat strong{display:block;margin:.12rem 0;font-size:clamp(1.04rem,1.68vw,1.65rem);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.04em;white-space:nowrap}
 .meg-l09-stat.is-balance strong{color:#1df8ce}
+.meg-l09-stat-icon svg{display:block;width:1.55rem;height:1.55rem;flex:none}
 .meg-l09-stat small{display:block;min-width:0;font-size:.64rem;color:#8caeae}
 .meg-l09-preview-warning{margin:0;color:#8eb2b1;font-size:.71rem;line-height:1.3}
 .meg-l09-refresh{display:inline-flex;align-items:center;justify-content:center;margin-left:.9rem;padding:.38rem .65rem;border:1px solid #278d8a;border-radius:.5rem;background:#06363c;color:#a5fff0;font-size:.72rem;min-height:2.3rem}
@@ -58,7 +59,9 @@
 .meg-l09-grid-panel .meg-datagrid-row{cursor:default}
 .meg-l09-open-row{width:100%;display:block;border:0;text-align:left;padding:.4rem 0;background:transparent;color:#f3fffd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meg-l09-open-row:hover{text-decoration:underline;text-decoration-color:#16e8ca}
-.meg-l09-chip{display:inline-flex;max-width:100%;padding:.28rem .55rem;border-radius:999px;background:#253c4a;color:#e4f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.77rem}
+.meg-l09-chip{display:inline-flex;align-items:center;gap:.36rem;max-width:100%;min-width:0;padding:.28rem .55rem;border-radius:999px;background:#253c4a;color:#e4f4f6;white-space:nowrap;overflow:hidden;font-size:.77rem}
+.meg-l09-chip svg{flex:none;color:inherit}
+.meg-l09-chip-label{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .meg-l09-chip.is-income{background:#0b493f;color:#b6ffe4}
 .meg-l09-chip.is-food{background:#67501b;color:#ffe694}
 .meg-l09-money{font-size:.81rem;font-variant-numeric:tabular-nums;white-space:nowrap}
