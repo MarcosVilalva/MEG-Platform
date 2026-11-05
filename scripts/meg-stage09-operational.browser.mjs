@@ -73,6 +73,9 @@ for(const [width,height] of [[1366,768],[390,844]]){
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:'101 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
   if(historyRequests!==4)issues.push('Histórico não lido duas vezes em duas páginas: '+historyRequests);
+  if(!(await page.locator('.meg-l09-stat.is-income [data-launch-icon="trendUp"]').count()))issues.push('Entrada sem ícone de alta');
+  if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="trendDown"]').count()))issues.push('Saída sem ícone de baixa');
+  if(!(await page.locator('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon="generic"]').count()))issues.push('Categoria desconhecida sem ícone neutro');
   if(!(await page.getByRole('button',{name:'Expandir gráfico de distribuição'}).isVisible()))issues.push('Gráfico não iniciou recolhido');
   if(!(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).isVisible()))issues.push('Detalhes não iniciaram recolhidos');
   if(!(await page.locator('.meg-l09-add').isDisabled()))issues.push('Criação foi liberada sem writer autorizado');
