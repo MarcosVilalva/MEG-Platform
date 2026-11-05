@@ -201,7 +201,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       footerAggregates={false} onFilterChange={onGridFilter} exportUserName={mode==='live'?exportUserName:undefined}
       exportPeriod={mode==='live'?'Histórico autorizado — '+periodMonth:'Demonstração visual'} />
     </section>
-    <div className="meg-l09-grid-summary">{shownRows.length} de {allRows.length} registros {mode==='live'?'do histórico autorizado':'da amostra de demonstração'}. Ordem cronológica, sem agrupamento por categoria.</div>
+    <div className="meg-l09-grid-summary">{shownRows.length.toLocaleString('pt-BR')} de {allRows.length.toLocaleString('pt-BR')} registros {mode==='live'?'do histórico autorizado':'da amostra de demonstração'}. Ordem cronológica, sem agrupamento por categoria.</div>
    </div>
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><LaunchIcon name="chevronLeft" width={18} height={18}/>Voltar à Home</button>
