@@ -23,7 +23,12 @@ const entries=Array.from({length:101},(_,i)=>({
  accountId:'conta-1',categoryId:i===0?null:'cat-1',paymentMethodId:i===0?null:'forma-1',
  account:{id:'conta-1',name:'Conta Teste'},category:i===0?null:{id:'cat-1',name:'Categoria Teste'},
  paymentMethod:i===0?null:{id:'forma-1',name:'Pagamento Teste'},
- sourcePayload:i===0?{category:'Categoria Original',paymentMethod:'Forma Original'}:null,
+ sourcePayload:i===0?{
+  category:'Categoria Original',paymentMethod:'Forma Original',
+  'Tp Lançamento':'DESPESA', 'Classificação da Despesa':'FIXO',
+  Grupo:'CASA',Situação:'REALIZADO',Modalidade:'À VISTA',
+  'Dia Semana':'QUINTA',Observações:'OBSERVAÇÃO ORIGINAL',
+ }:null,
  updatedAt:'2026-10-01T00:00:00.000Z'
 }));
 const tests=[];
@@ -98,6 +103,21 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
   if(historyRequests!==Math.ceil(records.length/100)*2)issues.push('Histórico não completou as duas leituras: '+historyRequests);
+  const expectedColumns=['Data','Descrição','Categoria','Conta / Cartão','Forma de pagamento','Valor','Tipo','Status','Competência',
+   'Tipo original','Classificação original','Grupo original','Situação original','Modalidade original','Dia da semana','Observações','Observações originais','Ações'];
+  const headings=await page.locator('.meg-l09-grid-panel .meg-datagrid-table thead').textContent()||'';
+  for(const label of expectedColumns)if(!headings.includes(label))issues.push('Coluna obrigatória ausente: '+label);
+  if(!(await page.locator('.meg-l09-grid-panel [aria-label="Colunas"]').count()))issues.push('Menu de visibilidade de colunas não disponível');
+  const sourceText=await page.locator('.meg-l09-grid-panel').textContent()||'';
+  for(const label of ['FIXO','CASA','REALIZADO','QUINTA','OBSERVAÇÃO ORIGINAL'])if(!sourceText.includes(label))issues.push('Campo original não recuperado: '+label);
+  if(width>=1024){
+   const view=page.locator('.meg-l09-grid-panel .meg-datagrid__viewport');
+   const scroller=await view.evaluate(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}));
+   if(scroller.scrollWidth<=scroller.clientWidth+50)issues.push('Colunas adicionais sem rolagem horizontal interna');
+   await view.evaluate(el=>el.scrollLeft=el.scrollWidth-el.clientWidth);
+   const afterScroll=await view.evaluate(el=>el.scrollLeft);
+   if(afterScroll<100)issues.push('Rolagem horizontal interna não alcançou as colunas adicionais');
+  }
   if(!(await page.getByText('Categoria Original',{exact:true}).count()))issues.push('Categoria original não exibida');
   if(!(await page.getByText('Forma Original',{exact:true}).count()))issues.push('Forma original de pagamento não exibida');
   const categoryFilter=page.locator('.meg-l09-filters select').nth(1);
