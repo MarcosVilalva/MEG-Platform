@@ -309,7 +309,7 @@ jobs:
           retention-days: 7
 
   stage09-security-upgrade-branch-only:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/fix/stage09-zod4-security-20261105'
+    if: github.event_name == 'pull_request' && github.head_ref == 'fix/stage09-zod4-security-20261105'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
@@ -322,6 +322,7 @@ jobs:
       - name: Checkout security branch
         uses: actions/checkout@v4
         with:
+          ref: fix/stage09-zod4-security-20261105
           persist-credentials: true
       - uses: actions/setup-node@v4
         with:
