@@ -42,6 +42,8 @@ jobs:
           grep -rlq 'meg-stage09-readonly-preview' apps/web/dist-fluxo-integrado-08/assets/
       - name: Auditar gateway Supabase Edge sem dados reais
         run: node --test scripts/meg-stage09-edge-proxy.test.mjs
+      - name: Verificar funcao Supabase Edge isolada publicada (sem JWT)
+        run: node scripts/meg-stage09-edge-live-check.mjs
       - name: Compilar entrada Web autenticada sem publicar em produção
         run: cd apps/web && npx vite build --base /
       - name: Validar gateway de acesso aos dados reais sem alterar API nem executar writers
