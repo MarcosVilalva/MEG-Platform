@@ -12,7 +12,7 @@ const MAX_CONCURRENT_PAGES = 4;
  * O primeiro GET fixa a contagem da passagem; as paginas restantes sao
  * consultadas em lotes limitados, anexadas em ordem de pagina e validadas
  * por total, tamanho e ID unico. Comparar as duas passagens e o sync-token
- * no chamador reduz o risco de alteracao concorrente, mas nao e snapshot.
+ * no chamador reduz o risco de alteração concorrente, mas nao e snapshot.
  * Nao recalcula valores nem altera eventos financeiros.
  */
 export async function readAuthorizedHistory(
@@ -30,7 +30,7 @@ export async function readAuthorizedHistory(
     assertActive();
     if (!first || !Number.isSafeInteger(first.total) || first.total < 0 ||
         first.page !== 1 || first.pageSize !== PAGE_SIZE || !Array.isArray(first.items)) {
-      throw new Error('A API retornou paginacao financeira invalida.');
+      throw new Error('A API retornou paginação financeira inválida.');
     }
     const expected = first.total;
     const totalPages = Math.max(1, Math.ceil(expected / PAGE_SIZE));
@@ -39,16 +39,16 @@ export async function readAuthorizedHistory(
       assertActive();
       if (!result || !Number.isSafeInteger(result.total) || result.total !== expected ||
           result.page !== page || result.pageSize !== PAGE_SIZE || !Array.isArray(result.items)) {
-        throw new Error('O numero de lancamentos mudou durante a consulta. Atualize o historico.');
+        throw new Error('O número de lançamentos mudou durante a consulta. Atualize o histórico.');
       }
       const offset = (page - 1) * PAGE_SIZE;
       const requiredLength = Math.min(PAGE_SIZE, Math.max(0, expected - offset));
       if (result.items.length !== requiredLength || rows.length !== offset) {
-        throw new Error('A consulta retornou uma pagina incompleta ou repetida. Atualize o historico.');
+        throw new Error('A consulta retornou uma página incompleta ou repetida. Atualize o histórico.');
       }
       for (const item of result.items) {
         if (!item || typeof item.id !== 'string' || !item.id || ids.has(item.id)) {
-          throw new Error('Foram encontrados registros invalidos ou repetidos. Atualize o historico.');
+          throw new Error('Foram encontrados registros inválidos ou repetidos. Atualize o histórico.');
         }
         ids.add(item.id);
         rows.push(item);
@@ -74,7 +74,7 @@ export async function readAuthorizedHistory(
   const second = await pass(2);
   if (first.length !== second.length ||
       first.some((entry, index) => JSON.stringify(entry) !== JSON.stringify(second[index]))) {
-    throw new Error('O historico mudou durante a verificacao. Atualize para evitar resultados incompletos.');
+    throw new Error('O histórico mudou durante a verificação. Atualize para evitar resultados incompletos.');
   }
   return second;
 }
