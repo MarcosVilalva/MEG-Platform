@@ -20,7 +20,12 @@ function currentAuthDestination(): AuthDestination {
 
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
-  const [section, setSection] = useState<'home' | 'launches'>('home');
+  // Link direto de validação operacional da Etapa 09. Não altera a prévia visual.
+  const [section, setSection] = useState<'home' | 'launches'>(
+    () => new URLSearchParams(window.location.search).get('tela') === 'lancamentos'
+      ? 'launches'
+      : 'home'
+  );
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
