@@ -209,8 +209,14 @@
   padding-block:0;justify-content:center;
  }
  .meg-shell.is-launches-operational.is-sidebar-collapsed .sidebar__art{
-  flex:0 1 auto;height:clamp(4rem,12dvh,8rem);min-height:0;margin-top:0;opacity:.38;
+  display:none;
  }
+ .meg-shell.is-launches-operational.is-sidebar-collapsed .meg-nav{
+  justify-content:space-evenly;
+  padding-block:.45rem;
+ }
+ /* Toda a altura entre a marca e Sair pertence aos atalhos. Ao aumentar
+    o número de ícones, o scroll da própria navegação evita recortes. */
 }
 @media(min-width:640px) and (max-height:699px){
  .meg-shell.is-launches-operational.is-sidebar-collapsed .sidebar__art{display:none}
