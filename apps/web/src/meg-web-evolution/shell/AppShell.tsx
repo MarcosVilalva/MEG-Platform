@@ -87,7 +87,7 @@ export function AppShell({ children, activeSection='home', onNavigate, periodLab
   const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
 
   return (
-    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${onNavigate && activeSection === 'launches' ? 'is-launches-operational' : ''}`}>
       <div className="meg-sidebar-wrap">
         <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand" aria-label="MEG Finanças">
