@@ -37,7 +37,7 @@ for(const [width,height] of [[1366,768],[390,844]]){
   const req=route.request();
   if(req.method()!=='GET') nonGetRequests++;
   const url=new URL(req.url());
-  const path=url.pathname;
+  const path=url.pathname.replace(/^\/functions\/v1\/meg-stage09-readonly-preview(?=\/)/,'');
   let body=null;
   if(path==='/finance/sync-status')body={token:'simulated-immutable-revision',changedAt:null,mutationType:null};
   else if(path==='/finance/summary')body={month:url.searchParams.get('month'),income:400,expense:240,projectedResult:160,realizedResult:125,pendingCount:0,pendingAmount:0};
