@@ -52,7 +52,9 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   let body=null;
   if(path==='/finance/sync-status'){
    syncChecks++;
-   body={token:mutation&&width===1366&&syncChecks%2===0?'simulated-updated-revision':'simulated-immutable-revision',changedAt:null,mutationType:null};
+   body={token:mutation&&width===1366&&syncChecks%2===0?'simulated-updated-revision':'simulated-immutable-revision',
+     changedAt:null,mutationType:null,
+     ...(width!==960?{capabilities:{historySnapshotV1:true}}:{})};
   }
   else if(path==='/finance/summary')body={month:url.searchParams.get('month'),income:400,expense:240,projectedResult:160,realizedResult:125,pendingCount:0,pendingAmount:0};
   else if(path==='/finance/cashflow')body={month:period,days:[]};
@@ -80,7 +82,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await new Promise(resolve=>setTimeout(resolve,40));
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items,total:records.length,page:index,pageSize:size})});
  });
- // A API nova faz uma leitura; 960px usa fallback 404 e 390px simula falha de transporte.
+ // 960px: API publicada ainda sem capacidade nova. 390px: endpoint anunciado mas falha de transporte.
  await page.route('**/finance/events/history-snapshot',async route=>{
   if(route.request().method()!=='GET')nonGetRequests++;
   snapshotRequests++;
@@ -123,7 +125,8 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await page.screenshot({path:resolve(output,'carregando-'+width+'x'+height+'.png'),fullPage:true});
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
-  if(snapshotRequests!==1)issues.push('Histórico sem solicitação única de snapshot: '+snapshotRequests);
+  if(snapshotRequests!==(width===960?0:1))
+    issues.push('Snapshot consultado sem capacidade anunciada: '+snapshotRequests);
   const expectedPages=width===960||width===390?Math.ceil(records.length/100)*2:0;
   if(historyRequests!==expectedPages)issues.push('Caminho de leitura incorreto: páginas '+historyRequests+', esperado '+expectedPages);
   // Sticky local ao scroll de .meg-main, com máscara sólida e sem sombra do sistema.
@@ -222,13 +225,13 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await query.fill('Teste Operacional 101');
   await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor();
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
-  await page.getByRole('status').filter({hasText:'Preparando histórico consistente na API'}).waitFor({timeout:12000});
+  await page.getByRole('status').filter({hasText:width===960?'Lendo os registros da primeira leitura':'Preparando histórico consistente na API'}).waitFor({timeout:12000});
   await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
   if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
   await query.fill('');
   historyRequests=0;mutation=true;
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
-  await page.getByRole('status').filter({hasText:'Preparando histórico consistente na API'}).waitFor({timeout:12000});
+  await page.getByRole('status').filter({hasText:width===960?'Lendo os registros da primeira leitura':'Preparando histórico consistente na API'}).waitFor({timeout:12000});
   await page.getByRole('alert').filter({hasText:width===960||width===390?'O histórico mudou durante a verificação':'Os dados foram alterados durante a consulta'}).waitFor({timeout:40000});
   if(await page.locator('.meg-l09-grid-panel').count())issues.push('Histórico parcial foi publicado após a alteração concorrente');
   if(nonGetRequests)issues.push('Operação de escrita inesperada: '+nonGetRequests);
