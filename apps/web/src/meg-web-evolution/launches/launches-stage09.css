@@ -216,3 +216,96 @@
  .meg-shell.is-launches-operational.is-sidebar-collapsed .sidebar__art{display:none}
 }
 @media(prefers-reduced-motion:reduce){.meg-l09-progress-track>span{transition:none}}
+
+/* Etapa 09: consulta operacional usa modal acessível em vez do painel
+   lateral. Os dois painéis e a prévia homologada continuam intactos no modo demo. */
+.meg-l09-right.is-operational{grid-template-columns:minmax(0,1fr)}
+.meg-l09-row-view{
+ display:inline-flex;align-items:center;justify-content:center;gap:.35rem;
+ min-width:4.2rem;min-height:2.4rem;padding:.35rem .55rem;
+ border:1px solid rgba(19,213,195,.45);border-radius:.5rem;
+ background:linear-gradient(145deg,rgba(6,79,80,.66),rgba(3,42,49,.9));
+ color:#bffff4;font-weight:750;letter-spacing:0;font-size:.76rem;
+}
+.meg-l09-row-view:hover{border-color:#3ff2da;background:rgba(9,111,103,.65)}
+.meg-l09-row-view svg{flex:none}
+.meg-l09-modal-backdrop{
+ position:fixed;inset:0;z-index:10000;
+ display:flex;align-items:center;justify-content:center;
+ padding:clamp(.7rem,2.3vw,1.6rem);
+ background:rgba(0,9,16,.78);backdrop-filter:blur(6px);
+}
+.meg-l09-modal{
+ display:flex;flex-direction:column;min-width:0;
+ width:min(44rem,100%);max-height:min(92dvh,56rem);
+ border:1px solid rgba(25,221,196,.54);border-radius:1rem;
+ background:linear-gradient(155deg,#042f34 0%,#031c27 45%,#02141c 100%);
+ box-shadow:0 1.7rem 5rem #0009,0 0 2rem #00cfac1c;
+ color:#ecfffb;overflow:hidden;
+}
+.meg-l09-modal button:focus-visible,.meg-l09-modal summary:focus-visible{
+ outline:2px solid #57ffe5;outline-offset:3px;
+}
+.meg-l09-modal-header{
+ display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;
+ padding:1.35rem 1.5rem 1.05rem;
+ border-bottom:1px solid rgba(27,190,178,.32);
+}
+.meg-l09-modal-header>div{min-width:0}
+.meg-l09-modal-eyebrow{font-size:.67rem;letter-spacing:.16em;color:#55e9d3;font-weight:750}
+.meg-l09-modal-header h2{margin:.32rem 0 .28rem;font-size:clamp(1.15rem,2vw,1.55rem);line-height:1.3;overflow-wrap:anywhere}
+.meg-l09-modal-header p{margin:0;color:#9bc9c4;font-size:.78rem;line-height:1.45}
+.meg-l09-modal-close{
+ width:2.55rem;height:2.55rem;flex:none;border:1px solid rgba(40,179,167,.5);
+ border-radius:.58rem;background:rgba(8,59,67,.8);color:#d6fbf5;
+ font-size:1.65rem;line-height:1;cursor:pointer;
+}
+.meg-l09-modal-close:hover{background:#0c6366}
+.meg-l09-modal-scroll{overflow:auto;min-height:0;padding:1.2rem 1.5rem;scrollbar-color:#287d77 #061c24}
+.meg-l09-modal-amount{
+ display:flex;align-items:center;justify-content:space-between;gap:1rem;
+ padding:1rem 1.15rem;border-radius:.7rem;
+ background:rgba(2,37,43,.84);border:1px solid rgba(21,162,156,.34);
+}
+.meg-l09-modal-amount span{color:#b6dad5;font-size:.83rem}
+.meg-l09-modal-amount strong{font-size:clamp(1.25rem,3vw,1.8rem);font-variant-numeric:tabular-nums;white-space:nowrap}
+.meg-l09-modal .is-negative{color:#ff7580}
+.meg-l09-modal .is-positive{color:#26f1c6}
+.meg-l09-modal-fields{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem 1rem;
+ margin:1.1rem 0 0;
+}
+.meg-l09-modal-fields>div{min-width:0;border-bottom:1px solid rgba(14,149,140,.24);padding:.25rem .2rem .65rem}
+.meg-l09-modal-fields dt{color:#96c9c6;font-size:.7rem;font-weight:600}
+.meg-l09-modal-fields dd{margin:.36rem 0 0;font-size:.84rem;line-height:1.45;overflow-wrap:anywhere}
+.meg-l09-modal-note{margin-top:1rem;padding:.8rem 1rem;border:1px solid rgba(29,178,158,.28);border-radius:.55rem}
+.meg-l09-modal-note strong{font-size:.79rem}
+.meg-l09-modal-note p{font-size:.78rem;color:#cbe6e2;line-height:1.6;white-space:pre-wrap}
+.meg-l09-modal-history{border-top:1px solid rgba(41,170,158,.35);margin-top:1.1rem;padding:.85rem .1rem 0}
+.meg-l09-modal-history summary{cursor:pointer;font-size:.86rem;font-weight:650;color:#7beddd;min-height:2.25rem}
+.meg-l09-modal-history summary span{font-size:.72rem;color:#9db5b4;padding-left:.25rem}
+.meg-l09-modal-history>p{color:#a8c9c6;font-size:.72rem;line-height:1.5}
+.meg-l09-modal-history .meg-l09-modal-fields{margin-top:.7rem}
+.meg-l09-modal-footer{
+ display:flex;align-items:center;justify-content:space-between;gap:1rem;
+ padding:.8rem 1.5rem;border-top:1px solid rgba(27,190,178,.28);
+ background:#021820;
+}
+.meg-l09-modal-footer span{color:#9bbdba;font-size:.72rem;line-height:1.4}
+.meg-l09-modal-footer button{
+ flex:none;min-width:5.7rem;min-height:2.6rem;border-radius:.5rem;
+ border:1px solid #27b6a4;color:#062d2e;background:#3be8ce;
+ font-size:.83rem;font-weight:800;cursor:pointer;
+}
+.meg-l09-modal-footer button:hover{background:#81f5e2}
+@media(max-width:639px){
+ .meg-l09-modal-backdrop{padding:.55rem;align-items:flex-end}
+ .meg-l09-modal{max-height:94dvh;border-radius:.95rem .95rem .5rem .5rem}
+ .meg-l09-modal-header{padding:1rem}
+ .meg-l09-modal-scroll{padding:.85rem 1rem}
+ .meg-l09-modal-fields{grid-template-columns:minmax(0,1fr);gap:.35rem}
+ .meg-l09-modal-footer{padding:.75rem 1rem;align-items:stretch;flex-direction:column}
+ .meg-l09-modal-footer button{width:100%;min-height:2.8rem}
+ .meg-l09-modal-amount{flex-direction:column;align-items:flex-start;gap:.3rem}
+}
+@media(prefers-reduced-motion:reduce){.meg-l09-modal *{transition:none!important}}
