@@ -14,6 +14,12 @@ const todayBrazil = () => {
  return get('year')+'-'+get('month')+'-'+get('day');
 };
 
+// Rótulos legados são apenas dados de exibição, nunca cadastram categoria
+// nem criam vinculação financeira, nem participam de cálculos monetários.
+function rawLabel(value:unknown):string|undefined {
+ return typeof value==='string' && value.trim() ? value.trim() : undefined;
+}
+
 function buildReadOnlyData(
  events:FinancialEvent[], summary:FinanceSummary, accounts:Account[],
  categories:Category[], methods:PaymentMethod[],
@@ -31,7 +37,11 @@ function buildReadOnlyData(
   type:event.type, status:event.status,
   amount:displayMoney(event.amount), signedAmount:displayMoney(event.signedAmount),
   categoryId:event.categoryId,accountId:event.accountId,
-  paymentMethodName:event.paymentMethod?.name || (event.paymentMethodId ? nameMethods.get(event.paymentMethodId) : undefined) || undefined,
+  legacyCategoryName:!event.categoryId ? rawLabel(event.sourcePayload?.category) : undefined,
+  paymentMethodName:event.paymentMethod?.name
+   || (event.paymentMethodId ? nameMethods.get(event.paymentMethodId) : undefined)
+   || rawLabel(event.sourcePayload?.paymentMethod)
+   || rawLabel(event.sourceDetails?.paymentMethod),
   notes:event.notes||'',
   sourceDetails:event.sourceDetails,
   competence:event.competence,
