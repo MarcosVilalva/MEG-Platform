@@ -4,7 +4,7 @@ import type {Account, Category, PaymentMethod, FinanceSummary, FinancialEvent} f
 import {financeClient} from '../../app/finance-client';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchesStage09, type LaunchesFilterPreset} from './LaunchesStage09';
-import {displayMoney, readSmartAuthorizedHistory, type HistoryProgress} from './authorized-history';
+import {displayMoney, readAuthorizedHistory, readSmartAuthorizedHistory, type HistoryProgress} from './authorized-history';
 
 const todayBrazil = () => {
  const parts = new Intl.DateTimeFormat('en-US', {
@@ -107,13 +107,19 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
     if(typeof before.token!=='string'||!before.token){
      throw new Error('A API não confirmou a versão dos dados financeiros.');
     }
+    // Implantação progressiva: a Web nunca requisita a rota nova a uma
+    // API que ainda não anunciou suporte, evitando falhas de proxy/CORS.
+    const supportsSnapshot=before.capabilities?.historySnapshotV1===true;
+    if(!supportsSnapshot&&!signal.aborted){
+     setProgress({loaded:0,total:0,pass:1,mode:'legacy'});
+    }
+    const fetchPage=(page:number,pageSize:number,s:AbortSignal)=>financeClient.listEvents(page,pageSize,'',s);
+    const report=(p:HistoryProgress)=>{if(!signal.aborted)setProgress(p)};
+    const eventRead=supportsSnapshot
+     ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),fetchPage,signal,report)
+     : readAuthorizedHistory(fetchPage,signal,p=>report({...p,mode:'legacy'}));
     const [events,summary,accounts,categories,methods]=await Promise.all([
-     readSmartAuthorizedHistory(
-      s=>financeClient.getHistorySnapshot(s),
-      (page,pageSize,s)=>financeClient.listEvents(page,pageSize,'',s),
-      signal,
-      p=>{if(!signal.aborted)setProgress(p)},
-     ),
+     eventRead,
      authenticatedRequest<FinanceSummary>('/finance/summary?month='+encodeURIComponent(month),{cache:'no-store',signal}),
      authenticatedRequest<Account[]>('/finance/accounts',{cache:'no-store',signal}),
      authenticatedRequest<Category[]>('/finance/categories',{cache:'no-store',signal}),
@@ -127,7 +133,13 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
     }
     setData(buildReadOnlyData(events,summary,accounts,categories,methods));
    }catch(cause){
-    if(!signal.aborted)setError(cause instanceof Error?cause.message:'Não foi possível carregar o histórico financeiro.');
+    if(!signal.aborted){
+     const networkFailure=cause instanceof TypeError &&
+      /^(?:Failed to fetch|NetworkError.*|Load failed)$/i.test(cause.message);
+     setError(networkFailure
+      ? 'Não foi possível conectar à API financeira. Verifique a conexão e tente novamente.'
+      : cause instanceof Error?cause.message:'Não foi possível carregar o histórico financeiro.');
+    }
    }
   };
   void run();
