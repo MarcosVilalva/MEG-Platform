@@ -60,6 +60,9 @@ for(const [width,height] of [[1366,768],[390,844]]){
    mutation && historyRequests>=3 && index===1 && j===0
     ? {...row,description:'Alterado entre leituras'}
     : row);
+  // Latência determinística mantém o estado de loading observável e impede
+  // que o teste aceite o grid antigo como resposta da nova consulta.
+  await new Promise(resolve=>setTimeout(resolve,40));
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items,total:entries.length,page:index,pageSize:size})});
  });
  await page.route('**/cards?*',route=>route.fulfill({status:200,contentType:'application/json',body:'[]'}));
@@ -88,16 +91,22 @@ for(const [width,height] of [[1366,768],[390,844]]){
   await query.fill('Teste Operacional 101');
   await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor();
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
+  await page.getByRole('status').filter({hasText:'Consultando histórico autorizado'}).waitFor({timeout:12000});
   await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
   if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
   await query.fill('');
   historyRequests=0;mutation=true;
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
+  await page.getByRole('status').filter({hasText:'Consultando histórico autorizado'}).waitFor({timeout:12000});
   await page.getByRole('alert').filter({hasText:'O histórico mudou durante a verificação'}).waitFor({timeout:40000});
   if(await page.locator('.meg-l09-grid-panel').count())issues.push('Histórico parcial foi publicado após a alteração concorrente');
   if(nonGetRequests)issues.push('Operação de escrita inesperada: '+nonGetRequests);
   await page.screenshot({path:resolve(output,'consistencia-'+width+'x'+height+'.png'),fullPage:true});
- }catch(error){issues.push(String(error))}
+ }catch(error){
+  issues.push(String(error));
+  issues.push('Diagnóstico: '+JSON.stringify({url:page.url(),historyRequests,mutation}));
+  try{await page.screenshot({path:resolve(output,'falha-'+width+'x'+height+'.png'),fullPage:true})}catch{}
+ }
  tests.push({width,height,historyRequests,nonGetRequests,issues});
  await page.close();
 }
