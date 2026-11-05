@@ -27,7 +27,7 @@ const entries=Array.from({length:101},(_,i)=>({
  updatedAt:'2026-10-01T00:00:00.000Z'
 }));
 const tests=[];
-for(const [width,height] of [[1366,768],[390,844]]){
+for(const [width,height] of [[1366,768],[960,900],[390,844]]){
  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
  page.setDefaultTimeout(20000);
  const issues=[];
@@ -75,6 +75,21 @@ for(const [width,height] of [[1366,768],[390,844]]){
   if(!/Usuário de Teste/.test(await page.locator('.meg-profile-name').textContent()||''))issues.push('Perfil exibiu identidade fixa de demonstracao');
   if(width<640)await page.getByRole('button',{name:'Abrir menu'}).click();
   await page.locator('.meg-sidebar .meg-nav-item[aria-label="Lançamentos"]').click();
+  const loading=page.locator('.meg-l09-loading-panel');
+  await loading.waitFor({timeout:12000});
+  if(!(await page.getByRole('progressbar',{name:'Conferência do histórico'}).count()))issues.push('Leitura integral sem barra de progresso');
+  if(!(await page.locator('.meg-l09-loading-placeholders').count()))issues.push('Leitura integral sem estrutura visual provisória');
+  if(await page.locator('.meg-l09-grid-panel').count())issues.push('Grade exibiu registros antes da segunda leitura');
+  if(width===960){
+   const spacing=await page.locator('.meg-sidebar .meg-nav').evaluate(nav=>{
+    const links=[...nav.querySelectorAll('.meg-nav-item')];
+    const ys=links.map(link=>{const r=link.getBoundingClientRect();return r.top+r.height/2});
+    const steps=ys.slice(1).map((y,index)=>y-ys[index]);
+    return {spread:Math.max(...steps)-Math.min(...steps),coverage:(ys[ys.length-1]-ys[0])/nav.getBoundingClientRect().height};
+   });
+   if(spacing.spread>12||spacing.coverage<.55)issues.push('Ícones da sidebar compacta não distribuídos uniformemente: '+JSON.stringify(spacing));
+  }
+  await page.screenshot({path:resolve(output,'carregando-'+width+'x'+height+'.png'),fullPage:true});
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:'101 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
   if(historyRequests!==4)issues.push('Histórico não lido duas vezes em duas páginas: '+historyRequests);
@@ -100,13 +115,13 @@ for(const [width,height] of [[1366,768],[390,844]]){
   await query.fill('Teste Operacional 101');
   await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor();
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
-  await page.getByRole('status').filter({hasText:'Consultando histórico autorizado'}).waitFor({timeout:12000});
+  await page.getByRole('status').filter({hasText:'Lendo os registros da primeira leitura'}).waitFor({timeout:12000});
   await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
   if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
   await query.fill('');
   historyRequests=0;mutation=true;
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
-  await page.getByRole('status').filter({hasText:'Consultando histórico autorizado'}).waitFor({timeout:12000});
+  await page.getByRole('status').filter({hasText:'Lendo os registros da primeira leitura'}).waitFor({timeout:12000});
   await page.getByRole('alert').filter({hasText:'O histórico mudou durante a verificação'}).waitFor({timeout:40000});
   if(await page.locator('.meg-l09-grid-panel').count())issues.push('Histórico parcial foi publicado após a alteração concorrente');
   if(nonGetRequests)issues.push('Operação de escrita inesperada: '+nonGetRequests);
