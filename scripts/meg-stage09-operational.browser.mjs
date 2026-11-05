@@ -103,6 +103,49 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
   if(historyRequests!==Math.ceil(records.length/100)*2)issues.push('Histórico não completou as duas leituras: '+historyRequests);
+  // Sticky local ao scroll de .meg-main, com máscara sólida e sem sombra do sistema.
+  const sticky=await page.evaluate(()=>{
+   const main=document.querySelector('.meg-main'),frame=document.querySelector('.meg-l09-hero-frame');
+   if(!main||!frame)return null;
+   main.scrollTop=240;
+   const top=main.getBoundingClientRect().top;
+   const frameRect=frame.getBoundingClientRect();
+   const style=getComputedStyle(frame);
+   return {top,frameTop:frameRect.top,scrolled:main.scrollTop,position:style.position,color:style.backgroundColor,
+    element:document.elementFromPoint(frameRect.left+frameRect.width/2,frameRect.top+5)?.closest('.meg-l09-hero-frame')===frame};
+  });
+  if(!sticky||sticky.position!=='sticky'||sticky.color!=='rgb(2, 25, 30)'||
+     (sticky.scrolled>15&&(Math.abs(sticky.frameTop-sticky.top)>3||!sticky.element)))
+   issues.push('Cabeçalho sticky sem máscara opaca ou preso no topo incorreto: '+JSON.stringify(sticky));
+  await page.screenshot({path:resolve(output,'cabecalho-fixo-'+width+'x'+height+'.png'),fullPage:true});
+  await page.locator('.meg-main').evaluate(main=>main.scrollTop=0);
+  // Modo foco preserva navegação do MEG, filtros, toolbar e rolagem só do grid.
+  const focusButton=page.getByRole('button',{name:'Maximizar tabela na área útil do sistema'});
+  await focusButton.click();
+  await page.locator('.meg-l09.is-grid-focus').waitFor();
+  const focusMetrics=await page.evaluate(()=>{
+   const main=document.querySelector('.meg-main'),grid=document.querySelector('.meg-l09-grid-panel'),
+    topbar=document.querySelector('.meg-topbar'),stat=document.querySelector('.meg-l09-stats'),
+    viewport=document.querySelector('.meg-l09-grid-panel .meg-datagrid__viewport');
+   if(!main||!grid||!topbar||!viewport||!stat)return null;
+   const area=main.getBoundingClientRect(),table=grid.getBoundingClientRect(),head=topbar.getBoundingClientRect();
+   return {areaTop:area.top,areaBottom:area.bottom,tableTop:table.top,tableBottom:table.bottom,
+    tableHeight:table.height,topbarBottom:head.bottom,mainOverflow:getComputedStyle(main).overflowY,
+    summaryHidden:getComputedStyle(stat).display==='none',
+    gridScroll:getComputedStyle(viewport).overflowY};
+  });
+  if(!focusMetrics||focusMetrics.mainOverflow!=='hidden'||!focusMetrics.summaryHidden||
+   focusMetrics.tableHeight<130||focusMetrics.tableBottom>focusMetrics.areaBottom+3||
+   focusMetrics.tableTop<focusMetrics.areaTop-3||focusMetrics.topbarBottom>focusMetrics.areaTop+3)
+    issues.push('Modo foco não respeitou a área útil do MEG: '+JSON.stringify(focusMetrics));
+  if(!(await page.locator('.meg-l09-filters').isVisible()))issues.push('Modo foco ocultou os filtros');
+  if(!(await page.locator('.meg-l09-grid-panel [aria-label="Seletor de colunas"]').isVisible()))issues.push('Modo foco ocultou ações da grade');
+  if(!(await page.getByRole('button',{name:'Restaurar tamanho da tabela'}).isVisible()))issues.push('Modo foco sem retorno visível');
+  await page.screenshot({path:resolve(output,'tabela-maximizada-'+width+'x'+height+'.png'),fullPage:true});
+  await page.keyboard.press('Escape');
+  if(await page.locator('.meg-l09.is-grid-focus').count())issues.push('Modo foco não fechou por Escape');
+  if(!(await page.locator('.meg-l09-stats').isVisible()))issues.push('Modo foco não restaurou os KPIs');
+
   const expectedColumns=['Ações','Data','Descrição','Categoria','Conta / Cartão','Forma de pagamento','Valor','Tipo','Status','Competência'];
   const headings=await page.locator('.meg-l09-grid-panel .meg-datagrid-table thead').textContent()||'';
   for(const label of expectedColumns)if(!headings.includes(label))issues.push('Coluna obrigatória ausente: '+label);
