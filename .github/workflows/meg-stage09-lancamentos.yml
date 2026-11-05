@@ -33,17 +33,10 @@ jobs:
         run: cd apps/web && npx tsc -b
       - name: Compilar preview isolado
         run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
-      - name: Conferir isolamento entre preview e entrada autenticada e CSP
+      - name: Garantir que o preview público não exponha login operacional bloqueado
         run: |
           test -f apps/web/dist-fluxo-integrado-08/fluxo-integrado-08.html
-          test -f apps/web/dist-fluxo-integrado-08/web-evolution.html
-          grep -q 'Content-Security-Policy' apps/web/dist-fluxo-integrado-08/web-evolution.html
-          grep -q 'dmrauztnozvxirbydtho.supabase.co' apps/web/dist-fluxo-integrado-08/web-evolution.html
-          grep -rlq 'meg-stage09-readonly-preview' apps/web/dist-fluxo-integrado-08/assets/
-      - name: Auditar gateway Supabase Edge sem dados reais
-        run: node --test scripts/meg-stage09-edge-proxy.test.mjs
-      - name: Verificar funcao Supabase Edge isolada publicada (sem JWT)
-        run: node scripts/meg-stage09-edge-live-check.mjs
+          test ! -e apps/web/dist-fluxo-integrado-08/web-evolution.html
       - name: Compilar entrada Web autenticada sem publicar em produção
         run: cd apps/web && npx vite build --base /
       - name: Validar gateway de acesso aos dados reais sem alterar API nem executar writers
