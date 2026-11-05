@@ -29,6 +29,8 @@ jobs:
           npm run test:core
           npm run test:evolution-data
           npm run test:web-evolution-datagrid
+      - name: Conferir tipos da API de snapshot sem publicar nem migrar banco
+        run: cd apps/api && npx tsc -p tsconfig.json --noEmit
       - name: Compilar Web e verificar tipos
         run: cd apps/web && npx tsc -b
       - name: Compilar preview isolado
