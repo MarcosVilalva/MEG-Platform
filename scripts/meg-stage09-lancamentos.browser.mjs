@@ -25,7 +25,7 @@ for(const [width,height] of sizes){
     grid:!!document.querySelector('.meg-l09-grid-panel .meg-datagrid'),
     pack:document.querySelector('.meg-l09')?.getAttribute('data-icon-pack'),
     kpiIconBox:(()=>{const x=document.querySelector('.meg-l09-stat.is-income [data-launch-icon]')?.getBoundingClientRect();return x?{width:x.width,height:x.height}:null})(),
-    categoryIconBox:(()=>{const x=document.querySelector('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon]')?.getBoundingClientRect();return x?{width:x.width,height:x.height}:null})(),
+    categoryIconBox:(()=>{const icons=[...document.querySelectorAll('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon]')];const x=icons.map(el=>el.getBoundingClientRect()).find(rect=>rect.width>0&&rect.height>0);return x?{width:x.width,height:x.height}:null})(),
     categoryIconPack:document.querySelector('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon]')?.getAttribute('data-launch-pack'),
     incomeViewBox:document.querySelector('.meg-l09-stat.is-income [data-launch-icon]')?.getAttribute('viewBox'),
     incomeGlyph:document.querySelector('.meg-l09-stat.is-income [data-launch-icon]')?.getAttribute('data-launch-icon'),
