@@ -82,8 +82,10 @@ export async function readAuthorizedHistory(
 /**
  * Preferir snapshot REPEATABLE READ da API: uma consulta autenticada traz
  * todas as linhas consistentes, sem duas passagens HTTP. O fallback continua
- * estrito: somente endpoint ausente no servidor (404/405/501) ou limite
- * explicitamente excedido. Outros erros não são ocultados.
+ * seguro: endpoint ausente (404/405/501), falha de transporte da
+ * rota opcional ou limite explicitamente excedido. Somente o histórico antigo
+ * integralmente validado pode ser exibido. Erros 5xx e conteúdo inválido
+ * retornado pela autoridade financeira continuam bloqueantes.
  */
 export async function readSmartAuthorizedHistory(
   fetchSnapshot: (signal:AbortSignal)=>Promise<FinancialHistorySnapshot>,
@@ -98,7 +100,13 @@ export async function readSmartAuthorizedHistory(
   }catch(error){
     if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
     const status=(error as {status?:number}|null)?.status;
-    if(status===404||status===405||status===501)return legacy();
+    // Em previews com proxy/CORS legado, a nova rota opcional pode falhar
+    // no transporte antes de retornar um HTTP. Só neste caso tentamos a
+    // leitura existente, que ainda exige duas passagens e integridade total.
+    // Uma falha da leitura legada também interrompe a tela, sem dados parciais.
+    const optionalNetworkFailure=error instanceof TypeError &&
+      /^(?:Failed to fetch|NetworkError.*|Load failed)$/i.test(error.message);
+    if(status===404||status===405||status===501||optionalNetworkFailure)return legacy();
     throw error;
   }
   if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
