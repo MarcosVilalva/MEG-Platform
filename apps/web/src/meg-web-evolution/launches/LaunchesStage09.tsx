@@ -127,12 +127,12 @@ function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
   ['Tipo',row.typeLabel],['Status',row.statusLabel],['Categoria',row.category],
   ['Conta / Cartão',row.account],['Forma de pagamento',row.paymentMethod],
  ];
- const original:[string,string][]=[
+ const original=([
   ['Tipo de lançamento original',row.launchType],['Classificação original',row.expenseClass],
   ['Grupo original',row.group],['Situação original',row.situation],
   ['Modalidade original',row.modality],['Dia da semana original',row.weekday],
   ['Observações originais',row.historicalNotes]
- ].filter(([,value])=>Boolean(value.trim()));
+ ] as [string,string][]).filter(([,value])=>Boolean(value.trim()));
  return createPortal(
   <div className="meg-l09-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
    <section className="meg-l09-modal" role="dialog" aria-modal="true" aria-labelledby="meg-l09-dialog-title" aria-describedby="meg-l09-dialog-description" ref={surfaceRef} tabIndex={-1}>
