@@ -45,6 +45,24 @@ assert.equal(fallback.length,101);
 assert.equal(pages,4,'Fallback deve continuar conferindo as duas páginas em duas passagens.');
 
 pages=0;
+const transportFallback=await readSmartAuthorizedHistory(async()=>{
+ throw new TypeError('Failed to fetch');
+},takePage as never,controller.signal);
+assert.equal(transportFallback.length,101);
+assert.equal(pages,4,'Falha de rede do endpoint opcional deve recuperar as duas leituras existentes.');
+
+pages=0;
+await assert.rejects(readSmartAuthorizedHistory(async()=>{
+ throw new TypeError('Failed to fetch');
+},async()=>{throw new Error('Legacy API unavailable');},controller.signal),/Legacy API unavailable/);
+assert.equal(pages,0,'Fallback nunca pode inventar dados quando a API antiga também falha.');
+
+await assert.rejects(readSmartAuthorizedHistory(async()=>{
+ throw new TypeError('Unexpected token in JSON');
+},takePage as never,controller.signal),/Unexpected token/);
+assert.equal(pages,0,'Erros de conteúdo inválido não podem disparar fallback silencioso.');
+
+pages=0;
 const tooLarge=await readSmartAuthorizedHistory(async()=>({
  kind:'limit-exceeded',protocol:'financial-history-v1',total:5100,limit:5000
 }),takePage as never,controller.signal);
