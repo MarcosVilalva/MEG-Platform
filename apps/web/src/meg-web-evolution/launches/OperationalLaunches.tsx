@@ -20,6 +20,32 @@ function rawLabel(value:unknown):string|undefined {
  return typeof value==='string' && value.trim() ? value.trim() : undefined;
 }
 
+// Recupera apenas rótulos textuais existentes. Não cria classificações ou regras.
+function historicKey(value:string):string{
+ return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+function historicLabels(event:FinancialEvent){
+ const raw=new Map(Object.entries(event.sourcePayload??{}).map(([key,value])=>[historicKey(key),value]));
+ const lookup=(explicit:unknown,...aliases:string[])=>{
+  const declared=rawLabel(explicit);
+  if(declared)return declared;
+  for(const alias of aliases){
+   const text=rawLabel(raw.get(historicKey(alias)));
+   if(text)return text;
+  }
+  return '';
+ };
+ return {
+  weekday:lookup(event.sourceDetails?.weekday,'DIA SEMANA','weekday','diaSemana'),
+  launchType:lookup(event.sourceDetails?.launchType,'TP LANCAMENTO','TIPO LANCAMENTO','launchType'),
+  expenseClass:lookup(event.sourceDetails?.expenseClass,'CLASSIFICACAO DA DESPESA','CLASSIFICAO DA DESPESA','expenseClass'),
+  group:lookup(event.sourceDetails?.group,'GRUPO','group'),
+  situation:lookup(event.sourceDetails?.situation,'SITUACAO','situation'),
+  modality:lookup(event.sourceDetails?.modality,'MODADLIDADE','MODALIDADE','modality'),
+  observations:lookup(event.sourceDetails?.observations,'OBSERVACOES','observations'),
+ };
+}
+
 function buildReadOnlyData(
  events:FinancialEvent[], summary:FinanceSummary, accounts:Account[],
  categories:Category[], methods:PaymentMethod[],
@@ -44,6 +70,7 @@ function buildReadOnlyData(
    || rawLabel(event.sourceDetails?.paymentMethod),
   notes:event.notes||'',
   sourceDetails:event.sourceDetails,
+  sourceLabels:historicLabels(event),
   competence:event.competence,
  }));
  return {
