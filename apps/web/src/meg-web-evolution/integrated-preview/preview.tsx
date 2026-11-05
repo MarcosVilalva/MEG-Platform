@@ -26,8 +26,6 @@ import './choice-refinement.css';
  */
 type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'launches' | 'new-launch';
 const urlScreen = new URLSearchParams(window.location.search).get('tela');
-// Comparação isolada de iconografia APENAS na tela Lançamentos. Home/Novo imutáveis.
-const urlIconPack = new URLSearchParams(window.location.search).get('icones') === 'tabler' ? 'tabler' : 'phosphor';
 const initialScreen: Screen =
   urlScreen === 'login' ? 'login' :
   urlScreen === 'home' ? 'home' :
@@ -122,7 +120,7 @@ function FlowPreview() {
     onClickCapture={handleShellCapture}>
     <AppShell>
       {screen === 'launches'
-        ? <LaunchesStage09 data={homePreviewFixture} iconPack={urlIconPack}
+        ? <LaunchesStage09 data={homePreviewFixture}
             onNew={() => { setNotice(''); setScreen('new-launch'); }}
             onHome={goHome}/>
         : <HomeDashboard previewData={homePreviewFixture} month="2026-10"
