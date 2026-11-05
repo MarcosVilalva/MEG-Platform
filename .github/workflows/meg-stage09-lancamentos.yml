@@ -33,10 +33,14 @@ jobs:
         run: cd apps/web && npx tsc -b
       - name: Compilar preview isolado
         run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
-      - name: Garantir que o preview público não exponha login operacional bloqueado
+      - name: Garantir separacao entre visual demonstrativo e autenticacao real
         run: |
           test -f apps/web/dist-fluxo-integrado-08/fluxo-integrado-08.html
-          test ! -e apps/web/dist-fluxo-integrado-08/web-evolution.html
+          test -f apps/web/dist-fluxo-integrado-08/web-evolution.html
+          grep -q 'Content-Security-Policy' apps/web/dist-fluxo-integrado-08/web-evolution.html
+          ! grep -q 'Content-Security-Policy' apps/web/dist-fluxo-integrado-08/fluxo-integrado-08.html
+      - name: Exigir CORS efetivo da API real somente na origem oficial da previa
+        run: node scripts/meg-stage09-origin-probe.mjs
       - name: Compilar entrada Web autenticada sem publicar em produção
         run: cd apps/web && npx vite build --base /
       - name: Validar gateway de acesso aos dados reais sem alterar API nem executar writers
@@ -61,7 +65,7 @@ jobs:
         env:
           PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
         run: |
-          python3 -m http.server 4174 --directory apps/web/dist >/tmp/meg-stage09-auth.log 2>&1 &
+          python3 -m http.server 4174 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-stage09-auth.log 2>&1 &
           PID=$!
           trap 'kill $PID 2>/dev/null || true' EXIT
           for i in {1..30}; do
