@@ -1,0 +1,62 @@
+name: MEG Stage09 Zod4 - proposta segura em branch isolada
+on:
+  push:
+    branches:
+      - 'fix/stage09-zod4-security-20261105'
+permissions:
+  contents: write
+jobs:
+  upgrade-branch-only:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/fix/stage09-zod4-security-20261105'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+      NODE_ENV: test
+      CORS_ORIGINS: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar exatamente as dependencias atuais
+        run: npm ci --audit=false
+      - name: Migrar apenas zod dos dois workspaces e gerar lockfile autentico via npm
+        run: |
+          npm install zod@4.6.7 --workspace apps/api --workspace apps/web --save-exact --ignore-scripts --audit=false
+          npm ls zod --all
+      - name: Prisma
+        run: npm run db:generate
+      - name: Nenhum high ou critical na auditoria
+        run: node scripts/npm-security-audit.mjs --audit-level=high
+      - name: Executar caracterizacao COMPLETA, core, financeira, Web e Android contracts
+        run: npm run check
+      - name: Verificar integridade e escopo do diff antes de gravar na branch
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          for(const p of ['apps/api/package.json','apps/web/package.json']){
+           const j=JSON.parse(fs.readFileSync(p,'utf8'));
+           if(j.dependencies?.zod!=='4.6.7')throw new Error('Versao Zod divergente: '+p);
+          }
+          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          if(lock.packages?.['node_modules/zod']?.version!=='4.6.7')throw new Error('Lock Zod divergente');
+          console.log('Manifestos e lockfile consistentes para Zod 4.6.7');
+          NODE
+          git diff --check
+          git status --short
+          test -z "$(git diff --name-only -- . ':(exclude)package-lock.json' ':(exclude)apps/api/package.json' ':(exclude)apps/web/package.json')"
+      - name: Gravar SOMENTE package lock e manifestos na branch de seguranca isolada
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- package-lock.json apps/api/package.json apps/web/package.json
+          if git diff --cached --quiet; then
+            echo 'Nenhuma atualizacao pendente'
+          else
+            git commit -m 'security(stage09): patch Zod CVE-2023-54404 to 4.6.7 after full checks'
+            git push origin HEAD:refs/heads/fix/stage09-zod4-security-20261105
+          fi
