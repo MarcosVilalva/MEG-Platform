@@ -242,7 +242,7 @@ export const financeClient = {
   listEventsForMonth: (month: string) =>
     authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   getSyncStatus: () =>
-    authorizedRequest<{ token: string; changedAt: string | null; mutationType: string | null }>('/finance/sync-status', { cache: 'no-store' }),
+    authorizedRequest<{token:string;changedAt:string|null;mutationType:string|null;capabilities?:{historySnapshotV1?:boolean}}>('/finance/sync-status', { cache: 'no-store' }),
   getHistorySnapshot: (signal?:AbortSignal) =>
     authorizedRequest<FinancialHistorySnapshot>('/finance/events/history-snapshot', {cache:'no-store',signal}),
   listEvents: (page = 1, pageSize = 50, search = '', signal?: AbortSignal) =>
