@@ -95,7 +95,10 @@ export async function listFinancialEvents(userId: string, input: { page: number;
       where,
       skip: (input.page - 1) * input.pageSize,
       take: input.pageSize,
-      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      // Desempate obrigatório: importações legadas compartilham date e
+      // createdAt. Sem ID estável, skip/take pode repetir ou omitir eventos
+      // entre páginas. Não altera filtros nem qualquer regra financeira.
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
       include: { account: true, category: true, paymentMethod: true, importedRow: { select: { rowNumber: true, rawData: true } } }
     }),
     prisma.financialEvent.count({ where })

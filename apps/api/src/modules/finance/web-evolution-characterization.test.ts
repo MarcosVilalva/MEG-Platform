@@ -155,3 +155,34 @@ assert.doesNotMatch(cardsRoutes, /CREDIARIO/);
 assert.doesNotMatch(cardsService, /CREDIARIO/);
 
 console.log('MEG Web Evolution — caracterização financeira da Etapa 1: OK');
+
+
+/**
+ * Etapa 09: os milhares de eventos importados podem compartilhar a mesma data
+ * e o mesmo instante de criação. A API pública usa skip/take; o último
+ * desempate precisa ser uma chave única para impedir paginação instável.
+ * Este teste só caracteriza a ordenação; não altera qualquer writer.
+ */
+const financeServiceSource = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
+const historyReaderBlock = financeServiceSource.split('export async function listFinancialEvents(')[1]
+  ?.split('export async function createFinancialEvent(')[0] || '';
+assert.ok(historyReaderBlock, 'Leitor oficial de histórico financeiro ausente.');
+assert.match(historyReaderBlock, /const where = \{[\s\S]*?userId,[\s\S]*?archivedAt:\s*null/);
+assert.match(historyReaderBlock, /prisma\.financialEvent\.findMany\(\{\s*where,/);
+assert.match(historyReaderBlock, /skip:\s*\(input\.page - 1\) \* input\.pageSize/);
+assert.match(historyReaderBlock, /take:\s*input\.pageSize/);
+assert.match(historyReaderBlock, /orderBy:\s*\[\s*\{\s*date:\s*'desc'\s*\},\s*\{\s*createdAt:\s*'desc'\s*\},\s*\{\s*id:\s*'asc'\s*\}\s*\]/);
+// A demonstração matemática da ordenação deve atravessar um limite de página
+// em um lote importado com 117 registros rigorosamente empatados em datas.
+const tiedLegacyEvents = Array.from({length:117},(_,index)=>({
+ id:'import-'+String(index).padStart(3,'0'), date:'2026-11-01', createdAt:'2026-11-01T00:00:00.000Z'
+}));
+const stableLegacyEvents = [...tiedLegacyEvents].reverse()
+  .sort((a,b)=>b.date.localeCompare(a.date)
+    ||b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
+const page1=stableLegacyEvents.slice(0,100);
+const page2=stableLegacyEvents.slice(100,200);
+assert.equal(page1.length,100);
+assert.equal(page2.length,17);
+assert.equal(new Set([...page1,...page2].map(item=>item.id)).size,117);
+
