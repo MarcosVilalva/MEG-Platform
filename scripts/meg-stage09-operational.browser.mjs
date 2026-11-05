@@ -20,9 +20,10 @@ const entries=Array.from({length:101},(_,i)=>({
  description:'Teste Operacional '+String(i+1).padStart(3,'0'),
  type:'expense',status:'paid',
  amount:'12.34',signedAmount:'-12.34',notes:'Registro criado apenas no teste',
- accountId:'conta-1',categoryId:'cat-1',paymentMethodId:'forma-1',
- account:{id:'conta-1',name:'Conta Teste'},category:{id:'cat-1',name:'Categoria Teste'},
- paymentMethod:{id:'forma-1',name:'Pagamento Teste'},
+ accountId:'conta-1',categoryId:i===0?null:'cat-1',paymentMethodId:i===0?null:'forma-1',
+ account:{id:'conta-1',name:'Conta Teste'},category:i===0?null:{id:'cat-1',name:'Categoria Teste'},
+ paymentMethod:i===0?null:{id:'forma-1',name:'Pagamento Teste'},
+ sourcePayload:i===0?{category:'Categoria Original',paymentMethod:'Forma Original'}:null,
  updatedAt:'2026-10-01T00:00:00.000Z'
 }));
 const tests=[];
@@ -77,6 +78,13 @@ for(const [width,height] of [[1366,768],[390,844]]){
   const sum=page.locator('.meg-l09-grid-summary');
   await sum.filter({hasText:'101 de 101 registros do histórico autorizado'}).waitFor({timeout:40000});
   if(historyRequests!==4)issues.push('Histórico não lido duas vezes em duas páginas: '+historyRequests);
+  if(!(await page.getByText('Categoria Original',{exact:true}).count()))issues.push('Categoria original não exibida');
+  if(!(await page.getByText('Forma Original',{exact:true}).count()))issues.push('Forma original de pagamento não exibida');
+  const categoryFilter=page.locator('.meg-l09-filters select').nth(1);
+  await categoryFilter.selectOption('legacy:Categoria Original');
+  await sum.filter({hasText:'1 de 101 registros do histórico autorizado'}).waitFor();
+  await categoryFilter.selectOption('all');
+  await sum.filter({hasText:'101 de 101 registros do histórico autorizado'}).waitFor();
   if(!(await page.locator('.meg-l09[data-icon-pack="phosphor"] .meg-l09-stat.is-income [data-launch-pack="phosphor"]').count()))issues.push('Phosphor nao foi adotado como padrao autenticado');
   if(!(await page.locator('.meg-l09-stat.is-income [data-launch-icon="trendUp"]').count()))issues.push('Entrada sem ícone de alta');
   if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="trendDown"]').count()))issues.push('Saída sem ícone de baixa');
