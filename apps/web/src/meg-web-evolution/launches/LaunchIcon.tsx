@@ -32,7 +32,7 @@ import {categorySemanticExtended} from './icon-packs/category-semantic-extended'
 
 export type LaunchIconName=
  'trendUp'|'trendDown'|'chart'|'wallet'|
- 'grocery'|'marketCart'|'motorcycle'|'petPaw'|'health'|'transport'|'home'|'income'|'generic'|'food'|'fuel'|
+ 'grocery'|'marketCart'|'motorcycle'|'petPaw'|'clothing'|'electronics'|'hygiene'|'schoolSupplies'|'debt'|'savings'|'beverages'|'fastFood'|'reimbursement'|'health'|'transport'|'home'|'income'|'generic'|'food'|'fuel'|
  'education'|'leisure'|'services'|'gift'|'card'|'work'|'subscriptions'|
  'plus'|'search'|'calendar'|'chevronDown'|'chevronLeft'|'list';
 
@@ -40,7 +40,7 @@ const phosphorGlyphs={
  ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls,...categorySemanticExtended
 } as Record<LaunchIconName,ReactNode>;
 
-const megSemanticIcons:ReadonlySet<LaunchIconName>=new Set(['marketCart','motorcycle','petPaw']);
+const megSemanticIcons:ReadonlySet<LaunchIconName>=new Set(['marketCart','motorcycle','petPaw','clothing','electronics','hygiene','schoolSupplies','debt','savings','beverages','fastFood','reimbursement']);
 type Props=SVGProps<SVGSVGElement>&{name:LaunchIconName};
 export function LaunchIcon({name,...props}:Props){
  return <svg
