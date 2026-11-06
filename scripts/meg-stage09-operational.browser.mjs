@@ -145,7 +145,16 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
    issues.push('Cabeçalho sticky sem máscara opaca ou preso no topo incorreto: '+JSON.stringify(sticky));
   await page.screenshot({path:resolve(output,'cabecalho-fixo-'+width+'x'+height+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate(main=>main.scrollTop=0);
-  // Modo foco preserva navegação do MEG, filtros, toolbar e rolagem só do grid.
+  // Filtros superiores recolhidos por padrão; a grade mantém os controles.
+  if(await page.locator('.meg-l09-filters').isVisible())
+   issues.push('Filtros redundantes não iniciaram recolhidos');
+  const toggleFilters=page.getByRole('button',{name:'Mostrar filtros'});
+  if(!(await toggleFilters.isVisible()))issues.push('Botão para revelar filtros superiores ausente');
+  if(!(await page.getByRole('combobox',{name:'Selecionar filtro favorito'}).isVisible()))
+   issues.push('Filtro favorito não está acessível dentro da grade');
+  if(!(await page.locator('.meg-l09-grid-focus-toolbar').getByRole('button',{name:'Salvar filtros'}).isVisible()))
+   issues.push('Salvar filtros não foi incorporado ao cabeçalho da grade');
+  // Modo foco mantém navegação da shell e usa só a área interna da grade.
   const focusButton=page.getByRole('button',{name:'Maximizar tabela na área útil do sistema'});
   await focusButton.click();
   await page.locator('.meg-l09.is-grid-focus').waitFor();
@@ -158,19 +167,34 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
    return {areaTop:area.top,areaBottom:area.bottom,tableTop:table.top,tableBottom:table.bottom,
     tableHeight:table.height,topbarBottom:head.bottom,mainOverflow:getComputedStyle(main).overflowY,
     summaryHidden:getComputedStyle(stat).display==='none',
+    mainHeight:main.clientHeight,mainScrollHeight:main.scrollHeight,
+    viewportHeight:viewport.clientHeight,viewportScrollHeight:viewport.scrollHeight,
+    topbarHeight:head.height,
     gridScroll:getComputedStyle(viewport).overflowY};
   });
   if(!focusMetrics||focusMetrics.mainOverflow!=='hidden'||!focusMetrics.summaryHidden||
    focusMetrics.tableHeight<130||focusMetrics.tableBottom>focusMetrics.areaBottom+3||
-   focusMetrics.tableTop<focusMetrics.areaTop-3||focusMetrics.topbarBottom>focusMetrics.areaTop+3)
+   focusMetrics.tableTop<focusMetrics.areaTop-3||focusMetrics.topbarBottom>focusMetrics.areaTop+3||
+   focusMetrics.mainScrollHeight>focusMetrics.mainHeight+3||
+   focusMetrics.viewportScrollHeight<=focusMetrics.viewportHeight+5)
     issues.push('Modo foco não respeitou a área útil do MEG: '+JSON.stringify(focusMetrics));
-  if(!(await page.locator('.meg-l09-filters').isVisible()))issues.push('Modo foco ocultou os filtros');
+  if(await page.locator('.meg-l09-filters').isVisible())issues.push('Modo foco deixou os filtros externos visíveis');
+  const focusScroll=await page.locator('.meg-l09-grid-panel .meg-datagrid__viewport').evaluate(viewport=>{
+   viewport.scrollTop=Math.min(160,viewport.scrollHeight-viewport.clientHeight);
+   const main=document.querySelector('.meg-main');
+   return {gridTop:viewport.scrollTop,mainTop:main?.scrollTop,mainOverflow:main?getComputedStyle(main).overflowY:''};
+  });
+  if(focusScroll.gridTop<=0||focusScroll.mainTop!==0||focusScroll.mainOverflow!=='hidden')
+   issues.push('Modo foco permitiu rolagem externa ou bloqueou grade: '+JSON.stringify(focusScroll));
   if(!(await page.locator('.meg-l09-grid-panel [aria-label="Seletor de colunas"]').isVisible()))issues.push('Modo foco ocultou ações da grade');
   if(!(await page.getByRole('button',{name:'Restaurar tamanho da tabela'}).isVisible()))issues.push('Modo foco sem retorno visível');
   await page.screenshot({path:resolve(output,'tabela-maximizada-'+width+'x'+height+'.png'),fullPage:true});
   await page.keyboard.press('Escape');
   if(await page.locator('.meg-l09.is-grid-focus').count())issues.push('Modo foco não fechou por Escape');
   if(!(await page.locator('.meg-l09-stats').isVisible()))issues.push('Modo foco não restaurou os KPIs');
+  await toggleFilters.click();
+  if(!(await page.locator('.meg-l09-filters').isVisible()))issues.push('Filtro superior não abriu pelo botão');
+  if(!(await page.getByRole('button',{name:'Ocultar filtros'}).isVisible()))issues.push('Alternância de filtros falhou');
 
   const expectedColumns=['Ações','Data','Descrição','Categoria','Conta / Cartão','Forma de pagamento','Valor','Tipo','Status','Competência'];
   const headings=await page.locator('.meg-l09-grid-panel .meg-datagrid-table thead').textContent()||'';
@@ -231,6 +255,17 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
    if(await categoryFilter.inputValue()!=='cat-1'||await method.inputValue()!=='Pagamento Teste')
     issues.push('Favorito não restaurou categoria e forma de pagamento');
    await page.screenshot({path:resolve(output,'filtros-favoritos-1366x768.png'),fullPage:true});
+   // O botão Limpar filtros zera TODOS os critérios e a seleção do favorito,
+   // sem apagar o preset salvo. Isso evita exibir LATAM como ainda ativo.
+   await page.getByRole('button',{name:'Limpar filtros',exact:true}).click();
+   if(await page.getByRole('combobox',{name:'Selecionar filtro favorito'}).inputValue()!=='')
+    issues.push('Limpar filtros manteve o favorito visualmente selecionado');
+   if(await categoryFilter.inputValue()!=='all'||await method.inputValue()!=='all')
+    issues.push('Limpar filtros não restaurou critérios superiores');
+   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor();
+   await page.getByRole('combobox',{name:'Selecionar filtro favorito'}).selectOption({label:'Cartão e categoria'});
+   await sum.filter({hasText:`100 de ${totalText} registros do histórico autorizado`}).waitFor();
+
    await page.getByRole('button',{name:'Excluir favorito'}).click();
    await page.getByRole('button',{name:'Confirmar exclusão'}).click();
    if(await page.getByRole('combobox',{name:'Selecionar filtro favorito'}).locator('option').count()!==1)
