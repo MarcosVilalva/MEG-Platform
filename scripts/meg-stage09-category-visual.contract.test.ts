@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {launchCategoryIcon} from '../apps/web/src/meg-web-evolution/launches/category-icon';
 import {launchCategoryPresentation,normalizeCategoryLabel} from '../apps/web/src/meg-web-evolution/launches/category-presentation';
+import {launchPaymentPresentation} from '../apps/web/src/meg-web-evolution/launches/payment-presentation';
 
 // Apenas nomes de categoria: não há valor, status, tipo, pagamento ou saldo.
 const expected=[
@@ -19,6 +20,35 @@ for(const [name,icon,tone] of expected){
  assert.equal(launchCategoryPresentation(name.toLocaleLowerCase('pt-BR')).icon,icon);
 }
 assert.equal(normalizeCategoryLabel('  SAÚDE  '),'saude');
+const categoriesFromLiveCatalog=[
+ 'AUTOMÓVEL','BEBIDAS E SIMILARES','COMUNICAÇÃO','CURSOS',
+ 'ELETRO/ELETRONICOS/ UTILIDADES','FAST FOOD','HIGIENE PESSOAL',
+ 'IMÓVEL','LAZER','MAT. ESCOLAR','MOTO','PET','PGTO DE DIVIDAS',
+ 'PRESENTES','Receitas','SAÚDE','SUPERMERCADO','TITULOS/PREVIDÊNCIA',
+ 'TRANSPORTE','VESTUÁRIO','COMPRA REEMBOLSÁVEL'
+];
+for(const label of categoriesFromLiveCatalog){
+ assert.notEqual(launchCategoryPresentation(label).icon,'generic',
+  'Categoria real não pode permanecer genérica: '+label);
+}
+assert.equal(launchCategoryPresentation('Sem categoria').icon,'generic');
+const knownPaymentLabels=[
+ 'BOLETO','CARTÃO AZUL','CARTÃO BB','CARTÃO BV','CARTÃO DÉBITO',
+ 'CARTÃO ITAÚ','CARTÃO KABUM','CARTÃO MAGALU','CARTÃO ML',
+ 'CARTÃO NUBANK','CARTÃO RIACHUELO','DÉBITO AUTOMÁTICO',
+ 'DEPÓSITO BANCÁRIO','DINHEIRO','PIX','RIACHUELO','VEROCARD',
+ 'CARTÃO LATAM PASS'
+];
+for(const method of knownPaymentLabels){
+ assert.notEqual(launchPaymentPresentation(method).kind,'unknown',
+  'Forma de pagamento real sem miniatura: '+method);
+}
+assert.deepEqual(launchPaymentPresentation('PIX'),{kind:'pix',tone:'teal',initials:''});
+assert.deepEqual(launchPaymentPresentation('BOLETO'),{kind:'boleto',tone:'amber',initials:''});
+assert.equal(launchPaymentPresentation('CARTÃO LATAM PASS').initials,'LP');
+assert.equal(launchPaymentPresentation('Pagamento Teste').kind,'unknown');
+assert.equal(launchPaymentPresentation('CARTÃO INEXISTENTE').kind,'unknown');
+
 for(const unknown of ['Sem categoria','Categoria Original','Supermercado inexistente','Moto com carro','']){
  const result=launchCategoryPresentation(unknown);
  assert.equal(result.icon,launchCategoryIcon(unknown),'Não classificar categoria desconhecida por aproximação.');
@@ -32,4 +62,7 @@ assert.match(component,/label==='Categoria'\?<LaunchCategoryBadge category=\{val
 const svg=readFileSync(new URL('../apps/web/src/meg-web-evolution/launches/icon-packs/category-semantic-extended.tsx',import.meta.url),'utf8');
 for(const id of ['marketCart','motorcycle','petPaw'])assert.match(svg,new RegExp("'"+id+"':"));
 assert.doesNotMatch(component,/categoryId\s*\?\s*setCategoryId/);
-console.log('Etapa 09: oito categorias semânticas, desconhecidas neutras e preview visual preservado.');
+const paymentBadge=readFileSync(new URL('../apps/web/src/meg-web-evolution/launches/LaunchPaymentBadge.tsx',import.meta.url),'utf8');
+assert.match(paymentBadge,/data-method-kind=\{item\.kind\}/);
+assert.match(component,/mode==='live'\?<LaunchPaymentBadge method=\{row\.paymentMethod\}/);
+console.log('Etapa 09: catálogo completo de categorias e formas de pagamento, fallback neutro e preview preservado.');
