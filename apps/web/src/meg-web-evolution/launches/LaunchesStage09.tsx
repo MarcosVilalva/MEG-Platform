@@ -6,6 +6,7 @@ import type {DataGridColumn,DataGridFilterState} from '../datagrid/types';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchIcon, type LaunchIconName} from './LaunchIcon';
 import {launchCategoryIcon} from './category-icon';
+import {LaunchCategoryBadge} from './LaunchCategoryBadge';
 import {applySavedFilter,readSavedFilters,saveNamedFilter,savedFiltersKey,serializeSavedFilters,MAX_SAVED_FILTERS,
  type SavedLaunchesFilter,type LaunchesFilterPreset} from './saved-filters';
 export type {LaunchesFilterPreset} from './saved-filters';
@@ -144,7 +145,7 @@ function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
      <div className="meg-l09-modal-amount">
       <span>Valor do lançamento</span><strong className={row.signedAmount>=0?'is-positive':'is-negative'}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>
      </div>
-     <dl className="meg-l09-modal-fields">{main.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+     <dl className="meg-l09-modal-fields">{main.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{label==='Categoria'?<LaunchCategoryBadge category={value}/>:value}</dd></div>)}</dl>
      {row.notes.trim()&&<div className="meg-l09-modal-note"><strong>Observações</strong><p>{row.notes}</p></div>}
      {original.length>0&&<details className="meg-l09-modal-history"><summary>Dados originais do histórico <span>{original.length}</span></summary>
       <p>Rótulos preservados da importação, sem alterar as classificações atuais.</p>
@@ -295,10 +296,12 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
   {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
-   render:(_value,row)=><span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
-    <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
-    <span className="meg-l09-chip-label">{row.category}</span>
-   </span>},
+   render:(_value,row)=>mode==='live'
+    ? <LaunchCategoryBadge category={row.category}/>
+    : <span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
+       <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
+       <span className="meg-l09-chip-label">{row.category}</span>
+      </span>},
   {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
   {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
