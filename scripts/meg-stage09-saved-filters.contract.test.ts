@@ -12,7 +12,7 @@ const base={
 };
 const grid={
  statusLabel:{type:'enum' as const,selected:['Planejado']},
- description:{type:'text' as const,operator:'contains' as const,value:''],
+ description:{type:'text' as const,operator:'contains' as const,value:''},
 };
 const first=saveNamedFilter([],' Cartão ML ',base,grid,'2026-11','fav-1');
 assert.equal(first.length,1);
