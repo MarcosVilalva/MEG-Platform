@@ -41,9 +41,15 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   ...entries[(index%100)+1],id:'volume-'+String(index),description:'Registro sintético de volume '+String(index+1)
  }))]:entries;
  const totalText=records.length.toLocaleString('pt-BR');
- let mutation=false,historyRequests=0,snapshotRequests=0,syncChecks=0,nonGetRequests=0;
+ let mutation=false,historyRequests=0,snapshotRequests=0,syncChecks=0,nonGetRequests=0,logoutCalls=0;
  await page.addInitScript(value=>sessionStorage.setItem('meg.auth.session',JSON.stringify(value)),session);
  await page.route('**/auth/me',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({user})}));
+ await page.route('**/auth/logout',async route=>{
+  logoutCalls++;
+  const body=route.request().postDataJSON();
+  if(body?.refreshToken!==session.refreshToken)issues.push('Logout sem token de revogação correto');
+  return route.fulfill({status:width===960?503:204,contentType:'application/json',body:width===960?'{"error":"SERVICE_UNAVAILABLE"}':''});
+ });
  await page.route('**/finance/**',async route=>{
   const req=route.request();
   if(req.method()!=='GET') nonGetRequests++;
@@ -311,6 +317,19 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(await page.locator('.meg-l09-grid-panel').count())issues.push('Histórico parcial foi publicado após a alteração concorrente');
   if(nonGetRequests)issues.push('Operação de escrita inesperada: '+nonGetRequests);
   await page.screenshot({path:resolve(output,'consistencia-'+width+'x'+height+'.png'),fullPage:true});
+  if(width!==390){
+   await page.getByRole('button',{name:'Sair',exact:true}).click();
+   await page.locator('[data-meg-login="stage05"]').waitFor({timeout:12000});
+   const sessionAfter=await page.evaluate(()=>sessionStorage.getItem('meg.auth.session'));
+   if(sessionAfter!==null)issues.push('Logout deixou sessão autenticada no navegador');
+   if(logoutCalls!==1)issues.push('Logout não revogou refreshToken exatamente uma vez');
+   if(await page.locator('.meg-l09-grid-panel').count())issues.push('Logout deixou informações financeiras visíveis');
+   if(width===960&&!(await page.getByRole('alert').filter({hasText:'Não foi possível confirmar a revogação no servidor'}).count()))
+    issues.push('Falha remota do logout sem aviso de segurança');
+   if(width===1366&&await page.getByRole('alert').filter({hasText:'revogação no servidor'}).count())
+    issues.push('Logout bem-sucedido exibiu aviso de falha');
+  }
+
  }catch(error){
   issues.push(String(error));
   issues.push('Diagnóstico: '+JSON.stringify({url:page.url(),historyRequests,mutation}));
