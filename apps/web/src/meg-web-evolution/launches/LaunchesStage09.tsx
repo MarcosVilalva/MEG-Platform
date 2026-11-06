@@ -6,6 +6,9 @@ import type {DataGridColumn,DataGridFilterState} from '../datagrid/types';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchIcon, type LaunchIconName} from './LaunchIcon';
 import {launchCategoryIcon} from './category-icon';
+import {applySavedFilter,readSavedFilters,saveNamedFilter,savedFiltersKey,serializeSavedFilters,MAX_SAVED_FILTERS,
+ type SavedLaunchesFilter,type LaunchesFilterPreset} from './saved-filters';
+export type {LaunchesFilterPreset} from './saved-filters';
 import './launches-stage09.css';
 
 /**
@@ -15,9 +18,6 @@ import './launches-stage09.css';
  * Totais financeiros vêm apenas do read model (summary) e ficam ocultos
  * quando os filtros deixam de representar o conjunto canônico do mês.
  */
-export type LaunchesFilterPreset={
- search:string;kind:string;category:string;account:string;start:string;end:string;
-};
 type Props={
  data:HomeFinancialData;onNew:()=>void;onHome:()=>void;
  mode?:'preview'|'live';periodMonth?:string;userId?:string;
@@ -163,12 +163,65 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const [kind,setKind]=useState(rememberedFilters?.kind??'all');
  const [category,setCategory]=useState(rememberedFilters?.category??'all');
  const [account,setAccount]=useState(rememberedFilters?.account??'all');
+ const [paymentMethod,setPaymentMethod]=useState(rememberedFilters?.paymentMethod??'all');
  const [start,setStart]=useState(rememberedFilters?.start??startOfMonth);
  const [end,setEnd]=useState(rememberedFilters?.end??endOfMonth);
  useEffect(()=>{
-  if(mode==='live')onRememberFilters?.({search,kind,category,account,start,end});
- },[search,kind,category,account,start,end,mode,onRememberFilters]);
+  if(mode==='live')onRememberFilters?.({search,kind,category,account,paymentMethod,start,end});
+ },[search,kind,category,account,paymentMethod,start,end,mode,onRememberFilters]);
  const [advanced,setAdvanced]=useState<DataGridFilterState>({});
+ const [applyGridPreset,setApplyGridPreset]=useState<{revision:number;filters:DataGridFilterState}|undefined>();
+ const [savedFilters,setSavedFilters]=useState<SavedLaunchesFilter[]>(()=>{
+  if(mode!=='live'||!userId||typeof window==='undefined')return [];
+  try{return readSavedFilters(window.localStorage.getItem(savedFiltersKey(userId)));}catch{return [];}
+ });
+ const [selectedFavorite,setSelectedFavorite]=useState('');
+ const [savingFavorite,setSavingFavorite]=useState(false);
+ const [favoriteName,setFavoriteName]=useState('');
+ const [confirmDelete,setConfirmDelete]=useState(false);
+ const [favoriteMessage,setFavoriteMessage]=useState('');
+ const currentCriteria:LaunchesFilterPreset={search,kind,category,account,paymentMethod,start,end};
+ const persistFavorites=(next:SavedLaunchesFilter[]):boolean=>{
+  if(mode!=='live'||!userId)return false;
+  try{
+   window.localStorage.setItem(savedFiltersKey(userId),serializeSavedFilters(next));
+   setSavedFilters(next);return true;
+  }catch{
+   setFavoriteMessage('O navegador não permitiu salvar as preferências neste dispositivo.');
+   return false;
+  }
+ };
+ const saveFavorite=()=>{
+  try{
+   const next=saveNamedFilter(savedFilters,favoriteName,currentCriteria,advanced,periodMonth,
+    typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function'?crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(16).slice(2));
+   if(!persistFavorites(next))return;
+   setSelectedFavorite(next[next.length-1].id);
+   setFavoriteMessage('Filtro favorito salvo neste navegador.');
+   setSavingFavorite(false);setFavoriteName('');setConfirmDelete(false);
+  }catch(error){setFavoriteMessage(error instanceof Error?error.message:'Não foi possível salvar o filtro.');}
+ };
+ const applyFavorite=(id:string)=>{
+  const preset=savedFilters.find(item=>item.id===id);
+  if(!preset){setSelectedFavorite('');return;}
+  const criteria=applySavedFilter(preset,periodMonth);
+  setSearch(criteria.search);setKind(criteria.kind);setCategory(criteria.category);
+  setAccount(criteria.account);setPaymentMethod(criteria.paymentMethod);
+  setStart(criteria.start);setEnd(criteria.end);
+  setAdvanced(preset.gridFilters);
+  setApplyGridPreset(previous=>({revision:(previous?.revision||0)+1,filters:preset.gridFilters}));
+  setSelectedFavorite(id);setConfirmDelete(false);setSavingFavorite(false);
+  setFavoriteMessage('Filtro “'+preset.name+'” aplicado.');
+ };
+ const removeFavorite=()=>{
+  if(!confirmDelete){setConfirmDelete(true);return;}
+  const next=savedFilters.filter(item=>item.id!==selectedFavorite);
+  if(persistFavorites(next)){
+   setSelectedFavorite('');setConfirmDelete(false);
+   setFavoriteMessage('Filtro favorito excluído. Os filtros atuais continuam aplicados.');
+  }
+ };
+
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const [modalId,setModalId]=useState<string|null>(null);
  const [distributionOpen,setDistributionOpen]=useState(false);
@@ -208,6 +261,9 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  },[mode]);
  const [showNotes,setShowNotes]=useState(false);
  const allRows=useMemo(()=>sourceRows(data),[data]);
+ const paymentMethodOptions=useMemo(()=>[...new Set(
+   allRows.map(row=>row.paymentMethod).filter(value=>value&&value!=='Não informado')
+  )].sort((left,right)=>left.localeCompare(right,'pt-BR')),[allRows]);
  const legacyCategoryOptions=useMemo(()=>[...new Set(
   allRows.filter(row=>!row.categoryId && row.category!=='Sem categoria').map(row=>row.category)
  )].sort((left,right)=>left.localeCompare(right,'pt-BR')),[allRows]);
@@ -219,8 +275,9 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    &&(category==='all'||row.categoryId===category
     ||(category.startsWith('legacy:')&&!row.categoryId&&row.category===category.slice(7)))
    &&(account==='all'||row.accountId===account)
+   &&(paymentMethod==='all'||row.paymentMethod===paymentMethod)
    &&(!start||row.date>=start)&&(!end||row.date<=end)
- ),[allRows,search,kind,category,account,start,end]);
+ ),[allRows,search,kind,category,account,paymentMethod,start,end]);
  const columns=useMemo<DataGridColumn<Row>[]>(()=>{
  const extraColumns:DataGridColumn<Row>[]=[
   // Somente campos financeiros canônicos no grid principal. Campos legados
@@ -253,7 +310,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
  const modalRow=mode==='live'?allRows.find(row=>row.id===modalId)??null:null;
- const filtered=Boolean(search||kind!=='all'||category!=='all'||account!=='all'||start!==startOfMonth||end!==endOfMonth||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
+ const filtered=Boolean(search||kind!=='all'||category!=='all'||account!=='all'||paymentMethod!=='all'||start!==startOfMonth||end!==endOfMonth||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
  const summary=!filtered&&data.summary?.month===periodMonth?data.summary:null;
  const blank=summary===null;
  const stats=[
@@ -282,9 +339,31 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       <label className="meg-l09-search"><LaunchIcon name="search" width={20} height={20}/><span className="sr-only">Buscar lançamentos</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar lançamentos..."/></label>
       <label><span className="sr-only">Tipo</span><select value={kind} onChange={event=>setKind(event.target.value)}><option value="all">Todos os tipos</option>{['income','expense','transfer','investment','redemption','adjustment'].map(k=><option key={k} value={k}>{shortType[k]}</option>)}</select></label>
       <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}{legacyCategoryOptions.length>0&&<optgroup label="Categorias do histórico">{legacyCategoryOptions.map(name=><option key={'legacy:'+name} value={'legacy:'+name}>{name}</option>)}</optgroup>}</select></label>
-      <label><span className="sr-only">Conta</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+      <label><span className="sr-only">Conta ou cartão</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+      {mode==='live'&&<label className="meg-l09-payment-select"><span className="sr-only">Forma de pagamento</span><select value={paymentMethod} onChange={event=>setPaymentMethod(event.target.value)}><option value="all">Todas as formas de pagamento</option>{paymentMethodOptions.map(name=><option key={name} value={name}>{name}</option>)}</select></label>}
       <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
+    {mode==='live'&&<div className="meg-l09-favorites" aria-label="Filtros favoritos">
+     <div className="meg-l09-favorites-main">
+      <label className="meg-l09-favorites-select"><span>Filtros favoritos</span>
+       <select aria-label="Selecionar filtro favorito" value={selectedFavorite} onChange={event=>applyFavorite(event.target.value)}>
+        <option value="">Escolha um filtro salvo</option>
+        {savedFilters.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+       </select>
+      </label>
+      <button type="button" className="meg-l09-favorites-save" onClick={()=>{setSavingFavorite(v=>!v);setFavoriteMessage('');setConfirmDelete(false)}} aria-expanded={savingFavorite}>
+       Salvar filtros
+      </button>
+      {selectedFavorite&&<button type="button" className="meg-l09-favorites-remove" onClick={removeFavorite}>{confirmDelete?'Confirmar exclusão':'Excluir favorito'}</button>}
+     </div>
+     {savingFavorite&&<form className="meg-l09-favorites-form" onSubmit={event=>{event.preventDefault();saveFavorite()}}>
+      <label><span>Nome do filtro</span><input value={favoriteName} maxLength={40} minLength={2} onChange={event=>setFavoriteName(event.target.value)} placeholder="Ex.: Cartão ML ou Saúde" required/></label>
+      <button type="submit" disabled={savedFilters.length>=MAX_SAVED_FILTERS}>Salvar favorito</button>
+      <button type="button" onClick={()=>{setSavingFavorite(false);setFavoriteMessage('')}}>Cancelar</button>
+     </form>}
+     {favoriteMessage&&<p className="meg-l09-favorites-message" role="status">{favoriteMessage}</p>}
+     <small>Até 12 filtros por usuário neste navegador. Inclui filtros das colunas; não salva valores financeiros.</small>
+    </div>}
     <aside className={'meg-l09-right '+(mode==='live'?'is-operational':'')} aria-label="Painéis complementares da grade">
      <section className={'meg-l09-panel meg-l09-distribution '+(distributionOpen?'is-open':'is-collapsed')} aria-label="Distribuição no período">
       <div className="meg-l09-panel-title">
@@ -329,7 +408,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
      </div>}
      <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable
       rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-v2-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
-      footerAggregates={false} onFilterChange={onGridFilter} exportUserName={mode==='live'?exportUserName:undefined}
+      footerAggregates={false} onFilterChange={onGridFilter} applySavedFilters={mode==='live'?applyGridPreset:undefined} exportUserName={mode==='live'?exportUserName:undefined}
       exportPeriod={mode==='live'?'Histórico autorizado — '+periodMonth:'Demonstração visual'} />
     </section>
     <div className="meg-l09-grid-summary">{shownRows.length.toLocaleString('pt-BR')} de {allRows.length.toLocaleString('pt-BR')} registros {mode==='live'?'do histórico autorizado':'da amostra de demonstração'}. Ordem cronológica, sem agrupamento por categoria.</div>
