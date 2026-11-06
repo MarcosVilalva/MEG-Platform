@@ -176,6 +176,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   try{return readSavedFilters(window.localStorage.getItem(savedFiltersKey(userId)));}catch{return [];}
  });
  const [selectedFavorite,setSelectedFavorite]=useState('');
+ const [topFiltersOpen,setTopFiltersOpen]=useState(false);
  const [savingFavorite,setSavingFavorite]=useState(false);
  const [favoriteName,setFavoriteName]=useState('');
  const [confirmDelete,setConfirmDelete]=useState(false);
@@ -307,6 +308,16 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   ...(mode==='live'?extraColumns:[]),
  ];},[openDetails,mode]);
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
+ // Os filtros do formulário e os do DataGrid pertencem à mesma consulta:
+ // "Limpar tudo" precisa zerar os dois, inclusive o favorito selecionado.
+ const clearAllLaunchFilters=()=>{
+  setSearch('');setKind('all');setCategory('all');setAccount('all');
+  setPaymentMethod('all');setStart(startOfMonth);setEnd(endOfMonth);
+  setAdvanced({});
+  setApplyGridPreset(current=>({revision:(current?.revision??0)+1,filters:{}}));
+  setSelectedFavorite('');setConfirmDelete(false);setSavingFavorite(false);
+  setFavoriteMessage('');
+ };
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
  const modalRow=mode==='live'?allRows.find(row=>row.id===modalId)??null:null;
@@ -335,7 +346,8 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   </p>
   <div className="meg-l09-workspace">
    <div className="meg-l09-left">
-    <form className="meg-l09-filters" onSubmit={event=>event.preventDefault()} role="search">
+    <form className="meg-l09-filters" id="meg-l09-extra-filters" hidden={mode==='live'&&!topFiltersOpen}
+     onSubmit={event=>event.preventDefault()} role="search" aria-label="Filtros complementares de lançamentos">
       <label className="meg-l09-search"><LaunchIcon name="search" width={20} height={20}/><span className="sr-only">Buscar lançamentos</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar lançamentos..."/></label>
       <label><span className="sr-only">Tipo</span><select value={kind} onChange={event=>setKind(event.target.value)}><option value="all">Todos os tipos</option>{['income','expense','transfer','investment','redemption','adjustment'].map(k=><option key={k} value={k}>{shortType[k]}</option>)}</select></label>
       <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}{legacyCategoryOptions.length>0&&<optgroup label="Categorias do histórico">{legacyCategoryOptions.map(name=><option key={'legacy:'+name} value={'legacy:'+name}>{name}</option>)}</optgroup>}</select></label>
@@ -343,27 +355,6 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       {mode==='live'&&<label className="meg-l09-payment-select"><span className="sr-only">Forma de pagamento</span><select value={paymentMethod} onChange={event=>setPaymentMethod(event.target.value)}><option value="all">Todas as formas de pagamento</option>{paymentMethodOptions.map(name=><option key={name} value={name}>{name}</option>)}</select></label>}
       <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
-    {mode==='live'&&<div className="meg-l09-favorites" aria-label="Filtros favoritos">
-     <div className="meg-l09-favorites-main">
-      <label className="meg-l09-favorites-select"><span>Filtros favoritos</span>
-       <select aria-label="Selecionar filtro favorito" value={selectedFavorite} onChange={event=>applyFavorite(event.target.value)}>
-        <option value="">Escolha um filtro salvo</option>
-        {savedFilters.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
-       </select>
-      </label>
-      <button type="button" className="meg-l09-favorites-save" onClick={()=>{setSavingFavorite(v=>!v);setFavoriteMessage('');setConfirmDelete(false)}} aria-expanded={savingFavorite}>
-       Salvar filtros
-      </button>
-      {selectedFavorite&&<button type="button" className="meg-l09-favorites-remove" onClick={removeFavorite}>{confirmDelete?'Confirmar exclusão':'Excluir favorito'}</button>}
-     </div>
-     {savingFavorite&&<form className="meg-l09-favorites-form" onSubmit={event=>{event.preventDefault();saveFavorite()}}>
-      <label><span>Nome do filtro</span><input value={favoriteName} maxLength={40} minLength={2} onChange={event=>setFavoriteName(event.target.value)} placeholder="Ex.: Cartão ML ou Saúde" required/></label>
-      <button type="submit" disabled={savedFilters.length>=MAX_SAVED_FILTERS}>Salvar favorito</button>
-      <button type="button" onClick={()=>{setSavingFavorite(false);setFavoriteMessage('')}}>Cancelar</button>
-     </form>}
-     {favoriteMessage&&<p className="meg-l09-favorites-message" role="status">{favoriteMessage}</p>}
-     <small>Até 12 filtros por usuário neste navegador. Inclui filtros das colunas; não salva valores financeiros.</small>
-    </div>}
     <aside className={'meg-l09-right '+(mode==='live'?'is-operational':'')} aria-label="Painéis complementares da grade">
      <section className={'meg-l09-panel meg-l09-distribution '+(distributionOpen?'is-open':'is-collapsed')} aria-label="Distribuição no período">
       <div className="meg-l09-panel-title">
@@ -398,17 +389,51 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
      </section>}
     </aside>
     <section className="meg-l09-grid-panel" aria-label="Tabela de lançamentos" id="meg-l09-grid-region">
-     {mode==='live'&&<div className="meg-l09-grid-focus-toolbar">
-      <span aria-hidden="true"><LaunchIcon name="list" width={17} height={17}/> Grade de lançamentos</span>
-      <button type="button" className="meg-l09-grid-focus-button" onClick={()=>setGridFocus(value=>!value)}
-       aria-pressed={gridFocus} aria-controls="meg-l09-grid-region" aria-label={gridFocus?'Restaurar tamanho da tabela':'Maximizar tabela na área útil do sistema'}
-       title={gridFocus?'Restaurar visualização normal (Esc)':'Maximizar tabela na área útil'}>
-       <LaunchIcon name="list" width={18} height={18}/>{gridFocus?'Restaurar visualização':'Maximizar tabela'}
-      </button>
-     </div>}
+     {mode==='live'&&<>
+      <div className="meg-l09-grid-focus-toolbar">
+       <span className="meg-l09-grid-heading"><LaunchIcon name="list" width={17} height={17}/> Grade de lançamentos</span>
+       <div className="meg-l09-grid-toolbar-actions">
+        {!gridFocus&&<button type="button" className="meg-l09-grid-filter-toggle" aria-controls="meg-l09-extra-filters"
+         aria-expanded={topFiltersOpen} onClick={()=>setTopFiltersOpen(open=>!open)}>
+         {topFiltersOpen?'Ocultar filtros':'Mostrar filtros'}
+        </button>}
+        <label className="meg-l09-favorites-select">
+         <span className="sr-only">Filtros favoritos</span>
+         <select aria-label="Selecionar filtro favorito" value={selectedFavorite} onChange={event=>applyFavorite(event.target.value)}>
+          <option value="">Selecionar filtro favorito</option>
+          {savedFilters.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+         </select>
+        </label>
+        <button type="button" className="meg-l09-favorites-save" onClick={()=>{
+         setSavingFavorite(open=>!open);setFavoriteMessage('');setConfirmDelete(false);
+        }} aria-expanded={savingFavorite} aria-controls="meg-l09-save-favorite">
+         Salvar filtros
+        </button>
+        {selectedFavorite&&<button type="button" className="meg-l09-favorites-remove" onClick={removeFavorite}>
+         {confirmDelete?'Confirmar exclusão':'Excluir favorito'}
+        </button>}
+        {(filtered||selectedFavorite)&&<button type="button" className="meg-l09-clear-filters" onClick={clearAllLaunchFilters}>
+         Limpar filtros
+        </button>}
+        <button type="button" className="meg-l09-grid-focus-button" onClick={()=>setGridFocus(value=>!value)}
+         aria-pressed={gridFocus} aria-controls="meg-l09-grid-region" aria-label={gridFocus?'Restaurar tamanho da tabela':'Maximizar tabela na área útil do sistema'}
+         title={gridFocus?'Restaurar visualização normal (Esc)':'Maximizar tabela na área útil'}>
+         <LaunchIcon name="list" width={18} height={18}/>{gridFocus?'Restaurar visualização':'Maximizar tabela'}
+        </button>
+       </div>
+      </div>
+      {savingFavorite&&<form id="meg-l09-save-favorite" className="meg-l09-favorites-form" onSubmit={event=>{event.preventDefault();saveFavorite()}}>
+       <label><span>Nome do filtro</span><input value={favoriteName} maxLength={40} minLength={2}
+        onChange={event=>setFavoriteName(event.target.value)} placeholder="Ex.: Cartão ML ou Saúde" required/></label>
+       <button type="submit" disabled={savedFilters.length>=MAX_SAVED_FILTERS}>Salvar favorito</button>
+       <button type="button" onClick={()=>{setSavingFavorite(false);setFavoriteMessage('')}}>Cancelar</button>
+      </form>}
+      {favoriteMessage&&<p className="meg-l09-favorites-message" role="status">{favoriteMessage}</p>}
+     </>}
      <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable
       rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-v2-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
-      footerAggregates={false} onFilterChange={onGridFilter} applySavedFilters={mode==='live'?applyGridPreset:undefined} exportUserName={mode==='live'?exportUserName:undefined}
+      footerAggregates={false} onFilterChange={onGridFilter} onClearAllFilters={mode==='live'?clearAllLaunchFilters:undefined}
+      applySavedFilters={mode==='live'?applyGridPreset:undefined} exportUserName={mode==='live'?exportUserName:undefined}
       exportPeriod={mode==='live'?'Histórico autorizado — '+periodMonth:'Demonstração visual'} />
     </section>
     <div className="meg-l09-grid-summary">{shownRows.length.toLocaleString('pt-BR')} de {allRows.length.toLocaleString('pt-BR')} registros {mode==='live'?'do histórico autorizado':'da amostra de demonstração'}. Ordem cronológica, sem agrupamento por categoria.</div>
