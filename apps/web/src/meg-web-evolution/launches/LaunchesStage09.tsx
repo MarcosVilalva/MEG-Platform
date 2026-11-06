@@ -7,6 +7,7 @@ import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchIcon, type LaunchIconName} from './LaunchIcon';
 import {launchCategoryIcon} from './category-icon';
 import {LaunchCategoryBadge} from './LaunchCategoryBadge';
+import {LaunchPaymentBadge} from './LaunchPaymentBadge';
 import {applySavedFilter,readSavedFilters,saveNamedFilter,savedFiltersKey,serializeSavedFilters,MAX_SAVED_FILTERS,
  type SavedLaunchesFilter,type LaunchesFilterPreset} from './saved-filters';
 export type {LaunchesFilterPreset} from './saved-filters';
@@ -145,7 +146,7 @@ function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
      <div className="meg-l09-modal-amount">
       <span>Valor do lançamento</span><strong className={row.signedAmount>=0?'is-positive':'is-negative'}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>
      </div>
-     <dl className="meg-l09-modal-fields">{main.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{label==='Categoria'?<LaunchCategoryBadge category={value}/>:value}</dd></div>)}</dl>
+     <dl className="meg-l09-modal-fields">{main.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{label==='Categoria'?<LaunchCategoryBadge category={value}/>:label==='Forma de pagamento'?<LaunchPaymentBadge method={value}/>:value}</dd></div>)}</dl>
      {row.notes.trim()&&<div className="meg-l09-modal-note"><strong>Observações</strong><p>{row.notes}</p></div>}
      {original.length>0&&<details className="meg-l09-modal-history"><summary>Dados originais do histórico <span>{original.length}</span></summary>
       <p>Rótulos preservados da importação, sem alterar as classificações atuais.</p>
@@ -303,7 +304,8 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
        <span className="meg-l09-chip-label">{row.category}</span>
       </span>},
   {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
-  {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true},
+  {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true,
+   render:(_value,row)=>mode==='live'?<LaunchPaymentBadge method={row.paymentMethod}/>:row.paymentMethod},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
    render:(_value,row)=><strong className={'meg-l09-money '+(row.signedAmount>=0?'is-positive':'is-negative')}>{row.signedAmount>0?'+ ':''}{currency(row.signedAmount)}</strong>},
   ...(mode==='preview'?[{key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
