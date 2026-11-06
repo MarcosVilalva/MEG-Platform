@@ -769,6 +769,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   selectable = false,
   footerAggregates = false,
   onFilterChange,
+  applySavedFilters,
   persistenceKey,
   rowKey,
   loading = false,
@@ -876,6 +877,28 @@ export function DataGrid<T extends Record<string, unknown>>({
     return () => media.removeEventListener('change', update);
   }, []);
   const visibleChipLimit = compactToolbar || compactMobileChips ? 1 : 2;
+  // Exclusivamente quando o consumidor solicita, restaurar filtros de coluna
+  // sem mudar ordenação, largura, visibilidade nem paginação persistida.
+  // Qualquer outro DataGrid continua com seu comportamento anterior.
+  const appliedRevision = useRef(0);
+  useEffect(() => {
+    if(!applySavedFilters||applySavedFilters.revision<=appliedRevision.current)return;
+    appliedRevision.current=applySavedFilters.revision;
+    const valid=sanitizePersistenceState(
+      {...persisted,filters:applySavedFilters.filters},columnKeys,pageSize,
+    ).filters;
+    setFilters(valid);
+    setSearchInput('');
+    setSearchText('');
+    setSearchExpanded(false);
+    setActiveFiltersOpen(false);
+    setOpenFilterKey(null);
+    setPageIndex(0);
+    setSelected(new Set());
+    if(viewportRef.current)viewportRef.current.scrollTop=0;
+    setScrollTop(0);
+  },[applySavedFilters,columnKeys,pageSize,persisted]);
+
 
   const getRowKey = useCallback((row: T) => {
     if (typeof rowKey === 'function') return String(rowKey(row));
