@@ -210,6 +210,35 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor();
   await categoryFilter.selectOption('all');
   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor();
+  // Favoritos: somente filtros, sem mudar dados financeiros nem executar writers.
+  if(width===1366){
+   const method=page.getByRole('combobox',{name:'Forma de pagamento'});
+   await categoryFilter.selectOption('cat-1');
+   await method.selectOption('Pagamento Teste');
+   await sum.filter({hasText:`100 de ${totalText} registros do histórico autorizado`}).waitFor();
+   await page.getByRole('button',{name:'Salvar filtros',exact:true}).click();
+   await page.getByRole('textbox',{name:'Nome do filtro'}).fill('Cartão e categoria');
+   await page.getByRole('button',{name:'Salvar favorito'}).click();
+   await page.getByRole('status').filter({hasText:'Filtro favorito salvo'}).waitFor();
+   const persisted=await page.evaluate(uid=>localStorage.getItem('meg-web-evolution:stage09:saved-filters:v1:'+uid),user.id);
+   if(!persisted||!persisted.includes('Cartão e categoria')||!persisted.includes('Pagamento Teste'))
+    issues.push('Filtro favorito não foi persistido para o usuário autenticado');
+   await categoryFilter.selectOption('all');
+   await method.selectOption('all');
+   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor();
+   await page.getByRole('combobox',{name:'Selecionar filtro favorito'}).selectOption({label:'Cartão e categoria'});
+   await sum.filter({hasText:`100 de ${totalText} registros do histórico autorizado`}).waitFor();
+   if(await categoryFilter.inputValue()!=='cat-1'||await method.inputValue()!=='Pagamento Teste')
+    issues.push('Favorito não restaurou categoria e forma de pagamento');
+   await page.screenshot({path:resolve(output,'filtros-favoritos-1366x768.png'),fullPage:true});
+   await page.getByRole('button',{name:'Excluir favorito'}).click();
+   await page.getByRole('button',{name:'Confirmar exclusão'}).click();
+   if(await page.getByRole('combobox',{name:'Selecionar filtro favorito'}).locator('option').count()!==1)
+    issues.push('Exclusão do favorito falhou');
+   await categoryFilter.selectOption('all');
+   await method.selectOption('all');
+   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor();
+  }
   if(!(await page.locator('.meg-l09[data-icon-pack="phosphor"] .meg-l09-stat.is-income [data-launch-pack="phosphor"]').count()))issues.push('Phosphor nao foi adotado como padrao autenticado');
   if(!(await page.locator('.meg-l09-stat.is-income [data-launch-icon="trendUp"]').count()))issues.push('Entrada sem ícone de alta');
   if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="trendDown"]').count()))issues.push('Saída sem ícone de baixa');
