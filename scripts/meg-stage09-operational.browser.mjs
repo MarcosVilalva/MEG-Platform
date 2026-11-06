@@ -292,6 +292,9 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await page.getByRole('status').filter({hasText:width===960?'Lendo os registros da primeira leitura':'Preparando histórico consistente na API'}).waitFor({timeout:12000});
   await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor({timeout:40000});
   if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
+  // O refresh remonta a tela, que deliberadamente inicia filtros externos
+  // recolhidos; reabrir antes de interagir com o campo.
+  if(!(await query.isVisible()))await page.getByRole('button',{name:'Mostrar filtros'}).click();
   await query.fill('');
   historyRequests=0;mutation=true;
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
