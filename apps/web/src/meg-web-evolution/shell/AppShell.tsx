@@ -25,9 +25,11 @@ function readSidebarPreference() {
 }
 
 export type ShellSection = 'home'|'launches';
-export function AppShell({ children, activeSection='home', onNavigate, periodLabel, profileName }: {
+export function AppShell({ children, activeSection='home', onNavigate, periodLabel, profileName, onLogout, logoutPending=false }: {
  children: ReactNode;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;
  periodLabel?:string;profileName?:string;
+ /** Disponível somente após autenticação; a prévia demonstrativa não executa logout. */
+ onLogout?:()=>void;logoutPending?:boolean;
 }) {
  const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
  const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
@@ -202,15 +204,18 @@ export function AppShell({ children, activeSection='home', onNavigate, periodLab
           <button
             type="button"
             className="meg-nav-item meg-logout-button"
-            aria-label="Sair"
+            aria-label={logoutPending?'Encerrando sessão':'Sair'}
             data-tooltip="Sair"
+            aria-busy={logoutPending}
+            disabled={Boolean(onLogout)&&logoutPending}
+            onClick={()=>{if(onLogout&&!logoutPending){setDrawerOpen(false);hideTooltip();onLogout()}}}
             onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
             onMouseLeave={hideTooltip}
             onFocus={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
             onBlur={hideTooltip}
           >
             <Icon name="logOut" width={20} height={20} strokeWidth={1.75} />
-            <span>Sair</span>
+            <span>{logoutPending?'Saindo...':'Sair'}</span>
           </button>
         </div>
 
