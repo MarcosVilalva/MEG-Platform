@@ -8,6 +8,7 @@ import {
   upsertBudget,
   deleteBudget,
   listFinancialEvents,
+  getFinancialHistorySnapshot,
   updateFinancialEvent
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
@@ -216,6 +217,9 @@ export async function financeRoutes(app: FastifyInstance) {
       changedAt: changedAtDate?.toISOString() || null,
       mutationType: catalogIsNewest ? 'CATALOG_SYNC' : latestMutation?.mutationType || null,
       catalogChangedAt: latestCatalog?.item.updatedAt.toISOString() || null,
+      // Capacidade aditiva: clientes antigos ignoram; clientes da Etapa 09
+      // só usam a nova rota após o backend anunciar suporte efetivo.
+      capabilities: { historySnapshotV1: true },
     };
   });
 
@@ -317,6 +321,14 @@ export async function financeRoutes(app: FastifyInstance) {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return listPhoenixFinancialEventsForMonth(request.user.sub, parsed.data.month);
+  });
+
+  // Exclusivo da consulta Web autorizada: resposta integral consistente em
+  // uma transação; para históricos grandes o servidor sinaliza fallback.
+  app.get('/events/history-snapshot', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getFinancialHistorySnapshot(dataOwnerId);
   });
 
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {

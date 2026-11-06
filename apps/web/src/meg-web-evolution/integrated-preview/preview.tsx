@@ -11,6 +11,7 @@ import {Icon} from '../components/Icon';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homePreviewFixture} from '../home/preview.fixture';
 import {LaunchTypePicker} from '../launches/LaunchTypePicker';
+import {LaunchesStage09} from '../launches/LaunchesStage09';
 import '../launches/new-launch.css';
 
 import './integrated-preview.css';
@@ -23,11 +24,12 @@ import './choice-refinement.css';
  * - Escolha do Novo Lancamento da PR #648, com os arquivos e WebPs originais.
  * Nunca envia credenciais, grava transacoes ou substitui o gateway real.
  */
-type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'new-launch';
+type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'launches' | 'new-launch';
 const urlScreen = new URLSearchParams(window.location.search).get('tela');
 const initialScreen: Screen =
   urlScreen === 'login' ? 'login' :
   urlScreen === 'home' ? 'home' :
+  urlScreen === 'lancamentos' ? 'launches' :
   urlScreen === 'novo' ? 'new-launch' :
   urlScreen === 'cadastro' ? 'register' :
   urlScreen === 'recuperar-senha' ? 'recover' :
@@ -65,6 +67,16 @@ function FlowPreview() {
     if (!(element instanceof Element)) return;
     const button = element.closest('button');
     if (!button) return;
+    if (button.getAttribute('aria-label') === 'Lançamentos') {
+      event.stopPropagation();
+      setNotice('');
+      setScreen('launches');
+    }
+    if (button.getAttribute('aria-label') === 'Início') {
+      event.stopPropagation();
+      setNotice('');
+      setScreen('home');
+    }
     if (button.getAttribute('aria-label') === 'Novo lançamento') {
       event.stopPropagation();
       setNotice('');
@@ -107,11 +119,16 @@ function FlowPreview() {
   return <div className="meg-integrated-preview" data-preview-view={screen}
     onClickCapture={handleShellCapture}>
     <AppShell>
-      <HomeDashboard previewData={homePreviewFixture} month="2026-10"
-        onNavigate={target => {
-          if (target === 'novo') { setNotice(''); setScreen('new-launch'); }
-          else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
-        }}/>
+      {screen === 'launches'
+        ? <LaunchesStage09 data={homePreviewFixture}
+            onNew={() => { setNotice(''); setScreen('new-launch'); }}
+            onHome={goHome}/>
+        : <HomeDashboard previewData={homePreviewFixture} month="2026-10"
+          onNavigate={target => {
+            if (target === 'novo') { setNotice(''); setScreen('new-launch'); }
+            else if (target === 'lancamentos') { setNotice(''); setScreen('launches'); }
+            else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
+          }}/>} 
     </AppShell>
     {screen === 'new-launch' && <div className="meg-new-launch__overlay is-choice-overlay meg-integrated-preview__choice-overlay">
       <section className="meg-new-launch is-choose" role="dialog" aria-modal="true" aria-labelledby="meg-integrated-new-title">

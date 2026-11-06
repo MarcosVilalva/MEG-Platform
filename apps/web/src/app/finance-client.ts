@@ -78,6 +78,10 @@ export type FinancialEventPage = {
   page: number;
   pageSize: number;
 };
+/** Snapshot completo de leitura ou sinal de fallback para a paginação histórica. */
+export type FinancialHistorySnapshot =
+ | {kind:'complete';protocol:'financial-history-v1';consistency:'repeatable-read';items:FinancialEvent[];total:number}
+ | {kind:'limit-exceeded';protocol:'financial-history-v1';total:number;limit:number};
 
 export type FinancialAuditEntry = {
   id: string;
@@ -238,10 +242,13 @@ export const financeClient = {
   listEventsForMonth: (month: string) =>
     authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   getSyncStatus: () =>
-    authorizedRequest<{ token: string; changedAt: string | null; mutationType: string | null }>('/finance/sync-status', { cache: 'no-store' }),
-  listEvents: (page = 1, pageSize = 50, search = '') =>
+    authorizedRequest<{token:string;changedAt:string|null;mutationType:string|null;capabilities?:{historySnapshotV1?:boolean}}>('/finance/sync-status', { cache: 'no-store' }),
+  getHistorySnapshot: (signal?:AbortSignal) =>
+    authorizedRequest<FinancialHistorySnapshot>('/finance/events/history-snapshot', {cache:'no-store',signal}),
+  listEvents: (page = 1, pageSize = 50, search = '', signal?: AbortSignal) =>
     authorizedRequest<FinancialEventPage>(
-      `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
+      `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`,
+      {cache:'no-store', signal}
     ),
   listAudit: (page = 1, pageSize = 100, filters: { action?: string; entity?: string } = {}) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
