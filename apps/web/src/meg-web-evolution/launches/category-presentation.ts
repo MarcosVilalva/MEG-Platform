@@ -74,7 +74,18 @@ const alias:Record<string,Appearance>={
  'imoveis':{icon:'home',tone:'aqua'},
  'moradia':{icon:'home',tone:'aqua'},
  'casa':{icon:'home',tone:'aqua'},
- 'comunicacao':{icon:'subscriptions',tone:'slate'},
+'comunicacao':{icon:'subscriptions',tone:'slate'},
+ // Rótulos reais que constam do cadastro/importação consultados somente
+ // para leitura em 06/11/2026. Não usar palavras da descrição como categoria.
+ 'bebidas e similares':{icon:'beverages',tone:'apricot'},
+ 'eletro/eletronicos/ utilidades':{icon:'electronics',tone:'blue'},
+ 'fast food':{icon:'fastFood',tone:'amber'},
+ 'higiene pessoal':{icon:'hygiene',tone:'mint'},
+ 'mat. escolar':{icon:'schoolSupplies',tone:'lavender'},
+ 'pgto de dividas':{icon:'debt',tone:'gold'},
+ 'titulos/previdencia':{icon:'savings',tone:'aqua'},
+ 'vestuario':{icon:'clothing',tone:'violet'},
+ 'compra reembolsavel':{icon:'reimbursement',tone:'blue'},
 };
 const fallbackTones:Partial<Record<LaunchIconName,CategoryTone>>={
  grocery:'amber',health:'rose',transport:'blue',home:'aqua',
