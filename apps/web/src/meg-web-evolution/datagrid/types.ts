@@ -75,6 +75,8 @@ export type DataGridProps<T extends Record<string, unknown>> = {
   selectable?: boolean;
   footerAggregates?: boolean | Record<string, DataGridAggregate>;
   onFilterChange?: (state: DataGridFilterChange) => void;
+  /** Notifica o consumidor quando Limpar tudo é acionado na grade. */
+  onClearAllFilters?: () => void;
   /** Solicitação opcional de aplicar filtros salvos, sem alterar layout/colunas. */
   applySavedFilters?: {revision:number;filters:DataGridFilterState};
   persistenceKey?: string;
