@@ -349,11 +349,14 @@
 
 /* Ocupa somente a área útil do MEG, preservando sidebar e topbar.
  * :has() identifica o estado desta tela sem alterar o shell compartilhado. */
-.meg-main:has(.meg-l09.is-grid-focus){overflow:hidden}
-.meg-shell-stage:has(.meg-l09.is-grid-focus){height:100%;min-height:0}
+.meg-main:has(.meg-l09.is-grid-focus){overflow:hidden!important}
+.meg-shell-stage:has(.meg-l09.is-grid-focus){
+ position:relative;height:100%;min-height:0;overflow:hidden;
+}
 .meg-l09.is-operational.is-grid-focus{
- height:100%;max-width:none;min-height:0;overflow:hidden;
- padding:.6rem .8rem;gap:.5rem;
+ position:absolute;inset:0;z-index:4;
+ height:100%;max-height:100%;width:100%;max-width:none;min-height:0;overflow:hidden;
+ padding:.5rem .7rem;gap:.35rem;
  background:#02191e;
 }
 .meg-l09.is-grid-focus .meg-l09-hero-frame,
@@ -369,7 +372,7 @@
  display:flex;flex:1 1 auto;min-width:0;min-height:0;
  gap:.5rem;
 }
-.meg-l09.is-grid-focus .meg-l09-filters{flex:0 0 auto}
+.meg-l09.is-grid-focus .meg-l09-filters{display:none!important}
 .meg-l09.is-grid-focus .meg-l09-grid-panel{
  flex:1 1 auto;min-height:0;min-width:0;
  display:flex;flex-direction:column;
@@ -381,6 +384,7 @@
 }
 .meg-l09.is-grid-focus .meg-l09-grid-panel .meg-datagrid__viewport{
  flex:1 1 auto;min-height:0;max-height:none;overflow:auto;
+ overscroll-behavior:contain;scrollbar-gutter:stable;
 }
 @media(max-width:1023px){
  .meg-l09.is-operational:not(.is-grid-focus) .meg-l09-hero-frame.is-sticky{
@@ -401,43 +405,60 @@
  .meg-l09-grid-focus-toolbar{justify-content:flex-end}
 }
 
-/* Etapa 09 | filtros favoritos: somente na rota autenticada.
- * Uma linha compacta, sem alterar a composição do print visual homologado. */
+/* Etapa 09: filtros principais disponíveis sob demanda. A grade já
+ * oferece filtros por coluna e mantém os controles essenciais visíveis. */
+.meg-l09-filters[hidden]{display:none!important}
 .meg-l09.is-operational .meg-l09-filters{
  grid-template-columns:minmax(10rem,1.55fr) repeat(4,minmax(6.2rem,.94fr)) minmax(12rem,1.7fr);
+ margin-bottom:.3rem;
 }
-.meg-l09-favorites{
- display:flex;flex-direction:column;gap:.4rem;
- border:1px solid rgba(30,169,160,.35);border-radius:.65rem;
- background:linear-gradient(105deg,rgba(1,38,43,.9),rgba(2,27,34,.94));
- padding:.55rem .7rem;min-width:0;
+.meg-l09-grid-focus-toolbar{
+ display:flex;flex-wrap:wrap;align-items:center;gap:.45rem .8rem;
+ padding:.5rem .75rem;min-height:3.35rem;
 }
-.meg-l09-favorites-main{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;min-width:0}
-.meg-l09-favorites-select{display:flex;align-items:center;gap:.6rem;flex:1 1 16rem;min-width:0;color:#b5e5de;font-size:.75rem;font-weight:750}
-.meg-l09-favorites-select span{flex:none}
-.meg-l09-favorites select,.meg-l09-favorites input{
- background:#052b32;color:#e5fffa;border:1px solid #247e7e;
- border-radius:.5rem;min-height:2.5rem;padding:.35rem .65rem;min-width:0;
+.meg-l09-grid-heading{display:inline-flex;align-items:center;gap:.45rem;flex:none}
+.meg-l09-grid-toolbar-actions{
+ display:flex;flex:1 1 33rem;align-items:center;justify-content:flex-end;
+ gap:.42rem;flex-wrap:wrap;min-width:0;
 }
-.meg-l09-favorites-select select{flex:1 1 auto;max-width:25rem;font-size:.77rem}
-.meg-l09-favorites select option{background:#05232b}
-.meg-l09-favorites button{
- border-radius:.5rem;border:1px solid #278e89;background:#084448;
- color:#befef0;padding:.45rem .85rem;min-height:2.5rem;
- font-size:.75rem;font-weight:700;
+.meg-l09-grid-toolbar-actions button{
+ display:inline-flex;align-items:center;justify-content:center;gap:.35rem;
+ min-height:2.45rem;padding:.4rem .65rem;border-radius:.49rem;
+ background:#073b42;color:#c2f5ec;border:1px solid #218482;
+ font-size:.74rem;font-weight:720;white-space:nowrap;cursor:pointer;
 }
-.meg-l09-favorites button:hover{background:#0c6160;border-color:#54ead1}
-.meg-l09-favorites button:disabled{opacity:.45;cursor:not-allowed}
-.meg-l09-favorites .meg-l09-favorites-save{background:#11675b;border-color:#31c9a8;color:#e3fffb}
-.meg-l09-favorites-remove{color:#ffd6d5!important;border-color:#9a5e61!important}
+.meg-l09-grid-toolbar-actions button:hover{background:#105962;border-color:#50e7d1}
+.meg-l09-grid-toolbar-actions .meg-l09-favorites-save{background:#105e55;border-color:#28bfa9;color:#e7fff9}
+.meg-l09-grid-toolbar-actions .meg-l09-favorites-remove{color:#ffd5d4;border-color:#91595b;background:#382c34}
+.meg-l09-grid-toolbar-actions .meg-l09-clear-filters{color:#d2e9e4;background:transparent}
+.meg-l09-grid-toolbar-actions .meg-l09-grid-focus-button{
+ background:#063b40;color:#abfff0;border-color:#218a88;
+}
+.meg-l09-grid-toolbar-actions .meg-l09-grid-focus-button[aria-pressed="true"]{
+ background:#0c5c5d;border-color:#3de2c9;
+}
+.meg-l09-favorites-select{display:flex;flex:0 1 14rem;min-width:9.2rem;max-width:19rem;align-items:center}
+.meg-l09-favorites-select select{
+ width:100%;min-width:0;height:2.45rem;padding:.38rem .65rem;
+ border:1px solid #238a84;border-radius:.49rem;
+ background:#042b32;color:#e3fcf7;font-size:.76rem;
+ text-overflow:ellipsis;
+}
+.meg-l09-favorites-select select option{background:#05232b}
 .meg-l09-favorites-form{
  display:flex;align-items:end;gap:.5rem;flex-wrap:wrap;
- padding:.7rem .15rem .15rem;border-top:1px solid #135a5a;
+ padding:.75rem 1rem;border-bottom:1px solid #16595a;background:#042b32;
 }
-.meg-l09-favorites-form label{display:flex;flex-direction:column;gap:.3rem;min-width:11rem;flex:1 1 14rem;font-size:.72rem;color:#bddbd7}
-.meg-l09-favorites-form input{width:100%}
-.meg-l09-favorites-message{margin:0;color:#88f5db;font-size:.72rem}
-.meg-l09-favorites small{font-size:.67rem;color:#94bdb8;line-height:1.35}
+.meg-l09-favorites-form label{display:flex;flex-direction:column;gap:.35rem;min-width:11rem;flex:1 1 16rem;font-size:.72rem;color:#bddbd7}
+.meg-l09-favorites-form input{
+ display:block;width:100%;min-height:2.5rem;padding:.4rem .7rem;
+ background:#05262e;color:#effffb;border:1px solid #257f79;border-radius:.48rem;
+}
+.meg-l09-favorites-form button{min-height:2.5rem;padding:.4rem .8rem;border:1px solid #269b8a;border-radius:.48rem;background:#075755;color:#e9fffb;font-size:.75rem}
+.meg-l09-favorites-form button:hover{background:#13736a}
+.meg-l09-favorites-form button:disabled{opacity:.45;cursor:not-allowed}
+.meg-l09-favorites-message{margin:0;padding:.42rem .9rem;color:#85efd9;font-size:.73rem;background:#042b32;border-bottom:1px solid #16595a}
+.meg-l09.is-grid-focus .meg-l09-favorites-message{display:none}
 @media(min-width:1024px) and (max-width:1420px){
  .meg-l09.is-operational .meg-l09-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
  .meg-l09.is-operational .meg-l09-filters .meg-l09-search{grid-column:span 2}
@@ -447,15 +468,16 @@
  .meg-l09.is-operational .meg-l09-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
  .meg-l09.is-operational .meg-l09-filters .meg-l09-search{grid-column:span 3}
  .meg-l09.is-operational .meg-l09-filters .meg-l09-date-range{grid-column:span 3}
+ .meg-l09-grid-toolbar-actions{justify-content:flex-start;flex-basis:100%}
 }
 @media(max-width:639px){
  .meg-l09.is-operational .meg-l09-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
  .meg-l09.is-operational .meg-l09-filters .meg-l09-search,
  .meg-l09.is-operational .meg-l09-filters .meg-l09-date-range{grid-column:span 2}
- .meg-l09-favorites-select{flex-basis:100%;flex-wrap:wrap}
- .meg-l09-favorites-select span{width:100%}
- .meg-l09-favorites-select select{max-width:none;width:100%}
- .meg-l09-favorites-main>button{flex:1 1 auto}
- .meg-l09-favorites{padding:.48rem}
+ .meg-l09-grid-focus-toolbar{padding:.4rem .48rem;gap:.4rem}
+ .meg-l09-grid-heading{font-size:.73rem}
+ .meg-l09-grid-toolbar-actions{gap:.35rem}
+ .meg-l09-grid-toolbar-actions button{min-height:2.7rem;padding-inline:.45rem;font-size:.7rem}
+ .meg-l09-favorites-select{flex:1 1 9rem;max-width:none}
  .meg-l09-favorites-form label{flex-basis:100%}
 }
