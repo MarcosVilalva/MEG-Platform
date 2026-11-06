@@ -33,7 +33,7 @@ function safeDate(value:unknown){
  return s;
 }
 export function cleanCriteria(raw:unknown):LaunchesFilterPreset {
- const v=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
+ const v:Record<string,unknown>=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
  return {
   search:safeString(v.search,120),
   kind:safeString(v.kind,28)||'all',
