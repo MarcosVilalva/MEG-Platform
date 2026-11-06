@@ -405,6 +405,18 @@
  .meg-l09-grid-focus-toolbar{justify-content:flex-end}
 }
 
+/* No mobile, a shell compartilhada troca grid por block. O modo foco
+ * precisa voltar a ter uma coluna flex com altura do viewport para que main
+ * não colapse quando a grade ocupa a área de trabalho. */
+@media(max-width:639px){
+ .meg-shell-body:has(.meg-l09.is-grid-focus){
+  display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;
+ }
+ .meg-main:has(.meg-l09.is-grid-focus){
+  flex:1 1 0;min-height:0;height:0;overflow:hidden!important;padding:0;
+ }
+}
+
 /* Etapa 09: filtros principais disponíveis sob demanda. A grade já
  * oferece filtros por coluna e mantém os controles essenciais visíveis. */
 .meg-l09-filters[hidden]{display:none!important}
