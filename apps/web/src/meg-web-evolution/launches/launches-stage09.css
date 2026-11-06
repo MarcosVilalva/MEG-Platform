@@ -557,3 +557,66 @@
  .meg-l09.is-operational .meg-l09-category-chip,
  .meg-l09-modal .meg-l09-category-chip{border-color:var(--category-accent);color:#fff}
 }
+
+/* Identidade visual dos meios de pagamento: miniaturas decorativas,
+ * NÃO são imagens dos cartões físicos nem exibem seus dados. */
+.meg-l09.is-operational .meg-l09-payment-badge,
+.meg-l09-modal .meg-l09-payment-badge{
+ --pay-accent:#96b9c5;--pay-wash:#6b93a41f;
+ display:inline-flex;align-items:center;gap:.38rem;
+ max-width:100%;min-width:0;min-height:1.92rem;
+ padding:.15rem .42rem .15rem .18rem;border-radius:999px;
+ border:1px solid color-mix(in srgb,var(--pay-accent) 24%,transparent);
+ background:linear-gradient(110deg,var(--pay-wash),rgba(1,39,42,.79));
+ color:#ebfcf8;vertical-align:middle;
+}
+.meg-l09-payment-badge[data-method-tone="blue"]{--pay-accent:#8cceff;--pay-wash:#358fd72a}
+.meg-l09-payment-badge[data-method-tone="purple"]{--pay-accent:#c8a6ff;--pay-wash:#a879e329}
+.meg-l09-payment-badge[data-method-tone="green"]{--pay-accent:#8df7ad;--pay-wash:#47c77527}
+.meg-l09-payment-badge[data-method-tone="amber"]{--pay-accent:#f8cb7a;--pay-wash:#c28e292c}
+.meg-l09-payment-badge[data-method-tone="teal"]{--pay-accent:#61f0dd;--pay-wash:#2bcab029}
+.meg-l09-payment-badge[data-method-tone="slate"]{--pay-accent:#a5cbd7;--pay-wash:#718e9a24}
+.meg-l09-payment-badge[data-method-tone="coral"]{--pay-accent:#ff9caa;--pay-wash:#e3757c24}
+.meg-l09-payment-badge .meg-l09-method-mark{
+ flex:0 0 1.9rem;display:grid;place-items:center;
+ width:1.9rem;height:1.5rem;min-width:0;min-height:0;
+ color:var(--pay-accent);
+}
+.meg-l09-payment-badge .meg-l09-method-mark>svg{
+ display:block;width:1.35rem;height:1.35rem;flex:none
+}
+.meg-l09-payment-badge .meg-l09-mini-card{
+ position:relative;display:block;width:1.85rem;height:1.25rem;
+ overflow:hidden;border-radius:.23rem;border:1px solid #d4fff84f;
+ background:linear-gradient(125deg,color-mix(in srgb,var(--pay-accent) 70%,#071a28),
+ color-mix(in srgb,var(--pay-accent) 16%,#052230) 57%,#09292c);
+ box-shadow:0 1px 3px #0007,inset 0 1px #fff6;
+}
+.meg-l09-mini-card:before{
+ content:"";position:absolute;width:2.8rem;height:2rem;
+ border-radius:50%;left:.7rem;top:-1.15rem;
+ border:1px solid #caffff3b;transform:rotate(-28deg);
+ box-shadow:0 4px 0 -3px #ffffff66,0 7px 0 -6px #d1fff366;
+}
+.meg-l09-mini-card .meg-l09-mini-chip{
+ position:absolute;left:.24rem;top:.29rem;width:.35rem;height:.26rem;
+ border:1px solid #d1b68f;border-radius:.08rem;background:#e7cb9d;
+ box-shadow:inset 0 0 0 1px #d9b37f;
+}
+.meg-l09-mini-card b{
+ position:absolute;bottom:.06rem;right:.13rem;
+ font-size:.39rem;font-weight:850;line-height:1;color:#fff;
+ letter-spacing:.015em;text-shadow:0 1px #0006;
+}
+.meg-l09-payment-badge .meg-l09-method-label{
+ min-width:0;display:block;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;font-size:.72rem;font-weight:650;
+}
+@media(max-width:639px){
+ .meg-l09.is-operational .meg-l09-payment-badge{gap:.25rem;padding-right:.3rem}
+ .meg-l09-payment-badge .meg-l09-method-mark{width:1.75rem;flex-basis:1.75rem}
+}
+@media(prefers-contrast:more){
+ .meg-l09.is-operational .meg-l09-payment-badge,
+ .meg-l09-modal .meg-l09-payment-badge{border-color:var(--pay-accent);color:#fff}
+}
