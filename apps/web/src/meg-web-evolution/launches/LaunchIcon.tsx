@@ -3,6 +3,7 @@ import {phosphorKpi} from './icon-packs/phosphor-kpi';
 import {phosphorCategoryA} from './icon-packs/phosphor-category-a';
 import {phosphorCategoryB} from './icon-packs/phosphor-category-b';
 import {phosphorControls} from './icon-packs/phosphor-controls';
+import {categorySemanticExtended} from './icon-packs/category-semantic-extended';
 
 /**
  * Pacote Phosphor Core (MIT), licença e aviso de copyright preservados.
@@ -31,12 +32,12 @@ import {phosphorControls} from './icon-packs/phosphor-controls';
 
 export type LaunchIconName=
  'trendUp'|'trendDown'|'chart'|'wallet'|
- 'grocery'|'health'|'transport'|'home'|'income'|'generic'|'food'|'fuel'|
+ 'grocery'|'marketCart'|'motorcycle'|'petPaw'|'health'|'transport'|'home'|'income'|'generic'|'food'|'fuel'|
  'education'|'leisure'|'services'|'gift'|'card'|'work'|'subscriptions'|
  'plus'|'search'|'calendar'|'chevronDown'|'chevronLeft'|'list';
 
 const phosphorGlyphs={
- ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls
+ ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls,...categorySemanticExtended
 } as Record<LaunchIconName,ReactNode>;
 
 type Props=SVGProps<SVGSVGElement>&{name:LaunchIconName};
