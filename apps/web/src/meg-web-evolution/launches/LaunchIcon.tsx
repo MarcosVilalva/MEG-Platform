@@ -40,12 +40,13 @@ const phosphorGlyphs={
  ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls,...categorySemanticExtended
 } as Record<LaunchIconName,ReactNode>;
 
+const megSemanticIcons:ReadonlySet<LaunchIconName>=new Set(['marketCart','motorcycle','petPaw']);
 type Props=SVGProps<SVGSVGElement>&{name:LaunchIconName};
 export function LaunchIcon({name,...props}:Props){
  return <svg
    viewBox="0 0 256 256"
    fill="currentColor"
    width={24} height={24} focusable="false" aria-hidden="true"
-   data-launch-icon={name} data-launch-pack="phosphor" {...props}
+   data-launch-icon={name} data-launch-pack={megSemanticIcons.has(name)?'meg-semantic':'phosphor'} {...props}
   >{phosphorGlyphs[name]}</svg>;
 }
