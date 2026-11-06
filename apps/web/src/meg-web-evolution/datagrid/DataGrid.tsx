@@ -769,6 +769,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   selectable = false,
   footerAggregates = false,
   onFilterChange,
+  onClearAllFilters,
   applySavedFilters,
   persistenceKey,
   rowKey,
@@ -1058,6 +1059,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   };
 
   const clearAllFilters = () => {
+    onClearAllFilters?.();
     setFilters({});
     setSearchInput('');
     setSearchText('');
