@@ -21,7 +21,7 @@ const entries=Array.from({length:101},(_,i)=>({
  type:'expense',status:'paid',
  amount:'12.34',signedAmount:'-12.34',notes:'Registro criado apenas no teste',
  accountId:'conta-1',categoryId:i===0?null:'cat-1',paymentMethodId:i===0?null:'forma-1',
- account:{id:'conta-1',name:'Conta Teste'},category:i===0?null:{id:'cat-1',name:'Categoria Teste'},
+ account:{id:'conta-1',name:'Conta Teste'},category:i===0?null:{id:'cat-1',name:'Saúde'},
  paymentMethod:i===0?null:{id:'forma-1',name:'Pagamento Teste'},
  sourcePayload:i===0?{
   category:'Categoria Original',paymentMethod:'Forma Original',
@@ -61,7 +61,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   else if(path==='/finance/benefit-summary')body={month:period,balance:0,credits:0,used:0};
   else if(path==='/finance/events/month')body={items:[]};
   else if(path==='/finance/accounts')body=[{id:'conta-1',name:'Conta Teste',type:'checking',isActive:true,openingBalance:'0.00'}];
-  else if(path==='/finance/categories')body=[{id:'cat-1',name:'Categoria Teste',isActive:true}];
+  else if(path==='/finance/categories')body=[{id:'cat-1',name:'Saúde',isActive:true}];
   else if(path==='/finance/payment-methods')body=[{id:'forma-1',name:'Pagamento Teste',isActive:true}];
   else if(path==='/finance/home-available')body=null;
   else body={items:[]};
@@ -277,7 +277,15 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(!(await page.locator('.meg-l09[data-icon-pack="phosphor"] .meg-l09-stat.is-income [data-launch-pack="phosphor"]').count()))issues.push('Phosphor nao foi adotado como padrao autenticado');
   if(!(await page.locator('.meg-l09-stat.is-income [data-launch-icon="trendUp"]').count()))issues.push('Entrada sem ícone de alta');
   if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="trendDown"]').count()))issues.push('Saída sem ícone de baixa');
-  if(!(await page.locator('.meg-l09-grid-panel .meg-l09-chip [data-launch-icon="generic"]').count()))issues.push('Categoria desconhecida sem ícone neutro');
+  // Registros sintéticos com categoria Saúde devem ganhar tratamento visual
+  // semanticamente reconhecível, enquanto rótulo legado desconhecido é neutro.
+  const semanticHealth=page.locator('.meg-l09-grid-panel .meg-l09-category-chip[data-category-glyph="health"][data-category-tone="rose"]');
+  if(!(await semanticHealth.count()))issues.push('Saúde sem ícone de coração e tom próprio');
+  const genericVisual=page.locator('.meg-l09-grid-panel .meg-l09-category-chip[data-category-glyph="generic"][data-category-tone="neutral"]');
+  if(!(await genericVisual.count()))issues.push('Categoria legada desconhecida perdeu fallback visual neutro');
+  if((await semanticHealth.first().innerText()).trim()!=='Saúde')issues.push('Categoria foi renomeada no tratamento visual');
+  await page.screenshot({path:resolve(output,'categorias-semanticas-'+width+'x'+height+'.png'),fullPage:true});
+
   if(!(await page.getByRole('button',{name:'Expandir gráfico de distribuição'}).isVisible()))issues.push('Gráfico não iniciou recolhido');
   if(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).count())issues.push('Detalhes ainda ocupam painel lateral na leitura real');
   if(!(await page.locator('.meg-l09-add').isDisabled()))issues.push('Criação foi liberada sem writer autorizado');
