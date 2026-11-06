@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { readSession, refreshAuthSession, validateSession, type AuthSession } from '../app/auth-client';
+import { clearSession, logout, readSession, refreshAuthSession, validateSession, type AuthSession } from '../app/auth-client';
 import './styles/tokens.css';
 import './styles/base.css';
 import { AppShell } from './shell/AppShell';
@@ -20,6 +20,8 @@ function currentAuthDestination(): AuthDestination {
 
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutWarning, setLogoutWarning] = useState('');
   // Link direto de validação operacional da Etapa 09. Não altera a prévia visual.
   const [section, setSection] = useState<'home' | 'launches'>(
     () => new URLSearchParams(window.location.search).get('tela') === 'lancamentos'
@@ -48,12 +50,36 @@ function AuthGateway() {
       await validateSession(current);
       reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
       setSession(current);
+      setLogoutWarning('');
     } catch {
       // Uma validação malsucedida não libera o shell.
       setSession(null);
       navigate('login');
     } finally {
       setCheckingSession(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!session || loggingOut) return;
+    setLoggingOut(true);
+    let remoteRevocationFailed = false;
+    try {
+      await logout(session);
+    } catch {
+      // logout() limpa a sessão local no finally. Não afirmar revogação
+      // remota se a API não conseguiu processar o token de renovação.
+      remoteRevocationFailed = true;
+    } finally {
+      clearSession();
+      setSession(null);
+      setSection('home');
+      setCheckingSession(false);
+      navigate('login');
+      setLogoutWarning(remoteRevocationFailed
+        ? 'Sua sessão foi encerrada neste navegador. Não foi possível confirmar a revogação no servidor. Faça login para revisar as sessões ativas.'
+        : '');
+      setLoggingOut(false);
     }
   };
 
@@ -135,6 +161,8 @@ function AuthGateway() {
     <AppShell
       activeSection={section}
       onNavigate={setSection}
+      onLogout={()=>{ void handleLogout(); }}
+      logoutPending={loggingOut}
       profileName={session.user.name}
       periodLabel={new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'America/Sao_Paulo'}).format(new Date()).replace(/^./,letter=>letter.toLocaleUpperCase('pt-BR'))}
     >
@@ -154,7 +182,10 @@ function AuthGateway() {
 
   if (destination === 'loading') return <LoadingScreen onNavigateLogin={() => navigate('login')} />;
 
-  return <LoginScreen onAuthenticated={() => { void handleAuthenticated(); }} onNavigate={navigate} />;
+  return <>
+    <LoginScreen onAuthenticated={() => { void handleAuthenticated(); }} onNavigate={navigate} />
+    {logoutWarning&&<p className="meg-auth-logout-warning" role="alert">{logoutWarning}</p>}
+  </>;
 }
 
 const root = document.getElementById('meg-web-evolution-root');
