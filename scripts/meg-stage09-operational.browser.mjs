@@ -145,7 +145,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
    return {
     inside:hero.contains(stats),count:stats.querySelectorAll('.meg-l09-stat').length,
     countInPage:root.querySelectorAll('.meg-l09-stats').length,
-    values:[...stats.querySelectorAll('.meg-l09-stat strong')].map(el=>el.textContent?.trim()),
+    values:[...stats.querySelectorAll('.meg-l09-stat strong')].map(el=>(el.textContent||'').replace(/\s/g,' ').trim()),
     height:bounds.height,metricsWithin:metric.top>=bounds.top&&metric.bottom<=bounds.bottom+1,
     documentWidth:document.documentElement.scrollWidth,
     mainScrollWidth:main.scrollWidth,mainClientWidth:main.clientWidth,
