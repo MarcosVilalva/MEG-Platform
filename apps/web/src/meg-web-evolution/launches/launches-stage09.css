@@ -724,3 +724,112 @@
  .meg-l09.is-operational .meg-l09-hero>.meg-l09-stats{border-color:#65e0d4}
  .meg-l09.is-operational .meg-l09-hero .meg-l09-stat h2{color:#fff}
 }
+
+/* Etapa 09 | cabeçalho responsivo reduzido sob rolagem real de .meg-main.
+ * Sem overlay translúcido nem nova sombra: máscara oficial opaca preservada.
+ * A prévia demonstrativa e o modo de maximização não entram nesse estado. */
+.meg-l09.is-operational.is-header-compact:not(.is-grid-focus) .meg-l09-hero-frame.is-sticky{
+ padding-top:.32rem;padding-bottom:.22rem;
+ background:#02191e;
+}
+.meg-l09.is-operational.is-header-compact:not(.is-grid-focus) .meg-l09-hero{
+ padding:.4rem .75rem .42rem;gap:.28rem .7rem;
+ background-position:center 43%;
+}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero h1{
+ font-size:clamp(1.05rem,1.75vw,1.45rem);
+ margin:0;line-height:1.15;letter-spacing:-.035em;
+}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero-intro p{display:none}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero>.meg-l09-add{
+ min-height:2.4rem;padding:.35rem .7rem;
+ font-size:.75rem;box-shadow:none;
+}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero>.meg-l09-stats{
+ border-radius:.42rem;
+}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat{
+ min-height:2.05rem;gap:.28rem;padding:.26rem .5rem;
+}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat-icon,
+.meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat small{display:none}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat>div{
+ display:flex;align-items:baseline;justify-content:space-between;
+ gap:.28rem;width:100%;
+}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat h2{
+ font-size:.6rem;line-height:1.15;white-space:normal;
+}
+.meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat strong{
+ margin:0;font-size:clamp(.74rem,.98vw,.94rem);
+ font-weight:800;white-space:nowrap;
+}
+
+/* O estado de verificação é compacto e clicável por teclado.
+ * Texto integral somente quando o usuário abre Detalhes da consulta. */
+.meg-l09.is-operational .meg-l09-verification{
+ display:flex;align-items:center;justify-content:space-between;gap:.6rem;
+ flex-wrap:wrap;min-height:2.25rem;
+}
+.meg-l09-verification-details{flex:1 1 15rem;min-width:0}
+.meg-l09-verification-details summary{
+ display:inline-flex;align-items:center;gap:.38rem;min-height:2.1rem;
+ cursor:pointer;color:#b5e7de;font-size:.73rem;
+ list-style:none;font-weight:700;
+}
+.meg-l09-verification-details summary::-webkit-details-marker{display:none}
+.meg-l09-verification-icon{
+ display:inline-grid;place-items:center;width:1.27rem;height:1.27rem;
+ border-radius:50%;border:1px solid #1eae90;
+ background:rgba(15,134,110,.17);color:#50f2d1;
+ font-size:.72rem;font-weight:900;
+}
+.meg-l09-verification-hint{font-size:.64rem;color:#83b9b0;font-weight:500}
+.meg-l09-verification-details[open] summary{color:#69ffe0}
+.meg-l09-verification-details p{
+ margin:.15rem 0 .42rem;color:#a6c7c2;font-size:.73rem;
+ line-height:1.5;max-width:75rem;
+}
+.meg-l09.is-operational .meg-l09-verification .meg-l09-refresh{
+ flex:0 0 auto;margin-left:auto;min-height:2.3rem;
+}
+.meg-l09-right.is-operational[hidden]{display:none!important}
+.meg-l09-grid-toolbar-actions .meg-l09-distribution-action{
+ background:#063c3e;border-color:#207f81;color:#b5f7ec;
+}
+.meg-l09-grid-toolbar-actions .meg-l09-distribution-action[aria-expanded="true"]{
+ background:#0b5d5d;border-color:#30d5bb;
+}
+@media(max-width:1023px){
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat>div{
+  flex-direction:column;align-items:flex-start;gap:.08rem;
+ }
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat{
+  min-height:2.45rem;padding:.22rem .48rem;
+ }
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat strong{
+  font-size:clamp(.7rem,1.45vw,.89rem);
+ }
+}
+@media(max-width:639px){
+ .meg-l09.is-operational.is-header-compact:not(.is-grid-focus) .meg-l09-hero{
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"intro action" "metrics metrics";
+  gap:.28rem .4rem;padding:.45rem .5rem;
+ }
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero h1{font-size:1.05rem}
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero>.meg-l09-add{
+  width:auto;align-self:center;min-height:2.45rem;
+  padding:.3rem .42rem;font-size:.68rem;
+ }
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero>.meg-l09-add svg{
+  width:.85rem;height:.85rem;
+ }
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat h2{font-size:.58rem}
+ .meg-l09.is-operational.is-header-compact .meg-l09-hero .meg-l09-stat strong{font-size:.75rem}
+ .meg-l09.is-operational .meg-l09-verification{align-items:flex-start}
+ .meg-l09-verification-hint{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .meg-l09.is-operational.is-header-compact *{transition:none!important}
+}
