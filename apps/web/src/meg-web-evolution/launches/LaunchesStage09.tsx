@@ -335,17 +335,21 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {name:'Saídas',value:summary?.expense,tag:mode==='live'?'Resumo da API':'Resumo da API / fixture',variant:'expense'},
   {name:mode==='live'?'Resultado realizado':'Saldo no período',value:mode==='live'?summary?.realizedResult:summary?.projectedResult,tag:mode==='live'?'Consolidado pela API':'Resultado do período',variant:'balance'}
  ];
- return <section className={'meg-l09'+(mode==='live'?' is-operational':'')+(gridFocus&&mode==='live'?' is-grid-focus':'')} aria-label="Lançamentos financeiros" data-icon-pack="phosphor">
-  <div className={'meg-l09-hero-frame'+(mode==='live'?' is-sticky':'')}>
-  <header className="meg-l09-hero">
-   <div><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
-   <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'} title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
-  </header>
-  </div>
+ const statisticsView=(
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
    <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart'} width={25} height={25} strokeWidth={1.9}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
+ );
+ return <section className={'meg-l09'+(mode==='live'?' is-operational':'')+(gridFocus&&mode==='live'?' is-grid-focus':'')} aria-label="Lançamentos financeiros" data-icon-pack="phosphor">
+  <div className={'meg-l09-hero-frame'+(mode==='live'?' is-sticky':'')}>
+  <header className="meg-l09-hero">
+   <div className="meg-l09-hero-intro"><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
+   <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'} title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
+   {mode==='live'&&statisticsView}
+  </header>
+  </div>
+  {mode==='preview'&&statisticsView}
   <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado e conferido em duas leituras. Use Ver na primeira coluna para consultar os detalhes e rótulos originais. Indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. Nenhum lançamento é alterado.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
    {mode==='live'&&onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
   </p>
