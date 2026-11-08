@@ -135,6 +135,31 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
     issues.push('Snapshot consultado sem capacidade anunciada: '+snapshotRequests);
   const expectedPages=width===960||width===390?Math.ceil(records.length/100)*2:0;
   if(historyRequests!==expectedPages)issues.push('Caminho de leitura incorreto: páginas '+historyRequests+', esperado '+expectedPages);
+  // Os quatro valores vêm exclusivamente do /finance/summary simulado:
+  // jamais reconstruir totais a partir de eventos ou dos filtros.
+  const banner=await page.evaluate(()=>{
+   const root=document.querySelector('.meg-l09'),hero=root?.querySelector('.meg-l09-hero'),
+    stats=root?.querySelector('.meg-l09-stats'),main=document.querySelector('.meg-main');
+   if(!root||!hero||!stats||!main)return null;
+   const bounds=hero.getBoundingClientRect(),metric=stats.getBoundingClientRect();
+   return {
+    inside:hero.contains(stats),count:stats.querySelectorAll('.meg-l09-stat').length,
+    countInPage:root.querySelectorAll('.meg-l09-stats').length,
+    values:[...stats.querySelectorAll('.meg-l09-stat strong')].map(el=>el.textContent?.trim()),
+    height:bounds.height,metricsWithin:metric.top>=bounds.top&&metric.bottom<=bounds.bottom+1,
+    documentWidth:document.documentElement.scrollWidth,
+    mainScrollWidth:main.scrollWidth,mainClientWidth:main.clientWidth,
+    ctaVisible:(()=>{const el=hero.querySelector('.meg-l09-add');return !!el&&el.getBoundingClientRect().width>50})(),
+   };
+  });
+  if(!banner||!banner.inside||banner.count!==4||banner.countInPage!==1||
+   !banner.metricsWithin||!banner.ctaVisible||banner.documentWidth>width+2||
+   banner.mainScrollWidth>banner.mainClientWidth+2)
+   issues.push('KPI duplicado/fora do banner ou layout com overflow: '+JSON.stringify(banner));
+  const expectedMetrics=['R$ 160,00','R$ 400,00','R$ 240,00','R$ 125,00'];
+  if(!banner||JSON.stringify(banner.values)!==JSON.stringify(expectedMetrics))
+   issues.push('Indicadores não reproduzem os quatro valores canônicos da API: '+JSON.stringify(banner?.values));
+  await page.screenshot({path:resolve(output,'banner-kpis-'+width+'x'+height+'.png'),fullPage:true});
   // Sticky local ao scroll de .meg-main, com máscara sólida e sem sombra do sistema.
   const sticky=await page.evaluate(()=>{
    const main=document.querySelector('.meg-main'),frame=document.querySelector('.meg-l09-hero-frame');
