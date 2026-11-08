@@ -768,6 +768,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   groupBy,
   selectable = false,
   footerAggregates = false,
+  filterButtonLabel = 'Filtros',
   onFilterChange,
   onClearAllFilters,
   applySavedFilters,
@@ -1450,7 +1451,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterItems.length ? 'is-active' : ''}`}
             aria-expanded={mobileFiltersOpen}
             aria-haspopup="dialog"
-            aria-label={`Filtros (${activeFilterKeys.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
+            aria-label={`${filterButtonLabel} (${activeFilterKeys.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
             onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
             onMouseLeave={(event) => hideTooltip(event.currentTarget)}
             onFocus={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
@@ -1464,7 +1465,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             }}
           >
             <GridIcon name="filter" />
-            <span className="meg-datagrid-filter-count-label">Filtros ({activeFilterKeys.length})</span>
+            <span className="meg-datagrid-filter-count-label">{filterButtonLabel} ({activeFilterKeys.length})</span>
           </button>
 
           {selectable && (
