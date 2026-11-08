@@ -229,6 +229,21 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const [modalId,setModalId]=useState<string|null>(null);
  const [distributionOpen,setDistributionOpen]=useState(false);
  const [gridFocus,setGridFocus]=useState(false);
+ const [headerCompact,setHeaderCompact]=useState(false);
+ // O scrollport da Web é .meg-main, não window. A histerese evita
+ // alternância constante quando a redução do banner muda sua altura.
+ useEffect(()=>{
+  if(mode!=='live'||gridFocus)return;
+  const main=document.querySelector<HTMLElement>('.meg-main');
+  if(!main)return;
+  const sync=()=>{
+   if(main.scrollTop>=190)setHeaderCompact(true);
+   else if(main.scrollTop<=70)setHeaderCompact(false);
+  };
+  sync();
+  main.addEventListener('scroll',sync,{passive:true});
+  return ()=>main.removeEventListener('scroll',sync);
+ },[mode,gridFocus]);
  const focusScrollRef=useRef(0);
  const wasGridFocused=useRef(false);
  useEffect(()=>{
@@ -341,7 +356,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
  );
- return <section className={'meg-l09'+(mode==='live'?' is-operational':'')+(gridFocus&&mode==='live'?' is-grid-focus':'')} aria-label="Lançamentos financeiros" data-icon-pack="phosphor">
+ return <section className={'meg-l09'+(mode==='live'?' is-operational':'')+(gridFocus&&mode==='live'?' is-grid-focus':'')+(headerCompact&&mode==='live'&&!gridFocus?' is-header-compact':'')} aria-label="Lançamentos financeiros" data-icon-pack="phosphor">
   <div className={'meg-l09-hero-frame'+(mode==='live'?' is-sticky':'')}>
   <header className="meg-l09-hero">
    <div className="meg-l09-hero-intro"><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
@@ -350,9 +365,15 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   </header>
   </div>
   {mode==='preview'&&statisticsView}
-  <p className="meg-l09-preview-warning" role="note">{mode==='live'?'Histórico autenticado e conferido em duas leituras. Use Ver na primeira coluna para consultar os detalhes e rótulos originais. Indicadores financeiros vêm da API e ficam indisponíveis com filtros personalizados. Nenhum lançamento é alterado.':'Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.'}
-   {mode==='live'&&onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
-  </p>
+  {mode==='live'
+   ? <div className="meg-l09-preview-warning meg-l09-verification" role="note">
+      <details className="meg-l09-verification-details">
+       <summary><LaunchIcon name="checkCircle" width={17} height={17}/>Histórico verificado <span className="meg-l09-verification-hint">Detalhes da consulta</span></summary>
+       <p>Histórico autenticado e verificado integralmente. Use “Ver” na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API e ficam indisponíveis com filtros personalizados. Nenhum lançamento é alterado.</p>
+      </details>
+      {onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
+     </div>
+   : <p className="meg-l09-preview-warning" role="note">Prévia visual com dados de demonstração já existentes na Home. Não consulta, altera ou grava dados financeiros. Os totais canônicos são ocultados quando filtros personalizados são usados.</p>}
   <div className="meg-l09-workspace">
    <div className="meg-l09-left">
     <form className="meg-l09-filters" id="meg-l09-extra-filters" hidden={mode==='live'&&!topFiltersOpen}
@@ -364,7 +385,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       {mode==='live'&&<label className="meg-l09-payment-select"><span className="sr-only">Forma de pagamento</span><select value={paymentMethod} onChange={event=>setPaymentMethod(event.target.value)}><option value="all">Todas as formas de pagamento</option>{paymentMethodOptions.map(name=><option key={name} value={name}>{name}</option>)}</select></label>}
       <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
-    <aside className={'meg-l09-right '+(mode==='live'?'is-operational':'')} aria-label="Painéis complementares da grade">
+    <aside className={'meg-l09-right '+(mode==='live'?'is-operational':'')} hidden={mode==='live'&&!distributionOpen} aria-label="Painéis complementares da grade">
      <section className={'meg-l09-panel meg-l09-distribution '+(distributionOpen?'is-open':'is-collapsed')} aria-label="Distribuição no período">
       <div className="meg-l09-panel-title">
        <button type="button" className="meg-l09-panel-toggle" aria-controls="meg-l09-distribution-content" aria-expanded={distributionOpen} aria-label={distributionOpen?'Recolher gráfico de distribuição':'Expandir gráfico de distribuição'} onClick={()=>setDistributionOpen(open=>!open)}>
@@ -404,7 +425,12 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
        <div className="meg-l09-grid-toolbar-actions">
         {!gridFocus&&<button type="button" className="meg-l09-grid-filter-toggle" aria-controls="meg-l09-extra-filters"
          aria-expanded={topFiltersOpen} onClick={()=>setTopFiltersOpen(open=>!open)}>
-         {topFiltersOpen?'Ocultar filtros':'Mostrar filtros'}
+         {topFiltersOpen?'Ocultar filtros gerais':'Filtros gerais'}
+        </button>}
+        {!gridFocus&&<button type="button" className="meg-l09-distribution-action"
+         aria-controls="meg-l09-distribution-content" aria-expanded={distributionOpen}
+         onClick={()=>setDistributionOpen(open=>!open)}>
+         <LaunchIcon name="chart" width={16} height={16}/>Distribuição
         </button>}
         <label className="meg-l09-favorites-select">
          <span className="sr-only">Filtros favoritos</span>
@@ -441,7 +467,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
      </>}
      <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable
       rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-v2-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
-      footerAggregates={false} onFilterChange={onGridFilter} onClearAllFilters={mode==='live'?clearAllLaunchFilters:undefined}
+      footerAggregates={false} filterButtonLabel={mode==='live'?'Filtros da grade':undefined} onFilterChange={onGridFilter} onClearAllFilters={mode==='live'?clearAllLaunchFilters:undefined}
       applySavedFilters={mode==='live'?applyGridPreset:undefined} exportUserName={mode==='live'?exportUserName:undefined}
       exportPeriod={mode==='live'?'Histórico autorizado — '+periodMonth:'Demonstração visual'} />
     </section>
