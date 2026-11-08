@@ -621,6 +621,8 @@
  .meg-l09-modal .meg-l09-payment-badge{border-color:var(--pay-accent);color:#fff}
 }
 
+.meg-l09.is-grid-focus .meg-l09-hero>.meg-l09-stats{display:none!important}
+
 /* Etapa 09 | indicadores compactos no próprio banner autenticado.
  * Mantém a hierarquia visual da referência oficial, com uma faixa única
  * de leitura financeira. O modo demonstrativo permanece intacto.
