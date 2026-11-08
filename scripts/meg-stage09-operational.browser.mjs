@@ -160,6 +160,24 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(!banner||JSON.stringify(banner.values)!==JSON.stringify(expectedMetrics))
    issues.push('Indicadores não reproduzem os quatro valores canônicos da API: '+JSON.stringify(banner?.values));
   await page.screenshot({path:resolve(output,'banner-kpis-'+width+'x'+height+'.png'),fullPage:true});
+  const verification=page.locator('.meg-l09-verification-details');
+  if(!(await verification.count())||await verification.getAttribute('open')!==null)
+   issues.push('Resumo financeiro precisa iniciar compacto');
+  if(!(await page.getByRole('button',{name:'Atualizar consulta'}).isVisible()))
+   issues.push('Atualizar consulta não está acessível no aviso compacto');
+  await verification.locator('summary').click();
+  if(!(await verification.getByText(/indicadores vêm da API/i).count()))
+   issues.push('Detalhes omitiram a origem da autoridade financeira');
+  await verification.locator('summary').click();
+  if(!(await page.locator('.meg-l09-right.is-operational[hidden]').count()))
+   issues.push('Gráfico complementar iniciou ocupando espaço da tabela');
+  const distributionToggle=page.getByRole('button',{name:'Distribuição',exact:true});
+  await distributionToggle.click();
+  if(!(await page.locator('.meg-l09-right.is-operational').isVisible()))
+   issues.push('Distribuição não abriu pelo controle da grade');
+  await distributionToggle.click();
+  if(await page.locator('.meg-l09-right.is-operational').isVisible())
+   issues.push('Distribuição não devolveu espaço à grade');
   // Sticky local ao scroll de .meg-main, com máscara sólida e sem sombra do sistema.
   const sticky=await page.evaluate(()=>{
    const main=document.querySelector('.meg-main'),frame=document.querySelector('.meg-l09-hero-frame');
@@ -174,13 +192,30 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(!sticky||sticky.position!=='sticky'||sticky.color!=='rgb(2, 25, 30)'||
      (sticky.scrolled>15&&(Math.abs(sticky.frameTop-sticky.top)>3||!sticky.element)))
    issues.push('Cabeçalho sticky sem máscara opaca ou preso no topo incorreto: '+JSON.stringify(sticky));
-  await page.screenshot({path:resolve(output,'cabecalho-fixo-'+width+'x'+height+'.png'),fullPage:true});
+  await page.locator('.meg-l09.is-header-compact').waitFor({timeout:10000});
+  const compact=await page.evaluate(()=>{
+   const root=document.querySelector('.meg-l09'),hero=root?.querySelector('.meg-l09-hero'),
+    main=document.querySelector('.meg-main');
+   if(!root||!hero||!main)return null;
+   return {height:hero.getBoundingClientRect().height,scrollWidth:main.scrollWidth,
+    width:main.clientWidth,subtitleVisible:getComputedStyle(hero.querySelector('.meg-l09-hero-intro p')).display!=='none',
+    kpiCount:hero.querySelectorAll('.meg-l09-stat').length,
+    values:[...hero.querySelectorAll('.meg-l09-stat strong')].map(e=>(e.textContent||'').replace(/\s/g,' ').trim()),
+    ctaWidth:hero.querySelector('.meg-l09-add').getBoundingClientRect().width};
+  });
+  if(!compact||compact.height>=banner.height-12||compact.subtitleVisible||
+    compact.kpiCount!==4||compact.scrollWidth>compact.width+2||compact.ctaWidth<65)
+   issues.push('Banner compacto perdeu KPIs/CTA ou criou overflow: '+JSON.stringify(compact));
+  await page.screenshot({path:resolve(output,'cabecalho-compacto-'+width+'x'+height+'.png'),fullPage:true});
   await page.locator('.meg-main').evaluate(main=>main.scrollTop=0);
+  await page.locator('.meg-l09:not(.is-header-compact)').waitFor({timeout:10000});
   // Filtros superiores recolhidos por padrão; a grade mantém os controles.
   if(await page.locator('.meg-l09-filters').isVisible())
    issues.push('Filtros redundantes não iniciaram recolhidos');
-  const toggleFilters=page.getByRole('button',{name:'Mostrar filtros'});
+  const toggleFilters=page.getByRole('button',{name:'Filtros gerais'});
   if(!(await toggleFilters.isVisible()))issues.push('Botão para revelar filtros superiores ausente');
+  if(!(await page.getByRole('button',{name:/Filtros da grade \(0\)/}).isVisible()))
+   issues.push('Filtros da grade indistintos dos filtros gerais');
   if(!(await page.getByRole('combobox',{name:'Selecionar filtro favorito'}).isVisible()))
    issues.push('Filtro favorito não está acessível dentro da grade');
   if(!(await page.locator('.meg-l09-grid-focus-toolbar').getByRole('button',{name:'Salvar filtros'}).isVisible()))
@@ -225,7 +260,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(!(await page.locator('.meg-l09-stats').isVisible()))issues.push('Modo foco não restaurou os KPIs');
   await toggleFilters.click();
   if(!(await page.locator('.meg-l09-filters').isVisible()))issues.push('Filtro superior não abriu pelo botão');
-  if(!(await page.getByRole('button',{name:'Ocultar filtros'}).isVisible()))issues.push('Alternância de filtros falhou');
+  if(!(await page.getByRole('button',{name:'Ocultar filtros gerais'}).isVisible()))issues.push('Alternância de filtros falhou');
 
   const expectedColumns=['Ações','Data','Descrição','Categoria','Conta / Cartão','Forma de pagamento','Valor','Tipo','Status','Competência'];
   const headings=await page.locator('.meg-l09-grid-panel .meg-datagrid-table thead').textContent()||'';
