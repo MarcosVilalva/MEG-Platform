@@ -368,7 +368,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   {mode==='live'
    ? <div className="meg-l09-preview-warning meg-l09-verification" role="note">
       <details className="meg-l09-verification-details">
-       <summary><LaunchIcon name="checkCircle" width={17} height={17}/>Histórico verificado <span className="meg-l09-verification-hint">Detalhes da consulta</span></summary>
+       <summary><span className="meg-l09-verification-icon" aria-hidden="true">✓</span>Histórico verificado <span className="meg-l09-verification-hint">Detalhes da consulta</span></summary>
        <p>Histórico autenticado e verificado integralmente. Use “Ver” na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API e ficam indisponíveis com filtros personalizados. Nenhum lançamento é alterado.</p>
       </details>
       {onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
