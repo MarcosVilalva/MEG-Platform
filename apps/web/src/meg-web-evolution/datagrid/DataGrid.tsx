@@ -1465,7 +1465,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             }}
           >
             <GridIcon name="filter" />
-            <span className="meg-datagrid-filter-count-label">{filterButtonLabel} ({activeFilterKeys.length})</span>
+            <span className="meg-datagrid-filter-count-label">{filterButtonLabel==='Filtros'?`Filtros (${activeFilterKeys.length})`:`${filterButtonLabel} (${activeFilterKeys.length})`}</span>
           </button>
 
           {selectable && (
