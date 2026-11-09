@@ -1,0 +1,87 @@
+name: MEG Stage 09 - API read-only release candidate
+on:
+  push:
+    branches:
+      - 'stage09-api-readonly-release-20261109'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  api-readonly-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias sem alterar banco
+        run: npm ci --audit=false
+      - name: Gerar cliente Prisma (sem conexao de escrita)
+        run: npm run db:generate
+      - name: Preflight contra deploy destrutivo
+        run: |
+          node --test scripts/meg-stage09-api-readonly-preflight.test.mjs
+          MEG_API_RENDER_BUILD_COMMAND='npm ci --audit=false && npm run db:generate && npm run build:api' node scripts/meg-stage09-api-readonly-preflight.mjs
+      - name: Regressao de regras financeiras sem publicar
+        run: npm run test:finance
+      - name: Regressao de CORS e seguranca
+        run: |
+          npm run test:cors
+          npm run test:security
+      - name: Contrato de filtros e agregacao monetaria canonica
+        run: npx tsx scripts/meg-stage09-filtered-summary.contract.test.ts
+      - name: Compilar API sem migrations ou writes
+        run: npm run build:api
+      - name: Proibir alteracao no schema e nos writers do release
+        run: |
+          git fetch origin main --depth=1
+          CHANGES=$(git diff --name-only origin/main...HEAD)
+          echo "$CHANGES"
+          if echo "$CHANGES" | grep -E '^(packages/database/|apps/web/|apps/api/src/modules/(app-state|payables|cards|receivables)/|apps/api/src/modules/finance/(event-mutation|event-settlement|transfer-service|catalog-mutation|financial-policy|monetary-protection|read-model)\.)'; then
+            echo "RELEASE_SCOPE_VIOLATION: writer, schema ou Web alterado"
+            exit 1
+          fi
+          if echo "$CHANGES" | grep -E '(^|/)\.env|\.sql$'; then
+            echo "RELEASE_SCOPE_VIOLATION: env ou SQL"
+            exit 1
+          fi
+  postgres-ephemeral-snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://stage09:ci_local_only@127.0.0.1:5432/meg_stage09_ci?schema=public
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: stage09
+          POSTGRES_PASSWORD: ci_local_only
+          POSTGRES_DB: meg_stage09_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U stage09 -d meg_stage09_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: |
+          npm ci --audit=false
+          npm run db:generate
+      - name: Criar schema somente no Postgres efemero
+        run: |
+          case "$DATABASE_URL" in
+            *"@127.0.0.1:5432/meg_stage09_ci"*) ;;
+            *) echo "Banco nao autorizado para CI"; exit 1 ;;
+          esac
+          npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Snapshot e indicadores filtrados sob transacao e limite
+        run: npx tsx scripts/meg-stage09-snapshot-postgres.integration.ts
