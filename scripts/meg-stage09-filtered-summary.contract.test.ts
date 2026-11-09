@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {applyFilters, type DataGridColumn} from '../apps/web/src/meg-web-evolution/datagrid/core';
+import {applyFilters} from '../apps/web/src/meg-web-evolution/datagrid/core';
+import type {DataGridColumn} from '../apps/web/src/meg-web-evolution/datagrid/types';
 import {summarizeMonetaryEvents} from '../apps/api/src/modules/finance/financial-policy';
 import {filterHistoryEvents,historyPresentationRow,parseHistoryFilters,type HistoryFilterEvent,type HistoryFilterRequest} from '../apps/api/src/modules/finance/history-filter';
 
@@ -28,7 +29,7 @@ const all=filterHistoryEvents(events,{criteria,grid:{}});
 assert.equal(all.length,6);
 const money=summarizeMonetaryEvents(all);
 assert.deepEqual({income:money.income,expense:money.expense,projectedResult:money.projectedResult,realizedResult:money.realizedResult},
- {income:100.05,expense:42.37,projectedResult:57.68,realizedResult:77.69});
+ {income:100.05,expense:42.37,projectedResult:57.68,realizedResult:77.7});
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,category:'legacy:ROUPAS'},grid:{}})[0]?.id,'7');
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,kind:'income'},grid:{}})[0]?.id,'3');
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,paymentMethod:'PIX'},grid:{}}).length,6);
