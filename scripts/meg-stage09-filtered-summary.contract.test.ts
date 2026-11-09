@@ -31,6 +31,17 @@ const money=summarizeMonetaryEvents(all);
 assert.deepEqual({income:money.income,expense:money.expense,projectedResult:money.projectedResult,realizedResult:money.realizedResult},
  {income:100.05,expense:42.37,projectedResult:57.68,realizedResult:77.7});
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,category:'legacy:ROUPAS'},grid:{}})[0]?.id,'7');
+const methodLegacy=event('historic-method',{
+ paymentMethod:null,sourcePayload:{paymentMethod:'DÉBITO AUTOMÁTICO'},paymentMethodId:null
+});
+assert.equal(historyPresentationRow(methodLegacy).paymentMethod,'DÉBITO AUTOMÁTICO');
+assert.equal(filterHistoryEvents([methodLegacy],{criteria:{...criteria,paymentMethod:'DÉBITO AUTOMÁTICO'},grid:{}}).length,1);
+const methodImported=event('imported-method',{
+ paymentMethod:null,paymentMethodId:null,sourceDetails:{paymentMethod:'BOLETO'}
+});
+assert.equal(historyPresentationRow(methodImported).paymentMethod,'BOLETO');
+assert.equal(filterHistoryEvents([methodImported],{criteria:{...criteria,paymentMethod:'BOLETO'},grid:{}}).length,1);
+
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,kind:'income'},grid:{}})[0]?.id,'3');
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,paymentMethod:'PIX'},grid:{}}).length,6);
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,search:'REFEIÇÃO'},grid:{}})[0]?.id,'5');
