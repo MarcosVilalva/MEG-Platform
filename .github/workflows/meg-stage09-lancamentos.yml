@@ -35,6 +35,8 @@ jobs:
         run: npx tsx scripts/meg-stage09-saved-filters.contract.test.ts
       - name: Verificar catálogo semântico das categorias sem alterar dados financeiros
         run: npx tsx scripts/meg-stage09-category-visual.contract.test.ts
+      - name: Verificar paridade entre filtros da grade e agregação canônica
+        run: npx tsx scripts/meg-stage09-filtered-summary.contract.test.ts
       - name: Conferir tipos da API de snapshot sem publicar nem migrar banco
         run: cd apps/api && npx tsc -p tsconfig.json --noEmit
       - name: Compilar Web e verificar tipos
