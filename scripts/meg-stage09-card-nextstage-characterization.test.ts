@@ -25,8 +25,8 @@ for(const [month,close,due,expected] of [
  ['2026-09',28,3,'2026-10-05'],   // sábado vira segunda
  ['2026-09',28,4,'2026-10-05'],   // domingo vira segunda
  ['2026-09',28,5,'2026-10-05'],   // segunda permanece
- ['2026-01',28,31,'2026-03-02'], // fevereiro de 28 dias acaba no sábado
- ['2028-01',28,31,'2028-02-29'], // fevereiro bissexto
+ ['2026-01',28,31,'2026-02-02'], // vencimento 31/01 em sábado vai para 02/02
+ ['2026-01',31,31,'2026-03-02'], // vencimento no mês seguinte, fevereiro comum (sábado)\n ['2028-01',31,31,'2028-02-29'], // vencimento no mês seguinte, fevereiro bissexto
  ['2026-12',28,3,'2027-01-04'],  // virada de ano, domingo vira segunda
  ['2026-11',15,30,'2026-11-30'], // vencimento na mesma competência
 ] as const){
