@@ -8,6 +8,7 @@ import {prisma} from '@meg/database';
 import {
   FINANCIAL_HISTORY_SNAPSHOT_LIMIT,
   getFinancialHistorySnapshot,
+  getCanonicalFilteredHistorySummary,
 } from '../apps/api/src/modules/finance/service';
 
 const url=process.env.DATABASE_URL||'';
@@ -81,6 +82,33 @@ try{
  const after=await prisma.financialEvent.count({where:{userId,archivedAt:null}});
  assert.equal(after,3731,'Leitura nunca altera o número de lançamentos.');
  console.log('Snapshot CI: 3.731 eventos em '+timeMs+' ms; '+bytes+' bytes JSON sintéticos (não é desempenho de produção).');
+ const filters={
+  criteria:{search:'',kind:'all',category:'all',account:'all',paymentMethod:'all',start:'2026-11-01',end:'2026-11-30'},
+  grid:{}
+ };
+ const canonical=await getCanonicalFilteredHistorySummary(userId,filters);
+ assert.equal(canonical.kind,'complete');
+ if(canonical.kind!=='complete')throw new Error('Resumo filtrado não foi calculado pelo servidor.');
+ assert.equal(canonical.total,3731);
+ assert.equal(canonical.filteredCount,3731);
+ assert.equal(canonical.income,0);
+ assert.equal(canonical.expense,27422.85);
+ assert.equal(canonical.projectedResult,-27422.85);
+ assert.equal(canonical.realizedResult,0);
+ const onlyPlanned=await getCanonicalFilteredHistorySummary(userId,{
+  ...filters,grid:{statusLabel:{type:'enum',selected:['Planejado']}}
+ });
+ assert.equal(onlyPlanned.kind,'complete');
+ if(onlyPlanned.kind==='complete')assert.equal(onlyPlanned.filteredCount,3731);
+ const absent=await getCanonicalFilteredHistorySummary(userId,{
+  ...filters,criteria:{...filters.criteria,kind:'income'}
+ });
+ assert.equal(absent.kind,'complete');
+ if(absent.kind==='complete'){
+  assert.equal(absent.filteredCount,0);
+  assert.equal(absent.projectedResult,0);
+ }
+ console.log('Resumo filtrado canônico validado em 3.731 eventos, sem cálculo no frontend.');
  assert.equal(FINANCIAL_HISTORY_SNAPSHOT_LIMIT,5000);
  for(let start=3731;start<5001;start+=300){
   const count=Math.min(300,5001-start);
@@ -88,6 +116,10 @@ try{
    data:Array.from({length:count},(_,i)=>row(start+i)),
   });
  }
+ const filteredLimit=await getCanonicalFilteredHistorySummary(userId,filters);
+ assert.deepEqual(filteredLimit,{
+  kind:'limit-exceeded',protocol:'financial-filter-summary-v1',total:5001,limit:5000
+ });
  const exceeded=await getFinancialHistorySnapshot(userId);
  assert.deepEqual(exceeded,{
   kind:'limit-exceeded',protocol:'financial-history-v1',
