@@ -734,7 +734,7 @@
  }
  .meg-main:has(.meg-l09.is-operational:not(.is-grid-focus)){
   flex:1 1 0;min-height:0;height:0;overflow-y:auto;overflow-x:hidden;
-  overscroll-behavior-y:contain;
+  padding:0;overscroll-behavior-y:contain;
  }
  .meg-shell-stage:has(.meg-l09.is-operational:not(.is-grid-focus)){
   min-height:0;
