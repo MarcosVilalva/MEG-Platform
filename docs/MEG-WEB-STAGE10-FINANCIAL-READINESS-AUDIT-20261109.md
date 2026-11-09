@@ -72,3 +72,11 @@
 - Render `meg-platform-api` mantém build com `db:prepare:production` e `prisma db push --accept-data-loss`: **não executar deploy** enquanto não corrigido e auditado.
 - Android congelado, Home congelada; #661 e #662 não iniciadas.
 - Este relatório é uma **auditoria preparatória estática e documental**, não auditoria exaustiva de todas as linhas, nem execução de todos os testes novos listados. Diferenças identificadas são reportadas, não corrigidas por presunção.
+
+
+## 8. Execução inicial da caracterização sem writers (continuidade 09/11/2026)
+- Teste novo `scripts/meg-stage09-card-nextstage-characterization.test.ts`, executado no CI da Etapa 09. **Somente funções puras e verificação de contratos existentes; nenhuma transação financeira, alteração de dados ou novo writer.**
+- Casos cobertos: vencimento no mesmo mês ou mês seguinte conforme `dueDay` versus `closingDay`, salto de fim de semana, fim de fevereiro comum e bissexto, dezembro/janeiro; preservação da competência na alteração de cartão por compra formal; bloqueio de compra com parcelas pagas/parciais; edição unitária de parcela aberta; total de fatura com eventos legados e parcelas formais, deduplicação de `purchaseId`; estorno, saldo credor e saldo aberto; status canônico de receita, crédito e Fixo; segregação de benefício; limites e proteção do lote de eventos legados.
+- **Lição técnica do primeiro ensaio:** o teste esperava incorretamente que `closingDay=28, dueDay=31` adiasse a fatura para fevereiro. A autoridade existente estabelece vencimento no mesmo mês quando `dueDay > closingDay`; 31/01/2026 (sábado) ajusta para 02/02/2026. Expectativa do teste corrigida, **sem alterar a regra canônica**. Foram adicionados cenários separados `closingDay=31, dueDay=31` para fevereiro comum e bissexto.
+- **Limite:** testes puros e contratos estáticos não garantem que transferência de várias compras, edição retroativa de vencimentos ou criação autentica da Etapa 10 já estejam homologadas. As demais famílias de teste previstas na seção 5 continuam pendentes até execução específica.
+- **CI da caracterização:** [workflow 42680554857](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42680554857). Não confundir aprovação do passo de caracterização com todos os jobs completos; conferir conclusão do workflow antes de declarar gate verde.
