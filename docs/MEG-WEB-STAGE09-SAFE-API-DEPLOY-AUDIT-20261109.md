@@ -33,3 +33,24 @@ Auditoria técnica da PR #656, em Draft, sem merge. Este documento NÃO autoriza
 
 ## Gate operacional
 **NÃO CONCLUÍDO.** Falta publicação segura real da API, contrato de KPIs canônicos filtrados, testes correspondentes, validação autenticada em dados reais e autorização expressa de encerramento. Não fazer merge nem iniciar Etapa 10.
+
+
+## Implementação isolada do resumo filtrado (09/11/2026, após a auditoria)
+**Estado: implementado em código de PR Draft, ainda NÃO disponível na API principal da produção.** O uso real depende da publicação segura e dos gates operacionais pendentes.
+
+- `apps/api/src/modules/finance/history-filter.ts`: contrato estrito dos filtros da consulta, sem regras monetárias; rejeita chaves, operadores, datas e tamanhos inválidos; seleção alinhada aos filtros gerais e tipos de DataGrid. Rótulos históricos continuam apenas informação exibida, sem reclassificação de eventos.
+- `apps/api/src/modules/finance/service.ts`: `getCanonicalFilteredHistorySummary` reutiliza o snapshot `RepeatableRead` e **exclusivamente** `summarizeMonetaryEvents` da política financeira para obter receitas, despesas, resultado projetado e realizado. Não usa widgets/UI para somar dinheiro. Se houver mais de 5.000 eventos retorna `limit-exceeded`, sem subtotal incompleto.
+- `apps/api/src/modules/finance/routes.ts`: endpoint GET autenticado `/finance/events/filtered-summary?filter=...`, `Cache-Control: no-store`, autorização idêntica aos eventos e resolução de titularidade de workspace; resposta 400 para filtros inválidos. `/finance/sync-status` anuncia `filteredSummaryV1` apenas quando a API que serve essa rota está publicada.
+- `apps/web/src/app/finance-client.ts`: cliente tipado, somente GET/no-store, filtro serializado limitado a 6.000 caracteres. Não envia arquivos, tokens no query, valores financeiros derivados ou operações mutantes.
+- `OperationalLaunches.tsx`: somente solicita indicadores se a API anunciar `filteredSummaryV1`, conferindo token de sincronização antes/depois da consulta contra a versão do histórico carregado.
+- `LaunchesStage09.tsx`: debounce de 350 ms, cancelamento de consultas superadas, proteção contra resposta atrasada; a UI apenas apresenta os quatro valores retornados pelo servidor e conserva `—` quando a capacidade ou a agregação não estiverem disponíveis. O modo demonstrativo visual não foi alterado.
+- CI: `scripts/meg-stage09-filtered-summary.contract.test.ts` compara a seleção com o DataGrid e testa receita, despesa, benefício, transferência, pendência, centavos e rejeição de critérios inválidos; `scripts/meg-stage09-snapshot-postgres.integration.ts` acrescenta cálculo de indicadores no PostgreSQL 16 descartável com 3.731 eventos e limite em 5.001; `scripts/meg-stage09-operational.browser.mjs` verifica no navegador os valores de um endpoint simulado para demonstrar que não há soma no React.
+- Segurança adicional: `scripts/meg-stage09-api-readonly-preflight.mjs` verifica o comando de build REAL informado pelo operador e **falha fechado** se encontrar `db:prepare:production`, `db:push:production`, `prisma db push`, `--accept-data-loss`, migrações, seed ou scripts de mutação; o CI possui testes positivos e negativos do bloqueio.
+
+### Limitações deliberadas
+1. O endpoint filtrado não contorna o limite de 5.000 eventos. Uma alternativa de agregação paginada/streaming, ainda canônica, exige desenho próprio e testes antes de ampliar o volume.
+2. Sem o token de sincronização consistente, não mostrar valores como definitivos; manter os indicadores indisponíveis.
+3. O novo código **não** torna seguro o comando de build atual do Render. Um procedimento operacional separado deve trocar o build da API para **`npm ci --audit=false && npm run db:generate && npm run build:api`**, validar com o preflight e depois revisar o SHA que será publicado. Não executar `db:prepare:production` ou `db:push:production` no deploy de leitura.
+4. O serviço `meg-platform-api` continua apontado para `main`. Esta PR Draft **não deve ser mesclada** para levar a API à produção. Preparar release/API isolada, revisar diff e pedir autorização de publicação quando a infraestrutura estiver segura.
+5. Os testes de navegador e PostgreSQL são com dados sintéticos. Teste autenticado com dados financeiros reais, observabilidade, latência sob volume real, compatibilidade Android e validação operacional continuam pendentes.
+6. Issues #661 (Home) e #662 (personalização transversal) continuam backlog. Este chat/branch só executa a Etapa 09.
