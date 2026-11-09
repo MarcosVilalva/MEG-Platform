@@ -1941,3 +1941,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Decisão histórica vigente:** crediário listado no PDF histórico, porém formalmente excluído da nova Web em `docs/MEG-WEB-FINANCIAL-AUTHORITY.md` (06/10/2026). Não reintroduzir. Alimentação permanece Conta Benefício + Verocard + Pago, writer separado.
 - **Pendências da futura Etapa 10:** executar os testes novos da matriz, rastrear autocomplete operacional, homologar contratos específicos de cartão e parcial, implementar telas **somente após autorização de transição**. Nenhuma alteração no Android, Home, banco ou writers nesta auditoria.
 - **Gates preservados:** Etapa 09 não encerrada por bloqueio de build da API no Render; PR #656 e #663 Draft/sem merge. CI e preview não equivalem a homologação da nova funcionalidade.
+
+
+## 09/11/2026 | Etapa 09 PT3 — primeira rodada de caracterização para a futura Etapa 10
+- Usuário autorizou prosseguir após a auditoria financeira preparatória, sem autorização de avanço para telas de Etapa 10, writers, merge ou publicação financeira.
+- Criado `scripts/meg-stage09-card-nextstage-characterization.test.ts` e acoplado ao CI `.github/workflows/meg-stage09-lancamentos.yml`. Executa funções puras e valida contratos existentes, sem mutação de banco. Cobertura de datas de fatura, parcela paga/parcial, legado versus compra formal, deduplicação, estorno, saldo credor, status canônico e proteção de benefício e lote.
+- Primeiro ensaio CI identificou **expectativa incorreta do teste**, não defeito comprovado da API: `closingDay 28` + `dueDay 31` implica vencimento no próprio mês e deslocamento para próximo dia útil se cair em fim de semana. Corrigida a expectativa, adicionados casos específicos para fevereiro comum e bissexto, **sem alterar writer nem autoridade financeira**.
+- Histórico do ensaio: [CI #42680342745](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42680342745) falhou na expectativa; [CI #42680554857](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42680554857) executou a nova caracterização com sucesso, sujeito ao estado final dos demais jobs.
+- Matriz `docs/MEG-WEB-STAGE10-FINANCIAL-READINESS-AUDIT-20261109.md` ampliada com testes efetivamente exercitados e suas limitações. Os demais testes de integração e as possíveis lacunas dos writers **não foram resolvidos**, pois ainda dependem de desenho/execução autorizados.
+- Manter PR #656 e PR #663 Draft, sem merge; Render da API principal continua bloqueado pelo build perigoso; Android, Home, writers e Etapa 10 intactos.
