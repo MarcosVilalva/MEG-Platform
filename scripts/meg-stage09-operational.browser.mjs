@@ -352,7 +352,8 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if((await semanticHealth.first().innerText()).trim()!=='Saúde')issues.push('Categoria foi renomeada no tratamento visual');
   await page.screenshot({path:resolve(output,'categorias-semanticas-'+width+'x'+height+'.png'),fullPage:true});
 
-  if(!(await page.getByRole('button',{name:'Expandir gráfico de distribuição'}).isVisible()))issues.push('Gráfico não iniciou recolhido');
+  if(await page.locator('.meg-l09-right.is-operational').isVisible())
+   issues.push('Gráfico complementar voltou a ocupar espaço após recolher');
   if(await page.getByRole('button',{name:'Expandir detalhes do lançamento'}).count())issues.push('Detalhes ainda ocupam painel lateral na leitura real');
   if(!(await page.locator('.meg-l09-add').isDisabled()))issues.push('Criação foi liberada sem writer autorizado');
   if(!/R\$/.test(await page.locator('.meg-l09-stats').innerText()))issues.push('Indicadores financeiros não exibidos');
@@ -368,7 +369,7 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(await query.inputValue()!=='Teste Operacional 101')issues.push('Filtro principal não foi preservado na atualização');
   // O refresh remonta a tela, que deliberadamente inicia filtros externos
   // recolhidos; reabrir antes de interagir com o campo.
-  if(!(await query.isVisible()))await page.getByRole('button',{name:'Mostrar filtros'}).click();
+  if(!(await query.isVisible()))await page.getByRole('button',{name:'Filtros gerais'}).click();
   await query.fill('');
   historyRequests=0;mutation=true;
   await page.getByRole('button',{name:'Atualizar consulta'}).click();
