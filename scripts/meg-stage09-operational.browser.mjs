@@ -60,9 +60,16 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
    syncChecks++;
    body={token:mutation&&width===1366&&syncChecks%2===0?'simulated-updated-revision':'simulated-immutable-revision',
      changedAt:null,mutationType:null,
-     ...(width!==960?{capabilities:{historySnapshotV1:true}}:{})};
+     ...(width!==960?{capabilities:{historySnapshotV1:true,...(width===1366?{filteredSummaryV1:true}:{})}}:{})};
   }
   else if(path==='/finance/summary')body={month:url.searchParams.get('month'),income:400,expense:240,projectedResult:160,realizedResult:125,pendingCount:0,pendingAmount:0};
+  else if(path==='/finance/events/filtered-summary'){
+   const filters=JSON.parse(url.searchParams.get('filter')||'{}');
+   if(!filters?.criteria||!filters?.grid)issues.push('Consulta filtrada sem critério validável');
+   body={kind:'complete',protocol:'financial-filter-summary-v1',consistency:'repeatable-read',
+    total:records.length,filteredCount:1,income:210.01,expense:90.02,
+    projectedResult:119.99,realizedResult:100.03};
+  }
   else if(path==='/finance/cashflow')body={month:period,days:[]};
   else if(path==='/finance/benefit-summary')body={month:period,balance:0,credits:0,used:0};
   else if(path==='/finance/events/month')body={items:[]};
@@ -298,6 +305,14 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   const categoryFilter=page.locator('.meg-l09-filters select').nth(1);
   await categoryFilter.selectOption('legacy:Categoria Original');
   await sum.filter({hasText:`1 de ${totalText} registros do histórico autorizado`}).waitFor();
+  if(width===1366){
+   await page.waitForFunction(()=>{
+    const values=[...document.querySelectorAll('.meg-l09-stat strong')].map(el=>(el.textContent||'').replace(/\s/g,''));
+    return values.length===4&&values[0].includes('119,99')&&values[1].includes('210,01')&&
+     values[2].includes('90,02')&&values[3].includes('100,03');
+   },null,{timeout:10000});
+   await page.screenshot({path:resolve(output,'indicadores-filtrados-canonicos-1366.png'),fullPage:true});
+  }
   await categoryFilter.selectOption('all');
   await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor();
   // Favoritos: somente filtros, sem mudar dados financeiros nem executar writers.
