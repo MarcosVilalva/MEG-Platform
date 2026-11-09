@@ -42,6 +42,26 @@ const methodImported=event('imported-method',{
 assert.equal(historyPresentationRow(methodImported).paymentMethod,'BOLETO');
 assert.equal(filterHistoryEvents([methodImported],{criteria:{...criteria,paymentMethod:'BOLETO'},grid:{}}).length,1);
 
+const legacyOnlyPayload=event('historic-source-payload',{
+ description:'Registro antigo',sourceDetails:null,
+ sourcePayload:{'DIA SEMANA':'QUINTA','TIPO LANCAMENTO':'DESPESA',
+  'CLASSIFICACAO DA DESPESA':'FIXO',paymentMethod:'DINHEIRO',category:'MERCADO'},
+ category:null,categoryId:null,paymentMethod:null,
+});
+const restored=historyPresentationRow(legacyOnlyPayload);
+assert.equal(restored.weekday,'QUINTA');
+assert.equal(restored.launchType,'DESPESA');
+assert.equal(restored.expenseClass,'FIXO');
+assert.equal(restored.paymentMethod,'DINHEIRO');
+for(const term of ['QUINTA','FIXO','DESPESA']){
+ assert.deepEqual(
+  filterHistoryEvents([legacyOnlyPayload],{criteria:{...criteria,search:term},grid:{}}).map(x=>x.id),
+  ['historic-source-payload'],
+  'Busca geral deve encontrar rotulos originais mesmo sem importedRow no snapshot',
+ );
+}
+
+
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,kind:'income'},grid:{}})[0]?.id,'3');
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,paymentMethod:'PIX'},grid:{}}).length,6);
 assert.equal(filterHistoryEvents(events,{criteria:{...criteria,search:'REFEIÇÃO'},grid:{}})[0]?.id,'5');
