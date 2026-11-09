@@ -10,6 +10,7 @@ import {
   getFinancialHistorySnapshot,
   getCanonicalFilteredHistorySummary,
 } from '../apps/api/src/modules/finance/service';
+import {getActiveFinancialHistoryRevision} from '../apps/api/src/modules/finance/history-revision';
 
 const url=process.env.DATABASE_URL||'';
 if(!/\bmeg_stage09_ci\b/.test(url)||!/(?:localhost|127\.0\.0\.1):5432/.test(url)){
@@ -81,6 +82,37 @@ try{
  assert.ok(bytes<24*1024*1024,'Payload sintético excessivo para uma única consulta.');
  const after=await prisma.financialEvent.count({where:{userId,archivedAt:null}});
  assert.equal(after,3731,'Leitura nunca altera o número de lançamentos.');
+
+ // Versao de leitura: o PATCH legado pode atualizar um evento SEM receipt.
+ // Testes usam somente PostgreSQL efemero do CI, nunca o banco real.
+ const revision0=await getActiveFinancialHistoryRevision(userId);
+ await prisma.financialEvent.update({
+  where:{id:id(42)},data:{description:'Lançamento alterado sem recibo CI'},
+ });
+ const revision1=await getActiveFinancialHistoryRevision(userId);
+ assert.notEqual(revision1,revision0,'Edição de evento sem CloudMutationReceipt precisa invalidar o token.');
+ await prisma.financialEvent.update({
+  where:{id:'stage09-ci-other-event'},data:{description:'Outro usuário alterou registro'},
+ });
+ assert.equal(await getActiveFinancialHistoryRevision(userId),revision1,
+  'Edição de outro titular não pode invalidar o token do proprietário.');
+ await prisma.importedRow.update({
+  where:{eventId:id(0)},data:{rawData:{DIASEMANA:'SEXTA',OBSERVACOES:'Mudança na importação'}},
+ });
+ const revision2=await getActiveFinancialHistoryRevision(userId);
+ assert.notEqual(revision2,revision1,'Importação vinculada ao snapshot deve invalidar o token.');
+ await prisma.financialEvent.update({
+  where:{id:'stage09-ci-archived'},data:{archivedAt:null},
+ });
+ const revision3=await getActiveFinancialHistoryRevision(userId);
+ assert.notEqual(revision3,revision2,'Desarquivar altera o conjunto ativo.');
+ await prisma.financialEvent.update({
+  where:{id:'stage09-ci-archived'},data:{archivedAt:day},
+ });
+ assert.equal(await getActiveFinancialHistoryRevision(userId),revision2,
+  'Arquivar novamente restaura a assinatura do conjunto ativo sem incluir arquivados.');
+ assert.equal(await prisma.financialEvent.count({where:{userId,archivedAt:null}}),3731);
+ console.log('Revisão de histórico: edição, importação e arquivamento detectados por leitura sem writers.');
  console.log('Snapshot CI: 3.731 eventos em '+timeMs+' ms; '+bytes+' bytes JSON sintéticos (não é desempenho de produção).');
  const filters={
   criteria:{search:'',kind:'all',category:'all',account:'all',paymentMethod:'all',start:'2026-11-01',end:'2026-11-30'},
