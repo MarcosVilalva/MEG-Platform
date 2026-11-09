@@ -725,6 +725,22 @@
  .meg-l09.is-operational .meg-l09-hero .meg-l09-stat h2{color:#fff}
 }
 
+/* Em telas pequenas, a shell usa layout block e o scroll pode migrar
+ * para o documento. A área de Lançamentos autenticada precisa de scrollport
+ * próprio; caso contrário, o sticky e o estado compacto nunca ativam. */
+@media(max-width:639px){
+ .meg-shell-body:has(.meg-l09.is-operational:not(.is-grid-focus)){
+  display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;
+ }
+ .meg-main:has(.meg-l09.is-operational:not(.is-grid-focus)){
+  flex:1 1 0;min-height:0;height:0;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior-y:contain;
+ }
+ .meg-shell-stage:has(.meg-l09.is-operational:not(.is-grid-focus)){
+  min-height:0;
+ }
+}
+
 /* Etapa 09 | cabeçalho responsivo reduzido sob rolagem real de .meg-main.
  * Sem overlay translúcido nem nova sombra: máscara oficial opaca preservada.
  * A prévia demonstrativa e o modo de maximização não entram nesse estado. */
