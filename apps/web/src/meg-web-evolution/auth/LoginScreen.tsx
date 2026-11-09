@@ -5,6 +5,8 @@ import './login.css';
 type LoginScreenProps = {
   onAuthenticated: () => void;
   onNavigate: (destination: 'create-account' | 'recover-password') => void;
+  focusOnMount?: boolean;
+  sessionNotice?: string;
 };
 
 type LoginError = 'email' | 'password' | 'server' | null;
@@ -43,7 +45,7 @@ export function LoginIcon({ name }: { name: 'shield' | 'mail' | 'lock' | 'eye' |
   return <svg className="meg-login-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{paths[name]}</svg>;
 }
 
-export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
+export function LoginScreen({ onAuthenticated, onNavigate, focusOnMount = false, sessionNotice = '' }: LoginScreenProps) {
   const emailId = useId();
   const passwordId = useId();
   const errorId = useId();
@@ -113,7 +115,7 @@ export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
               <label htmlFor={emailId}>E-mail</label>
               <div className={`meg-login-input-wrap ${errorField === 'email' ? 'is-invalid' : ''}`}>
                 <LoginIcon name="mail" />
-                <input id={emailId} type="email" name="email" autoComplete="username" inputMode="email" required placeholder="seu@email.com" value={email} onChange={event => {setEmail(event.target.value); if(errorField) {setErrorField(null);setMessage('');}}} aria-invalid={errorField === 'email'} aria-describedby={errorField === 'email' ? errorId : undefined} disabled={submitting || authenticated} />
+                <input id={emailId} type="email" name="email" autoFocus={focusOnMount} autoComplete="username" inputMode="email" required placeholder="seu@email.com" value={email} onChange={event => {setEmail(event.target.value); if(errorField) {setErrorField(null);setMessage('');}}} aria-invalid={errorField === 'email'} aria-describedby={errorField === 'email' ? errorId : undefined} disabled={submitting || authenticated} />
               </div>
             </div>
             <div className="meg-login-input-block">
@@ -128,7 +130,7 @@ export function LoginScreen({ onAuthenticated, onNavigate }: LoginScreenProps) {
               <label className="meg-login-remember"><input type="checkbox" checked={rememberEmail} onChange={event => setRememberEmail(event.target.checked)} disabled={submitting || authenticated}/><span>Lembrar meu e-mail</span></label>
               <a href="?auth=recover-password" onClick={event => {event.preventDefault();onNavigate('recover-password');}}>Esqueci minha senha</a>
             </div>
-            <p id={errorId} className={`meg-login-message ${errorField ? 'is-error' : ''}`} role={errorField ? 'alert' : 'status'} aria-live="polite">{message}</p>
+            <p id={errorId} className={`meg-login-message ${errorField ? 'is-error' : ''}`} role={errorField ? 'alert' : 'status'} aria-live="polite">{message || sessionNotice}</p>
             <button type="submit" className="meg-login-submit" disabled={submitting || authenticated} aria-busy={submitting}>
               <span>{submitting ? 'Entrando...' : authenticated ? 'Acesso autorizado' : 'Entrar no MEG'}</span>
               <span className="meg-login-submit-arrow"><LoginIcon name="arrow" /></span>

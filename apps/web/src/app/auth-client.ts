@@ -32,6 +32,7 @@ export type RegistrationResult = AuthSession | {
 };
 
 const SESSION_KEY = 'meg.auth.session';
+let sessionRevision = 0;
 let refreshInFlight: Promise<AuthSession | null> | null = null;
 const AUTH_REFRESH_TIMEOUT_MS = 15_000;
 const responseCache = new Map<string, { value: unknown; storedAt: number }>();
@@ -103,22 +104,28 @@ export async function refreshAuthSession(): Promise<AuthSession | null> {
   if (refreshInFlight) return refreshInFlight;
   const current = readSession();
   if (!current?.refreshToken) return null;
-  refreshInFlight = request<AuthSession>('/auth/refresh', {
+  const revision = sessionRevision;
+  const priorRefreshToken = current.refreshToken;
+  const pending = request<AuthSession>('/auth/refresh', {
     method: 'POST',
     body: JSON.stringify({ refreshToken: current.refreshToken }),
     signal: AbortSignal.timeout(AUTH_REFRESH_TIMEOUT_MS)
   }).then((next) => {
+    if (revision !== sessionRevision || readSession()?.refreshToken !== priorRefreshToken) return null;
     saveSession(next);
     return next;
   }).catch((error: unknown) => {
     const status = Number((error as { status?: number } | null)?.status || 0);
     if (status === 401 || status === 403) {
-      clearSession();
+      if (revision === sessionRevision && readSession()?.refreshToken === priorRefreshToken) clearSession();
       return null;
     }
     throw error;
-  }).finally(() => { refreshInFlight = null; });
-  return refreshInFlight;
+  }).finally(() => {
+    if (refreshInFlight === pending) refreshInFlight = null;
+  });
+  refreshInFlight = pending;
+  return pending;
 }
 
 export async function authenticatedRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -245,11 +252,14 @@ export function readSession(): AuthSession | null {
 }
 
 export function saveSession(session: AuthSession) {
+  sessionRevision += 1;
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   localStorage.removeItem(SESSION_KEY);
 }
 
 export function clearSession() {
+  sessionRevision += 1;
+  refreshInFlight = null;
   clearAuthenticatedCache();
   sessionStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_KEY);
@@ -286,11 +296,13 @@ export async function forgotPassword(email: string) {
 }
 
 export async function logout(session: AuthSession) {
-  try {
-    await request<void>('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken: session.refreshToken }) });
-  } finally {
-    clearSession();
-  }
+  // Invalida a sessão local antes da rede: erro ou timeout não podem restaurar o acesso.
+  clearSession();
+  await request<void>('/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken: session.refreshToken }),
+    signal: AbortSignal.timeout(10_000)
+  });
 }
 
 export async function validateSession(session: AuthSession) {
@@ -298,12 +310,24 @@ export async function validateSession(session: AuthSession) {
 }
 
 export async function updateOwnProfile(data: { name: string; phone?: string | null }) {
+  const originalSession = readSession();
+  const originalRevision = sessionRevision;
   const result = await authenticatedRequest<{ user: AuthUser }>('/auth/me/profile', {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
   const current = readSession();
-  if (current) saveSession({ ...current, user: { ...current.user, ...result.user } });
+  // Uma resposta antiga não pode sobrescrever o perfil de quem entrou depois do logout.
+  if (
+    originalSession &&
+    current &&
+    sessionRevision === originalRevision &&
+    current.refreshToken === originalSession.refreshToken &&
+    current.user.id === originalSession.user.id &&
+    result.user.id === originalSession.user.id
+  ) {
+    saveSession({ ...current, user: { ...current.user, ...result.user } });
+  }
   return result;
 }
 
