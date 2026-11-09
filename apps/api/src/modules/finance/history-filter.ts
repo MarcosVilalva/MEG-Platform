@@ -88,8 +88,15 @@ function rawLabels(raw:unknown):Map<string,unknown>{
 }
 function label(event:HistoryFilterEvent,explicit:unknown,...aliases:string[]){
  const first=originalText(explicit);if(first)return first;
- const raw=rawLabels(event.importedRow?.rawData);
- for(const alias of aliases){const value=originalText(raw.get(keyNorm(alias)));if(value)return value;}
+ // A Web recupera rotulos historicos de sourcePayload quando sourceDetails nao os declara.
+ // O snapshot nao expoe importedRow; a selecao da API deve conservar a mesma origem.
+ const payload=rawLabels(event.sourcePayload);
+ const imported=rawLabels(event.importedRow?.rawData);
+ for(const alias of aliases){
+  const key=keyNorm(alias);
+  const fromPayload=originalText(payload.get(key));if(fromPayload)return fromPayload;
+  const fromImport=originalText(imported.get(key));if(fromImport)return fromImport;
+ }
  return '';
 }
 function dateKey(v:unknown):string{
@@ -119,7 +126,7 @@ export function historyPresentationRow(event:HistoryFilterEvent){
   competence:event.competence||'',signedAmount:Number(event.signedAmount),
   weekday:label(event,d.weekday,'DIA SEMANA','weekday','diaSemana'),
   launchType:label(event,d.launchType,'TP LANCAMENTO','TIPO LANCAMENTO','launchType'),
-  expenseClass:label(event,d.expenseClass,'CLASSIFICACAO DA DESPESA','expenseClass'),
+  expenseClass:label(event,d.expenseClass,'CLASSIFICACAO DA DESPESA','CLASSIFICAO DA DESPESA','expenseClass'),
   group:label(event,d.group,'GRUPO','group'),
   situation:label(event,d.situation,'SITUACAO','situation'),
   modality:label(event,d.modality,'MODADLIDADE','MODALIDADE','modality'),
