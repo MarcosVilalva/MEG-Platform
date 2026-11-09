@@ -5,6 +5,8 @@ import { recordFinancialAudit } from './audit';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import type { z } from 'zod';
+import {summarizeMonetaryEvents} from './financial-policy';
+import {filterHistoryEvents, type HistoryFilterRequest} from './history-filter';
 
 type CreateFinancialEventInput = z.infer<typeof createFinancialEventSchema>;
 type UpdateFinancialEventInput = z.infer<typeof updateFinancialEventSchema>;
@@ -161,6 +163,25 @@ export async function getFinancialHistorySnapshot(userId: string) {
     maxWait: 5_000,
     timeout: 20_000,
   });
+}
+
+/**
+ * Agrega SOMENTE na API a mesma seleção estrutural vista no DataGrid.
+ * O snapshot reaproveita a transação repeatable-read existente; nenhuma
+ * operação de banco é executada além da leitura autorizada por titular.
+ */
+export async function getCanonicalFilteredHistorySummary(userId:string, filters:HistoryFilterRequest){
+ const snapshot=await getFinancialHistorySnapshot(userId);
+ if(snapshot.kind==='limit-exceeded'){
+  return {kind:'limit-exceeded' as const,protocol:'financial-filter-summary-v1' as const,
+   total:snapshot.total,limit:snapshot.limit};
+ }
+ const selected=filterHistoryEvents(snapshot.items,filters);
+ const totals=summarizeMonetaryEvents(selected);
+ return {kind:'complete' as const,protocol:'financial-filter-summary-v1' as const,
+  consistency:'repeatable-read' as const,total:snapshot.total,filteredCount:selected.length,
+  income:totals.income,expense:totals.expense,
+  projectedResult:totals.projectedResult,realizedResult:totals.realizedResult};
 }
 
 export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {
