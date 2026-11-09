@@ -1,0 +1,136 @@
+name: MEG Web Etapa 09 - Lançamentos isolados
+on:
+  push:
+    branches:
+      - 'preview/09-lancamentos-20261104'
+  pull_request:
+    branches:
+      - 'preview/06-home-refino-preservado-20261104'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lancamentos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci --audit=false
+      - name: Gerar cliente Prisma para executar contratos financeiros
+        run: npm run db:generate
+      - name: Testes financeiros existentes e infraestrutura de dados
+        run: |
+          npm run test:finance
+          npm run test:core
+          npm run test:evolution-data
+          npm run test:web-evolution-datagrid
+      - name: Bloquear comando de deploy da API com risco de mutação destrutiva
+        run: node --test scripts/meg-stage09-api-readonly-preflight.test.mjs
+      - name: Verificar persistência isolada dos filtros favoritos
+        run: npx tsx scripts/meg-stage09-saved-filters.contract.test.ts
+      - name: Verificar catálogo semântico das categorias sem alterar dados financeiros
+        run: npx tsx scripts/meg-stage09-category-visual.contract.test.ts
+      - name: Verificar paridade entre filtros da grade e agregação canônica
+        run: npx tsx scripts/meg-stage09-filtered-summary.contract.test.ts
+      - name: Caracterizar regras de cartões e edição futura sem acionar writers
+        run: npx tsx scripts/meg-stage09-card-nextstage-characterization.test.ts
+      - name: Conferir tipos da API de snapshot sem publicar nem migrar banco
+        run: cd apps/api && npx tsc -p tsconfig.json --noEmit
+      - name: Compilar Web e verificar tipos
+        run: cd apps/web && npx tsc -b
+      - name: Compilar preview isolado
+        run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Garantir separacao entre visual demonstrativo e autenticacao real
+        run: |
+          test -f apps/web/dist-fluxo-integrado-08/fluxo-integrado-08.html
+          test -f apps/web/dist-fluxo-integrado-08/web-evolution.html
+          grep -q 'Content-Security-Policy' apps/web/dist-fluxo-integrado-08/web-evolution.html
+          ! grep -q 'Content-Security-Policy' apps/web/dist-fluxo-integrado-08/fluxo-integrado-08.html
+      - name: Exigir CORS efetivo da API real somente na origem oficial da previa
+        run: node scripts/meg-stage09-origin-probe.mjs
+      - name: Compilar entrada Web autenticada sem publicar em produção
+        run: cd apps/web && npx vite build --base /
+      - name: Validar gateway de acesso aos dados reais sem alterar API nem executar writers
+        run: |
+          bash -n scripts/meg-stage09-real-local.sh
+          node --test scripts/meg-stage09-readonly-gateway.test.mjs
+      - name: Preparar navegador
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Testar renderização e filtros em oito viewports
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4173 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-stage09.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage09-lancamentos.browser.mjs
+      - name: Testar historico autenticado paginado e consistencia sem API real
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4174 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-stage09-auth.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4174/web-evolution.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage09-operational.browser.mjs
+      - name: Guardar capturas e relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage09-lancamentos
+          path: |
+            artifacts/meg-stage09-lancamentos/
+            artifacts/meg-stage09-operational/
+          if-no-files-found: warn
+
+  snapshot-postgres-sintetico:
+    name: Snapshot transacional no PostgreSQL descartável (3.731 registros)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://stage09:ci_local_only@127.0.0.1:5432/meg_stage09_ci?schema=public
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: stage09
+          POSTGRES_PASSWORD: ci_local_only
+          POSTGRES_DB: meg_stage09_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stage09 -d meg_stage09_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependências e gerar Prisma
+        run: |
+          npm ci --audit=false
+          npm run db:generate
+      - name: Criar schema somente no banco efêmero deste job
+        run: |
+          case "$DATABASE_URL" in
+            *"@127.0.0.1:5432/meg_stage09_ci"*) ;;
+            *) echo "Banco não autorizado para teste"; exit 1 ;;
+          esac
+          npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Testar transação REPEATABLE READ, projeção financeira e limites
+        run: npx tsx scripts/meg-stage09-snapshot-postgres.integration.ts

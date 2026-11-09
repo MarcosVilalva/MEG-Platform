@@ -5,6 +5,8 @@ import { recordFinancialAudit } from './audit';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import type { z } from 'zod';
+import {summarizeMonetaryEvents} from './financial-policy';
+import {filterHistoryEvents, type HistoryFilterRequest} from './history-filter';
 
 type CreateFinancialEventInput = z.infer<typeof createFinancialEventSchema>;
 type UpdateFinancialEventInput = z.infer<typeof updateFinancialEventSchema>;
@@ -95,7 +97,7 @@ export async function listFinancialEvents(userId: string, input: { page: number;
       where,
       skip: (input.page - 1) * input.pageSize,
       take: input.pageSize,
-      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
       include: { account: true, category: true, paymentMethod: true, importedRow: { select: { rowNumber: true, rawData: true } } }
     }),
     prisma.financialEvent.count({ where })
@@ -111,6 +113,75 @@ export async function listFinancialEvents(userId: string, input: { page: number;
     page: input.page,
     pageSize: input.pageSize
   };
+}
+
+
+/**
+ * Etapa 09 Web: um snapshot do histórico em UMA transação REPEATABLE READ.
+ * As leituras existentes /events seguem sem alterações para Android/legado.
+ *
+ * Limite explícito evita respostas excessivas/timeout em contas grandes.
+ * Acima do limite, o cliente segue com as duas passagens verificadas.
+ * Sem cálculo monetário, writer, cache de dados privados ou alteração de schema.
+ */
+export const FINANCIAL_HISTORY_SNAPSHOT_LIMIT = 5000;
+export async function getFinancialHistorySnapshot(userId: string) {
+  return prisma.$transaction(async (tx) => {
+    const where = { userId, archivedAt: null };
+    const total = await tx.financialEvent.count({ where });
+    if (total > FINANCIAL_HISTORY_SNAPSHOT_LIMIT) {
+      return {
+        kind: 'limit-exceeded' as const,
+        protocol: 'financial-history-v1' as const,
+        total,
+        limit: FINANCIAL_HISTORY_SNAPSHOT_LIMIT,
+      };
+    }
+    const items = await tx.financialEvent.findMany({
+      where,
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+      include: {
+        account: true, category: true, paymentMethod: true,
+        importedRow: { select: { rowNumber: true, rawData: true } },
+      },
+    });
+    if (items.length !== total) throw new Error('FINANCIAL_HISTORY_SNAPSHOT_INCONSISTENT');
+    return {
+      kind: 'complete' as const,
+      protocol: 'financial-history-v1' as const,
+      consistency: 'repeatable-read' as const,
+      total,
+      items: items.map(item => ({
+        ...item,
+        sourceRowNumber: item.importedRow?.rowNumber ?? null,
+        sourceDetails: sourceDetails(item.importedRow?.rawData),
+        importedRow: undefined,
+      })),
+    };
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+    maxWait: 5_000,
+    timeout: 20_000,
+  });
+}
+
+/**
+ * Agrega SOMENTE na API a mesma seleção estrutural vista no DataGrid.
+ * O snapshot reaproveita a transação repeatable-read existente; nenhuma
+ * operação de banco é executada além da leitura autorizada por titular.
+ */
+export async function getCanonicalFilteredHistorySummary(userId:string, filters:HistoryFilterRequest){
+ const snapshot=await getFinancialHistorySnapshot(userId);
+ if(snapshot.kind==='limit-exceeded'){
+  return {kind:'limit-exceeded' as const,protocol:'financial-filter-summary-v1' as const,
+   total:snapshot.total,limit:snapshot.limit};
+ }
+ const selected=filterHistoryEvents(snapshot.items,filters);
+ const totals=summarizeMonetaryEvents(selected);
+ return {kind:'complete' as const,protocol:'financial-filter-summary-v1' as const,
+  consistency:'repeatable-read' as const,total:snapshot.total,filteredCount:selected.length,
+  income:totals.income,expense:totals.expense,
+  projectedResult:totals.projectedResult,realizedResult:totals.realizedResult};
 }
 
 export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {

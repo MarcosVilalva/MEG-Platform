@@ -1,0 +1,167 @@
+# MEG Web Evolution | Etapa 09 | Auditoria de Lançamentos
+Data de trabalho: 04/11/2026. Estado: **candidata visual read-only; NÃO homologada**.
+
+## Base protegida
+- Repositório: `MarcosVilalva/MEG-Platform`.
+- Branch isolada: `preview/09-lancamentos-20261104`; PR Draft #656 contra `preview/06-home-refino-preservado-20261104`.
+- Home PR #655: homologação visual exclusiva do código `dd0a472eee736558c224268c5bca096bc2d58187`. O código das telas, assets e CSS da Home não foram modificados.
+- Seletor Novo Lançamento PR #654: homologação visual exclusiva do commit `28a2bd0f3b550c87958e78805f0ca1739e8adf62`. Não foi modificado.
+- Android, API, banco, regras centrais, componentes compartilhados Shell/DataGrid e entrada autenticada `main.tsx`: intocados.
+
+## Fontes que orientam a implementação
+- `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`; `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`.
+- `MEG-WEB-CONTINUIDADE-OFICIAL.md` e `PROMPT-MASTER.txt`.
+- Itens 7–16, 18–19, 21–22 das Regras Consolidadas, **exceto o item 11 sobre Crediário**, excluído por decisão posterior.
+- Exclusivamente a imagem oficial da tela Lançamentos no Projeto (`Imagem do ChatGPT 3 de out. de 2026, 16_54_48-4.png`), para aparência.
+- A Home e o seletor Novo homologados, como contexto visual atual, sem modificar seu código.
+
+## Matriz de auditoria de regras financeiras
+A matriz abaixo usa as linhas auditadas e registradas em `docs/MEG-WEB-AUDITORIA-ETAPA-01.md`. Reflete a autoridade funcional, não declara que toda a UI já esteja integrada.
+
+| Regra | Arquivo:linhas | Comportamento a preservar | Atinge |
+|---|---|---|---|
+| Classificação de status, Fixo, crédito | `apps/api/src/modules/finance/financial-policy.ts:103-121` | Receita/Fixo realizados, cartão pendente até fatura, benefício com writer próprio | Lançamentos, Novo/Editar, Pendentes |
+| Escopo monetário e status postado | `financial-policy.ts:13-48`; `monetary-protection.ts:60-80` | Não incluir benefício ou transferência como lançamento monetário indevido | Home, Lançamentos, Benefícios |
+| Valores e saldos realizados | `monetary-protection.ts:60-80,139-199` | Saldo por conta e data via domínio, nunca por somas de componentes | Home, Lançamentos, Pendentes |
+| Criação protegida | `event-mutation.ts:43-192` | Idempotência, validação e status oficiais | Novo Lançamento (Etapa futura) |
+| Leitura resumo/fluxo/analytics | `read-model.ts:21-310`; `routes.ts:258-310` | KPIs e somas financeiras provenientes da API | Home, Lançamentos, Relatórios |
+| Histórico de eventos | `routes.ts:316-342`; `service.ts:listFinancialEvents` | Autorizar e paginar apenas eventos do titular | Lançamentos |
+| Benefício | `benefit-event-mutation.ts:76-97,252-402` | Conta benefício, Verocard legado só compatibilidade, saldo protegido | Alimentação, Benefícios |
+| Competência e parcelas de cartão | `cards/service.ts:262-373` | Competência por fechamento, divisão em centavos, saldo e limite | Lançamentos, Cartões, Novo/Editar |
+| Pagamento de fatura | `cards/service.ts:374-586` | Pagamento total/parcial protegido e competência | Cartões, Pendentes |
+| Pendência/baixa | `payables/service.ts:79-88,291-300` | Pendente só baixado após confirmação e saldo suficiente | Lançamentos, Pendentes |
+| Transferências | `transfer-service.ts:46-67,165-171` | Duas pernas conservativas, atomicidade e saldo da origem | Lançamentos, Transferência |
+| Precisão Decimal | `packages/database/prisma/schema.prisma:313-320,369-401,561-617` | Nunca criar saldo ou arredondamento de regras na UI | Todos |
+
+**Divergências já conhecidas:** tratamento de Conta Benefício legada versus API normalizada; funções antigas de summary/cashflow fora das rotas; writer alternativo de payable não roteado. Não corrigir ou consumir esses caminhos por conveniência visual.
+
+## Contratos e lacunas confirmados nesta etapa
+1. `GET /finance/events` expõe `page`, `pageSize`, `total`, `items` (tamanho máximo 100), mas o tipo `FinancialEventPage` presente na base atual **não declara `revision`**. O loader de PR #646 exige `revision`. Sua integração sem reconciliação não é segura.
+2. `GET /finance/summary` e `GET /finance/analytics` recebem `month`, mas não há contrato verificado de totais financeiros para **cada filtro arbitrário** da grade. A prévia não deriva saldo no cliente.
+3. O fixture isolado `homePreviewFixture.transactions` contém campos básicos de eventos, mas nem sempre possui forma de pagamento, competência e cartão explícito. Não inventar esses atributos.
+4. O schema atual não fornece catálogo próprio `Classification`; preservar classificação existente, sem inventar catálogo.
+5. Autocomplete de descrição, recuperação de categoria/conta/forma, edição/exclusão protegidas, estornos, parcelamento e baixa são contratos obrigatórios, **não implementados nesta prévia read-only**. Pertencem a integrações futuras autorizadas.
+6. Crediário fora do escopo; Benefício pré-pago não é cartão de crédito com fatura.
+
+## Implementação isolada nesta PR
+- `apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx`: tela de apresentação; filtros estruturais, DataGrid, detalhe sem mutação, KPIs vindos do `summary` existente quando o intervalo não foi filtrado; seletor de datas; rosca por **quantidade de despesas**, explicitamente rotulada como visualização exploratória.
+- `apps/web/src/meg-web-evolution/launches/launches-stage09.css`: folha nova e escopada, mobile-first, composição inspirada apenas no print oficial; sem alteração dos estilos globais.
+- `apps/web/src/meg-web-evolution/integrated-preview/preview.tsx`: adição de rota de demonstração `?tela=lancamentos` e navegação pelo Shell, sem substituir Home nem seletor Novo.
+- `scripts/meg-stage09-lancamentos.browser.mjs` + `.github/workflows/meg-stage09-lancamentos.yml`: contratos de build, Prisma, financeiros, core, fonte única, DataGrid, geometria e capturas em oito resoluções.
+- Preview próprio Render: `https://meg-lancamentos-09-pr.onrender.com/fluxo-integrado-08.html?tela=lancamentos`.
+
+## 04/11/2026 | Ajuste de ergonomia aprovado: DataGrid prioritário
+- O usuário solicitou painéis auxiliares **recolhidos por padrão**, com expansão/recolhimento **independente**, para ampliar o DataGrid. Essa autorização NÃO homologa o resultado visual.
+- Os dois painéis ("Distribuição no período" e "Lançamento selecionado") saíram da coluna lateral permanente e passaram a uma faixa de accordions acima da grade; mesmo quando abertos, a tabela continua em **100% da largura disponível**.
+- Botões nativos com `aria-expanded`, `aria-controls`, `hidden` e foco por teclado. No mobile, os detalhes expandidos aparecem na própria página, sem modal que cubra a grade.
+- Clicar em uma descrição ou ação da linha revela o detalhamento do ID selecionado e desloca a área de conteúdo até o painel. Não aciona edição.
+- A altura máxima da área rolável do DataGrid aumentou de `clamp(18rem, 100dvh - 24rem, 42rem)` para `clamp(22rem, 100dvh - 13rem, 64rem)` em desktop, limitada ao viewport e sem scroll horizontal da página; na faixa mobile, até `52rem`. A paginação padrão passou de 12 para **25 registros**. Preferências persistidas do usuário continuam sujeitas ao contrato do DataGrid.
+- Teste de navegador atualizado para validar estado inicial fechado, abertura independente, recolhimento, seleção, largura integral da grade, ausência de mutação/API, filtros e responsividade em oito resoluções.
+- **Preservação:** não houve alteração de Home, Novo Lançamento, Android, API, camada financeira, nem implementação de writers. PR #656 permanece Draft. Requer CI, inspeção de capturas e aprovação visual explícita.
+
+## 04/11/2026 | Homologação visual formal pelo usuário
+- O usuário aprovou explicitamente o resultado com “linduuu aprovado, caso tenha algo acrescentar”.
+- **Versão visual homologada e congelada:** `61970409b834da102a5b6351d64a1e4776963678`, PR #656, somente Lançamentos. Preview `https://meg-lancamentos-09-pr.onrender.com/fluxo-integrado-08.html?tela=lancamentos&v=61970409b834da102a5b6351d64a1e4776963678`.
+- Critérios aprovados: DataGrid em largura integral e viewport vertical ampliado, 25 registros por página inicialmente, distribuição e detalhes fechados no estado inicial, abertura independente e leitura móvel sem modal.
+- Gate técnico [#41921287908](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41921287908): **success** para o mesmo SHA, com testes financeiros e browser nos oito tamanhos previstos. Preview Render do SHA homologado estava `live`.
+- **Nenhuma modificação visual posterior é autorizada por essa aprovação**. A homologação não implica operações financeiras prontas, acesso a registros reais, produção ou merge.
+- **Próximos itens mandatórios na própria Etapa 09:** leitura autenticada e paginada de `GET /finance/events`; coerência de revisão/snapshot versus PR #646; status/categoria/forma de pagamento somente segundo contratos verificáveis; read model canônico de totais filtrados; testes de regressão financeira e responsividade. Não duplicar regras de saldos no componente.
+- PR continua Draft e sem merge; **Etapa 09 NÃO ENCERRADA**.
+
+## 04/11/2026 | Integração de leitura autenticada após homologação visual
+- **Aprovação de continuidade pelo usuário:** “pode prosseguir”, após homologação visual da versão `61970409b834da102a5b6351d64a1e4776963678`. Este SHA **continua referência visual congelada**. PR #656 permanece Draft.
+- **Entrada autenticada:** `apps/web/src/meg-web-evolution/main.tsx` agora oferece navegação Home ⇄ Lançamentos por `AppShell`, com identidade e período reais da sessão. A prévia `fluxo-integrado-08.html` não foi substituída e continua usando apenas `homePreviewFixture`.
+- **Leitura integral:** novo `launches/authorized-history.ts` consome `GET /finance/events` via `financeClient.listEvents(page,100,'',signal)`. Como o contrato **não entrega `revision`**, realiza duas leituras independentes sem cache, verifica total, paginação, unicidade, ordenação e igualdade serializada de cada item. Detecta mudanças observáveis entre leituras, **mas não constitui snapshot transacional garantido**. Não integrar o loader de PR #646 na hipótese de revisão inexistente.
+- **API read-only:** `service.ts` recebeu apenas desempate `id asc` quando `date` e `createdAt` coincidirem, para paginação determinística. Autorização por workspace, limites 10–100 e API de escrita existentes foram preservados. Nenhuma política monetária, banco ou domínio foi alterado.
+- **Dados operacionais:** `launches/OperationalLaunches.tsx` consulta registros, `/finance/summary?month=YYYY-MM`, contas, categorias e formas de pagamento. O DataGrid usa os eventos autorizados integralmente carregados, com conversão de moeda **só para exibição**, sem saldo/totais em React. O `LaunchesStage09` recebe dados reais via modo `live`, mantendo o modo `preview` visualmente aprovado. Filtros principais são restaurados após atualização; filtros e ordenação do DataGrid têm armazenamento isolado por usuário.
+- **Resumos financeiros:** a API canônica fornece receitas, despesas, resultado projetado e resultado realizado para o mês atual. Os quatro KPIs operacionais não misturam benefício/transferência por soma local. Com filtros arbitrários, ocultam-se os KPIs enquanto não houver contrato de resumo filtrado. O gráfico permanece por **contagem de registros**, não financeiro.
+- **Escopo de uso:** tela operacional é **somente leitura**; Novo Lançamento desabilitado nessa entrada, edição, baixa e exclusão indisponíveis até integração autorizada. A área pública da prévia continua demonstrativa; o deploy Render isolado usa a build da prévia, não comprova conexão real à API. Também não foi testado contra conta real/ambiente produtivo.
+- **Testes:** workflow da PR #656 agora compila `web-evolution.html` além da prévia, roda contratos financeiros existentes e Playwright com API **simulada em CI**: 101 registros (2 páginas), duas leituras, prevenção de escrita, erro após mudança na segunda leitura, conservação dos filtros ao atualizar, titular da sessão e responsividade desktop/mobile. O teste de browser não substitui homologação operacional em ambiente integrado.
+- **Pendências:** integração com API real em ambiente controlado, revisão/snapshot transacional no contrato para datasets extensos, resumo canônico sob filtros arbitrários, ações de escrita protegidas e eventual validação funcional explícita. Não considerar Etapa 09 encerrada nem fazer merge.
+
+## 04/11/2026 | Ajuste visual solicitado: ícones modernos e direção das entradas/saídas
+- **Pedido explícito do usuário:** revisar setas de entradas/saídas, usar pacote de ícones mais moderno e incluir ícones nas categorias do DataGrid. Esta solicitação AUTORIZA apenas este refinamento; **não homologa automaticamente** sua nova versão.
+- **Problema confirmado:** os KPIs de Entradas e Saídas usavam os caracteres `↓` e `↑`, que podem expressar sentido de movimentação de caixa, mas geravam ambiguidade como sinalizadores de desempenho financeiro.
+- **Novo padrão visual:** Entradas = `trending-up` verde (eleva), Saídas = `trending-down` vermelho (reduz); Resultado/Total = gráfico, Saldo/Resultado realizado = carteira. Os ícones são exclusivamente decorativos; as cores e os valores continuam definidos pelos campos canônicos.
+- **Pacote:** 19 SVGs oficiais curados da biblioteca **Lucide** (licença ISC), empacotados localmente em `apps/web/src/meg-web-evolution/launches/LaunchIcon.tsx`, com copyright e licença incluídos. Sem CDN, dependência npm nova, alteração de Shell/Android ou bundle global.
+- **DataGrid:** `category-icon.ts` mapeia explicitamente alguns nomes de categoria para ícones (supermercado, saúde, transporte, casa, receitas, alimentação, educação etc.). Categorias desconhecidas conservam texto e recebem `tag` neutra. **Não cria, muda ou reclassifica categorias**, nem infere natureza financeira. O valor original usado na busca/filtro/exportação permanece intocado.
+- **Layout:** `LaunchesStage09.tsx` e CSS escopado `launches-stage09.css` recebem os ícones. A coluna Categoria **preserva 160 px de largura original**. Uma primeira tentativa de 188 px cortou parte da coluna Ações em 1366 px e foi revertida após inspeção de capturas; SVG compacto e truncamento com título completo preservam espaço. A rolagem horizontal segue dentro da tabela. Home, seletor Novo, Android, DataGrid e Shell compartilhados permanecem intocados.
+- **QA específico:** `scripts/meg-stage09-lancamentos.browser.mjs` verifica setas dos KPIs, ícones reais de Supermercado/Saúde, SVGs no DataGrid e oito viewports. Teste operacional verifica ícone neutro para categoria desconhecida, sem mutações.
+- **Status:** refinamento **candidato à nova validação visual**. Manter o SHA visual anterior `61970409b834da102a5b6351d64a1e4776963678` como referência homologada até nova aprovação explícita; PR #656 continua Draft sem merge. **Etapa 09 não encerrada.**
+
+## 04/11/2026 | Experimento controlado de iconografia Phosphor × Tabler
+- **Autorização contextual do usuário:** “Vamos seguir com sua recomendação”, após orientação de migrar para Phosphor como linguagem principal, comparar com Tabler em Lançamentos e estender às demais telas **somente após validação visual**. Essa aprovação para executar **não homologa** o desenho novo.
+- **Comparativo verdadeiro, dentro da própria tela homologada de Lançamentos:** a rota pública `fluxo-integrado-08.html?tela=lancamentos&icones=phosphor` seleciona Phosphor por padrão; `&icones=tabler` alterna apenas o desenho dos ícones. O conteúdo, os filtros, o layout, o DataGrid e os valores da demonstração são idênticos nas duas versões.
+- **Arquitetura:** `launches/LaunchIcon.tsx` foi convertido em adaptador visual tipado (`LaunchIconPack`), usando duas coleções locais com 25 semânticas equivalentes. Fontes oficiais Phosphor Core (MIT, Copyright 2023 Phosphor Icons) e Tabler Icons (MIT, Copyright 2020–2026 Paweł Kuna), licenças preservadas no adaptador. Phosphor usa **Regular em categoria/controles** e **Duotone em KPIs**; Tabler usa **Outline** para comparação. SVGs sem CDN e sem instalar dependências novas.
+- **Bounding box:** SVG Phosphor usa viewBox 256×256, Tabler 24×24, mas o tamanho renderizado é explicitamente controlado (16/17/19/20/25 px conforme componente original). Sem adicionar padding ao chip, sem alterar largura de coluna Categoria de **160 px**, sem modificar a rolagem da página.
+- **Escopo limitado:** `LaunchesStage09.tsx` usa adaptador nos indicadores, categoria, pesquisa, calendário, expansão/recolhimento, voltar e novo. O `integrated-preview/preview.tsx` só passa um parâmetro de apresentação à tela Lançamentos. **Não substituir** ícones no Shell, Home, DataGrid compartilhado, Android, telas homologadas ou financeiras nesta PR.
+- **Gates específicos:** `scripts/meg-stage09-lancamentos.browser.mjs` executa as duas variantes em oito resoluções cada (16 situações), verifica renderização, mapeamento de categorias, bounding boxes, largura da grade, filtros, panelização e ausência de API na prévia. O teste autenticado assegura Phosphor como padrão e mantém a leitura financeira read-only.
+- **Critério de decisão:** inspecionar capturas reais desktop/mobile e exigir aprovação visual explícita do usuário **antes** de promover Phosphor para as demais telas. A versão de Lançamentos aprovada previamente ainda é o SHA `61970409b834da102a5b6351d64a1e4776963678`. PR #656 **Draft e sem merge**; a Etapa 09 continua aberta.
+
+## 04/11/2026 | Phosphor escolhido e homologado como iconografia de Lançamentos
+- **Decisão explícita após ver o comparativo:** usuário respondeu **“seguir com Phosphor”** à apresentação de imagens reais e links separados Phosphor e Tabler. **Escolha e aprovação visual da iconografia Phosphor na Etapa 09**, sem afirmar homologação funcional da API ou re-homologar outras telas. O layout de Lançamentos aprovado antes permanece congelado.
+- **Linguagem visual:** SVG Phosphor Core MIT, Regular em categorias, filtros e controles; Duotone nos quatro KPIs. Boxes preservados em 16/17/19/20/25 px; coluna Categoria de 160 px; sem alteração de cor semântica, saldo, classificação, filtros, exportações e regras financeiras.
+- **Consolidação técnica:** `LaunchIcon.tsx` fica Phosphor-only; quatro módulos experimentais `tabler-*` retirados do branch ativo (a comparação anterior permanece documentada no histórico de commits e nos artefatos do GitHub Actions). `LaunchesStage09.tsx` não aceita mais alternância da iconografia; `integrated-preview/preview.tsx` não depende mais de `&icones`; testes de navegador da Etapa 09 voltam a testar oito viewports apenas da variante escolhida.
+- **Restrições da decisão:** Home, Novo Lançamento, Shell, DataGrid e demais telas homologadas **não foram editados**. A partir desta aprovação, Phosphor é **diretriz iconográfica para as etapas Web seguintes**, exigindo aplicação e validação visual controladas uma tela por vez. O Android segue congelado. Não realizar migração global neste chat, que executa apenas Etapa 09.
+- **Próximas verificações:** TypeScript, CI financeiro, build Web autenticada/preview, Playwright com dimensões e ausência de rolagem lateral, Render LIVE no SHA final e link sem cache. CI não substitui inspeção visual.
+- **Situação da Etapa 09:** iconografia escolhida, visual de Lançamentos preservado; API real, resumos financeiros filtrados, writers e homologação operacional permanecem pendentes. **PR #656 Draft, sem merge**.
+
+## 04/11/2026 | Captação real: implementação segura e bloqueio de publicação
+- **Autorização do usuário:** “siga agora com a captaçao de dados reais o q vc acha”. Trabalho restrito à Etapa 09, a partir da API financeira oficial já existente, sem recriar cálculos no frontend.
+- **API e contrato efetivos auditados:** `GET /finance/events?page=...&pageSize=100` com JWT/ownership do workspace; `GET /finance/summary?month=YYYY-MM` canônico; `GET /finance/accounts`, `/categories`, `/payment-methods` e `GET /finance/sync-status`. O frontend `OperationalLaunches.tsx` carrega eventos em duas passagens, consulta catálogos reais e compara token antes/depois, só publica conjunto completo e coerente. **O token do backend não é snapshot transacional garantido.**
+- **Gateway isolado implementado:** `scripts/meg-stage09-readonly-gateway.mjs`. Serve `web-evolution.html` e apenas assets necessários, e faz proxy **same-origin** à `meg-platform-api.onrender.com` para GETs autenticados. Permite POST apenas para login, refresh e logout; **nega POST/PATCH/DELETE financeiros**. Não possui credenciais fixas, não grava dados, não salva tokens em log e não altera API/DB.
+- **Testes do gateway:** `scripts/meg-stage09-readonly-gateway.test.mjs` usa API simulada, testa autorização por Bearer, 401 sem sessão, rejeição de escritores, origem do POST e publicação seletiva do HTML. `scripts/meg-stage09-operational.browser.mjs` confere eventos paginados, contagem 101, filtros, Phosphor, erro em mudança concorrente e responsividade. **Nenhum dado real do usuário foi lido ou validado pelo assistente**.
+- **Inicialização em Codespaces sem novo serviço:** `bash scripts/meg-stage09-real-local.sh` na branch oficial da Etapa 09 gera build da entrada real e inicia gateway read-only na porta 4178. No GitHub Codespaces, **manter a porta PRIVADA** e abrir `/web-evolution.html?tela=lancamentos`. O login usa a conta existente; senha e tokens jamais devem ser enviados ao chat. Uso com conta real permanece pendente de validação.
+- **Bloqueios de infraestrutura constatados:** criação de novo web service gratuito no Render retornou `Hobby Tier is limited to 25 services`. O diagnóstico real de preflight CORS da API, feito sem credenciais a partir da origem `https://meg-lancamentos-09-pr.onrender.com`, obteve **HTTP 500 e ausência de Access-Control-Allow-Origin em 3/3 rotas**, portanto a prévia **estática não consegue acessar a API autenticada diretamente**. **Não sobrescrever `CORS_ORIGINS` de produção** sem ler seus valores atuais e autorização de alteração de segurança.
+- **Decisão de proteção:** a tentativa de adicionar `web-evolution.html` ao build publicado foi revertida. O Render isolado `meg-lancamentos-09-pr` continua a servir apenas `fluxo-integrado-08.html`, visual de demonstração homologado. A autenticação operacional fica pronta no repositório e no gateway local, **não publicada no Render**. Não declarar dados reais captados no preview.
+- **Próxima dependência:** liberar uma vaga no plano Render (remover/reutilizar serviço antigo **somente com decisão explícita do usuário**) para criar gateway isolado, ou demonstrar outra hospedagem com proxy read-only e controles equivalentes. Não liberar escrita financeira, não trocar identidade visual aprovada, não fazer merge. A Etapa 09 continua aberta.
+
+## 05/11/2026 | Auditoria com dados reais: vínculo legado sem migração
+- Solicitação: validar a tela com dados reais **sem Codespaces** e sem colocar cópia de dados bancários no GitHub. O repositório contém código; a autoridade persistida está em Supabase PostgreSQL e é consultada pela API oficial.
+- Leitura **somente agregada** através do conector Supabase, projeto `meg-financas` (sem retornar nomes, descrições, valores, IDs pessoais ou credenciais): **6.576** `FinancialEvent` no banco, **3.731** ativos (`archivedAt IS NULL`) e **2.845** arquivados; 1 titular de registros, 47 categorias e 2 contas. Ativos: **2.759 despesas pagas**, **646 receitas pagas**, **326 despesas planejadas**.
+- **Divergência crucial:** 3.626 ativos sem `categoryId` e 3.512 sem `paymentMethodId`. Nenhuma linha ativa possui vínculo `ImportedRow`, portanto `sourceDetails` **não** resolve essas lacunas. O `sourcePayload` legado contém o texto original de `category` em **todos os 3.626** casos e de `paymentMethod` em **todos os 3.512** casos. Esses textos são fatos da origem, não uma nova classificação. Categorias/contas financeiras não foram regravadas.
+- **Correção restrita à apresentação:** `OperationalLaunches.tsx` passou a ler `sourcePayload.category` e `sourcePayload.paymentMethod` somente para exibir rótulos na ausência dos vínculos formais. `LaunchesStage09.tsx` passou a mostrar o nome original e a oferecer filtro por texto histórico `legacy:<rótulo>` em grupo separado, sem criar `Category`, reclassificar, calcular saldo ou alterar writers. Preview oficial com fixture continua idêntico. Teste Playwright operacional simula registro sem vínculos mas com rótulos históricos para provar comportamento.
+- **Infraestrutura:** Supabase `meg-evolution` aceita deploy da Edge Function, mas preflight em endpoint de teste retornou **HTTP 402**, não emitido por nosso handler. Como não foi possível validar conectividade, a função foi substituída por stub inativo (HTTP 410 quando plataforma permitir) e os arquivos experimentais do branch foram retirados. Não declarar operação real publicada por esse caminho. O Render continua com limite de 25 serviços.
+- **Caminho de publicação recomendado:** liberar a **origem exata** `https://meg-lancamentos-09-pr.onrender.com` na API MEG com gate de leitura/sessão e bloqueio de writers da origem. Código segregado na **PR #657 (Draft, base main)**, arquivos `apps/api/src/cors.ts`, `server.ts`, `cors.test.ts`. Não realizar merge, deploy ou alteração em `CORS_ORIGINS` sem autorização explícita. PR #656 segue Draft, preservando visual Phosphor.
+- **Gates:** build/testes de Lançamentos no workflow isolado; PR #657 recebeu gate geral interrompido por advisory `zod` high **pré-existente no lockfile, sem relação com CORS**. Correção de dependência exige fluxo próprio e não pode ser escondida por `continue-on-error`. Verificar resultado específico de testes e não afirmar gates gerais verdes.
+- **Pendente:** após aprovar e corrigir os gates da PR #657, fazer merge/deploy da API, verificar CORS ao vivo, publicar `web-evolution.html` autenticado no preview isolado da PR #656 com `VITE_API_URL` oficial, autenticar com a conta MEG e validar contagem, categorias e formas reais. Sem cópias no repo; Android intocado; sem merge prematuro da PR #656.
+
+## Checklist
+- [x] Auditoria prévia das autoridades, funcionalidades e conflitos.
+- [x] Branch e PR isoladas; Home/Novo/Android/API/financial-policy intocados.
+- [x] Print oficial identificado e estrutura de Lançamentos reproduzida como candidata.
+- [x] DataGrid e Shell existentes reaproveitados sem importar UI legada.
+- [x] Mocks somente do conjunto já existente, declarados como demonstração.
+- [x] Edição, exclusão, baixa e gravação protegidas/desabilitadas.
+- [x] Render próprio criado sem substituir previews homologados.
+- [x] Gate técnico da versão visual `61970409` concluído com sucesso no run #41921287908.
+- [x] Capturas de CI revisadas e Playwright em oito resoluções (390/768/1024/1366/1920/2560, alturas compactas).
+- [ ] Simulação de zoom 125% (não declarada concluída).
+- [x] Validação visual **explícita** pelo usuário para SHA `61970409` (somente escopo visual).
+- [ ] Contrato operacional de leitura consistente com revision/snapshot.
+- [ ] Totais financeiros canônicos reagindo a todos os filtros.
+- [ ] Operações financeiras protegidas e integrações API.
+- [ ] Merge (somente com gates e autorização posterior).
+
+## Posição de segurança
+**Não concluir a etapa.** O prévio visual/funcional de consulta é demonstração. CI, build e Render não substituem homologação visual nem contrato financeiro operacional.
+
+
+## 05/11/2026 | Liberação controlada de leitura real após gates de segurança
+- **Autorização do usuário:** “Siga”, para corrigir gate de segurança, liberar CORS restrito e oferecer leitura autenticada dos dados já persistidos, sem Codespaces e sem copiar registros financeiros ao repositório público.
+- **Segurança da dependência:** PR [#658](https://github.com/MarcosVilalva/MEG-Platform/pull/658) incorporada à main (SHA `db3219517998c1cd726c0ea3453922f5ad4535e9`). Atualiza exclusivamente os dois manifestos dos workspaces API/Web e `package-lock.json` para Zod 4.6.7 gerado pelo npm. Auditoria high, suite completa `npm run check` e CI geral [#42026464025](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42026464025) **success**. Nenhum arquivo Android alterado; compilação móvel distribuída NÃO foi homologada.
+- **API / CORS por origem exata:** PR [#657](https://github.com/MarcosVilalva/MEG-Platform/pull/657) incorporada à main (SHA `222cee8c563ee853ccbb12228e24a100c5e601b4`), CI geral [#42027114023](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42027114023) e CORS [#42027113994](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42027113994) **success**. API Render `meg-platform-api` confirmada LIVE neste commit. Origem permitida: `https://meg-lancamentos-09-pr.onrender.com`; GETs de leitura e POSTs estritos de sessão, com HTTP 405 para writers financeiros dessa origem. JWT, autorização e escopo de workspace permanecem obrigatórios; cabeçalho Origin não é proteção contra scripts externos.
+- **Preview Web duplo isolado:** `apps/web/vite.fluxo-integrado-08.config.ts` agora publica dois HTMLs na mesma build Render do serviço já existente: `/fluxo-integrado-08.html?tela=lancamentos` exclusivamente **fixture demonstrativa e visual Phosphor**, e `/web-evolution.html?tela=lancamentos` **autenticação MEG existente + consulta da API oficial**. A entrada autenticada recebe CSP `connect-src` somente para a API e self, sem dados, tokens ou segredos embutidos em bundle. Exibição de `sourcePayload.category` e `sourcePayload.paymentMethod` é read-only e não reclassifica itens.
+- **CI Etapa 09 [#42027715633](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42027715633) concluído success** no código visual/operacional `0512df8edf3a3b5c6760ed7722d8ce176694d5bb`: financeiros, core, fonte única, DataGrid, TypeScript, build dupla, preflight CORS REAL da origem da prévia, 8 resoluções demonstrativas, 2 viewports operacionais com API simulada, rejeição de writes no gateway de teste. Render isolado LIVE no SHA.
+- **Sem validação funcional de conta real ainda:** CI não autentica com a senha do usuário nem verifica sua lista particular no navegador. O banco persistente foi auditado por contagens agregadas, mas a tela autenticada com dados reais depende de login pelo próprio usuário. Login/cadastro/recuperação fora do contrato de leitura da PR de preview não estão homologados como fluxos novos da Etapa 09.
+- **Pendências:** comprovar acesso e contagem em sessão real, monitorar possíveis erros HTTP e correspondência canônica dos totais; snapshot financeiro de paginação com revision forte ainda não existe, totais filtrados arbitrários continuam não calculados, escritores bloqueados intencionalmente. PR #656 permanece DRAFT, sem merge, e Etapa 09 NÃO encerrada.
+
+
+## 05/11/2026 | Correção de desempate da paginação após conferência agregada do banco real
+- **Diagnóstico no Supabase MEG (somente leitura, sem dados pessoais exportados):** 3.731 eventos não arquivados; 49 eventos com data em novembro/2026. 3.477 eventos participam de 371 grupos empatados em `date` e `createdAt`; um grupo contém 117. A API usava ordenação incompleta, expondo `skip/take` a inconsistência em fronteiras de páginas.
+- **Correção:** PR [#659](https://github.com/MarcosVilalva/MEG-Platform/pull/659), `service.ts` com `orderBy: [{date:'desc'},{createdAt:'desc'},{id:'asc'}]` no leitor de eventos, contrato no teste financeiro existente (ordem exata e caso 100+17 com IDs únicos); nenhuma regra monetária, writer, esquema, conta ou dado alterado.
+- **Gates:** CI principal [#42044132598](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42044132598) success; CORS + finanças [#42044132389](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42044132389) success. PR merged na main sob `28703a95310c9b9b5f193ef4f3a0cbe80e121f07`. O deploy Render da API deve ser confirmado LIVE no commit antes de apresentar conclusão de API operacional.
+- **Rótulos legados sem mutação:** dentre 3.731 ativos, 3.626 sem `categoryId` mas com `sourcePayload.category`, e 3.512 sem `paymentMethodId` mas com `sourcePayload.paymentMethod`. São rótulos expositivos, não equivalem a categorias formalmente reconciliadas.
+- **Pendente de validação pelo usuário no navegador:** login da conta real na rota `web-evolution.html?tela=lancamentos`, confirmar contador 49 no mês e total 3.731 (base pontual), conferir descrições e rótulos, filtros e ausência de edição/baixa. Não compartilhar senha/tokens. CI simulado não substitui essa homologação.
+- **Pendente estrutural:** paginação agora é determinística para dados estáticos; não garante snapshot transacional em presença de escritas concorrentes. A dupla passagem de verificação e `sync-status` permanecem fail-closed. KPIs arbitrariamente filtrados requerem read model canônico futuro. Não declarar Etapa 09 finalizada nem fazer merge PR #656 sem confirmação.
+

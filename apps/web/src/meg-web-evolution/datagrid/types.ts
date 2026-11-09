@@ -74,7 +74,13 @@ export type DataGridProps<T extends Record<string, unknown>> = {
   groupBy?: keyof T & string;
   selectable?: boolean;
   footerAggregates?: boolean | Record<string, DataGridAggregate>;
+  /** Rótulo contextual da abertura de filtros (padrão preservado em outros grids). */
+  filterButtonLabel?: string;
   onFilterChange?: (state: DataGridFilterChange) => void;
+  /** Notifica o consumidor quando Limpar tudo é acionado na grade. */
+  onClearAllFilters?: () => void;
+  /** Solicitação opcional de aplicar filtros salvos, sem alterar layout/colunas. */
+  applySavedFilters?: {revision:number;filters:DataGridFilterState};
   persistenceKey?: string;
   rowKey?: keyof T & string | ((row: T) => string);
   loading?: boolean;
