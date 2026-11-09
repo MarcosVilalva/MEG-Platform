@@ -4,6 +4,7 @@ import {DataGrid} from '../datagrid/DataGrid';
 import {applyFilters} from '../datagrid/core';
 import type {DataGridColumn,DataGridFilterState} from '../datagrid/types';
 import type {HomeFinancialData} from '../home/HomeDashboard';
+import type {CanonicalFilteredHistorySummary} from '../../app/finance-client';
 import {LaunchIcon, type LaunchIconName} from './LaunchIcon';
 import {launchCategoryIcon} from './category-icon';
 import {LaunchCategoryBadge} from './LaunchCategoryBadge';
@@ -26,6 +27,7 @@ type Props={
  exportUserName?:string;onRefresh?:()=>void;
  rememberedFilters?:Partial<LaunchesFilterPreset>;
  onRememberFilters?:(value:LaunchesFilterPreset)=>void;
+ onFilteredSummary?:(criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal)=>Promise<CanonicalFilteredHistorySummary|null>;
 };
 type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
@@ -158,7 +160,7 @@ function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
   </div>,document.body
  );
 }
-export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters}:Props){
+export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters,onFilteredSummary}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
  const [search,setSearch]=useState(rememberedFilters?.search??'');
@@ -342,7 +344,23 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
  const modalRow=mode==='live'?allRows.find(row=>row.id===modalId)??null:null;
  const filtered=Boolean(search||kind!=='all'||category!=='all'||account!=='all'||paymentMethod!=='all'||start!==startOfMonth||end!==endOfMonth||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
- const summary=!filtered&&data.summary?.month===periodMonth?data.summary:null;
+ // O navegador só encaminha critérios; nenhuma regra monetária é calculada aqui.
+ const [filteredSummary,setFilteredSummary]=useState<{key:string;value:CanonicalFilteredHistorySummary}|null>(null);
+ const filterKey=JSON.stringify({criteria:currentCriteria,grid:advanced});
+ useEffect(()=>{
+  setFilteredSummary(null);
+  if(mode!=='live'||!filtered||!onFilteredSummary)return;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>{
+   void onFilteredSummary(currentCriteria,advanced,controller.signal)
+    .then(value=>{if(!controller.signal.aborted&&value?.kind==='complete')setFilteredSummary({key:filterKey,value});})
+    .catch(()=>{if(!controller.signal.aborted)setFilteredSummary(null);});
+  },350);
+  return ()=>{clearTimeout(timeout);controller.abort()};
+ },[filterKey,filtered,onFilteredSummary,mode]);
+ const summary=filtered
+  ? (filteredSummary?.key===filterKey&&filteredSummary.value.kind==='complete'?filteredSummary.value:null)
+  : data.summary?.month===periodMonth?data.summary:null;
  const blank=summary===null;
  const stats=[
   {name:mode==='live'?'Resultado projetado':'Total no período',value:summary?.projectedResult,tag:'Resultado canônico',variant:'total'},
@@ -369,7 +387,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    ? <div className="meg-l09-preview-warning meg-l09-verification" role="note">
       <details className="meg-l09-verification-details">
        <summary><span className="meg-l09-verification-icon" aria-hidden="true">✓</span>Histórico verificado <span className="meg-l09-verification-hint">Detalhes da consulta</span></summary>
-       <p>Histórico autenticado e verificado integralmente. Use “Ver” na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API e ficam indisponíveis com filtros personalizados. Nenhum lançamento é alterado.</p>
+       <p>Histórico autenticado e verificado integralmente. Use “Ver” na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API canônica, inclusive sob filtros personalizados quando o backend confirmar suporte. Se a agregação não for segura, ficam indisponíveis. Nenhum lançamento é alterado.</p>
       </details>
       {onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
      </div>
