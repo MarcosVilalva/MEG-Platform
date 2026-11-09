@@ -1,0 +1,76 @@
+# MEG Web Evolution | Etapa 09 PT4 | Revisão da PR #663 e plano de publicação segura
+**Consulta:** 09/11/2026. **Estado:** revisão documental + testes locais não destrutivos; **NÃO autoriza merge, deploy, mudança de Build Command, banco de produção ou Etapa 10**.
+
+## 1. Base e gates observados
+- PR visual **#656**: OPEN/DRAFT/sem merge, branch `preview/09-lancamentos-20261104` HEAD auditado `b721788c51fb6ad5db056423b017362681a93bdd`. Os cinco pontos visuais foram expressamente aprovados; **não modificar a interface**.
+- CI #42686850292: **SUCCESS** nos jobs `lancamentos` e `Snapshot transacional no PostgreSQL descartável (3.731 registros)`. Confirmado novamente pela ferramenta GitHub.
+- PR técnica **#663**: OPEN/DRAFT/sem merge, branch `stage09-api-readonly-release-20261109`, HEAD `fe50d3e11e5f2f364fb4b786e95442618082fac7`, base `main@28703a95310c9b9b5f193ef4f3a0cbe80e121f07`. Comparação atual: **10 commits à frente, 0 atrás, 9 arquivos**. CIs #42657015109 (API read-only), #42657015119 (plataforma), #42657015070 (CORS) SUCCESS; Foundation SKIPPED neste commit (não contar como executado).
+- Arquivos da PR #663: `.github/workflows/meg-stage09-api-readonly-release.yml`, `apps/api/src/modules/finance/history-filter.ts`, `apps/api/src/modules/finance/routes.ts`, `apps/api/src/modules/finance/service.ts`, `docs/MEG-STAGE09-API-READONLY-RELEASE-CHECKLIST.md`, `scripts/meg-stage09-api-readonly-preflight.mjs`, `scripts/meg-stage09-api-readonly-preflight.test.mjs`, `scripts/meg-stage09-filtered-summary.contract.test.ts`, `scripts/meg-stage09-snapshot-postgres.integration.ts`. **Nenhum writer, schema Prisma, Android, Home ou UI no diff**.
+- Render API: `meg-platform-api`, serviço `srv-d98k61daeets7384hvb0`, branch `main`, último deploy LIVE `dep-dbm92b17lnhs738s0jr0` no SHA `28703a95310c9b9b5f193ef4f3a0cbe80e121f07`. A API da #663 **não está publicada**.
+- Render preview: `meg-lancamentos-09-pr`, serviço `srv-dblou80m7kps73brj0kg`, branch `preview/09-lancamentos-20261104`; autoDeploy ON. Não escrever nessa branch sem autorização de deploy da prévia.
+- Esta atualização foi registrada apenas na branch **`stage09/pt4-auditoria-sem-deploy-20261109`**, não vinculada a serviço Render conhecido; nenhuma alteração no checkpoint da branch ativa de preview foi aplicada nesta rodada.
+
+## 2. Revisão de código e segurança
+**Constatado no código da PR #663:**
+1. `GET /finance/events/history-snapshot` usa `authorize(readRoles)`, `financialDataOwnerId(request.user.sub)`, `Cache-Control: no-store`, `prisma.$transaction` com `RepeatableRead`, limite 5.000, ordem `date DESC, createdAt DESC, id ASC`, e impede publicação de conjunto incompleto.
+2. `GET /finance/events/filtered-summary` usa mesma autorização, valida o parâmetro e os filtros em `parseHistoryFilters`, reutiliza o snapshot e agrega por `summarizeMonetaryEvents` de `financial-policy.ts`. **Não cria regra monetária na UI**.
+3. `GET /finance/sync-status` anuncia capacidades aditivas; o preview só utiliza snapshot e indicadores filtrados se explicitamente anunciados e mantém a verificação do token antes/depois. Se API antiga não oferecer capacidade, conserva a leitura de duas passagens.
+4. A PR não modifica writers, transações de pagamento, transferência, cartões, benefícios, schema ou migrations. Os testes com PostgreSQL 16 são confinados ao host `127.0.0.1:5432`, banco sintético `meg_stage09_ci`, e não são prova de desempenho real.
+
+**Gates de risco ainda pendentes:**
+- **BLOQUEANTE, paridade histórica:** `apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx:28-48` recupera certos rótulos históricos de `sourcePayload`. No backend, `apps/api/src/modules/finance/history-filter.ts:95-106` usa `event.importedRow?.rawData` como fallback; mas `service.ts:142-162` remove `importedRow` ao compor o snapshot. Para evento cujo rótulo só esteja em `sourcePayload` e não em `sourceDetails`, a busca da grade Web inclui o item e a API pode excluí-lo do resumo. **É uma divergência de seleção, não um defeito confirmado no writer nem na soma canônica.** Teste sintético isolado reproduziu: `sourcePayload['DIA SEMANA']='QUINTA'` => Web `QUINTA`, API `''`. Confirmar na suíte real e corrigir **somente no adaptador de leitura da PR #663**, com teste de equivalência e preservação do histórico. Nenhuma correção foi aplicada nesta revisão.
+- **IMPORTANTE, consistência observável:** token de `sync-status` depende de recibos de mutação e `updatedAt` de catálogos; testar que TODAS as vias reais de edição/importação invalidam token. Checar concorrência entre snapshot da lista e transação separada de indicadores. Não afirmar que token equivale a número de revisão transacional sem teste.
+- **IMPORTANTE, seleção canônica:** antes de exibir KPI filtrado, comparar IDs/quantidade de itens com seleção Web sob busca textual, categorias e métodos históricos, AND/OR, filtros vazios, data/competência, transferências/benefícios/status. `filteredCount` é retornado, mas não prova por si só que a UI validou equivalência dos IDs.
+- **OPERACIONAL:** limite 5.000 implica fallback acima disso e ausência de KPIs filtrados; testar cenário 5.001 apenas em banco descartável. Snapshot sintético 3.731 teve payload >5 MB na auditoria anterior, não inferir latência de produção.
+- **SEGURANÇA:** validar CORS de origem específica, 401 sem sessão, 403 sob papéis não autorizados, isolamento por titular e `no-store` em ambiente publicado. Nenhuma credencial ou registro financeiro em logs públicos.
+
+## 3. Ensaios não destrutivos desta rodada
+- **GitHub Actions confirmado:** #42686850292 (2 jobs SUCCESS), #42657015109 (2 jobs SUCCESS), além dos jobs de plataforma e CORS da PR #663.
+- **Preflight local em Node.js, sem rede/Prisma/produção:** 3 testes PASS; Build Command atual reprovou por `PREPARE_PRODUCTION_CAN_DELETE_ROWS` e `PRISMA_DB_PUSH_NOT_ALLOWED`; candidato compilação somente passou na validação de padrões; falta de comando e Prisma direto foram rejeitados. Trata-se de transcrição verificada do contrato da PR #663, **não** da execução remota de todo o repositório.
+- **Reprodutor local de seleção histórica:** 2 testes PASS, sendo 1 que detectou a **divergência** Web/API ao recuperar `DIA SEMANA` de `sourcePayload`, 1 que confirmou igualdade quando `sourceDetails` fornece o valor. Trata-se de reprodução isolada das expressões inspecionadas; precisa tornar-se teste oficial no CI antes da publicação.
+- **Não executado:** comandos de produção, qualquer escrita no banco, API autenticada com dados reais, alteração de Render, alterações em PR #663, deploy, merge ou testes ponta a ponta de Novo/Editar.
+
+## 4. Bloqueio real do Build Command
+Comando atual em Render:
+```sh
+npm install && npm run db:generate && npm run build:api && npm run db:prepare:production && npm run db:push:production
+```
+`db:prepare:production` pode executar `DELETE FROM "Budget"`. `db:push:production` executa `prisma db push --accept-data-loss && tsx prisma/ensure-performance-indexes.ts`. **É proibido executar novo deploy com esse build**.
+Comando candidato, para aprovação posterior:
+```sh
+npm ci --audit=false && npm run db:generate && npm run build:api
+```
+**Atenção:** o preflight verifica padrões conhecidos; não prova ausência de outras dependências de inicialização. Investigar qualquer pre-deploy, start command, env group e eventual necessidade de schema sem escrever no banco. O serviço atual utiliza `npm run start:api` e health `/health`.
+
+## 5. PROCEDIMENTO PROPOSTO PARA APROVAÇÃO FUTURA (NÃO EXECUTAR NESTA RODADA)
+
+### Fase A — preparação fora da produção (sem mutações)
+1. Congelar SHAs: `main@28703a...` ou o head novo constatado, PR #663 exata, preview #656 e deploy LIVE atual; nenhuma alteração de UI ou Android.
+2. Corrigir a divergência de rótulos na PR #663, com teste de integração de paridade API/DataGrid nos casos de `sourcePayload` sem `importedRow`; validar histórico, CORS, auth, teste PostgreSQL local, segurança, TypeScript, build API, precaução de escopo. Nenhum deploy.
+3. Conferir backup/snapshot restaurável do banco segundo a plataforma de armazenamento, sem gerar backup por operação mutante nesta etapa; confirmar dono/recursos responsáveis e plano de contingência. Revisar schema e índices por leitura apenas.
+4. Congelar diffs de serviço, `main`, configuração de build/deploy, versão Node, `npm ci`, env vars referenciadas por nome sem ler valores nem registrar secrets. Aprovação explícita para mudança de configuração e possível deploy.
+
+### Fase B — alteração CONTROLADA da configuração da API (requer autorização separada)
+1. Em janela aprovada, no serviço exato `meg-platform-api` (id `srv-d98k61daeets7384hvb0`), ajustar **somente** Build Command para `npm ci --audit=false && npm run db:generate && npm run build:api`; confirmar que **não há** outro pre-deploy mutante. Não alterar `main`, writes, API frontend, Android nem DB.
+2. A documentação do Render sobre alterações de configuração e filtros indica que elas podem desencadear deploy fora dos filtros automáticos; **tratar qualquer edição do serviço como deploy potencial até confirmar a semântica do canal escolhido**. A referência API de atualização de serviço, por sua vez, documenta que PATCH sozinho não publica automaticamente; o procedimento deve seguir o comportamento específico da interface utilizada e **NÃO presumir que desativar Auto-Deploy elimina qualquer deploy de configuração**.
+3. Se a mudança iniciar deploy, acompanhar build/health antes de roteamento, com o **código `main` já publicado**, garantir logs sem `db:prepare`, `db:push`, `migrate` ou `seed`. **Cancelar/abortar** se houver comando inesperado. Confirmar que nenhuma transação de banco foi tentada.
+4. Verificar Build Command reconsultando o serviço Render, SHA LIVE, saúde `GET /health` e ausência de regressão da API antiga. Não confundir conclusão técnica da alteração de build com publicação da PR #663.
+
+### Fase C — liberação isolada da PR #663 (requer SEGUNDA autorização de merge/deploy)
+1. Atualizar diff contra `main`, rever todos os 9 arquivos mais correções autorizadas, executar gates completos e checar autorização da revisão. Exigir merge separado da API apenas após confirmação explícita do usuário. **Não incluir PR #656.**
+2. Deploy monitorado com Build Command seguro e SHA específico; comparar deploy LIVE e `/health`.
+3. Teste autenticado GET, sem escrita: token válido/ausente, papéis, workspace, origem CORS, headers no-store, snapshot 3.731 (se ainda for o estado real), ordenação/IDs, legado, filtros equivalentes e soma canônica, fallback antigo e tempo total de carregamento. Não criar eventos para forçar o limite 5.001 em produção.
+4. Comparar relatórios existentes da Home e fluxo Android no estado atual, sem alterações nesses clientes; validar ausência de regressões e logs de segurança.
+
+### Critérios de interrupção e rollback
+- **Antes do deploy:** PR diferente da auditada, writer/schema modificado, Build Command inseguro, pre-deploy inesperado, teste de paridade falho, CI não verde ou backup/rollback não comprovado => **não publicar**.
+- **Durante o deploy:** log sugerindo `DELETE`, `db push`, migration ou seed => cancelar assim que identificado, tratar como possível incidente de banco e auditar; **rollback de aplicação NÃO desfaz escrita de banco**.
+- **Após deploy com erro da nova API:** usar dashboard Render > Deploys > Rollback ao deploy LIVE anterior `dep-dbm92b17lnhs738s0jr0` ou outro comprovadamente saudável. **Manter Build Command atual da configuração em versão segura; nunca restaurar o script destrutivo como rollback.** Verificar disponibilidade do artefato alvo, pois Render pode expirar builds e o rollback via dashboard ajusta Auto-Deploy; validar novamente configuração/health. O cliente Lançamentos deve voltar ao fallback quando capacidades novas não forem anunciadas, sem calcular dinheiro localmente.
+- **Riscos residuais:** conexão de banco/compatibilidade do Node, CORS, isolamento de usuário, latência/carga para 5.000 eventos, token de revisão não cobrindo determinada mutação, diferença de rótulos legados e regressão de clients antigos. Monitorar erros e latência sem expor conteúdo financeiro.
+
+## 6. Handoff para Novo/Editar Lançamento (NÃO iniciar Etapa 10)
+- Preservar `OPENING_BALANCE` auditável, `financial-policy.ts` para Fixo/receita/cartão, writers distintos de dinheiro, benefício Verocard, transferências, payables, compras/parcelas e conciliação de faturas. Crediário excluído por decisão atual.
+- A UI de Lançamentos já seleciona múltiplos IDs, mas não possui **Editar selecionados**. `FinancialEvent` em lote tem writer protegido limitado a 200 IDs; `CardPurchase/CardInstallment` precisam contrato próprio, não transformar vários PATCHs unitários em transação supostamente atômica.
+- Alterar cartão e vencimento pode afetar competências e faturas; parcelas pagas/parcialmente pagas têm bloqueios explícitos. Não alterar retroativamente `dueDay/closingDay` sem caracterização e contrato histórico.
+- Testes da futura Etapa 10: autocomplete sem copiar valor/data, edição/baixa idempotente, saldo suficiente, benefício sem saldo monetário, parcelas e arredondamento, concorrência/409, rollback de lote, seleção mista e confirmação diferenciada de domínios, revisão da UI após backend canônico.
+- **Etapa 09 ABERTA:** corrigir/auditar paridade de filtros e resolver segurança operacional da publicação antes de declarar encerramento. Homologação visual da Etapa 09 já existente não deve ser repetida sem mudança visual. Issues #661 e #662 permanecem fora de escopo.
