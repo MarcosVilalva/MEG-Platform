@@ -19,7 +19,7 @@ assert.match(snapshot,/kind:\s*'limit-exceeded'/);
 assert.doesNotMatch(snapshot,/\.(?:create|createMany|update|updateMany|delete|deleteMany|upsert)\s*\(/);
 assert.match(routes,/app\.get\('\/events\/history-snapshot',\s*\{\s*preHandler:\s*app\.authorize\(\[\.\.\.readRoles\]\)/);
 assert.match(routes,/getFinancialHistorySnapshot\(dataOwnerId\)/);
-assert.match(routes,/capabilities:\s*\{\s*historySnapshotV1:\s*true\s*\}/);
+assert.match(routes,/capabilities:\s*\{\s*historySnapshotV1:\s*true,\s*filteredSummaryV1:\s*true\s*\}/);
 assert.match(operational,/before\.capabilities\?\.historySnapshotV1===true/);
 assert.match(operational,/readAuthorizedHistory\(fetchPage,signal/);
 assert.match(operational,/readSmartAuthorizedHistory\(/);
