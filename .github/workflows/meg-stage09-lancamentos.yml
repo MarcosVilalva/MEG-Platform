@@ -29,6 +29,8 @@ jobs:
           npm run test:core
           npm run test:evolution-data
           npm run test:web-evolution-datagrid
+      - name: Bloquear comando de deploy da API com risco de mutação destrutiva
+        run: node --test scripts/meg-stage09-api-readonly-preflight.test.mjs
       - name: Verificar persistência isolada dos filtros favoritos
         run: npx tsx scripts/meg-stage09-saved-filters.contract.test.ts
       - name: Verificar catálogo semântico das categorias sem alterar dados financeiros
