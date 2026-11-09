@@ -54,3 +54,15 @@ Auditoria técnica da PR #656, em Draft, sem merge. Este documento NÃO autoriza
 4. O serviço `meg-platform-api` continua apontado para `main`. Esta PR Draft **não deve ser mesclada** para levar a API à produção. Preparar release/API isolada, revisar diff e pedir autorização de publicação quando a infraestrutura estiver segura.
 5. Os testes de navegador e PostgreSQL são com dados sintéticos. Teste autenticado com dados financeiros reais, observabilidade, latência sob volume real, compatibilidade Android e validação operacional continuam pendentes.
 6. Issues #661 (Home) e #662 (personalização transversal) continuam backlog. Este chat/branch só executa a Etapa 09.
+
+
+## Evidência operacional somente leitura do banco real (09/11/2026)
+Projeto Supabase confirmado: `meg-financas` (`ugbiqzaqnrhulhetevby`, ACTIVE_HEALTHY). A consulta foi limitada a metadados, contagens e índices; **nenhum valor financeiro, lançamento individual, token ou dado de usuário foi extraído e nenhuma escrita foi realizada**. O projeto `meg-evolution` NÃO foi consultado.
+- `FinancialEvent`: 6.576 registros físicos, sendo **3.731 ativos** (`archivedAt IS NULL`) e **2.845 arquivados**. Um titular distinto no conjunto consultado; nenhum evento ativo sem `userId`.
+- Entre os ativos, **3.626 sem `categoryId`** e exatamente **3.626 com a chave histórica `sourcePayload.category`**; **3.512 sem `paymentMethodId`** e exatamente **3.512 com `sourcePayload.paymentMethod`**. Nenhum evento ativo sem `accountId`. A regra de filtro de rótulos históricos é, portanto, requisito operacional, não capricho visual.
+- Distribuição de tipos/status entre ativos: 2.759 despesas pagas, 646 receitas pagas e 326 despesas planejadas. Não foram consultados montantes.
+- As colunas utilizadas no snapshot constam do schema real, incluindo `signedAmount`/`amount` como `numeric`, `sourcePayload` como `jsonb`, `archivedAt`, `userId` e datas.
+- Índices presentes: `FinancialEvent_user_active_date_idx` (parcial `archivedAt IS NULL`), `FinancialEvent_user_active_status_date_idx`, índices por `accountId`, `categoryId`, `paymentMethodId` e índice de workspace/data.
+- O limite de 5.000 abrange o histórico **ativo no instante auditado**, mas não constitui garantia para crescimento futuro. A UI continuará exibindo `—` se o limite for ultrapassado, sem total incompleto.
+- A consulta direta ao banco **não equivale** à chamada autenticada pelo endpoint publicado, nem comprova CORS, headers, sessão, latência HTTP, confiabilidade da cache ou equivalência financeira em produção. Esses gates continuam pendentes.
+- Contrato ampliado com testes explícitos de forma de pagamento histórica tanto no `sourcePayload` quanto em `sourceDetails`, sem criar novo vínculo de cadastro.
