@@ -2,7 +2,7 @@
 
 Antes de alterar o MEG Web ou responder a “Retomar MEG — memória oficial — último ponto validado”, ler primeiro `docs/MEG_CURRENT_STATE.md` e depois `docs/MEG_WEB_MASTER_SPEC.md`. Se `docs/MEG-RETOMADA-OFICIAL.md` estiver presente na branch corrente, usar também seus checkpoints históricos e referências visuais.
 
-Referência visual obrigatória: `docs/design/2026-10-03/manifest.json` e os 16 PNGs originais ao lado quando disponíveis. O conjunto define o novo sistema confirmado por Marcos. As regras financeiras existentes do App continuam obrigatórias.
+Referência visual obrigatória **atual**: conjunto oficial vigente registrado em `docs/MEG-WEB-REFERENCIAS-OFICIAIS-20261027.md` e os prints oficiais de 27/10/2026 do Projeto. Não usar as referências visuais antigas de `docs/design/2026-10-03/` como base das telas Web; mantê-las somente como histórico quando necessário. As regras financeiras existentes no repositório continuam soberanas.
 
 **REGRA ABSOLUTA PARA O TRABALHO EVOLUTION WEB:** `/android/**` e `apps/web/src/mobile/**` são somente leitura. Podem ser consultados como referência funcional/visual, mas não podem ser editados, renomeados, removidos, reformatados, ter versões alteradas, receber assets, builds, configuração, OTA ou qualquer outra modificação como parte da reconstrução Web. Qualquer mudança no Android exige uma solicitação explícita e separada do usuário.
 
@@ -10,7 +10,20 @@ Não assumir que uma imagem de referência, uma prévia estática ou um build ve
 
 Manter a documentação atualizada com o resultado real de cada etapa, a revisão correspondente e pendências concretas. Não depender somente do chat nem solicitar de novo imagens já presentes no repositório.
 
-Preservar Loading aprovado, responsividade, SVGs lineares premium, neon elegante, profundidade 3D, legibilidade, telas fixas e rolagem somente nas áreas densas. Conferir todas as regras de lançamento, conta, crédito, benefício e baixa no checkpoint oficial antes de editar fluxos financeiros.
+Preservar Loading aprovado, responsividade, imagens WebP artísticas oficiais, ícones de função discretos quando necessários, neon elegante, profundidade, legibilidade, telas fixas e rolagem somente nas áreas densas. Evitar SVGs genéricos como decoração em substituição às imagens oficiais. Conferir todas as regras de lançamento, conta, crédito, benefício e baixa no checkpoint oficial antes de editar fluxos financeiros.
+
+## Regra permanente de simetria visual entre telas (MEG Web Evolution)
+
+**Prioridade obrigatória em toda revisão de interface:** preservar a **simetria e coerência visual** de uma tela para a próxima. Esta é uma decisão expressa do usuário aprovada em 28/10/2026, não uma sugestão estética.
+
+- Entre telas relacionadas, alinhar a mesma **grade estrutural**, eixos, margens, espaçamentos, proporções, hierarquia tipográfica, tamanho/presença da marca MEG, cabeçalhos, botões de ação, formulários, modais e estados visuais. O conjunto deve parecer um único produto, não páginas independentes.
+- O **logotipo MEG oficial deve ser um elemento de destaque**, legível, nítido e com dimensões consistentes entre telas equivalentes. Evitar arquivos com margens internas excessivas, object-fit que reduza a marca ou limites de altura que produzam logos minúsculos.
+- Manter unidade de cores, imagens decorativas, linguagem de profundidade/iluminação e posições de comandos; **não forçar identidade absoluta** quando os conteúdos e regras de negócio exigirem disposição distinta.
+- Exigir **comparação visual lado a lado** de telas relacionadas em desktop, tablet e celular, incluindo os breakpoints principais de 640 e 1024 px; inspecionar alinhamento, proporção da marca, cortes, sobreposição, rolagem externa indevida e acessibilidade. Testes/build/deploy não substituem aprovação visual explícita.
+- Ao implementar ou revisar uma tela, avaliar o impacto sobre o sistema visual completo; corrigir estruturas incoerentes em vez de empilhar exceções CSS. Preservar DataGrid, interações reais e domínio financeiro; nunca fabricar informação financeira para obter simetria.
+- **Hierarquia preservada:** 1) regras de negócio do repositório; 2) print oficial atual; 3) Prompt Master. A simetria é requisito transversal **dentro desses limites**, não autorização para contrariar um print oficial ou regra financeira.
+- **Aceite registrado:** em 28/10/2026, o usuário aprovou expressamente as revisões visuais do Login e Criar Conta **com a marca MEG ampliada e reenquadrada**, além do Loading já aprovado. Isso não representa homologação funcional de autenticação/cadastro, conclusão da suíte E2E, aprovação de outras telas ou autorização de merge.
+
 
 ## Metodologia obrigatória do projeto
 

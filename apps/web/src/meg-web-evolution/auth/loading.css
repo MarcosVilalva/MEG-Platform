@@ -1,158 +1,184 @@
-/* Splash visual da referência oficial, sem reaproveitar Evolution antiga. */
-.meg-loading-screen { position: relative; width: 100%; height: 100dvh; overflow: hidden; background: #010c0d; color: #eafbf8; font-family: 'MEG Inter', Inter, system-ui, sans-serif; }
-.meg-loading-art { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: none; }
-.meg-loading-mobile-copy { display: none; }
-.meg-loading-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.meg-loading-alt { justify-content: center; align-items: center; }
-.meg-loading-state { width: min(100%, 31rem); display: grid; gap: 1rem; padding: 2rem; text-align: center; max-height: 90dvh; overflow-y: auto; }
-.meg-loading-state img { display: block; margin: auto; object-fit: contain; filter: none; }
-.meg-loading-state h1 { margin: 0; font-size: clamp(1.4rem, 3vw, 2rem); }
-.meg-loading-state p { margin: 0; line-height: 1.5; color: #b6cccf; }
-.meg-loading-state button { min-height: 44px; }
-@media (max-width: 480px) { .meg-loading-screen { min-height: 100dvh; } .meg-loading-state { padding: 1.1rem; } }
-@media (prefers-reduced-motion: reduce) { .meg-loading-screen *, .meg-loading-alt * { animation: none !important; transition: none !important; } }
-
-@media (max-width: 480px) {
-  .meg-loading-screen::after { content: ''; position: absolute; inset: auto 0 0; height: 35%; background: linear-gradient(transparent 0%, #010f12 22%, #010f12 100%); pointer-events: none; }
-  .meg-loading-mobile-copy { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; left: 1rem; right: 1rem; bottom: 2.5rem; gap: .65rem; }
-  .meg-loading-mobile-track { width: 100%; height: 15px; overflow: hidden; border: 2px solid #22e9d6; border-radius: 99px; background: rgba(0,20,24,.9); }
-  .meg-loading-mobile-track span { display: block; height: 100%; width: 68%; border-radius: inherit; background: linear-gradient(90deg, #09d8e1, #60f6bb); }
-  .meg-loading-mobile-copy h1 { font-size: clamp(1.15rem, 5.7vw, 1.5rem); line-height: 1.25; text-wrap: balance; margin: .3rem 0 0; }
-  .meg-loading-mobile-copy p { font-size: .95rem; line-height: 1.4; text-wrap: pretty; color: #bdd5d5; margin: 0; max-width: 22rem; }
+/* MEG Web Evolution · Tela 01 · cenário fotográfico em viewport completa.
+   Nada de cards de imagem, recortes com bordas ou screenshot como UI.
+   Arte local é fundo decorativo; marca, progresso, status e acessibilidade são React.
+   Únicos breakpoints estruturais de largura: 640 e 1024px.
+*/
+.meg-loading-screen {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: stretch;
+  width: 100%;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: #f4fffe;
+  background: #001116;
+  font-family: 'MEG Inter', Inter, ui-sans-serif, system-ui, sans-serif;
 }
-
-/* Artboard oficial completo em viewports desktop muito largos e baixos. */
-@media (min-width: 1024px) and (max-height: 650px) and (min-aspect-ratio: 2/1) {
-  .meg-loading-art { object-fit: contain; }
-}
-
-/* Tarjas laterais: fundo desfocado da própria arte e bordas suavizadas, sem emenda. */
-@media (min-width: 1024px) and (max-height: 650px) and (min-aspect-ratio: 2/1) {
-  .meg-loading-screen::before { content: ''; position: absolute; inset: -5%; background: var(--meg-loading-art) center / cover no-repeat; filter: blur(28px) brightness(.7); }
-  .meg-loading-art { position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
-}
-
-/* Mobile: degradê maior e mais suave para esconder o corte onde a arte termina. */
-@media (max-width: 480px) {
-  .meg-loading-screen::after { height: 48%; background: linear-gradient(to bottom, rgba(1,15,18,0) 0%, rgba(1,15,18,.85) 30%, #010f12 55%); }
-}
-
-/* O img tem a largura exata da arte 16:9, então a máscara atua na emenda real. */
-@media (min-width: 1024px) and (max-height: 650px) and (min-aspect-ratio: 2/1) {
-  .meg-loading-art { width: min(100%, calc(100dvh * 16 / 9)); margin-inline: auto; }
-}
-
-/* Barra real animada sobre a região inferior da arte. */
-.meg-loading-screen::after {
-  content: '';
+.meg-loading-background {
   position: absolute;
-  z-index: 1;
-  inset: auto 0 0;
-  height: 48%;
-  background: linear-gradient(
-    to bottom,
-    rgba(1, 15, 18, 0) 0%,
-    rgba(1, 15, 18, .94) 35%,
-    #010f12 60%
-  );
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 11, 17, .06), rgba(0, 12, 17, .03) 49%, rgba(0, 11, 16, .28)),
+    url('/meg-web-evolution/visual-loading/loading-fullbleed-cinematic.webp')
+      center center / cover no-repeat;
   pointer-events: none;
 }
-
-.meg-loading-screen .meg-loading-mobile-copy {
-  position: absolute;
-  z-index: 2;
+.meg-loading-composition {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, .30fr) minmax(0, .47fr) minmax(0, .23fr);
+  justify-items: center;
+  align-items: center;
+  padding: clamp(.5rem, 1.5vh, 1.4rem) clamp(.75rem, 2vw, 2.25rem)
+    max(.7rem, env(safe-area-inset-bottom));
+}
+.meg-loading-brand {
+  display: block;
+  justify-self: center;
+  align-self: center;
+  width: clamp(10rem, 17vw, 17rem);
+  height: 100%;
+  max-height: 12rem;
+  max-width: 68vw;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 0 1rem rgba(11, 238, 224, .12));
+}
+.meg-loading-stage {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  pointer-events: none;
+}
+.meg-loading-progress {
   display: flex;
   flex-direction: column;
+  align-self: center;
   align-items: center;
+  justify-content: center;
+  width: min(51vw, 46rem);
+  max-width: calc(100vw - 1.5rem);
+  min-width: 0;
+  padding: .75rem 0 0;
+  gap: clamp(.4rem, 1.25vh, .8rem);
   text-align: center;
-  left: 1rem;
-  right: 1rem;
-  bottom: max(2rem, env(safe-area-inset-bottom));
-  gap: .8rem;
+  text-shadow: 0 2px 12px #001013;
 }
-
-.meg-loading-screen .meg-loading-mobile-track {
-  width: min(100%, 650px);
-  height: 18px;
-  box-sizing: border-box;
+.meg-loading-track {
+  width: 100%;
+  height: clamp(.95rem, 1.85vh, 1.18rem);
+  padding: .14rem;
+  border: 2px solid #15eae1;
+  border-radius: 99rem;
   overflow: hidden;
-  border: 2px solid #22e9d6;
-  border-radius: 999px;
-  background: #001418;
-  box-shadow: 0 0 16px #22e9d633;
+  background: rgba(0, 17, 25, .96);
+  box-shadow: inset 0 0 .8rem rgba(6, 235, 206, .09);
 }
-
-.meg-loading-screen .meg-loading-mobile-track span {
+.meg-loading-fill {
   display: block;
-  width: 35%;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #09d8e1, #60f6bb);
-  box-shadow: 0 0 14px #60f6bb80;
-  animation: meg-loading-indeterminate 1.8s ease-in-out infinite;
-}
-
-.meg-loading-screen .meg-loading-mobile-copy h1 {
-  margin: .3rem 0 0;
-  font-size: clamp(1.2rem, 2.3vw, 2rem);
-  line-height: 1.25;
-  text-wrap: balance;
-}
-
-.meg-loading-screen .meg-loading-mobile-copy p {
-  margin: 0;
-  max-width: 30rem;
-  font-size: clamp(.95rem, 1.3vw, 1.2rem);
-  line-height: 1.4;
-  color: #bdd5d5;
-  text-wrap: balance;
-}
-
-@keyframes meg-loading-indeterminate {
-  from { transform: translateX(-110%); }
-  to { transform: translateX(300%); }
-}
-
-@media (max-width: 480px) {
-  .meg-loading-screen .meg-loading-mobile-track {
-    height: 15px;
-  }
-
-  .meg-loading-screen .meg-loading-mobile-copy {
-    bottom: max(2.5rem, env(safe-area-inset-bottom));
-    gap: .65rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .meg-loading-screen .meg-loading-mobile-track span {
-    animation: none !important;
-    transform: none;
-    width: 100%;
-    opacity: .65;
-  }
-}
-
-/* MEG: progresso por etapas reais */
-.meg-loading-screen .meg-loading-mobile-track span {
-  width: 100% !important;
-  animation: none !important;
+  background: linear-gradient(90deg, #08cbe7, #30f5df 55%, #68ffc7);
+  box-shadow: 0 0 1rem rgba(36, 240, 213, .55);
   transform-origin: left center;
-  transition: transform .35s ease;
-  opacity: 1;
+  transform: scaleX(0);
+  transition: transform .12s linear;
 }
-
+.meg-loading-progress h1 {
+  margin: 0;
+  font-size: clamp(1.3rem, 2.35vw, 2.2rem);
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: -.03em;
+}
+.meg-loading-progress p {
+  margin: 0;
+  max-width: 36rem;
+  color: #c0d8db;
+  font-size: clamp(.83rem, 1.28vw, 1.16rem);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+.meg-loading-a11y {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.meg-loading-alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.meg-loading-state {
+  display: grid;
+  gap: .8rem;
+  text-align: center;
+  width: min(100%, 33rem);
+  min-height: 0;
+  max-height: 100dvh;
+  padding: clamp(1rem, 3vw, 2rem);
+  overflow: auto;
+}
+.meg-loading-state img {
+  display: block;
+  width: 8.5rem;
+  height: 7rem;
+  margin-inline: auto;
+  object-fit: contain;
+}
+.meg-loading-state h1 { margin: 0; font-size: clamp(1.4rem, 3vw, 2rem); }
+.meg-loading-state p { margin: 0; color: #bfd5d7; line-height: 1.4; }
+.meg-loading-state button { min-height: 44px; }
+@media (max-width: 1024px) {
+  .meg-loading-composition {
+    grid-template-rows: minmax(0, .25fr) minmax(0, .52fr) minmax(0, .23fr);
+  }
+  .meg-loading-brand { width: min(45vw, 15rem); }
+  .meg-loading-progress { width: min(76vw, 42rem); }
+}
+@media (max-width: 639px) {
+  .meg-loading-background {
+    background-position: center center, 50% center;
+    background-size: 100% 100%, auto 100%;
+  }
+  .meg-loading-composition {
+    grid-template-rows: minmax(0, .22fr) minmax(0, .55fr) minmax(0, .23fr);
+    padding: max(.65rem, env(safe-area-inset-top)) .85rem
+      max(.8rem, env(safe-area-inset-bottom));
+  }
+  .meg-loading-brand { width: min(56vw, 13rem); max-height: 10rem; }
+  .meg-loading-progress {
+    width: calc(100vw - 2.1rem);
+    max-width: 100%;
+    padding: 0;
+    gap: .5rem;
+  }
+  .meg-loading-progress h1 { font-size: clamp(1.2rem, 5.35vw, 1.68rem); }
+  .meg-loading-progress p { font-size: clamp(.79rem, 3.6vw, .97rem); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .meg-loading-screen .meg-loading-mobile-track span {
+  .meg-loading-screen *,
+  .meg-loading-screen *::before,
+  .meg-loading-screen *::after {
+    animation: none !important;
     transition: none !important;
   }
-}
-
-/* Desktop: preservar a ponta da seta e dar respiro acima da logo. */
-@media (min-width: 481px) {
-  .meg-loading-screen .meg-loading-art {
-    box-sizing: border-box;
-    padding-top: 20px;
-    object-position: center top;
-  }
+  [data-meg-loading="preview-only"] .meg-loading-fill { transform: scaleX(.55); }
 }
