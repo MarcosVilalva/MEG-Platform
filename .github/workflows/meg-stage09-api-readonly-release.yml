@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -38,7 +40,7 @@ jobs:
         run: npm run build:api
       - name: Proibir alteracao no schema e nos writers do release
         run: |
-          git fetch origin main --depth=1
+          git fetch origin main
           CHANGES=$(git diff --name-only origin/main...HEAD)
           echo "$CHANGES"
           if echo "$CHANGES" | grep -E '^(packages/database/|apps/web/|apps/api/src/modules/(app-state|payables|cards|receivables)/|apps/api/src/modules/finance/(event-mutation|event-settlement|transfer-service|catalog-mutation|financial-policy|monetary-protection|read-model)\.)'; then
