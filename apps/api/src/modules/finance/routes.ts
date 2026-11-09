@@ -14,6 +14,7 @@ import {
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
 import {parseHistoryFilters} from './history-filter';
+import {getActiveFinancialHistoryRevision} from './history-revision';
 import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './phoenix-read';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
@@ -161,7 +162,7 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get('/sync-status', { preHandler: app.authorize([...readRoles]) }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
     const dataOwnerId = context.workspace.ownerId;
-    const [latestMutation, latestAccount, latestCategory, latestPaymentMethod, latestCard] = await Promise.all([
+    const [latestMutation, latestAccount, latestCategory, latestPaymentMethod, latestCard, activeHistoryRevision] = await Promise.all([
       prisma.cloudMutationReceipt.findFirst({
         where: { workspaceId: context.workspaceId },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -187,6 +188,9 @@ export async function financeRoutes(app: FastifyInstance) {
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         select: { id: true, updatedAt: true },
       }),
+      // Revisao de dados ativos: cobre PATCH/arquivamento/importacao sem
+      // CloudMutationReceipt, sem alterar o writer financeiro existente.
+      getActiveFinancialHistoryRevision(dataOwnerId),
     ]);
 
     const catalogSources = [
@@ -215,7 +219,7 @@ export async function financeRoutes(app: FastifyInstance) {
     const catalogIsNewest = Boolean(latestCatalog && (!latestMutation || latestCatalog.item.updatedAt > latestMutation.createdAt));
 
     return {
-      token: `${mutationToken}|${catalogToken}`,
+      token: `${mutationToken}|${catalogToken}|${activeHistoryRevision}`,
       changedAt: changedAtDate?.toISOString() || null,
       mutationType: catalogIsNewest ? 'CATALOG_SYNC' : latestMutation?.mutationType || null,
       catalogChangedAt: latestCatalog?.item.updatedAt.toISOString() || null,
