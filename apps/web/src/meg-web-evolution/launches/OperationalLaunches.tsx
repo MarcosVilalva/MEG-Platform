@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {authenticatedRequest} from '../../app/auth-client';
-import type {Account, Category, PaymentMethod, FinanceSummary, FinancialEvent} from '../../app/finance-client';
+import type {Account, Category, PaymentMethod, FinanceSummary, FinancialEvent, CanonicalFilteredHistorySummary} from '../../app/finance-client';
+import type {DataGridFilterState} from '../datagrid/types';
 import {financeClient} from '../../app/finance-client';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchesStage09, type LaunchesFilterPreset} from './LaunchesStage09';
@@ -91,13 +92,15 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
  const [error,setError]=useState('');
  const [progress,setProgress]=useState<HistoryProgress>({loaded:0,total:0,pass:1,mode:'snapshot'});
  const [version,setVersion]=useState(0);
+ const [canFilterCanonically,setCanFilterCanonically]=useState(false);
+ const loadedRevision=useRef('');
  const filterMemory=useRef<Partial<LaunchesFilterPreset>>({});
  const rememberFilters=useCallback((next:LaunchesFilterPreset)=>{filterMemory.current=next},[]);
  const reload=useCallback(()=>setVersion(current=>current+1),[]);
  useEffect(()=>{
   const controller=new AbortController();
   const {signal}=controller;
-  setData(null);setError('');setProgress({loaded:0,total:0,pass:1,mode:'snapshot'});
+  setData(null);setError('');setCanFilterCanonically(false);loadedRevision.current='';setProgress({loaded:0,total:0,pass:1,mode:'snapshot'});
   const run=async()=>{
    try{
     // O snapshot da API oferece consistência transacional para eventos.
@@ -131,6 +134,8 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
     if(typeof after.token!=='string'||before.token!==after.token){
      throw new Error('Os dados foram alterados durante a consulta. Atualize o histórico.');
     }
+    loadedRevision.current=before.token;
+    setCanFilterCanonically(before.capabilities?.filteredSummaryV1===true);
     setData(buildReadOnlyData(events,summary,accounts,categories,methods));
    }catch(cause){
     if(!signal.aborted){
@@ -147,6 +152,21 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
   window.addEventListener('meg:data-invalidated',invalidate);
   return ()=>{controller.abort();window.removeEventListener('meg:data-invalidated',invalidate)};
  },[userId,month,version,reload]);
+ const readCanonicalFiltered=useCallback(async(
+  criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal,
+ ):Promise<CanonicalFilteredHistorySummary|null>=>{
+  if(!canFilterCanonically)return null;
+  const revision=loadedRevision.current;
+  const before=await financeClient.getSyncStatus();
+  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+  if(!revision||before.token!==revision)throw new Error('O histórico foi atualizado. Atualize a consulta.');
+  const result=await financeClient.getFilteredHistorySummary({criteria,grid},signal);
+  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+  const after=await financeClient.getSyncStatus();
+  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+  if(after.token!==revision)throw new Error('O histórico mudou durante os indicadores. Atualize a consulta.');
+  return result;
+ },[canFilterCanonically]);
  if(error)return <section className="meg-l09" aria-label="Erro na consulta dos lançamentos">
   <div className="meg-l09-preview-warning" role="alert">{error} Nenhum resultado parcial foi publicado.</div>
   <button type="button" className="meg-l09-add" onClick={reload}>Tentar novamente</button>
@@ -184,6 +204,7 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
  return <LaunchesStage09
   key={userId} data={data} mode="live" periodMonth={month} userId={userId}
   exportUserName={userName} onRefresh={reload}
+  onFilteredSummary={canFilterCanonically?readCanonicalFiltered:undefined}
   rememberedFilters={filterMemory.current} onRememberFilters={rememberFilters}
   onNew={()=>{}} onHome={onHome}
  />;
