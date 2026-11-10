@@ -74,6 +74,7 @@ try{
   assert(areas.every(item=>item.w>=44&&item.h>=44&&item.aria),'alvos de toque e rótulos dos controles: '+width);
   await page.getByRole('button',{name:'Mover Transferência para direita'}).click();
   assert(JSON.stringify((await stored(page)).slice(0,2))===JSON.stringify(['pendentes','transferencia']),'ordenação à direita: '+width);
+  for(let k=0;k<10&&!await page.getByRole('button',{name:'Mover Transferência para esquerda'}).count();k++)await next(page);
   await page.getByRole('button',{name:'Mover Transferência para esquerda'}).click();
   assert(JSON.stringify((await stored(page)).slice(0,4))===JSON.stringify(['transferencia','pendentes','relatorios','metas']),'ordenação à esquerda: '+width);
 
