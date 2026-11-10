@@ -16,7 +16,8 @@ Arquivos nesta PR:
 
 1. `scripts/meg-stage09-safe-backup.sh`: exportação **lógica completa do PostgreSQL com `pg_dump`**, formato custom, enviada diretamente ao **age** por pipe. Nenhum dump SQL aberto é escrito no disco. Um manifesto com SHA-256 do arquivo criptografado e inventário é gerado. Inclui esquemas gerenciados **somente na medida em que o usuário PostgreSQL tiver leitura e o `pg_dump` os incluir**. Dump de schemas internos **não é** automaticamente restaurável em outro Supabase.
 2. `scripts/meg-stage09-safe-restore-drill.sh`: valida SHA-256 e descriptografa em fluxo, restaurando **apenas o schema `public`** em banco PostgreSQL **exclusivamente local** (`127.0.0.1:5432/meg_restore_drill`). O script recusa banco não vazio e recusa host remoto ou nome de banco diferente. Compara 32 tabelas (ou o número encontrado durante a exportação) e exige registros presentes em `User`, `AppState` e `FinancialEvent`.
-3. `scripts/meg-stage09-backup-safety.test.mjs`: testa o controle de fluxo e bloqueios com **ferramentas simuladas e dados fictícios**, nunca com produção. A workflow também executa um ensaio de **PostgreSQL 17 real, mas com dados inteiramente sintéticos e bancos descartáveis**, verificando `pg_dump` → `age` → `pg_restore`. **Nenhum desses testes comprova restauração dos dados verdadeiros do MEG.**
+3. `scripts/meg-stage09-safe-vault-rootkey.sh`: salvaguarda opcional e separada da **chave-raiz criptográfica** usando apenas GET da Management API oficial. O token é lido exclusivamente do terminal privado, a chave nunca é exibida e é imediatamente criptografada com `age`. **Nenhum segredo real foi acessado neste trabalho.**
+4. `scripts/meg-stage09-backup-safety.test.mjs`: testa o controle de fluxo e bloqueios com **ferramentas simuladas e dados fictícios**, nunca com produção. A workflow também executa um ensaio de **PostgreSQL 17 real, mas com dados inteiramente sintéticos e bancos descartáveis**, verificando `pg_dump` → `age` → `pg_restore`. **Nenhum desses testes comprova restauração dos dados verdadeiros do MEG.**
 
 **Cobertura ainda pendente após rodar o kit:** chave-raiz de criptografia do Supabase Vault; senhas dos papéis customizados; segredos de ambiente do Render, chaves de autenticação da API, variáveis operacionais e credenciais externas; objetos Storage futuros; settings, extensões e ajustes de schemas gerenciados; restauração realmente funcional em um **novo projeto Supabase isolado**. Não confundir um dump existente com um plano integral de recuperação.
 
@@ -102,10 +103,21 @@ O script exige o SHA-256, restaura apenas objetos `public` em uma transação e 
 
 A consulta agregada revelou **1 entrada em `vault.secrets`**. Pela documentação Supabase, a chave-raiz do projeto **não integra dumps**. Uma restauração lógica em novo projeto pode deixar segredos e colunas criptografadas ilegíveis sem a chave original.
 
-Procedimento autorizado a ser feito apenas em terminal/gerenciador **privado**, por responsável que controla a organização:
+Procedimento para terminal/gerenciador **privado**, por responsável que controla a organização (o arquivo abaixo está preparado; a consulta real ainda NÃO foi executada):
 
 1. Enquanto o **projeto original permanece ativo**, obter a chave-raiz do projeto via método oficial do Supabase (Management API `/v1/projects/<project_ref>/pgsodium` com token de acesso pessoal). **Não recuperar a chave nesta conversa**, não registrar em logs do Work e não enviá-la ao GitHub.
-2. Armazenar a chave-raiz criptografada, com restrição de acesso, **separadamente** do dump e de sua própria chave de descriptografia. Registrar no manifesto operacional apenas o status **"chave guardada e acesso testado"**, nunca o valor.
+2. O script abaixo faz essa consulta de leitura, valida resposta de **64 caracteres hexadecimais** e salva o resultado diretamente criptografado, sem exibir o conteúdo. Exige **token pessoal inserido localmente**, nunca neste chat:
+
+```bash
+read -r -s -p 'Token Supabase pessoal, somente no terminal privado: ' SUPABASE_ACCESS_TOKEN; echo
+export SUPABASE_ACCESS_TOKEN
+export MEG_VAULT_KEY_BACKUP_DIR='/outro/volume-seguro/MEG-Vault-Key' # diferente do backup do banco
+export MEG_AGE_RECIPIENT="$(age-keygen -y "$MEG_AGE_IDENTITY")"
+bash scripts/meg-stage09-safe-vault-rootkey.sh
+unset SUPABASE_ACCESS_TOKEN
+```
+
+Armazenar a chave-raiz criptografada, com restrição de acesso, **separadamente** do dump e de sua própria chave de descriptografia. Registrar no manifesto operacional apenas o status **"chave guardada e acesso testado"**, nunca o valor.
 3. Para validar recuperação integral, criar **outro projeto Supabase isolado**, sujeito a avaliação prévia do custo e autorização de operações. Restaurar dados com o fluxo oficial, configurar extensões/permissões, copiar chave-raiz conforme procedimento da documentação e verificar uso do Vault sem expor o segredo. **Não enviar PUT da chave-raiz para o projeto original**, sob hipótese alguma.
 4. Documentar backups de credenciais externas, JWT secrets, configurações do Render, integrações e eventualmente Storage, todos fora do GitHub.
 
@@ -119,7 +131,7 @@ Documentação: [Supabase Backups](https://supabase.com/docs/guides/platform/bac
 - [ ] Exportação **real** do PostgreSQL executada com resultado confirmado.
 - [ ] Arquivo criptografado copiado e verificado em repositório de armazenamento **externo** ao Supabase/GitHub.
 - [ ] Chave de recuperação `age` armazenada offline e leitura testada.
-- [ ] Chave-raiz Supabase Vault protegida sem divulgação.
+- [ ] Chave-raiz Supabase Vault protegida sem divulgação por meio de exportação criptografada e confirmação privada.
 - [ ] Teste com **PostgreSQL real local**, verificação de contagens, dados essenciais, RLS/permissões e dependências.
 - [ ] Recuperação de componentes Supabase gerenciados e configurações externas em **novo projeto isolado**, se necessária à homologação integral.
 - [ ] Política de frequência (sugestão: backup diário), retenção e alerta de falha aprovada; automação somente **após** restore validado. Backup diário implica perda potencial de até um dia de alterações, sem PITR.
