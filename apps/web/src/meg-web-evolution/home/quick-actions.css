@@ -1,0 +1,21 @@
+/* Extensão isolada da Home aprovada: não modifica Shell, cards financeiros ou DataGrid. */
+.pano-quick-heading{gap:.6rem;flex-wrap:wrap}
+.pano-quick-edit-toggle{margin-left:auto;min-height:3rem;padding:.45rem .8rem;border:1px solid #388e887a;border-radius:.5rem;background:#073a42;color:#b8fff0;font-size:.76rem;font-weight:750}
+.pano-quick-edit-toggle:hover,.pano-quick-edit-toggle:focus-visible{border-color:#66e7cf;background:#104b52}
+.pano-quick-editor{margin-top:.6rem;padding:.7rem;border:1px solid #358e8875;border-radius:.65rem;background:#031c23}
+.pano-quick-editor>p,.pano-quick-empty{margin:.15rem 0 .6rem;color:#b3d5d1;font-size:.78rem;line-height:1.4}
+.pano-quick-editor-list{display:flex;flex-direction:column;gap:.35rem;padding:0;margin:0;list-style:none}
+.pano-quick-editor-list>li{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:space-between;min-width:0;padding:.45rem;border:1px solid #25635f80;border-radius:.5rem}
+.pano-quick-editor-list>li>span{font-weight:750;font-size:.78rem}
+.pano-quick-editor-controls,.pano-quick-available>div{display:flex;flex-wrap:wrap;gap:.3rem;min-width:0}
+.pano-quick-editor-controls button,.pano-quick-available button,.pano-quick-reset{min-height:3rem;border:1px solid #368d857f;border-radius:.4rem;background:#0a3a43;color:#c2f9ee;padding:.35rem .65rem;font-size:.73rem;font-weight:700}
+.pano-quick-editor-controls button:disabled{opacity:.35;cursor:not-allowed}
+.pano-quick-editor-controls button:not(:disabled):hover,.pano-quick-available button:hover,.pano-quick-reset:hover{background:#11535b;border-color:#79dcc8}
+.pano-quick-available{display:flex;flex-direction:column;gap:.4rem;margin-top:.8rem}
+.pano-quick-available>strong{font-size:.78rem}
+.pano-quick-reset{margin-top:.8rem}
+.pano-quick-status{display:block;font-size:.72rem;color:#9ddfcf;margin-top:.35rem}
+.pano-quick-status:empty{display:none}
+.pano-quick-edit-toggle:focus-visible,.pano-quick-editor button:focus-visible{outline:2px solid #a6ffe6;outline-offset:2px}
+@media(max-width:639px){.pano-quick-editor-list>li{align-items:stretch;flex-direction:column}.pano-quick-editor-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.pano-quick-editor-controls button{padding:.3rem .15rem;min-width:0}}
+@media(prefers-reduced-motion:reduce){.pano-quick-edit-toggle,.pano-quick-editor button{transition:none}}
