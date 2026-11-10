@@ -1472,3 +1472,57 @@
 @media(min-width:1024px) and (max-height:500px){
   .meg-shell.is-sidebar-collapsed .meg-brand{flex-basis:3.35rem;height:3.35rem;min-height:3.35rem}
 }
+
+/* Home 08: iluminação circular real, sem caixa ou contorno em torno do item ativo.
+   Inclui mouse e foco por Tab, mantendo Sair vermelho. */
+@media (min-width:1024px) {
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item {
+    position:relative;isolation:isolate;
+    border:1px solid transparent!important;border-radius:50%;
+    background:transparent!important;box-shadow:none!important;
+    outline:0!important;
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item::before {
+    content:"";position:absolute;z-index:-1;pointer-events:none;
+    width:44px;height:44px;max-width:calc(100% - 2px);
+    left:50%;top:50%;transform:translate(-50%,-50%);
+    border-radius:50%;border:0;
+    background:radial-gradient(circle,rgba(14,112,111,.16) 0%,rgba(6,55,62,.09) 52%,transparent 75%);
+    box-shadow:none;opacity:.65;transition:background .18s ease,box-shadow .18s ease,opacity .18s ease;
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item:is(:hover,:focus-visible)::before {
+    opacity:1;
+    background:radial-gradient(circle,rgba(32,225,203,.36) 0%,rgba(13,133,127,.17) 58%,transparent 78%);
+    box-shadow:0 0 17px rgba(12,218,194,.22),inset 0 0 11px rgba(30,239,209,.15);
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item.is-active::before {
+    opacity:1;
+    background:radial-gradient(circle,rgba(27,221,199,.37) 0%,rgba(12,125,120,.20) 56%,transparent 79%);
+    box-shadow:0 0 18px rgba(20,233,207,.27);
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item:focus-visible::before {
+    outline:2px solid rgba(126,255,228,.68);outline-offset:0;
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item svg {
+    color:#bdeee7;transition:color .17s ease,filter .17s ease,transform .17s ease;
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item:is(:hover,:focus-visible,.is-active) svg {
+    color:#b3fff0;filter:drop-shadow(0 0 6px rgba(34,246,212,.84));
+  }
+  .meg-shell.is-sidebar-collapsed .meg-logout-button {
+    border-color:rgba(249,105,123,.38);border-radius:13px;
+    background:linear-gradient(145deg,rgba(123,35,53,.29),rgba(45,20,34,.66));
+    color:#ffbcc5;box-shadow:0 0 10px rgba(231,68,99,.06);
+  }
+  .meg-shell.is-sidebar-collapsed .meg-logout-button:is(:hover,:focus-visible) {
+    border-color:#ff879a;background:rgba(158,49,76,.51);
+    color:#fff2f3;box-shadow:0 0 16px rgba(247,79,118,.20);
+  }
+  .meg-shell.is-sidebar-collapsed .meg-logout-button:is(:hover,:focus-visible) svg {
+    color:#ffb0bb;filter:drop-shadow(0 0 5px rgba(249,102,129,.5));
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item::before,
+  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item svg{transition:none}
+}
