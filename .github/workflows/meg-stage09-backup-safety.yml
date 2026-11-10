@@ -34,3 +34,65 @@ jobs:
       - name: Run simulated backup and isolated restore safety contract
         shell: bash
         run: node scripts/meg-stage09-backup-safety.test.mjs
+
+  postgres17-synthetic-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Install encryption tool, no production credentials
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y age
+      - name: Start two disposable PostgreSQL 17 servers
+        shell: bash
+        run: |
+          docker run -d --name meg-stage09-test-src -e POSTGRES_PASSWORD=LOCAL_TEST_ONLY postgres:17
+          docker run -d --name meg-stage09-test-dst -e POSTGRES_PASSWORD=LOCAL_TEST_ONLY postgres:17
+          for target in meg-stage09-test-src meg-stage09-test-dst; do
+            for i in $(seq 1 60); do
+              if docker exec "$target" pg_isready -U postgres >/dev/null 2>&1; then break; fi
+              sleep 1
+            done
+            docker exec "$target" pg_isready -U postgres
+          done
+      - name: Create synthetic dataset including placeholder Vault schema
+        shell: bash
+        run: |
+          docker exec -i meg-stage09-test-src psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE public."User" (id text PRIMARY KEY, name text NOT NULL);
+          CREATE TABLE public."AppState" (id text PRIMARY KEY, state jsonb NOT NULL);
+          CREATE TABLE public."FinancialEvent" (id text PRIMARY KEY, amount numeric(12,2) NOT NULL);
+          INSERT INTO public."User" VALUES ('test-user', 'SYNTHETIC');
+          INSERT INTO public."AppState" VALUES ('test-state', '{"transactions":[]}');
+          INSERT INTO public."FinancialEvent" VALUES ('t1', 10), ('t2', 20), ('t3', 30);
+          CREATE SCHEMA vault;
+          CREATE TABLE vault.secrets (id text PRIMARY KEY, secret text NOT NULL);
+          INSERT INTO vault.secrets VALUES ('test-vault', 'SYNTHETIC-NOT-A-PRODUCTION-KEY');
+          SQL
+      - name: Dump, encrypt, decrypt and restore real PostgreSQL 17 archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          age-keygen -o "$RUNNER_TEMP/meg-synthetic-key.txt"
+          recipient="$(age-keygen -y "$RUNNER_TEMP/meg-synthetic-key.txt")"
+          docker exec meg-stage09-test-src pg_dump -U postgres -Fc --no-owner --no-privileges --no-tablespaces -Z 6 -d postgres \
+            | age -r "$recipient" -o "$RUNNER_TEMP/meg-synthetic.pgdump.age"
+          age -d -i "$RUNNER_TEMP/meg-synthetic-key.txt" "$RUNNER_TEMP/meg-synthetic.pgdump.age" \
+            | docker exec -i meg-stage09-test-dst pg_restore -U postgres -d postgres --no-owner --no-privileges --single-transaction --exit-on-error -n public
+          source_count="$(docker exec meg-stage09-test-src psql -U postgres -d postgres -Atc 'SELECT count(*) FROM public."FinancialEvent"')"
+          restored_count="$(docker exec meg-stage09-test-dst psql -U postgres -d postgres -Atc 'SELECT count(*) FROM public."FinancialEvent"')"
+          test "$source_count" = 3
+          test "$restored_count" = "$source_count"
+          docker exec meg-stage09-test-dst psql -U postgres -d postgres -Atc 'SELECT count(*) FROM public."AppState"' | grep -qx 1
+          docker exec meg-stage09-test-dst psql -U postgres -d postgres -Atc 'SELECT count(*) FROM public."User"' | grep -qx 1
+          age -d -i "$RUNNER_TEMP/meg-synthetic-key.txt" "$RUNNER_TEMP/meg-synthetic.pgdump.age" \
+            | docker exec -i meg-stage09-test-dst pg_restore --list \
+            | grep -Eq 'TABLE DATA[[:space:]]+vault[[:space:]]+secrets'
+          echo 'PostgreSQL 17 synthetic encrypted backup and isolated restore: PASSED'
+      - name: Remove disposable databases and synthetic key
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f meg-stage09-test-src meg-stage09-test-dst 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/meg-synthetic-key.txt" "$RUNNER_TEMP/meg-synthetic.pgdump.age"
