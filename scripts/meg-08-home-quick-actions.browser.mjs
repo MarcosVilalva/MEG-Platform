@@ -64,6 +64,11 @@ try{
   assert(await dots.last().getAttribute('aria-current')==='true','pílula clicável não atualiza página: '+width);
   await dots.first().click();
   assert(await dots.first().getAttribute('aria-current')==='true','retorno à primeira pílula: '+width);
+  const pageSizes=await page.locator('.pano-finance-block .pano-grid .meg-datagrid-page-size select').evaluateAll(els=>els.map(el=>({
+    value:el.value,options:[...el.options].map(o=>o.value)
+  })));
+  assert(pageSizes.length===2&&pageSizes.every(x=>x.options.join(',')==='5,10'&&['5','10'].includes(x.value)),
+   'Home deve oferecer apenas 5 ou 10 registros, sem 600: '+width+' '+JSON.stringify(pageSizes));
   if(width>=1024){
    const rows=await page.evaluate(()=>{
     const blocks=[...document.querySelectorAll('.pano-finance-block .pano-grid')];
