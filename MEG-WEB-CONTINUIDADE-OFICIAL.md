@@ -1646,3 +1646,10 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **CI confirmada:** workflow [42871932832](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42871932832), conclusão `success`, SHA `1601926adeac3a0b46b3c5d356588cb2e38ffd89`. Build isolado e testes de navegador concluídos. Artefato `meg-home-08-qa` registrado no run.
 - **Preview público independente:** ainda NÃO publicado; não alterar configurações ou executar deploy Render sem autorização. A prévia existente da PR #655 NÃO representa o novo editor. Evidências do Actions não substituem demonstração interativa e validação visual.
 - **Homologação do painel customizável:** PENDENTE de inspeção visual do usuário. **Sincronização entre dispositivos:** PENDENTE da issue #662 e aprovação própria.
+
+### 10/11/2026 — autorização para prosseguir após entrega
+- Usuário respondeu **"APROVADO PODE SEGUIR"** à entrega da PR #664. Interpretar como autorização de continuidade técnica e preparação de validação, **não como homologação visual de interface que ainda não teve preview próprio**.
+- CI do head anterior `847dde648674ca88c674e16ee5c124aa35985e16`: [42872403421](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42872403421) **success**.
+- Adicionado upload de **build estático navegável** como artefato do workflow, para inspeção sem modificar serviços Render. Isso não equivale a URL pública de preview; instalação/serviço de hospedagem permanece pendente.
+- PR #664 permanece Draft e sem merge. Não alterar API, banco, Android, serviço Render ou PRs #656/#663; autorização de merge/deploy de produção segue ausente.
+- Atenção: os destinos da Home visual demonstrativa são avisos, não navegação operacional autenticada. Validar rotas/autorização antes de ampliar catálogo; não prometer lançamento de transferência, pagamento, relatórios ou configurações sem módulo implementado.
