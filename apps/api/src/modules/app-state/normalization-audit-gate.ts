@@ -10,6 +10,7 @@
 export const FULL_NORMALIZATION_AUDIT_INTERVAL_MS = 2 * 60 * 60 * 1000;
 
 export type NormalizationAuditStamp = {
+  workspaceId: string;
   stateRevision: number | null;
   stateUpdatedAt: string | null;
   activeEventCount: number;
@@ -20,7 +21,8 @@ export function sameNormalizationAuditStamp(
   left: NormalizationAuditStamp,
   right: NormalizationAuditStamp
 ): boolean {
-  return left.stateRevision === right.stateRevision
+  return left.workspaceId === right.workspaceId
+    && left.stateRevision === right.stateRevision
     && left.stateUpdatedAt === right.stateUpdatedAt
     && left.activeEventCount === right.activeEventCount
     && left.latestEventUpdatedAt === right.latestEventUpdatedAt;
