@@ -72,26 +72,28 @@ Um bloco só pode ser fechado após os gates pertinentes:
 
 ## Bloco em execução
 
-**Relatórios — revisão estrutural e anti-regressão — branch `feat/evolution-reports-structure` em validação.**
+**REPRODUÇÃO FIEL — Login — branch `feat/evolution-login-faithful-v3`.**
 
-Fundação estrutural global concluída pela PR #590. Login consolidado pela PR #591. Loading consolidado pela PR #592. Shell/Navegação consolidado pela PR #593. Home consolidada pela PR #594. Lançamentos consolidado pela PR #595. Pendentes consolidado pela PR #596. Cartões consolidado pela PR #597. Benefícios consolidado pela PR #598. Fluxo de Caixa consolidado pela PR #599, com CI e Visual Preflight verdes.
+A partir das referências visuais anexadas em 05/10/2026, o projeto deixa de aceitar interpretações estéticas. As imagens aprovadas são a única fonte da verdade para estrutura, posição, proporção, cor, tipografia, ícones, bordas, glow, textos e dados visíveis.
 
-Objetivos imediatos de Relatórios:
+Estado do Login:
 
-- preservar análise baseada apenas em movimentos realizados, sem transferências e benefício;
-- manter abas Despesas/Receitas/Fluxo de caixa/Categorias;
-- preservar dimensões Categoria/Conta/Forma/Status/Tipo/Competência;
-- manter métricas Valor total/Quantidade/Média e busca por grupo;
-- preservar exportação Excel do recorte corrente;
-- manter KPIs com contagens em formato inteiro;
-- preservar tabela dinâmica e gráfico por dimensão;
-- manter o Financial Copilot estritamente analítico, sem executar movimentações;
-- preservar recomposição responsiva em 430 px;
-- reforçar contrato anti-regressão no CI.
+- stack preservada: React + TypeScript + CSS customizado + Vite;
+- referência desktop oficial: 1672×941;
+- fundo final fornecido separadamente, sem texto/logo/cards, destinado a `apps/web/public/bg-login.webp`;
+- o fundo é tratado exclusivamente como imagem, sem recriação de montanhas, barras 3D ou brilhos por CSS;
+- overlay operacional: `rgba(0,0,0,.25)`;
+- estrutura HTML real para logo, narrativa, três cards e formulário;
+- cabeçalho do card usa escudo com cadeado interno;
+- composição desktop auditada contra a referência antes do merge;
+- mobile recompõe em coluna e centraliza o card;
+- nenhuma tela previamente aprovada pode ser alterada ao trabalhar em outra.
+
+A PR #601 permanece fora da `main` e não é tratada como direção visual aprovada.
 
 ## Próximo bloco
 
-Após Relatórios: **Histórico**, seguindo então a ordem fixa acima.
+Somente após aprovação visual do Login: **Loading**, repetindo Passo 1 → código → auditoria imagem × código → aprovação.
 
 ## Bloqueios que exigem Marcos
 
