@@ -12,7 +12,7 @@
 .pano-quick-edit-toggle:hover,.pano-quick-edit-toggle:focus-visible{
   border-color:#8cffe7;background:#115a60;box-shadow:0 0 14px rgba(34,225,201,.2)
 }
-.pano-quick-edit-toggle::after,.pano-quick-editor-controls button[data-tooltip]::after,{
+.pano-quick-edit-toggle::after,.pano-quick-editor-controls button[data-tooltip]::after{
   content:attr(data-tooltip);position:absolute;z-index:20;left:50%;bottom:calc(100% + 9px);
   transform:translate(-50%,4px);padding:7px 10px;max-width:min(260px,80vw);
   width:max-content;white-space:normal;text-align:center;border:1px solid rgba(79,218,196,.4);
