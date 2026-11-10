@@ -1659,3 +1659,13 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Logs confirmam **16 cenários da Home original, zero falhas**, e **73 verificações da personalização aprovadas em oito larguras**. Build Vite e etapas de artefato concluídas.
 - Artefatos gerados: `meg-home-08-preview-estatico` (build compilado, uso com servidor HTTP local) e `meg-home-08-qa` (evidências). Artefatos ficam no run GitHub, sem deploy.
 - **Ainda faltam:** URL de prévia pública sem cache no commit atualizado, validação visual explícita do novo editor e decisão futura de sincronização. Esta autorização de continuidade não substitui esses gates nem libera merge.
+
+### 10/11/2026 — auditoria de custo e serviços Render (workspace My Workspace)
+- Usuário autorizou limpeza de serviços não utilizados para economizar recursos. Inventário de **25 serviços** ativos/listados alcança teto Hobby Render, que bloqueou criação do static site `meg-home-08-acoes-pr664` (HTTP 400: `Hobby Tier is limited to 25 services`).
+- Não foram encontradas instâncias Render Postgres nem Key Value no workspace; isso NÃO implica que as APIs ou bancos externos possam ser alterados.
+- Candidatos iniciais com evidência objetiva: `meg-web-stage05-login-pr626` (`srv-db6nr0l9fdbs73dkjkrg`, PR #626 fechada sem merge, autoDeploy desligado) e `meg-stage05-criar-conta-pr627` (`srv-db6obd59fdbs73dmln40`, PR #627 fechada sem merge, autoDeploy desligado). Ambos previews estáticos de 13/10, URLs próprias; requerem checagem final de referências externas antes de exclusão.
+- Outros candidatos, mas com necessidade de revisão extra: `meg-phoenix-v15-ux-preview-pr271` (PR #271 merged) e `meg-home-06-refino-pr653` (PR #653 ainda Draft; não excluir sem verificar usos).
+- Métricas HTTP consultadas para alguns candidatos retornaram séries vazias; NÃO usar como prova definitiva de zero acessos.
+- **Limite operacional:** ferramentas Render disponíveis neste chat NÃO incluem exclusão, suspensão ou edição de configuração de serviços. Portanto, nenhum serviço foi efetivamente excluído. Não afirmar economia realizada ou vaga liberada.
+- Proteger `meg-platform-api`, `meg-evolution-api`, previews de produção/main, `meg-home-06-refino-pr655`, `meg-lancamentos-09-pr` e serviços cuja dependência não foi auditada. Manter PR #664 Draft, sem merge.
+- Próximo passo: exclusão dos candidatos comprovadamente dispensáveis via painel Render por operador autorizado, seguida de nova conferência de quota e criação do Static Site isolado já autorizado.
