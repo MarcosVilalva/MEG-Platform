@@ -19,3 +19,12 @@
 .pano-quick-edit-toggle:focus-visible,.pano-quick-editor button:focus-visible{outline:2px solid #a6ffe6;outline-offset:2px}
 @media(max-width:639px){.pano-quick-editor-list>li{align-items:stretch;flex-direction:column}.pano-quick-editor-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.pano-quick-editor-controls button{padding:.3rem .15rem;min-width:0}}
 @media(prefers-reduced-motion:reduce){.pano-quick-edit-toggle,.pano-quick-editor button{transition:none}}
+
+/* Controles visuais: mesma linguagem dos cards, ícones consistentes e alvos acessíveis. */
+.pano-quick-editor-controls button,.pano-quick-available button,.pano-quick-reset{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;white-space:nowrap}
+.pano-quick-editor-controls button svg,.pano-quick-available button svg,.pano-quick-reset svg{flex:0 0 auto}
+.pano-quick-editor-controls button[aria-label^="Remover"]{border-color:rgba(245,119,131,.28);color:#ffd6d9}
+.pano-quick-editor-controls button[aria-label^="Remover"]:hover{background:rgba(151,38,59,.22);border-color:rgba(255,139,154,.7)}
+.pano-quick-editor-controls button:disabled{opacity:.38;filter:grayscale(.4);box-shadow:none}
+.pano-quick-editor-controls button:not(:disabled):active,.pano-quick-available button:active,.pano-quick-reset:active{transform:translateY(1px)}
+@media(max-width:639px){.pano-quick-editor-controls button{gap:.25rem;font-size:.69rem}.pano-quick-editor-controls button svg{width:15px;height:15px}}
