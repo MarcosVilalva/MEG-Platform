@@ -34,7 +34,19 @@ try{
   await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).focus();
   const tooltip=await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).evaluate(el=>getComputedStyle(el,'::after').content);
   assert(tooltip.includes('Mover Relatórios para esquerda'),'tooltip de ordenação ausente: '+width);
-  assert(await page.locator('.pano-quick-placeholder').count()===0,'não deve haver slot vazio quando quatro atalhos estão presentes: '+width);
+  assert(await page.locator('.pano-quick-editor-empty').count()===1,'deve haver expansão mesmo com quatro atalhos: '+width);
+  assert(await page.locator('.pano-quick-display-grid>.pano-quick-placeholder').count()===1,'slot Adicionar ausente na Home com quatro atalhos: '+width);
+  await page.locator('.pano-quick-editor-empty .pano-quick-placeholder').first().click();
+  assert(await page.getByRole('button',{name:'Adicionar Cartões',exact:true}).isVisible(),'catálogo não oferece funcionalidade nova: '+width);
+  await page.getByRole('button',{name:'Adicionar Cartões',exact:true}).click();
+  assert(JSON.stringify(await titles(page))===JSON.stringify([...defaults,'Cartões']),'quinto atalho não entrou: '+width);
+  assert(await page.locator('.pano-quick-editor-card').count()===5,'quinto cartão editável ausente: '+width);
+  await page.reload({waitUntil:'networkidle'});
+  assert(JSON.stringify(await titles(page))===JSON.stringify([...defaults,'Cartões']),'persistência do quinto atalho: '+width);
+  await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
+  await page.getByRole('button',{name:'Remover Cartões'}).click();
+  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'remover quinto atalho não restaurou quatro: '+width);
+
   await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).click();
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação: '+width);
   await page.getByRole('button',{name:'Remover Transferência'}).click();
@@ -104,6 +116,10 @@ try{
    });
    assert(visual?.logoContained,'logo extrapola contorno: '+width+' '+JSON.stringify(visual));
    assert(visual?.logoutRed?.startsWith('rgb(255')&&visual?.logoutBorder?.startsWith('rgba(249'),'sair perdeu vermelho: '+width+' '+JSON.stringify(visual));
+   const selected=await page.locator('.meg-shell.is-sidebar-collapsed .meg-nav-item.is-active').evaluate(el=>({border:getComputedStyle(el).borderTopColor,glow:getComputedStyle(el.querySelector('svg')).filter}));
+   assert(selected.border==='rgba(0, 0, 0, 0)'||selected.border==='transparent','seleção ainda tem moldura: '+width+' '+JSON.stringify(selected));
+   assert(selected.glow.includes('drop-shadow'),'ícone ativo não possui halo luminoso: '+width);
+
    assert(position.centerDiff<=2,'logo não está centrada nos 72px: '+width);
    assert(position.topDiff<=7,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
   }
