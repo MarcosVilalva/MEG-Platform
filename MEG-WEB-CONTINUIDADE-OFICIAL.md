@@ -1623,3 +1623,20 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Confirmação posterior à aprovação do usuário:** workflow [41879282835](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/41879282835) alcançou status `completed` e conclusão **`success`** para o SHA visual `dd0a472eee736558c224268c5bca096bc2d58187`.
 - A Home desse commit já estava **homologada visualmente pelo usuário**. A PR #655, contudo, permanece **OPEN / Draft / não mesclada**, e nenhuma publicação de produção foi autorizada. O SHA atual da branch no momento do registro anterior era `5ab6f2f888a741a2477ee73d6534de5e0349fd5e`, contendo apenas documentação após o commit visual.
 - **Continuidade:** revalidar os checks obrigatórios e a cadeia de dependências de PRs antes de qualquer merge; preservar a versão visual aprovada. A próxima etapa/tela a tratar, em chat próprio, é **Lançamentos**, após leitura deste checkpoint e da autoridade financeira. Não alterar o Android nem antecipar funções.
+
+
+---
+
+## 10/11/2026 — Etapa 08 Home PT2 — Ações rápidas customizáveis (correção isolada)
+
+- **Autorização específica do usuário:** personalização do painel Ações rápidas da Home já homologada visualmente, sem alterar outros módulos. Este registro atualiza a continuidade sem reabrir a homologação da composição geral.
+- **Base visual congelada:** PR #655, branch `preview/06-home-refino-preservado-20261104`; versão visual explicitamente aprovada em 04/11/2026, `dd0a472eee736558c224268c5bca096bc2d58187`. A branch corretiva foi criada do head `0e3ca5592d8d8458819dab4f8649ee26d1575aa8` da PR #655. Nenhuma alteração foi feita na PR original.
+- **Branch isolada:** `preview/08-home-acoes-customizaveis-20261110`. Escopo restrito ao `QuickActions`, integração pontual na Home e passagem do ID de sessão autenticada. As issues #661 e #662 seguem distintas.
+- **Quatro atalhos iniciais:** Transferência, Pagar conta, Relatórios e Configurações, mantendo as ações de navegação/avisos já existentes. Novo lançamento continua exclusivamente na topbar. A inclusão de atalhos se limita a restaurar atalhos desse catálogo existente; destinos adicionais exigem confirmação real de rotas e permissões.
+- **Alterações em código:** `apps/web/src/meg-web-evolution/home/QuickActions.tsx`, `quick-actions.css`, `HomeDashboard.tsx` e `main.tsx`. Editor permite adicionar, remover, reordenar por controles de teclado e restaurar o padrão. Sem drag-and-drop obrigatório. Nenhum cálculo, status ou operação financeira introduzidos.
+- **Persistência local:** chave de `localStorage` versionada e segregada por `session.user.id`. Prévia de demonstração usa chave própria, sem acesso financeiro e sem misturar usuários. Leitura valida lista, IDs permitidos e ausência de duplicatas; dados inválidos retornam ao padrão. Falha no storage não anuncia gravação falsa.
+- **Sincronização entre dispositivos:** pendente. Exige contrato autenticado de preferências e homologação transversal da issue #662. Não criar migration, schema, writer, endpoint ou mudança em Render nesta correção.
+- **Testes adicionados:** `scripts/meg-08-home-quick-actions.browser.mjs` (oito larguras, persistência após recarga, adicionar, remover, reordenar, restaurar, estado inválido, topbar e overflow); `.github/workflows/meg-08-home-quick-actions.yml` (build Vite + regressão Home original + testes de personalização, sem publicação). Resultado de CI e prévia pública ainda precisam ser verificados após commit.
+- **Gates:** não fazer merge, deploy de produção, alterações de banco, API, Render, Android ou outras telas. PR #656 e PR #663 da Etapa 09 permanecem intocadas.
+- **Validação visual do novo editor:** PENDENTE de aprovação explícita. Homologação anterior da composição da Home permanece válida e congelada.
+- **Pendências reais:** CI de branch, revisão visual no navegador, URL de preview com cache-busting, homologação do editor, verificação de navegação real/permissões antes de expandir o catálogo e sincronização futura somente mediante autorização.
