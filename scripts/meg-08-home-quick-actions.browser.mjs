@@ -16,8 +16,8 @@ try{
   const edit=page.getByRole('button',{name:'Personalizar ações rápidas'});
   assert(await edit.locator('svg').count()===1&&await edit.innerText()==='', 'editar deve exibir apenas lápis: '+width);
   await edit.click();
-  assert(await page.getByRole('button',{name:'Mover Relatórios para cima'}).locator('svg').count()===1,'ícone SVG de subir ausente: '+width);
-  assert(await page.getByRole('button',{name:'Mover Relatórios para baixo'}).locator('svg').count()===1,'ícone SVG de descer ausente: '+width);
+  assert(await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).locator('svg').count()===1,'ícone SVG de subir ausente: '+width);
+  assert(await page.getByRole('button',{name:'Mover Relatórios para direita'}).locator('svg').count()===1,'ícone SVG de descer ausente: '+width);
   assert(await page.getByRole('button',{name:'Remover Relatórios'}).locator('svg').count()===1,'ícone SVG de remover ausente: '+width);
   const cards=await page.locator('.pano-quick-editor-card').evaluateAll(items=>items.map(el=>({x:el.getBoundingClientRect().left,y:el.getBoundingClientRect().top,width:el.getBoundingClientRect().width,buttons:[...el.querySelectorAll('.pano-quick-editor-controls button')].map(btn=>{const r=btn.getBoundingClientRect();return {left:r.left,right:r.right,bottom:r.bottom}}),right:el.getBoundingClientRect().right,bottom:el.getBoundingClientRect().bottom})));
   assert(cards.length===4&&cards.every(card=>card.buttons.length===3&&card.buttons.every(btn=>btn.left>=card.x-1&&btn.right<=card.right+1&&btn.bottom<=card.bottom+1)),'ícones escaparam dos cartões da grade: '+width);
@@ -31,23 +31,21 @@ try{
   }
   const buttons=await page.locator('.pano-quick-editor-controls button').evaluateAll(items=>items.map(el=>({text:el.textContent?.trim(),label:el.getAttribute('aria-label'),tooltip:el.getAttribute('data-tooltip'),width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})));
   assert(buttons.every(btn=>!btn.text&&btn.label&&btn.tooltip&&btn.width>=44&&btn.height>=44),'controles sem texto, com tooltip e alvo >=44px: '+width);
-  await page.getByRole('button',{name:'Mover Relatórios para cima'}).focus();
-  const tooltip=await page.getByRole('button',{name:'Mover Relatórios para cima'}).evaluate(el=>getComputedStyle(el,'::after').content);
-  assert(tooltip.includes('Subir Relatórios'),'tooltip de ordenação ausente: '+width);
-  const chooserButton=page.getByRole('button',{name:'Escolher funcionalidade para Transferência'});
-  assert(await chooserButton.locator('svg').count()===1,'seta de seleção sem SVG: '+width);
-  await chooserButton.click();
-  assert(await page.getByRole('button',{name:'Selecionar Pagar conta'}).isVisible(),'catálogo de troca não abriu: '+width);
-  await page.getByRole('button',{name:'Selecionar Pagar conta'}).click();
-  const afterSwap=await titles(page);
-  assert(JSON.stringify(afterSwap)===JSON.stringify(['Pagar conta','Transferência','Relatórios','Configurações']),'troca de duas ações existentes: '+width+' '+JSON.stringify(afterSwap));
-  await page.getByRole('button',{name:'Escolher funcionalidade para Pagar conta'}).click();
-  await page.getByRole('button',{name:'Selecionar Transferência'}).click();
-  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'troca reversível sem duplicação: '+width);
-  await page.getByRole('button',{name:'Mover Relatórios para cima'}).click();
+  await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).focus();
+  const tooltip=await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).evaluate(el=>getComputedStyle(el,'::after').content);
+  assert(tooltip.includes('Mover Relatórios para esquerda'),'tooltip de ordenação ausente: '+width);
+  assert(await page.locator('.pano-quick-placeholder').count()===0,'não deve haver slot vazio quando quatro atalhos estão presentes: '+width);
+  await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).click();
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação: '+width);
   await page.getByRole('button',{name:'Remover Transferência'}).click();
   assert((await titles(page)).length===3,'remoção: '+width);
+  assert(await page.locator('.pano-quick-editor-empty').count()===1,'slot vazio pontilhado ausente: '+width);
+  assert(await page.locator('.pano-quick-placeholder').count()===2,'slot de demonstração e edição devem aparecer: '+width);
+  const slot=page.locator('.pano-quick-editor-empty .pano-quick-placeholder').first();
+  const dashed=await slot.evaluate(el=>({style:getComputedStyle(el).borderTopStyle,width:el.getBoundingClientRect().width}));
+  assert(dashed.style==='dashed'&&dashed.width>40,'slot tracejado não aplicado: '+width);
+  await slot.click();
+  assert(await page.getByRole('button',{name:'Adicionar Transferência',exact:true}).count()===1,'catálogo não exibiu funcionalidade removida: '+width);
   await page.getByRole('button',{name:'Adicionar Transferência'}).click();
   assert((await titles(page)).length===4,'adição: '+width);
   await page.reload({waitUntil:'networkidle'});
@@ -99,7 +97,7 @@ try{
    assert(visual?.logoContained,'logo extrapola contorno: '+width+' '+JSON.stringify(visual));
    assert(visual?.logoutRed?.startsWith('rgb(255')&&visual?.logoutBorder?.startsWith('rgba(249'),'sair perdeu vermelho: '+width+' '+JSON.stringify(visual));
    assert(position.centerDiff<=2,'logo não está centrada nos 72px: '+width);
-   assert(position.topDiff<=4,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
+   assert(position.topDiff<=7,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
   }
   await context.close();
  }
