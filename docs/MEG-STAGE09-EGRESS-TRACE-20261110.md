@@ -14,6 +14,12 @@
 - Consultas adicionais: `queryid 8637865989334625977`, **1.263 execuções / 4.585.530 linhas**; `queryid -2724073358134369300`, **1.296 / 4.126.856**. SQLs semelhantes mostram outros caminhos de leitura integral.
 - Agregado da base atual: **3.630 eventos legados ativos**, `sourcePayload` médio **578,5 bytes como texto JSON**, `pg_column_size(t)` médio **912,3 bytes armazenados/tupla**, estado `AppState` (1 registro) **2.412.952 bytes como texto JSON (~2,41 MB)**. Nenhum conteúdo financeiro, pessoal ou payload individual foi retornado ao relatório. **Tamanho de armazenamento/JSON não é igual a bytes exatos na rede nem permite deduzir quota faturada sem metadados de tráfego.**
 
+
+### 2.1. Novo achado: releituras frequentes de `AppState.state` (mesmo JSON de ~2,41 MB)
+- `pg_stat_statements`, mesma janela acumulada desde 10/07: SQL `AppState` com `SELECT id,state,revision,updatedAt WHERE workspaceId` (**queryid -3149437411110864888**) **7.488 execuções/7.488 linhas**. Mais duas variantes com `state` e dados de metadados: **4.455 execuções** por `userId` e **4.451 execuções** por `workspaceId`. Há outras variantes de leitura `AppState` significativas.
+- Um único `AppState.state` atual serializado mede **2.412.952 bytes em JSON texto**. **Não multiplicar este tamanho atual pelos contadores desde julho para calcular Egress**, pois tamanho histórico, representação no protocolo, cache e estado da rota variaram. Porém o padrão comprova consultas repetidas a um objeto atualmente volumoso; é candidato tão importante quanto `FinancialEvent`.
+- O código de `normalizedStateForRead()` e `normalizationPreview()` lê `AppState.state` na íntegra, mesmo quando só precisa conferir paridade e revisão. A combinação de **AppState completo + FinancialEvent completo** em auditorias periódicas e em cargas de contexto é o foco da futura proposta de redução de tráfego com provas de equivalência funcional.
+
 ### 3. Fluxos confirmados no código
 #### A. Auditoria periódica da própria API — independente do usuário (prioridade crítica)
 - [`apps/api/src/server.ts:215-240`](https://github.com/MarcosVilalva/MEG-Platform/blob/main/apps/api/src/server.ts#L215-L240) executa `normalizationPreview()` **a cada 15 minutos** quando processo ativo.
