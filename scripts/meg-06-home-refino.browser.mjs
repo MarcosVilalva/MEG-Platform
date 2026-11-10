@@ -115,7 +115,13 @@ try {
   }
   const problems=[];
   if(changed.documentWidth>width+1)problems.push('rolagem horizontal da pagina');
-  if(changed.mainScrollWidth>changed.mainWidth+2)problems.push('rolagem horizontal indevida na Home');
+  if(changed.mainScrollWidth>changed.mainWidth+2){
+    const overs=await page.evaluate(()=>{
+      const main=document.querySelector('.meg-main'),left=main?.getBoundingClientRect().left??0,right=main?.getBoundingClientRect().right??0;
+      return [...document.querySelectorAll('.meg-main *')].map(e=>({cls:typeof e.className==='string'?e.className:e.tagName,right:Math.round(e.getBoundingClientRect().right),width:Math.round(e.getBoundingClientRect().width),scroll:e.scrollWidth,client:e.clientWidth})).filter(x=>x.right>right+2).slice(0,12);
+    });
+    problems.push('rolagem horizontal indevida na Home '+changed.mainScrollWidth+'/'+changed.mainWidth+' '+JSON.stringify(overs));
+  }
   if(width<1024 && changed.rootRect){
     for(const panel of changed.tablePanels){
       if(panel.right>changed.rootRect.right+2)
