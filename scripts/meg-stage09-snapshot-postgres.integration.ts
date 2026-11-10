@@ -97,8 +97,10 @@ try{
   'Distribuicao historica de categoria nao vinculada.');
  assert.equal(result.items.filter(item=>!item.paymentMethodId).length,historicMethodCount,
   'Distribuicao historica de forma de pagamento nao vinculada.');
- assert.equal(result.items[1]?.sourcePayload?.category,'Categoria original CI');
- assert.equal(result.items[1]?.sourcePayload?.paymentMethod,'PIX CI');
+ assert.deepEqual(result.items[1]?.sourcePayload,{
+  category:'Categoria original CI',paymentMethod:'PIX CI',
+  'DIA SEMANA':'QUINTA','CLASSIFICACAO DA DESPESA':'LEGADO CI',
+ });
  const bytes=Buffer.byteLength(JSON.stringify(result));
  assert.ok(bytes<24*1024*1024,'Payload sintético excessivo para uma única consulta.');
  const after=await prisma.financialEvent.count({where:{userId,archivedAt:null}});
