@@ -1,0 +1,36 @@
+name: MEG Stage09 Backup Recovery Safety (offline)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/meg-stage09-safe-backup.sh'
+      - 'scripts/meg-stage09-safe-restore-drill.sh'
+      - 'scripts/meg-stage09-backup-safety.test.mjs'
+      - 'docs/MEG-STAGE09-BACKUP-RECOVERY-RUNBOOK-20261110.md'
+      - '.github/workflows/meg-stage09-backup-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (no credentials for production)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node for synthetic tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate shell syntax, no database network access
+        shell: bash
+        run: |
+          bash -n scripts/meg-stage09-safe-backup.sh
+          bash -n scripts/meg-stage09-safe-restore-drill.sh
+      - name: Run simulated backup and isolated restore safety contract
+        shell: bash
+        run: node scripts/meg-stage09-backup-safety.test.mjs
