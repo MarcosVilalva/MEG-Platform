@@ -20,7 +20,7 @@ try{
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação: '+width);
   await page.getByRole('button',{name:'Remover Transferência'}).click();
   assert((await titles(page)).length===3,'remoção: '+width);
-  await page.getByRole('button',{name:'+ Transferência'}).click();
+  await page.getByRole('button',{name:'Adicionar Transferência'}).click();
   assert((await titles(page)).length===4,'adição: '+width);
   await page.reload({waitUntil:'networkidle'});
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Relatórios','Pagar conta','Configurações','Transferência']),'persistência: '+width);
