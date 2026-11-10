@@ -3,134 +3,115 @@ import {mkdirSync} from 'node:fs';
 const base=process.env.MEG_PREVIEW_URL||'http://127.0.0.1:4173';
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 const defaults=['Transferência','Pagar conta','Relatórios','Configurações'];
+const catalog=['Lançamentos','Cartões','Benefícios'];
 let checked=0;
-const assert=(ok,reason)=>{if(!ok)throw new Error(reason);checked++};
-const titles=page=>page.locator('.pano-action strong').allTextContents();
+function assert(ok,reason){if(!ok)throw new Error(reason);checked++}
+const titles=page=>page.locator('.pano-quick-link strong').allTextContents();
+const clickAdd=async(page,name)=>{
+ const rail=page.locator('.pano-quick-rail');
+ await rail.getByRole('button',{name:'Adicionar atalho'}).click();
+ await page.getByRole('dialog',{name:'Adicionar funcionalidade'}).getByRole('button',{name:'Adicionar '+name}).click();
+};
+const verifyRail=async(page,width,editing)=>{
+ const rail=page.locator('.pano-quick-rail');
+ const data=await rail.evaluate(el=>{
+  const rect=el.getBoundingClientRect();
+  const cards=[...el.querySelectorAll('.pano-quick-item')].map(node=>node.getBoundingClientRect());
+  return {height:rect.height,viewportWidth:rect.width,scrollWidth:el.scrollWidth,
+   row:cards.every(r=>Math.abs(r.top-cards[0].top)<2),
+   allContained:cards.every(r=>r.height<=rect.height+2),
+   addLast:el.lastElementChild?.classList.contains('pano-quick-add'),
+   bodyOverflow:document.documentElement.scrollWidth>window.innerWidth+2,
+   editorExists:!!document.querySelector('.pano-quick-editor-list'),
+   editButtons:el.querySelectorAll('.pano-quick-inline-controls').length
+  };
+ });
+ assert(data.row&&data.allContained&&data.addLast&&!data.bodyOverflow&&!data.editorExists,
+  'carrossel deve ocupar apenas uma linha, Adicionar no final, sem overflow da página: '+width+' '+JSON.stringify(data));
+ assert(data.editButtons===(editing?await page.locator('.pano-quick-item:not(.pano-quick-add)').count():0),
+  'modo edição precisa usar os mesmos cartões: '+width);
+};
 try{
  for(const width of [320,390,640,768,1024,1366,1920,2560]){
   const context=await browser.newContext({viewport:{width,height:Math.min(900,width)},reducedMotion:'reduce'});
   const page=await context.newPage();
   await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
-  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'padrão errado: '+width);
-  assert(await page.locator('.meg-topbar-new').isVisible(),'Novo lançamento saiu do cabeçalho: '+width);
+  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'padrão original alterado: '+width);
+  assert(await page.locator('.meg-topbar-new').isVisible(),'Novo lançamento não está no topo: '+width);
+  assert(await page.locator('.pano-quick-rail').count()===1,'deve existir um único carrossel: '+width);
+  await verifyRail(page,width,false);
+
   const edit=page.getByRole('button',{name:'Personalizar ações rápidas'});
-  assert(await edit.locator('svg').count()===1&&await edit.innerText()==='', 'editar deve exibir apenas lápis: '+width);
+  assert(await edit.locator('svg').count()===1&&await edit.innerText()==='','botão lápis não é icon-only: '+width);
   await edit.click();
-  assert(await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).locator('svg').count()===1,'ícone SVG de subir ausente: '+width);
-  assert(await page.getByRole('button',{name:'Mover Relatórios para direita'}).locator('svg').count()===1,'ícone SVG de descer ausente: '+width);
-  assert(await page.getByRole('button',{name:'Remover Relatórios'}).locator('svg').count()===1,'ícone SVG de remover ausente: '+width);
-  const cards=await page.locator('.pano-quick-editor-card').evaluateAll(items=>items.map(el=>({x:el.getBoundingClientRect().left,y:el.getBoundingClientRect().top,width:el.getBoundingClientRect().width,buttons:[...el.querySelectorAll('.pano-quick-editor-controls button')].map(btn=>{const r=btn.getBoundingClientRect();return {left:r.left,right:r.right,bottom:r.bottom}}),right:el.getBoundingClientRect().right,bottom:el.getBoundingClientRect().bottom})));
-  assert(cards.length===4&&cards.every(card=>card.buttons.length===3&&card.buttons.every(btn=>btn.left>=card.x-1&&btn.right<=card.right+1&&btn.bottom<=card.bottom+1)),'ícones escaparam dos cartões da grade: '+width);
-  if(width===1366){
-   await page.getByRole('button',{name:'Recolher menu'}).click();
-   await page.waitForTimeout(250);
-   mkdirSync('artifacts/meg-home-refino-06',{recursive:true});
-   await page.screenshot({path:'artifacts/meg-home-refino-06/home-pt2-editor-grade-1366.png',fullPage:false});
-   await page.getByRole('button',{name:'Expandir menu'}).click();
-   await page.waitForTimeout(250);
-  }
-  const buttons=await page.locator('.pano-quick-editor-controls button').evaluateAll(items=>items.map(el=>({text:el.textContent?.trim(),label:el.getAttribute('aria-label'),tooltip:el.getAttribute('data-tooltip'),width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})));
-  assert(buttons.every(btn=>!btn.text&&btn.label&&btn.tooltip&&btn.width>=44&&btn.height>=44),'controles sem texto, com tooltip e alvo >=44px: '+width);
-  await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).focus();
-  const tooltip=await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).evaluate(el=>getComputedStyle(el,'::after').content);
-  assert(tooltip.includes('Mover Relatórios para esquerda'),'tooltip de ordenação ausente: '+width);
-  assert(await page.locator('.pano-quick-editor-empty').count()===1,'deve haver expansão mesmo com quatro atalhos: '+width);
-  assert(await page.locator('.pano-quick-display-grid>.pano-quick-placeholder').count()===1,'slot Adicionar ausente na Home com quatro atalhos: '+width);
-  await page.locator('.pano-quick-editor-empty .pano-quick-placeholder').first().click();
-  assert(await page.getByRole('button',{name:'Adicionar Cartões',exact:true}).isVisible(),'catálogo não oferece funcionalidade nova: '+width);
-  await page.getByRole('button',{name:'Adicionar Cartões',exact:true}).click();
-  assert(JSON.stringify(await titles(page))===JSON.stringify([...defaults,'Cartões']),'quinto atalho não entrou: '+width);
-  assert(await page.locator('.pano-quick-editor-card').count()===5,'quinto cartão editável ausente: '+width);
-  await page.reload({waitUntil:'networkidle'});
-  assert(JSON.stringify(await titles(page))===JSON.stringify([...defaults,'Cartões']),'persistência do quinto atalho: '+width);
-  await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
-  await page.getByRole('button',{name:'Remover Cartões'}).click();
-  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'remover quinto atalho não restaurou quatro: '+width);
-
+  await verifyRail(page,width,true);
+  assert(await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).isVisible(),'mover esquerda ausente: '+width);
+  assert(await page.getByRole('button',{name:'Mover Relatórios para direita'}).isVisible(),'mover direita ausente: '+width);
+  assert(await page.getByRole('button',{name:'Remover Relatórios'}).isVisible(),'remover ausente: '+width);
+  const activeButtons=await page.locator('.pano-quick-inline-controls button').evaluateAll(els=>els.map(el=>({label:el.getAttribute('aria-label'),tooltip:el.getAttribute('data-tooltip')})));
+  assert(activeButtons.every(x=>!!x.label&&!!x.tooltip),'tooltips e nomes acessíveis faltando: '+width);
   await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).click();
-  assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação: '+width);
-  await page.getByRole('button',{name:'Remover Transferência'}).click();
-  assert((await titles(page)).length===3,'remoção: '+width);
-  assert(await page.locator('.pano-quick-editor-empty').count()===1,'slot vazio pontilhado ausente: '+width);
-  assert(await page.locator('.pano-quick-placeholder').count()===2,'slot de demonstração e edição devem aparecer: '+width);
-  const slot=page.locator('.pano-quick-editor-empty .pano-quick-placeholder').first();
-  const dashed=await slot.evaluate(el=>({style:getComputedStyle(el).borderTopStyle,width:el.getBoundingClientRect().width}));
-  assert(dashed.style==='dashed'&&dashed.width>40,'slot tracejado não aplicado: '+width);
-  await slot.click();
-  assert(await page.getByRole('button',{name:'Adicionar Transferência',exact:true}).count()===1,'catálogo não exibiu funcionalidade removida: '+width);
-  await page.getByRole('button',{name:'Adicionar Transferência'}).click();
-  assert((await titles(page)).length===4,'adição: '+width);
-  await page.reload({waitUntil:'networkidle'});
-  assert(JSON.stringify(await titles(page))===JSON.stringify(['Relatórios','Pagar conta','Configurações','Transferência']),'persistência: '+width);
-  await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
-  await page.getByRole('button',{name:'Restaurar configuração padrão'}).click();
-  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'restaurar: '+width);
-  await page.reload({waitUntil:'networkidle'});
-  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'restaurar e persistir: '+width);
-  await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
-  await page.getByRole('button',{name:'Remover Transferência'}).click();
-  await page.getByRole('button',{name:'Remover Pagar conta'}).click();
-  assert(await page.locator('.pano-quick-editor-empty').count()===2,'dois espaços pontilhados esperados: '+width);
-  assert(await page.locator('.pano-quick-display-grid>.pano-quick-placeholder').count()===2,'dois espaços pontilhados no painel: '+width);
-  await page.getByRole('button',{name:'Restaurar configuração padrão'}).click();
-  assert(await page.locator('.pano-quick-editor-empty').count()===1&&await page.locator('.pano-quick-display-grid>.pano-quick-placeholder').count()===1,'restaurar deve manter uma vaga para expandir: '+width);
-  await page.getByRole('button',{name:'Concluir personalização'}).click();
-  const geometry=await page.evaluate(()=>{
-   const root=document.querySelector('.pano-root')?.getBoundingClientRect();
-   const actions=[...document.querySelectorAll('.pano-action')].map(el=>el.getBoundingClientRect());
-   return {scroll:document.documentElement.scrollWidth,window:window.innerWidth,actions:actions.every(r=>r.left>=-2&&r.right<=window.innerWidth+2),root:root&&root.width>0};
-  });
-  assert(geometry.scroll<=geometry.window+2&&geometry.actions&&geometry.root,'overflow ou botão cortado: '+width);
-  if(width>=1024){
-   const toggle=page.getByRole('button',{name:'Recolher menu'});
-   if(await toggle.count())await toggle.click();
-   await page.waitForTimeout(260);
-   const position=await page.evaluate(()=>{
-    const brand=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-brand-stack');
-    const image=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed');
-    const expand=document.querySelector('.meg-sidebar-toggle-topbar');
-    if(!brand||!image||!expand)return null;
-    const a=brand.getBoundingClientRect(),b=expand.getBoundingClientRect();
-    return {centerDiff:Math.abs(a.left+a.width/2-36),topDiff:Math.abs(a.top-b.top),logoWidth:image.getBoundingClientRect().width,bodyOverflow:document.documentElement.scrollWidth>window.innerWidth+2};
-   });
-   assert(position!==null&&!position.bodyOverflow,'sidebar recolhida ausente/overflow: '+width);
-   const chrome=await page.evaluate(()=>{
-    const brand=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-brand-stack');
-    const active=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-nav-item.is-active');
-    if(!brand||!active)return null;
-    const image=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed');
-    const frame=brand.getBoundingClientRect(),icon=active.getBoundingClientRect();
-    return {brandWidth:frame.width,logoWidth:image?.getBoundingClientRect().width,navWidth:icon.width,navBorder:getComputedStyle(active).borderTopWidth,brandBorder:getComputedStyle(brand).borderTopWidth};
-   });
-   assert(chrome&&chrome.brandWidth===56&&chrome.logoWidth===52&&chrome.navBorder!=='0px'&&chrome.brandBorder==='0px','marca e frames premium: '+width+' '+JSON.stringify(chrome));
-   assert(position.logoWidth>=44,'logo recolhida não aumentou: '+width);
-   const visual=await page.evaluate(()=>{
-    const shell=document.querySelector('.meg-shell.is-sidebar-collapsed');
-    const brand=shell?.querySelector('.meg-brand-stack');
-    const img=shell?.querySelector('.meg-brand-logo--collapsed');
-    const logout=shell?.querySelector('.meg-logout-button');
-    const idle=shell?.querySelector('.meg-nav-item:not(.is-active):not(.meg-logout-button)');
-    if(!brand||!img||!logout||!idle)return null;
-    const b=brand.getBoundingClientRect(),i=img.getBoundingClientRect(),l=getComputedStyle(logout),n=getComputedStyle(idle);
-    return {logoContained:i.top>=b.top-1&&i.bottom<=b.bottom+1&&i.left>=b.left-1&&i.right<=b.right+1,logoutRed:l.color,logoutBorder:l.borderTopColor,idleBackground:n.backgroundColor};
-   });
-   assert(visual?.logoContained,'logo extrapola contorno: '+width+' '+JSON.stringify(visual));
-   assert(visual?.logoutRed?.startsWith('rgb(255')&&visual?.logoutBorder?.startsWith('rgba(249'),'sair perdeu vermelho: '+width+' '+JSON.stringify(visual));
-   const selected=await page.locator('.meg-shell.is-sidebar-collapsed .meg-nav-item.is-active').evaluate(el=>({border:getComputedStyle(el).borderTopColor,glow:getComputedStyle(el.querySelector('svg')).filter}));
-   assert(selected.border==='rgba(0, 0, 0, 0)'||selected.border==='transparent','seleção ainda tem moldura: '+width+' '+JSON.stringify(selected));
-   assert(selected.glow.includes('drop-shadow'),'ícone ativo não possui halo luminoso: '+width);
+  assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação esquerda: '+width);
+  await page.getByRole('button',{name:'Mover Relatórios para direita'}).click();
+  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'reordenação direita: '+width);
 
-   assert(position.centerDiff<=2,'logo não está centrada nos 72px: '+width);
-   assert(position.topDiff<=7,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
+  for(const name of catalog)await clickAdd(page,name);
+  assert(JSON.stringify(await titles(page))===JSON.stringify([...defaults,...catalog]),'adição dos três extras: '+width);
+  assert((await page.locator('.pano-quick-rail .pano-quick-item').count())===8,'sete itens + Adicionar: '+width);
+  await verifyRail(page,width,true);
+  await page.locator('.pano-quick-rail').getByRole('button',{name:'Adicionar atalho'}).click();
+  assert((await page.locator('.pano-quick-status').innerText()).includes('Todos os ícones disponíveis já foram adicionados.'),
+   'mensagem do catálogo completo: '+width);
+  assert(await page.getByRole('dialog',{name:'Adicionar funcionalidade'}).count()===0,'catálogo vazio não deve abrir diálogo: '+width);
+  await page.reload({waitUntil:'networkidle'});
+  assert(JSON.stringify(await titles(page))===JSON.stringify([...defaults,...catalog]),'persistência dos sete itens: '+width);
+  await verifyRail(page,width,false);
+
+  await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
+  await page.getByRole('button',{name:'Remover Benefícios'}).click();
+  assert((await titles(page)).length===6,'remoção sem segundo trilho: '+width);
+  assert(await page.locator('.pano-quick-add').count()===1,'Adicionar único após remoção: '+width);
+  await clickAdd(page,'Benefícios');
+  assert((await titles(page)).length===7,'recuperar atalho: '+width);
+  await page.getByRole('button',{name:'Restaurar configuração padrão'}).click();
+  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'restauração padrão: '+width);
+  await page.getByRole('button',{name:'Concluir personalização'}).click();
+  await verifyRail(page,width,false);
+  await page.reload({waitUntil:'networkidle'});
+  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'padrão restaurado persistente: '+width);
+
+  if(width===1366){
+   await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
+   await page.getByRole('button',{name:'Recolher menu'}).click();
+   mkdirSync('artifacts/meg-home-refino-06',{recursive:true});
+   await page.screenshot({path:'artifacts/meg-home-refino-06/home-pt2-carrossel-1366.png',fullPage:false});
+  }
+  if(width>=1024){
+   if(width!==1366)await page.getByRole('button',{name:'Recolher menu'}).click();
+   const brand=await page.evaluate(()=>{
+    const shell=document.querySelector('.meg-shell.is-sidebar-collapsed');
+    const image=shell?.querySelector('.meg-brand-logo--collapsed');
+    const stack=shell?.querySelector('.meg-brand-stack');
+    const logout=shell?.querySelector('.meg-logout-button');
+    const active=shell?.querySelector('.meg-nav-item.is-active');
+    const expand=document.querySelector('.meg-sidebar-toggle-topbar');
+    if(!stack||!image||!logout||!active||!expand)return null;
+    const a=stack.getBoundingClientRect(),b=expand.getBoundingClientRect();
+    return {center:Math.abs(a.left+a.width/2-36),top:Math.abs(a.top-b.top),
+     logo:getComputedStyle(stack).borderTopWidth,
+     exit:getComputedStyle(logout).color,
+     activeGlow:getComputedStyle(active.querySelector('svg')).filter};
+   });
+   assert(brand&&brand.center<=2&&brand.top<=8&&brand.logo==='0px'&&brand.exit.startsWith('rgb(255')&&brand.activeGlow.includes('drop-shadow'),
+    'sidebar desfigurada: '+width+' '+JSON.stringify(brand));
   }
   await context.close();
  }
- // Preferência malformada não deve criar destinos nem causar erro.
  const context=await browser.newContext();
  await context.addInitScript(()=>localStorage.setItem('meg.web.home.quick-actions.v1.demo','["inexistente","transferencia"]'));
  const page=await context.newPage();
  await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
- assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'preferência inválida não caiu no padrão');
+ assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'entrada inválida deve ser ignorada');
  await context.close();
- console.log('MEG Home Ações rápidas: '+checked+' verificações passaram; oito viewports; sem deploy.');
+ console.log('MEG Home Ações rápidas: '+checked+' verificações passaram; 8 viewports; carrossel único sem merge.');
 }catch(error){console.error(error);process.exitCode=1}finally{await browser.close()}
