@@ -5,6 +5,7 @@ on:
     paths:
       - 'scripts/meg-stage09-safe-backup.sh'
       - 'scripts/meg-stage09-safe-restore-drill.sh'
+      - 'scripts/meg-stage09-safe-vault-rootkey.sh'
       - 'scripts/meg-stage09-backup-safety.test.mjs'
       - 'docs/MEG-STAGE09-BACKUP-RECOVERY-RUNBOOK-20261110.md'
       - '.github/workflows/meg-stage09-backup-safety.yml'
@@ -31,6 +32,7 @@ jobs:
         run: |
           bash -n scripts/meg-stage09-safe-backup.sh
           bash -n scripts/meg-stage09-safe-restore-drill.sh
+          bash -n scripts/meg-stage09-safe-vault-rootkey.sh
       - name: Run simulated backup and isolated restore safety contract
         shell: bash
         run: node scripts/meg-stage09-backup-safety.test.mjs
