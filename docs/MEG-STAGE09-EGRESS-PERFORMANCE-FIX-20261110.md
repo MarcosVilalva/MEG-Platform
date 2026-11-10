@@ -32,7 +32,7 @@
 - Ambos ligados a `npm --workspace apps/api run test:app-state`. CI e `npm run build:api` / `npm run build:web` **devem passar para candidato tecnicamente validado**. Não declarar validado só porque há testes.
 
 ## 4. Gates obrigatórios antes de merge/deploy
-- [ ] Revisar e passar `test:app-state`, `test:finance`, contratos Etapa 09, e builds Web/API no SHA final.
+- [x] Validado no SHA de código `ee6bd17d3dcad7b5adf09a4a2c1b9d66145c1a71`: [MEG Platform CI #42921808054](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42921808054) **success** com `npm test` (incluindo `test:app-state`, novas caracterizações, `test:finance`) e `build:web` + `build:api`; [CORS #42921808207](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42921808207) **success**. Gate Foundation skipped; `financial-e2e` e `android-rc1` não executados nesse fluxo, e **CI não equivale a validação operacional/visual**.
 - [ ] Medir diferença em **ambiente isolado**, com mocks representativos de 3.630 eventos + AppState volumoso, sem tocar base financeira. Demonstrar paridade de fingerprints, totais, event counts e comportamento com atualizações concorrentes.
 - [ ] Verificar com testes que alterações diretas SQL acionam os contadores de `pg_stat_user_tables` e a checagem profunda; decidir se **2 horas** como fallback de drift invisível é aceitável frente à segurança financeira.
 - [ ] Manter preview isolado, sem reutilizar screenshots obsoletos. Android e Home PT2 preservados.
