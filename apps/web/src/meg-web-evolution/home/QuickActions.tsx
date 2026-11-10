@@ -76,14 +76,14 @@ export function QuickActions({userId,preview,onNavigate}:Props){
      {actions.map((id,index)=>{
       const action=CATALOG.find(item=>item.id===id)!;
       return <li key={id}><span>{action.title}</span><div className="pano-quick-editor-controls">
-       <button type="button" disabled={index===0} onClick={()=>reorder(index,-1)} aria-label={'Mover '+action.title+' para cima'}>Subir</button>
-       <button type="button" disabled={index===actions.length-1} onClick={()=>reorder(index,1)} aria-label={'Mover '+action.title+' para baixo'}>Descer</button>
-       <button type="button" onClick={()=>save(actions.filter(item=>item!==id))} aria-label={'Remover '+action.title}>Remover</button>
+       <button type="button" disabled={index===0} onClick={()=>reorder(index,-1)} aria-label={'Mover '+action.title+' para cima'}><HomeGlyph name="chevronUp" size={17}/><span>Subir</span></button>
+       <button type="button" disabled={index===actions.length-1} onClick={()=>reorder(index,1)} aria-label={'Mover '+action.title+' para baixo'}><HomeGlyph name="chevronDown" size={17}/><span>Descer</span></button>
+       <button type="button" onClick={()=>save(actions.filter(item=>item!==id))} aria-label={'Remover '+action.title}><HomeGlyph name="trash" size={17}/><span>Remover</span></button>
       </div></li>
      })}
     </ul>
-    {available.length>0&&<div className="pano-quick-available"><strong>Adicionar atalho</strong><div>{available.map(item=><button key={item.id} type="button" onClick={()=>save([...actions,item.id])}>+ {item.title}</button>)}</div></div>}
-    <button type="button" className="pano-quick-reset" onClick={()=>save([...DEFAULT_QUICK_ACTIONS])}>Restaurar configuração padrão</button>
+    {available.length>0&&<div className="pano-quick-available"><strong>Adicionar atalho</strong><div>{available.map(item=><button key={item.id} type="button" onClick={()=>save([...actions,item.id])}><HomeGlyph name="plus" size={17}/><span>{item.title}</span></button>)}</div></div>}
+    <button type="button" className="pano-quick-reset" onClick={()=>save([...DEFAULT_QUICK_ACTIONS])}><HomeGlyph name="reload" size={17}/><span>Restaurar configuração padrão</span></button>
    </div>}
   <span className="pano-quick-status" role="status" aria-live="polite">{message}</span>
  </section>;
