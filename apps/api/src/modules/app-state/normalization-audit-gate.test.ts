@@ -7,6 +7,7 @@ import {
 } from './normalization-audit-gate';
 
 const original: NormalizationAuditStamp = {
+  workspaceId: 'workspace-main',
   stateRevision: 12,
   stateUpdatedAt: '2026-11-10T12:00:00.000Z',
   activeEventCount: 3630,
@@ -20,6 +21,7 @@ assert.equal(needsDeepNormalizationAudit(original, original, 0, FULL_NORMALIZATI
 assert.equal(needsDeepNormalizationAudit(original, original, 30_000, 29_999), true, 'clock rollback forces deep audit');
 
 for (const changed of [
+  { workspaceId: 'workspace-other' },
   { stateRevision: 13 },
   { stateUpdatedAt: '2026-11-10T12:15:00.000Z' },
   { activeEventCount: 3629 },
