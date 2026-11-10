@@ -17,7 +17,7 @@
   3. quando passaram **2 horas** desde a última verificação profunda (mesmo sem alterações);
   4. a cada pulso enquanto houver divergência/erro.
 - Toda verificação profunda segue usando **o fingerprint de SHA-256 original**, classificação e regras canônicas sem alterar lógica de saldo, parcelas, status, benefícios, cartões ou lançamentos. SQL `aggregate` do marcador é somente leitura, executado dentro do servidor conectado ao banco.
-- Marcador conferido **antes e depois** do full scan; alterações concorrentes impedem o registro de verificação concluída. Erros/fallback exigem nova comparação. Se a visão estatística não retornar ambas as tabelas, a API falha de modo conservador. O modo rollback continua protegido. Contadores de mutação de tabela detectam também writes SQL fora do Prisma, mesmo sem mudanças em `updatedAt`.
+- Marcador conferido **antes e depois** do full scan; alterações concorrentes impedem o registro de verificação concluída. Erros/fallback exigem nova comparação. Se a visão estatística estiver indisponível ou incompleta, a API executa o fingerprint integral a **cada 15 minutos** (comportamento anterior), sem depender do marcador para validar a integridade. O modo rollback continua protegido. Contadores de mutação de tabela detectam também writes SQL fora do Prisma, mesmo sem mudanças em `updatedAt`.
 - **Tradeoff transparente:** alterações diretas via SQL tendem a ser detectadas em até 15 minutos também pelos contadores de mutações em `pg_stat_user_tables`; porém essas estatísticas são assíncronas e **não representam prova criptográfica de invariância**. Um drift invisível aos marcadores ainda pode aguardar até **2 horas** para o fingerprint profundo (antes tentado a cada 15 minutos). Esse intervalo não muda nenhum cálculo financeiro, mas é uma mudança no prazo de detecção de falhas. **Requer aceite técnico específico antes de produção** e teste de detecção de divergência fora dos writers.
 
 ### B. Eliminação de leitura duplicada de integridade na Phoenix **somente para Web**
@@ -27,7 +27,7 @@
 - Nenhuma página calcula saldo/status no frontend, nenhum endpoint writer alterado.
 
 ## 3. Testes de caracterização adicionados
-- `normalization-audit-gate.test.ts`: primeiro ciclo, marcador inalterado, revisão alterada, timestamp atualizado, contagem aumentando/diminuindo, incremento de contador de INSERT/UPDATE/DELETE, mudança de workspace, clock rollback e auditoria profunda mandatória após 2h.
+- `normalization-audit-gate.test.ts`: primeiro ciclo, marcador inalterado, revisão alterada, timestamp atualizado, contagem aumentando/diminuindo, incremento de contador de INSERT/UPDATE/DELETE, estatísticas ausentes, mudança de workspace, clock rollback e auditoria profunda mandatória após 2h.
 - `normalization-from-shared-state.test.ts`: confirma reaproveitamento apenas quando há prova de paridade, e exigência de full diagnostic diante de fallback, divergência e payload incompleto.
 - Ambos ligados a `npm --workspace apps/api run test:app-state`. CI e `npm run build:api` / `npm run build:web` **devem passar para candidato tecnicamente validado**. Não declarar validado só porque há testes.
 
