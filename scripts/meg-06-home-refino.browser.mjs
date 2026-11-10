@@ -23,7 +23,7 @@ async function measure(page){
     const r=e.getBoundingClientRect();
     return {x:r.x,y:r.y,width:r.width,height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right};
   };
-  const buttons=all('.pano-action');
+  const buttons=all('.pano-quick-link');
   const stage=one('.pano-card-stage');
   const summary=one('.pano-card-summary');
   const summaryName=one('.pano-card-summary-copy strong');
@@ -68,10 +68,10 @@ async function measure(page){
     grids:all('.pano-grid .meg-datagrid').length,
     actions:buttons.map(b=>({
       title:b.querySelector('strong')?.textContent?.trim(),
-      iconCount:b.querySelectorAll('.pano-action-icon svg').length,
+      iconCount:b.querySelectorAll('.pano-quick-item-icon svg').length,
       ...rect(b)
     })),
-    actionGap:panel?getComputedStyle(one('.pano-action-list')).gap:null,
+    actionGap:panel?getComputedStyle(one('.pano-quick-rail')).gap:null,
     cardStage:stage?rect(stage):null,
     activeCard:active?rect(active):null,
     cardCount:all('.pano-credit-card').length,
@@ -81,7 +81,7 @@ async function measure(page){
     cardPanelRect:one('.pano-cards')?rect(one('.pano-cards')):null,
     actionsPanelRect:panel?rect(panel):null,
     financePanelRect:one('.pano-finance-block')?rect(one('.pano-finance-block')):null,
-    descriptions:all('.pano-action small').map(el=>el.textContent?.trim()),
+    descriptions:all('.pano-quick-link small').map(el=>el.textContent?.trim()),
     summary:summary?rect(summary):null,
     summaryName:summaryName?.textContent?.trim(),
     summaryValue:summaryCard?.querySelector('strong')?.textContent?.trim(),
@@ -217,18 +217,12 @@ try {
       changed.activeCard.bottom>changed.cardStage.bottom+2))
     problems.push('cartão central cortado no palco');
   if(api.length)problems.push('requisições API em modo visual');
-  if(width>=1024 && changed.actions.length===4){
+  // Contrato da Home PT2: os quatro atalhos conservam UMA faixa horizontal
+  // também em tablet e mobile. Rolagem ocorre somente dentro do carrossel.
+  if(changed.actions.length===4){
     const tops=changed.actions.map(x=>x.top);
     if(Math.max(...tops)-Math.min(...tops)>3)
-      problems.push('quatro atalhos não estão na mesma linha no desktop');
-  } else if(width>=640 && changed.actions.length===4){
-    const [a,b,c,d]=changed.actions;
-    if(Math.abs(a.top-b.top)>3||Math.abs(c.top-d.top)>3||c.top<=a.top+5)
-      problems.push('tablet não está em grade 2x2');
-  } else if(changed.actions.length===4){
-    const [a,b,c,d]=changed.actions;
-    if(!(b.top>a.top+5&&c.top>b.top+5&&d.top>c.top+5))
-      problems.push('mobile não empilha os quatro atalhos');
+      problems.push('os atalhos deixaram de ocupar uma única linha horizontal');
   }
   // O novo tamanho do cartão foi aprovado como proposta visual, mas
   // nunca pode cortar controles ou deslocar os KPIs/DataGrids.
@@ -273,7 +267,7 @@ try {
  if(before===after)throw Error('carrossel nao navegou');
  // Novo Lançamento deve permanecer no cabeçalho, sem duplicação no painel.
  if(!(await page.locator('.meg-topbar-new').isVisible()))throw Error('Novo lançamento no topo não visível');
- if(await page.locator('.pano-action').filter({hasText:'Novo lançamento'}).count())
+ if(await page.locator('.pano-quick-link').filter({hasText:'Novo lançamento'}).count())
    throw Error('Novo lançamento duplicado nas ações');
  await page.locator('.meg-topbar-new').click();
  await page.locator('[data-testid="new-launch-types"]').waitFor();
