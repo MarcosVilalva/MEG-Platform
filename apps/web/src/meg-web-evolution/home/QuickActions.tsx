@@ -77,7 +77,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
     aria-expanded={editing} aria-controls="pano-quick-editor"
     onClick={()=>{setEditing(v=>!v);setChoosing(null);setMessage('')}}>
     <HomeGlyph name={editing?'check':'pencil'} size={20}/>
-    <span className="sr-only">{editing?'Concluir':'Personalizar'}</span>
+
    </button>
   </div>
   <div className="pano-action-list">
