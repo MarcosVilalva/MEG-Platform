@@ -37,9 +37,9 @@ export function QuickActions({userId,preview,onNavigate}:Props){
  const key=storageKey(userId,preview);
  const [actions,setActions]=useState<HomeQuickAction[]>(()=>readActions(key));
  const [editing,setEditing]=useState(false);
- const [choosing,setChoosing]=useState<HomeQuickAction|null>(null);
+ const [choosing,setChoosing]=useState(false);
  const [message,setMessage]=useState('');
- useEffect(()=>{setActions(readActions(key));setEditing(false);setChoosing(null);setMessage('')},[key]);
+ useEffect(()=>{setActions(readActions(key));setEditing(false);setChoosing(false);setMessage('')},[key]);
  const save=(next:HomeQuickAction[])=>{
   const normalized=validIds(next);
   if(!normalized)return;
@@ -56,17 +56,6 @@ export function QuickActions({userId,preview,onNavigate}:Props){
   const next=[...actions];[next[index],next[destination]]=[next[destination],next[index]];
   save(next);
  };
- const replace=(current:HomeQuickAction,chosen:HomeQuickAction)=>{
-  const index=actions.indexOf(current);
-  const existing=actions.indexOf(chosen);
-  if(index<0)return;
-  const next=[...actions];
-  if(existing===index){setChoosing(null);return}
-  if(existing>=0)next[existing]=current; // Ações já em uso trocam de lugar, sem duplicação.
-  next[index]=chosen;
-  save(next);
-  setChoosing(null);
- };
  const available=CATALOG.filter(action=>!actions.includes(action.id));
  return <section className="pano-panel pano-actions" aria-label="Ações rápidas">
   <div className="pano-panel-title pano-quick-heading">
@@ -75,12 +64,12 @@ export function QuickActions({userId,preview,onNavigate}:Props){
     aria-label={editing?'Concluir personalização':'Personalizar ações rápidas'}
     data-tooltip={editing?'Concluir personalização':'Personalizar ações rápidas'}
     aria-expanded={editing} aria-controls="pano-quick-editor"
-    onClick={()=>{setEditing(v=>!v);setChoosing(null);setMessage('')}}>
+    onClick={()=>{setEditing(v=>!v);setChoosing(false);setMessage('')}}>
     <HomeGlyph name={editing?'check':'pencil'} size={20}/>
 
    </button>
   </div>
-  <div className="pano-action-list">
+  <div className="pano-action-list pano-quick-display-grid">
    {actions.map(id=>{
     const action=CATALOG.find(item=>item.id===id);
     if(!action)return null;
@@ -88,10 +77,12 @@ export function QuickActions({userId,preview,onNavigate}:Props){
      <span className="pano-action-icon"><HomeGlyph name={action.icon} size={17}/></span><strong>{action.title}</strong><small>{action.description}</small>
     </button>
    })}
+   {Array.from({length:DEFAULT_QUICK_ACTIONS.length-actions.length},(_,index)=><button key={'empty-'+index} type="button" className="pano-quick-placeholder" aria-label="Adicionar atalho" onClick={()=>{setEditing(true);setChoosing(true)}}>
+    <HomeGlyph name="plus" size={25}/><span>Adicionar</span>
+   </button>)}
   </div>
-  {actions.length===0&&<p className="pano-quick-empty">Nenhum atalho selecionado. Abra a personalização para adicionar.</p>}
   {editing&&<div className="pano-quick-editor" id="pano-quick-editor" aria-label="Editar atalhos">
-   <p>Organize, substitua ou remova atalhos. A preferência fica salva neste navegador.</p>
+   <p>Organize, adicione ou remova atalhos. A preferência fica salva neste navegador.</p>
    <ul className="pano-quick-editor-list">
     {actions.map((id,index)=>{
      const action=CATALOG.find(item=>item.id===id)!;
@@ -99,29 +90,28 @@ export function QuickActions({userId,preview,onNavigate}:Props){
       <div className="pano-quick-editor-card-main">
        <span className="pano-quick-editor-icon"><HomeGlyph name={action.icon} size={22}/></span>
        <span className="pano-quick-editor-copy"><strong>{action.title}</strong><small>{action.description}</small></span>
-       <button type="button" className="pano-quick-choose" aria-label={'Escolher funcionalidade para '+action.title}
-        aria-expanded={choosing===id} aria-controls="pano-quick-chooser" data-tooltip={'Escolher outro atalho para '+action.title}
-        onClick={()=>setChoosing(current=>current===id?null:id)}><HomeGlyph name="chevronRight" size={20}/></button>
       </div>
       <div className="pano-quick-editor-controls">
-       <button type="button" disabled={index===0} onClick={()=>reorder(index,-1)} aria-label={'Mover '+action.title+' para cima'} data-tooltip={'Subir '+action.title}><HomeGlyph name="chevronUp" size={20}/></button>
-       <button type="button" disabled={index===actions.length-1} onClick={()=>reorder(index,1)} aria-label={'Mover '+action.title+' para baixo'} data-tooltip={'Descer '+action.title}><HomeGlyph name="chevronDown" size={20}/></button>
-       <button type="button" onClick={()=>{save(actions.filter(item=>item!==id));setChoosing(null)}} aria-label={'Remover '+action.title} data-tooltip={'Remover '+action.title}><HomeGlyph name="trash" size={20}/></button>
+       <button type="button" disabled={index===0} onClick={()=>reorder(index,-1)} aria-label={'Mover '+action.title+' para esquerda'} data-tooltip={'Mover '+action.title+' para esquerda'}><HomeGlyph name="chevronLeft" size={20}/></button>
+       <button type="button" disabled={index===actions.length-1} onClick={()=>reorder(index,1)} aria-label={'Mover '+action.title+' para direita'} data-tooltip={'Mover '+action.title+' para direita'}><HomeGlyph name="chevronRight" size={20}/></button>
+       <button type="button" onClick={()=>{save(actions.filter(item=>item!==id));setChoosing(false)}} aria-label={'Remover '+action.title} data-tooltip={'Remover '+action.title}><HomeGlyph name="trash" size={20}/></button>
       </div>
      </li>
     })}
+    {Array.from({length:DEFAULT_QUICK_ACTIONS.length-actions.length},(_,index)=><li key={'slot-'+index} className="pano-quick-editor-empty">
+     <button type="button" className="pano-quick-placeholder" aria-label="Adicionar atalho" onClick={()=>setChoosing(true)}>
+      <HomeGlyph name="plus" size={25}/><span>Adicionar</span>
+     </button>
+    </li>)}
    </ul>
-   {choosing&&actions.includes(choosing)&&<div className="pano-quick-chooser" id="pano-quick-chooser" aria-label="Escolher funcionalidade">
-    <div className="pano-quick-chooser-heading"><strong>Escolher funcionalidade</strong><button type="button" aria-label="Fechar seleção de atalhos" onClick={()=>setChoosing(null)}><HomeGlyph name="chevronDown" size={18}/></button></div>
-    <p>Escolha um atalho disponível. Um item já utilizado troca de posição com o atual.</p>
-    <div className="pano-quick-chooser-options">
-     {CATALOG.map(item=><button type="button" key={item.id} className={'is-'+item.kind} aria-label={'Selecionar '+item.title} aria-current={item.id===choosing?'true':undefined}
-       onClick={()=>replace(choosing,item.id)}><span className="pano-quick-editor-icon"><HomeGlyph name={item.icon} size={21}/></span><span><strong>{item.title}</strong><small>{item.description}</small></span>{item.id===choosing&&<HomeGlyph name="check" size={17}/>}</button>)}
-    </div>
-    <p className="pano-quick-catalog-note">Outras funcionalidades serão incluídas quando as rotas e permissões estiverem validadas.</p>
+   {choosing&&<div className="pano-quick-chooser" id="pano-quick-chooser" aria-label="Adicionar funcionalidade">
+    <div className="pano-quick-chooser-heading"><strong>Adicionar funcionalidade</strong><button type="button" aria-label="Fechar seleção de atalhos" onClick={()=>setChoosing(false)}><HomeGlyph name="chevronDown" size={18}/></button></div>
+    {available.length>0?<div className="pano-quick-chooser-options">
+     {available.map(item=><button type="button" key={item.id} className={'is-'+item.kind} aria-label={'Adicionar '+item.title} onClick={()=>{save([...actions,item.id]);setChoosing(false)}}><span className="pano-quick-editor-icon"><HomeGlyph name={item.icon} size={21}/></span><span><strong>{item.title}</strong><small>{item.description}</small></span></button>)}
+    </div>:<p>Todos os atalhos atualmente autorizados estão na grade.</p>}
+    <p className="pano-quick-catalog-note">Novas funcionalidades serão disponibilizadas após validação das rotas e permissões.</p>
    </div>}
-   {available.length>0&&<div className="pano-quick-available"><strong>Adicionar atalho</strong><div>{available.map(item=><button key={item.id} type="button" aria-label={'Adicionar '+item.title} onClick={()=>save([...actions,item.id])}><HomeGlyph name={item.icon} size={18}/><span>{item.title}</span></button>)}</div></div>}
-   <button type="button" className="pano-quick-reset" onClick={()=>{save([...DEFAULT_QUICK_ACTIONS]);setChoosing(null)}}><HomeGlyph name="reload" size={17}/><span>Restaurar configuração padrão</span></button>
+   <button type="button" className="pano-quick-reset" onClick={()=>{save([...DEFAULT_QUICK_ACTIONS]);setChoosing(false)}}><HomeGlyph name="reload" size={17}/><span>Restaurar configuração padrão</span></button>
   </div>}
   <span className="pano-quick-status" role="status" aria-live="polite">{message}</span>
  </section>;
