@@ -39,7 +39,8 @@ try{
   await chooserButton.click();
   assert(await page.getByRole('button',{name:'Selecionar Pagar conta'}).isVisible(),'catálogo de troca não abriu: '+width);
   await page.getByRole('button',{name:'Selecionar Pagar conta'}).click();
-  assert(JSON.stringify(await titles(page))===JSON.stringify(['Pagar conta','Transferência','Relatórios','Configurações']),'troca de duas ações existentes: '+width);
+  const afterSwap=await titles(page);
+  assert(JSON.stringify(afterSwap)===JSON.stringify(['Pagar conta','Transferência','Relatórios','Configurações']),'troca de duas ações existentes: '+width+' '+JSON.stringify(afterSwap));
   await page.getByRole('button',{name:'Escolher funcionalidade para Pagar conta'}).click();
   await page.getByRole('button',{name:'Selecionar Transferência'}).click();
   assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'troca reversível sem duplicação: '+width);
