@@ -127,12 +127,15 @@ try{
     (onHover.border==='transparent'||onHover.border==='rgba(0, 0, 0, 0)'),
     'sidebar aberta: hover deve iluminar sem contorno '+width+' '+JSON.stringify(onHover));
    await other.focus();
-   const onFocus=await other.evaluate(el=>({
-    opacity:getComputedStyle(el,'::before').opacity,
-    outline:getComputedStyle(el,'::before').outlineStyle
-   }));
-   assert(onFocus.opacity==='1'&&onFocus.outline==='solid',
-    'sidebar aberta: Tab precisa de foco circular visível '+width+' '+JSON.stringify(onFocus));
+   await page.keyboard.press('Tab');
+   const onFocus=await page.evaluate(()=>{
+    const el=document.activeElement;
+    if(!(el instanceof HTMLElement)||!el.classList.contains('meg-nav-item'))return null;
+    const pseudo=getComputedStyle(el,'::before');
+    return {opacity:pseudo.opacity,shadow:pseudo.boxShadow,outline:pseudo.outlineStyle};
+   });
+   assert(onFocus&&onFocus.opacity==='1'&&onFocus.shadow!=='none'&&onFocus.outline==='none',
+    'sidebar aberta: Tab precisa de iluminação circular, sem contorno '+width+' '+JSON.stringify(onFocus));
   }
   if(width===1366){
    await page.getByRole('button',{name:'Recolher menu'}).click();
