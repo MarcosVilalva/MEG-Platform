@@ -243,3 +243,51 @@
 .pano-grid .meg-datagrid-pagination button:not(:disabled):hover{background:#0e5059;border-color:#62e7d0;box-shadow:0 0 10px #16cfb32b}
 .pano-grid .meg-datagrid-pagination button svg{stroke-width:2.35}
 @media(prefers-reduced-motion:reduce){.pano-card-control,.pano-grid .meg-datagrid-sort-button,.pano-grid .meg-datagrid-filter-button,.pano-grid .meg-datagrid-pagination button{transition:none!important}}
+
+/* Home 08: densidade pareada dos DataGrids, sem modificar a biblioteca compartilhada.
+   Com três vencimentos, não esticar linhas até preencher artificialmente a coluna. */
+.pano-finance-block .pano-grid{
+  display:flex;flex-direction:column;align-self:stretch;justify-content:flex-start;
+}
+.pano-finance-block .pano-grid .meg-datagrid{
+  flex:0 0 auto;height:auto!important;min-height:0;
+}
+.pano-finance-block .pano-grid .meg-datagrid__viewport{
+  flex:0 0 auto!important;height:auto!important;min-height:0!important;max-height:none;
+}
+.pano-finance-block .pano-grid .meg-datagrid-table{
+  height:auto!important;min-height:0!important;
+}
+.pano-finance-block .pano-grid .meg-datagrid-table tbody{
+  height:auto!important;
+}
+.pano-finance-block .pano-grid .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row){
+  height:3rem;max-height:3rem;
+}
+.pano-finance-block .pano-grid .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row) td{
+  box-sizing:border-box;height:3rem!important;min-height:3rem;
+  vertical-align:middle;padding-block:.32rem;
+}
+.pano-finance-block .pano-grid .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row):is(:hover,:focus-within) td{
+  background:rgba(15,78,79,.60)!important;
+}
+.pano-finance-block .pano-grid .meg-datagrid-table :is(button,a):focus-visible,
+.pano-finance-block .pano-grid .meg-datagrid-pagination button:focus-visible,
+.pano-finance-block .pano-grid-actions button:focus-visible{
+  outline:2px solid #91ffe6;outline-offset:2px;
+  box-shadow:0 0 12px rgba(25,230,206,.20);
+}
+.pano-finance-block .pano-grid-heading{
+  min-height:2.75rem;align-items:center;
+}
+.pano-finance-block .pano-grid .meg-datagrid-footer{
+  flex:0 0 auto;
+}
+@media(max-width:639px){
+  .pano-finance-block .pano-grid .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row) td{
+    height:auto!important;min-height:0;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .pano-finance-block .pano-grid .meg-datagrid-table tbody tr td{transition:none!important}
+}
