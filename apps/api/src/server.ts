@@ -243,8 +243,10 @@ try {
       .then(async (workspace) => {
         if (!workspace) throw new Error('NORMALIZATION_SOURCE_NOT_FOUND');
         const before = await normalizationAuditStamp(workspace.id);
-        if (!needsDeepNormalizationAudit(before, lastDeepAuditStamp, lastDeepAuditAtMs, Date.now())) {
-          return; // Mantém o resultado da última auditoria profunda, sem fingir nova conferência.
+        const lastRuntime = getNormalizationRuntimeStatus();
+        const stableRuntime = lastRuntime.status === 'completed' || lastRuntime.status === 'rollback-protected';
+        if (stableRuntime && !needsDeepNormalizationAudit(before, lastDeepAuditStamp, lastDeepAuditAtMs, Date.now())) {
+          return; // Divergência/fallback nunca é dispensada por marcador inalterado.
         }
 
         // Contrato financeiro original: executar a comparação integral de
