@@ -89,6 +89,13 @@ export function QuickActions({userId,preview,onNavigate}:Props){
  const count=Math.min(visibleCount,sequence.length);
  const index=((startIndex%sequence.length)+sequence.length)%sequence.length;
  const shown=Array.from({length:count},(_,i)=>sequence[(index+i)%sequence.length]);
+ const pageCount=Math.ceil(sequence.length/count);
+ const activePage=Math.floor(index/count);
+ const goToPage=(page:number)=>{
+  if(page<0||page>=pageCount)return;
+  setStartIndex(page*count);
+  setMotion(page>=activePage?'right':'left');
+ };
  const cycle=(step:number)=>{
   if(sequence.length<=count)return;
   setStartIndex(old=>(old+step+sequence.length)%sequence.length);
@@ -156,6 +163,13 @@ export function QuickActions({userId,preview,onNavigate}:Props){
     })}
    </div>
   </div>
+  {pageCount>1&&<div className="pano-quick-pagination" role="group" aria-label="Páginas de ações rápidas">
+   {Array.from({length:pageCount},(_,page)=><button key={page} type="button"
+    className={'pano-quick-dot'+(page===activePage?' is-active':'')}
+    aria-label={'Ir à página '+(page+1)+' de '+pageCount+' dos atalhos'}
+    aria-current={page===activePage?'true':undefined}
+    onClick={()=>goToPage(page)}><span aria-hidden="true"/></button>)}
+  </div>}
   {choosing&&<div className="pano-quick-picker-backdrop" onClick={()=>setChoosing(false)}>
    <div ref={dialogRef} className="pano-quick-picker" role="dialog" aria-modal="true" aria-label="Adicionar funcionalidade"
     onClick={event=>event.stopPropagation()}>
