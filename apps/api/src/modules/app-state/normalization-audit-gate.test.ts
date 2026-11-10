@@ -8,6 +8,7 @@ import {
 
 const original: NormalizationAuditStamp = {
   workspaceId: 'workspace-main',
+  tableMutationCounters: 'AppState:1:12:0|FinancialEvent:100:200:0',
   stateRevision: 12,
   stateUpdatedAt: '2026-11-10T12:00:00.000Z',
   activeEventCount: 3630,
@@ -22,6 +23,10 @@ assert.equal(needsDeepNormalizationAudit(original, original, 30_000, 29_999), tr
 
 for (const changed of [
   { workspaceId: 'workspace-other' },
+  { tableMutationCounters: 'AppState:1:13:0|FinancialEvent:100:200:0' },
+  { tableMutationCounters: 'AppState:1:12:0|FinancialEvent:100:201:0' },
+  { tableMutationCounters: 'AppState:1:12:0|FinancialEvent:101:200:0' },
+  { tableMutationCounters: 'AppState:1:12:0|FinancialEvent:100:200:1' },
   { stateRevision: 13 },
   { stateUpdatedAt: '2026-11-10T12:15:00.000Z' },
   { activeEventCount: 3629 },
