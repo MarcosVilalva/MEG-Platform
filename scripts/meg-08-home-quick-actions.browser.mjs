@@ -102,6 +102,38 @@ try{
   await page.getByRole('button',{name:'Concluir personalização'}).click();
   await checkWindow(page,width);
 
+  if(width>=1024){
+   const nav=page.getByRole('button',{name:'Início'});
+   const baseline=await nav.evaluate(el=>({
+    border:getComputedStyle(el).borderTopColor,
+    borderWidth:getComputedStyle(el).borderTopWidth,
+    background:getComputedStyle(el).backgroundImage,
+    circle:getComputedStyle(el,'::before').borderRadius,
+    glow:getComputedStyle(el.querySelector('svg')).filter,
+    haloOpacity:getComputedStyle(el,'::before').opacity
+   }));
+   assert(baseline.border==='rgba(0, 0, 0, 0)'||baseline.border==='transparent',
+    'sidebar aberta: borda visível no ativo '+width+' '+JSON.stringify(baseline));
+   assert(baseline.circle==='50%'&&baseline.glow.includes('drop-shadow')&&baseline.haloOpacity==='1',
+    'sidebar aberta: halo circular ativo ausente '+width+' '+JSON.stringify(baseline));
+   const other=page.getByRole('button',{name:'Lançamentos'});
+   await other.hover();
+   const onHover=await other.evaluate(el=>({
+    opacity:getComputedStyle(el,'::before').opacity,
+    glow:getComputedStyle(el.querySelector('svg')).filter,
+    border:getComputedStyle(el).borderTopColor
+   }));
+   assert(onHover.opacity==='1'&&onHover.glow.includes('drop-shadow')&&
+    (onHover.border==='transparent'||onHover.border==='rgba(0, 0, 0, 0)'),
+    'sidebar aberta: hover deve iluminar sem contorno '+width+' '+JSON.stringify(onHover));
+   await other.focus();
+   const onFocus=await other.evaluate(el=>({
+    opacity:getComputedStyle(el,'::before').opacity,
+    outline:getComputedStyle(el,'::before').outlineStyle
+   }));
+   assert(onFocus.opacity==='1'&&onFocus.outline==='solid',
+    'sidebar aberta: Tab precisa de foco circular visível '+width+' '+JSON.stringify(onFocus));
+  }
   if(width===1366){
    await page.getByRole('button',{name:'Recolher menu'}).click();
    mkdirSync('artifacts/meg-home-refino-06',{recursive:true});
@@ -120,6 +152,13 @@ try{
    });
    assert(style&&style.circle==='50%'&&style.glow.includes('drop-shadow')&&style.exitColor.startsWith('rgb(255'),
     'halo circular ou Sair vermelho regressou: '+width+' '+JSON.stringify(style));
+   const collapsedActive=await page.getByRole('button',{name:'Início'}).evaluate(el=>({
+     border:getComputedStyle(el).borderTopColor,
+     background:getComputedStyle(el).backgroundColor,
+     halo:getComputedStyle(el,'::before').opacity
+   }));
+   assert((collapsedActive.border==='transparent'||collapsedActive.border==='rgba(0, 0, 0, 0)')&&collapsedActive.halo==='1',
+    'sidebar recolhida: ativo deve iluminar sem borda '+width+' '+JSON.stringify(collapsedActive));
    const home=page.getByRole('button',{name:'Início'});
    await home.focus();
    const focus=await home.evaluate(el=>getComputedStyle(el,'::before').boxShadow);
