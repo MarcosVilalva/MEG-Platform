@@ -1,4 +1,5 @@
 import {chromium} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 const base=process.env.MEG_PREVIEW_URL||'http://127.0.0.1:4173';
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 const defaults=['Transferência','Pagar conta','Relatórios','Configurações'];
@@ -16,6 +17,16 @@ try{
   assert(await page.getByRole('button',{name:'Mover Relatórios para cima'}).locator('svg').count()===1,'ícone SVG de subir ausente: '+width);
   assert(await page.getByRole('button',{name:'Mover Relatórios para baixo'}).locator('svg').count()===1,'ícone SVG de descer ausente: '+width);
   assert(await page.getByRole('button',{name:'Remover Relatórios'}).locator('svg').count()===1,'ícone SVG de remover ausente: '+width);
+  const cards=await page.locator('.pano-quick-editor-card').evaluateAll(items=>items.map(el=>({x:el.getBoundingClientRect().left,y:el.getBoundingClientRect().top,width:el.getBoundingClientRect().width,buttons:[...el.querySelectorAll('.pano-quick-editor-controls button')].map(btn=>{const r=btn.getBoundingClientRect();return {left:r.left,right:r.right,bottom:r.bottom}}),right:el.getBoundingClientRect().right,bottom:el.getBoundingClientRect().bottom})));
+  assert(cards.length===4&&cards.every(card=>card.buttons.length===3&&card.buttons.every(btn=>btn.left>=card.x-1&&btn.right<=card.right+1&&btn.bottom<=card.bottom+1)),'ícones escaparam dos cartões da grade: '+width);
+  if(width===1366){
+   await page.getByRole('button',{name:'Recolher menu'}).click();
+   await page.waitForTimeout(250);
+   mkdirSync('artifacts/meg-home-refino-06',{recursive:true});
+   await page.screenshot({path:'artifacts/meg-home-refino-06/home-pt2-editor-grade-1366.png',fullPage:false});
+   await page.getByRole('button',{name:'Expandir menu'}).click();
+   await page.waitForTimeout(250);
+  }
   const buttons=await page.locator('.pano-quick-editor-controls button').evaluateAll(items=>items.map(el=>({text:el.textContent?.trim(),label:el.getAttribute('aria-label'),tooltip:el.getAttribute('data-tooltip'),width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})));
   assert(buttons.every(btn=>!btn.text&&btn.label&&btn.tooltip&&btn.width>=44&&btn.height>=44),'controles sem texto, com tooltip e alvo >=44px: '+width);
   await page.getByRole('button',{name:'Mover Relatórios para cima'}).focus();
