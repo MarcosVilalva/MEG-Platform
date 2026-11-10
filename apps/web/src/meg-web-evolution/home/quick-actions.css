@@ -2,7 +2,7 @@
 .pano-quick{
   position:relative;min-width:0;overflow:visible;
 }
-.pano-quick-heading{display:flex;align-items:center;gap:.55rem;min-width:0;margin-bottom:.65rem}
+.pano-quick-heading{display:flex;align-items:center;gap:.55rem;min-width:0;max-width:100%;box-sizing:border-box;margin-bottom:.65rem}
 .pano-quick-heading h2{margin-right:0}
 .pano-quick-heading button{
   flex:0 0 auto;display:inline-grid;place-items:center;position:relative;
@@ -36,7 +36,7 @@
 .pano-quick-carousel-controls button{width:38px;min-width:38px;height:38px;min-height:38px;border-radius:10px}
 .pano-quick-rail{
   display:flex;flex-wrap:nowrap;gap:.65rem;
-  width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+  box-sizing:border-box;width:100%;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;
   padding:3px 2px 7px;margin:0;
   scroll-snap-type:x mandatory;scroll-padding-inline:2px;
   overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;
