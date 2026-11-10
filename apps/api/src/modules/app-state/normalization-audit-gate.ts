@@ -11,7 +11,7 @@ export const FULL_NORMALIZATION_AUDIT_INTERVAL_MS = 2 * 60 * 60 * 1000;
 
 export type NormalizationAuditStamp = {
   workspaceId: string;
-  tableMutationCounters: string;
+  tableMutationCounters: string | null;
   stateRevision: number | null;
   stateUpdatedAt: string | null;
   activeEventCount: number;
@@ -38,6 +38,9 @@ export function needsDeepNormalizationAudit(
   maxAgeMs = FULL_NORMALIZATION_AUDIT_INTERVAL_MS
 ): boolean {
   if (!lastVerified || lastVerifiedAtMs === null) return true;
+  // Se o servidor não puder consultar as estatísticas, executar o full-scan
+  // original a cada pulso, sem impedir a fiscalização financeira.
+  if (!stamp.tableMutationCounters || !lastVerified.tableMutationCounters) return true;
   if (maxAgeMs <= 0 || nowMs < lastVerifiedAtMs || nowMs - lastVerifiedAtMs >= maxAgeMs) return true;
   return !sameNormalizationAuditStamp(stamp, lastVerified);
 }
