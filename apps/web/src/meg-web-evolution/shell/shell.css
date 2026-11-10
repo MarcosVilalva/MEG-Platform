@@ -1472,79 +1472,56 @@
   }
 }
 
-/* Home PT2: correção após validação visual.
-   Restaurar a hierarquia oficial: nav sem caixas repetidas; sair em vermelho.
-   Logo inteira, sem recorte, centrada com o botão do cabeçalho. */
-@media (min-width:1024px) {
-  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
-    box-sizing:border-box;
-    width:56px;
-    height:56px;
-    flex:0 0 56px;
-    display:grid;
-    place-items:center;
-    overflow:visible;
-    border:1px solid rgba(29,227,204,.63);
-    border-radius:14px;
-    background:linear-gradient(145deg,rgba(6,58,63,.90),rgba(1,28,34,.96));
-    box-shadow:inset 0 0 0 2px rgba(2,27,30,.83),0 0 0 1px rgba(26,193,176,.11),0 0 12px rgba(16,221,201,.09);
+/* Home PT2: marca solta conforme validação 10/11, sem molduras ou recortes.
+   A faixa de altura segue o topbar; ajuste óptico de -4px fica restrito à marca. */
+@media(min-width:1024px){
+  .meg-shell.is-sidebar-collapsed .meg-brand{
+    flex:0 0 5.35rem;height:5.35rem;min-height:5.35rem;
+    margin:0;padding:0;display:flex;align-items:center;justify-content:center
   }
-  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
-    box-sizing:border-box;
-    width:48px;
-    min-width:48px;
-    max-width:48px;
-    height:48px;
-    max-height:48px;
-    object-fit:contain;
-    object-position:center;
-    margin:0;
-    filter:drop-shadow(0 0 4px rgba(20,227,200,.14));
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack{
+    position:relative;display:grid;place-items:center;
+    width:56px;height:56px;flex:0 0 56px;
+    overflow:visible;border:0;border-radius:0;
+    background:none;box-shadow:none;transform:translateY(-4px)
   }
-  .meg-shell.is-sidebar-collapsed .meg-nav-item:not(.is-active):not(.meg-logout-button) {
-    border-color:transparent;
-    background:transparent;
-    box-shadow:none;
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack::before,
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack::after{
+    content:none;display:none
   }
-  .meg-shell.is-sidebar-collapsed .meg-nav-item:not(.is-active):not(.meg-logout-button):is(:hover,:focus-visible) {
-    border-color:rgba(20,227,200,.36);
-    background:rgba(20,227,200,.075);
-    box-shadow:0 0 12px rgba(20,227,200,.10);
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed{
+    position:relative;inset:auto;display:block;flex:0 0 auto;
+    width:52px;min-width:52px;max-width:52px;
+    height:52px;max-height:52px;object-fit:contain;object-position:center;
+    opacity:1;margin:0;transform:none;
+    filter:drop-shadow(0 0 5px rgba(27,235,216,.20))
   }
-  .meg-shell.is-sidebar-collapsed .meg-nav-item.is-active {
-    border:1px solid rgba(46,246,217,.72);
-    border-radius:13px;
+  .meg-shell.is-sidebar-collapsed .meg-nav-item:not(.is-active):not(.meg-logout-button){
+    border-color:transparent;background:transparent;box-shadow:none
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav-item:not(.is-active):not(.meg-logout-button):is(:hover,:focus-visible){
+    border-color:rgba(20,227,200,.33);background:rgba(20,227,200,.065);box-shadow:0 0 12px rgba(20,227,200,.08)
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav-item.is-active{
+    border:1px solid rgba(46,246,217,.72);border-radius:13px;
     background:linear-gradient(145deg,rgba(5,117,112,.40),rgba(2,59,64,.84));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(20,227,200,.09),0 0 12px rgba(20,227,200,.09);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(20,227,200,.09),0 0 12px rgba(20,227,200,.09)
   }
-  .meg-shell.is-sidebar-collapsed .meg-logout-button {
-    border:1px solid rgba(249,105,123,.38);
-    border-radius:13px;
+  .meg-shell.is-sidebar-collapsed .meg-logout-button{
+    border:1px solid rgba(249,105,123,.38);border-radius:13px;
     background:linear-gradient(145deg,rgba(123,35,53,.29),rgba(45,20,34,.66));
-    color:#ffbcc5;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 0 10px rgba(231,68,99,.06);
+    color:#ffbcc5;box-shadow:0 0 10px rgba(231,68,99,.06)
   }
-  .meg-shell.is-sidebar-collapsed .meg-logout-button svg {color:#ff8c9c}
-  .meg-shell.is-sidebar-collapsed .meg-logout-button:is(:hover,:focus-visible) {
-    border-color:#ff879a;
-    background:linear-gradient(145deg,rgba(158,49,76,.51),rgba(75,25,48,.83));
-    color:#fff2f3;
-    box-shadow:0 0 16px rgba(247,79,118,.20);
+  .meg-shell.is-sidebar-collapsed .meg-logout-button svg{color:#ff8c9c}
+  .meg-shell.is-sidebar-collapsed .meg-logout-button:is(:hover,:focus-visible){
+    border-color:#ff879a;background:rgba(158,49,76,.51);color:#fff2f3;box-shadow:0 0 16px rgba(247,79,118,.20)
   }
-  .meg-shell.is-sidebar-collapsed .meg-logout-button:is(:hover,:focus-visible) svg {color:#ffb0bb}
 }
-@media (min-width:1024px) and (max-height:640px) {
-  .meg-shell.is-sidebar-collapsed .meg-brand-stack {
-    width:44px;
-    height:44px;
-    flex-basis:44px;
-    border-radius:11px;
-  }
-  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed {
-    width:38px;
-    min-width:38px;
-    max-width:38px;
-    height:38px;
-    max-height:38px;
-  }
+@media(min-width:1024px) and (max-height:640px){
+  .meg-shell.is-sidebar-collapsed .meg-brand{flex-basis:3.7rem;height:3.7rem;min-height:3.7rem}
+  .meg-shell.is-sidebar-collapsed .meg-brand-stack{width:48px;height:48px;flex-basis:48px;transform:translateY(-3px)}
+  .meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed{width:46px;min-width:46px;max-width:46px;height:46px;max-height:46px}
+}
+@media(min-width:1024px) and (max-height:500px){
+  .meg-shell.is-sidebar-collapsed .meg-brand{flex-basis:3.35rem;height:3.35rem;min-height:3.35rem}
 }
