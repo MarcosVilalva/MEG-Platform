@@ -125,12 +125,18 @@
 .pano-quick-picker .pano-quick-picker-note{font-size:.7rem;color:#a7ccc5}
 @media(max-width:639px){
  .pano-quick-item{flex-basis:min(78vw,255px)}
- .pano-quick-heading{gap:.35rem}
- .pano-quick-heading button{min-width:40px;width:40px;height:40px;min-height:40px}
- .pano-quick-carousel-controls button{min-width:36px;width:36px;height:36px;min-height:36px}
+ .pano-quick-heading{gap:.25rem;justify-content:flex-start}
+ .pano-quick-heading h2{font-size:.80rem;gap:.25rem;white-space:nowrap}
+ .pano-quick-heading h2 svg{width:15px;height:15px}
+ .pano-quick-heading button{min-width:36px;width:36px;height:36px;min-height:36px}
+ .pano-quick-carousel-controls{gap:.15rem}
+ .pano-quick-carousel-controls button{min-width:32px;width:32px;height:36px;min-height:36px}
  .pano-quick-picker-options{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){
  .pano-quick-item,.pano-quick-heading button,.pano-quick-heading button::after,.pano-quick-inline-controls button::after{transition:none!important}
  .pano-quick-rail{scroll-behavior:auto}
 }
+
+/* Delimita a área de rolagem ao trilho, inclusive em viewport de 320px. */
+.pano-quick-rail{contain:layout paint}
