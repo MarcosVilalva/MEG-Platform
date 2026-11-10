@@ -73,7 +73,7 @@ try{
   assert(await page.locator('.pano-quick-editor-empty').count()===2,'dois espaços pontilhados esperados: '+width);
   assert(await page.locator('.pano-quick-display-grid>.pano-quick-placeholder').count()===2,'dois espaços pontilhados no painel: '+width);
   await page.getByRole('button',{name:'Restaurar configuração padrão'}).click();
-  assert(await page.locator('.pano-quick-placeholder').count()===0,'restauração não limpou slots vazios: '+width);
+  assert(await page.locator('.pano-quick-editor-empty').count()===1&&await page.locator('.pano-quick-display-grid>.pano-quick-placeholder').count()===1,'restaurar deve manter uma vaga para expandir: '+width);
   await page.getByRole('button',{name:'Concluir personalização'}).click();
   const geometry=await page.evaluate(()=>{
    const root=document.querySelector('.pano-root')?.getBoundingClientRect();
