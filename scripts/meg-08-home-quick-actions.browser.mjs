@@ -13,7 +13,9 @@ try{
   await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
   assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'padrão errado: '+width);
   assert(await page.locator('.meg-topbar-new').isVisible(),'Novo lançamento saiu do cabeçalho: '+width);
-  await page.getByRole('button',{name:'Personalizar'}).click();
+  const edit=page.getByRole('button',{name:'Personalizar ações rápidas'});
+  assert(await edit.locator('svg').count()===1&&await edit.innerText()==='', 'editar deve exibir apenas lápis: '+width);
+  await edit.click();
   assert(await page.getByRole('button',{name:'Mover Relatórios para cima'}).locator('svg').count()===1,'ícone SVG de subir ausente: '+width);
   assert(await page.getByRole('button',{name:'Mover Relatórios para baixo'}).locator('svg').count()===1,'ícone SVG de descer ausente: '+width);
   assert(await page.getByRole('button',{name:'Remover Relatórios'}).locator('svg').count()===1,'ícone SVG de remover ausente: '+width);
@@ -32,6 +34,15 @@ try{
   await page.getByRole('button',{name:'Mover Relatórios para cima'}).focus();
   const tooltip=await page.getByRole('button',{name:'Mover Relatórios para cima'}).evaluate(el=>getComputedStyle(el,'::after').content);
   assert(tooltip.includes('Subir Relatórios'),'tooltip de ordenação ausente: '+width);
+  const chooserButton=page.getByRole('button',{name:'Escolher funcionalidade para Transferência'});
+  assert(await chooserButton.locator('svg').count()===1,'seta de seleção sem SVG: '+width);
+  await chooserButton.click();
+  assert(await page.getByRole('button',{name:'Selecionar Pagar conta'}).isVisible(),'catálogo de troca não abriu: '+width);
+  await page.getByRole('button',{name:'Selecionar Pagar conta'}).click();
+  assert(JSON.stringify(await titles(page))===JSON.stringify(['Pagar conta','Transferência','Relatórios','Configurações']),'troca de duas ações existentes: '+width);
+  await page.getByRole('button',{name:'Escolher funcionalidade para Pagar conta'}).click();
+  await page.getByRole('button',{name:'Selecionar Transferência'}).click();
+  assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'troca reversível sem duplicação: '+width);
   await page.getByRole('button',{name:'Mover Relatórios para cima'}).click();
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação: '+width);
   await page.getByRole('button',{name:'Remover Transferência'}).click();
@@ -40,7 +51,7 @@ try{
   assert((await titles(page)).length===4,'adição: '+width);
   await page.reload({waitUntil:'networkidle'});
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Relatórios','Pagar conta','Configurações','Transferência']),'persistência: '+width);
-  await page.getByRole('button',{name:'Personalizar'}).click();
+  await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
   await page.getByRole('button',{name:'Restaurar configuração padrão'}).click();
   assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'restaurar: '+width);
   await page.reload({waitUntil:'networkidle'});
@@ -72,7 +83,7 @@ try{
     const frame=brand.getBoundingClientRect(),icon=active.getBoundingClientRect();
     return {brandWidth:frame.width,logoWidth:image?.getBoundingClientRect().width,navWidth:icon.width,navBorder:getComputedStyle(active).borderTopWidth,brandBorder:getComputedStyle(brand).borderTopWidth};
    });
-   assert(chrome&&chrome.brandWidth===56&&chrome.logoWidth===48&&chrome.navBorder!=='0px'&&chrome.brandBorder!=='0px','marca e frames premium: '+width+' '+JSON.stringify(chrome));
+   assert(chrome&&chrome.brandWidth===56&&chrome.logoWidth===52&&chrome.navBorder!=='0px'&&chrome.brandBorder==='0px','marca e frames premium: '+width+' '+JSON.stringify(chrome));
    assert(position.logoWidth>=44,'logo recolhida não aumentou: '+width);
    const visual=await page.evaluate(()=>{
     const shell=document.querySelector('.meg-shell.is-sidebar-collapsed');
@@ -87,7 +98,7 @@ try{
    assert(visual?.logoContained,'logo extrapola contorno: '+width+' '+JSON.stringify(visual));
    assert(visual?.logoutRed?.startsWith('rgb(255')&&visual?.logoutBorder?.startsWith('rgba(249'),'sair perdeu vermelho: '+width+' '+JSON.stringify(visual));
    assert(position.centerDiff<=2,'logo não está centrada nos 72px: '+width);
-   assert(position.topDiff<=14,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
+   assert(position.topDiff<=9,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
   }
   await context.close();
  }
