@@ -115,12 +115,23 @@ try {
   }
   const problems=[];
   if(changed.documentWidth>width+1)problems.push('rolagem horizontal da pagina');
+  // A faixa de atalhos possui scroll horizontal INTERNO, deliberado.
+  // main.scrollWidth pode refletir itens fora da viewport mesmo com main overflow-x:hidden;
+  // só é erro se o próprio carrossel escapar do container ou se a página rolar.
   if(changed.mainScrollWidth>changed.mainWidth+2){
-    const overs=await page.evaluate(()=>{
-      const main=document.querySelector('.meg-main'),left=main?.getBoundingClientRect().left??0,right=main?.getBoundingClientRect().right??0;
-      return [...document.querySelectorAll('.meg-main *')].map(e=>({cls:typeof e.className==='string'?e.className:e.tagName,right:Math.round(e.getBoundingClientRect().right),width:Math.round(e.getBoundingClientRect().width),scroll:e.scrollWidth,client:e.clientWidth})).filter(x=>x.right>right+2).slice(0,12);
+    const containment=await page.evaluate(()=>{
+      const main=document.querySelector('.meg-main');
+      const rail=document.querySelector('.pano-quick-rail');
+      if(!main||!rail)return null;
+      const a=main.getBoundingClientRect(),b=rail.getBoundingClientRect();
+      return {mainOverflow:getComputedStyle(main).overflowX,
+        railOverflow:getComputedStyle(rail).overflowX,
+        clipped:b.left>=a.left-2&&b.right<=a.right+2,
+        documentWidth:document.documentElement.scrollWidth,viewport:innerWidth};
     });
-    problems.push('rolagem horizontal indevida na Home '+changed.mainScrollWidth+'/'+changed.mainWidth+' '+JSON.stringify(overs));
+    if(!containment||containment.mainOverflow!=='hidden'||containment.railOverflow!=='auto'||
+      !containment.clipped||containment.documentWidth>containment.viewport+1)
+      problems.push('rolagem horizontal indevida na Home: '+JSON.stringify(containment));
   }
   if(width<1024 && changed.rootRect){
     for(const panel of changed.tablePanels){
