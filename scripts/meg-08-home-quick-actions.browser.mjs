@@ -61,8 +61,20 @@ try{
     const frame=brand.getBoundingClientRect(),icon=active.getBoundingClientRect();
     return {brandWidth:frame.width,logoWidth:image?.getBoundingClientRect().width,navWidth:icon.width,navBorder:getComputedStyle(active).borderTopWidth,brandBorder:getComputedStyle(brand).borderTopWidth};
    });
-   assert(chrome&&chrome.brandWidth===56&&chrome.logoWidth>=50&&chrome.navBorder!=='0px'&&chrome.brandBorder!=='0px','marca e frames premium: '+width+' '+JSON.stringify(chrome));
+   assert(chrome&&chrome.brandWidth===56&&chrome.logoWidth===48&&chrome.navBorder!=='0px'&&chrome.brandBorder!=='0px','marca e frames premium: '+width+' '+JSON.stringify(chrome));
    assert(position.logoWidth>=44,'logo recolhida não aumentou: '+width);
+   const visual=await page.evaluate(()=>{
+    const shell=document.querySelector('.meg-shell.is-sidebar-collapsed');
+    const brand=shell?.querySelector('.meg-brand-stack');
+    const img=shell?.querySelector('.meg-brand-logo--collapsed');
+    const logout=shell?.querySelector('.meg-logout-button');
+    const idle=shell?.querySelector('.meg-nav-item:not(.is-active):not(.meg-logout-button)');
+    if(!brand||!img||!logout||!idle)return null;
+    const b=brand.getBoundingClientRect(),i=img.getBoundingClientRect(),l=getComputedStyle(logout),n=getComputedStyle(idle);
+    return {logoContained:i.top>=b.top-1&&i.bottom<=b.bottom+1&&i.left>=b.left-1&&i.right<=b.right+1,logoutRed:l.color,logoutBorder:l.borderTopColor,idleBackground:n.backgroundColor};
+   });
+   assert(visual?.logoContained,'logo extrapola contorno: '+width+' '+JSON.stringify(visual));
+   assert(visual?.logoutRed?.startsWith('rgb(255')&&visual?.logoutBorder?.startsWith('rgba(249'),'sair perdeu vermelho: '+width+' '+JSON.stringify(visual));
    assert(position.centerDiff<=2,'logo não está centrada nos 72px: '+width);
    assert(position.topDiff<=14,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
   }
