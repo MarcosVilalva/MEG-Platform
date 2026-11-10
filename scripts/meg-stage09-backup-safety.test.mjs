@@ -9,8 +9,10 @@ const sourceDir = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const testDir = mkdtempSync(join(tmpdir(), 'meg-backup-contract-'));
 const bin = join(testDir, 'bin');
 const target = join(testDir, 'external-offsite-placeholder');
+const vaultTarget = join(testDir, 'separate-vault-offsite-placeholder');
 mkdirSync(bin);
 mkdirSync(target);
+mkdirSync(vaultTarget);
 const ageKey = join(testDir, 'recovery-key-only-for-tests.txt');
 writeFileSync(ageKey, 'AGE-SECRET-KEY-FAKE-FOR-TESTS\n');
 const restoredFlag = join(testDir, 'is-restored');
@@ -26,6 +28,10 @@ else if (q.includes('count(*)')) console.log(process.env.PGDATABASE==='meg_resto
 else process.exit(44);
 `);
 mock('pg_dump', `process.stdout.write('MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA');`);
+mock('curl', `
+process.stdin.resume();
+process.stdin.on('end',()=>process.stdout.write('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
+`);
 mock('age', `
 const fs=require('node:fs'); const args=process.argv.slice(2);
 if (args.includes('-d')) {
@@ -88,7 +94,22 @@ try {
   assert.notEqual(r.status,0,'restore must never be able to target remote Postgres');
   r=run('meg-stage09-safe-backup.sh',{PGHOST:'db.other-project.supabase.co'});
   assert.notEqual(r.status,0,'backup must be restricted to MEG project');
-  console.log('MEG backup contract: encrypted pipeline, archive check, isolated restore and remote guard OK (mock tools only)');
+  r=run('meg-stage09-safe-vault-rootkey.sh',{
+    SUPABASE_ACCESS_TOKEN:'TEST-PRIVATE-TOKEN-NOT-REAL',
+    MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+  });
+  assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
+  assert.equal(r.stdout.includes('aaaaaaaaaaaaaaaa'),false,'Vault root key must never be printed');
+  assert.equal(r.stdout.includes('TEST-PRIVATE-TOKEN'),false,'PAT must never be printed');
+  const vaultFiles=readdirSync(vaultTarget);
+  const encryptedVault=join(vaultTarget,vaultFiles.find(x=>x.endsWith('.rootkey.age')));
+  assert.ok(existsSync(encryptedVault));
+  assert.match(readFileSync(encryptedVault,'utf8'),/^MOCK-AGE-ENCRYPTED:/);
+  r=run('meg-stage09-safe-vault-rootkey.sh',{
+    SUPABASE_ACCESS_TOKEN:'BAD\nINJECT', MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+  });
+  assert.notEqual(r.status,0,'token injection must be rejected');
+  console.log('MEG backup contract: encrypted dump, isolated restore, remote guard and encrypted Vault key OK (mock tools only)');
 } finally {
   rmSync(testDir,{force:true,recursive:true});
 }
