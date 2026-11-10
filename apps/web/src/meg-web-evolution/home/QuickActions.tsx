@@ -2,20 +2,24 @@ import {useEffect,useState} from 'react';
 import {HomeGlyph,type HomeIconName} from './HomeGlyph';
 import './quick-actions.css';
 
-/** Catálogo seguro: só destinos já representados na Home oficial; expansão exige rota e autorização verificadas. */
-export type HomeQuickAction='transferencia'|'pendentes'|'relatorios'|'metas';
+/** Destinos já tipados na Home e presentes na navegação; não cria rotas nem operações novas. */
+export type HomeQuickAction='transferencia'|'pendentes'|'relatorios'|'metas'|'lancamentos'|'cartoes'|'beneficios';
 type CatalogEntry={id:HomeQuickAction;title:string;description:string;icon:HomeIconName;kind:string};
 const CATALOG:ReadonlyArray<CatalogEntry>=[
  {id:'transferencia',title:'Transferência',description:'Mover entre contas',icon:'transfer',kind:'blue'},
  {id:'pendentes',title:'Pagar conta',description:'Contas e boletos',icon:'receipt',kind:'violet'},
  {id:'relatorios',title:'Relatórios',description:'Extratos e análises',icon:'chart',kind:'amber'},
- {id:'metas',title:'Configurações',description:'Preferências do sistema',icon:'settings',kind:'slate'}
+ {id:'metas',title:'Configurações',description:'Preferências do sistema',icon:'settings',kind:'slate'},
+ {id:'lancamentos',title:'Lançamentos',description:'Movimentações financeiras',icon:'activity',kind:'blue'},
+ {id:'cartoes',title:'Cartões',description:'Cartões e faturas',icon:'card',kind:'violet'},
+ {id:'beneficios',title:'Benefícios',description:'Saldos e recargas',icon:'gift',kind:'slate'}
 ];
-export const DEFAULT_QUICK_ACTIONS:readonly HomeQuickAction[]=CATALOG.map(action=>action.id);
+export const DEFAULT_QUICK_ACTIONS:readonly HomeQuickAction[]=CATALOG.slice(0,4).map(action=>action.id);
+const MIN_SLOTS=DEFAULT_QUICK_ACTIONS.length;
 const PREFIX='meg.web.home.quick-actions.v1.';
 function validIds(input:unknown):HomeQuickAction[]|null{
  if(!Array.isArray(input)||input.length>CATALOG.length||input.some(v=>typeof v!=='string'))return null;
- const allowed=new Set<string>(DEFAULT_QUICK_ACTIONS);
+ const allowed=new Set<string>(CATALOG.map(action=>action.id));
  if(input.some(v=>!allowed.has(v))||new Set(input).size!==input.length)return null;
  return input as HomeQuickAction[];
 }
@@ -57,6 +61,8 @@ export function QuickActions({userId,preview,onNavigate}:Props){
   save(next);
  };
  const available=CATALOG.filter(action=>!actions.includes(action.id));
+ // Mantém a grade inicial com 4 posições e oferece uma vaga de expansão depois disso.
+ const emptySlots=available.length===0?Math.max(0,MIN_SLOTS-actions.length):Math.max(1,MIN_SLOTS-actions.length);
  return <section className="pano-panel pano-actions" aria-label="Ações rápidas">
   <div className="pano-panel-title pano-quick-heading">
    <h2><HomeGlyph name="sparkle" size={19}/>Ações rápidas</h2>
@@ -77,7 +83,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
      <span className="pano-action-icon"><HomeGlyph name={action.icon} size={17}/></span><strong>{action.title}</strong><small>{action.description}</small>
     </button>
    })}
-   {Array.from({length:DEFAULT_QUICK_ACTIONS.length-actions.length},(_,index)=><button key={'empty-'+index} type="button" className="pano-quick-placeholder" aria-label="Adicionar atalho" onClick={()=>{setEditing(true);setChoosing(true)}}>
+   {Array.from({length:emptySlots},(_,index)=><button key={'empty-'+index} type="button" className="pano-quick-placeholder" aria-label="Adicionar atalho" onClick={()=>{setEditing(true);setChoosing(true)}}>
     <HomeGlyph name="plus" size={25}/><span>Adicionar</span>
    </button>)}
   </div>
@@ -98,7 +104,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
       </div>
      </li>
     })}
-    {Array.from({length:DEFAULT_QUICK_ACTIONS.length-actions.length},(_,index)=><li key={'slot-'+index} className="pano-quick-editor-empty">
+    {Array.from({length:emptySlots},(_,index)=><li key={'slot-'+index} className="pano-quick-editor-empty">
      <button type="button" className="pano-quick-placeholder" aria-label="Adicionar atalho" onClick={()=>setChoosing(true)}>
       <HomeGlyph name="plus" size={25}/><span>Adicionar</span>
      </button>
@@ -109,7 +115,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
     {available.length>0?<div className="pano-quick-chooser-options">
      {available.map(item=><button type="button" key={item.id} className={'is-'+item.kind} aria-label={'Adicionar '+item.title} onClick={()=>{save([...actions,item.id]);setChoosing(false)}}><span className="pano-quick-editor-icon"><HomeGlyph name={item.icon} size={21}/></span><span><strong>{item.title}</strong><small>{item.description}</small></span></button>)}
     </div>:<p>Todos os atalhos atualmente autorizados estão na grade.</p>}
-    <p className="pano-quick-catalog-note">Novas funcionalidades serão disponibilizadas após validação das rotas e permissões.</p>
+    <p className="pano-quick-catalog-note">Este catálogo contém destinos já previstos na Home. A prévia demonstra a interface; a navegação operacional depende da integração das telas.</p>
    </div>}
    <button type="button" className="pano-quick-reset" onClick={()=>{save([...DEFAULT_QUICK_ACTIONS]);setChoosing(false)}}><HomeGlyph name="reload" size={17}/><span>Restaurar configuração padrão</span></button>
   </div>}
