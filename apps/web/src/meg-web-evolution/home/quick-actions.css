@@ -153,3 +153,30 @@
 }
 
 
+
+/* Indicadores do carrossel: uma pílula acesa, demais pontos discretos.
+   Alvos acessíveis, com centro visual pequeno e hover/foco em halo. */
+.pano-quick-pagination{
+  display:flex;justify-content:center;align-items:center;gap:.22rem;
+  min-height:21px;padding:0;margin:.05rem 0 0;
+}
+.pano-quick-dot{
+  display:grid;place-items:center;min-width:29px;width:29px;min-height:23px;height:23px;
+  padding:0;border:0;border-radius:99px;background:transparent;
+  cursor:pointer;color:inherit;
+}
+.pano-quick-dot span{
+  display:block;width:5px;height:5px;border-radius:999px;
+  background:rgba(118,180,178,.50);transition:width .18s ease,background .18s ease,box-shadow .18s ease;
+}
+.pano-quick-dot.is-active span{
+  width:17px;height:5px;background:#60f5d5;
+  box-shadow:0 0 9px rgba(36,235,198,.48);
+}
+.pano-quick-dot:hover span,.pano-quick-dot:focus-visible span{
+  background:#a5ffe9;box-shadow:0 0 12px rgba(40,245,215,.54);
+}
+.pano-quick-dot:focus-visible{
+  outline:2px solid rgba(149,255,233,.85);outline-offset:1px;
+}
+@media(prefers-reduced-motion:reduce){.pano-quick-dot span{transition:none}}
