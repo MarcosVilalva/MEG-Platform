@@ -23,6 +23,7 @@ assert.equal(needsDeepNormalizationAudit(original, original, 30_000, 29_999), tr
 
 for (const changed of [
   { workspaceId: 'workspace-other' },
+  { tableMutationCounters: null },
   { tableMutationCounters: 'AppState:1:13:0|FinancialEvent:100:200:0' },
   { tableMutationCounters: 'AppState:1:12:0|FinancialEvent:100:201:0' },
   { tableMutationCounters: 'AppState:1:12:0|FinancialEvent:101:200:0' },
@@ -40,6 +41,7 @@ for (const changed of [
     'any observable change must run the exact fingerprint comparison'
   );
 }
+assert.equal(needsDeepNormalizationAudit({ ...original, tableMutationCounters: null }, { ...original, tableMutationCounters: null }, 0, 15 * 60_000), true, 'missing pg stats falls back to full integrity scan');
 assert.equal(sameNormalizationAuditStamp(original, { ...original }), true);
 assert.equal(sameNormalizationAuditStamp(original, { ...original, activeEventCount: 3631 }), false);
 assert.equal(needsDeepNormalizationAudit(original, original, 0, 1, 0), true, 'zero TTL forces full fidelity');
