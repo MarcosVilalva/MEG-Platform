@@ -76,9 +76,9 @@ export function QuickActions({userId,preview,onNavigate}:Props){
      {actions.map((id,index)=>{
       const action=CATALOG.find(item=>item.id===id)!;
       return <li key={id}><span>{action.title}</span><div className="pano-quick-editor-controls">
-       <button type="button" disabled={index===0} onClick={()=>reorder(index,-1)} aria-label={'Mover '+action.title+' para cima'}><HomeGlyph name="chevronUp" size={17}/><span>Subir</span></button>
-       <button type="button" disabled={index===actions.length-1} onClick={()=>reorder(index,1)} aria-label={'Mover '+action.title+' para baixo'}><HomeGlyph name="chevronDown" size={17}/><span>Descer</span></button>
-       <button type="button" onClick={()=>save(actions.filter(item=>item!==id))} aria-label={'Remover '+action.title}><HomeGlyph name="trash" size={17}/><span>Remover</span></button>
+       <button type="button" disabled={index===0} onClick={()=>reorder(index,-1)} aria-label={'Mover '+action.title+' para cima'} data-tooltip={'Subir '+action.title}><HomeGlyph name="chevronUp" size={20}/></button>
+       <button type="button" disabled={index===actions.length-1} onClick={()=>reorder(index,1)} aria-label={'Mover '+action.title+' para baixo'} data-tooltip={'Descer '+action.title}><HomeGlyph name="chevronDown" size={20}/></button>
+       <button type="button" onClick={()=>save(actions.filter(item=>item!==id))} aria-label={'Remover '+action.title} data-tooltip={'Remover '+action.title}><HomeGlyph name="trash" size={20}/></button>
       </div></li>
      })}
     </ul>
