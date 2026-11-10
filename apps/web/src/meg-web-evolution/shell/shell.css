@@ -1442,10 +1442,17 @@
   .meg-shell.is-sidebar-collapsed .meg-nav-item:not(.is-active):not(.meg-logout-button):is(:hover,:focus-visible){
     border-color:rgba(20,227,200,.33);background:rgba(20,227,200,.065);box-shadow:0 0 12px rgba(20,227,200,.08)
   }
+  /* Seleção iluminada: sem quadro maior que o ícone, com halo em vez de contorno. */
   .meg-shell.is-sidebar-collapsed .meg-nav-item.is-active{
-    border:1px solid rgba(46,246,217,.72);border-radius:13px;
-    background:linear-gradient(145deg,rgba(5,117,112,.40),rgba(2,59,64,.84));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(20,227,200,.09),0 0 12px rgba(20,227,200,.09)
+    border:1px solid transparent;
+    border-radius:13px;
+    background:radial-gradient(circle at 50% 48%,rgba(24,205,186,.24),rgba(9,89,88,.12) 66%,transparent 95%);
+    box-shadow:0 0 18px rgba(17,222,197,.18),inset 0 0 12px rgba(16,185,171,.12);
+    color:#a2fff1;
+  }
+  .meg-shell.is-sidebar-collapsed .meg-nav-item.is-active svg{
+    color:#b4fff4;
+    filter:drop-shadow(0 0 6px rgba(33,247,215,.78));
   }
   .meg-shell.is-sidebar-collapsed .meg-logout-button{
     border:1px solid rgba(249,105,123,.38);border-radius:13px;
