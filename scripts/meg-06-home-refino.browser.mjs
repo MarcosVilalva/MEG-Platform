@@ -126,10 +126,11 @@ try {
       const a=main.getBoundingClientRect(),b=rail.getBoundingClientRect();
       return {mainOverflow:getComputedStyle(main).overflowX,
         railOverflow:getComputedStyle(rail).overflowX,
+        viewportOverflow:getComputedStyle(rail.parentElement).overflowX,
         clipped:b.left>=a.left-2&&b.right<=a.right+2,
         documentWidth:document.documentElement.scrollWidth,viewport:innerWidth};
     });
-    if(!containment||containment.mainOverflow!=='hidden'||containment.railOverflow!=='auto'||
+    if(!containment||containment.mainOverflow!=='hidden'||containment.viewportOverflow!=='hidden'||
       !containment.clipped||containment.documentWidth>containment.viewport+1)
       problems.push('rolagem horizontal indevida na Home: '+JSON.stringify(containment));
   }
