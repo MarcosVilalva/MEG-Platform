@@ -169,7 +169,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
   {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
-   render:v=><span className="pano-status">{String(v??'—')}</span>}
+   render:v=>{const label=String(v??'—');return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}>{label}</span>}}
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
  const stats:{label:string;value:number|null|undefined;note:string;icon:HomeIconName;kind:string;action:Action}[]=[
