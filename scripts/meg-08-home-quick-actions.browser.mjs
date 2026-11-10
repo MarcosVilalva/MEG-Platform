@@ -55,6 +55,14 @@ try{
   assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'restaurar: '+width);
   await page.reload({waitUntil:'networkidle'});
   assert(JSON.stringify(await titles(page))===JSON.stringify(defaults),'restaurar e persistir: '+width);
+  await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
+  await page.getByRole('button',{name:'Remover Transferência'}).click();
+  await page.getByRole('button',{name:'Remover Pagar conta'}).click();
+  assert(await page.locator('.pano-quick-editor-empty').count()===2,'dois espaços pontilhados esperados: '+width);
+  assert(await page.locator('.pano-quick-display-grid>.pano-quick-placeholder').count()===2,'dois espaços pontilhados no painel: '+width);
+  await page.getByRole('button',{name:'Restaurar configuração padrão'}).click();
+  assert(await page.locator('.pano-quick-placeholder').count()===0,'restauração não limpou slots vazios: '+width);
+  await page.getByRole('button',{name:'Concluir personalização'}).click();
   const geometry=await page.evaluate(()=>{
    const root=document.querySelector('.pano-root')?.getBoundingClientRect();
    const actions=[...document.querySelectorAll('.pano-action')].map(el=>el.getBoundingClientRect());
