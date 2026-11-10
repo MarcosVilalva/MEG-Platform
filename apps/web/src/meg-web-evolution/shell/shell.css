@@ -1442,18 +1442,6 @@
   .meg-shell.is-sidebar-collapsed .meg-nav-item:not(.is-active):not(.meg-logout-button):is(:hover,:focus-visible){
     border-color:rgba(20,227,200,.33);background:rgba(20,227,200,.065);box-shadow:0 0 12px rgba(20,227,200,.08)
   }
-  /* Seleção iluminada: sem quadro maior que o ícone, com halo em vez de contorno. */
-  .meg-shell.is-sidebar-collapsed .meg-nav-item.is-active{
-    border:1px solid transparent;
-    border-radius:13px;
-    background:radial-gradient(circle at 50% 48%,rgba(24,205,186,.24),rgba(9,89,88,.12) 66%,transparent 95%);
-    box-shadow:0 0 18px rgba(17,222,197,.18),inset 0 0 12px rgba(16,185,171,.12);
-    color:#a2fff1;
-  }
-  .meg-shell.is-sidebar-collapsed .meg-nav-item.is-active svg{
-    color:#b4fff4;
-    filter:drop-shadow(0 0 6px rgba(33,247,215,.78));
-  }
   .meg-shell.is-sidebar-collapsed .meg-logout-button{
     border:1px solid rgba(249,105,123,.38);border-radius:13px;
     background:linear-gradient(145deg,rgba(123,35,53,.29),rgba(45,20,34,.66));
@@ -1473,56 +1461,67 @@
   .meg-shell.is-sidebar-collapsed .meg-brand{flex-basis:3.35rem;height:3.35rem;min-height:3.35rem}
 }
 
-/* Home 08: iluminação circular real, sem caixa ou contorno em torno do item ativo.
-   Inclui mouse e foco por Tab, mantendo Sair vermelho. */
-@media (min-width:1024px) {
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item {
-    position:relative;isolation:isolate;
-    border:1px solid transparent!important;border-radius:50%;
-    background:transparent!important;box-shadow:none!important;
-    outline:0!important;
-  }
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item::before {
-    content:"";position:absolute;z-index:-1;pointer-events:none;
-    width:44px;height:44px;max-width:calc(100% - 2px);
-    left:50%;top:50%;transform:translate(-50%,-50%);
-    border-radius:50%;border:0;
-    background:radial-gradient(circle,rgba(14,112,111,.16) 0%,rgba(6,55,62,.09) 52%,transparent 75%);
-    box-shadow:none;opacity:.65;transition:background .18s ease,box-shadow .18s ease,opacity .18s ease;
-  }
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item:is(:hover,:focus-visible)::before {
-    opacity:1;
-    background:radial-gradient(circle,rgba(32,225,203,.36) 0%,rgba(13,133,127,.17) 58%,transparent 78%);
-    box-shadow:0 0 17px rgba(12,218,194,.22),inset 0 0 11px rgba(30,239,209,.15);
-  }
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item.is-active::before {
-    opacity:1;
-    background:radial-gradient(circle,rgba(27,221,199,.37) 0%,rgba(12,125,120,.20) 56%,transparent 79%);
-    box-shadow:0 0 18px rgba(20,233,207,.27);
-  }
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item:focus-visible::before {
-    outline:2px solid rgba(126,255,228,.68);outline-offset:0;
-  }
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item svg {
-    color:#bdeee7;transition:color .17s ease,filter .17s ease,transform .17s ease;
-  }
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item:is(:hover,:focus-visible,.is-active) svg {
-    color:#b3fff0;filter:drop-shadow(0 0 6px rgba(34,246,212,.84));
-  }
-  .meg-shell.is-sidebar-collapsed .meg-logout-button {
-    border-color:rgba(249,105,123,.38);border-radius:13px;
-    background:linear-gradient(145deg,rgba(123,35,53,.29),rgba(45,20,34,.66));
-    color:#ffbcc5;box-shadow:0 0 10px rgba(231,68,99,.06);
-  }
-  .meg-shell.is-sidebar-collapsed .meg-logout-button:is(:hover,:focus-visible) {
-    border-color:#ff879a;background:rgba(158,49,76,.51);
-    color:#fff2f3;box-shadow:0 0 16px rgba(247,79,118,.20);
-  }
-  .meg-shell.is-sidebar-collapsed .meg-logout-button:is(:hover,:focus-visible) svg {
-    color:#ffb0bb;filter:drop-shadow(0 0 5px rgba(249,102,129,.5));
-  }
+
+/* Home 08, contrato visual único para os dois estados da navegação.
+   Sem retângulos no item ativo; luz circular centralizada no ícone.
+   Hover e Tab partilham a mesma linguagem, sem suprimir o foco visível. */
+.meg-sidebar .meg-nav .meg-nav-item {
+  position:relative;
+  isolation:isolate;
+  border-color:transparent!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  outline:none!important;
+  transition:color .18s ease;
+}
+.meg-sidebar .meg-nav .meg-nav-item::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  pointer-events:none;
+  width:46px;height:46px;
+  left:calc(.875rem + 10px);
+  top:50%;
+  transform:translate(-50%,-50%);
+  border:0;
+  border-radius:50%;
+  opacity:0;
+  background:radial-gradient(circle,rgba(28,220,199,.34) 0%,rgba(12,130,121,.16) 55%,transparent 77%);
+  box-shadow:0 0 16px rgba(22,212,193,.18);
+  transition:opacity .17s ease,box-shadow .17s ease;
+}
+.meg-sidebar .meg-nav .meg-nav-item:is(.is-active,:hover,:focus-visible)::before{
+  opacity:1;
+}
+.meg-sidebar .meg-nav .meg-nav-item:is(:hover,:focus-visible)::before {
+  background:radial-gradient(circle,rgba(42,247,215,.42) 0%,rgba(12,150,139,.21) 54%,transparent 78%);
+  box-shadow:0 0 17px rgba(19,230,204,.29);
+}
+.meg-sidebar .meg-nav .meg-nav-item:focus-visible::before{
+  outline:2px solid rgba(132,255,235,.82);
+  outline-offset:1px;
+}
+.meg-sidebar .meg-nav .meg-nav-item svg{
+  position:relative;
+  color:#b5e7e1;
+  transition:color .17s ease,filter .17s ease;
+}
+.meg-sidebar .meg-nav .meg-nav-item:is(.is-active,:hover,:focus-visible) svg {
+  color:#bbfff4;
+  filter:drop-shadow(0 0 5px rgba(35,245,216,.78));
+}
+.meg-sidebar .meg-nav .meg-nav-item.is-active span {
+  color:#e8fff8;
+}
+.meg-shell.is-sidebar-collapsed .meg-sidebar .meg-nav .meg-nav-item::before{
+  left:50%;
+}
+.meg-shell.is-sidebar-collapsed .meg-sidebar .meg-nav .meg-nav-item{
+  border-radius:0!important;
 }
 @media(prefers-reduced-motion:reduce){
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item::before,
-  .meg-shell.is-sidebar-collapsed .meg-nav .meg-nav-item svg{transition:none}
+  .meg-sidebar .meg-nav .meg-nav-item,
+  .meg-sidebar .meg-nav .meg-nav-item::before,
+  .meg-sidebar .meg-nav .meg-nav-item svg{transition:none}
 }
