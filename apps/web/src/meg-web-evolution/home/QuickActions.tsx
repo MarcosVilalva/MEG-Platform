@@ -106,6 +106,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
     onClick={()=>{setEditing(v=>!v);setChoosing(false);setMessage('')}}>
     <HomeGlyph name={editing?'check':'pencil'} size={20}/>
    </button>
+   {editing&&<button type="button" className="pano-quick-reset" aria-label="Restaurar configuração padrão" data-tooltip="Restaurar padrão" onClick={()=>{save([...DEFAULT_QUICK_ACTIONS]);setChoosing(false);rail.current?.scrollTo({left:0,behavior:'smooth'})}}><HomeGlyph name="reload" size={18}/></button>}
    <div className="pano-quick-carousel-controls" aria-label="Navegar nos atalhos">
     <button type="button" aria-label="Ver atalhos anteriores" data-tooltip="Voltar no carrossel" disabled={!scrollState.left} onClick={()=>scroll(-1)}><HomeGlyph name="chevronLeft" size={19}/></button>
     <button type="button" aria-label="Ver próximos atalhos" data-tooltip="Avançar no carrossel" disabled={!scrollState.right} onClick={()=>scroll(1)}><HomeGlyph name="chevronRight" size={19}/></button>
@@ -146,10 +147,6 @@ export function QuickActions({userId,preview,onNavigate}:Props){
     </div>
     <p className="pano-quick-picker-note">A prévia demonstra os destinos existentes na Home. A navegação operacional depende da integração das telas.</p>
    </div>
-  </div>}
-  {editing&&<div className="pano-quick-footer">
-   <button type="button" className="pano-quick-reset" onClick={()=>{save([...DEFAULT_QUICK_ACTIONS]);setChoosing(false);rail.current?.scrollTo({left:0,behavior:'smooth'})}}><HomeGlyph name="reload" size={16}/><span>Restaurar configuração padrão</span></button>
-   <span>Arraste a faixa horizontalmente ou use as setas para navegar.</span>
   </div>}
   <span className="pano-quick-status" role="status" aria-live="polite">{message}</span>
  </section>;
