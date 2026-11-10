@@ -48,8 +48,8 @@ try{
   assert(await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).isVisible(),'mover esquerda ausente: '+width);
   assert(await page.getByRole('button',{name:'Mover Relatórios para direita'}).isVisible(),'mover direita ausente: '+width);
   assert(await page.getByRole('button',{name:'Remover Relatórios'}).isVisible(),'remover ausente: '+width);
-  const activeButtons=await page.locator('.pano-quick-inline-controls button').evaluateAll(els=>els.map(el=>({label:el.getAttribute('aria-label'),tooltip:el.getAttribute('data-tooltip')})));
-  assert(activeButtons.every(x=>!!x.label&&!!x.tooltip),'tooltips e nomes acessíveis faltando: '+width);
+  const activeButtons=await page.locator('.pano-quick-inline-controls button').evaluateAll(els=>els.map(el=>({label:el.getAttribute('aria-label'),tooltip:el.getAttribute('data-tooltip'),width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})));
+  assert(activeButtons.every(x=>!!x.label&&!!x.tooltip&&x.width>=44&&x.height>=44),'alvo 44px, tooltips e nomes acessíveis: '+width);
   await page.getByRole('button',{name:'Mover Relatórios para esquerda'}).click();
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação esquerda: '+width);
   await page.getByRole('button',{name:'Mover Relatórios para direita'}).click();
