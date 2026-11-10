@@ -33,13 +33,28 @@ try{
   prisma.category.create({data:{userId:owner.id,name:'Categoria CI',type:'expense'}}),
   prisma.paymentMethod.create({data:{userId:owner.id,name:'PIX CI',type:'instant'}}),
  ]);
- const row=(i:number)=>({
-  id:id(i),userId,description:'Lançamento sintético '+String(i),
-  type:'expense',status:'planned',date:day,competence:'2026-11',
-  amount:'7.35',signedAmount:'-7.35',createdAt,accountId:account.id,
-  categoryId:category.id,paymentMethodId:method.id,
-  ...(i===0?{sourcePayload:{category:'Categoria original CI'}}:{}),
- });
+ // Replica apenas a DISTRIBUICAO estrutural previamente auditada do legado:
+ // 3.626 registros sem categoryId, 3.512 sem paymentMethodId, de 3.731 ativos.
+ // Nenhuma linha, descricao ou valor financeiro de producao e utilizado.
+ const historicCategoryCount=3626;
+ const historicMethodCount=3512;
+ const row=(i:number)=>{
+  const historicCategory=i>=1&&i<=historicCategoryCount;
+  const historicMethod=i>=1&&i<=historicMethodCount;
+  return {
+   id:id(i),userId,description:'Lançamento sintético '+String(i),
+   type:'expense',status:'planned',date:day,competence:'2026-11',
+   amount:'7.35',signedAmount:'-7.35',createdAt,accountId:account.id,
+   categoryId:historicCategory?null:category.id,
+   paymentMethodId:historicMethod?null:method.id,
+   ...(i===0||historicCategory||historicMethod?{
+    sourcePayload:{
+     category:'Categoria original CI',paymentMethod:'PIX CI',
+     'DIA SEMANA':'QUINTA','CLASSIFICACAO DA DESPESA':'LEGADO CI',
+    }
+   }:{}),
+  };
+ };
  // Grava SOMENTE no banco descartável iniciado pelo serviço do GitHub Actions.
  for(let start=0;start<3731;start+=300){
   const count=Math.min(300,3731-start);
@@ -78,6 +93,12 @@ try{
  assert.equal(result.items[0]?.account?.name,'Conta CI');
  assert.equal(result.items[0]?.category?.name,'Categoria CI');
  assert.equal(result.items[0]?.paymentMethod?.name,'PIX CI');
+ assert.equal(result.items.filter(item=>!item.categoryId).length,historicCategoryCount,
+  'Distribuicao historica de categoria nao vinculada.');
+ assert.equal(result.items.filter(item=>!item.paymentMethodId).length,historicMethodCount,
+  'Distribuicao historica de forma de pagamento nao vinculada.');
+ assert.equal(result.items[1]?.sourcePayload?.category,'Categoria original CI');
+ assert.equal(result.items[1]?.sourcePayload?.paymentMethod,'PIX CI');
  const bytes=Buffer.byteLength(JSON.stringify(result));
  assert.ok(bytes<24*1024*1024,'Payload sintético excessivo para uma única consulta.');
  const after=await prisma.financialEvent.count({where:{userId,archivedAt:null}});
@@ -131,6 +152,32 @@ try{
  assert.equal(canonical.expense,27422.85);
  assert.equal(canonical.projectedResult,-27422.85);
  assert.equal(canonical.realizedResult,0);
+ // Indicadores sobre filtros historicos devem selecionar os mesmos IDs
+ // que a grade e continuar somando exclusivamente pela autoridade financeira.
+ const onlyLegacyCategory=await getCanonicalFilteredHistorySummary(userId,{
+  ...filters,criteria:{...filters.criteria,category:'legacy:Categoria original CI'},
+ });
+ assert.equal(onlyLegacyCategory.kind,'complete');
+ if(onlyLegacyCategory.kind==='complete'){
+  assert.equal(onlyLegacyCategory.filteredCount,historicCategoryCount);
+  assert.equal(onlyLegacyCategory.expense,Math.round(historicCategoryCount*735)/100);
+ }
+ const onlyLegacyMethod=await getCanonicalFilteredHistorySummary(userId,{
+  ...filters,criteria:{...filters.criteria,paymentMethod:'PIX CI'},
+ });
+ assert.equal(onlyLegacyMethod.kind,'complete');
+ if(onlyLegacyMethod.kind==='complete'){
+  // Inclui os registros modernos com metodo vinculado de mesmo nome.
+  assert.equal(onlyLegacyMethod.filteredCount,3731);
+ }
+ const onlyLegacyLabel=await getCanonicalFilteredHistorySummary(userId,{
+  ...filters,criteria:{...filters.criteria,search:'LEGADO CI'},
+ });
+ assert.equal(onlyLegacyLabel.kind,'complete');
+ if(onlyLegacyLabel.kind==='complete'){
+  assert.equal(onlyLegacyLabel.filteredCount,historicCategoryCount);
+ }
+ console.log('Filtros historicos: 3.626 categorias e 3.512 metodos legados sinteticos validados.');
  const onlyPlanned=await getCanonicalFilteredHistorySummary(userId,{
   ...filters,grid:{statusLabel:{type:'enum',selected:['Planejado']}}
  });
