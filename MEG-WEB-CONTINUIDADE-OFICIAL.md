@@ -1095,3 +1095,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Testes adicionados:** `normalization-audit-gate.test.ts`, `normalization-from-shared-state.test.ts`; script `apps/api/package.json:test:app-state` estendido. CI, build Web/API e testes financeiros devem ser comprovados antes de qualquer merge ou deploy.
 - **Gate de segurança NÃO resolvido:** Supabase Free com Egress 11,419GB/5GB, serviços restritos, sem backup restaurável comprovado. Render ainda usa `db:prepare:production` e `db:push:production` potencialmente destrutivos. **Não salvar configuração/merge/deploy** até backup cifrado e restauração isolada, saneamento de Build Command e aprovações.
 - **Status:** Etapa 09 **ABERTA**. Correções propostas e não publicadas; não declarar funcional ou visualmente homologado pelo CI.
+
+
+### Complemento de proteção do gatilho de Egress (PR #665)
+- Foi confirmada por consulta **somente leitura** a existência de estatísticas `pg_stat_user_tables` no banco Supabase: `AppState` / `FinancialEvent`, contadores de INSERT/UPDATE/DELETE. Nenhuma linha financeira foi consultada.
+- Marcador de auditoria agora inclui **ID do workspace** e **contadores mutacionais do PostgreSQL** para identificar inclusive alterações SQL sem `@updatedAt`; a comparação completa original continua após mudanças observadas, quando o runtime estiver em fallback, e obrigatoriamente a cada **2 horas**. Se não houver estatísticas/permissões suficientes, o programa **retoma o full-scan de 15 em 15 minutos** sem interromper a proteção. Resultado com mudanças concorrentes não é armazenado.
+- Testes de caracterização estendidos para contadores, isolamento multi-workspace e ausência de estatísticas. Registros de CI iniciais sobre SHAs anteriores foram verdes, porém o **SHA final** ainda requer comprovação e monitoramento. Sem merge, deploy ou alteração em banco/API de produção; PR #665 **Draft**, Etapa 09 aberta, backup ainda pendente.
