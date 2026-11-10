@@ -85,7 +85,11 @@ try{
 
  // Versao de leitura: o PATCH legado pode atualizar um evento SEM receipt.
  // Testes usam somente PostgreSQL efemero do CI, nunca o banco real.
+ // Medicao descritiva: serve para estimar custo da leitura, NAO e SLA de producao.
+ const revisionStart=performance.now();
  const revision0=await getActiveFinancialHistoryRevision(userId);
+ const revision3731ms=Math.round((performance.now()-revisionStart)*100)/100;
+ console.log('Token de leitura CI: 3.731 ativos em '+revision3731ms+' ms (dados sinteticos; sem SLA de producao).');
  await prisma.financialEvent.update({
   where:{id:id(42)},data:{description:'Lançamento alterado sem recibo CI'},
  });
@@ -148,6 +152,16 @@ try{
    data:Array.from({length:count},(_,i)=>row(start+i)),
   });
  }
+ // Mesmo acima do limite de snapshot, o pulso deve sinalizar alteracao;
+ // nao consultar historico integral nem expor dados privados.
+ const revisionLargeStart=performance.now();
+ const revision5001=await getActiveFinancialHistoryRevision(userId);
+ const revision5001ms=Math.round((performance.now()-revisionLargeStart)*100)/100;
+ assert.match(revision5001,/^history-v1:5001:[a-f0-9]{32}$/);
+ assert.equal(await getActiveFinancialHistoryRevision(userId),revision5001,
+  'Duas leituras sem mutacao devem produzir o mesmo token.');
+ console.log('Token de leitura CI: 5.001 ativos em '+revision5001ms+' ms (dados sinteticos; sem SLA de producao).');
+
  const filteredLimit=await getCanonicalFilteredHistorySummary(userId,filters);
  assert.deepEqual(filteredLimit,{
   kind:'limit-exceeded',protocol:'financial-filter-summary-v1',total:5001,limit:5000
