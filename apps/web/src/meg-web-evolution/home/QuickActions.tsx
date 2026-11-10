@@ -82,7 +82,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
       </div></li>
      })}
     </ul>
-    {available.length>0&&<div className="pano-quick-available"><strong>Adicionar atalho</strong><div>{available.map(item=><button key={item.id} type="button" onClick={()=>save([...actions,item.id])}><HomeGlyph name="plus" size={17}/><span>{item.title}</span></button>)}</div></div>}
+    {available.length>0&&<div className="pano-quick-available"><strong>Adicionar atalho</strong><div>{available.map(item=><button key={item.id} type="button" aria-label={'Adicionar '+item.title} onClick={()=>save([...actions,item.id])}><HomeGlyph name="plus" size={17}/><span>{item.title}</span></button>)}</div></div>}
     <button type="button" className="pano-quick-reset" onClick={()=>save([...DEFAULT_QUICK_ACTIONS])}><HomeGlyph name="reload" size={17}/><span>Restaurar configuração padrão</span></button>
    </div>}
   <span className="pano-quick-status" role="status" aria-live="polite">{message}</span>
