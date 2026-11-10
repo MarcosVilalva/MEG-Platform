@@ -90,3 +90,58 @@
   .pano-quick-editor-controls button svg{width:20px;height:20px}
 }
 @media(prefers-reduced-motion:reduce){.pano-quick-editor-controls button,.pano-quick-editor-controls button::after{transition:none!important}}
+
+/* Home PT2: editor em grade correspondente aos atalhos, sem fileiras vazias. */
+.pano-quick-editor-list {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  align-items:stretch;
+  gap:.65rem;
+}
+.pano-quick-editor-list > .pano-quick-editor-card {
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:space-between;
+  flex-wrap:nowrap;
+  gap:.85rem;
+  padding:.9rem .75rem .75rem;
+  min-width:0;
+  min-height:118px;
+  border:1px solid rgba(65,166,164,.42);
+  border-top-width:2px;
+  border-radius:12px;
+  background:linear-gradient(155deg,rgba(9,54,61,.84),rgba(1,27,34,.95));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 5px 14px rgba(0,0,0,.10);
+}
+.pano-quick-editor-list > .pano-quick-editor-card.is-blue{border-top-color:#28bafa}
+.pano-quick-editor-list > .pano-quick-editor-card.is-violet{border-top-color:#a18bff}
+.pano-quick-editor-list > .pano-quick-editor-card.is-amber{border-top-color:#f8b83c}
+.pano-quick-editor-list > .pano-quick-editor-card.is-slate{border-top-color:#6ec7d5}
+.pano-quick-editor-list > .pano-quick-editor-card > span {
+  font-size:.8rem;
+  line-height:1.3;
+  font-weight:750;
+  color:#eafffb;
+}
+.pano-quick-editor-card .pano-quick-editor-controls {
+  display:grid;
+  grid-template-columns:repeat(3,44px);
+  justify-content:start;
+  align-items:center;
+  gap:.5rem;
+}
+.pano-quick-editor-list > .pano-quick-editor-card:hover,
+.pano-quick-editor-list > .pano-quick-editor-card:focus-within {
+  border-right-color:rgba(91,225,208,.52);
+  border-bottom-color:rgba(91,225,208,.52);
+  border-left-color:rgba(91,225,208,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 8px 24px rgba(0,0,0,.19);
+}
+@media(max-width:1199px){.pano-quick-editor-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:639px){
+  .pano-quick-editor-list{grid-template-columns:minmax(0,1fr)}
+  .pano-quick-editor-list > .pano-quick-editor-card{min-height:104px}
+  .pano-quick-editor-card .pano-quick-editor-controls{display:grid;grid-template-columns:repeat(3,44px);justify-content:start}
+}
