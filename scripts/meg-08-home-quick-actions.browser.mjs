@@ -16,6 +16,11 @@ try{
   assert(await page.getByRole('button',{name:'Mover Relatórios para cima'}).locator('svg').count()===1,'ícone SVG de subir ausente: '+width);
   assert(await page.getByRole('button',{name:'Mover Relatórios para baixo'}).locator('svg').count()===1,'ícone SVG de descer ausente: '+width);
   assert(await page.getByRole('button',{name:'Remover Relatórios'}).locator('svg').count()===1,'ícone SVG de remover ausente: '+width);
+  const buttons=await page.locator('.pano-quick-editor-controls button').evaluateAll(items=>items.map(el=>({text:el.textContent?.trim(),label:el.getAttribute('aria-label'),tooltip:el.getAttribute('data-tooltip'),width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})));
+  assert(buttons.every(btn=>!btn.text&&btn.label&&btn.tooltip&&btn.width>=44&&btn.height>=44),'controles sem texto, com tooltip e alvo >=44px: '+width);
+  await page.getByRole('button',{name:'Mover Relatórios para cima'}).focus();
+  const tooltip=await page.getByRole('button',{name:'Mover Relatórios para cima'}).evaluate(el=>getComputedStyle(el,'::after').content);
+  assert(tooltip.includes('Subir Relatórios'),'tooltip de ordenação ausente: '+width);
   await page.getByRole('button',{name:'Mover Relatórios para cima'}).click();
   assert(JSON.stringify(await titles(page))===JSON.stringify(['Transferência','Relatórios','Pagar conta','Configurações']),'reordenação: '+width);
   await page.getByRole('button',{name:'Remover Transferência'}).click();
@@ -48,6 +53,15 @@ try{
     return {centerDiff:Math.abs(a.left+a.width/2-36),topDiff:Math.abs(a.top-b.top),logoWidth:image.getBoundingClientRect().width,bodyOverflow:document.documentElement.scrollWidth>window.innerWidth+2};
    });
    assert(position!==null&&!position.bodyOverflow,'sidebar recolhida ausente/overflow: '+width);
+   const chrome=await page.evaluate(()=>{
+    const brand=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-brand-stack');
+    const active=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-nav-item.is-active');
+    if(!brand||!active)return null;
+    const image=document.querySelector('.meg-shell.is-sidebar-collapsed .meg-brand-logo--collapsed');
+    const frame=brand.getBoundingClientRect(),icon=active.getBoundingClientRect();
+    return {brandWidth:frame.width,logoWidth:image?.getBoundingClientRect().width,navWidth:icon.width,navBorder:getComputedStyle(active).borderTopWidth,brandBorder:getComputedStyle(brand).borderTopWidth};
+   });
+   assert(chrome&&chrome.brandWidth===56&&chrome.logoWidth>=50&&chrome.navBorder!=='0px'&&chrome.brandBorder!=='0px','marca e frames premium: '+width+' '+JSON.stringify(chrome));
    assert(position.logoWidth>=44,'logo recolhida não aumentou: '+width);
    assert(position.centerDiff<=2,'logo não está centrada nos 72px: '+width);
    assert(position.topDiff<=14,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
