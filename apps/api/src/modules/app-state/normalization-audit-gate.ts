@@ -11,6 +11,7 @@ export const FULL_NORMALIZATION_AUDIT_INTERVAL_MS = 2 * 60 * 60 * 1000;
 
 export type NormalizationAuditStamp = {
   workspaceId: string;
+  tableMutationCounters: string;
   stateRevision: number | null;
   stateUpdatedAt: string | null;
   activeEventCount: number;
@@ -22,6 +23,7 @@ export function sameNormalizationAuditStamp(
   right: NormalizationAuditStamp
 ): boolean {
   return left.workspaceId === right.workspaceId
+    && left.tableMutationCounters === right.tableMutationCounters
     && left.stateRevision === right.stateRevision
     && left.stateUpdatedAt === right.stateUpdatedAt
     && left.activeEventCount === right.activeEventCount
