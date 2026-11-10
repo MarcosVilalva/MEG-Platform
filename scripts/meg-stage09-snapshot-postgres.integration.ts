@@ -47,7 +47,9 @@ try{
    amount:'7.35',signedAmount:'-7.35',createdAt,accountId:account.id,
    categoryId:historicCategory?null:category.id,
    paymentMethodId:historicMethod?null:method.id,
-   ...(i===0||historicCategory||historicMethod?{
+   ...(i===0?{
+    sourcePayload:{category:'Categoria original CI'},
+   }:historicCategory||historicMethod?{
     sourcePayload:{
      category:'Categoria original CI',paymentMethod:'PIX CI',
      'DIA SEMANA':'QUINTA','CLASSIFICACAO DA DESPESA':'LEGADO CI',
