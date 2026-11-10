@@ -28,8 +28,10 @@ export function normalizationFromSharedState(
     response.dataSource !== 'normalized'
     || response.normalizedPrimary !== true
     || integrity?.reconciled !== true
+    || typeof integrity.count !== 'number'
     || !Number.isSafeInteger(integrity.count)
     || (integrity.count ?? -1) < 0
+    || typeof response.revision !== 'number'
     || !Number.isSafeInteger(response.revision)
     || (response.revision ?? -1) < 0
   ) {
