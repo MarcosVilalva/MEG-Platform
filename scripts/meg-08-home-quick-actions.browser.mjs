@@ -99,7 +99,7 @@ try{
    assert(visual?.logoContained,'logo extrapola contorno: '+width+' '+JSON.stringify(visual));
    assert(visual?.logoutRed?.startsWith('rgb(255')&&visual?.logoutBorder?.startsWith('rgba(249'),'sair perdeu vermelho: '+width+' '+JSON.stringify(visual));
    assert(position.centerDiff<=2,'logo não está centrada nos 72px: '+width);
-   assert(position.topDiff<=9,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
+   assert(position.topDiff<=4,'marca não alinha com o botão expandir: '+width+' '+JSON.stringify(position));
   }
   await context.close();
  }
