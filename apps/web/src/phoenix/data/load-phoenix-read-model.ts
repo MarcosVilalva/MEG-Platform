@@ -14,13 +14,14 @@ import type {
   PhoenixWorkspaceUsers
 } from '../contracts';
 import { projectCardInstallmentsIntoEvents } from './card-movement-projection';
+import { normalizationFromSharedState, type NormalizationSharedRead } from './normalization-from-shared-state';
 import {
   deletePhoenixPersistentSnapshot,
   readPhoenixPersistentSnapshot,
   writePhoenixPersistentSnapshot
 } from './phoenix-persistent-snapshot';
 
-type SharedStateRead = {
+type SharedStateRead = NormalizationSharedRead & {
   state?: {
     activityLog?: PhoenixActivity[];
     transactions?: PhoenixLegacyTransaction[];
@@ -208,14 +209,22 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
 }
 
 async function fetchStaticContext(session: NonNullable<ReturnType<typeof readSession>>): Promise<StaticReadContext> {
-  const [health, normalization, sharedState, customers, receivables, workspaceUsers] = await Promise.all([
+  // Android permanece com exatamente as consultas originais. Na Web,
+  // /app-state já confere os dois fingerprints e informa a integridade.
+  // Somente a confirmação de paridade permite economizar o segundo full scan.
+  const [health, nativeNormalization, sharedState, customers, receivables, workspaceUsers] = await Promise.all([
     getApiHealth(),
-    authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview'),
+    import.meta.env.VITE_MOBILE_APP === 'true'
+      ? authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview')
+      : Promise.resolve(null),
     authenticatedRequest<SharedStateRead>('/app-state'),
     receivablesClient.listCustomers(),
     receivablesClient.listReceivables(),
     loadWorkspaceUsers(session.user.role)
   ]);
+  const normalization = nativeNormalization
+    ?? normalizationFromSharedState(sharedState)
+    ?? await authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview');
 
   return {
     key: staticContextKey(session.user),

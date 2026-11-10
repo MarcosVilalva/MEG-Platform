@@ -37,6 +37,7 @@ import {
   recordNormalizationRuntimeStatus,
 } from './modules/app-state/normalization-migration';
 import { reconcilePrimaryAppStateFromNormalized } from './modules/app-state/normalized-primary-writeback';
+import { needsDeepNormalizationAudit, sameNormalizationAuditStamp, type NormalizationAuditStamp } from './modules/app-state/normalization-audit-gate';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -212,26 +213,87 @@ try {
       recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, count: 0, reason: error instanceof Error ? error.message : 'NORMALIZATION_STARTUP_FAILED' });
       app.log.error(error, 'Normalized financial source remained on AppState fallback');
     });
+  // Pulso leve de 15 minutos. O fingerprint completo continua obrigatório após
+  // qualquer alteração observável e a cada 2 horas, mesmo sem alterações.
+  // Nunca suprimir a auditoria quando houver divergência ou erro.
   let normalizationAuditRunning = false;
+  let lastDeepAuditStamp: NormalizationAuditStamp | null = null;
+  let lastDeepAuditAtMs: number | null = null;
+  async function normalizationAuditStamp(workspaceId: string): Promise<NormalizationAuditStamp> {
+    // Os contadores do PostgreSQL detectam alterações feitas por SQL direto
+    // mesmo quando o writer não modificou updatedAt ou revision.
+    type TableMutationStats = {
+      relname: string;
+      n_tup_ins: bigint;
+      n_tup_upd: bigint;
+      n_tup_del: bigint;
+    };
+    const [appState, events, tableStats] = await Promise.all([
+      prisma.appState.findUnique({ where: { workspaceId }, select: { revision: true, updatedAt: true } }),
+      prisma.financialEvent.aggregate({
+        where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: null },
+        _count: { _all: true },
+        _max: { updatedAt: true },
+      }),
+      prisma.$queryRaw<TableMutationStats[]>`
+        SELECT relname, n_tup_ins, n_tup_upd, n_tup_del
+        FROM pg_stat_user_tables
+        WHERE schemaname = 'public'
+          AND relname IN ('AppState', 'FinancialEvent')
+        ORDER BY relname
+      `.catch(() => [] as TableMutationStats[]),
+    ]);
+    // Sem permissões/estatísticas, o marcador será nulo e a comparação
+    // completa continuará sendo executada a cada pulso de 15 minutos.
+    return {
+      workspaceId,
+      tableMutationCounters: tableStats.length === 2
+        ? tableStats.map((row) => `${row.relname}:${row.n_tup_ins}:${row.n_tup_upd}:${row.n_tup_del}`).join('|')
+        : null,
+      stateRevision: appState?.revision ?? null,
+      stateUpdatedAt: appState?.updatedAt.toISOString() ?? null,
+      activeEventCount: events._count._all,
+      latestEventUpdatedAt: events._max.updatedAt?.toISOString() ?? null,
+    };
+  }
   const normalizationAuditTimer = setInterval(() => {
     if (normalizationAuditRunning) return;
     normalizationAuditRunning = true;
     void ensurePrimaryWorkspace()
       .then(async (workspace) => {
         if (!workspace) throw new Error('NORMALIZATION_SOURCE_NOT_FOUND');
+        const before = await normalizationAuditStamp(workspace.id);
+        const lastRuntime = getNormalizationRuntimeStatus();
+        const stableRuntime = lastRuntime.status === 'completed' || lastRuntime.status === 'rollback-protected';
+        if (stableRuntime && !needsDeepNormalizationAudit(before, lastDeepAuditStamp, lastDeepAuditAtMs, Date.now())) {
+          return; // Divergência/fallback nunca é dispensada por marcador inalterado.
+        }
+
+        // Contrato financeiro original: executar a comparação integral de
+        // fingerprints com a mesma função que já valida reconciliação e rollback.
         const preview = await normalizationPreview(workspace.id, workspace.ownerId);
+        const after = await normalizationAuditStamp(workspace.id);
+        if (!sameNormalizationAuditStamp(before, after)) {
+          // Alteração concorrente: não registrar um resultado como definitivo.
+          // Sem cache de erro: o próximo pulso repetirá a checagem integral.
+          app.log.warn('Periodic normalized financial audit saw concurrent changes; full check required next pulse');
+          return;
+        }
         if (preview.mode === 'app-state-rollback') {
           recordNormalizationRuntimeStatus({ status: 'rollback-protected', primary: false, reconciled: preview.reconciled, count: preview.normalized.count, reason: 'ADMIN_ROLLBACK' });
-          return;
-        }
-        if (!preview.primary || !preview.reconciled) {
+        } else if (!preview.primary || !preview.reconciled) {
           recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, count: preview.normalized.count, reason: 'PERIODIC_RECONCILIATION_FAILED' });
           app.log.warn({ sourceCount: preview.source.validCount, normalizedCount: preview.normalized.count }, 'Periodic normalized financial source audit detected a divergence');
-          return;
+          return; // Divergências continuam sendo rechecadas a cada 15 minutos.
+        } else {
+          recordNormalizationRuntimeStatus({ status: 'completed', primary: true, reconciled: true, count: preview.normalized.count, reason: null });
         }
-        recordNormalizationRuntimeStatus({ status: 'completed', primary: true, reconciled: true, count: preview.normalized.count, reason: null });
+        lastDeepAuditStamp = after;
+        lastDeepAuditAtMs = Date.now();
       })
       .catch((error) => {
+        lastDeepAuditStamp = null;
+        lastDeepAuditAtMs = null;
         recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, reason: error instanceof Error ? error.message : 'PERIODIC_NORMALIZATION_AUDIT_FAILED' });
         app.log.error(error, 'Periodic normalized financial source audit failed');
       })
