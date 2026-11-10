@@ -16,7 +16,7 @@ Arquivos nesta PR:
 
 1. `scripts/meg-stage09-safe-backup.sh`: exportação **lógica completa do PostgreSQL com `pg_dump`**, formato custom, enviada diretamente ao **age** por pipe. Nenhum dump SQL aberto é escrito no disco. Um manifesto com SHA-256 do arquivo criptografado e inventário é gerado. Inclui esquemas gerenciados **somente na medida em que o usuário PostgreSQL tiver leitura e o `pg_dump` os incluir**. Dump de schemas internos **não é** automaticamente restaurável em outro Supabase.
 2. `scripts/meg-stage09-safe-restore-drill.sh`: valida SHA-256 e descriptografa em fluxo, restaurando **apenas o schema `public`** em banco PostgreSQL **exclusivamente local** (`127.0.0.1:5432/meg_restore_drill`). O script recusa banco não vazio e recusa host remoto ou nome de banco diferente. Compara 32 tabelas (ou o número encontrado durante a exportação) e exige registros presentes em `User`, `AppState` e `FinancialEvent`.
-3. `scripts/meg-stage09-backup-safety.test.mjs`: testa o controle de fluxo e bloqueios com **ferramentas simuladas e dados fictícios**, nunca com produção. **Não comprova restauração real.**
+3. `scripts/meg-stage09-backup-safety.test.mjs`: testa o controle de fluxo e bloqueios com **ferramentas simuladas e dados fictícios**, nunca com produção. A workflow também executa um ensaio de **PostgreSQL 17 real, mas com dados inteiramente sintéticos e bancos descartáveis**, verificando `pg_dump` → `age` → `pg_restore`. **Nenhum desses testes comprova restauração dos dados verdadeiros do MEG.**
 
 **Cobertura ainda pendente após rodar o kit:** chave-raiz de criptografia do Supabase Vault; senhas dos papéis customizados; segredos de ambiente do Render, chaves de autenticação da API, variáveis operacionais e credenciais externas; objetos Storage futuros; settings, extensões e ajustes de schemas gerenciados; restauração realmente funcional em um **novo projeto Supabase isolado**. Não confundir um dump existente com um plano integral de recuperação.
 
@@ -115,7 +115,7 @@ Documentação: [Supabase Backups](https://supabase.com/docs/guides/platform/bac
 
 - [x] Projeto identificado, 32 tabelas públicas e presença de Vault inventariadas com consultas **agregadas de leitura**.
 - [x] Código de exportação encriptada e teste local guardado em branch isolada, sem credenciais.
-- [x] Testes **simulados** de segurança do script, bloqueio de restore remoto e conferência de integridade de arquivo. Não se confundem com backup/recovery efetivo.
+- [x] Testes **simulados** de segurança do script, bloqueio de restore remoto e conferência de integridade de arquivo. Um job de PostgreSQL 17 **sintético** foi definido na CI para verificar a cadeia criptografada; seu resultado deve ser conferido na própria execução. Não se confundem com backup/recovery efetivo.
 - [ ] Exportação **real** do PostgreSQL executada com resultado confirmado.
 - [ ] Arquivo criptografado copiado e verificado em repositório de armazenamento **externo** ao Supabase/GitHub.
 - [ ] Chave de recuperação `age` armazenada offline e leitura testada.
