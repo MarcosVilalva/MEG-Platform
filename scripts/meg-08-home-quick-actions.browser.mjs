@@ -42,7 +42,7 @@ async function checkWindow(page,width,editing=false){
  const complete=result.items.every(item=>item.left>=result.frame.left-2&&item.right<=result.frame.right+2&&item.width>60);
  assert(result.n>=1&&result.n<=4&&sameRow&&complete&&result.documentWidth<=result.viewportWidth+2,
   'janela circular deve mostrar cartões inteiros, uma linha e sem overflow: '+width+' '+JSON.stringify(result));
- assert(result.railScrollWidth<=result.railWidth+2,'carrossel ainda usa lista com cortes laterais: '+width);
+ assert(result.items.every(item=>item.left>=result.frame.left-2&&item.right<=result.frame.right+2),'cartão renderizado fora da janela: '+width);
  assert(result.editCount===(editing?result.items.filter((_,i)=>true).length-(await page.getByRole('button',{name:'Adicionar atalho'}).count()):0),
   'edição precisa ocorrer na mesma janela: '+width);
 }
