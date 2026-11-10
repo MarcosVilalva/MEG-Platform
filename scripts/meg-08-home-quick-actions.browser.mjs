@@ -57,6 +57,26 @@ try{
   assert(JSON.stringify(await names(page))===JSON.stringify(defaults.slice(0,(await buttons(page).count()))),
    'ordem inicial visível incorreta: '+width);
   await checkWindow(page,width);
+  const dots=page.getByRole('group',{name:'Páginas de ações rápidas'}).getByRole('button');
+  assert(await dots.count()>1,'indicadores não aparecem com mais de uma página: '+width);
+  assert(await dots.first().getAttribute('aria-current')==='true','primeira pílula deveria estar ativa: '+width);
+  await dots.last().click();
+  assert(await dots.last().getAttribute('aria-current')==='true','pílula clicável não atualiza página: '+width);
+  await dots.first().click();
+  assert(await dots.first().getAttribute('aria-current')==='true','retorno à primeira pílula: '+width);
+  if(width>=1024){
+   const rows=await page.evaluate(()=>{
+    const blocks=[...document.querySelectorAll('.pano-finance-block .pano-grid')];
+    if(blocks.length!==2)return null;
+    return blocks.map(block=>[...block.querySelectorAll('.meg-datagrid-table tbody tr:not(.meg-datagrid-group-row)')]
+     .filter(el=>el.getBoundingClientRect().height>0)
+     .map(el=>el.getBoundingClientRect().height));
+   });
+   assert(rows&&rows[0].length>=3&&rows[1].length>=1,'DataGrid sem linhas de prévia: '+width+' '+JSON.stringify(rows));
+   const left=rows[0][0],right=rows[1][0];
+   assert(Math.abs(left-right)<=3&&left<=65&&right<=65,
+    'linhas dos dois DataGrids devem ter densidade equivalente: '+width+' '+JSON.stringify({left,right,rows}));
+  }
   const initial=await names(page);
   await previous(page);
   assert((await names(page))[0]==='Adicionar','carrossel não volta circularmente ao fim: '+width);
