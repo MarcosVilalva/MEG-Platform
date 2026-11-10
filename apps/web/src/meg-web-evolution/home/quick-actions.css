@@ -12,7 +12,7 @@
 .pano-quick-edit-toggle:hover,.pano-quick-edit-toggle:focus-visible{
   border-color:#8cffe7;background:#115a60;box-shadow:0 0 14px rgba(34,225,201,.2)
 }
-.pano-quick-edit-toggle::after,.pano-quick-editor-controls button[data-tooltip]::after,.pano-quick-choose[data-tooltip]::after{
+.pano-quick-edit-toggle::after,.pano-quick-editor-controls button[data-tooltip]::after,{
   content:attr(data-tooltip);position:absolute;z-index:20;left:50%;bottom:calc(100% + 9px);
   transform:translate(-50%,4px);padding:7px 10px;max-width:min(260px,80vw);
   width:max-content;white-space:normal;text-align:center;border:1px solid rgba(79,218,196,.4);
@@ -21,8 +21,7 @@
   transition:opacity .15s,transform .15s,visibility .15s;
 }
 .pano-quick-edit-toggle:is(:hover,:focus-visible)::after,
-.pano-quick-editor-controls button[data-tooltip]:not(:disabled):is(:hover,:focus-visible)::after,
-.pano-quick-choose[data-tooltip]:is(:hover,:focus-visible)::after{
+.pano-quick-editor-controls button[data-tooltip]:not(:disabled):is(:hover,:focus-visible)::after{
   opacity:1;visibility:visible;transform:translate(-50%,0)
 }
 .pano-quick-editor{
@@ -59,15 +58,6 @@
 .pano-quick-editor-copy{display:flex;flex:1 1 auto;min-width:0;flex-direction:column;gap:.17rem}
 .pano-quick-editor-copy strong{color:#effffb;font-size:.78rem;line-height:1.2}
 .pano-quick-editor-copy small{color:#b7ded9;font-size:.67rem;line-height:1.3}
-.pano-quick-choose{
-  position:relative;flex:0 0 auto;display:grid;place-items:center;
-  width:42px;height:44px;min-height:44px;padding:0;
-  color:#c8fff5;border:1px solid rgba(56,197,182,.48);border-radius:11px;
-  background:rgba(10,75,80,.76);cursor:pointer
-}
-.pano-quick-choose:hover,.pano-quick-choose[aria-expanded=true],.pano-quick-choose:focus-visible{
-  color:#fff;border-color:#77efdc;background:rgba(15,116,119,.88)
-}
 .pano-quick-editor-controls{display:flex;align-items:center;justify-content:flex-start;gap:.45rem}
 .pano-quick-editor-controls button{
   position:relative;isolation:isolate;display:grid;place-items:center;
@@ -123,11 +113,46 @@
 .pano-quick-empty{padding:.6rem}
 .pano-quick-status{display:block;color:#9ddfcf;font-size:.72rem;margin-top:.35rem}
 .pano-quick-status:empty{display:none}
-@media(max-width:1199px){.pano-quick-editor-list,.pano-quick-chooser-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1199px){ .pano-quick-editor-list,.pano-quick-chooser-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:639px){
   .pano-quick-editor-list,.pano-quick-chooser-options{grid-template-columns:minmax(0,1fr)}
   .pano-quick-editor-card{min-height:122px}
 }
 @media(prefers-reduced-motion:reduce){
-  .pano-quick-editor button,.pano-quick-edit-toggle,.pano-quick-edit-toggle::after,.pano-quick-editor-controls button::after,.pano-quick-choose::after{transition:none!important}
+  .pano-quick-editor button,.pano-quick-edit-toggle,.pano-quick-edit-toggle::after,.pano-quick-editor-controls button::after{transition:none!important}
 }
+
+/* Slots futuros: proporção do cartão original, traço espaçado e ícone solto,
+   sem copiar o fundo opaco nem o texto técnico do SVG de referência. */
+.pano-quick-display-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.pano-quick-display-grid>.pano-action{min-width:0;width:100%}
+.pano-quick-placeholder{
+  box-sizing:border-box;min-width:0;min-height:68px;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:.8rem;
+  padding:.65rem .8rem;
+  border:2px dashed rgba(107,142,148,.68);border-radius:14px;
+  background:rgba(25,40,46,.18);color:#e4f9f5;
+  font:inherit;font-size:.81rem;font-weight:750;
+  cursor:pointer;
+  transition:border-color .18s,background .18s,box-shadow .18s;
+}
+.pano-quick-placeholder svg{flex:0 0 auto;color:#72d9ca;stroke-width:1.8}
+.pano-quick-placeholder:hover,.pano-quick-placeholder:focus-visible{
+  border-color:#60edd2;background:rgba(10,83,86,.35);
+  box-shadow:0 0 18px rgba(15,191,174,.13);
+}
+.pano-quick-editor-empty{display:flex;min-width:0;min-height:136px;list-style:none}
+.pano-quick-editor-empty .pano-quick-placeholder{
+  flex:1 1 auto;min-height:136px;border-radius:12px;
+}
+.pano-quick-editor-card-main{min-height:44px}
+.pano-quick-editor-controls button[aria-label*="esquerda"] svg,
+.pano-quick-editor-controls button[aria-label*="direita"] svg{width:21px;height:21px}
+@media(max-width:1199px){
+ .pano-quick-display-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:639px){
+ .pano-quick-display-grid{grid-template-columns:minmax(0,1fr)}
+ .pano-quick-editor-empty,.pano-quick-editor-empty .pano-quick-placeholder{min-height:122px}
+}
+@media(prefers-reduced-motion:reduce){.pano-quick-placeholder{transition:none}}
