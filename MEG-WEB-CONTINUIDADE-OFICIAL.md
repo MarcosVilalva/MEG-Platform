@@ -1640,3 +1640,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Gates:** não fazer merge, deploy de produção, alterações de banco, API, Render, Android ou outras telas. PR #656 e PR #663 da Etapa 09 permanecem intocadas.
 - **Validação visual do novo editor:** PENDENTE de aprovação explícita. Homologação anterior da composição da Home permanece válida e congelada.
 - **Pendências reais:** CI de branch, revisão visual no navegador, URL de preview com cache-busting, homologação do editor, verificação de navegação real/permissões antes de expandir o catálogo e sincronização futura somente mediante autorização.
+
+### 10/11/2026 — resultado técnico e PR da correção
+- **PR isolada:** #664 (Draft), base `preview/06-home-refino-preservado-20261104`. Sem merge.
+- **CI confirmada:** workflow [42871932832](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42871932832), conclusão `success`, SHA `1601926adeac3a0b46b3c5d356588cb2e38ffd89`. Build isolado e testes de navegador concluídos. Artefato `meg-home-08-qa` registrado no run.
+- **Preview público independente:** ainda NÃO publicado; não alterar configurações ou executar deploy Render sem autorização. A prévia existente da PR #655 NÃO representa o novo editor. Evidências do Actions não substituem demonstração interativa e validação visual.
+- **Homologação do painel customizável:** PENDENTE de inspeção visual do usuário. **Sincronização entre dispositivos:** PENDENTE da issue #662 e aprovação própria.
