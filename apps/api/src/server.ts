@@ -220,16 +220,35 @@ try {
   let lastDeepAuditStamp: NormalizationAuditStamp | null = null;
   let lastDeepAuditAtMs: number | null = null;
   async function normalizationAuditStamp(workspaceId: string): Promise<NormalizationAuditStamp> {
-    const [appState, events] = await Promise.all([
+    // Os contadores do PostgreSQL detectam alterações feitas por SQL direto
+    // mesmo quando o writer não modificou updatedAt ou revision.
+    type TableMutationStats = {
+      relname: string;
+      n_tup_ins: bigint;
+      n_tup_upd: bigint;
+      n_tup_del: bigint;
+    };
+    const [appState, events, tableStats] = await Promise.all([
       prisma.appState.findUnique({ where: { workspaceId }, select: { revision: true, updatedAt: true } }),
       prisma.financialEvent.aggregate({
         where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: null },
         _count: { _all: true },
         _max: { updatedAt: true },
       }),
+      prisma.$queryRaw<TableMutationStats[]>`
+        SELECT relname, n_tup_ins, n_tup_upd, n_tup_del
+        FROM pg_stat_user_tables
+        WHERE schemaname = 'public'
+          AND relname IN ('AppState', 'FinancialEvent')
+        ORDER BY relname
+      `,
     ]);
+    if (tableStats.length !== 2) throw new Error('NORMALIZATION_AUDIT_STATS_UNAVAILABLE');
     return {
       workspaceId,
+      tableMutationCounters: tableStats.map((row) =>
+        `${row.relname}:${row.n_tup_ins}:${row.n_tup_upd}:${row.n_tup_del}`
+      ).join('|'),
       stateRevision: appState?.revision ?? null,
       stateUpdatedAt: appState?.updatedAt.toISOString() ?? null,
       activeEventCount: events._count._all,
