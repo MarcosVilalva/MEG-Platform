@@ -34,6 +34,14 @@ jobs:
           done
           node scripts/meg-06-home-refino.browser.mjs
           node scripts/meg-08-home-quick-actions.browser.mjs
+      - name: Empacotar build interativo para inspeção local, sem deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-08-preview-estatico
+          path: apps/web/dist-fluxo-integrado-08/
+          if-no-files-found: error
+          retention-days: 14
       - name: Evidencias visuais
         if: always()
         uses: actions/upload-artifact@v4
