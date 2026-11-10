@@ -116,7 +116,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
     <p>Escolha um atalho disponível. Um item já utilizado troca de posição com o atual.</p>
     <div className="pano-quick-chooser-options">
      {CATALOG.map(item=><button type="button" key={item.id} className={'is-'+item.kind} aria-label={'Selecionar '+item.title} aria-current={item.id===choosing?'true':undefined}
-       onClick={()=>replace(choosing,item)}><span className="pano-quick-editor-icon"><HomeGlyph name={item.icon} size={21}/></span><span><strong>{item.title}</strong><small>{item.description}</small></span>{item.id===choosing&&<HomeGlyph name="check" size={17}/>}</button>)}
+       onClick={()=>replace(choosing,item.id)}><span className="pano-quick-editor-icon"><HomeGlyph name={item.icon} size={21}/></span><span><strong>{item.title}</strong><small>{item.description}</small></span>{item.id===choosing&&<HomeGlyph name="check" size={17}/>}</button>)}
     </div>
     <p className="pano-quick-catalog-note">Outras funcionalidades serão incluídas quando as rotas e permissões estiverem validadas.</p>
    </div>}
