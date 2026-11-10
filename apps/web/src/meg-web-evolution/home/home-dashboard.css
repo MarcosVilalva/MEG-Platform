@@ -292,3 +292,14 @@
 @media(prefers-reduced-motion:reduce){
   .pano-finance-block .pano-grid .meg-datagrid-table tbody tr td{transition:none!important}
 }
+
+/* Somente estados oficiais já presentes na leitura; não classificar vencimento na tela. */
+.pano-finance-block .pano-status.is-planned{
+  color:#bde6e0;border-color:rgba(80,191,185,.44);background:rgba(12,83,87,.28);
+}
+.pano-finance-block .pano-status.is-partial{
+  color:#9acffa;border-color:rgba(73,163,227,.48);background:rgba(20,74,119,.28);
+}
+.pano-finance-block .pano-status.is-payable{
+  color:#ffdc96;border-color:rgba(214,155,56,.46);background:rgba(119,77,16,.20);
+}
