@@ -1499,8 +1499,10 @@
   box-shadow:0 0 17px rgba(19,230,204,.29);
 }
 .meg-sidebar .meg-nav .meg-nav-item:focus-visible::before{
-  outline:2px solid rgba(132,255,235,.82);
-  outline-offset:1px;
+  outline:none;
+  opacity:1;
+  background:radial-gradient(circle,rgba(65,255,230,.56) 0%,rgba(16,177,158,.25) 56%,transparent 80%);
+  box-shadow:0 0 22px rgba(29,255,215,.48),0 0 9px rgba(63,255,229,.24);
 }
 .meg-sidebar .meg-nav .meg-nav-item svg{
   position:relative;
