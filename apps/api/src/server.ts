@@ -241,14 +241,15 @@ try {
         WHERE schemaname = 'public'
           AND relname IN ('AppState', 'FinancialEvent')
         ORDER BY relname
-      `,
+      `.catch(() => [] as TableMutationStats[]),
     ]);
-    if (tableStats.length !== 2) throw new Error('NORMALIZATION_AUDIT_STATS_UNAVAILABLE');
+    // Sem permissões/estatísticas, o marcador será nulo e a comparação
+    // completa continuará sendo executada a cada pulso de 15 minutos.
     return {
       workspaceId,
-      tableMutationCounters: tableStats.map((row) =>
-        `${row.relname}:${row.n_tup_ins}:${row.n_tup_upd}:${row.n_tup_del}`
-      ).join('|'),
+      tableMutationCounters: tableStats.length === 2
+        ? tableStats.map((row) => `${row.relname}:${row.n_tup_ins}:${row.n_tup_upd}:${row.n_tup_del}`).join('|')
+        : null,
       stateRevision: appState?.revision ?? null,
       stateUpdatedAt: appState?.updatedAt.toISOString() ?? null,
       activeEventCount: events._count._all,
