@@ -1653,3 +1653,9 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Adicionado upload de **build estático navegável** como artefato do workflow, para inspeção sem modificar serviços Render. Isso não equivale a URL pública de preview; instalação/serviço de hospedagem permanece pendente.
 - PR #664 permanece Draft e sem merge. Não alterar API, banco, Android, serviço Render ou PRs #656/#663; autorização de merge/deploy de produção segue ausente.
 - Atenção: os destinos da Home visual demonstrativa são avisos, não navegação operacional autenticada. Validar rotas/autorização antes de ampliar catálogo; não prometer lançamento de transferência, pagamento, relatórios ou configurações sem módulo implementado.
+
+### 10/11/2026 — evidências definitivas do workflow da correção
+- Workflow do commit `ed9d3421719ecc63381c6ab0fc95aa48143dddce`: [42873289447](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42873289447), conclusão **success**.
+- Logs confirmam **16 cenários da Home original, zero falhas**, e **73 verificações da personalização aprovadas em oito larguras**. Build Vite e etapas de artefato concluídas.
+- Artefatos gerados: `meg-home-08-preview-estatico` (build compilado, uso com servidor HTTP local) e `meg-home-08-qa` (evidências). Artefatos ficam no run GitHub, sem deploy.
+- **Ainda faltam:** URL de prévia pública sem cache no commit atualizado, validação visual explícita do novo editor e decisão futura de sincronização. Esta autorização de continuidade não substitui esses gates nem libera merge.
