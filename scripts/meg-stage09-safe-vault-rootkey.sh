@@ -26,7 +26,7 @@ fi
 # -K / --config - le o cabecalho do stdin: PAT NAO aparece nos argumentos
 # do processo curl, na URL, nos logs ou em arquivos locais.
 key="$(printf 'header = "Authorization: Bearer %s"\n' "$SUPABASE_ACCESS_TOKEN" \
-  | curl -fSsL --retry 0 --config - "https://api.supabase.com/v1/projects/${project_ref}/pgsodium" \
+  | curl -fSs --retry 0 --config - "https://api.supabase.com/v1/projects/${project_ref}/pgsodium" \
   | python3 -c 'import sys,json,re
 v=sys.stdin.read().strip()
 try: obj=json.loads(v)
