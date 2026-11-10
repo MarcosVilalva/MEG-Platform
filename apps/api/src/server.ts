@@ -229,6 +229,7 @@ try {
       }),
     ]);
     return {
+      workspaceId,
       stateRevision: appState?.revision ?? null,
       stateUpdatedAt: appState?.updatedAt.toISOString() ?? null,
       activeEventCount: events._count._all,
