@@ -6,7 +6,7 @@ const defaults=['Transferência','Pagar conta','Relatórios','Configurações'];
 const catalog=['Lançamentos','Cartões','Benefícios'];
 let checked=0;
 function assert(ok,reason){if(!ok)throw new Error(reason);checked++}
-const titles=page=>page.locator('.pano-quick-link strong').allTextContents();
+const titles=page=>page.locator('.pano-quick-item:not(.pano-quick-add) .pano-quick-item-label strong').allTextContents();
 const clickAdd=async(page,name)=>{
  const rail=page.locator('.pano-quick-rail');
  await rail.getByRole('button',{name:'Adicionar atalho'}).click();
