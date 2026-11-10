@@ -171,12 +171,14 @@ try {
       problems.push('quatro indicadores não estão distribuídos em 2x2');
   }
   const desired=['Transferência','Pagar conta','Relatórios','Configurações'];
-  if(changed.actions.length!==4 || changed.actions.some(x=>!x.title||x.iconCount!==1))
-    problems.push('quatro atalhos não preservados');
-  if(changed.actions.map(x=>x.title).join('|')!==desired.join('|'))
-    problems.push('atalhos não seguem imagem 01');
-  if(changed.descriptions.length!==4 || changed.descriptions.some(x=>!x))
-    problems.push('descrição de atalhos ausente');
+  // Novo contrato: janela de 1 a 4 cartões INTEIROS por viewport.
+  // Os quatro atalhos padrão continuam no catálogo e na preferência persistida.
+  if(changed.actions.length<1||changed.actions.length>4||changed.actions.some(x=>!x.title||x.iconCount!==1))
+    problems.push('janela circular sem cartões íntegros');
+  if(changed.actions.map(x=>x.title).join('|')!==desired.slice(0,changed.actions.length).join('|'))
+    problems.push('ordem inicial dos atalhos alterada');
+  if(changed.descriptions.length!==changed.actions.length||changed.descriptions.some(x=>!x))
+    problems.push('descrições dos atalhos visíveis ausentes');
   if(byName(baseline)!==byName(changed) || JSON.stringify(baseline.copy)!==JSON.stringify(changed.copy))
     problems.push('dados/rótulos financeiros mudaram durante refino CSS');
   if(changed.actions.some(x=>x.height<44))problems.push('area de toque menor que 44px');
@@ -234,8 +236,7 @@ try {
       changed.activeCard.bottom>changed.cardStage.bottom+2))
     problems.push('cartão central cortado no palco');
   if(api.length)problems.push('requisições API em modo visual');
-  // Contrato da Home PT2: os quatro atalhos conservam UMA faixa horizontal
-  // também em tablet e mobile. Rolagem ocorre somente dentro do carrossel.
+  // Carrossel de janela circular: só cartões completos, numa linha, sem corte.
   if(changed.actions.length===4){
     const tops=changed.actions.map(x=>x.top);
     if(Math.max(...tops)-Math.min(...tops)>3)
@@ -264,7 +265,7 @@ try {
    const m=await measure(page);
    const problems=[];
    if(m.documentWidth>width+2)problems.push('rolagem horizontal com altura/zoom');
-   if(m.actions.length!==4)problems.push('atalhos desaparecem com altura/zoom');
+   if(m.actions.length<1||m.actions.length>4)problems.push('janela de atalhos inconsistente com altura/zoom');
    if(!m.topPlusVisible)problems.push('Novo lançamento do topo não visível');
    if(!m.chart||m.chart.height<165)problems.push('gráfico comprimido com altura/zoom');
    if(m.cardStage&&m.activeCard&&m.activeCard.bottom>m.cardStage.bottom+3)
