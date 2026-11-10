@@ -10,15 +10,15 @@
 
 ## 2. Alterações desta branch (sem alteração de regras financeiras)
 ### A. Redução segura dos full scans periódicos
-- Novo `apps/api/src/modules/app-state/normalization-audit-gate.ts`: marcador **somente leitura** por revisão/atualização do AppState, número de eventos legados ativos e última atualização dos eventos.
+- Novo `apps/api/src/modules/app-state/normalization-audit-gate.ts`: marcador **somente leitura** por workspace, revisão/atualização do AppState, número e última atualização dos eventos legados ativos **e contadores globais de INSERT/UPDATE/DELETE nas tabelas AppState e FinancialEvent** (visão PostgreSQL `pg_stat_user_tables`).
 - `apps/api/src/server.ts`: preserva **pulso a cada 15 minutos**, mas transfere todas as linhas para a verificação original `normalizationPreview()` somente:
   1. na primeira rodada;
   2. quando há alteração observável no marcador;
   3. quando passaram **2 horas** desde a última verificação profunda (mesmo sem alterações);
   4. a cada pulso enquanto houver divergência/erro.
 - Toda verificação profunda segue usando **o fingerprint de SHA-256 original**, classificação e regras canônicas sem alterar lógica de saldo, parcelas, status, benefícios, cartões ou lançamentos. SQL `aggregate` do marcador é somente leitura, executado dentro do servidor conectado ao banco.
-- Marcador conferido **antes e depois** do full scan; alterações concorrentes impedem o registro de verificação concluída. Erros limpam o cache e exigem nova comparação. O modo rollback continua protegido.
-- **Tradeoff transparente:** alterações diretas fora dos writers que não avancem `updatedAt`, revisão ou contagem poderão aguardar até **2 horas** para a comparação profunda; na versão anterior a comparação era tentada a cada 15 min. Alterações regulares do domínio (com `@updatedAt`) acionam o full scan no próximo pulso. Esse intervalo é parâmetro de política operacional, não um novo cálculo financeiro. **Requer aceite técnico específico antes de produção** e teste de detecção de divergência fora dos writers.
+- Marcador conferido **antes e depois** do full scan; alterações concorrentes impedem o registro de verificação concluída. Erros/fallback exigem nova comparação. Se a visão estatística não retornar ambas as tabelas, a API falha de modo conservador. O modo rollback continua protegido. Contadores de mutação de tabela detectam também writes SQL fora do Prisma, mesmo sem mudanças em `updatedAt`.
+- **Tradeoff transparente:** alterações diretas via SQL tendem a ser detectadas em até 15 minutos também pelos contadores de mutações em `pg_stat_user_tables`; porém essas estatísticas são assíncronas e **não representam prova criptográfica de invariância**. Um drift invisível aos marcadores ainda pode aguardar até **2 horas** para o fingerprint profundo (antes tentado a cada 15 minutos). Esse intervalo não muda nenhum cálculo financeiro, mas é uma mudança no prazo de detecção de falhas. **Requer aceite técnico específico antes de produção** e teste de detecção de divergência fora dos writers.
 
 ### B. Eliminação de leitura duplicada de integridade na Phoenix **somente para Web**
 - `apps/web/src/phoenix/data/normalization-from-shared-state.ts`: reutiliza `integrity.reconciled: true`, `count` e `revision` devolvidos pelo **mesmo GET `/app-state`**, que já realizou comparação de fingerprint do lado da API.
@@ -27,14 +27,14 @@
 - Nenhuma página calcula saldo/status no frontend, nenhum endpoint writer alterado.
 
 ## 3. Testes de caracterização adicionados
-- `normalization-audit-gate.test.ts`: primeiro ciclo, marcador inalterado, revisão alterada, timestamp atualizado, contagem aumentando/diminuindo, clock rollback, auditoria profunda mandatória após 2h.
+- `normalization-audit-gate.test.ts`: primeiro ciclo, marcador inalterado, revisão alterada, timestamp atualizado, contagem aumentando/diminuindo, incremento de contador de INSERT/UPDATE/DELETE, mudança de workspace, clock rollback e auditoria profunda mandatória após 2h.
 - `normalization-from-shared-state.test.ts`: confirma reaproveitamento apenas quando há prova de paridade, e exigência de full diagnostic diante de fallback, divergência e payload incompleto.
 - Ambos ligados a `npm --workspace apps/api run test:app-state`. CI e `npm run build:api` / `npm run build:web` **devem passar para candidato tecnicamente validado**. Não declarar validado só porque há testes.
 
 ## 4. Gates obrigatórios antes de merge/deploy
 - [ ] Revisar e passar `test:app-state`, `test:finance`, contratos Etapa 09, e builds Web/API no SHA final.
 - [ ] Medir diferença em **ambiente isolado**, com mocks representativos de 3.630 eventos + AppState volumoso, sem tocar base financeira. Demonstrar paridade de fingerprints, totais, event counts e comportamento com atualizações concorrentes.
-- [ ] Verificar que teste de alterações diretas fora de writers detecta divergência dentro do limite documentado; decidir se **2 horas** é aceitável frente a risco de integridade.
+- [ ] Verificar com testes que alterações diretas SQL acionam os contadores de `pg_stat_user_tables` e a checagem profunda; decidir se **2 horas** como fallback de drift invisível é aceitável frente à segurança financeira.
 - [ ] Manter preview isolado, sem reutilizar screenshots obsoletos. Android e Home PT2 preservados.
 - [ ] Confirmar **backup externo criptografado + restauração isolada realmente testada**, inclusive Auth/objetos relevantes, antes de qualquer deploy.
 - [ ] Corrigir Render `meg-platform-api` Build Command **sem executar scripts `db:prepare:production` nem `db:push:production --accept-data-loss`**; salvar configuração pode gerar deploy e precisa de planejamento/autorização específica.
