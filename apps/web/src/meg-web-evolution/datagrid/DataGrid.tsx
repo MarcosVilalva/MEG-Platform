@@ -765,6 +765,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   data,
   columns,
   pageSize = 12,
+  pageSizeOptions,
   groupBy,
   selectable = false,
   footerAggregates = false,
@@ -800,7 +801,8 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [columnOrder, setColumnOrder] = useState<string[]>(persisted.columnOrder);
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(() => new Set(persisted.hiddenColumns));
   const [widths, setWidths] = useState<Record<string, number>>(persisted.widths);
-  const [currentPageSize, setCurrentPageSize] = useState(persisted.pageSize);
+  const [currentPageSize, setCurrentPageSize] = useState(()=>
+    pageSizeOptions?.length&& !pageSizeOptions.includes(persisted.pageSize)?pageSize:persisted.pageSize);
   const [pageIndex, setPageIndex] = useState(0);
   const [searchInput, setSearchInput] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -1205,9 +1207,9 @@ export function DataGrid<T extends Record<string, unknown>>({
     URL.revokeObjectURL(url);
   };
 
-  const pageSizes = [...new Set([pageSize, 12, 25, 50, 100, 250, 600])]
-    .filter((size) => size > 0)
-    .sort((a, b) => a - b);
+  const pageSizes = [...new Set(pageSizeOptions?.length?[pageSize,...pageSizeOptions]:[pageSize,12,25,50,100,250,600])]
+    .filter((size) => Number.isInteger(size) && size > 0)
+    .sort((a,b)=>a-b);
 
   const mobileSortValue = sort.length === 1 ? `${sort[0].key}:${sort[0].direction}` : '';
 
