@@ -3,7 +3,7 @@
 Status: **DRAFT / NÃO PUBLICAR**. PR #663, base `main`. PR visual #656 continua independente.
 
 ## O que esta PR pode alterar
-Somente: `apps/api/src/modules/finance/service.ts` (adições de leitura), `routes.ts` (GETs autorizados e flags aditivas), `history-filter.ts` (validação e seleção); testes, workflow e este documento. Não altera as rotas de escrita, imports, transferências, pagamentos, políticas monetárias, Prisma schema, Android, Home ou UI de Lançamentos.
+Somente: `apps/api/src/modules/finance/service.ts` (adições de leitura), `routes.ts` (GETs autorizados, flags aditivas e token de revisão), `history-filter.ts` (validação, seleção e compatibilidade dos rótulos históricos), `history-revision.ts` (consulta SQL `SELECT` do fingerprint de eventos ativos/importação). Alterações de teste em `workspace-sharing.contract.test.ts`, scripts de contrato/integração e workflow. Não altera rotas de escrita, importadores, transferências, pagamentos, políticas monetárias, Prisma schema, Android, Home ou UI de Lançamentos.
 
 ## Risco crítico, confirmado na configuração REAL do Render
 Serviço `meg-platform-api`, branch `main`, workspace `My Workspace`, id `srv-d98k61daeets7384hvb0`, comando vigente:
@@ -37,3 +37,11 @@ Esse resultado apenas valida padrões perigosos conhecidos; não comprova que o 
 Projeto financeiro correto: Supabase `meg-financas`. 6.576 eventos no total, 3.731 ativos e 2.845 arquivados. 3.626 ativos sem `categoryId` usam `sourcePayload.category`; 3.512 sem `paymentMethodId` usam `sourcePayload.paymentMethod`. Nenhum evento ativo sem `accountId` ou `userId`; índices de leitura foram observados. Nenhum valor ou registro individual foi extraído.
 
 Os testes com dados sintéticos **não provam** a disponibilidade nem o desempenho dos endpoints na API LIVE. Esta PR não deve ser considerada pronta para release enquanto a configuração perigosa do Render permanecer.
+
+
+## Evidência adicional de 10/11/2026 — custos e limites em CI efêmero
+- HEAD de teste `abf2feec97aa7def64d9c5b4148e9d8b3e1df8e0`. [API read-only #42863126002](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/42863126002) **SUCCESS**, incluindo contratos, regressão financeira, build e PostgreSQL sintético descartável.
+- Logs do job `postgres-ephemeral-snapshot`: assinatura de 3.731 eventos ativos em **54,74 ms** e 5.001 ativos em **75,75 ms**; snapshot 3.731 em **353 ms**, payload JSON de **5.189.007 bytes**. Dados sintéticos e execução única, **não** representam SLA do banco/Render em produção.
+- Novas asserções verificam revisões idênticas em duas leituras sem mutação, edição sem CloudMutationReceipt, importação, arquivamento e isolamento de outro titular. O limite 5.001 continua `limit-exceeded` sem KPI parcial.
+- O benchmark mede custo em ambiente isolado, não autoriza deploy. **Pendente** avaliar latência real de `/sync-status` e concorrência da carga; o fingerprint percorre os eventos ativos para detectar alterações mesmo sem recibo.
+- A configuração REAL do Render continua com `db:prepare:production` e `db:push:production`: **não publicar**, não alterar Build Command nem mesclar antes das autorizações separadas do usuário.
