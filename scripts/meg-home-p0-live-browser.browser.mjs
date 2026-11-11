@@ -225,8 +225,21 @@ try {
           'Lista de oito não deve ser apresentada como total da dívida');
         assert.ok(await attention.getByText('Obrigação fictícia p0-old').isVisible(),
           'Compromisso vencido deve ser visível antes do DataGrid');
-        assert.ok(await attention.getByText('Obrigação fictícia p0-today').isVisible(),
-          'Compromisso do dia deve ser visível antes do DataGrid');
+        const sourceRows=(await Promise.all(apiResponses.map(r=>r.json())))
+          .flatMap(payload=>Array.isArray(payload.items)?payload.items:[]);
+        const canonicalToday=sourceRows.find(item=>item.dueState==='due_today');
+        const canonicalOld=sourceRows.find(item=>item.dueState==='overdue');
+        assert.ok(canonicalToday&&canonicalOld,'QA exige estados vencido/hoje na resposta canônica');
+        assert.equal(
+          (await attention.locator('.pano-attention__item.is-due-today .pano-attention__description').innerText()).trim(),
+          canonicalToday.description,
+          'Destaque do dia precisa reproduzir a descrição da API, mesmo quando é pagamento parcial'
+        );
+        assert.equal(
+          (await attention.locator('.pano-attention__item.is-overdue .pano-attention__description').innerText()).trim(),
+          canonicalOld.description,
+          'Destaque vencido precisa reproduzir a descrição da API'
+        );
         const spot=await page.locator('.pano-spotlight').boundingBox();
         const alert=await attention.boundingBox();
         const actions=await page.locator('.pano-actions').boundingBox();
