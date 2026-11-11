@@ -70,9 +70,15 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    const spot=await page.locator('.pano-spotlight').boundingBox();
    const banner=await attention.boundingBox();
    const actions=await page.locator('.pano-actions').boundingBox();
-   assert.ok(spot&&banner&&actions&&
-    banner.y>=spot.y+spot.height-2&&banner.y+banner.height<=actions.y+2,
-    'Atenção deve aparecer em faixa discreta acima dos atalhos');
+   const financial=await page.locator('.pano-financial-column').boundingBox();
+   const cards=await page.locator('.pano-cards').boundingBox();
+   assert.ok(spot&&banner&&actions&&financial&&cards&&
+    banner.y>=spot.y-2&&banner.y+banner.height<=spot.y+spot.height+2&&
+    actions.y>=spot.y+spot.height-2,
+    'Atenção deve integrar o painel superior, acima dos atalhos');
+   if(width<1024)assert.ok(
+    banner.y>=financial.y+financial.height-2&&banner.y+banner.height<=cards.y+2,
+    'No mobile a faixa de atenção deve vir antes dos cartões');
    await attention.screenshot({
     path:'artifacts/meg-home-navigation-qa/'+home+'-'+width+'-atencao.png',
     animations:'disabled'
