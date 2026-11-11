@@ -82,10 +82,22 @@ try{
  const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
  assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
  assert.ok(await table.getByText('Vence hoje',{exact:true}).count()>0,'Vence hoje deve aparecer ao lado da data');
+ const attention=success.page.locator('.pano-attention');
+ await attention.waitFor({timeout:20000});
+ assert.equal(await attention.locator('.pano-attention__item').count(),2,
+  'Atenção deve destacar um vencido e um vencendo hoje da leitura canônica, sem contagem global');
+ assert.ok(await attention.getByText('Destaques da consulta inicial').isVisible(),
+  'Amostra parcial não pode ser apresentada como total');
+ assert.ok(await attention.getByText('Compromisso antigo fictício').isVisible(),
+  'Destaque vencido deve apresentar descrição real da API');
+ assert.ok(await attention.getByText('Compromisso hoje fictício').isVisible(),
+  'Destaque de hoje deve apresentar descrição real da API');
+ assert.equal((await attention.innerText()).includes('Total de vencidos'),false,
+  'Não inventar total financeiro com oito itens');
  assert.equal(success.visited.some(path=>path.startsWith('/payables/open')),false,'Não chamar payables/open redundante');
  assert.equal(success.visited.filter(path=>path.includes('/finance/events/month')).length,1,'Somente mês atual para movimentações');
  assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
- await success.page.getByRole('button',{name:'Ver todos os compromissos'}).click();
+ await attention.getByRole('button',{name:/Vencido: Compromisso antigo fictício/}).click();
  const dialog=success.page.getByRole('dialog',{name:'Todos os compromissos'});
  await dialog.getByText('3 compromissos carregados. Consulta concluída.',{exact:false}).waitFor({timeout:20000});
  const detailTable=dialog.getByRole('table',{name:'Todos os compromissos carregados'});
