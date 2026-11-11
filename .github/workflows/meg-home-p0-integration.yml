@@ -61,11 +61,11 @@ jobs:
               *) echo "FORA DO ESCOPO: $path" >&2; exit 1;;
             esac
           done < /tmp/meg-home-p0-integration-files.txt
-      - name: Artefato visual para homologacao
+      - name: Evidencias visuais leves, sem empacotar assets do site
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: meg-home-p0-preview
-          path: apps/web/dist-fluxo-integrado-08/
+          name: meg-home-p0-qa
+          path: artifacts/meg-home-refino-06/
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7
