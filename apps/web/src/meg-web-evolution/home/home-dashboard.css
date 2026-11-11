@@ -333,6 +333,18 @@
   color:#ffda83;flex:0 0 auto;
 }
 
+/* Ordenação estrutural: mobile/tablet exibem atenção antes dos cartões.
+   Desktop conserva saldo e cartões lado a lado, com o alerta abaixo.
+   Só altera a Home quando há itens canônicos para destacar. */
+.pano-spotlight.has-attention>.pano-financial-column{order:0}
+.pano-spotlight.has-attention>.pano-cards{order:1}
+.pano-spotlight.has-attention>.pano-attention{
+ order:2;grid-column:1/-1;margin-top:0;
+}
+@media(max-width:1023px){
+ .pano-spotlight.has-attention>.pano-attention{order:1}
+ .pano-spotlight.has-attention>.pano-cards{order:2}
+}
 /* Revisão pós-vídeo 3: atenção canônica sem cartão KPI adicional.
    Somente dois DESTAQUES do resumo consultado: não são totais financeiros.
    O botão abre o mesmo modal paginado autorizado; jamais recalcula vencimento. */
