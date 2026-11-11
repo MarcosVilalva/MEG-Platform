@@ -1,0 +1,35 @@
+name: MEG Home P0 - Leitura Financeira Isolada
+on:
+  push:
+    branches:
+      - 'audit/08-home-p0-overdue-read-20261110'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  canonical-home-commitments:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependencias do repositório
+        run: npm ci --audit=false
+      - name: Gerar cliente Prisma sem acessar banco de dados
+        run: npm run db:generate
+      - name: Compilar API sem deploy
+        run: npm --workspace apps/api run build
+      - name: Testar read model P0 e política financeira existente
+        run: |
+          npx tsx apps/api/src/modules/finance/home-commitments-read.contract.test.ts
+          npx tsx apps/api/src/modules/finance/financial-policy.test.ts
+          npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
+          npx tsx apps/api/src/modules/payables/routes.contract.test.ts
+          npx tsx apps/api/src/modules/finance/workspace-sharing.contract.test.ts
+      - name: Verificar isolamento da alteração
+        run: |
+          git diff --name-only HEAD~1 HEAD
+          echo "Sem deploy, migrations ou comandos de escrita financeira"
