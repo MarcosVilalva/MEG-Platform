@@ -76,7 +76,7 @@ try{
  // não representa a experiência mobile no primeiro acesso.
  const mobile=await create(false,{width:375,height:812});
  await mobile.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
- await mobile.page.getByText('Compromisso antigo fictício').first().waitFor({timeout:20000});
+ await mobile.page.getByText('Compromisso antigo fictício').filter({visible:true}).first().waitFor({timeout:20000});
  await mobile.page.locator('.pano-grid').last().screenshot({
   path:'artifacts/meg-home-p0-qa/compromissos-mobile-375.png',
  });
