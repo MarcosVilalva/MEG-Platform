@@ -31,6 +31,8 @@ jobs:
           npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
           npx tsx apps/api/src/modules/payables/routes.contract.test.ts
           npx tsx apps/api/src/modules/finance/workspace-sharing.contract.test.ts
+      - name: Regressão financeira completa da API
+        run: npm --workspace apps/api run test:finance
       - name: Gate de isolamento (base Home aprovada)
         run: |
           set -euo pipefail
