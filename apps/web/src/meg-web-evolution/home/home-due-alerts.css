@@ -1,0 +1,120 @@
+/* Etapa 08: alerta financeiro não intrusivo, derivado exclusivamente da leitura canônica.
+   Cores e geometria da Home oficial, sem estilos legados nem recálculos financeiros. */
+.meg-due-alert-dialog,
+.meg-due-bell-panel,
+.meg-due-reminder{font-family:Inter,system-ui,sans-serif;box-sizing:border-box}
+.meg-due-alert-dialog *,
+.meg-due-bell-panel *,
+.meg-due-reminder *{box-sizing:border-box}
+.meg-due-alert-dialog{
+ width:min(35.5rem,calc(100vw - 1.5rem));max-height:calc(100dvh - 1.5rem);
+ overflow:auto;margin:auto;padding:1.3rem 1.45rem 1.4rem;
+ border:1px solid #56b3a6;border-radius:1.1rem;
+ color:#eaf9f6;background:
+ radial-gradient(ellipse at 12% -20%,rgba(245,98,116,.18),transparent 62%),
+ linear-gradient(148deg,#092f38,#031e27 78%);
+ box-shadow:0 2rem 5rem #000d17e0,inset 0 1px #c6fff21c;
+}
+.meg-due-alert-dialog::backdrop{
+ background:rgba(1,9,15,.85);backdrop-filter:blur(7px)
+}
+.meg-due-alert-dialog__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.meg-due-alert-dialog__emblem{
+ display:grid;place-items:center;width:3.5rem;height:3.5rem;border-radius:1rem;
+ color:#ffb7be;background:#6f293748;border:1px solid #e36a76;
+ box-shadow:0 0 0 .4rem #fd657511
+}
+.meg-due-alert-dialog__close,
+.meg-due-bell-panel header button{
+ display:grid;place-items:center;min-width:2.75rem;min-height:2.75rem;
+ background:#15353c;color:#d4f7ef;border:1px solid #416b70;
+ border-radius:.55rem;font-size:1.5rem;cursor:pointer
+}
+.meg-due-alert-dialog__eyebrow{display:block;margin-top:1.2rem;font-size:.7rem;font-weight:850;letter-spacing:.14em;color:#ffc3c7}
+.meg-due-alert-dialog h2{
+ margin:.36rem 0 .45rem;font:850 clamp(1.38rem,3.8vw,1.85rem)/1.15 Manrope,Inter,sans-serif;
+ letter-spacing:-.04em;color:#f6fffc
+}
+.meg-due-alert-dialog__intro{margin:0 0 1rem;color:#bcd8d5;font-size:.88rem;line-height:1.6}
+.meg-due-alert-dialog__list,
+.meg-due-bell-panel ul{
+ display:grid;gap:.48rem;list-style:none;margin:0;padding:0
+}
+.meg-due-alert-item{
+ display:flex;align-items:center;gap:.65rem;min-width:0;
+ padding:.75rem .8rem;border:1px solid #cf6c7e88;border-radius:.65rem;
+ background:linear-gradient(90deg,#572b3a77,#132e3c8a);
+}
+.meg-due-alert-item.is-due-today{
+ border-color:#cea34caa;background:linear-gradient(90deg,#4a3e2777,#122e378a)
+}
+.meg-due-alert-item__state{
+ flex:0 0 auto;border-radius:.35rem;padding:.28rem .42rem;
+ color:#ffe5e7;background:#853f4d;font-weight:820;font-size:.7rem;
+ white-space:nowrap
+}
+.is-due-today .meg-due-alert-item__state{color:#fff0ca;background:#775b22}
+.meg-due-alert-item__detail{display:flex;flex:1 1 auto;flex-direction:column;gap:.22rem;min-width:0}
+.meg-due-alert-item__detail strong{
+ font-size:.82rem;line-height:1.34;overflow-wrap:anywhere;font-weight:750;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+}
+.meg-due-alert-item__detail small{font-size:.73rem;color:#a9c9c7}
+.meg-due-alert-item__amount{flex:0 0 auto;white-space:nowrap;font-size:.87rem;font-variant-numeric:tabular-nums}
+.meg-due-alert-dialog__note{
+ font-size:.74rem;line-height:1.5;color:#acc9c7;margin:.85rem 0 1rem
+}
+.meg-due-alert-dialog__actions{display:flex;gap:.55rem;flex-wrap:wrap}
+.meg-due-alert-dialog__actions button,.meg-due-bell-panel__all{
+ display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
+ min-height:2.8rem;padding:.58rem .85rem;border-radius:.55rem;
+ font-size:.84rem;font-weight:790;cursor:pointer
+}
+.meg-due-alert-dialog__primary,.meg-due-bell-panel__all{
+ background:#19b6a4;color:#032e32;border:1px solid #70e8d8
+}
+.meg-due-alert-dialog__secondary{
+ background:#113a40;color:#d0f1eb;border:1px solid #4a8483
+}
+.meg-due-alert-dialog button:focus-visible,
+.meg-due-bell-panel button:focus-visible{
+ outline:2px solid #c7ffef;outline-offset:3px
+}
+.meg-due-bell-button{position:relative}
+.meg-due-bell-layer{position:fixed;inset:0;z-index:1550;pointer-events:none}
+.meg-due-bell-backdrop{position:absolute;inset:0;background:transparent;border:0;pointer-events:auto}
+.meg-due-bell-panel{
+ position:absolute;right:clamp(.65rem,3vw,2.5rem);top:4.1rem;
+ width:min(24rem,calc(100vw - 1.3rem));max-height:calc(100dvh - 5rem);
+ overflow:auto;pointer-events:auto;
+ padding:.9rem;border:1px solid #498f88;border-radius:.85rem;
+ color:#edfdf7;background:#05262e;box-shadow:0 1rem 3rem #000a12d9
+}
+.meg-due-bell-panel header{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.meg-due-bell-panel header strong{font-size:.92rem}
+.meg-due-bell-panel header button{font-size:1.2rem;min-width:2.4rem;min-height:2.4rem}
+.meg-due-bell-panel p{font-size:.77rem;color:#b8d8d2;line-height:1.5}
+.meg-due-bell-panel .meg-due-alert-item{flex-wrap:wrap;padding:.65rem}
+.meg-due-bell-panel .meg-due-alert-item__detail{flex:1 1 8rem}
+.meg-due-bell-panel .meg-due-alert-item__amount{font-size:.77rem}
+.meg-due-bell-panel__all{width:100%;margin-top:.7rem}
+.meg-due-reminder{
+ position:fixed;z-index:1620;right:.9rem;bottom:.9rem;
+ display:flex;align-items:flex-start;gap:.7rem;
+ width:min(22rem,calc(100vw - 1.8rem));padding:.78rem;
+ border-radius:.75rem;background:#07363c;border:1px solid #e1a36b;
+ box-shadow:0 1rem 2.8rem #001019cc;color:#f2fef9
+}
+.meg-due-reminder>svg{color:#f6c375;flex-shrink:0}
+.meg-due-reminder div{flex:1;min-width:0}
+.meg-due-reminder strong{font-size:.83rem}
+.meg-due-reminder p{margin:.22rem 0 0;font-size:.76rem;line-height:1.45;color:#b9d6d2}
+.meg-due-reminder button{border:0;background:none;color:#effff9;font-size:1.4rem;cursor:pointer}
+@media(max-width:639px){
+ .meg-due-alert-dialog{width:calc(100vw - .55rem);max-height:calc(100dvh - .65rem);padding:.9rem}
+ .meg-due-alert-item{flex-wrap:wrap;gap:.42rem}
+ .meg-due-alert-item__state{min-width:4.3rem;text-align:center}
+ .meg-due-alert-item__amount{margin-left:auto}
+ .meg-due-alert-dialog__actions button{width:100%}
+ .meg-due-bell-panel{top:3.7rem;right:.4rem}
+}
