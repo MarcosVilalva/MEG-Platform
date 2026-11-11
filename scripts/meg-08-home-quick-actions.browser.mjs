@@ -60,6 +60,16 @@ async function checkWindow(page,width,editing=false){
    return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}};
   return {spotlight:b('.pano-spotlight'),quick:b('.pano-quick'),finance:b('.pano-finance-block'),
    flow:b('.pano-flow'),benefits:b('.pano-benefits'),
+   css:{viewport:window.innerWidth,
+    parentDisplay:getComputedStyle(document.querySelector('.pano-finance-block')).display,
+    parentColumns:getComputedStyle(document.querySelector('.pano-finance-block')).gridTemplateColumns,
+    parentRows:getComputedStyle(document.querySelector('.pano-finance-block')).gridTemplateRows,
+    wrappers:[...document.querySelectorAll('.pano-finance-block>.pano-finance-column')].map(el=>({
+     display:getComputedStyle(el).display,
+     gridColumn:getComputedStyle(el).gridColumn,
+     width:el.getBoundingClientRect().width})),
+    flowGridColumn:getComputedStyle(document.querySelector('.pano-flow')).gridColumn,
+    benefitGridColumn:getComputedStyle(document.querySelector('.pano-benefits')).gridColumn},
    movements:b('.is-primary>.pano-grid'),due:b('.pano-grid--commitments'),
    cardName:b('.pano-card-summary-copy strong'),issuer:b('.pano-card-summary-copy>span')};
  });
