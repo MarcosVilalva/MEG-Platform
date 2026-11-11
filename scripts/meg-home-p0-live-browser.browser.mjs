@@ -241,6 +241,7 @@ try {
       const fullList = page.getByRole('dialog', {name: 'Todos os compromissos'});
       await fullList.waitFor({timeout: 20000});
       const detailedTable=fullList.getByRole('table',{name:'Todos os compromissos carregados',includeHidden:true});
+      await detailedTable.locator('thead th').first().waitFor({timeout:20000,state:'attached'});
       assert.equal(await detailedTable.locator('thead th').count(),5,
         'Consulta completa deve manter Vencimento, Descrição, Origem, Valor e Situação');
       const countText = fullList.locator('.pano-commitments-dialog__summary');
