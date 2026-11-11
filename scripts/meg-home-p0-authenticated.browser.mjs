@@ -82,22 +82,30 @@ try{
  const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
  assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
  assert.ok(await table.getByText('Vence hoje',{exact:true}).count()>0,'Vence hoje deve aparecer ao lado da data');
- const attention=success.page.locator('.pano-attention');
- await attention.waitFor({timeout:20000});
- assert.equal(await attention.locator('.pano-attention__item').count(),2,
-  'Atenção deve destacar um vencido e um vencendo hoje da leitura canônica, sem contagem global');
- assert.ok(await attention.getByText('Destaques da consulta inicial').isVisible(),
-  'Amostra parcial não pode ser apresentada como total');
- assert.ok(await attention.getByText('Compromisso antigo fictício').isVisible(),
-  'Destaque vencido deve apresentar descrição real da API');
- assert.ok(await attention.getByText('Pagamento parcial fictício').isVisible(),
-  'Destaque de hoje deve apresentar descrição real da API');
- assert.equal((await attention.innerText()).includes('Total de vencidos'),false,
-  'Não inventar total financeiro com oito itens');
+ const entry=success.page.getByRole('dialog',{name:'Atenção aos seus vencimentos'});
+ await entry.waitFor({timeout:20000});
+ assert.ok(await entry.getByText('Compromisso antigo fictício').isVisible(),
+  'Modal precisa mostrar o vencido vindo da API');
+ assert.ok(await entry.getByText('Pagamento parcial fictício').isVisible(),
+  'Modal precisa mostrar vencimento de hoje da API');
+ assert.ok((await entry.innerText()).includes('Outros compromissos podem existir'),
+  'A amostra não pode se apresentar como total');
+ assert.equal(await success.page.locator('.pano-attention').count(),0,
+  'Faixa fixa rejeitada não pode continuar na Home');
+ await entry.screenshot({path:'artifacts/meg-home-p0-qa/alerta-desktop-1366.png',animations:'disabled'});
+ await entry.getByRole('button',{name:'Entendi'}).click();
+ const bell=success.page.getByRole('button',{name:'Notificações'});
+ assert.ok(await bell.isVisible(),'O sino precisa permanecer acessível depois do modal');
+ assert.equal(await bell.locator('.meg-notification-dot').count(),1,
+  'Sino mostra indicador apenas para alertas presentes na leitura');
+ await bell.click();
+ const notifications=success.page.getByRole('region',{name:'Notificações financeiras'});
+ await notifications.waitFor({timeout:20000});
+ assert.ok(await notifications.getByText('Compromisso antigo fictício').isVisible());
  assert.equal(success.visited.some(path=>path.startsWith('/payables/open')),false,'Não chamar payables/open redundante');
  assert.equal(success.visited.filter(path=>path.includes('/finance/events/month')).length,1,'Somente mês atual para movimentações');
  assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
- await attention.getByRole('button',{name:/Vencido: Compromisso antigo fictício/}).click();
+ await notifications.getByRole('button',{name:'Ver todos os compromissos'}).click();
  const dialog=success.page.getByRole('dialog',{name:'Todos os compromissos'});
  await dialog.getByText('3 compromissos carregados. Consulta concluída.',{exact:false}).waitFor({timeout:20000});
  const detailTable=dialog.getByRole('table',{name:'Todos os compromissos carregados'});
@@ -122,6 +130,10 @@ try{
  // não representa a experiência mobile no primeiro acesso.
  const mobile=await create(false,{width:375,height:812});
  await mobile.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
+ const mobileEntry=mobile.page.getByRole('dialog',{name:'Atenção aos seus vencimentos'});
+ await mobileEntry.waitFor({timeout:20000});
+ await mobileEntry.screenshot({path:'artifacts/meg-home-p0-qa/alerta-mobile-375.png',animations:'disabled'});
+ await mobileEntry.getByRole('button',{name:'Entendi'}).click();
  await mobile.page.getByText('Compromisso antigo fictício').filter({visible:true}).first().waitFor({timeout:20000});
  await mobile.page.locator('.pano-grid').last().screenshot({
   path:'artifacts/meg-home-p0-qa/compromissos-mobile-375.png',
