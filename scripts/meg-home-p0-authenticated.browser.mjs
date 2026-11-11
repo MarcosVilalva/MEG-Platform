@@ -57,10 +57,16 @@ try{
  assert.equal(success.count,2,'Uma página filtrada vazia não significa ausência de compromissos');
  await table.getByText('Pagamento parcial fictício').first().waitFor();
  await table.getByText('Compromisso futuro fictício').first().waitFor();
- assert.ok(await table.locator('[aria-label*="Vencido"]').count()>0,'Vencido aparece na acessibilidade sem recomputar data');
+ const overdueDate=table.locator('.pano-due-date__urgency.is-overdue').first();
+ await overdueDate.waitFor({timeout:20000});
+ assert.ok(await overdueDate.isVisible(),'Vencido precisa aparecer visível na coluna Vencimento');
+ assert.equal((await overdueDate.textContent())?.trim(),'Vencido','A urgência vencida deve ter texto, não apenas cor');
+ assert.ok(await table.locator('.pano-due-date__urgency.is-upcoming').count()>0,
+  'A vencer deve ser mostrado textualmente ao receber upcoming da API');
  assert.ok(await table.getByText('Parcial').count()>0,'Status parcial preservado');
  const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
  assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
+ assert.ok(await table.getByText('Vence hoje',{exact:true}).count()>0,'Vence hoje deve aparecer ao lado da data');
  assert.equal(success.visited.some(path=>path.startsWith('/payables/open')),false,'Não chamar payables/open redundante');
  assert.equal(success.visited.filter(path=>path.includes('/finance/events/month')).length,1,'Somente mês atual para movimentações');
  assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
