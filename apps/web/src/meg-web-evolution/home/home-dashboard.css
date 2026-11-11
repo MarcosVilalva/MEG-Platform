@@ -365,6 +365,18 @@
 .pano-finance-block .pano-grid--commitments .meg-datagrid-table th{
  font-size:.79rem;line-height:1.3;
 }
+/* O resumo de 3 colunas é distinto da listagem integral de 5 colunas.
+   O valor e o vencimento precisam caber na primeira visualização da Home. */
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table{
+ width:100%;table-layout:fixed;
+}
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table td:last-child strong{
+ display:inline-block;max-width:100%;white-space:nowrap;
+ font-size:.82rem;font-variant-numeric:tabular-nums;
+}
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table td:nth-child(2) .pano-cell-text{
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 .pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row){
  height:3rem;max-height:3rem;
 }
