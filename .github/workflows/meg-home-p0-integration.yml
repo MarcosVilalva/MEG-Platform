@@ -64,7 +64,7 @@ jobs:
         run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
       - name: Instalar Playwright para regressão visual
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
-      - name: Regressões visuais da Home aprovada
+      - name: Regressões visuais base da Home
         env:
           PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
         run: |
@@ -76,8 +76,19 @@ jobs:
             sleep 1
           done
           node scripts/meg-06-home-refino.browser.mjs
-          node scripts/meg-08-home-quick-actions.browser.mjs
           node scripts/meg-home-p0-authenticated.browser.mjs
+      - name: Ações rápidas minimalistas - visual QA em oito larguras
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4173 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-quick-visual.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-08-home-quick-actions.browser.mjs
       - name: Home P0 no navegador com API e PostgreSQL reais de QA
         env:
           NODE_ENV: test
