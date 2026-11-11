@@ -74,14 +74,16 @@ try{
  const overdueDate=table.locator('.pano-due-date__urgency.is-overdue').first();
  await overdueDate.waitFor({timeout:20000});
  assert.ok(await overdueDate.isVisible(),'Vencido precisa aparecer visível na coluna Vencimento');
- assert.equal((await overdueDate.textContent())?.trim(),'Vencido','A urgência vencida deve ter texto, não apenas cor');
+ assert.equal(await overdueDate.getAttribute('aria-label'),'Vencido','Sirene precisa de nome acessível');
+ assert.equal(await overdueDate.locator('svg').count(),1,'Símbolo de urgência precisa ser SVG');
  assert.ok(await table.locator('.pano-due-date__urgency.is-upcoming').count()>0,
-  'A vencer deve ser mostrado textualmente ao receber upcoming da API');
+  'A vencer deve manter indicador positivo acessível vindo da API');
  assert.equal(await table.getByText('Parcial',{exact:true}).count(),0,
   'Situação não deve competir com o valor no resumo compacto');
  const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
  assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
- assert.ok(await table.getByText('Vence hoje',{exact:true}).count()>0,'Vence hoje deve aparecer ao lado da data');
+ assert.ok(await table.locator('.pano-due-date__urgency[aria-label="Vence hoje"] svg').count()>0,
+  'Vencimento de hoje deve ter indicador SVG acessível junto à data');
  const entry=success.page.getByRole('dialog',{name:'Atenção aos seus vencimentos'});
  await entry.waitFor({timeout:20000});
  assert.ok(await entry.getByText('Compromisso antigo fictício').isVisible(),

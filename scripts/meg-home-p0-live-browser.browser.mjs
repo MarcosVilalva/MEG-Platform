@@ -234,7 +234,7 @@ try {
           'Home A não pode mostrar dados da B');
         const badges = dueGrid.locator('.pano-due-date__urgency').filter({ visible: true });
         assert.ok(await badges.count() >= 6,
-          'Vencido/hoje/futuro devem aparecer por texto junto à data');
+          'Vencido/hoje/futuro devem aparecer por SVG acessível junto à data');
         const sourceRows=(await Promise.all(apiResponses.map(r=>r.json())))
           .flatMap(payload=>Array.isArray(payload.items)?payload.items:[]);
         const canonicalToday=sourceRows.find(item=>item.dueState==='due_today');
@@ -243,8 +243,8 @@ try {
         assert.equal(await page.locator('.pano-attention').count(),0,
           'A faixa visual rejeitada deve ser removida');
         for (const urgency of ['Vencido', 'Vence hoje', 'A vencer']) {
-          const badge = dueGrid.locator('.pano-due-date__urgency').getByText(urgency, {exact:true}).filter({visible:true}).first();
-          assert.ok(await badge.count() > 0, 'Estado canônico visível na coluna Vencimento: ' + urgency);
+          const badge = dueGrid.locator('.pano-due-date__urgency[aria-label="'+urgency+'"]').filter({visible:true}).first();
+          assert.ok(await badge.count()>0&&await badge.locator('svg').count()===1, 'Ícone semântico acessível: '+urgency);
         }
         const overdue = dueGrid.locator('.pano-due-date__urgency.is-overdue').filter({ visible: true }).first();
         const bounds = await overdue.boundingBox();
