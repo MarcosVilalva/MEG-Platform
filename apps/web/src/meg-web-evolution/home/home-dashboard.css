@@ -255,6 +255,46 @@
 .pano-grid .meg-datagrid-pagination button svg{stroke-width:2.35}
 @media(prefers-reduced-motion:reduce){.pano-card-control,.pano-grid .meg-datagrid-sort-button,.pano-grid .meg-datagrid-filter-button,.pano-grid .meg-datagrid-pagination button{transition:none!important}}
 
+/* Ações contextuais SVG com tooltip, foco e alvos de toque adequados. */
+.pano-root .pano-icon-action{
+ position:relative;display:inline-grid;place-items:center;
+ flex:0 0 2.75rem;width:2.75rem;height:2.75rem;min-height:2.75rem;
+ padding:0;border-radius:.85rem;
+ transition:border-color .16s,background .16s,box-shadow .16s,transform .16s
+}
+.pano-root .pano-icon-action svg{width:1.2rem;height:1.2rem;stroke-width:2.1}
+.pano-root .pano-icon-action:hover:not(:disabled),
+.pano-root .pano-icon-action[aria-expanded="true"]{
+ background:#0d6469;border-color:#79fbe2;box-shadow:0 0 16px rgba(28,228,197,.21);
+ transform:translateY(-1px)
+}
+.pano-root .pano-icon-action:active:not(:disabled){transform:translateY(0)}
+.pano-root .pano-icon-action:focus-visible{outline:2px solid #9dffeb;outline-offset:2px}
+.pano-root .pano-icon-action[data-tooltip]::after{
+ content:attr(data-tooltip);position:absolute;z-index:40;
+ right:0;bottom:calc(100% + 9px);pointer-events:none;
+ min-width:max-content;max-width:min(12rem,calc(100vw - 2rem));
+ padding:.4rem .6rem;border:1px solid rgba(119,244,225,.54);border-radius:.6rem;
+ background:#052c35;color:#e9fff9;font-size:.73rem;font-weight:750;
+ line-height:1.35;white-space:normal;text-align:center;
+ box-shadow:0 10px 24px rgba(0,0,0,.37);
+ opacity:0;visibility:hidden;transform:translateY(4px);
+ transition:opacity .16s,transform .16s,visibility .16s
+}
+.pano-root .pano-icon-action[data-tooltip]:is(:hover,:focus-visible)::after{
+ opacity:1;visibility:visible;transform:translateY(0)
+}
+.pano-icon-action__count{
+ position:absolute;top:-.3rem;right:-.25rem;
+ display:grid;place-items:center;min-width:1.05rem;height:1.05rem;
+ padding:0 .15rem;border-radius:50%;font-size:.58rem;font-weight:900;
+ color:#042f33;background:#7cffdf;border:1px solid #d8fff5
+}
+@media(prefers-reduced-motion:reduce){
+ .pano-root .pano-icon-action,.pano-root .pano-icon-action::after{transition:none!important}
+ .pano-root .pano-icon-action:hover:not(:disabled){transform:none}
+}
+
 /* Home 08: densidade pareada dos DataGrids, sem modificar a biblioteca compartilhada.
    Com três vencimentos, não esticar linhas até preencher artificialmente a coluna. */
 .pano-finance-block .pano-grid{
