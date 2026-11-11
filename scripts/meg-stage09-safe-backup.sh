@@ -59,6 +59,9 @@ fi
 export PGOPTIONS='-c default_transaction_read_only=on'
 source_db="$(psql -X -w -v ON_ERROR_STOP=1 -Atc 'SELECT current_database()' 2>/dev/null)" || fail 'Falha na conexao PostgreSQL com TLS verify-full. Conferir certificado, quota e credenciais.'
 [[ "$source_db" == 'postgres' ]] || fail 'O servidor respondeu com um database inesperado.'
+server_version="$(psql -X -w -v ON_ERROR_STOP=1 -Atc "SELECT current_setting('server_version_num')" 2>/dev/null)" || fail 'Nao foi possivel confirmar versao do servidor.'
+[[ "$server_version" =~ ^17[0-9]{4,}$ ]] || fail 'Servidor de origem deve ser PostgreSQL 17.'
+
 public_tables="$(psql -X -w -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON c.relnamespace=n.oid WHERE n.nspname='public' AND c.relkind IN ('r','p')" 2>/dev/null)" || fail 'Falha ao auditar quantidade de tabelas.'
 [[ "$public_tables" =~ ^[0-9]+$ && "$public_tables" -gt 0 ]] || fail 'Nenhuma tabela public encontrada. Backup nao confiavel.'
 
