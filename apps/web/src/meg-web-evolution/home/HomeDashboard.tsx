@@ -196,7 +196,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
   {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
-   render:(v,row)=>{const label=String(v??'—');const urgency=String(row.dueState??'');
+   render:v=>{const label=String(v??'—');
     return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}
       title={label} aria-label={label}>{label}</span>}}
  ];
