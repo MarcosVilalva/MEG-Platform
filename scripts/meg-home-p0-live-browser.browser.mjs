@@ -226,7 +226,7 @@ try {
       const countText = fullList.locator('.pano-commitments-dialog__summary');
       const loadedCount = async () => {
         const content = await countText.innerText();
-        const match = content.match(/(\\d+) compromissos? carregados?/);
+        const match = content.match(/(\d+) compromissos? carregados?/);
         assert.ok(match, 'Modal precisa informar quantos itens foram realmente carregados: ' + content);
         return Number(match[1]);
       };
@@ -239,7 +239,7 @@ try {
         await fullList.getByRole('button', {name:'Carregar próximos compromissos'}).click();
         await page.waitForFunction((n) => {
           const text = document.querySelector('.pano-commitments-dialog__summary')?.textContent||'';
-          const match = text.match(/(\\d+) compromissos? carregados?/);
+          const match = text.match(/(\d+) compromissos? carregados?/);
           return match && Number(match[1]) > n;
         },firstLoaded,{timeout:20000});
         assert.ok((await loadedCount())>firstLoaded,'Paginação real deve carregar além da primeira página');
