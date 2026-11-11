@@ -5,7 +5,7 @@ umask 077
 
 fail() { printf 'ERRO: %s\n' "$*" >&2; exit 1; }
 require() { command -v "$1" >/dev/null 2>&1 || fail "Comando nao encontrado: $1"; }
-for tool in pg_dump pg_restore psql age sha256sum mktemp date grep awk wc tr; do require "$tool"; done
+for tool in pg_dump pg_restore psql age sha256sum mktemp date grep awk wc tr stat; do require "$tool"; done
 
 readonly project_ref='ugbiqzaqnrhulhetevby'
 : "${PGHOST:?Informe PGHOST (painel Supabase > Connect)}"
@@ -17,8 +17,18 @@ readonly project_ref='ugbiqzaqnrhulhetevby'
 [[ "$MEG_AGE_RECIPIENT" == age1* ]] || fail 'MEG_AGE_RECIPIENT nao parece uma chave publica age.'
 [[ -r "$MEG_AGE_IDENTITY" ]] || fail 'Chave privada age indisponivel.'
 
-export PGSSLMODE="${PGSSLMODE:-require}"
-[[ "$PGSSLMODE" == 'require' || "$PGSSLMODE" == 'verify-ca' || "$PGSSLMODE" == 'verify-full' ]] || fail 'TLS obrigatorio: PGSSLMODE deve ser require, verify-ca ou verify-full.'
+# "require" criptografa mas NAO autentica o servidor; impedir MITM.
+[[ -z "${PGSSLMODE:-}" || "$PGSSLMODE" == 'verify-full' ]] || fail 'TLS verify-full e obrigatorio. Remova PGSSLMODE inseguro.'
+: "${PGSSLROOTCERT:?Informe o caminho do certificado CA oficial baixado do Supabase Database Settings}"
+[[ "$PGSSLROOTCERT" == /* && -f "$PGSSLROOTCERT" && -s "$PGSSLROOTCERT" ]] || fail 'Certificado CA precisa ser arquivo absoluto, existente e nao vazio.'
+export PGSSLMODE='verify-full'
+export PGSSLROOTCERT
+# Nao permitir que parametros libpq em ambiente redirecionem o alvo.
+unset PGHOSTADDR PGSERVICE PGSERVICEFILE PGPASSFILE PGREQUIRESSL PGSSLCERT PGSSLKEY PGSSLCRL PGSSLCRLDIR
+for client in pg_dump pg_restore psql; do
+  version="$("$client" --version)"
+  [[ "$version" =~ ([0-9]+)\.([0-9]+) && "${BASH_REMATCH[1]}" == 17 ]] || fail "$client deve ser PostgreSQL major 17."
+done
 export PGPORT="${PGPORT:-5432}" PGDATABASE="${PGDATABASE:-postgres}"
 [[ "$PGPORT" == '5432' ]] || fail 'Porta inesperada; conferir Connect do Supabase.'
 [[ "$PGDATABASE" == 'postgres' ]] || fail 'Banco inesperado; este procedimento e exclusivo de postgres.'
@@ -31,6 +41,12 @@ else
 fi
 
 backup_dir="$(mkdir -p -- "$MEG_BACKUP_DIR" && cd -- "$MEG_BACKUP_DIR" && pwd -P)"
+# Diretório já existente pode ser compartilhado mesmo com umask 077.
+[[ -O "$backup_dir" ]] || fail 'Diretorio de backup deve pertencer ao usuario corrente.'
+mode="$(stat -c '%a' -- "$backup_dir")"
+[[ "$mode" =~ ^[0-7]+$ ]] || fail 'Nao foi possivel verificar permissoes.'
+(( (8#$mode & 077) == 0 )) || fail 'Diretorio permite acesso de grupo/outros. Use pasta privada no filesystem Linux WSL.'
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)"
 if [[ -n "$repo_root" ]]; then
@@ -41,7 +57,7 @@ fi
 # A conexao do psql e do pg_dump usa as mesmas variaveis PG*: senha fica
 # somente em ambiente do processo, nunca e impressa ou passada em argumentos.
 export PGOPTIONS='-c default_transaction_read_only=on'
-source_db="$(psql -X -w -v ON_ERROR_STOP=1 -Atc 'SELECT current_database()' 2>/dev/null)" || fail 'Falha na conexao PostgreSQL, conferir restricoes por Egress e credenciais.'
+source_db="$(psql -X -w -v ON_ERROR_STOP=1 -Atc 'SELECT current_database()' 2>/dev/null)" || fail 'Falha na conexao PostgreSQL com TLS verify-full. Conferir certificado, quota e credenciais.'
 [[ "$source_db" == 'postgres' ]] || fail 'O servidor respondeu com um database inesperado.'
 public_tables="$(psql -X -w -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON c.relnamespace=n.oid WHERE n.nspname='public' AND c.relkind IN ('r','p')" 2>/dev/null)" || fail 'Falha ao auditar quantidade de tabelas.'
 [[ "$public_tables" =~ ^[0-9]+$ && "$public_tables" -gt 0 ]] || fail 'Nenhuma tabela public encontrada. Backup nao confiavel.'
