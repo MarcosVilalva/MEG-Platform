@@ -84,6 +84,14 @@ unset PGPASSWORD
 - Verificar a existência do `.pgdump.age` em armazenamento externo **independente**. Não enviar o dump, chave privada nem URL de acesso ao chat ou ao GitHub.
 - Guardar uma cópia íntegra em segunda localização, com controle de acesso. O manifesto, sem segredos, pode ser anexado ao relatório técnico se necessário.
 
+### Atualizacao da verificacao de restore e preflight local (11/11/2026)
+
+- A copia do backup foi validada por hash apos download declarado pelo operador como feito via OneDrive Web: resultado `DOWNLOAD_CLOUD_CONFERIDO_POR_HASH` (20h01); origem remota nao e verificavel tecnicamente por script offline, devendo ser distinguida da evidencia criptografica.
+- Revisado `scripts/meg-stage09-safe-restore-drill.sh`: a etapa `age -d | pg_restore --list` agora consome o fluxo descriptografado ate EOF antes de autorizar qualquer restore. O consumidor de catalogo pode terminar antecipadamente, levando a SIGPIPE e falso negativo se `age` ainda estiver lendo dados. A correção nao grava SQL em disco, mantem `pipefail` e recusa archives truncados.
+- **Preflight sem qualquer mutacao**, a realizar no Windows PowerShell 5.1, gerado como `MEG-ETAPA09-PREFLIGHT-RESTAURACAO-LOCAL.ps1` (artefato da conversa, nao commitado): verifica checksum e manifesto do arquivo local, autentica exclusivamente via socket Unix/peer com `PGREQUIREPEER=postgres` e `env -i`, confere o servidor PostgreSQL 17 e `meg_restore_drill` vazio, e apenas detecta se o script corrigido esta instalado. Nao usa `pg_dump`, nao le dados financeiros, nao executa `pg_restore`, nao utiliza credenciais remotas.
+- Somente depois de preflight aprovado, validar o script local de restore contra blob Git `5946d03f4102068f84d9ebb011aaa199aa1e063b` e obter autorizacao separada para restaurar dados reais no banco local. Jamais executar restore com `PGHOST` remoto, nem reproduzir as senhas no chat.
+- O teste sintetico do script no GitHub Actions nao substitui ensaio de restore dos dados reais; os componentes Supabase gerenciados e chave raiz Vault continuam fora da homologacao.
+
 ## 4. Ensaio isolado de restauração do domínio financeiro
 
 Em **PostgreSQL 17 local no WSL**, confirme que o servidor atende ao socket `/var/run/postgresql/.s.PGSQL.5432` e pertence ao usuário Unix `postgres`. **Não** use `createdb -h localhost` ou túnel TCP para esta operação.
