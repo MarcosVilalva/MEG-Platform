@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -29,7 +31,21 @@ jobs:
           npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
           npx tsx apps/api/src/modules/payables/routes.contract.test.ts
           npx tsx apps/api/src/modules/finance/workspace-sharing.contract.test.ts
-      - name: Verificar isolamento da alteração
+      - name: Gate de isolamento (base Home aprovada)
         run: |
-          git diff --name-only HEAD~1 HEAD
-          echo "Sem deploy, migrations ou comandos de escrita financeira"
+          set -euo pipefail
+          BASE=7298b59f40cf91df9d5744607fd01f3bcef97ca0
+          git cat-file -e "$BASE^{commit}"
+          git diff --name-only "$BASE" HEAD > /tmp/meg-p0-files.txt
+          cat /tmp/meg-p0-files.txt
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/meg-home-p0-overdue-read.yml|apps/api/src/modules/finance/home-commitments-core.ts|apps/api/src/modules/finance/home-commitments-read.ts|apps/api/src/modules/finance/home-commitments-read.contract.test.ts|apps/api/src/modules/finance/routes.ts|docs/MEG-WEB-HOME-OVERDUE-READ-CONTRACT-20261110.md|MEG-WEB-CONTINUIDADE-OFICIAL.md)
+                ;;
+              *)
+                echo "ERRO: arquivo fora do escopo P0: $path" >&2
+                exit 1
+                ;;
+            esac
+          done < /tmp/meg-p0-files.txt
+          echo "Escopo P0 isolado. Sem writers, schema, migrations, Android ou deploy."
