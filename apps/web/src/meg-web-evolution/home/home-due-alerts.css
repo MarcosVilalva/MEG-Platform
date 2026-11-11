@@ -80,7 +80,13 @@
 .meg-due-bell-panel button:focus-visible{
  outline:2px solid #c7ffef;outline-offset:3px
 }
-.meg-due-bell-button{position:relative}
+.meg-due-bell-button{
+ display:grid;place-items:center;position:relative;
+ width:3rem;height:3rem;min-width:3rem;
+ border:1px solid rgba(20,227,200,.25);border-radius:.75rem;
+ background:rgba(3,23,27,.76);color:#dff7f1;cursor:pointer;
+}
+.meg-due-bell-button:focus-visible{outline:2px solid #14e3c8;outline-offset:3px}
 .meg-due-bell-layer{position:fixed;inset:0;z-index:1550;pointer-events:none}
 .meg-due-bell-backdrop{position:absolute;inset:0;background:transparent;border:0;pointer-events:auto}
 .meg-due-bell-panel{
