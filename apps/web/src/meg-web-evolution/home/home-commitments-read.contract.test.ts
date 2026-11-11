@@ -69,7 +69,7 @@ assert.match(home,/readCanonicalHomeCommitments\(authenticatedRequest\)/);
 assert.match(home,/data\.canonicalCommitments/);
 assert.match(home,/if\(!preview\)return \[\]/,'Sem fallback financeiro na sessão real');
 assert.match(home,/dueState:item\.dueState/,'Urgência deve vir da API');
-assert.match(home,/error\}&&<div className="pano-error"/);
+assert.match(home,/error&&<div className="pano-error"/);
 assert.doesNotMatch(home,/readCanonicalHomeCommitments\(authenticatedRequest\)\.catch\(/,'Não silenciar erro de leitura');
 const client=readFileSync(new URL('./home-commitments-read.ts',import.meta.url),'utf8');
 assert.doesNotMatch(client,/dateNow\(|new Date\(|dueDate\s*[<>]/,'Não classificar vencimento no navegador');
