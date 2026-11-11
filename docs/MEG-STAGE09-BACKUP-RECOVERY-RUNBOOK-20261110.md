@@ -1,6 +1,8 @@
 # MEG Web Evolution | Etapa 09 | Backup e recuperação, plano executável
 
-**Preparado em 10/11/2026. Status: CANDIDATO.** Procedimentos e testes com ferramentas simuladas não substituem dump efetivo e recuperação real. Nenhuma senha, chave privada ou dado de usuário deve ser anexado ao GitHub, ChatGPT, issues, logs ou capturas.
+**Preparado em 10/11/2026, revisado em 11/11/2026. Status: CANDIDATO / NO-GO PARA PRODUÇÃO.** Procedimentos e testes com ferramentas simuladas não substituem dump efetivo e recuperação real. Nenhuma senha, chave privada ou dado de usuário deve ser anexado ao GitHub, ChatGPT, issues, logs ou capturas.
+
+> **CORREÇÃO DE SEGURANÇA APÓS AUDITORIA DO WORK (11/11/2026):** não usar pacotes/scripts locais anteriores à revisão da PR #666. O backup agora exige `PGSSLMODE=verify-full` + CA oficial; o restore usa **exclusivamente socket Unix `/var/run/postgresql`**, com autenticação do processo PostgreSQL e sem aceitar túnel TCP. O script Vault interpreta o campo JSON `root_key` documentado. **NO-GO PARA PRODUÇÃO** enquanto CI final, simulação local e requisitos de recuperação efetiva não estiverem comprovados. O ZIP gerado anteriormente foi superado pela versão do GitHub.
 
 ## 1. Escopo verificado na produção (somente leitura)
 
@@ -15,7 +17,7 @@
 Arquivos nesta PR:
 
 1. `scripts/meg-stage09-safe-backup.sh`: exportação **lógica completa do PostgreSQL com `pg_dump`**, formato custom, enviada diretamente ao **age** por pipe. Nenhum dump SQL aberto é escrito no disco. Um manifesto com SHA-256 do arquivo criptografado e inventário é gerado. Inclui esquemas gerenciados **somente na medida em que o usuário PostgreSQL tiver leitura e o `pg_dump` os incluir**. Dump de schemas internos **não é** automaticamente restaurável em outro Supabase.
-2. `scripts/meg-stage09-safe-restore-drill.sh`: valida SHA-256 e descriptografa em fluxo, restaurando **apenas o schema `public`** em banco PostgreSQL **exclusivamente local** (`127.0.0.1:5432/meg_restore_drill`). O script recusa banco não vazio e recusa host remoto ou nome de banco diferente. Compara 32 tabelas (ou o número encontrado durante a exportação) e exige registros presentes em `User`, `AppState` e `FinancialEvent`.
+2. `scripts/meg-stage09-safe-restore-drill.sh`: valida SHA-256 e descriptografa em fluxo, restaurando **apenas o schema `public`** em banco PostgreSQL **exclusivamente local** (socket Unix de PostgreSQL 17 em `/var/run/postgresql`, database `meg_restore_drill`). O script exige socket pertencente ao processo PostgreSQL, verifica que a conexão efetiva é Unix e recusa banco com objetos prévios em quaisquer schemas não sistêmicos. Compara 32 tabelas (ou o número encontrado durante a exportação) e exige registros presentes em `User`, `AppState` e `FinancialEvent`.
 3. `scripts/meg-stage09-safe-vault-rootkey.sh`: salvaguarda opcional e separada da **chave-raiz criptográfica** usando apenas GET da Management API oficial. O token é lido exclusivamente do terminal privado, a chave nunca é exibida e é imediatamente criptografada com `age`. **Nenhum segredo real foi acessado neste trabalho.**
 4. `scripts/meg-stage09-backup-safety.test.mjs`: testa o controle de fluxo e bloqueios com **ferramentas simuladas e dados fictícios**, nunca com produção. A workflow também executa um ensaio de **PostgreSQL 17 real, mas com dados inteiramente sintéticos e bancos descartáveis**, verificando `pg_dump` → `age` → `pg_restore`. **Nenhum desses testes comprova restauração dos dados verdadeiros do MEG.**
 
@@ -23,7 +25,7 @@ Arquivos nesta PR:
 
 ## 3. Pré-requisitos no PC ou runner privado
 
-- Bash com `pipefail` (Linux, WSL ou Git Bash), Git, utilitários GNU (incluindo `sha256sum`). **Nunca** executar no GitHub Actions com logs/artefatos reais de produção.
+- Bash com `pipefail` (Linux, WSL ou Git Bash), Git, utilitários GNU (incluindo `sha256sum`). **Nunca** executar no GitHub Actions com logs/artefatos reais de produção. **No WSL**, mantenha o backup e a identidade `age` em diretórios privados `0700` no filesystem Linux, não em `C:\` ou `/mnt/c`.
 - Cliente **PostgreSQL 17** para `psql`, `pg_dump` e `pg_restore`, compatível com a instância original.
 - Utilitário **age** com `age-keygen`, para criptografia de chave pública. A identidade de descriptografia é secreta.
 - Um diretório **fora do repositório**, preferencialmente montado em volume seguro e sincronizado com uma conta de nuvem distinta do Supabase (por exemplo, uma pasta com sincronização independente ou drive externo). O script salva o arquivo criptografado ali. Depois, **verificar a transferência efetiva** desse arquivo para outro local.
@@ -44,14 +46,15 @@ A última linha exibe apenas a **chave pública**, que começa com `age1`. Guard
 
 ### Conexão de leitura ao projeto correto
 
-Copiar os valores **somente do painel Connect do projeto `meg-financas`**. Para conexão direta, o usuário é `postgres`; para Session Pooler é `postgres.ugbiqzaqnrhulhetevby`. O script exige host desse projeto e TLS:
+Copiar os valores **somente do painel Connect do projeto `meg-financas`**. Para conexão direta, o usuário é `postgres`; para Session Pooler é `postgres.ugbiqzaqnrhulhetevby`. O script exige o host desse projeto e **TLS verify-full**, certificado CA oficial baixado em Supabase > Database Settings > SSL Configuration:
 
 ```bash
 export PGHOST='db.ugbiqzaqnrhulhetevby.supabase.co' # ou o host Session Pooler exibido no painel
 export PGUSER='postgres'                            # ou postgres.ugbiqzaqnrhulhetevby, para Pooler
 export PGPORT='5432'
 export PGDATABASE='postgres'
-export PGSSLMODE='require'
+export PGSSLMODE='verify-full'
+export PGSSLROOTCERT="$HOME/.meg-recovery-keys/prod-supabase-ca.crt" # baixar no painel, NUNCA aceitar CA inventada
 read -r -s -p 'Senha PostgreSQL (nao aparece na tela): ' PGPASSWORD; echo
 export PGPASSWORD
 
@@ -74,30 +77,31 @@ unset PGPASSWORD
 
 ## 4. Ensaio isolado de restauração do domínio financeiro
 
-Em **PostgreSQL 17 local**, com um servidor que NÃO aponte para Supabase, criar manualmente um banco de teste **novo e vazio** chamado exatamente `meg_restore_drill`, de preferência a partir do `template0`:
+Em **PostgreSQL 17 local no WSL**, confirme que o servidor atende ao socket `/var/run/postgresql/.s.PGSQL.5432` e pertence ao usuário Unix `postgres`. **Não** use `createdb -h localhost` ou túnel TCP para esta operação.
+
+O script de restore deve ser executado com o **mesmo usuário Unix que possui um papel PostgreSQL local homônimo**, autenticado via peer no socket local. Depois de revisar o alvo, prepare manualmente o papel e crie o banco isolado com estes comandos; **nunca os rode contra servidor remoto**:
 
 ```bash
-createdb -h 127.0.0.1 -p 5432 -U postgres -T template0 meg_restore_drill
+# Estes comandos somente funcionam em PostgreSQL local Unix, sem herdar PGHOST remoto.
+local_user="$(id -un)"
+sudo -u postgres env -i PATH="$PATH" HOME=/var/lib/postgresql PGREQUIREPEER=postgres \\
+  createuser -h /var/run/postgresql -p 5432 --login --createdb "$local_user"
+sudo -u postgres env -i PATH="$PATH" HOME=/var/lib/postgresql PGREQUIREPEER=postgres \\
+  createdb -h /var/run/postgresql -p 5432 -O "$local_user" -T template0 meg_restore_drill
 ```
 
-Confirmar antes: essa instrução **escreve apenas no servidor LOCAL**. Nunca executar se a conexão foi redirecionada por túnel ou proxy para produção. O script abaixo recusa destinos remotos e bancos que já contenham tabelas `public`.
+Se o papel ou banco já existir, **não recrie nem apague nada automaticamente**; inspecione o ambiente. `createuser` deve ser omitido se o papel local já existir. O restore recusa banco com schemas ou objetos adicionais além dos componentes nativos de um banco vazio.
 
 ```bash
 export MEG_BACKUP_FILE='/seu/volume-seguro/MEG-Backups/ARQUIVO-REAL.pgdump.age'
 export MEG_AGE_IDENTITY="$HOME/.meg-recovery-keys/identity.txt"
-export MEG_RESTORE_HOST='127.0.0.1'
-export MEG_RESTORE_PORT='5432'
-export MEG_RESTORE_DB='meg_restore_drill'
-export MEG_RESTORE_USER='postgres'
-read -r -s -p 'Senha PostgreSQL LOCAL: ' MEG_RESTORE_PASSWORD; echo
-export MEG_RESTORE_PASSWORD
 export MEG_RESTORE_ISOLATED_OK='YES'
-
+# Não definir host, porta, senha, serviço ou túnel: o script fixa socket Unix e db.
 bash scripts/meg-stage09-safe-restore-drill.sh
-unset MEG_RESTORE_PASSWORD MEG_RESTORE_ISOLATED_OK
+unset MEG_RESTORE_ISOLATED_OK
 ```
 
-O script exige o SHA-256, restaura apenas objetos `public` em uma transação e compara o número total de tabelas com o manifesto. Além disso, exige presença de registros nas tabelas principais da aplicação. **Isso não homologa restauração de todo o Supabase**. Extensões e dependências de managed schemas podem impedir o restore local; esse erro deve ser registrado e tratado, **não ignorado com `--clean` ou `--disable-triggers`**.
+O script verifica SHA-256, autenticidade do socket local, identidade/versão do PostgreSQL e banco sem objetos; restaura somente `public` em uma transação e compara o número de tabelas com o manifesto. Variáveis libpq herdadas são isoladas com `env -i` e não podem redirecionar o restore. Além disso, exige presença de registros nas tabelas principais da aplicação. **Isso não homologa restauração de todo o Supabase**. Extensões e dependências de managed schemas podem impedir o restore local; esse erro deve ser registrado e tratado, **não ignorado com `--clean` ou `--disable-triggers`**.
 
 ## 5. Vault e material secreto: gate separado e crítico
 
@@ -106,7 +110,7 @@ A consulta agregada revelou **1 entrada em `vault.secrets`**. Pela documentaçã
 Procedimento para terminal/gerenciador **privado**, por responsável que controla a organização (o arquivo abaixo está preparado; a consulta real ainda NÃO foi executada):
 
 1. Enquanto o **projeto original permanece ativo**, obter a chave-raiz do projeto via método oficial do Supabase (Management API `/v1/projects/<project_ref>/pgsodium` com token de acesso pessoal). **Não recuperar a chave nesta conversa**, não registrar em logs do Work e não enviá-la ao GitHub.
-2. O script abaixo faz essa consulta de leitura, valida resposta de **64 caracteres hexadecimais** e salva o resultado diretamente criptografado, sem exibir o conteúdo. Exige **token pessoal inserido localmente**, nunca neste chat:
+2. O script abaixo faz essa consulta de leitura, interpreta o JSON documentado com campo **`root_key`** de 64 caracteres hexadecimais e salva o resultado diretamente criptografado, sem exibir o conteúdo. Exige **token pessoal inserido localmente**, nunca neste chat:
 
 ```bash
 read -r -s -p 'Token Supabase pessoal, somente no terminal privado: ' SUPABASE_ACCESS_TOKEN; echo
@@ -127,7 +131,7 @@ Documentação: [Supabase Backups](https://supabase.com/docs/guides/platform/bac
 
 - [x] Projeto identificado, 32 tabelas públicas e presença de Vault inventariadas com consultas **agregadas de leitura**.
 - [x] Código de exportação encriptada e teste local guardado em branch isolada, sem credenciais.
-- [x] Testes **simulados** de segurança do script, bloqueio de restore remoto e conferência de integridade de arquivo. Um job de PostgreSQL 17 **sintético** foi definido na CI para verificar a cadeia criptografada; seu resultado deve ser conferido na própria execução. Não se confundem com backup/recovery efetivo.
+- [x] Testes **simulados** de segurança do script, bloqueio de restore remoto e conferência de integridade de arquivo. Um job de PostgreSQL 17 **sintético** foi definido na CI para executar o **script real de restore via socket Unix**; seu resultado deve ser conferido no SHA final da PR. Não se confundem com backup/recovery efetivo.
 - [ ] Exportação **real** do PostgreSQL executada com resultado confirmado.
 - [ ] Arquivo criptografado copiado e verificado em repositório de armazenamento **externo** ao Supabase/GitHub.
 - [ ] Chave de recuperação `age` armazenada offline e leitura testada.
