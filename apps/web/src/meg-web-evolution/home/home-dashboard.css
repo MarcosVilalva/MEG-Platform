@@ -398,15 +398,15 @@
  padding:0;border:1px solid transparent;border-radius:.72rem
 }
 .pano-grid--commitments .pano-due-date__urgency.is-overdue{
- color:#ffd1d9;background:rgba(155,44,65,.45);border-color:rgba(250,104,126,.72);
+ color:#EF4444;background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.35);
  filter:drop-shadow(0 0 7px rgba(247,77,111,.30))
 }
 .pano-grid--commitments .pano-due-date__urgency.is-due-today{
- color:#ffe29f;background:rgba(143,96,27,.43);border-color:rgba(245,191,75,.75);
+ color:#F59E0B;background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.36);
  filter:drop-shadow(0 0 7px rgba(246,177,75,.24))
 }
 .pano-grid--commitments .pano-due-date__urgency.is-upcoming{
- color:#aaffdd;background:rgba(17,113,85,.38);border-color:rgba(61,221,166,.61);
+ color:#10B981;background:rgba(16,185,129,.10);border-color:rgba(16,185,129,.35);
  filter:drop-shadow(0 0 6px rgba(34,220,156,.19))
 }
 .pano-grid--commitments .pano-due-date__urgency svg{flex:0 0 auto;stroke-width:2.1}
@@ -495,11 +495,25 @@
 }
 .pano-commitments-dialog__header .pano-commitments-dialog__close{
  display:grid;place-items:center;flex:0 0 2.75rem;
- width:2.75rem;height:2.75rem;padding:0;border-radius:50%;
- color:#c5fff1;background:rgba(5,69,78,.73);border-color:rgba(110,220,206,.56)
+ position:relative;isolation:isolate;width:2.75rem;height:2.75rem;
+ padding:0;border:0;border-radius:50%;color:#b9e9e0;background:transparent;
+ box-shadow:none;transition:color .18s,transform .18s
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close::before{
+ content:"";position:absolute;z-index:-1;inset:.23rem;border-radius:50%;
+ background:linear-gradient(145deg,rgba(26,104,112,.55),rgba(4,42,55,.35));
+ opacity:.32;transform:scale(.9);transition:opacity .18s,transform .18s
 }
 .pano-commitments-dialog__header .pano-commitments-dialog__close:hover{
- background:#0e6269;border-color:#8affdf;box-shadow:0 0 16px rgba(37,231,198,.24)
+ color:#f7fffc;transform:scale(1.045)
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close:is(:hover,:focus-visible)::before{
+ opacity:1;transform:scale(1)
+}
+@media(prefers-reduced-motion:reduce){
+ .pano-commitments-dialog__header .pano-commitments-dialog__close,
+ .pano-commitments-dialog__header .pano-commitments-dialog__close::before{transition:none!important}
+ .pano-commitments-dialog__header .pano-commitments-dialog__close:hover{transform:none}
 }
 .pano-commitments-dialog__header button:focus-visible,
 .pano-commitments-dialog__footer button:focus-visible{

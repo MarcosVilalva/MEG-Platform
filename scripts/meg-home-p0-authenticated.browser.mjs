@@ -74,6 +74,21 @@ try{
  const overdueDate=table.locator('.pano-due-date__urgency.is-overdue').first();
  await overdueDate.waitFor({timeout:20000});
  assert.ok(await overdueDate.isVisible(),'Vencido precisa aparecer visível na coluna Vencimento');
+
+ const iconGeometry=await table.locator('.pano-due-date__urgency').evaluateAll(nodes=>nodes.map(node=>({
+  state:node.getAttribute('aria-label'),
+  markup:node.querySelector('svg')?.innerHTML??'',
+  stroke:getComputedStyle(node).color,
+  width:node.querySelector('svg')?.getAttribute('width')??'',
+  strokeWidth:node.querySelector('svg')?.getAttribute('stroke-width')??''
+ })));
+ assert.ok(iconGeometry.some(s=>s.state==='Vencido'&&s.markup.includes('<circle')&&s.stroke==='rgb(239, 68, 68)'&&s.strokeWidth==='2'),
+  'Vencido deve exibir círculo vermelho de exclamação enviado pelo usuário');
+ assert.ok(iconGeometry.some(s=>s.state==='Vence hoje'&&s.markup.includes('<polyline')&&s.stroke==='rgb(245, 158, 11)'&&s.strokeWidth==='2'),
+  'Vence hoje deve exibir relógio circular âmbar');
+ assert.ok(iconGeometry.some(s=>s.state==='A vencer'&&s.markup.includes('<rect')&&s.stroke==='rgb(16, 185, 129)'&&s.strokeWidth==='2'),
+  'A vencer deve exibir calendário verde');
+
  assert.equal(await overdueDate.getAttribute('aria-label'),'Vencido','Sirene precisa de nome acessível');
  assert.equal(await overdueDate.locator('svg').count(),1,'Símbolo de urgência precisa ser SVG');
  assert.ok(await table.locator('.pano-due-date__urgency.is-upcoming').count()>0,
@@ -86,6 +101,12 @@ try{
   'Vencimento de hoje deve ter indicador SVG acessível junto à data');
  const entry=success.page.getByRole('dialog',{name:'Atenção aos seus vencimentos'});
  await entry.waitFor({timeout:20000});
+ const ghostClose=await entry.getByRole('button',{name:'Fechar alerta de vencimentos'}).evaluate(el=>{
+  const s=getComputedStyle(el),b=el.getBoundingClientRect();
+  return {border:s.borderTopWidth,background:s.backgroundColor,radius:s.borderRadius,w:b.width,h:b.height,svg:el.querySelectorAll('svg').length};
+ });
+ assert.ok(ghostClose.border==='0px'&&ghostClose.background==='rgba(0, 0, 0, 0)'&&ghostClose.radius==='50%'&&ghostClose.w>=44&&ghostClose.h>=44&&ghostClose.svg===1,
+  'Fechar deve ser ghost circular sem moldura permanente, SVG e 44px: '+JSON.stringify(ghostClose));
  assert.ok(await entry.getByText('Compromisso antigo fictício').isVisible(),
   'Modal precisa mostrar o vencido vindo da API');
  assert.ok(await entry.getByText('Pagamento parcial fictício').isVisible(),

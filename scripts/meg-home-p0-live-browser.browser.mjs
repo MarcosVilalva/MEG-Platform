@@ -246,6 +246,17 @@ try {
           const badge = dueGrid.locator('.pano-due-date__urgency[aria-label="'+urgency+'"]').filter({visible:true}).first();
           assert.ok(await badge.count()>0&&await badge.locator('svg').count()===1, 'Ícone semântico acessível: '+urgency);
         }
+        const icons=await dueGrid.locator('.pano-due-date__urgency').evaluateAll(nodes=>nodes.map(el=>({
+          label:el.getAttribute('aria-label'),
+          color:getComputedStyle(el).color,
+          path:el.querySelector('svg')?.innerHTML||''
+        })));
+        assert.ok(icons.some(x=>x.label==='Vencido'&&x.color==='rgb(239, 68, 68)'&&x.path.includes('circle')),
+          'Vencidos usam círculo de alerta vermelho');
+        assert.ok(icons.some(x=>x.label==='Vence hoje'&&x.color==='rgb(245, 158, 11)'&&x.path.includes('polyline')),
+          'Hoje usa relógio amarelo');
+        assert.ok(icons.some(x=>x.label==='A vencer'&&x.color==='rgb(16, 185, 129)'&&x.path.includes('rect')),
+          'A vencer usa calendário verde');
         const overdue = dueGrid.locator('.pano-due-date__urgency.is-overdue').filter({ visible: true }).first();
         const bounds = await overdue.boundingBox();
         assert.ok(bounds && bounds.width > 0 && bounds.height > 0, 'Vencido não está visível');
