@@ -43,8 +43,10 @@ async function checkWindow(page,width,editing=false){
  assert(result.n>=1&&result.n<=4&&sameRow&&complete&&result.documentWidth<=result.viewportWidth+2,
   'janela circular deve mostrar cartões inteiros, uma linha e sem overflow: '+width+' '+JSON.stringify(result));
  assert(result.items.every(item=>item.left>=result.frame.left-2&&item.right<=result.frame.right+2),'cartão renderizado fora da janela: '+width);
- assert(result.editCount===(editing?result.items.filter((_,i)=>true).length-(await page.getByRole('button',{name:'Adicionar atalho'}).count()):0),
-  'edição precisa ocorrer na mesma janela: '+width);
+ assert(result.editCount===0,'controles concorrentes não devem ficar dentro dos cards: '+width);
+ assert(result.items.every(item=>Math.abs(item.bottom-item.top-75)<=2),
+  'cards devem manter 75px também na edição: '+width);
+
 }
 try{
  for(const width of [320,390,640,768,1024,1366,1920,2560]){
@@ -94,14 +96,26 @@ try{
   assert(await pencil.locator('svg').count()===1&&await pencil.innerText()==='','lápis deve ser apenas ícone: '+width);
   await pencil.click();
   await checkWindow(page,width,true);
-  assert(await page.getByRole('button',{name:'Mover Transferência para direita'}).count()===1,'seta de ordenação ausente: '+width);
-  const areas=await page.locator('.pano-quick-inline-controls button').evaluateAll(items=>items.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,aria:el.getAttribute('aria-label')})));
-  assert(areas.every(item=>item.w>=44&&item.h>=44&&item.aria),'alvos de toque e rótulos dos controles: '+width);
-  await page.getByRole('button',{name:'Mover Transferência para direita'}).click();
-  assert(JSON.stringify((await stored(page)).slice(0,2))===JSON.stringify(['pendentes','transferencia']),'ordenação à direita: '+width);
-  for(let k=0;k<10&&!await page.getByRole('button',{name:'Mover Transferência para esquerda'}).count();k++)await next(page);
-  await page.getByRole('button',{name:'Mover Transferência para esquerda'}).click();
-  assert(JSON.stringify((await stored(page)).slice(0,4))===JSON.stringify(['transferencia','pendentes','relatorios','metas']),'ordenação à esquerda: '+width);
+  assert(await page.getByRole('button',{name:'Organizar Transferência'}).count()===1,
+   'edição precisa oferecer painel por atalho: '+width);
+  await page.getByRole('button',{name:'Organizar Transferência'}).click();
+  const organize=page.getByRole('dialog',{name:'Organizar atalho'});
+  assert(await organize.getByText('Posição 1 de 4').isVisible(),'posição inicial deve ser clara: '+width);
+  const areas=await organize.locator('button').evaluateAll(items=>items.map(el=>({
+   w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,aria:el.getAttribute('aria-label')
+  })));
+  assert(areas.every(item=>item.w>=44&&item.h>=44&&item.aria),
+   'controles acessíveis no painel: '+width);
+  await organize.getByRole('button',{name:'Mover Transferência para direita'}).click();
+  assert(JSON.stringify((await stored(page)).slice(0,2))===JSON.stringify(['pendentes','transferencia']),
+   'ordenação à direita: '+width);
+  assert(await organize.getByText('Posição 2 de 4').isVisible(),'posição mudou no painel: '+width);
+  await organize.getByRole('button',{name:'Mover Transferência para esquerda'}).click();
+  assert(JSON.stringify((await stored(page)).slice(0,4))===JSON.stringify(['transferencia','pendentes','relatorios','metas']),
+   'ordenação à esquerda: '+width);
+  await page.keyboard.press('Escape');
+  assert(await page.getByRole('dialog',{name:'Organizar atalho'}).count()===0,
+   'Escape precisa fechar a organização: '+width);
 
   for(const extra of extras)await addItem(page,extra);
   assert((await stored(page)).length===7,'catálogo não aceita todos os sete destinos: '+width);
@@ -116,8 +130,9 @@ try{
   await checkWindow(page,width);
   await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
   // Benefícios não precisa estar visível: rotação garante acesso.
-  for(let n=0;n<10&&!await page.getByRole('button',{name:'Remover Benefícios'}).count();n++)await next(page);
-  await page.getByRole('button',{name:'Remover Benefícios'}).click();
+  for(let n=0;n<10&&!await page.getByRole('button',{name:'Organizar Benefícios'}).count();n++)await next(page);
+  await page.getByRole('button',{name:'Organizar Benefícios'}).click();
+  await page.getByRole('dialog',{name:'Organizar atalho'}).getByRole('button',{name:'Remover Benefícios'}).click();
   assert((await stored(page)).length===6,'remoção falhou: '+width);
   await addItem(page,'Benefícios');
   assert((await stored(page)).length===7,'reinclusão falhou: '+width);
