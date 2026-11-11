@@ -73,6 +73,17 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    assert.ok(spot&&banner&&actions&&
     banner.y>=spot.y+spot.height-2&&banner.y+banner.height<=actions.y+2,
     'Atenção deve aparecer em faixa discreta acima dos atalhos');
+   await attention.screenshot({
+    path:'artifacts/meg-home-navigation-qa/'+home+'-'+width+'-atencao.png',
+    animations:'disabled'
+   });
+   if(width===1366||width===375){
+    await page.locator('.meg-main').evaluate(element=>element.scrollTop=0);
+    await page.screenshot({
+     path:'artifacts/meg-home-navigation-qa/'+home+'-'+width+'-topo.png',
+     animations:'disabled'
+    });
+   }
    await attention.locator('.pano-attention__item.is-overdue').click();
    const complete=page.getByRole('dialog',{name:'Todos os compromissos'});
    await complete.waitFor({timeout:10000});
