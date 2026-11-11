@@ -214,6 +214,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
   .filter(column=>column.key==='date'||column.key==='description'||column.key==='value')
   .map(column=>({
    ...column,
+   label:column.key==='date'?'Vence em':column.label,
    width:column.key==='date'?143:column.key==='description'?157:124,
    minWidth:column.key==='date'?130:column.key==='description'?128:104,
   }));
