@@ -99,20 +99,26 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  const [showAllCommitments,setShowAllCommitments]=useState(false);
  const publishDueAlerts=useHomeDueAlertPublisher();
  const openAllForAlerts=useCallback(()=>setShowAllCommitments(true),[]);
+ const alertBindingVersion=useRef(0);
  useEffect(()=>{
   if(!publishDueAlerts)return;
-  if(!data.canonicalCommitments){
-   publishDueAlerts(null);
-   return;
-  }
-  publishDueAlerts({
-   items:data.canonicalCommitments,
-   owner:userId||'qa-preview',
-   preview,
-   hidden,
-   openAll:openAllForAlerts,
-  });
-  return ()=>publishDueAlerts(null);
+  const version=++alertBindingVersion.current;
+  if(data.canonicalCommitments){
+   publishDueAlerts({
+    items:data.canonicalCommitments,
+    owner:userId||'qa-preview',
+    preview,
+    hidden,
+    openAll:openAllForAlerts,
+   });
+  }else publishDueAlerts(null);
+  return ()=>{
+   // StrictMode desmonta e remonta efeitos em desenvolvimento.
+   // Não apagar a primeira notificação antes da remontagem síncrona.
+   queueMicrotask(()=>{
+    if(alertBindingVersion.current===version)publishDueAlerts(null);
+   });
+  };
  },[publishDueAlerts,data.canonicalCommitments,userId,preview,hidden,openAllForAlerts]);
  const [movementFiltersCount,setMovementFiltersCount]=useState(0);
  const [dueFiltersCount,setDueFiltersCount]=useState(0);
