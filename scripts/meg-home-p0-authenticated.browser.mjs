@@ -90,7 +90,7 @@ try{
   'Amostra parcial não pode ser apresentada como total');
  assert.ok(await attention.getByText('Compromisso antigo fictício').isVisible(),
   'Destaque vencido deve apresentar descrição real da API');
- assert.ok(await attention.getByText('Compromisso hoje fictício').isVisible(),
+ assert.ok(await attention.getByText('Pagamento parcial fictício').isVisible(),
   'Destaque de hoje deve apresentar descrição real da API');
  assert.equal((await attention.innerText()).includes('Total de vencidos'),false,
   'Não inventar total financeiro com oito itens');
