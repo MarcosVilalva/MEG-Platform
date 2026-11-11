@@ -9,6 +9,6 @@ export default defineConfig({
  build: {
   outDir: resolve(root,'dist-fluxo-integrado-08'),
   emptyOutDir:true,
-  rollupOptions:{input:resolve(root,'fluxo-integrado-08.html')}
+  rollupOptions:{input:{preview:resolve(root,'fluxo-integrado-08.html'),authenticated:resolve(root,'web-evolution.html')}}
  }
 });

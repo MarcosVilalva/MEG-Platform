@@ -1,7 +1,7 @@
 /* MEG Web Evolution | Home 06 | reconstrução estrutural isolada.
    Autoridade financeira na API; estilos apenas na Home, sem tocar no Shell ou no DataGrid. */
 .meg-shell:has(.pano-root) .meg-main{display:block;min-width:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1b7775 transparent}
-.pano-root{--p-line:rgba(41,189,171,.31);--p-muted:#9cbcbf;color:#effcf9;min-width:0;width:100%;box-sizing:border-box;padding:.44rem .42rem 1rem;background:#03191d;font-family:Inter,system-ui,sans-serif}
+.pano-root{--p-line:rgba(41,189,171,.31);--p-gap:.75rem;--p-muted:#9cbcbf;color:#effcf9;min-width:0;width:100%;box-sizing:border-box;padding:.44rem .42rem 1rem;background:#03191d;font-family:Inter,system-ui,sans-serif}
 .pano-root *,.pano-root *::before,.pano-root *::after{box-sizing:border-box}
 .pano-root button{font:inherit;cursor:pointer}
 .pano-root button:focus-visible,.pano-card-stage:focus-visible{outline:2px solid #a6ffe6;outline-offset:2px}
@@ -13,28 +13,39 @@
 .pano-notice span{flex:1}
 .pano-notice button,.pano-error button{min-height:2.3rem;padding:.2rem .6rem;border:1px solid currentColor;border-radius:.4rem;background:transparent;color:inherit;margin-left:auto}
 .pano-loading{padding:2rem;color:#a1c7c3}
-.pano-panel{min-width:0;border:1px solid var(--p-line);border-radius:.77rem;background:linear-gradient(145deg,#052c32,#042129);padding:.76rem .83rem;box-shadow:inset 0 1px #bdfffa08,0 5px 18px #00131632}
+.pano-root>.pano-quick{margin-top:.75rem}
+.pano-panel{min-width:0;border:1px solid var(--p-line);border-radius:1.02rem;background:linear-gradient(148deg,#062e35,#042129 82%);padding:.8rem .9rem;box-shadow:inset 0 1px #bdfffa12,0 8px 26px #0013163b}
 .pano-panel-title{display:flex;align-items:center;justify-content:space-between;min-width:0;gap:.5rem}
 .pano-panel-title h2{display:flex;align-items:center;gap:.45rem;margin:0;min-width:0;font-size:.94rem;line-height:1.3;font-weight:800}
 .pano-panel-title h2 svg{color:#43ebc9}
 .pano-panel-title>span{font-size:.73rem;color:#a0c7c7;text-align:right}
-.pano-financial-column{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:0;align-content:start}
-.pano-spotlight{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:.5rem;min-width:0}
-.pano-hero{position:relative;isolation:isolate;display:flex;min-width:0;min-height:8.5rem;align-items:flex-start;justify-content:center;flex-direction:column;padding:.85rem;border:1px solid #2aac9b70;border-radius:.7rem;overflow:hidden;background:#052c30}
+.pano-financial-column{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:.75rem;min-width:0;align-content:start
+}
+.pano-spotlight{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:.75rem;align-items:start;min-width:0
+}
+.pano-hero{position:relative;isolation:isolate;display:flex;min-width:0;min-height:8.5rem;align-items:flex-start;justify-content:center;flex-direction:column;padding:.85rem;border:1px solid #2aac9b70;border-radius:1.02rem;overflow:hidden;background:#052c30}
 .pano-hero::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#031b23ec 0%,#03242cc9 51%,#042c3780 100%),url("https://images.unsplash.com/photo-1604240400568-c50e9a0f518f?auto=format&fit=crop&w=1800&q=85&fm=webp") 58% center/cover no-repeat}
 .pano-hero::after{content:"";z-index:-1;position:absolute;inset:0;background:linear-gradient(0deg,#001d2260,transparent 60%);pointer-events:none}
 .pano-balance{display:flex;flex-direction:column;align-items:flex-start;gap:.56rem;min-width:0;width:100%;text-shadow:0 2px 12px #00191b}
 .pano-balance-top{display:flex;align-items:center;gap:.5rem;min-width:0;font-size:1rem;font-weight:770;color:#f2fffc}
 .pano-balance-top>h1{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin:0;font-size:inherit;font-weight:inherit;line-height:1.22}
 .pano-balance-scope{font-size:.7rem;letter-spacing:.055em;font-weight:800;color:#8ef0d8}
-.pano-balance-top button{display:grid;place-items:center;width:2.75rem;height:2.75rem;flex:0 0 2.75rem;background:#07484c9c;border:1px solid #63c6b56d;border-radius:50%;color:#d4fff8}
+.pano-balance-top button{
+ display:grid;place-items:center;width:2.75rem;height:2.75rem;flex:0 0 2.75rem;border:0;border-radius:50%;color:#d4fff8;background:transparent
+}
 .pano-balance>strong{font-size:clamp(1.75rem,7.6vw,3.4rem);font-weight:850;line-height:1.12;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:100%}
 .pano-balance-bottom{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem .85rem}
 .pano-balance-bottom>span{color:#b3d7d6;font-size:.69rem}
 .pano-balance-bottom button{display:inline-flex;align-items:center;gap:.32rem;min-height:2.35rem;border:0;border-bottom:1px solid #62d5c58c;padding:.25rem 0;border-radius:0;background:transparent;color:#7df2d9;font-size:.72rem;font-weight:750}
-.pano-cards{display:flex;flex-direction:column;min-width:0;gap:.16rem;padding:.62rem .65rem .57rem;border-color:#2aa99591;background:linear-gradient(130deg,#062e35,#05212a)}
+.pano-cards{
+ display:flex;flex-direction:column;min-width:0;gap:.35rem;padding:.9rem;border-color:#2aa99591;background:linear-gradient(130deg,#062e35,#05212a)
+}
 .pano-carousel-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-height:2.3rem}
-.pano-view-all,.pano-flow-open{display:inline-flex;align-items:center;gap:.32rem;justify-content:center;min-height:2.75rem;padding:.32rem .56rem;border:1px solid #238a8379;border-radius:.42rem;background:#07545a66;color:#a0f9e4;font-size:.71rem;font-weight:750;white-space:nowrap}
+.pano-view-all,.pano-flow-open{
+ display:inline-flex;align-items:center;justify-content:center;width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;padding:0;border:0;border-radius:50%;background:transparent;color:#adffec;box-shadow:none
+}
 .pano-card-stage{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%;max-width:43rem;min-width:0;min-height:clamp(10.5rem,52vw,12rem);overflow:hidden;margin:.22rem auto .28rem;border-radius:.56rem;touch-action:pan-y;outline-offset:2px}
 .pano-card-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,#051d29d8,#03303881 48%,#071a25d6),url("https://images.unsplash.com/photo-1699982758974-0703b87f052d?auto=format&fit=crop&w=1600&q=82&fm=webp") center/cover no-repeat;filter:saturate(.68)}
 .pano-card-stage::after{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 50% 90%,#00e0b71c,transparent 67%);pointer-events:none}
@@ -65,6 +76,13 @@
 .pano-scheme-elo{font-size:1.3rem;font-weight:900;color:#fff}
 .pano-scheme-amex{background:#2b6bae;padding:.17rem;font-size:.7rem;font-weight:900;color:white;border-radius:.2rem}
 .pano-scheme-unavailable{font-size:.72rem;letter-spacing:.13em;font-weight:800;color:#d4fffa}
+/* Cartão: nome e emissor em linhas independentes. */
+.pano-card-summary{display:flex;flex-direction:column;min-width:0;gap:.08rem}
+.pano-card-summary-info{display:flex;align-items:center;gap:.5rem;min-width:0;min-height:2.2rem}
+.pano-cards .pano-card-summary-icon{display:grid;place-items:center;flex:0 0 1.45rem;width:1.45rem;height:1.45rem;color:#a9f8e7;border:0!important;background:transparent!important;box-shadow:none!important}
+.pano-card-summary-copy{display:flex;flex-direction:column;min-width:0;gap:.12rem}
+.pano-card-summary-copy strong{font-size:.86rem;line-height:1.2;font-weight:800;white-space:normal;overflow-wrap:anywhere}
+.pano-card-summary-copy>span{font-size:.77rem;line-height:1.3;color:#b7d9d8;white-space:normal;overflow-wrap:anywhere}
 .pano-card-amount{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.22rem .4rem;margin-top:.06rem;padding:.4rem .15rem .3rem;border-top:1px solid #3f8d8760;color:#b0cece;font-size:.73rem}
 .pano-card-amount strong{color:#f4fffd;font-size:1.09rem;letter-spacing:-.022em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .pano-card-nav{display:flex;align-items:center;justify-content:space-between;gap:.32rem;min-height:2.75rem}
@@ -86,19 +104,34 @@
 @keyframes pano-card-prev{from{opacity:.65;translate:-12% 0;scale:.94}to{opacity:1;translate:0 0;scale:1}}
 .pano-credit-card.is-arriving-next{animation:pano-card-next .28s ease-out both}
 .pano-credit-card.is-arriving-prev{animation:pano-card-prev .28s ease-out both}
-.pano-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));align-items:stretch;gap:.38rem;margin-top:.46rem;min-width:0}
-.pano-stat{min-width:0;min-height:5rem;display:flex;align-items:center;justify-content:flex-start;padding:.49rem .45rem;text-align:left;border:1px solid #238f888a;border-radius:.64rem;background:linear-gradient(145deg,#062e34,#04242c);color:#f6fffc;transition:border-color .16s,background .16s}
+.pano-overview{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));align-items:stretch;grid-auto-rows:minmax(5.4rem,auto);gap:.75rem;margin-top:0;min-width:0
+}
+.pano-stat{
+ min-width:0;min-height:5.4rem;display:flex;align-items:center;justify-content:flex-start;padding:.62rem .7rem;text-align:left;border:1px solid #238f888a;border-radius:.9rem;background:linear-gradient(145deg,#062e34,#04242c);color:#f6fffc
+}
 .pano-stat:hover{background:#0b3940;border-color:#37dabb}
 .pano-stat-head{display:flex;align-items:center;gap:.43rem;min-width:0;width:100%}
-.pano-stat-icon{display:grid;place-items:center;width:2rem;height:2rem;flex:0 0 2rem;background:#0a5850;color:#49efc9;border-radius:.48rem}
-.pano-stat.is-expense .pano-stat-icon{background:#4e2736;color:#ff8d9c}
-.pano-stat.is-pending .pano-stat-icon{background:#554024;color:#ffd28d}
-.pano-stat.is-benefit .pano-stat-icon{background:#0b5a52;color:#9cffe3}
+.pano-stat-icon{
+ display:grid;place-items:center;flex:0 0 2.25rem;width:2.25rem;height:2.25rem;background:transparent;border:0;box-shadow:none;color:#49efc9
+}
+.pano-stat.is-expense .pano-stat-icon{
+ color:#ff8d9c
+}
+.pano-stat.is-pending .pano-stat-icon{
+ color:#ffd28d
+}
+.pano-stat.is-benefit .pano-stat-icon{
+ color:#9cffe3
+}
 .pano-stat-copy{display:flex;flex-direction:column;justify-content:center;gap:.16rem;min-width:0;flex:1}
 .pano-stat-label{font-size:clamp(.7rem,2.7vw,.78rem);line-height:1.18;font-weight:760;color:#badbd7}
 .pano-stat strong{width:100%;font-size:clamp(.86rem,3.25vw,1.08rem);font-weight:850;letter-spacing:-.02em;line-height:1.16;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pano-stat small{font-size:.72rem;line-height:1.25;color:#b7d5d0}
-.pano-finance-block{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem;min-width:0;align-items:start;margin-top:.5rem}
+.pano-finance-block{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:.75rem;min-width:0;align-items:start;margin-top:.75rem
+}
+.pano-finance-block>.pano-finance-column{display:flex;flex-direction:column;gap:.75rem;min-width:0;min-height:0}
 .pano-flow{display:flex;flex-direction:column;min-width:0;min-height:0}
 .pano-flow-head{display:flex;align-items:center;justify-content:space-between;gap:.45rem;flex-wrap:wrap}
 .pano-flow-head>.pano-panel-title{flex:1 1 9rem}
@@ -113,7 +146,7 @@
 .pano-mid{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;align-items:stretch;gap:.5rem}
 .pano-benefits,.pano-actions{min-width:0;width:100%;align-self:stretch}
 .pano-benefits>.pano-panel-title>span{font-size:.7rem;line-height:1.25;max-width:11rem}
-.pano-benefit-card{position:relative;isolation:isolate;display:flex;align-items:stretch;width:100%;min-height:7rem;margin-top:.5rem;padding:0;overflow:hidden;border-radius:.6rem;border:1px solid #55d6b47a;background:#064138;color:white;text-align:left}
+.pano-benefit-card{position:relative;isolation:isolate;display:flex;align-items:stretch;width:100%;min-height:7rem;margin-top:.5rem;padding:0;overflow:hidden;border-radius:.9rem;border:1px solid #55d6b47a;background:#064138;color:white;text-align:left}
 .pano-benefit-card::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#03242cf7 0%,#06483fbd 53%,#04483d19),url("https://images.unsplash.com/photo-1705140643816-2bb76d7ddeb1?auto=format&fit=crop&w=1250&q=84&fm=webp") right 45%/cover no-repeat}
 .pano-benefit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(0deg,#02282285,transparent 54%);pointer-events:none}
 .pano-benefit-card:hover{border-color:#9af7d5}
@@ -142,7 +175,9 @@
 .pano-grid-heading{display:flex;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}
 .pano-grid-heading>.pano-panel-title h2{font-size:.86rem}
 .pano-grid-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.35rem}
-.pano-grid-actions button{display:inline-flex;align-items:center;justify-content:center;gap:.25rem;min-height:2.75rem;padding:.27rem .5rem;border:1px solid #299e966d;border-radius:.42rem;background:#063e46;color:#70f6df;font-size:.69rem}
+.pano-grid-actions button{
+ display:inline-flex;align-items:center;justify-content:center;width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;padding:0;border:0;border-radius:50%;background:transparent;color:#70f6df;box-shadow:none
+}
 .pano-grid:not(.is-filters-open) .meg-datagrid-toolbar{display:none}
 .pano-grid .meg-datagrid{min-width:0;border-color:#24686858!important;background:transparent!important;box-shadow:none!important}
 .pano-grid .meg-datagrid__viewport{flex:0 0 auto;min-height:8rem;height:auto;max-height:none;overflow:auto}
@@ -173,13 +208,13 @@
  .pano-hero{min-height:10rem;padding:1rem 1.15rem}
  .pano-balance{gap:.65rem}
  .pano-balance>strong{font-size:clamp(2.6rem,4.1vw,3.45rem)}
- .pano-overview{gap:.5rem;margin-top:.5rem}
- .pano-stat{padding:.6rem .7rem;min-height:5.2rem}
+ .pano-overview{gap:.75rem;margin-top:0}
+ .pano-stat{padding:.62rem .7rem;min-height:5.4rem}
  .pano-stat-icon{width:2.3rem;height:2.3rem;flex-basis:2.3rem}
  .pano-stat-label{font-size:.76rem}
  .pano-stat strong{font-size:clamp(1.05rem,1.6vw,1.3rem)}
- .pano-spotlight{gap:.6rem}
- .pano-cards{padding:.72rem .8rem}
+ .pano-spotlight{gap:.75rem}
+ .pano-cards{padding:.9rem}
  .pano-card-stage{min-height:13rem}
  .pano-credit-card{width:min(58%,21rem);padding:.75rem .9rem}
  .pano-credit-card-name{font-size:1.05rem}
@@ -189,22 +224,23 @@
  .pano-card-amount strong{font-size:1.2rem}
  .pano-card-nav>span:not(.pano-card-indicator){display:block}
  .pano-chart{height:14rem;min-height:13rem}
- .pano-finance-block{gap:.6rem;margin-top:.6rem}
+ .pano-finance-block{gap:.75rem;margin-top:.75rem}
  .pano-mid{grid-template-columns:repeat(2,minmax(0,1fr))}
  .pano-action-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,6.4rem),1fr))}
  .pano-tables{gap:.6rem;margin-top:.6rem}
  .pano-grid-heading{flex-wrap:nowrap}
 }
+/* Desktop oficial a partir de 1024px; prévia segue a mesma malha. */
 @media(min-width:1024px){
  .pano-root{padding:.7rem .8rem 1.2rem}
- .pano-spotlight{grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));gap:.62rem;align-items:stretch}
- .pano-financial-column{grid-template-rows:minmax(0,1fr) auto;gap:0;align-content:stretch}
+ .pano-spotlight{grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));gap:.75rem;align-items:stretch}
+ .pano-financial-column{grid-template-rows:minmax(0,1fr) auto;gap:.75rem;align-content:stretch}
  .pano-hero{min-height:10rem;padding:1rem 1.15rem}
- .pano-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:.46rem;margin-top:.46rem}
- .pano-stat{min-height:4.9rem}
+ .pano-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-top:0}
+ .pano-stat{min-height:5.4rem}
  .pano-cards{min-height:0}
  .pano-card-stage{min-height:13rem}
- .pano-finance-block{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:.6rem;align-items:stretch}
+ .pano-finance-block{grid-template-columns:minmax(0,7fr) minmax(0,5fr);grid-template-rows:auto auto;gap:.75rem;align-items:stretch}
  .pano-mid{display:flex;flex-direction:column;align-items:stretch;gap:.6rem}
  .pano-tables{grid-template-columns:repeat(2,minmax(0,1fr))}
  .pano-action-list{grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem}
@@ -220,29 +256,77 @@
    Preserva carrossel circular, pontos de paginação e DataGrid compartilhado. */
 .pano-card-stage{background:radial-gradient(ellipse at 50% 75%,#0c9c9730,transparent 63%)}
 .pano-credit-card{border-color:#bafff2aa;box-shadow:0 15px 35px #00131be5,0 0 25px #23e7cf31,inset 0 1px 1px #ffffff50}
-.pano-card-control{position:absolute;z-index:6;top:50%;display:grid;place-items:center;width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;padding:0;border:1px solid #70e5d2b0;border-radius:50%;background:linear-gradient(145deg,#0c555fcc,#063039ec);color:#d7fff6;box-shadow:0 0 0 1px #07313980,0 7px 17px #00191abc,0 0 14px #24cfb53b;backdrop-filter:blur(10px);transform:translateY(-50%);transition:background .16s,border-color .16s,box-shadow .16s}
+.pano-card-control{
+ position:absolute;z-index:6;top:50%;display:grid;place-items:center;width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;padding:0;border:0;border-radius:50%;background:transparent;color:#d7fff6;box-shadow:none;transform:translateY(-50%);transition:color .16s
+}
 .pano-card-control.is-prev{left:.35rem}
 .pano-card-control.is-next{right:.35rem}
-.pano-card-control:hover:not(:disabled){background:#0d6b70;border-color:#b0fff0;box-shadow:0 0 0 1px #18dcbda0,0 0 20px #27e1c37a,0 8px 19px #00171de0}
+.pano-card-control:hover:not(:disabled){
+ color:#8cffe8;background:transparent;box-shadow:none
+}
 .pano-card-control:disabled{opacity:.35;cursor:default;box-shadow:none}
 .pano-card-nav{justify-content:center;gap:.4rem;min-height:2.75rem}
 .pano-card-nav>span:not(.pano-card-indicator){flex:0 1 auto}
 .pano-card-indicator{margin-inline:auto}
 /* Os botões e SVGs do DataGrid recebem tratamento SOMENTE dentro da Home. */
-.pano-grid .pano-panel-title h2 svg{color:#70f5db;filter:drop-shadow(0 0 6px #1cf1c94d);stroke-width:2.05}
-.pano-grid-actions button{gap:.38rem;border-color:#398e89b8;background:linear-gradient(145deg,#08434b,#062b35);color:#abffed;font-weight:750}
+.pano-grid .pano-panel-title h2 svg{
+ color:#70f5db;filter:none;stroke-width:2.05
+}
+.pano-grid-actions button{border:0;background:transparent;box-shadow:none;color:#abffed;font-weight:750}
 .pano-grid-actions button svg{color:#61e6d4;stroke-width:2.1}
-.pano-grid-actions button:hover,.pano-grid-actions button[aria-expanded=true]{border-color:#5ff1d7;background:#0b555d;box-shadow:0 0 12px #13d8b127}
+.pano-grid-actions button:hover,.pano-grid-actions button[aria-expanded=true]{
+ color:#c2fff2;border:0;background:transparent;box-shadow:none
+}
 .pano-grid .meg-datagrid-sort-button{color:#72cfcb;transition:color .16s,background .16s}
 .pano-grid .meg-datagrid-sort-button svg{stroke-width:2.2;filter:drop-shadow(0 0 3px #10cbbd33)}
 .pano-grid .meg-datagrid-sort-button:hover{color:#aefff0;background:#0e494e}
 .pano-grid .meg-datagrid-filter-button{color:#75d6ce;border-radius:.3rem;transition:color .16s,background .16s}
 .pano-grid .meg-datagrid-filter-button svg{stroke-width:2.1}
 .pano-grid .meg-datagrid-filter-button:hover,.pano-grid .meg-datagrid-filter-button.is-active{color:#b5fff0;background:#0c595b}
-.pano-grid .meg-datagrid-pagination button{border:1px solid #287b797f;border-radius:.46rem;background:#062d35;color:#a6f9e7;transition:background .16s,border-color .16s,box-shadow .16s}
-.pano-grid .meg-datagrid-pagination button:not(:disabled):hover{background:#0e5059;border-color:#62e7d0;box-shadow:0 0 10px #16cfb32b}
+.pano-grid .meg-datagrid-pagination button{
+ border:0;border-radius:50%;background:transparent;color:#a6f9e7;transition:color .16s
+}
+.pano-grid .meg-datagrid-pagination button:not(:disabled):hover{
+ color:#cbfff3;background:transparent;border:0;box-shadow:none
+}
 .pano-grid .meg-datagrid-pagination button svg{stroke-width:2.35}
 @media(prefers-reduced-motion:reduce){.pano-card-control,.pano-grid .meg-datagrid-sort-button,.pano-grid .meg-datagrid-filter-button,.pano-grid .meg-datagrid-pagination button{transition:none!important}}
+
+/* Ações contextuais SVG com tooltip, foco e alvos de toque adequados. */
+.pano-root .pano-icon-action{
+ position:relative;display:inline-grid;place-items:center;flex:0 0 2.75rem;width:2.75rem;height:2.75rem;min-height:2.75rem;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;transition:color .16s
+}
+.pano-root .pano-icon-action svg{width:1.2rem;height:1.2rem;stroke-width:2.1}
+.pano-root .pano-icon-action:hover:not(:disabled),
+.pano-root .pano-icon-action[aria-expanded="true"]{
+ color:#c5fff1;background:transparent;border:0;box-shadow:none;transform:none
+}
+.pano-root .pano-icon-action:active:not(:disabled){transform:translateY(0)}
+.pano-root .pano-icon-action:focus-visible{outline:2px solid #9dffeb;outline-offset:2px}
+.pano-root .pano-icon-action[data-tooltip]::after{
+ content:attr(data-tooltip);position:absolute;z-index:40;
+ right:0;bottom:calc(100% + 9px);pointer-events:none;
+ min-width:max-content;max-width:min(12rem,calc(100vw - 2rem));
+ padding:.4rem .6rem;border:1px solid rgba(119,244,225,.54);border-radius:.6rem;
+ background:#052c35;color:#e9fff9;font-size:.73rem;font-weight:750;
+ line-height:1.35;white-space:normal;text-align:center;
+ box-shadow:0 10px 24px rgba(0,0,0,.37);
+ opacity:0;visibility:hidden;transform:translateY(4px);
+ transition:opacity .16s,transform .16s,visibility .16s
+}
+.pano-root .pano-icon-action[data-tooltip]:is(:hover,:focus-visible)::after{
+ opacity:1;visibility:visible;transform:translateY(0)
+}
+.pano-icon-action__count{
+ position:absolute;top:-.3rem;right:-.25rem;
+ display:grid;place-items:center;min-width:1.05rem;height:1.05rem;
+ padding:0 .15rem;border-radius:50%;font-size:.58rem;font-weight:900;
+ color:#042f33;background:#7cffdf;border:1px solid #d8fff5
+}
+@media(prefers-reduced-motion:reduce){
+ .pano-root .pano-icon-action,.pano-root .pano-icon-action::after{transition:none!important}
+ .pano-root .pano-icon-action:hover:not(:disabled){transform:none}
+}
 
 /* Home 08: densidade pareada dos DataGrids, sem modificar a biblioteca compartilhada.
    Com três vencimentos, não esticar linhas até preencher artificialmente a coluna. */
@@ -304,12 +388,224 @@
   color:#ffdc96;border-color:rgba(214,155,56,.46);background:rgba(119,77,16,.20);
 }
 
-/* O alinhamento vertical das duas colunas permanece independente da quantidade de registros. */
+/* Home: quatro painéis na mesma malha 2x2, sem alturas artificiais.
+   display:contents é exclusivo do desktop e só remove caixas de layout. */
+/* Desktop oficial a partir de 1024px; prévia segue a mesma malha. */
 @media(min-width:1024px){
- .pano-finance-block>.pano-finance-column{
-  display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:0;
+ .pano-finance-block{
+  grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+  grid-template-rows:auto auto;align-items:stretch;gap:.75rem
  }
- .pano-finance-block>.pano-finance-column>.pano-grid{
-  flex:1 1 auto;
+ .pano-finance-block>.pano-finance-column{display:contents}
+ .pano-finance-block .pano-flow{grid-column:1;grid-row:1}
+ .pano-finance-block .pano-benefits{
+  grid-column:2;grid-row:1;display:flex;flex-direction:column;min-height:0;align-self:stretch
  }
+ .pano-finance-block .pano-benefits .pano-benefit-card{flex:1 1 auto}
+ .pano-finance-block .is-primary>.pano-grid{
+  grid-column:1;grid-row:2;align-self:stretch;min-height:0
+ }
+ .pano-finance-block .is-secondary>.pano-grid--commitments{
+  grid-column:2;grid-row:2;align-self:stretch;min-height:0
+ }
+}
+
+/* A urgência é fornecida exclusivamente pela API financeira canônica.
+   Ícone e contraste sem mudar proporções homologadas do DataGrid da Home. */
+.pano-finance-block .pano-status.is-overdue{
+  display:inline-flex;align-items:center;gap:.22rem;
+  color:#ffc6cb;border-color:rgba(248,104,124,.55);
+  background:rgba(122,29,53,.22);
+}
+.pano-finance-block .pano-status.is-overdue svg{
+  color:#ffa8b6;flex:0 0 auto;
+}
+.pano-finance-block .pano-status.is-due-today{
+  display:inline-flex;align-items:center;gap:.22rem;
+  color:#ffe3a8;border-color:rgba(250,190,78,.54);
+  background:rgba(130,79,15,.22);
+}
+.pano-finance-block .pano-status.is-due-today svg{
+  color:#ffda83;flex:0 0 auto;
+}
+
+/* Estados canônicos da API em SVG, no mesmo eixo visual da data. */
+.pano-grid--commitments .pano-due-date{
+ display:inline-flex;flex-direction:row;align-items:center;justify-content:flex-start;
+ gap:.45rem;min-width:0;max-width:100%;line-height:1.15
+}
+.pano-grid--commitments .pano-due-date__value{
+ color:#f1fffa;font-weight:780;font-variant-numeric:tabular-nums;
+ white-space:nowrap;font-size:.83rem
+}
+.pano-grid--commitments .pano-due-date__urgency{
+ display:inline-grid;place-items:center;flex:0 0 1.5rem;width:1.5rem;height:1.5rem;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;filter:none
+}
+.pano-grid--commitments .pano-due-date__urgency.is-overdue{
+ color:#EF4444;background:transparent;border:0;filter:none
+}
+.pano-grid--commitments .pano-due-date__urgency.is-due-today{
+ color:#F59E0B;background:transparent;border:0;filter:none
+}
+.pano-grid--commitments .pano-due-date__urgency.is-upcoming{
+ color:#10B981;background:transparent;border:0;filter:none
+}
+.pano-grid--commitments .pano-due-date__urgency svg{flex:0 0 auto;stroke-width:2.1}
+.pano-finance-block .pano-grid--commitments .meg-datagrid-table td{
+ font-size:.81rem;line-height:1.38;
+}
+.pano-finance-block .pano-grid--commitments .meg-datagrid-table th{
+ font-size:.79rem;line-height:1.3;
+}
+/* Responsividade por largura da coluna sem mudar o DataGrid central. */
+.pano-grid--movements{container-type:inline-size}
+@container (max-width:38rem){
+ .pano-grid--movements .meg-datagrid-table{display:none!important}
+ .pano-grid--movements .meg-datagrid-cards{display:grid!important;min-width:0}
+}
+/* O resumo de 3 colunas é distinto da listagem integral de 5 colunas.
+   O valor e o vencimento precisam caber na primeira visualização da Home. */
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table{
+ width:100%;table-layout:fixed;
+}
+/* A largura do painel é a autoridade da apresentação compacta.
+   Em 1024px o card direito tem ~295px: usar cards já existentes no DataGrid
+   em vez de cortar valor/data ou criar breakpoint global adicional. */
+.pano-grid--commitments:not(.pano-commitments-dialog__grid){
+ container-type:inline-size;
+}
+@container (max-width:26rem){
+ .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table{
+  display:none!important;
+ }
+ .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-cards{
+  display:grid!important;min-width:0;
+ }
+}
+/* O DataGrid posiciona a alça 4px além da última coluna. Só no resumo
+   compacto, trazê-la para dentro impede rolagem indevida sem desativá-la. */
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table th:last-child .meg-datagrid-resizer{
+ right:0;
+}
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table td:last-child strong{
+ display:inline-block;max-width:100%;white-space:nowrap;
+ font-size:.82rem;font-variant-numeric:tabular-nums;
+}
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table td:nth-child(2) .pano-cell-text{
+ display:-webkit-box;max-width:100%;overflow:hidden;
+ -webkit-line-clamp:2;-webkit-box-orient:vertical;
+ white-space:normal;line-height:1.26;overflow-wrap:anywhere;
+}
+.pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row){
+ height:3rem;max-height:3rem;
+}
+.pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row) td{
+ height:3rem!important;min-height:3rem;padding-block:.24rem;
+}
+.pano-grid--commitments .meg-datagrid-card-row dd{font-size:.89rem}
+.pano-grid--commitments .meg-datagrid-card-row .pano-due-date__value{font-size:.88rem}
+.pano-grid--commitments .meg-datagrid-page-range,
+.pano-grid--commitments .meg-datagrid-page-size{font-size:.8rem}
+@media (max-width:639px){
+ .pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row) td{
+  min-height:0;padding-block:.42rem;
+ }
+
+}
+
+
+/* Home 08 P0: consulta integral sob demanda. Não altera o DataGrid global.
+   O próprio diálogo nativo gerencia foco/modalidade, com scroll interno. */
+.pano-commitments-dialog{
+ width:min(62rem,calc(100vw - 1.5rem));max-width:calc(100vw - 1.5rem);
+ max-height:calc(100dvh - 1.5rem);height:auto;
+ margin:auto;padding:0;overflow:auto;box-sizing:border-box;
+ border:1px solid #3bafa0;border-radius:1.35rem;
+ background:#031f27;color:#effcf9;
+ box-shadow:0 1.2rem 4rem #000d17cc;
+ font-family:Inter,system-ui,sans-serif;
+}
+.pano-commitments-dialog::backdrop{background:rgba(0,10,15,.81);backdrop-filter:blur(3px)}
+.pano-commitments-dialog__header{
+ display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;
+ padding:1rem 1.15rem .8rem;border-bottom:1px solid #2e777366;
+}
+.pano-commitments-dialog__header h2{font-size:1.12rem;margin:0 0 .3rem;font-weight:830}
+.pano-commitments-dialog__header p{
+ margin:0;font-size:.84rem;line-height:1.45;color:#abd8d1;
+}
+.pano-commitments-dialog__header button,
+.pano-commitments-dialog__footer button{
+ min-height:2.75rem;padding:.45rem .75rem;border:1px solid #399b94;
+ border-radius:.47rem;background:#09515a;color:#eafff6;
+ font-size:.86rem;font-weight:770;cursor:pointer;
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close{
+ display:grid;place-items:center;flex:0 0 2.75rem;
+ position:relative;isolation:isolate;width:2.75rem;height:2.75rem;
+ padding:0;border:0;border-radius:50%;color:#b9e9e0;background:transparent;
+ box-shadow:none;transition:color .18s,transform .18s
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close::before{
+ content:"";position:absolute;z-index:-1;inset:.23rem;border-radius:50%;
+ background:linear-gradient(145deg,rgba(26,104,112,.55),rgba(4,42,55,.35));
+ opacity:.32;transform:scale(.9);transition:opacity .18s,transform .18s
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close:hover{
+ color:#f7fffc;transform:scale(1.045)
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close:is(:hover,:focus-visible)::before{
+ opacity:1;transform:scale(1)
+}
+@media(prefers-reduced-motion:reduce){
+ .pano-commitments-dialog__header .pano-commitments-dialog__close,
+ .pano-commitments-dialog__header .pano-commitments-dialog__close::before{transition:none!important}
+ .pano-commitments-dialog__header .pano-commitments-dialog__close:hover{transform:none}
+}
+.pano-commitments-dialog__header button:focus-visible,
+.pano-commitments-dialog__footer button:focus-visible{
+ outline:2px solid #b6ffec;outline-offset:2px;
+}
+.pano-commitments-dialog__footer button:disabled{opacity:.55;cursor:wait}
+.pano-commitments-dialog__summary{
+ margin:0;padding:.75rem 1.1rem;font-size:.87rem;
+ color:#d5f4ec;font-weight:720;line-height:1.4;
+}
+.pano-commitments-dialog__error{
+ margin:.2rem 1.05rem;padding:.65rem .7rem;border-radius:.42rem;
+ border:1px solid #d18c72;background:#472b2a;color:#ffded4;
+ font-size:.86rem;line-height:1.45;
+}
+.pano-commitments-dialog__notice{
+ margin:.2rem 1.05rem;font-size:.83rem;color:#ffe8b0;
+}
+.pano-commitments-dialog__grid{
+ margin:0 .8rem;min-width:0;
+}
+.pano-commitments-dialog__grid .meg-datagrid{background:#032b30}
+.pano-commitments-dialog__grid .meg-datagrid-table td{font-size:.84rem}
+.pano-commitments-dialog__grid .meg-datagrid-table th{font-size:.8rem}
+.pano-commitments-dialog__grid .pano-due-date__value{font-size:.84rem}
+.pano-commitments-dialog__grid .meg-datagrid__viewport{
+ max-height:min(55dvh,32rem);overflow:auto;
+}
+.pano-commitments-dialog__empty{
+ margin:1.2rem;font-size:.87rem;color:#aed6d0;
+}
+.pano-commitments-dialog__footer{
+ display:flex;align-items:center;flex-wrap:wrap;gap:.7rem;
+ padding:.9rem 1.1rem 1.1rem;min-width:0;
+}
+.pano-commitments-dialog__footer span{
+ min-width:0;font-size:.8rem;color:#b8d9d6;
+}
+@media(max-width:639px){
+ .pano-commitments-dialog{width:calc(100vw - .6rem);max-width:calc(100vw - .6rem);max-height:calc(100dvh - .6rem)}
+ .pano-commitments-dialog__header{padding:.8rem .7rem;align-items:center}
+ .pano-commitments-dialog__header h2{font-size:1rem}
+ .pano-commitments-dialog__header p{font-size:.76rem}
+ .pano-commitments-dialog__header button{flex:0 0 auto}
+ .pano-commitments-dialog__grid{margin:0 .3rem}
+ .pano-commitments-dialog__summary{padding:.65rem .7rem}
+ .pano-commitments-dialog__footer{padding:.75rem .7rem}
 }

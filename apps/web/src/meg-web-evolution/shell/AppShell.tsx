@@ -2,6 +2,7 @@ import { useEffect, useState, type FocusEvent, type MouseEvent, type ReactNode }
 import { createPortal } from 'react-dom';
 import { Icon } from '../components/Icon';
 import { IconButton } from '../components/primitives';
+import {HomeDueAlertsProvider,HomeDueAlertsBell} from '../home/HomeDueAlerts';
 import './shell.css';
 
 const navigation = [
@@ -24,7 +25,11 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({children,periodLabel}:{children:ReactNode;periodLabel?:string}){
+ return <HomeDueAlertsProvider><AppShellView periodLabel={periodLabel}>{children}</AppShellView></HomeDueAlertsProvider>;
+}
+
+function AppShellView({ children, periodLabel }: { children: ReactNode; periodLabel?: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -268,23 +273,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="meg-topbar-actions">
             <button type="button" className="meg-period">
               <Icon name="calendar" />
-              <span>Outubro&nbsp;de&nbsp;2026</span>
+              <span>{periodLabel || 'Outubro de 2026'}</span>
               <Icon name="chevronDown" />
             </button>
 
-            <IconButton
-              label="Notificações"
-              className="meg-notification"
-              data-tooltip="Notificações"
-              onMouseEnter={(event) => showTooltip(event, 'Notificações', 'bottom')}
-              onMouseLeave={hideTooltip}
-              onFocus={(event) => showTooltip(event, 'Notificações', 'bottom')}
-              onBlur={hideTooltip}
-            >
-              <Icon name="bell" />
-              <span className="meg-notification-dot" aria-hidden="true" />
-            </IconButton>
-
+            <HomeDueAlertsBell/>
             <button type="button" className="meg-profile">
               <span className="meg-avatar">MV</span>
               <span className="meg-profile-name">Marcos de Andrade Vilalva</span>

@@ -43,8 +43,91 @@ async function checkWindow(page,width,editing=false){
  assert(result.n>=1&&result.n<=4&&sameRow&&complete&&result.documentWidth<=result.viewportWidth+2,
   'janela circular deve mostrar cartões inteiros, uma linha e sem overflow: '+width+' '+JSON.stringify(result));
  assert(result.items.every(item=>item.left>=result.frame.left-2&&item.right<=result.frame.right+2),'cartão renderizado fora da janela: '+width);
- assert(result.editCount===(editing?result.items.filter((_,i)=>true).length-(await page.getByRole('button',{name:'Adicionar atalho'}).count()):0),
-  'edição precisa ocorrer na mesma janela: '+width);
+ assert(result.editCount===0,'controles concorrentes não devem ficar dentro dos cards: '+width);
+
+ const bare=await page.locator([
+  '.pano-stat-icon','.pano-grid--commitments .pano-due-date__urgency',
+  '.pano-card-summary-icon','.pano-flow-open','.pano-grid-actions .pano-icon-action',
+  '.pano-view-all','.pano-quick-item-icon'
+ ].join(',')).evaluateAll(els=>els.filter(el=>el.getBoundingClientRect().width>0).map(el=>{
+  const s=getComputedStyle(el);return {c:typeof el.className==='string'?el.className:'svg',
+   bg:s.backgroundColor,border:s.borderTopWidth,shadow:s.boxShadow,svg:el.querySelectorAll('svg').length};
+ }));
+ assert(bare.length>=7&&bare.every(x=>x.bg==='rgba(0, 0, 0, 0)'&&x.border==='0px'&&x.shadow==='none'&&x.svg===1),
+  'ícones da Home sem caixas, medalhões ou sombras: '+width+' '+JSON.stringify(bare));
+ const layout=await page.evaluate(()=>{
+  const b=s=>{const el=document.querySelector(s);if(!el)return null;const r=el.getBoundingClientRect();
+   return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}};
+  return {spotlight:b('.pano-spotlight'),quick:b('.pano-quick'),finance:b('.pano-finance-block'),
+   flow:b('.pano-flow'),benefits:b('.pano-benefits'),
+   movements:b('.is-primary>.pano-grid'),due:b('.pano-grid--commitments'),
+   cardName:b('.pano-card-summary-copy strong'),issuer:b('.pano-card-summary-copy>span')};
+ });
+ assert(layout.spotlight&&layout.quick&&layout.finance&&
+  layout.spotlight.bottom+7<=layout.quick.top&&layout.quick.bottom+7<=layout.finance.top,
+  'distância uniforme entre seções sem sobreposição: '+width+' '+JSON.stringify(layout));
+ if(width>=1024){
+  assert(layout.flow&&layout.benefits&&layout.movements&&layout.due&&
+   Math.abs(layout.flow.top-layout.benefits.top)<=3&&
+   Math.abs(layout.movements.top-layout.due.top)<=3&&
+   Math.abs(layout.flow.bottom-layout.benefits.bottom)<=3&&
+   layout.flow.bottom+7<=layout.movements.top,
+   'malha financeira 2x2 simétrica, sem cards desencontrados: '+width+' '+JSON.stringify(layout)+
+    ' CSSOM '+JSON.stringify(await page.evaluate(()=>{
+     const matches=[];
+     const scan=(rules,media='all')=>{
+      for(const r of Array.from(rules)){
+       if(r instanceof CSSMediaRule){if(/1008|1024|992/.test(r.conditionText))scan(r.cssRules,r.conditionText);continue}
+       if(r instanceof CSSStyleRule&&/pano-finance-block|pano-finance-column/.test(r.selectorText)){
+        matches.push({media,selector:r.selectorText,columns:r.style.gridTemplateColumns,
+         display:r.style.display,match:media==='all'||matchMedia(media).matches})
+       }
+      }
+     };
+     for(const sheet of Array.from(document.styleSheets)){
+      try{scan(sheet.cssRules)}catch{/* estilos de terceiros não são fontes da Home */}
+     }
+     return matches.slice(-28)
+    })));
+ }
+ assert(layout.cardName&&layout.issuer&&layout.issuer.top>=layout.cardName.bottom-1,
+  'nome e emissor do cartão não podem se sobrepor: '+width);
+
+
+ const visual=await page.locator('.pano-quick-item:not(.pano-quick-add)').evaluateAll(nodes=>nodes.map(el=>{
+  const icon=el.querySelector('.pano-quick-item-icon');
+  const s=getComputedStyle(el),i=icon?getComputedStyle(icon):null;
+  return {kind:[...el.classList].find(c=>c.startsWith('is-')&&c!=='is-editing')??'',
+   border:s.borderTopColor,active:el.matches(':hover')||el.matches(':focus-within'),
+   corner:s.borderTopLeftRadius,
+   iconBg:i?.backgroundColor??'',iconColor:i?.color??'',
+   iconWidth:icon?.getBoundingClientRect().width??0,
+   svg:icon?.querySelectorAll('svg').length??0
+  };
+ }));
+ const approvedColors={'is-blue':'rgb(101, 207, 255)','is-violet':'rgb(185, 163, 255)',
+  'is-amber':'rgb(244, 199, 107)','is-slate':'rgb(167, 221, 232)'};
+ assert(visual.length>0&&visual.every(item=>
+  item.iconBg==='rgba(0, 0, 0, 0)'&&item.svg===1&&item.iconWidth<=32&&
+  item.iconColor===approvedColors[item.kind]&&parseFloat(item.corner)>=14),
+  'atalhos devem usar SVG de cor isolada, sem quadrado interno: '+width+' '+JSON.stringify(visual));
+ const resting=visual.filter(item=>!item.active);
+ assert(new Set(resting.map(item=>item.border)).size<=1,
+  'cards inativos devem usar uma borda sutil única; hover/foco podem iluminar: '+width);
+ const header=await page.locator('.pano-quick-header-actions').evaluate(el=>({
+  width:el.getBoundingClientRect().width,
+  buttons:[...el.querySelectorAll('button')].map(b=>({
+   w:b.getBoundingClientRect().width,h:b.getBoundingClientRect().height,
+   border:getComputedStyle(b).borderTopWidth,aria:b.getAttribute('aria-label')
+  }))
+ }));
+ assert(header.buttons.length===(editing?4:3)&&
+  header.buttons.every(b=>b.w>=44&&b.h>=44&&b.border==='0px'&&b.aria),
+  'ícones de personalização e carrossel precisam ser ghost e acessíveis: '+width+' '+JSON.stringify(header));
+
+ assert(result.items.every(item=>Math.abs(item.bottom-item.top-75)<=2),
+  'cards devem manter 75px também na edição: '+width);
+
 }
 try{
  for(const width of [320,390,640,768,1024,1366,1920,2560]){
@@ -70,18 +153,33 @@ try{
   assert(pageSizes.length===2&&pageSizes.every(x=>x.options.join(',')==='5,10'&&['5','10'].includes(x.value)),
    'Home deve oferecer apenas 5 ou 10 registros, sem 600: '+width+' '+JSON.stringify(pageSizes));
   if(width>=1024){
-   const rows=await page.evaluate(()=>{
+   const modes=await page.evaluate(()=>{
     const blocks=[...document.querySelectorAll('.pano-finance-block .pano-grid')];
     if(blocks.length!==2)return null;
-    return blocks.map(block=>[...block.querySelectorAll('.meg-datagrid-table tbody tr:not(.meg-datagrid-group-row)')]
-     .filter(el=>el.getBoundingClientRect().height>0)
-     .map(el=>el.getBoundingClientRect().height));
+    const visible=el=>{if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0};
+    return blocks.map(block=>({
+      rows:[...block.querySelectorAll('.meg-datagrid-table tbody tr:not(.meg-datagrid-group-row)')].filter(visible).map(el=>el.getBoundingClientRect().height),
+      cards:[...block.querySelectorAll('.meg-datagrid-card-row')].filter(visible).map(el=>el.getBoundingClientRect().height)
+    }));
    });
-   assert(rows&&rows[0].length>=3&&rows[1].length>=1,'DataGrid sem linhas de prévia: '+width+' '+JSON.stringify(rows));
-   const left=rows[0][0],right=rows[1][0];
-   assert(Math.abs(left-right)<=3&&left<=65&&right<=65,
-    'linhas dos dois DataGrids devem ter densidade equivalente: '+width+' '+JSON.stringify({left,right,rows}));
+   assert(modes&&modes[0].rows.length+modes[0].cards.length>=3&&modes[1].rows.length+modes[1].cards.length>=1,
+    'Ambos DataGrids devem ter registros visíveis em tabela ou cards: '+width+' '+JSON.stringify(modes));
+   assert(modes.every(v=>(v.rows.length>0)!==(v.cards.length>0)),
+    'Cada DataGrid deve ter um único modo visual ativo: '+width+' '+JSON.stringify(modes));
+   if(modes.every(v=>v.rows.length>0)){
+    const [left,right]=modes.map(v=>v.rows[0]);
+    assert(Math.abs(left-right)<=3&&left<=65&&right<=65,
+     'As linhas visíveis das duas tabelas devem ter densidade equivalente: '+width+' '+JSON.stringify(modes));
+   }
   }
+  const typeScale=await page.locator('.pano-quick-item:not(.pano-quick-add) .pano-quick-item-label').first().evaluate(el=>{
+    const strong=getComputedStyle(el.querySelector('strong'));
+    const small=getComputedStyle(el.querySelector('small'));
+    const card=el.closest('.pano-quick-item').getBoundingClientRect();
+    return {title:parseFloat(strong.fontSize),secondary:parseFloat(small.fontSize),lineHeight:parseFloat(small.lineHeight),height:card.height};
+  });
+  assert(typeScale.title>=13&&typeScale.secondary>=12&&typeScale.lineHeight>=14&&Math.abs(typeScale.height-75)<=2,
+   'tipografia legível sem aumentar o card: '+width+' '+JSON.stringify(typeScale));
   const initial=await names(page);
   await previous(page);
   assert((await names(page))[0]==='Adicionar','carrossel não volta circularmente ao fim: '+width);
@@ -93,15 +191,39 @@ try{
   const pencil=page.getByRole('button',{name:'Personalizar ações rápidas'});
   assert(await pencil.locator('svg').count()===1&&await pencil.innerText()==='','lápis deve ser apenas ícone: '+width);
   await pencil.click();
+  assert(await page.getByRole('button',{name:'Concluir personalização'}).getAttribute('aria-pressed')==='true',
+   'botão de personalização deve refletir estado ativo para leitores de tela: '+width);
   await checkWindow(page,width,true);
-  assert(await page.getByRole('button',{name:'Mover Transferência para direita'}).count()===1,'seta de ordenação ausente: '+width);
-  const areas=await page.locator('.pano-quick-inline-controls button').evaluateAll(items=>items.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,aria:el.getAttribute('aria-label')})));
-  assert(areas.every(item=>item.w>=44&&item.h>=44&&item.aria),'alvos de toque e rótulos dos controles: '+width);
-  await page.getByRole('button',{name:'Mover Transferência para direita'}).click();
-  assert(JSON.stringify((await stored(page)).slice(0,2))===JSON.stringify(['pendentes','transferencia']),'ordenação à direita: '+width);
-  for(let k=0;k<10&&!await page.getByRole('button',{name:'Mover Transferência para esquerda'}).count();k++)await next(page);
-  await page.getByRole('button',{name:'Mover Transferência para esquerda'}).click();
-  assert(JSON.stringify((await stored(page)).slice(0,4))===JSON.stringify(['transferencia','pendentes','relatorios','metas']),'ordenação à esquerda: '+width);
+  assert(await page.getByRole('button',{name:'Organizar Transferência'}).count()===1,
+   'edição precisa oferecer painel por atalho: '+width);
+  const trigger=page.getByRole('button',{name:'Organizar Transferência'});
+  await trigger.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  const focus=await trigger.evaluate(el=>{
+    const style=getComputedStyle(el);
+    return {visible:el.matches(':focus-visible'),outlineStyle:style.outlineStyle,outlineWidth:style.outlineWidth};
+  });
+  assert(focus.visible&&focus.outlineStyle==='solid'&&parseFloat(focus.outlineWidth)>=2,
+   'foco de teclado deve ficar visível nos atalhos: '+width+' '+JSON.stringify(focus));
+  await trigger.click();
+  const organize=page.getByRole('dialog',{name:'Organizar atalho'});
+  assert(await organize.getByText('Posição 1 de 4').isVisible(),'posição inicial deve ser clara: '+width);
+  const areas=await organize.locator('button').evaluateAll(items=>items.map(el=>({
+   w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,aria:el.getAttribute('aria-label')
+  })));
+  assert(areas.every(item=>item.w>=44&&item.h>=44&&item.aria),
+   'controles acessíveis no painel: '+width);
+  await organize.getByRole('button',{name:'Mover Transferência para direita'}).click();
+  assert(JSON.stringify((await stored(page)).slice(0,2))===JSON.stringify(['pendentes','transferencia']),
+   'ordenação à direita: '+width);
+  assert(await organize.getByText('Posição 2 de 4').isVisible(),'posição mudou no painel: '+width);
+  await organize.getByRole('button',{name:'Mover Transferência para esquerda'}).click();
+  assert(JSON.stringify((await stored(page)).slice(0,4))===JSON.stringify(['transferencia','pendentes','relatorios','metas']),
+   'ordenação à esquerda: '+width);
+  await page.keyboard.press('Escape');
+  assert(await page.getByRole('dialog',{name:'Organizar atalho'}).count()===0,
+   'Escape precisa fechar a organização: '+width);
 
   for(const extra of extras)await addItem(page,extra);
   assert((await stored(page)).length===7,'catálogo não aceita todos os sete destinos: '+width);
@@ -116,8 +238,9 @@ try{
   await checkWindow(page,width);
   await page.getByRole('button',{name:'Personalizar ações rápidas'}).click();
   // Benefícios não precisa estar visível: rotação garante acesso.
-  for(let n=0;n<10&&!await page.getByRole('button',{name:'Remover Benefícios'}).count();n++)await next(page);
-  await page.getByRole('button',{name:'Remover Benefícios'}).click();
+  for(let n=0;n<10&&!await page.getByRole('button',{name:'Organizar Benefícios'}).count();n++)await next(page);
+  await page.getByRole('button',{name:'Organizar Benefícios'}).click();
+  await page.getByRole('dialog',{name:'Organizar atalho'}).getByRole('button',{name:'Remover Benefícios'}).click();
   assert((await stored(page)).length===6,'remoção falhou: '+width);
   await addItem(page,'Benefícios');
   assert((await stored(page)).length===7,'reinclusão falhou: '+width);
@@ -125,6 +248,8 @@ try{
   assert(JSON.stringify(await stored(page))===JSON.stringify(['transferencia','pendentes','relatorios','metas']),
    'restaurar padrão falhou: '+width);
   await page.getByRole('button',{name:'Concluir personalização'}).click();
+  assert(await page.getByRole('button',{name:'Personalizar ações rápidas'}).getAttribute('aria-pressed')==='false',
+   'estado desligado da personalização deve ser acessível: '+width);
   await checkWindow(page,width);
 
   if(width>=1024){

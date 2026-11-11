@@ -1,13 +1,16 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {authenticatedRequest} from '../../app/auth-client';
 // @ts-expect-error Adaptador JavaScript da fonte única já validada na Etapa 02
-import {composeMegApiSnapshot,fromCanonicalReadModels,fromFinancialEvents,fromPayables,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
+import {composeMegApiSnapshot,fromCanonicalReadModels,fromFinancialEvents,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
 import {DataGrid} from '../datagrid/DataGrid';
 import type {DataGridColumn} from '../datagrid/types';
 import {HomeChart,type CashflowDay} from './HomeChart';
 import {HomeGlyph,type HomeIconName} from './HomeGlyph';
 import {CardBrandMark} from './CardBrandMark';
 import {QuickActions} from './QuickActions';
+import {readCanonicalHomeCommitments,type CanonicalHomeCommitment} from './home-commitments-read';
+import {HomeCommitmentsFullList} from './HomeCommitmentsFullList';
+import {useHomeDueAlertPublisher} from './HomeDueAlerts';
 import './home-dashboard.css';
 
 export type HomeFinancialData={
@@ -17,6 +20,8 @@ export type HomeFinancialData={
  available:{date:string;available:number;scope:'monetary'}|null;
  transactions:Array<{id:string;date:string;description:string;status:string;type:string;amount:number;signedAmount:number;categoryId?:string|null;accountId?:string|null}>;
  followingTransactions?:HomeFinancialData['transactions'];
+ /** Fonte exclusiva em sessão autenticada. Em prévia visual mantém dados fictícios existentes. */
+ canonicalCommitments?:CanonicalHomeCommitment[];
  payables:Array<{id:string;description:string;dueDate:string;status:string;openAmount:number;categoryId?:string|null}>;
  accounts:Array<{id:string;name:string;type?:string}>;
  categories:Array<{id:string;name:string}>;
@@ -31,37 +36,45 @@ const format=(n:number|null|undefined,hidden:boolean)=>hidden?'R$ ••••�
 const dateString=(s:string)=>/^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
 const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,available:null,transactions:[],payables:[],accounts:[],categories:[],cards:[]};
 async function readHome(month:string):Promise<HomeFinancialData>{
- const following=new Date(month+'-01T12:00:00Z');following.setUTCMonth(following.getUTCMonth()+1);
- const followingMonth=following.toISOString().slice(0,7);
- const [summary,cashflow,benefit,events,payables,cards,accounts,categories,available,followingEvents]=await Promise.all([
+ const [summary,cashflow,benefit,events,cards,accounts,categories,available,canonicalCommitments]=await Promise.all([
   authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/payables/open',{cache:'no-store'}),
   authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
   authenticatedRequest<unknown>('/finance/accounts',{cache:'no-store'}),
   authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
   // Rota nova, canônica; até ser implantada na API retorna ausente, nunca estimado.
   authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
-  authenticatedRequest<unknown>('/finance/events/month?month='+followingMonth,{cache:'no-store'}).catch(()=>[])
+  // Falha de compromisso canônico é crítica: não mostrar um falso quadro vazio.
+  readCanonicalHomeCommitments(authenticatedRequest)
  ]);
  const adapted=composeMegApiSnapshot([
   fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
   fromFinancialEvents(events),
-  fromPayables(payables),
   fromCards(cards),
   fromFinanceCatalogs({accounts,categories})
  ]) as HomeFinancialData & {readModels?:unknown};
  return {
-  summary,cashflow,benefit,available,
+  summary,cashflow,benefit,available,canonicalCommitments,
   transactions:adapted.transactions||[],
-  followingTransactions:(fromFinancialEvents(followingEvents) as HomeFinancialData).transactions||[],
-  payables:adapted.payables||[],
+  followingTransactions:[],
+  payables:[],
   accounts:adapted.accounts||[],
   categories:adapted.categories||[],
   cards:adapted.cards||[]
  };
+}
+// Conversão de exibição compartilhada pelo resumo e pela listagem paginada.
+ // Nenhuma regra financeira é recalculada: os valores e estados são da API.
+function commitmentGridRows(items:CanonicalHomeCommitment[]):Record<string,unknown>[] {
+ return items.map(item=>({
+  id:item.id,date:item.dueDate,description:item.description,
+  source:item.source==='payable'?'Conta a pagar':'Lançamento previsto',
+  value:Number(item.amount),
+  status:item.source==='payable'?(item.status==='partial'?'Parcial':'A pagar'):'Previsto',
+  dueState:item.dueState
+ }));
 }
 // Apenas iconografia da categoria existente. Sem classificação financeira ou mutação de dados.
 function categoryGlyph(label:string):HomeIconName{
@@ -83,6 +96,30 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  const [movementMode,setMovementMode]=useState<'all'|'income'|'expense'>('all');
  const [showMovementFilters,setShowMovementFilters]=useState(false);
  const [showDueFilters,setShowDueFilters]=useState(false);
+ const [showAllCommitments,setShowAllCommitments]=useState(false);
+ const publishDueAlerts=useHomeDueAlertPublisher();
+ const openAllForAlerts=useCallback(()=>setShowAllCommitments(true),[]);
+ const alertBindingVersion=useRef(0);
+ useEffect(()=>{
+  if(!publishDueAlerts)return;
+  const version=++alertBindingVersion.current;
+  if(data.canonicalCommitments){
+   publishDueAlerts({
+    items:data.canonicalCommitments,
+    owner:userId||'qa-preview',
+    preview,
+    hidden,
+    openAll:openAllForAlerts,
+   });
+  }else publishDueAlerts(null);
+  return ()=>{
+   // StrictMode desmonta e remonta efeitos em desenvolvimento.
+   // Não apagar a primeira notificação antes da remontagem síncrona.
+   queueMicrotask(()=>{
+    if(alertBindingVersion.current===version)publishDueAlerts(null);
+   });
+  };
+ },[publishDueAlerts,data.canonicalCommitments,userId,preview,hidden,openAllForAlerts]);
  const [movementFiltersCount,setMovementFiltersCount]=useState(0);
  const [dueFiltersCount,setDueFiltersCount]=useState(0);
  const [cardIndex,setCardIndex]=useState(0);
@@ -139,6 +176,13 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    account:t.accountId?accounts.get(t.accountId)||'—':'—',
    value:t.amount,amount:t.signedAmount,status:t.status})),[data.transactions,categories,accounts,movementMode]);
  const commitments=useMemo<Record<string,unknown>[]>(()=>{
+  if(data.canonicalCommitments){
+   // Resumo visual de até oito itens; consulta integral disponível sob demanda.
+   return commitmentGridRows(data.canonicalCommitments);
+  }
+  // EXCLUSIVO da prévia de dados fictícios que recebeu aprovação visual.
+  // A sessão autenticada não utiliza este fallback e nunca recalcula vencidos.
+  if(!preview)return [];
   const planned=[...data.transactions,...(data.followingTransactions||[])].filter(t=>t.status==='planned'&&t.date>=dateNow()&&t.signedAmount<0)
    .map(t=>({id:'event:'+t.id,date:t.date,description:t.description,
     source:'Lançamento previsto',value:t.amount,status:'Previsto'}));
@@ -146,7 +190,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    .map(p=>({id:'payable:'+p.id,date:p.dueDate,description:p.description,
     source:'Conta a pagar',value:p.openAmount,status:p.status==='partial'?'Parcial':'A pagar'}));
   return [...planned,...payables].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).slice(0,8);
- },[data.transactions,data.followingTransactions,data.payables]);
+ },[data.canonicalCommitments,data.transactions,data.followingTransactions,data.payables,preview]);
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'date',label:'Data',type:'date',width:105,sortable:true,filterable:true},
   {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true,
@@ -162,15 +206,41 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    render:(v,row)=><strong className={Number(row.amount)<0?'pano-negative':'pano-positive'}>{Number(row.amount)<0?'− ':'+ '}{format(Number(v),hidden)}</strong>}
  ];
  const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',width:150,sortable:true,filterable:true},
+  {key:'date',label:'Vencimento',type:'date',width:162,sortable:true,filterable:true,
+   render:(v,row)=>{
+    // O dia e o estado de urgência vêm prontos da autoridade financeira.
+    // A Home não compara datas nem altera situação de pagamento.
+    const urgency=String(row.dueState??'');
+    const urgencyLabel=urgency==='overdue'?'Vencido':urgency==='due_today'?'Vence hoje':urgency==='upcoming'?'A vencer':'';
+    return <span className="pano-due-date" title={'Vencimento: '+dateString(String(v??''))+(urgencyLabel?' · '+urgencyLabel:'')}>
+      {urgencyLabel&&<span role="img" className={'pano-due-date__urgency is-'+urgency.replaceAll('_','-')}
+       aria-label={urgencyLabel} title={urgencyLabel}>
+       <HomeGlyph name={urgency==='overdue'?'siren':urgency==='due_today'?'timer':'checkCircle'} size={19}/>
+      </span>}
+      <span className="pano-due-date__value">{dateString(String(v??''))}</span>
+    </span>;
+   }},
   {key:'description',label:'Descrição',type:'text',width:155,sortable:true,filterable:true,
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'source',label:'Origem',type:'text',width:119,sortable:true,filterable:true,
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
   {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
-   render:v=>{const label=String(v??'—');return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}>{label}</span>}}
+   render:v=>{const label=String(v??'—');
+    return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}
+      title={label} aria-label={label}>{label}</span>}}
  ];
+ // Resumo compacto: informação necessária à decisão sem rolagem lateral.
+ // Origem e Situação continuam na consulta integral, com todas as colunas.
+ // Não eliminar linhas, mudar valores, urgência ou critérios da API.
+ const compactDueColumns:DataGridColumn<Record<string,unknown>>[]=dueColumns
+  .filter(column=>column.key==='date'||column.key==='description'||column.key==='value')
+  .map(column=>({
+   ...column,
+   label:column.key==='date'?'Vence em':column.label,
+   width:column.key==='date'?143:column.key==='description'?157:124,
+   minWidth:column.key==='date'?130:column.key==='description'?128:104,
+  }));
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
  const stats:{label:string;value:number|null|undefined;note:string;icon:HomeIconName;kind:string;action:Action}[]=[
   {label:'Receitas',value:data.summary?.income,note:'',icon:'income',kind:'income',action:'lancamentos'},
@@ -180,7 +250,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  ];
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
-  {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso">×</button></div>}
+  {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso" title="Fechar aviso"><HomeGlyph name="x" size={18}/></button></div>}
   <div className="pano-spotlight" aria-label="Visão financeira e cartões">
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
@@ -204,7 +274,8 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
   </section>
    </div>
    <section ref={cardsSection} className="pano-panel pano-cards">
-    <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all" onClick={()=>move('cartoes')}>Ver todos <HomeGlyph name="arrow" size={14}/></button></div>
+    <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all pano-icon-action" onClick={()=>move('cartoes')}
+ aria-label="Ver todos os cartões" title="Ver todos os cartões" data-tooltip="Ver todos os cartões"><HomeGlyph name="list" size={20}/></button></div>
     {selectedCard?<>
       <div className="pano-card-stage" aria-label={'Cartão '+(activeCardIndex+1)+' de '+cardCount} tabIndex={cardCount>1?0:undefined}
        onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();stepCard(event.key==='ArrowLeft'?-1:1)}}}
@@ -252,6 +323,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
      </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
   </div>
+
   {/* Quatro atalhos originais, configuráveis sem alterar o restante da Home. */}
   <QuickActions userId={userId} preview={preview} onNavigate={move}/>
 
@@ -259,17 +331,21 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    <div className="pano-finance-column is-primary">
     <section ref={flowSection} className="pano-panel pano-flow">
     <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro"/>
-     <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros">Ver relatórios <HomeGlyph name="arrow" size={16}/></button>
+     <button type="button" className="pano-flow-open pano-icon-action" onClick={()=>move('relatorios')}
+ aria-label="Abrir relatórios financeiros" title="Abrir relatórios financeiros" data-tooltip="Relatórios"><HomeGlyph name="chart" size={20}/></button>
     </div>
     <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
     <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
     <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
    </section>
-    <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
-     <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" onClick={()=>setMovementMode('all')}>Limpar seleção</button>}
-      <button type="button" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters} aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'}>
-       <HomeGlyph name="filter" size={15}/>{showMovementFilters?'Ocultar filtros':'Mostrar filtros'}{movementFiltersCount>0?' ('+movementFiltersCount+')':''}
-      </button></div></div>
+    <section ref={movementSection} className={'pano-panel pano-grid pano-grid--movements '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
+     <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" className="pano-icon-action" onClick={()=>setMovementMode('all')}
+ aria-label="Limpar seleção" title="Limpar seleção" data-tooltip="Limpar seleção"><HomeGlyph name="x" size={19}/></button>}
+ <button type="button" className="pano-icon-action" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters}
+ aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'+(movementFiltersCount>0?' ('+movementFiltersCount+')':'')}
+ title={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'} data-tooltip={showMovementFilters?'Ocultar filtros':'Mostrar filtros'}>
+ <HomeGlyph name="filter" size={20}/>{movementFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{movementFiltersCount}</span>}
+ </button></div></div>
      <DataGrid data={movements} columns={movementColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
    </div>
    <div className="pano-finance-column is-secondary">
@@ -281,12 +357,21 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     </button>
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
-    <section ref={dueSection} className={'pano-panel pano-grid '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
-     <div className="pano-grid-actions"><button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
-      <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
-     <DataGrid data={commitments} columns={dueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
+    <section ref={dueSection} className={'pano-panel pano-grid pano-grid--commitments '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
+     <div className="pano-grid-actions"><button type="button" className="pano-icon-action" onClick={()=>setShowAllCommitments(true)}
+ aria-label="Ver todos os compromissos" title="Ver todos os compromissos" data-tooltip="Ver todos"><HomeGlyph name="list" size={20}/></button>
+ <button type="button" className="pano-icon-action" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters}
+ aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'+(dueFiltersCount>0?' ('+dueFiltersCount+')':'')}
+ title={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'} data-tooltip={showDueFilters?'Ocultar filtros':'Mostrar filtros'}>
+ <HomeGlyph name="filter" size={20}/>{dueFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{dueFiltersCount}</span>}
+ </button></div></div>
+     <DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
    </div>
   </div>
+  {showAllCommitments&&<HomeCommitmentsFullList
+    columns={dueColumns} mapRows={commitmentGridRows}
+    preview={preview} previewRows={commitments}
+    onDismiss={()=>setShowAllCommitments(false)}/>}
  </div>;
 }
 export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId}:Props){
@@ -299,10 +384,10 @@ export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId
   if(previewData)return;
   const id=++serial.current;setLoading(true);setError(null);
   try{const result=await readHome(current);if(serial.current===id)setData(result)}
-  catch{if(serial.current===id){setData(null);setError('Não foi possível consultar a API financeira. Nenhum saldo foi estimado.')}}
+  catch{if(serial.current===id){setData(null);setError('Não foi possível consultar as informações financeiras e compromissos abertos. Nenhum resultado foi estimado.')}}
   finally{if(serial.current===id)setLoading(false)}
  },[current,previewData]);
  useEffect(()=>{if(previewData){setData(previewData);return}void reload();const onRefresh=()=>void reload();window.addEventListener('meg:data-invalidated',onRefresh);window.addEventListener('focus',onRefresh);return()=>{serial.current++;window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh)}},[previewData,reload]);
  return <>{error&&<div className="pano-error" role="alert">{error}<button type="button" onClick={()=>void reload()}><HomeGlyph name="reload" size={16}/> Tentar novamente</button></div>}
- {loading&&!data?<div className="pano-loading" role="status">Consultando seus dados financeiros...</div>:<HomeContent data={data||emptyState} month={current} preview={Boolean(previewData)} onNavigate={onNavigate} userId={userId}/>}</>;
+ {!error&&(loading&&!data?<div className="pano-loading" role="status">Consultando seus dados financeiros...</div>:<HomeContent data={data||emptyState} month={current} preview={Boolean(previewData)} onNavigate={onNavigate} userId={userId}/>)}</>;
 }
