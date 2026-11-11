@@ -230,7 +230,9 @@
  .pano-tables{gap:.6rem;margin-top:.6rem}
  .pano-grid-heading{flex-wrap:nowrap}
 }
-@media(min-width:1024px){
+/* Uma barra de rolagem de até 16px reduz a área CSS em viewport de 1024px.
+   Sem tolerância, Chrome usa layout mobile e empilha os painéis. */
+@media(min-width:1008px){
  .pano-root{padding:.7rem .8rem 1.2rem}
  .pano-spotlight{grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));gap:.75rem;align-items:stretch}
  .pano-financial-column{grid-template-rows:minmax(0,1fr) auto;gap:.75rem;align-content:stretch}
@@ -389,7 +391,9 @@
 
 /* Home: quatro painéis na mesma malha 2x2, sem alturas artificiais.
    display:contents é exclusivo do desktop e só remove caixas de layout. */
-@media(min-width:1024px){
+/* Uma barra de rolagem de até 16px reduz a área CSS em viewport de 1024px.
+   Sem tolerância, Chrome usa layout mobile e empilha os painéis. */
+@media(min-width:1008px){
  .pano-finance-block{
   grid-template-columns:minmax(0,7fr) minmax(0,5fr);
   grid-template-rows:auto auto;align-items:stretch;gap:.75rem
