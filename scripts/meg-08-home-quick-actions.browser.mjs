@@ -65,6 +65,23 @@ async function checkWindow(page,width,editing=false){
     m1008:matchMedia('(min-width:1008px)').matches,
     m992:matchMedia('(min-width:992px)').matches,
     rootWidth:document.querySelector('.pano-root')?.getBoundingClientRect().width,
+    gridRules:[...document.styleSheets].flatMap(sheet=>{
+     const found=[];
+     const visit=(rules,media)=>{for(const r of rules){
+      if(r.cssRules){visit(r.cssRules,r.conditionText||media);continue}
+      if(r.selectorText?.includes('.pano-finance-block')&&(
+       r.style?.getPropertyValue('grid-template-columns')||
+       r.style?.getPropertyValue('display')||
+       r.style?.getPropertyValue('grid-template-rows'))){
+       found.push({href:sheet.href?.slice(-90),media,selector:r.selectorText.slice(0,190),
+        display:r.style.getPropertyValue('display'),
+        cols:r.style.getPropertyValue('grid-template-columns'),
+        rows:r.style.getPropertyValue('grid-template-rows'),important:r.style.getPropertyPriority('grid-template-columns')});
+      }
+     }};
+     try{visit(sheet.cssRules,'all')}catch{}
+     return found;
+    }).slice(-50),
     parentDisplay:getComputedStyle(document.querySelector('.pano-finance-block')).display,
     parentColumns:getComputedStyle(document.querySelector('.pano-finance-block')).gridTemplateColumns,
     parentRows:getComputedStyle(document.querySelector('.pano-finance-block')).gridTemplateRows,
