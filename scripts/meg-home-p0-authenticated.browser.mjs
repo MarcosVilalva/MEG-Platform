@@ -33,7 +33,7 @@ const create=async(fail=false,viewport={width:1366,height:900})=>{
    assert.equal(request.headers().authorization,'Bearer qa-fictitious-token','Endpoint somente autenticado');
    assert.equal(url.searchParams.get('limit'),'16');
    if(fail)return json(route,{error:'SERVICE_UNAVAILABLE'},503);
-   if(commitmentCalls===1)return json(route,{asOf:'2026-11-11',items:[],hasMore:true,nextCursor:'fictitious-cursor'});
+   if(!url.searchParams.get('cursor'))return json(route,{asOf:'2026-11-11',items:[],hasMore:true,nextCursor:'fictitious-cursor'});
    assert.equal(url.searchParams.get('cursor'),'fictitious-cursor');
    return json(route,{asOf:'2026-11-11',items,hasMore:false,nextCursor:null});
   }
@@ -70,6 +70,14 @@ try{
  assert.equal(success.visited.some(path=>path.startsWith('/payables/open')),false,'Não chamar payables/open redundante');
  assert.equal(success.visited.filter(path=>path.includes('/finance/events/month')).length,1,'Somente mês atual para movimentações');
  assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
+ await success.page.getByRole('button',{name:'Ver todos os compromissos'}).click();
+ const dialog=success.page.getByRole('dialog',{name:'Todos os compromissos'});
+ await dialog.getByText('3 compromissos carregados. Consulta concluída.',{exact:false}).waitFor({timeout:20000});
+ assert.ok(await dialog.getByText('Compromisso antigo fictício').filter({visible:true}).count()>0);
+ assert.equal(success.count,4,'Resumo e diálogo devem percorrer páginas independentes');
+ assert.equal(await dialog.getByRole('button',{name:'Carregar próximos compromissos'}).count(),0,
+  'Não inventar continuação quando o backend confirmou fim de páginas');
+ await dialog.getByRole('button',{name:'Fechar lista de compromissos'}).click();
  // Evidência de QA: sessão e dados 100% fictícios; não publicar como Home homologada.
  await mkdir('artifacts/meg-home-p0-qa',{recursive:true});
  await success.page.screenshot({path:'artifacts/meg-home-p0-qa/urgencia-desktop-1366.png',fullPage:true});
