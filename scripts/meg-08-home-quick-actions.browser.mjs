@@ -49,7 +49,8 @@ async function checkWindow(page,width,editing=false){
   const icon=el.querySelector('.pano-quick-item-icon');
   const s=getComputedStyle(el),i=icon?getComputedStyle(icon):null;
   return {kind:[...el.classList].find(c=>c.startsWith('is-')&&c!=='is-editing')??'',
-   border:s.borderTopColor,corner:s.borderTopLeftRadius,
+   border:s.borderTopColor,active:el.matches(':hover')||el.matches(':focus-within'),
+   corner:s.borderTopLeftRadius,
    iconBg:i?.backgroundColor??'',iconColor:i?.color??'',
    iconWidth:icon?.getBoundingClientRect().width??0,
    svg:icon?.querySelectorAll('svg').length??0
@@ -61,8 +62,9 @@ async function checkWindow(page,width,editing=false){
   item.iconBg==='rgba(0, 0, 0, 0)'&&item.svg===1&&item.iconWidth<=32&&
   item.iconColor===approvedColors[item.kind]&&parseFloat(item.corner)>=14),
   'atalhos devem usar SVG de cor isolada, sem quadrado interno: '+width+' '+JSON.stringify(visual));
- assert(new Set(visual.map(item=>item.border)).size===1,
-  'cards devem usar uma borda sutil única, não quatro contornos coloridos: '+width);
+ const resting=visual.filter(item=>!item.active);
+ assert(new Set(resting.map(item=>item.border)).size<=1,
+  'cards inativos devem usar uma borda sutil única; hover/foco podem iluminar: '+width);
  const header=await page.locator('.pano-quick-header-actions').evaluate(el=>({
   width:el.getBoundingClientRect().width,
   buttons:[...el.querySelectorAll('button')].map(b=>({
