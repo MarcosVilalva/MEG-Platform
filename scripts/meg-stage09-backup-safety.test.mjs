@@ -27,6 +27,7 @@ mock('psql', `
 if (process.argv.includes('--version')) { console.log('psql (PostgreSQL) 17.6'); process.exit(0); }
 const args=process.argv.slice(2); const q=args[args.indexOf('-Atc')+1]||'';
 if (q.includes('current_database')) console.log('postgres');
+else if (q.includes('server_version_num')) console.log('170006');
 else if (q.includes('count(*)')) console.log(process.env.PGDATABASE==='meg_restore_drill' ? (require('node:fs').existsSync(process.env.MEG_MOCK_RESTORED_FLAG)?'32':'0'):'32');
 else process.exit(44);
 `);
