@@ -35,7 +35,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    const compactTable=commitments.getByRole('table',{name:'Próximos compromissos',includeHidden:true});
    const titles=await compactTable.locator('thead th').allTextContents();
    assert.equal(titles.length,3,'Resumo visual precisa ter 3 colunas: '+JSON.stringify(titles));
-   assert.ok(['Vencimento','Descrição','Valor'].every((label,i)=>titles[i].includes(label)),
+   assert.ok(['Vence em','Descrição','Valor'].every((label,i)=>titles[i].includes(label)),
     'As colunas essenciais precisam preservar a ordem e seus rótulos');
    if(width>=1024){
     if(await compactTable.isVisible()){
