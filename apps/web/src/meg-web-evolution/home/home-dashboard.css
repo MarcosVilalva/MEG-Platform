@@ -409,6 +409,14 @@
  background:#07515a;color:#b7fff0;font-size:.78rem;font-weight:800;
 }
 .pano-attention__all:hover{background:#0b6167;border-color:#83e9d6}
+/* No painel intermediário, priorizar espaço para descrições.
+   Header/ação em uma linha e destaques ocupando uma segunda linha. */
+@media(min-width:640px) and (max-width:1024px){
+ .pano-attention__heading{flex:1 1 15rem}
+ .pano-attention__all{order:0;margin-left:auto}
+ .pano-attention__items{order:1;flex:1 1 100%}
+ .pano-attention__item{flex:1 1 17rem}
+}
 @media(max-width:639px){
  .pano-attention{padding:.5rem}
  .pano-attention__heading{flex:1 1 100%;gap:.25rem}
