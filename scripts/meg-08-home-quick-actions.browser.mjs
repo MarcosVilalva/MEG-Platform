@@ -60,7 +60,11 @@ async function checkWindow(page,width,editing=false){
    return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}};
   return {spotlight:b('.pano-spotlight'),quick:b('.pano-quick'),finance:b('.pano-finance-block'),
    flow:b('.pano-flow'),benefits:b('.pano-benefits'),
-   css:{viewport:window.innerWidth,
+   css:{viewport:window.innerWidth,clientWidth:document.documentElement.clientWidth,
+    m1024:matchMedia('(min-width:1024px)').matches,
+    m1008:matchMedia('(min-width:1008px)').matches,
+    m992:matchMedia('(min-width:992px)').matches,
+    rootWidth:document.querySelector('.pano-root')?.getBoundingClientRect().width,
     parentDisplay:getComputedStyle(document.querySelector('.pano-finance-block')).display,
     parentColumns:getComputedStyle(document.querySelector('.pano-finance-block')).gridTemplateColumns,
     parentRows:getComputedStyle(document.querySelector('.pano-finance-block')).gridTemplateRows,
