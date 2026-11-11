@@ -11,8 +11,10 @@ const bin = join(testDir, 'bin');
 const target = join(testDir, 'external-offsite-placeholder');
 const vaultTarget = join(testDir, 'separate-vault-offsite-placeholder');
 mkdirSync(bin);
-mkdirSync(target);
-mkdirSync(vaultTarget);
+mkdirSync(target, { mode: 0o700 });
+mkdirSync(vaultTarget, { mode: 0o700 });
+chmodSync(target, 0o700);
+chmodSync(vaultTarget, 0o700);
 const ageKey = join(testDir, 'recovery-key-only-for-tests.txt');
 writeFileSync(ageKey, 'AGE-SECRET-KEY-FAKE-FOR-TESTS\n');
 const restoredFlag = join(testDir, 'is-restored');
@@ -22,15 +24,16 @@ const mock = (name, source) => {
   chmodSync(f, 0o755);
 };
 mock('psql', `
+if (process.argv.includes('--version')) { console.log('psql (PostgreSQL) 17.6'); process.exit(0); }
 const args=process.argv.slice(2); const q=args[args.indexOf('-Atc')+1]||'';
 if (q.includes('current_database')) console.log('postgres');
 else if (q.includes('count(*)')) console.log(process.env.PGDATABASE==='meg_restore_drill' ? (require('node:fs').existsSync(process.env.MEG_MOCK_RESTORED_FLAG)?'32':'0'):'32');
 else process.exit(44);
 `);
-mock('pg_dump', `process.stdout.write('MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA');`);
+mock('pg_dump', `if (process.argv.includes('--version')) {console.log('pg_dump (PostgreSQL) 17.6');process.exit(0);} process.stdout.write('MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA');`);
 mock('curl', `
 process.stdin.resume();
-process.stdin.on('end',()=>process.stdout.write('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
+process.stdin.on('end',()=>process.stdout.write('{"root_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'));
 `);
 mock('age', `
 const fs=require('node:fs'); const args=process.argv.slice(2);
@@ -46,6 +49,7 @@ if (args.includes('-d')) {
 }
 `);
 mock('pg_restore', `
+if (process.argv.includes('--version')) { console.log('pg_restore (PostgreSQL) 17.6'); process.exit(0); }
 const fs=require('node:fs'); let v='';
 process.stdin.setEncoding('utf8');process.stdin.on('data',c=>v+=c);
 process.stdin.on('end',()=>{
@@ -60,10 +64,11 @@ const env = {
   ...process.env,
   PATH: `${bin}:${process.env.PATH}`,
   PGHOST: 'db.ugbiqzaqnrhulhetevby.supabase.co', PGUSER: 'postgres',
-  PGPASSWORD: 'DUMMY-ONLY-FOR-FAKE-TEST', PGSSLMODE: 'require', PGPORT:'5432', PGDATABASE:'postgres',
+  PGPASSWORD: 'DUMMY-ONLY-FOR-FAKE-TEST', PGSSLMODE: 'verify-full', PGSSLROOTCERT: join(testDir,'supabase-test-ca.crt'), PGPORT:'5432', PGDATABASE:'postgres',
   MEG_AGE_RECIPIENT:'age1fakesafeoutputonly', MEG_AGE_IDENTITY:ageKey,
   MEG_BACKUP_DIR:target, MEG_MOCK_RESTORED_FLAG: restoredFlag,
 };
+writeFileSync(join(testDir,'supabase-test-ca.crt'), 'TEST-CA-CERT-NOT-REAL');
 const run = (file, options = {}) => spawnSync('bash', [join(sourceDir,file)], {
   cwd: testDir, env: {...env,...options}, encoding:'utf8', timeout:10000,
 });
@@ -78,20 +83,20 @@ try {
   assert.match(readFileSync(manifest,'utf8'),/vault_root_key_included=NO/);
   assert.match(readFileSync(manifest,'utf8'),/vault_secrets_table_found=yes/);
   assert.equal(readFileSync(manifest,'utf8').includes(env.PGPASSWORD),false);
+  // Os stubs nao sao PostgreSQL real e nao possuem socket Unix postgres.
+  // A restauracao DEVE recusar o destino, em vez de confiar em localhost.
   r=run('meg-stage09-safe-restore-drill.sh',{
     MEG_BACKUP_FILE:backup,MEG_RESTORE_ISOLATED_OK:'YES',
-    MEG_RESTORE_PASSWORD:'DUMMY-ONLY-FOR-FAKE-TEST',
   });
-  assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
-  assert.match(r.stdout,/DRILL DE public APROVADO/);
-  assert.ok(existsSync(restoredFlag));
-  rmSync(restoredFlag);
+  assert.notEqual(r.status,0,'restore must reject missing authenticated Unix socket');
+  assert.equal(existsSync(restoredFlag),false,'restore cannot write via mocked TCP');
   r=run('meg-stage09-safe-restore-drill.sh',{
     MEG_BACKUP_FILE:backup, MEG_RESTORE_ISOLATED_OK:'YES',
     MEG_RESTORE_HOST:'db.ugbiqzaqnrhulhetevby.supabase.co',
-    MEG_RESTORE_PASSWORD:'DUMMY-ONLY-FOR-FAKE-TEST',
   });
   assert.notEqual(r.status,0,'restore must never be able to target remote Postgres');
+  r=run('meg-stage09-safe-backup.sh',{PGSSLMODE:'require'});
+  assert.notEqual(r.status,0,'TLS without CA/hostname validation must fail');
   r=run('meg-stage09-safe-backup.sh',{PGHOST:'db.other-project.supabase.co'});
   assert.notEqual(r.status,0,'backup must be restricted to MEG project');
   r=run('meg-stage09-safe-vault-rootkey.sh',{
@@ -109,7 +114,7 @@ try {
     SUPABASE_ACCESS_TOKEN:'BAD\nINJECT', MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
   });
   assert.notEqual(r.status,0,'token injection must be rejected');
-  console.log('MEG backup contract: encrypted dump, isolated restore, remote guard and encrypted Vault key OK (mock tools only)');
+  console.log('MEG backup contract: encrypted dump, Unix socket guard, TLS verification and Vault JSON OK (mock tools only)');
 } finally {
   rmSync(testDir,{force:true,recursive:true});
 }
