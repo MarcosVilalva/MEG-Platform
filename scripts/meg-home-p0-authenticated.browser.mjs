@@ -54,6 +54,20 @@ try{
  await success.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
  const table=success.page.getByRole('table',{name:'Próximos compromissos'}).first();
  await table.getByText('Compromisso antigo fictício').first().waitFor({timeout:20000});
+ const summaryHeaders=await table.locator('thead th').allTextContents();
+ assert.equal(summaryHeaders.length,3,
+  'Resumo precisa ter somente Vencimento, Descrição e Valor: '+JSON.stringify(summaryHeaders));
+ assert.ok(summaryHeaders[0].includes('Vencimento')
+  && summaryHeaders[1].includes('Descrição')&&summaryHeaders[2].includes('Valor'),
+  'O resumo deve priorizar data, descrição e valor');
+ const compactViewport=success.page.locator('.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid__viewport');
+ const geometry=await compactViewport.evaluate(element=>({
+  scroll:element.scrollWidth,available:element.clientWidth,
+  right:element.getBoundingClientRect().right,
+  lastValueRight:element.querySelector('tbody tr td:last-child strong')?.getBoundingClientRect().right||0,
+ }));
+ assert.ok(geometry.scroll<=geometry.available+2&&geometry.lastValueRight<=geometry.right+1,
+  'DataGrid compacto não pode esconder o valor atrás da rolagem: '+JSON.stringify(geometry));
  assert.equal(success.count,2,'Uma página filtrada vazia não significa ausência de compromissos');
  await table.getByText('Pagamento parcial fictício').first().waitFor();
  await table.getByText('Compromisso futuro fictício').first().waitFor();
@@ -63,7 +77,8 @@ try{
  assert.equal((await overdueDate.textContent())?.trim(),'Vencido','A urgência vencida deve ter texto, não apenas cor');
  assert.ok(await table.locator('.pano-due-date__urgency.is-upcoming').count()>0,
   'A vencer deve ser mostrado textualmente ao receber upcoming da API');
- assert.ok(await table.getByText('Parcial').count()>0,'Status parcial preservado');
+ assert.equal(await table.getByText('Parcial').count(),0,
+  'Situação não deve competir com o valor no resumo compacto');
  const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
  assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
  assert.ok(await table.getByText('Vence hoje',{exact:true}).count()>0,'Vence hoje deve aparecer ao lado da data');
@@ -72,6 +87,10 @@ try{
  assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
  await success.page.getByRole('button',{name:'Ver todos os compromissos'}).click();
  const dialog=success.page.getByRole('dialog',{name:'Todos os compromissos'});
+ const detailTable=dialog.getByRole('table',{name:'Todos os compromissos carregados'});
+ assert.equal(await detailTable.locator('thead th').count(),5,
+  'A listagem integral preserva as cinco colunas');
+ await detailTable.getByText('Parcial',{exact:true}).first().waitFor({timeout:20000});
  await dialog.getByText('3 compromissos carregados. Consulta concluída.',{exact:false}).waitFor({timeout:20000});
  assert.ok(await dialog.getByText('Compromisso antigo fictício').filter({visible:true}).count()>0);
  assert.equal(success.count,4,'Resumo e diálogo devem percorrer páginas independentes');
