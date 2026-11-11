@@ -243,8 +243,15 @@ try {
         const spot=await page.locator('.pano-spotlight').boundingBox();
         const alert=await attention.boundingBox();
         const actions=await page.locator('.pano-actions').boundingBox();
-        assert.ok(spot&&alert&&actions&&alert.y>=spot.y+spot.height-2&&alert.y+alert.height<=actions.y+2,
-          'Aviso deve ocupar faixa compacta entre painel superior e Ações rápidas');
+        const financial=await page.locator('.pano-financial-column').boundingBox();
+        const cardsPanel=await page.locator('.pano-cards').boundingBox();
+        assert.ok(spot&&alert&&actions&&financial&&cardsPanel&&
+          alert.y>=spot.y-2&&alert.y+alert.height<=spot.y+spot.height+2&&
+          actions.y>=spot.y+spot.height-2,
+          'Aviso deve ficar dentro da composição superior, antes das Ações rápidas');
+        if(width<1024)assert.ok(alert.y>=financial.y+financial.height-2&&
+          alert.y+alert.height<=cardsPanel.y+2,
+          'Mobile deve destacar urgência antes do carrossel de cartões');
         for (const urgency of ['Vencido', 'Vence hoje', 'A vencer']) {
           const badge = dueGrid.locator('.pano-due-date__urgency').getByText(urgency, {exact:true}).filter({visible:true}).first();
           assert.ok(await badge.count() > 0, 'Estado canônico visível na coluna Vencimento: ' + urgency);
