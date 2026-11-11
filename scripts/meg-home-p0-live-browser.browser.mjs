@@ -183,6 +183,8 @@ try {
       assert.equal(jsErrors.length, 0, 'Erro JavaScript não esperado: ' + jsErrors.join('; '));
       assert.equal(await page.getByRole('alert').count(), 0, 'Não renderizar erro financeiro após sucesso');
       assert.equal(await page.locator('.pano-grid').count(), 2, 'Geometria homologada preservada');
+      assert.match((await page.locator('.meg-period').innerText()), /Novembro de 2026/,
+        'Cabeçalho da Home autenticada não pode exibir mês fixo anterior');
       const viewport = await page.evaluate(() => ({ page: document.documentElement.scrollWidth, screen: innerWidth }));
       assert.ok(viewport.page <= viewport.screen, 'Rolagem horizontal da página é proibida: ' + JSON.stringify(viewport));
       if (name.startsWith('A')) {
@@ -195,8 +197,23 @@ try {
           'Compromisso parcial deve aparecer na UI');
         assert.equal(await dueGrid.getByText('Conta fictícia p0-secret-payable-b', { exact: false }).count(), 0,
           'Home A não pode mostrar dados da B');
-        assert.ok(await dueGrid.locator('[aria-label*="Vencido"]').count() > 0,
-          'Urgência vencida deve vir do servidor e permanecer acessível');
+        const badges = dueGrid.locator('.pano-due-date__urgency').filter({ visible: true });
+        assert.ok(await badges.count() >= 6,
+          'Vencido/hoje/futuro devem aparecer por texto junto à data');
+        for (const urgency of ['Vencido', 'Vence hoje', 'A vencer']) {
+          const badge = dueGrid.locator('.pano-due-date__urgency').getByText(urgency, {exact:true}).filter({visible:true}).first();
+          assert.ok(await badge.count() > 0, 'Estado canônico visível na coluna Vencimento: ' + urgency);
+        }
+        const overdue = dueGrid.locator('.pano-due-date__urgency.is-overdue').filter({ visible: true }).first();
+        const bounds = await overdue.boundingBox();
+        assert.ok(bounds && bounds.width > 0 && bounds.height > 0, 'Vencido não está visível');
+        // No desktop, a primeira coluna deve ser visível no painel sem rolagem
+        // interna. No mobile, cards devem permanecer estruturais.
+        if (width >= 1024) {
+          const viewport = await dueGrid.locator('.meg-datagrid__viewport').boundingBox();
+          assert.ok(viewport && bounds.x >= viewport.x && bounds.x + bounds.width <= viewport.x + viewport.width,
+            'A urgência do vencido não pode depender de rolagem horizontal no desktop');
+        }
       } else {
         assert.equal(await dueGrid.getByText('Obrigação fictícia p0-old', { exact: false }).count(), 0,
           'Home B não pode mostrar dados da A');
