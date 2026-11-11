@@ -107,7 +107,8 @@ export function HomeDueAlertsProvider({children}:{children:ReactNode}){
  const items=verified??source?.items??[];
  const overdue=items.filter(i=>i.dueState==='overdue');
  const today=items.filter(i=>i.dueState==='due_today');
- const selected=[...overdue.slice(0,3),...today.slice(0,2)];
+ // Três destaques no modal: cabem no celular e não simulam um total global.
+ const selected=[...overdue.slice(0,2),...today.slice(0,1)];
  const hasAlert=selected.length>0;
  const ctx=useMemo<ContextValue>(()=>({
   publish,indicator:hasAlert,bellOpen,toggleBell:()=>setBellOpen(v=>!v),
