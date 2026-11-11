@@ -124,11 +124,19 @@ function AuthGateway() {
     );
   }
 
-  if (session) return (
-    <AppShell>
-      <HomeDashboard userId={session.user.id} />
-    </AppShell>
-  );
+  if (session) {
+    // Exibição do período civil no fuso da Home. Não altera competência,
+    // vencimentos nem qualquer cálculo financeiro.
+    const monthLabel = new Intl.DateTimeFormat('pt-BR', {
+      month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo',
+    }).format(new Date());
+    const periodLabel = monthLabel.slice(0, 1).toLocaleUpperCase('pt-BR') + monthLabel.slice(1);
+    return (
+      <AppShell periodLabel={periodLabel}>
+        <HomeDashboard userId={session.user.id} />
+      </AppShell>
+    );
+  }
 
   if (destination === 'create-account') {
     return <CreateAccountScreen onNavigateLogin={() => navigate('login')} onAuthenticated={() => { void handleAuthenticated(); }} />;
