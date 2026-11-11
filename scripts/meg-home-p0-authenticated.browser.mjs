@@ -51,12 +51,13 @@ const create=async(fail=false)=>{
 try{
  const success=await create();
  await success.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
- await success.page.getByText('Compromisso antigo fictício').waitFor({timeout:20000});
+ const table=success.page.getByRole('table',{name:'Próximos compromissos'}).first();
+ await table.getByText('Compromisso antigo fictício').first().waitFor({timeout:20000});
  assert.equal(success.count,2,'Uma página filtrada vazia não significa ausência de compromissos');
- await success.page.getByText('Pagamento parcial fictício').waitFor();
- await success.page.getByText('Compromisso futuro fictício').waitFor();
- assert.equal(await success.page.getByText('Vencido',{exact:false}).count()>0,true,'Vencido aparece em leitura autêntica');
- assert.equal(await success.page.getByText('Parcial').count()>0,true,'Status parcial preservado');
+ await table.getByText('Pagamento parcial fictício').first().waitFor();
+ await table.getByText('Compromisso futuro fictício').first().waitFor();
+ assert.ok(await table.locator('[aria-label*="Vencido"]').count()>0,'Vencido aparece na acessibilidade sem recomputar data');
+ assert.ok(await table.getByText('Parcial').count()>0,'Status parcial preservado');
  const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
  assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
  assert.equal(success.visited.some(path=>path.startsWith('/payables/open')),false,'Não chamar payables/open redundante');
