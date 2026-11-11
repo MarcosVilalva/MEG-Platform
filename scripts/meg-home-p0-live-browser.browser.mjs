@@ -167,6 +167,7 @@ try {
       }
     });
     await page.addInitScript(value => sessionStorage.setItem('meg.auth.session', JSON.stringify(value)), session);
+    if(name==='A-desktop-1366')await page.clock.install({time:new Date('2026-11-11T18:00:00.000Z')});
     try {
       await page.goto(frontendBase + '/web-evolution.html', { waitUntil: 'domcontentloaded' });
       const dueGrid = page.locator('.pano-panel.pano-grid').filter({ hasText: 'Próximos compromissos' });
@@ -319,6 +320,22 @@ try {
         path: 'artifacts/meg-home-p0-live/' + name + '-home.png',
         fullPage: true, animations: 'disabled',
       });
+      if(name==='A-desktop-1366'){
+        const previousReads=apiResponses.length;
+        await page.clock.fastForward(3_601_000);
+        const reminder=page.locator('.meg-due-reminder');
+        await reminder.waitFor({timeout:20000});
+        assert.equal(apiResponses.length,previousReads+1,
+          'Lembrete horário só pode aparecer após nova leitura HTTP canônica');
+        assert.equal(apiResponses.at(-1)?.status(),200,
+          'Revalidação do compromisso vencido deve ser HTTP 200');
+        assert.equal(await page.getByRole('dialog',{name:'Atenção aos seus vencimentos'}).count(),0,
+          'Lembrete horário não deve reabrir modal bloqueante');
+        await reminder.screenshot({
+          path:'artifacts/meg-home-p0-live/A-desktop-1366-lembrete-horario.png',
+          animations:'disabled'
+        });
+      }
       return { name, width, apiCalls: apiResponses.length, horizontalOverflow: false };
     } catch (error) {
       await page.screenshot({
