@@ -49,7 +49,7 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
   authenticatedRequest<unknown>('/finance/events/month?month='+followingMonth,{cache:'no-store'}).catch(()=>[]),
   // Falha de compromisso canônico é crítica: não mostrar um falso quadro vazio.
-  readCanonicalHomeCommitments()
+  readCanonicalHomeCommitments(authenticatedRequest)
  ]);
  const adapted=composeMegApiSnapshot([
   fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
