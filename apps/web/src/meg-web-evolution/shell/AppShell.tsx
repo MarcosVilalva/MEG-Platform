@@ -24,7 +24,7 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, periodLabel }: { children: ReactNode; periodLabel?: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -268,7 +268,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="meg-topbar-actions">
             <button type="button" className="meg-period">
               <Icon name="calendar" />
-              <span>Outubro&nbsp;de&nbsp;2026</span>
+              <span>{periodLabel || 'Outubro de 2026'}</span>
               <Icon name="chevronDown" />
             </button>
 
