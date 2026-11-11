@@ -108,7 +108,7 @@ function FlowPreview() {
 
   return <div className="meg-integrated-preview" data-preview-view={screen}
     onClickCapture={handleShellCapture}>
-    <AppShell>
+    <AppShell periodLabel={screen === 'home-p0' ? 'Novembro de 2026' : undefined}>
       <HomeDashboard previewData={screen === 'home-p0' ? homeP0QaPreviewFixture : homePreviewFixture}
         month={screen === 'home-p0' ? '2026-11' : '2026-10'}
         onNavigate={target => {
