@@ -24,6 +24,9 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
   const path=new URL(request.url()).pathname;
   if(/^\/(finance|auth|cards|payables)\//.test(path))financialRequests.push(path);
  });
+ if(home==='home-p0'&&width===1366){
+  await page.clock.install({time:new Date('2026-11-11T18:00:00.000Z')});
+ }
  const entry=base+'/fluxo-integrado-08.html?tela='+home+'&v=qa-navigation';
  const expectedView=home;
  try{
@@ -59,51 +62,46 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    }
   }
   if(home==='home-p0'){
-   const attention=page.locator('.pano-attention');
-   await attention.waitFor({timeout:10000});
-   assert.equal(await attention.locator('.pano-attention__item').count(),2,
-    'Atenção não deve calcular total: apenas um vencido e um vencendo hoje canônicos');
-   assert.ok(await attention.getByText('Destaques da consulta inicial').isVisible(),
-    'Oito registros de resumo não representam o total');
-   assert.ok(await attention.getByText('Obrigação fictícia vencida').isVisible());
-   assert.ok(await attention.getByText('Obrigação fictícia que vence hoje').isVisible());
-   if(width===1024){
-    const descWidths=await attention.locator('.pano-attention__description').evaluateAll(
-     nodes=>nodes.map(node=>node.getBoundingClientRect().width)
-    );
-    assert.ok(descWidths.length===2&&descWidths.every(value=>value>=105),
-     'Descrições de 1024px não podem ser esmagadas pela data, valor e CTA: '+JSON.stringify(descWidths));
-   }
-   const spot=await page.locator('.pano-spotlight').boundingBox();
-   const banner=await attention.boundingBox();
-   const actions=await page.locator('.pano-actions').boundingBox();
-   const financial=await page.locator('.pano-financial-column').boundingBox();
-   const cards=await page.locator('.pano-cards').boundingBox();
-   assert.ok(spot&&banner&&actions&&financial&&cards&&
-    banner.y>=spot.y-2&&banner.y+banner.height<=spot.y+spot.height+2&&
-    actions.y>=spot.y+spot.height-2,
-    'Atenção deve integrar o painel superior, acima dos atalhos');
-   if(width<=1024)assert.ok(
-    banner.y>=financial.y+financial.height-2&&banner.y+banner.height<=cards.y+2,
-    'No mobile a faixa de atenção deve vir antes dos cartões');
-   await attention.screenshot({
-    path:'artifacts/meg-home-navigation-qa/'+home+'-'+width+'-atencao.png',
+   const alert=page.getByRole('dialog',{name:'Atenção aos seus vencimentos'});
+   await alert.waitFor({timeout:20000});
+   assert.ok(await alert.getByText('Obrigação fictícia vencida').isVisible(),
+    'Modal inicial deve mostrar vencido fictício');
+   assert.ok(await alert.getByText('Obrigação fictícia que vence hoje').isVisible(),
+    'Modal inicial deve mostrar obrigação de hoje');
+   assert.ok((await alert.innerText()).includes('Outros compromissos podem existir'),
+    'Não inventar que a janela contém todas as pendências');
+   assert.equal(await page.locator('.pano-attention').count(),0,
+    'Faixa fixa rejeitada deve desaparecer da Home');
+   await alert.screenshot({
+    path:'artifacts/meg-home-navigation-qa/'+home+'-'+width+'-alerta-modal.png',
     animations:'disabled'
    });
-   if(width===1366||width===375){
-    await page.locator('.meg-main').evaluate(element=>element.scrollTop=0);
-    await page.screenshot({
-     path:'artifacts/meg-home-navigation-qa/'+home+'-'+width+'-topo.png',
-     animations:'disabled'
-    });
+   await alert.getByRole('button',{name:'Entendi'}).click();
+   const bell=page.getByRole('button',{name:'Notificações'});
+   assert.equal(await bell.locator('.meg-notification-dot').count(),1,
+    'Marcador do sino deve persistir após fechar o modal');
+   await bell.click();
+   const notifications=page.getByRole('region',{name:'Notificações financeiras'});
+   await notifications.waitFor({timeout:10000});
+   assert.ok(await notifications.getByText('Obrigação fictícia vencida').isVisible());
+   await notifications.getByRole('button',{name:'Ver todos os compromissos'}).click();
+   const full=page.getByRole('dialog',{name:'Todos os compromissos'});
+   await full.waitFor({timeout:10000});
+   assert.match(await full.locator('.pano-commitments-dialog__summary').innerText(),
+    /8 compromissos carregados/,'O sino abre o modal integral com 8 registros fictícios');
+   assert.equal(await full.getByRole('table',{name:'Todos os compromissos carregados',includeHidden:true})
+    .locator('thead th').count(),5,'Lista integral mantém cinco colunas');
+   await full.getByRole('button',{name:'Fechar lista de compromissos'}).click();
+   if(width===1366){
+    await page.clock.fastForward(3601000);
+    const reminder=page.locator('.meg-due-reminder');
+    await reminder.waitFor({timeout:15000});
+    assert.ok(await reminder.getByText('Lembrete de vencimento').isVisible(),
+     'Uma hora depois, lembrete discreto deve surgir sem reabrir modal');
+    assert.equal(await page.getByRole('dialog',{name:'Atenção aos seus vencimentos'}).count(),0,
+     'Lembrete de hora em hora não pode interromper com modal bloqueante');
+    await reminder.getByRole('button',{name:'Dispensar lembrete'}).click();
    }
-   await attention.locator('.pano-attention__item.is-overdue').click();
-   const complete=page.getByRole('dialog',{name:'Todos os compromissos'});
-   await complete.waitFor({timeout:10000});
-   assert.match(await complete.locator('.pano-commitments-dialog__summary').innerText(),
-    /8 compromissos carregados/,
-    'O destaque deve abrir o mesmo modal aprovado de 8 registros fictícios');
-   await complete.getByRole('button',{name:'Fechar lista de compromissos'}).click();
   }
   assert.match(await period.innerText(),new RegExp(expectedPeriod),'Período inicial incorreto');
   assert.equal(await page.locator('.meg-integrated-preview').getAttribute('data-preview-view'),
