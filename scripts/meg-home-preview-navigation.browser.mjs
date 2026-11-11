@@ -58,6 +58,29 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
     }
    }
   }
+  if(home==='home-p0'){
+   const attention=page.locator('.pano-attention');
+   await attention.waitFor({timeout:10000});
+   assert.equal(await attention.locator('.pano-attention__item').count(),2,
+    'Atenção não deve calcular total: apenas um vencido e um vencendo hoje canônicos');
+   assert.ok(await attention.getByText('Destaques da consulta inicial').isVisible(),
+    'Oito registros de resumo não representam o total');
+   assert.ok(await attention.getByText('Obrigação fictícia vencida').isVisible());
+   assert.ok(await attention.getByText('Obrigação fictícia que vence hoje').isVisible());
+   const spot=await page.locator('.pano-spotlight').boundingBox();
+   const banner=await attention.boundingBox();
+   const actions=await page.locator('.pano-actions').boundingBox();
+   assert.ok(spot&&banner&&actions&&
+    banner.y>=spot.y+spot.height-2&&banner.y+banner.height<=actions.y+2,
+    'Atenção deve aparecer em faixa discreta acima dos atalhos');
+   await attention.locator('.pano-attention__item.is-overdue').click();
+   const complete=page.getByRole('dialog',{name:'Todos os compromissos'});
+   await complete.waitFor({timeout:10000});
+   assert.match(await complete.locator('.pano-commitments-dialog__summary').innerText(),
+    /8 compromissos carregados/,
+    'O destaque deve abrir o mesmo modal aprovado de 8 registros fictícios');
+   await complete.getByRole('button',{name:'Fechar lista de compromissos'}).click();
+  }
   assert.match(await period.innerText(),new RegExp(expectedPeriod),'Período inicial incorreto');
   assert.equal(await page.locator('.meg-integrated-preview').getAttribute('data-preview-view'),
    expectedView,'Versão inicial da Home incorreta');
