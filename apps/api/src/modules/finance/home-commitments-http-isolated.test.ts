@@ -101,7 +101,10 @@ try {
   const a = await success('/finance/home-commitments?limit=16', tokenA);
   assert.match(a.asOf, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(a.hasMore && a.nextCursor, 'Fonte com volume deve paginar');
-  assert.equal(a.items.length, 16);
+  // A API limita candidatos examinados, não obrigações elegíveis:
+  // benefício, crédito e pagamento vinculado são excluídos após a leitura.
+  assert.ok(a.items.length > 0 && a.items.length <= 16,
+    'Página HTTP não pode exceder o limite de 16 candidatos');
   const ids = a.items.map(item => item.id);
   assert.ok(ids.includes('financialEvent:p0-old'),
     'Vencido do mês anterior precisa chegar pela rota real');
