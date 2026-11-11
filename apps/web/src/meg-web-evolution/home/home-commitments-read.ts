@@ -36,6 +36,9 @@ function validPage(value:unknown):value is CommitmentPage{
    && ['overdue','due_today','upcoming'].includes(item.dueState));
 }
 
+export { validPage as isCanonicalHomeCommitmentPage };
+export type { CommitmentPage };
+
 /**
  * A interface não decide vencimentos nem quantias: consome valores e status
  * canônicos da API. Páginas vazias com hasMore não equivalem a saldo zerado.
