@@ -57,7 +57,19 @@ async function measure(page){
     })),
     tableHeadings:all('.pano-grid .meg-datagrid-table th .meg-datagrid-sort-button>span:first-child')
       .map(x=>({label:x.textContent?.trim(),width:x.clientWidth,scroll:x.scrollWidth})),
-    visibleMoneyCells:all('.pano-grid .meg-datagrid-table tbody td strong').map(el=>{
+    tableModes:all('.pano-finance-column>.pano-grid').map(panel=>{
+      const visible=el=>{if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0};
+      const table=panel.querySelector('.meg-datagrid-table');
+      const cards=panel.querySelector('.meg-datagrid-cards');
+      return {movements:panel.classList.contains('pano-grid--movements'),
+       commitments:panel.classList.contains('pano-grid--commitments'),
+       tableVisible:visible(table),cardsVisible:visible(cards),
+       cardCount:cards?[...cards.querySelectorAll('.meg-datagrid-card-row')].filter(visible).length:0,
+       panelWidth:panel.getBoundingClientRect().width};
+    }),
+    visibleMoneyCells:all('.pano-grid .meg-datagrid-table tbody td strong').filter(el=>{
+      const r=el.getBoundingClientRect();return r.width>0&&r.height>0
+    }).map(el=>{
       const cell=el.closest('td');
       const range=document.createRange();range.selectNodeContents(el);
       const textRight=range.getBoundingClientRect().right;
@@ -148,8 +160,19 @@ try {
     problems.push('painel de benefícios comprimido');
   if(width>=1024 && changed.tablePanels.length===2){
     const [a,b]=changed.tablePanels;
-    if(Math.abs(a.top-b.top)<3 && Math.min(a.width,b.width)<680)
-      problems.push('tabelas lado a lado sem largura para cabeçalhos');
+    // Novo contrato visual: duas colunas podem ter larguras diferentes,
+    // mas nenhuma pode apresentar uma tabela ilegível. DataGrid alterna
+    // para cards estruturados quando a coluna não comporta a tabela.
+    for(const mode of changed.tableModes){
+      if(mode.movements&&mode.panelWidth<=608&&!mode.cardsVisible)
+        problems.push('movimentações estreitas não adaptaram para cards');
+      if(mode.commitments&&mode.panelWidth<=416&&!mode.cardsVisible)
+        problems.push('compromissos estreitos não adaptaram para cards');
+      if(mode.cardsVisible&&mode.cardCount===0)
+        problems.push('DataGrid em cards sem registros visíveis');
+      if(!mode.cardsVisible&&!mode.tableVisible)
+        problems.push('DataGrid sem tabela nem cards visíveis');
+    }
     for(const heading of changed.tableHeadings.filter(x=>['Vencimento','Situação'].includes(x.label))){
       if(heading.scroll>heading.width+2)
         problems.push('cabeçalho '+heading.label+' ainda truncado');

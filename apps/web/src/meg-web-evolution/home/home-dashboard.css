@@ -457,6 +457,12 @@
 .pano-finance-block .pano-grid--commitments .meg-datagrid-table th{
  font-size:.79rem;line-height:1.3;
 }
+/* Responsividade por largura da coluna sem mudar o DataGrid central. */
+.pano-grid--movements{container-type:inline-size}
+@container (max-width:38rem){
+ .pano-grid--movements .meg-datagrid-table{display:none!important}
+ .pano-grid--movements .meg-datagrid-cards{display:grid!important;min-width:0}
+}
 /* O resumo de 3 colunas é distinto da listagem integral de 5 colunas.
    O valor e o vencimento precisam caber na primeira visualização da Home. */
 .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table{
