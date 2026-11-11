@@ -353,15 +353,26 @@
     grid-template-columns:repeat(auto-fit,minmax(min(100%,31.5rem),1fr));
     gap:clamp(.52rem,.9vw,.75rem);align-items:stretch;
   }
+  /* O layout autoritativo da Home usa quatro itens em duas linhas comuns.
+     O CSS histórico não pode reativar auto-fit e empilhar as duas colunas. */
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-block {
-    /* Duas colunas só quando há largura real. Na mesma linha, a altura
-       é compartilhada, permitindo que ambos os DataGrids terminem juntos. */
-    grid-template-columns:repeat(auto-fit,minmax(min(100%,34rem),1fr));
-    align-items:stretch;
+    display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+    grid-template-rows:auto auto;gap:.75rem;align-items:stretch;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-column{
-    align-self:stretch;
-    min-height:0;
+    display:contents;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-flow{
+    grid-column:1;grid-row:1;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-benefits{
+    grid-column:2;grid-row:1;min-height:0;align-self:stretch;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-primary>.pano-grid{
+    grid-column:1;grid-row:2;min-height:0;align-self:stretch;
+  }
+  .meg-integrated-preview[data-preview-view="home"] .pano-finance-column.is-secondary>.pano-grid{
+    grid-column:2;grid-row:2;min-height:0;align-self:stretch;
   }
   .meg-integrated-preview[data-preview-view="home"] .pano-finance-column>.pano-grid{
     display:flex;
