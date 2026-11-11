@@ -207,6 +207,16 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}
       title={label} aria-label={label}>{label}</span>}}
  ];
+ // Resumo compacto: informação necessária à decisão sem rolagem lateral.
+ // Origem e Situação continuam na consulta integral, com todas as colunas.
+ // Não eliminar linhas, mudar valores, urgência ou critérios da API.
+ const compactDueColumns:DataGridColumn<Record<string,unknown>>[]=dueColumns
+  .filter(column=>column.key==='date'||column.key==='description'||column.key==='value')
+  .map(column=>({
+   ...column,
+   width:column.key==='date'?137:column.key==='description'?148:120,
+   minWidth:column.key==='date'?130:column.key==='description'?128:104,
+  }));
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
  const stats:{label:string;value:number|null|undefined;note:string;icon:HomeIconName;kind:string;action:Action}[]=[
   {label:'Receitas',value:data.summary?.income,note:'',icon:'income',kind:'income',action:'lancamentos'},
@@ -323,7 +333,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
       aria-label="Ver todos os compromissos">Ver todos <HomeGlyph name="arrow" size={14}/></button>
      <button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
       <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
-     <DataGrid data={commitments} columns={dueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
+     <DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
    </div>
   </div>
   {showAllCommitments&&<HomeCommitmentsFullList
