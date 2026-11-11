@@ -123,7 +123,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
 }
 
 try{
- for(const width of [375,1366]){
+ for(const width of [375,640,1024,1366]){
   await runCase({width,home:'home-p0',expectedPeriod:'Novembro de 2026',
    expectedCommitment:'Obrigação fictícia vencida'});
   await runCase({width,home:'home',expectedPeriod:'Outubro de 2026',
