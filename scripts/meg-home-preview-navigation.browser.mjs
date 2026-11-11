@@ -76,7 +76,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
     banner.y>=spot.y-2&&banner.y+banner.height<=spot.y+spot.height+2&&
     actions.y>=spot.y+spot.height-2,
     'Atenção deve integrar o painel superior, acima dos atalhos');
-   if(width<1024)assert.ok(
+   if(width<=1024)assert.ok(
     banner.y>=financial.y+financial.height-2&&banner.y+banner.height<=cards.y+2,
     'No mobile a faixa de atenção deve vir antes dos cartões');
    await attention.screenshot({
