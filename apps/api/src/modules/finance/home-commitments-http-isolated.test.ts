@@ -3,7 +3,6 @@ import Fastify from 'fastify';
 import { prisma } from '@meg/database';
 import { registerAuth } from '../../plugins/auth';
 import { financeRoutes } from './routes';
-import { readCanonicalHomeCommitments } from '../../../../web/src/meg-web-evolution/home/home-commitments-read';
 
 /**
  * E2E HTTP real: Fastify + JWT oficial + rota financeira real + PostgreSQL 17
@@ -141,7 +140,18 @@ try {
     if (!response.ok) throw new Error('HTTP_' + response.status);
     return response.json() as Promise<T>;
   };
-  const visible = await readCanonicalHomeCommitments(requestA);
+  // Importação dinâmica evita que o TSConfig da API compile fontes da Web:
+  // os contratos de compilação dos dois workspaces permanecem independentes.
+  const webReadPath = new URL(
+    '../../../../web/src/meg-web-evolution/home/home-commitments-read.ts',
+    import.meta.url,
+  ).href;
+  const webModule = await import(webReadPath) as {
+    readCanonicalHomeCommitments: (
+      request: <T>(path: string) => Promise<T>,
+    ) => Promise<Array<{ id: string; sourceId: string; amount: string; dueState: string }>>;
+  };
+  const visible = await webModule.readCanonicalHomeCommitments(requestA);
   assert.equal(visible.length, 8, 'A Home deve exibir janela de oito compromissos');
   assert.ok(visible.some(item => item.id === 'financialEvent:p0-old'));
   assert.ok(visible.some(item => item.id === 'payable:p0-partial'));
