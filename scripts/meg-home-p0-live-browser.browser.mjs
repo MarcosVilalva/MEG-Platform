@@ -171,6 +171,23 @@ try {
       await page.goto(frontendBase + '/web-evolution.html', { waitUntil: 'domcontentloaded' });
       const dueGrid = page.locator('.pano-panel.pano-grid').filter({ hasText: 'Próximos compromissos' });
       await dueGrid.waitFor({ timeout: 12000 });
+      const entry=page.getByRole('dialog',{name:'Atenção aos seus vencimentos'});
+      await entry.waitFor({timeout:20000});
+      assert.ok((await entry.innerText()).includes('consulta inicial'),
+        'Alerta não pode declarar contagem global de obrigações');
+      if(name.startsWith('A')){
+        assert.ok(await entry.getByText('Obrigação fictícia p0-old').count()>0,
+          'Modal deve mostrar obrigação vencida vinda do PostgreSQL de QA');
+      }else{
+        assert.equal(await entry.getByText('Obrigação fictícia p0-old').count(),0,
+          'Modal do usuário B não pode mostrar compromisso de A');
+      }
+      await entry.screenshot({path:'artifacts/meg-home-p0-live/'+name+'-alerta-inicial.png',animations:'disabled'});
+      await entry.getByRole('button',{name:'Entendi'}).click();
+      const bell=page.getByRole('button',{name:'Notificações'});
+      assert.equal(await bell.locator('.meg-notification-dot').count(),1,
+        'Notificação canônica deve manter marcador persistente');
+
       await dueGrid.getByText(expected, { exact: false }).filter({ visible: true }).first().waitFor({ timeout: 30000 });
       const compactTable = dueGrid.getByRole('table', {name:'Próximos compromissos',includeHidden:true});
       assert.equal(await compactTable.locator('thead th').count(),3,
@@ -217,41 +234,13 @@ try {
         const badges = dueGrid.locator('.pano-due-date__urgency').filter({ visible: true });
         assert.ok(await badges.count() >= 6,
           'Vencido/hoje/futuro devem aparecer por texto junto à data');
-        const attention=page.locator('.pano-attention');
-        await attention.waitFor({timeout:20000});
-        assert.equal(await attention.locator('.pano-attention__item').count(),2,
-          'Destaque da Home usa um vencido e um vencendo hoje, ambos canônicos');
-        assert.ok(await attention.getByText('Destaques da consulta inicial').isVisible(),
-          'Lista de oito não deve ser apresentada como total da dívida');
-        assert.ok(await attention.getByText('Obrigação fictícia p0-old').isVisible(),
-          'Compromisso vencido deve ser visível antes do DataGrid');
         const sourceRows=(await Promise.all(apiResponses.map(r=>r.json())))
           .flatMap(payload=>Array.isArray(payload.items)?payload.items:[]);
         const canonicalToday=sourceRows.find(item=>item.dueState==='due_today');
         const canonicalOld=sourceRows.find(item=>item.dueState==='overdue');
         assert.ok(canonicalToday&&canonicalOld,'QA exige estados vencido/hoje na resposta canônica');
-        assert.equal(
-          (await attention.locator('.pano-attention__item.is-due-today .pano-attention__description').innerText()).trim(),
-          canonicalToday.description,
-          'Destaque do dia precisa reproduzir a descrição da API, mesmo quando é pagamento parcial'
-        );
-        assert.equal(
-          (await attention.locator('.pano-attention__item.is-overdue .pano-attention__description').innerText()).trim(),
-          canonicalOld.description,
-          'Destaque vencido precisa reproduzir a descrição da API'
-        );
-        const spot=await page.locator('.pano-spotlight').boundingBox();
-        const alert=await attention.boundingBox();
-        const actions=await page.locator('.pano-actions').boundingBox();
-        const financial=await page.locator('.pano-financial-column').boundingBox();
-        const cardsPanel=await page.locator('.pano-cards').boundingBox();
-        assert.ok(spot&&alert&&actions&&financial&&cardsPanel&&
-          alert.y>=spot.y-2&&alert.y+alert.height<=spot.y+spot.height+2&&
-          actions.y>=spot.y+spot.height-2,
-          'Aviso deve ficar dentro da composição superior, antes das Ações rápidas');
-        if(width<1024)assert.ok(alert.y>=financial.y+financial.height-2&&
-          alert.y+alert.height<=cardsPanel.y+2,
-          'Mobile deve destacar urgência antes do carrossel de cartões');
+        assert.equal(await page.locator('.pano-attention').count(),0,
+          'A faixa visual rejeitada deve ser removida');
         for (const urgency of ['Vencido', 'Vence hoje', 'A vencer']) {
           const badge = dueGrid.locator('.pano-due-date__urgency').getByText(urgency, {exact:true}).filter({visible:true}).first();
           assert.ok(await badge.count() > 0, 'Estado canônico visível na coluna Vencimento: ' + urgency);
@@ -270,15 +259,18 @@ try {
         assert.equal(await dueGrid.getByText('Obrigação fictícia p0-old', { exact: false }).count(), 0,
           'Home B não pode mostrar dados da A');
       }
-      // Exercitar acesso direto a partir da urgência, sem requisição adicional.
-      // A Home mostra 8 como resumo, mas a lista sob demanda não truncará.
+      // O sino abre a lista completa canônica sem nova regra financeira.
+      await bell.click();
+      const notifications=page.getByRole('region',{name:'Notificações financeiras'});
+      await notifications.waitFor({timeout:10000});
       if(name.startsWith('A')){
-        await page.locator('.pano-attention__item.is-overdue').first().click();
+        assert.ok(await notifications.getByText('Obrigação fictícia p0-old').count()>0,
+          'Sino deve refletir compromisso do usuário A');
       }else{
-        assert.equal(await page.locator('.pano-attention').getByText('Obrigação fictícia p0-old').count(),0,
-          'Atenção do usuário B não pode vazar descrição do usuário A');
-        await page.getByRole('button', {name: 'Ver todos os compromissos'}).click();
+        assert.equal(await notifications.getByText('Obrigação fictícia p0-old').count(),0,
+          'Sino B não pode vazar dados do usuário A');
       }
+      await notifications.getByRole('button',{name:'Ver todos os compromissos'}).click();
       const fullList = page.getByRole('dialog', {name: 'Todos os compromissos'});
       await fullList.waitFor({timeout: 20000});
       const detailedTable=fullList.getByRole('table',{name:'Todos os compromissos carregados',includeHidden:true});
