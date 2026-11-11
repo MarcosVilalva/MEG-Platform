@@ -8,9 +8,13 @@ import {
   upsertBudget,
   deleteBudget,
   listFinancialEvents,
+  getFinancialHistorySnapshot,
+  getCanonicalFilteredHistorySummary,
   updateFinancialEvent
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
+import {parseHistoryFilters} from './history-filter';
+import {getActiveFinancialHistoryRevision} from './history-revision';
 import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './phoenix-read';
 import { listCanonicalHomeCommitments } from './home-commitments-read';
 import { decodeCommitmentCursor } from './home-commitments-core';
@@ -160,7 +164,7 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get('/sync-status', { preHandler: app.authorize([...readRoles]) }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
     const dataOwnerId = context.workspace.ownerId;
-    const [latestMutation, latestAccount, latestCategory, latestPaymentMethod, latestCard] = await Promise.all([
+    const [latestMutation, latestAccount, latestCategory, latestPaymentMethod, latestCard, activeHistoryRevision] = await Promise.all([
       prisma.cloudMutationReceipt.findFirst({
         where: { workspaceId: context.workspaceId },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -186,6 +190,7 @@ export async function financeRoutes(app: FastifyInstance) {
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         select: { id: true, updatedAt: true },
       }),
+      getActiveFinancialHistoryRevision(dataOwnerId),
     ]);
 
     const catalogSources = [
@@ -214,10 +219,11 @@ export async function financeRoutes(app: FastifyInstance) {
     const catalogIsNewest = Boolean(latestCatalog && (!latestMutation || latestCatalog.item.updatedAt > latestMutation.createdAt));
 
     return {
-      token: `${mutationToken}|${catalogToken}`,
+      token: `${mutationToken}|${catalogToken}|${activeHistoryRevision}`,
       changedAt: changedAtDate?.toISOString() || null,
       mutationType: catalogIsNewest ? 'CATALOG_SYNC' : latestMutation?.mutationType || null,
       catalogChangedAt: latestCatalog?.item.updatedAt.toISOString() || null,
+      capabilities: {historySnapshotV1:true, filteredSummaryV1:true},
     };
   });
 
@@ -333,6 +339,27 @@ export async function financeRoutes(app: FastifyInstance) {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return listPhoenixFinancialEventsForMonth(request.user.sub, parsed.data.month);
+  });
+
+  // Exclusivo da consulta Web autorizada: resposta integral consistente em
+  // uma transação; para históricos grandes o servidor sinaliza fallback.
+  app.get('/events/history-snapshot', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getFinancialHistorySnapshot(dataOwnerId);
+  });
+
+  // Somente leitura: os filtros estruturais são validáveis na API.
+  // Nunca publica somas do React; se exceder o limite informa indisponibilidade.
+  app.get('/events/filtered-summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    const parsed = z.object({filter:z.string().min(2).max(12000)}).safeParse(request.query);
+    if(!parsed.success)return validationError(reply, parsed.error.flatten());
+    let filters;
+    try {filters=parseHistoryFilters(JSON.parse(parsed.data.filter));}
+    catch {return reply.code(400).send({code:'INVALID_HISTORY_FILTER',message:'Filtros financeiros inválidos.'});}
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getCanonicalFilteredHistorySummary(dataOwnerId, filters);
   });
 
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
