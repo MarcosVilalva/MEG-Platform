@@ -38,19 +38,24 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    assert.ok(['Vencimento','Descrição','Valor'].every((label,i)=>titles[i].includes(label)),
     'As colunas essenciais precisam preservar a ordem e seus rótulos');
    if(width>=1024){
-    const viewport=commitments.locator('.meg-datagrid__viewport');
-    const dimensions=await viewport.evaluate(element=>({
-     available:element.clientWidth,scroll:element.scrollWidth,
-     right:element.getBoundingClientRect().right,
-     valueRight:element.querySelector('tbody tr td:last-child strong')?.getBoundingClientRect().right||0,
-     tableWidth:element.querySelector('table')?.getBoundingClientRect().width||0,
-     tableMinWidth:element.querySelector('table')?.style.minWidth||'',
-     tableComputedWidth:element.querySelector('table')?getComputedStyle(element.querySelector('table')).width:'',
-     colWidths:[...element.querySelectorAll('table col')].map(col=>col.getBoundingClientRect().width),
-     thWidths:[...element.querySelectorAll('table thead th')].map(th=>th.getBoundingClientRect().width),
-    }));
-    assert.ok(dimensions.scroll<=dimensions.available+2&&dimensions.valueRight<=dimensions.right+1,
-      'Tabela compacta não pode esconder valor e vencimento: '+JSON.stringify(dimensions));
+    if(await compactTable.isVisible()){
+     const viewport=commitments.locator('.meg-datagrid__viewport');
+     const dimensions=await viewport.evaluate(element=>({
+      available:element.clientWidth,scroll:element.scrollWidth,
+      right:element.getBoundingClientRect().right,
+      valueRight:element.querySelector('tbody tr td:last-child strong')?.getBoundingClientRect().right||0,
+      tableWidth:element.querySelector('table')?.getBoundingClientRect().width||0,
+     }));
+     assert.ok(dimensions.scroll<=dimensions.available+2&&dimensions.valueRight<=dimensions.right+1,
+       'Tabela compacta não pode esconder valor e vencimento: '+JSON.stringify(dimensions));
+    }else{
+     const cards=commitments.locator('.meg-datagrid-cards');
+     assert.ok(await cards.isVisible(),'Painel estreito deve apresentar cards estruturais');
+     assert.ok(await cards.getByText('Valor',{exact:true}).count()>0,
+       'Valor precisa ser encontrado sem rolagem lateral');
+     assert.ok(await cards.getByText('Vencido',{exact:true}).count()>0,
+       'Urgência precisa estar visível junto à data');
+    }
    }
   }
   assert.match(await period.innerText(),new RegExp(expectedPeriod),'Período inicial incorreto');
