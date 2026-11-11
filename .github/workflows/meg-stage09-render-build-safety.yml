@@ -1,0 +1,41 @@
+name: MEG Stage09 Render API Safe Build (offline)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/meg-stage09-render-build-contract.mjs'
+      - 'scripts/meg-stage09-render-build-contract.test.mjs'
+      - 'docs/MEG-STAGE09-RENDER-PREFLIGHT-20261111.md'
+      - '.github/workflows/meg-stage09-render-build-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-api-build-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Placeholder points to an unreachable local port. No production secrets.
+      DATABASE_URL: postgresql://invalid:invalid@127.0.0.1:1/meg_no_database
+      PGCONNECT_TIMEOUT: '1'
+    steps:
+      - name: Checkout, no persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reject dangerous Render build candidate and mutated npm chains
+        run: |
+          node scripts/meg-stage09-render-build-contract.test.mjs
+          node scripts/meg-stage09-render-build-contract.mjs
+      - name: Install from frozen lockfile, with no production credentials
+        run: npm ci --audit=false
+      - name: Validate Prisma client generation without database access
+        run: npm run db:generate
+      - name: Compile API without database access
+        run: npm run build:api
