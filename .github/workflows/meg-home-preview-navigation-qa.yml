@@ -1,0 +1,46 @@
+name: MEG Home 08 P0 - Navegacao Visual Isolada
+on:
+  push:
+    branches:
+      - 'preview/08-home-p0-qa-pr669-20261111'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview-navigation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci --audit=false
+      - name: Compilar somente a previa visual, sem API
+        run: cd apps/web && npx vite build --config vite.home-p0-qa.config.ts
+      - name: Instalar Playwright sem modificar lockfile
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Verificar contexto de outubro e novembro ao abrir/fechar Novo lancamento
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+          MEG_PREVIEW_URL: http://127.0.0.1:4176
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4176 --bind 127.0.0.1 --directory apps/web/dist-home-p0-qa >/tmp/meg-home-preview-nav.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4176/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-home-preview-navigation.browser.mjs
+      - name: Evidencias de navegador ficticio
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-preview-navigation-qa
+          path: artifacts/meg-home-navigation-qa/
+          if-no-files-found: warn
+          retention-days: 7
