@@ -149,13 +149,14 @@ Documentação: [Supabase Backups](https://supabase.com/docs/guides/platform/bac
 - [x] Projeto identificado, 32 tabelas públicas e presença de Vault inventariadas com consultas **agregadas de leitura**.
 - [x] Código de exportação encriptada e teste local guardado em branch isolada, sem credenciais.
 - [x] Testes **simulados** de segurança do script, bloqueio de restore remoto e conferência de integridade de arquivo. Um job de PostgreSQL 17 **sintético** foi definido na CI para executar o **script real de restore via socket Unix**; seu resultado deve ser conferido no SHA final da PR. Não se confundem com backup/recovery efetivo.
-- [ ] Exportação **real** do PostgreSQL executada com resultado confirmado.
-- [ ] Arquivo criptografado copiado e verificado em repositório de armazenamento **externo** ao Supabase/GitHub.
+- [x] Exportação **real** do PostgreSQL executada: 11/11/2026, arquivo age validado integralmente e SHA-256 conferido.
+- [x] Arquivo criptografado e manifesto copiados ao OneDrive pessoal com hash conferido; download separado conferido por hash, com origem Web declarada pelo operador e não atestável pelo script offline.
 - [ ] Chave de recuperação `age` armazenada offline e leitura testada.
 - [ ] Chave-raiz Supabase Vault protegida sem divulgação por meio de exportação criptografada e confirmação privada.
-- [ ] Teste com **PostgreSQL real local**, verificação de contagens, dados essenciais, RLS/permissões e dependências.
+- [x] **Restore real de `public`** no PostgreSQL 17 local WSL, em `meg_restore_drill`, concluído com código 0: 32/32 tabelas e registros nas três tabelas essenciais.
+- [ ] Auditoria independente pós-restore de chaves, índices, integridade, RLS/permissões, dados e regras financeiras canônicas, sem reutilizar o script de restore.
 - [ ] Recuperação de componentes Supabase gerenciados e configurações externas em **novo projeto isolado**, se necessária à homologação integral.
 - [ ] Política de frequência (sugestão: backup diário), retenção e alerta de falha aprovada; automação somente **após** restore validado. Backup diário implica perda potencial de até um dia de alterações, sem PITR.
 - [ ] Build Command Render seguro e recuperação das cotas liberados antes do deploy das PRs #665/#663, mantendo #656 e Home PT2 em seus escopos.
 
-**Estado:** o MEG continua na **Etapa 09 — Lançamentos**. Este kit não altera API, Android, Frontend, regras financeiras, Render ou o Supabase; não foi publicado, nem configura backup automático por si só. O projeto só deixa de estar sem backup recuperável **depois de realizar a exportação e provar a restauração**.
+**Estado atualizado em 11/11/2026:** o MEG continua na **Etapa 09**, com **backup real criptografado e restauração do schema `public` comprovados** em WSL isolado, mas sem recuperação integral do Supabase ou homologação funcional financeira. O kit não alterou produção, API, Android, frontend, regras financeiras ou Render, e não configura backup automático. PR #666 Draft, sem merge; NO-GO de deploy até concluir os demais gates.
