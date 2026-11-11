@@ -218,6 +218,45 @@ try {
         assert.equal(await dueGrid.getByText('Obrigação fictícia p0-old', { exact: false }).count(), 0,
           'Home B não pode mostrar dados da A');
       }
+      // Exercitar o botão "Ver todos" contra HTTP/JWT/PostgreSQL reais:
+      // a Home mostra 8 como resumo, mas a consulta sob demanda não truncará.
+      await page.getByRole('button', {name: 'Ver todos os compromissos'}).click();
+      const fullList = page.getByRole('dialog', {name: 'Todos os compromissos'});
+      await fullList.waitFor({timeout: 20000});
+      const countText = fullList.locator('.pano-commitments-dialog__summary');
+      const loadedCount = async () => {
+        const content = await countText.innerText();
+        const match = content.match(/(\\d+) compromissos? carregados?/);
+        assert.ok(match, 'Modal precisa informar quantos itens foram realmente carregados: ' + content);
+        return Number(match[1]);
+      };
+      await fullList.locator('.meg-datagrid').waitFor({timeout:20000});
+      const firstLoaded = await loadedCount();
+      if (name.startsWith('A')) {
+        assert.ok(firstLoaded > 8, 'Primeira página integral deve ultrapassar o limite de 8 da Home');
+        assert.ok(await fullList.getByRole('button', {name:'Carregar próximos compromissos'}).isVisible(),
+          'Mais registros canônicos precisam ficar acessíveis');
+        await fullList.getByRole('button', {name:'Carregar próximos compromissos'}).click();
+        await page.waitForFunction((n) => {
+          const text = document.querySelector('.pano-commitments-dialog__summary')?.textContent||'';
+          const match = text.match(/(\\d+) compromissos? carregados?/);
+          return match && Number(match[1]) > n;
+        },firstLoaded,{timeout:20000});
+        assert.ok((await loadedCount())>firstLoaded,'Paginação real deve carregar além da primeira página');
+        assert.ok(await fullList.getByText('Os itens carregados não representam o total.',{exact:false}).count()>0,
+          'Não afirmar total sem chegar ao fim do cursor');
+      }else{
+        assert.equal(firstLoaded,2,'Outro workspace deve ver apenas seus 2 itens fictícios');
+        assert.equal(await fullList.getByText('Obrigação fictícia p0-old').count(),0,
+          'Consulta integral não pode vazar dados de outro workspace');
+      }
+      await fullList.screenshot({
+        path:'artifacts/meg-home-p0-live/'+name+'-lista-completa.png',
+        animations:'disabled',
+      });
+      await fullList.getByRole('button',{name:'Fechar lista de compromissos'}).click();
+      assert.equal(await page.getByRole('dialog',{name:'Todos os compromissos'}).count(),0,
+        'Dialog deve fechar sem sair da Home');
       await dueGrid.screenshot({
         path: 'artifacts/meg-home-p0-live/' + name + '-compromissos.png',
         animations: 'disabled',
