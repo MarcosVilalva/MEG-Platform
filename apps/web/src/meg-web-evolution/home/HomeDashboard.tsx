@@ -321,7 +321,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
      <div className="pano-grid-actions"><button type="button"
       onClick={()=>setShowAllCommitments(true)}
       aria-label="Ver todos os compromissos">Ver todos <HomeGlyph name="arrow" size={14}/></button>
-     <button type="button" onClick={()=>setShowDueFilters(v=>!v) aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
+     <button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
       <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
      <DataGrid data={commitments} columns={dueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
    </div>
