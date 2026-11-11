@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {authenticatedRequest} from '../../app/auth-client';
 import {DataGrid} from '../datagrid/DataGrid';
+import {HomeGlyph} from './HomeGlyph';
 import type {DataGridColumn} from '../datagrid/types';
 import {
   isCanonicalHomeCommitmentPage,
@@ -129,7 +130,10 @@ export function HomeCommitmentsFullList({columns,mapRows,preview,previewRows,onD
     <h2 id="pano-commitments-full-title">Todos os compromissos</h2>
     <p>Compromissos monetários em aberto, incluindo vencidos de meses anteriores.</p>
    </div>
-   <button type="button" onClick={onDismiss} aria-label="Fechar lista de compromissos">Fechar</button>
+   <button type="button" className="pano-commitments-dialog__close" onClick={onDismiss}
+    aria-label="Fechar lista de compromissos" title="Fechar lista de compromissos" data-tooltip="Fechar">
+     <HomeGlyph name="x" size={21}/>
+    </button>
   </div>
   <p className="pano-commitments-dialog__summary" role="status">
    {preview?'Demonstração: dados fictícios. ' : ''}

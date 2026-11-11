@@ -56,7 +56,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
      assert.ok(await cards.isVisible(),'Painel estreito deve apresentar cards estruturais');
      assert.ok(await cards.getByText('Valor',{exact:true}).count()>0,
        'Valor precisa ser encontrado sem rolagem lateral');
-     assert.ok(await cards.getByText('Vencido',{exact:true}).count()>0,
+     assert.ok(await cards.locator('.pano-due-date__urgency[aria-label="Vencido"]').count()>0,
        'Urgência precisa estar visível junto à data');
     }
    }
@@ -64,6 +64,19 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
   if(home==='home-p0'){
    const alert=page.getByRole('dialog',{name:'Atenção aos seus vencimentos'});
    await alert.waitFor({timeout:20000});
+   const closeButton=alert.getByRole('button',{name:'Fechar alerta de vencimentos'});
+   const closeVisual=await closeButton.evaluate(el=>({
+    radius:getComputedStyle(el).borderRadius,
+    width:el.getBoundingClientRect().width,
+    height:el.getBoundingClientRect().height,
+    svg:el.querySelectorAll('svg').length,
+   }));
+   assert.ok(closeVisual.radius==='50%'&&closeVisual.width>=44&&closeVisual.height>=44&&closeVisual.svg===1,
+    'Fechar precisa ser controle circular SVG com alvo adequado: '+JSON.stringify(closeVisual));
+   assert.ok(await alert.locator('.meg-due-alert-item.is-overdue .meg-due-alert-item__symbol svg').count()>0,
+    'Vencido precisa exibir sirene SVG');
+   assert.ok(await alert.locator('.meg-due-alert-item.is-due-today .meg-due-alert-item__symbol svg').count()>0,
+    'Vence hoje precisa exibir ícone amarelo SVG');
    assert.ok(await alert.getByText('Obrigação fictícia vencida').isVisible(),
     'Modal inicial deve mostrar vencido fictício');
    assert.ok(await alert.getByText('Obrigação fictícia que vence hoje').isVisible(),
@@ -153,6 +166,17 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
     'O modal deve preservar as 5 colunas canônicas da consulta integral');
    await full.getByRole('button',{name:'Fechar lista de compromissos'}).click();
   }
+  const contextControls=page.locator('.pano-finance-block .pano-icon-action');
+  assert.ok(await contextControls.count()>=3,'Ações financeiras precisam usar SVG');
+  const controls=await contextControls.evaluateAll(buttons=>buttons.map(b=>({
+   svg:b.querySelectorAll('svg').length,
+   text:b.textContent?.trim()??'',
+   title:b.getAttribute('title'),
+   aria:b.getAttribute('aria-label'),
+   height:b.getBoundingClientRect().height,
+  })));
+  assert.ok(controls.every(c=>c.svg===1&&c.text===''&&c.title&&c.aria&&c.height>=44),
+   'Ações visuais devem manter acessibilidade e alvo: '+JSON.stringify(controls));
   const dimensions=await page.evaluate(()=>({
    scroll:document.documentElement.scrollWidth,
    inner:window.innerWidth,

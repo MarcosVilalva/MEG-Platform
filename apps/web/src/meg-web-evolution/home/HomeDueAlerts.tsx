@@ -2,6 +2,7 @@ import {createContext,useCallback,useContext,useEffect,useMemo,useRef,useState,t
 import {createPortal} from 'react-dom';
 import {authenticatedRequest} from '../../app/auth-client';
 import {Icon} from '../components/Icon';
+import {HomeGlyph} from './HomeGlyph';
 import {readCanonicalHomeCommitments,type CanonicalHomeCommitment} from './home-commitments-read';
 import './home-due-alerts.css';
 
@@ -43,13 +44,17 @@ export function useHomeDueAlertPublisher(){
 }
 
 function AlertItem({item,hidden}:{item:CanonicalHomeCommitment;hidden:boolean}){
+ const overdue=item.dueState==='overdue';
+ const stateLabel=overdue?'Vencido':'Vence hoje';
  return <li className={'meg-due-alert-item is-'+item.dueState.replace('_','-')}>
-  <span className="meg-due-alert-item__state">
-   {item.dueState==='overdue'?'Vencido':'Vence hoje'}
+  <span className="meg-due-alert-item__symbol" aria-hidden="true">
+   <HomeGlyph name={overdue?'siren':'timer'} size={23}/>
   </span>
   <span className="meg-due-alert-item__detail">
    <strong title={item.description}>{item.description}</strong>
-   <small>Vencimento: {dateBR(item.dueDate)}</small>
+   <small><span className="meg-due-alert-item__state-word">{stateLabel}</span>
+    <span>Vencimento: {dateBR(item.dueDate)}</span>
+   </small>
   </span>
   <strong className="meg-due-alert-item__amount">
    {hidden?'R$ •••••':currency.format(Number(item.amount))}
@@ -171,9 +176,9 @@ export function HomeDueAlertsProvider({children}:{children:ReactNode}){
    <dialog className="meg-due-alert-dialog" ref={dialog}
     aria-labelledby="meg-due-alert-title" onCancel={dismiss} onClose={dismiss}>
     <div className="meg-due-alert-dialog__top">
-     <span className="meg-due-alert-dialog__emblem" aria-hidden="true"><Icon name="clock" width={28} height={28}/></span>
+     <span className="meg-due-alert-dialog__emblem" aria-hidden="true"><HomeGlyph name="siren" size={27}/></span>
      <button type="button" className="meg-due-alert-dialog__close"
-      aria-label="Fechar alerta de vencimentos" onClick={dismiss}>×</button>
+      aria-label="Fechar alerta de vencimentos" title="Fechar alerta" onClick={dismiss}><HomeGlyph name="x" size={21}/></button>
     </div>
     <span className="meg-due-alert-dialog__eyebrow">ALERTA FINANCEIRO</span>
     <h2 id="meg-due-alert-title">Atenção aos seus vencimentos</h2>
@@ -190,7 +195,7 @@ export function HomeDueAlertsProvider({children}:{children:ReactNode}){
     </p>
     <div className="meg-due-alert-dialog__actions">
      <button type="button" className="meg-due-alert-dialog__primary" onClick={openAll}>
-      Ver todos os compromissos <Icon name="chevronRight" width={17} height={17}/>
+      Ver todos os compromissos <HomeGlyph name="arrow" size={18}/>
      </button>
      <button type="button" className="meg-due-alert-dialog__secondary" onClick={dismiss}>Entendi</button>
     </div>
@@ -202,7 +207,7 @@ export function HomeDueAlertsProvider({children}:{children:ReactNode}){
      aria-label="Fechar notificações" onClick={()=>setBellOpen(false)}/>
     <section className="meg-due-bell-panel" aria-label="Notificações financeiras">
      <header><strong>Notificações financeiras</strong>
-      <button type="button" aria-label="Fechar painel de notificações" onClick={()=>setBellOpen(false)}>×</button>
+      <button type="button" aria-label="Fechar painel de notificações" title="Fechar notificações" onClick={()=>setBellOpen(false)}><HomeGlyph name="x" size={20}/></button>
      </header>
      {hasAlert&&source?<>
       <p>Destaques dos compromissos consultados</p>
@@ -221,7 +226,7 @@ export function HomeDueAlertsProvider({children}:{children:ReactNode}){
     <div><strong>Lembrete de vencimento</strong>
      <p>Há compromisso vencido confirmado na última consulta. Verifique as notificações.</p>
     </div>
-    <button type="button" aria-label="Dispensar lembrete" onClick={()=>setToastOpen(false)}>×</button>
+    <button type="button" aria-label="Dispensar lembrete" title="Dispensar lembrete" onClick={()=>setToastOpen(false)}><HomeGlyph name="x" size={18}/></button>
    </div>,document.body
   )}
  </AlertsContext.Provider>;

@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 
-export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload'|'chevronLeft'|'chevronRight'|'chevronUp'|'chevronDown'|'trash'|'pencil'|'filter'|'activity'|'calendarClock'|'basket'|'medical'|'house'|'car'|'tag';
+export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload'|'chevronLeft'|'chevronRight'|'chevronUp'|'chevronDown'|'trash'|'pencil'|'filter'|'activity'|'calendarClock'|'basket'|'medical'|'house'|'car'|'tag'|'x'|'siren'|'timer'|'checkCircle'|'list';
 const shapes:Record<HomeIconName,ReactNode>={
  wallet:<><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18M16 14h2"/></>,
  eye:<><path d="M2 12s3.7-6.5 10-6.5S22 12 22 12s-3.7 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.7"/></>,
@@ -36,7 +36,12 @@ const shapes:Record<HomeIconName,ReactNode>={
  medical:<><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z"/></>,
  house:<><path d="m3 11 9-8 9 8v9h-7v-6h-4v6H3v-9Z"/></>,
  car:<><rect x="3" y="9" width="18" height="10" rx="2"/><path d="m5 9 2-5h10l2 5M7 19v2M17 19v2M6 13h2M16 13h2"/></>,
- tag:<><path d="M3 4h10l8 8-9 9-9-9V4Z"/><circle cx="8" cy="9" r="1"/></>
+ tag:<><path d="M3 4h10l8 8-9 9-9-9V4Z"/><circle cx="8" cy="9" r="1"/></>,
+ x:<path d="M18 6 6 18M6 6l12 12"/>,
+ siren:<><path d="M7 16v-4a5 5 0 0 1 10 0v4"/><path d="M5 20h14v-4H5zM12 2v3M3 12h2M19 12h2M4.9 4.9l1.5 1.5M19.1 4.9l-1.5 1.5"/></>,
+ timer:<><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 1M9 2h6M17.5 5.5l1.5-1.5"/></>,
+ checkCircle:<><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></>,
+ list:<><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></>
 };
 export function HomeGlyph({name,size=20,className=''}:{name:HomeIconName;size?:number;className?:string}){
  return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{shapes[name]}</svg>;

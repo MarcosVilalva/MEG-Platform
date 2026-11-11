@@ -13,14 +13,14 @@
 .pano-notice span{flex:1}
 .pano-notice button,.pano-error button{min-height:2.3rem;padding:.2rem .6rem;border:1px solid currentColor;border-radius:.4rem;background:transparent;color:inherit;margin-left:auto}
 .pano-loading{padding:2rem;color:#a1c7c3}
-.pano-panel{min-width:0;border:1px solid var(--p-line);border-radius:.77rem;background:linear-gradient(145deg,#052c32,#042129);padding:.76rem .83rem;box-shadow:inset 0 1px #bdfffa08,0 5px 18px #00131632}
+.pano-panel{min-width:0;border:1px solid var(--p-line);border-radius:1.02rem;background:linear-gradient(148deg,#062e35,#042129 82%);padding:.8rem .9rem;box-shadow:inset 0 1px #bdfffa12,0 8px 26px #0013163b}
 .pano-panel-title{display:flex;align-items:center;justify-content:space-between;min-width:0;gap:.5rem}
 .pano-panel-title h2{display:flex;align-items:center;gap:.45rem;margin:0;min-width:0;font-size:.94rem;line-height:1.3;font-weight:800}
 .pano-panel-title h2 svg{color:#43ebc9}
 .pano-panel-title>span{font-size:.73rem;color:#a0c7c7;text-align:right}
 .pano-financial-column{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:0;align-content:start}
 .pano-spotlight{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:.5rem;min-width:0}
-.pano-hero{position:relative;isolation:isolate;display:flex;min-width:0;min-height:8.5rem;align-items:flex-start;justify-content:center;flex-direction:column;padding:.85rem;border:1px solid #2aac9b70;border-radius:.7rem;overflow:hidden;background:#052c30}
+.pano-hero{position:relative;isolation:isolate;display:flex;min-width:0;min-height:8.5rem;align-items:flex-start;justify-content:center;flex-direction:column;padding:.85rem;border:1px solid #2aac9b70;border-radius:1.02rem;overflow:hidden;background:#052c30}
 .pano-hero::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#031b23ec 0%,#03242cc9 51%,#042c3780 100%),url("https://images.unsplash.com/photo-1604240400568-c50e9a0f518f?auto=format&fit=crop&w=1800&q=85&fm=webp") 58% center/cover no-repeat}
 .pano-hero::after{content:"";z-index:-1;position:absolute;inset:0;background:linear-gradient(0deg,#001d2260,transparent 60%);pointer-events:none}
 .pano-balance{display:flex;flex-direction:column;align-items:flex-start;gap:.56rem;min-width:0;width:100%;text-shadow:0 2px 12px #00191b}
@@ -34,7 +34,13 @@
 .pano-balance-bottom button{display:inline-flex;align-items:center;gap:.32rem;min-height:2.35rem;border:0;border-bottom:1px solid #62d5c58c;padding:.25rem 0;border-radius:0;background:transparent;color:#7df2d9;font-size:.72rem;font-weight:750}
 .pano-cards{display:flex;flex-direction:column;min-width:0;gap:.16rem;padding:.62rem .65rem .57rem;border-color:#2aa99591;background:linear-gradient(130deg,#062e35,#05212a)}
 .pano-carousel-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-height:2.3rem}
-.pano-view-all,.pano-flow-open{display:inline-flex;align-items:center;gap:.32rem;justify-content:center;min-height:2.75rem;padding:.32rem .56rem;border:1px solid #238a8379;border-radius:.42rem;background:#07545a66;color:#a0f9e4;font-size:.71rem;font-weight:750;white-space:nowrap}
+.pano-view-all,.pano-flow-open{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;
+ padding:0;border:1px solid rgba(60,181,167,.65);border-radius:.85rem;
+ background:linear-gradient(155deg,rgba(11,95,101,.75),rgba(6,49,59,.90));
+ color:#adffec;white-space:nowrap;box-shadow:inset 0 1px rgba(255,255,255,.07)
+}
 .pano-card-stage{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%;max-width:43rem;min-width:0;min-height:clamp(10.5rem,52vw,12rem);overflow:hidden;margin:.22rem auto .28rem;border-radius:.56rem;touch-action:pan-y;outline-offset:2px}
 .pano-card-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,#051d29d8,#03303881 48%,#071a25d6),url("https://images.unsplash.com/photo-1699982758974-0703b87f052d?auto=format&fit=crop&w=1600&q=82&fm=webp") center/cover no-repeat;filter:saturate(.68)}
 .pano-card-stage::after{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 50% 90%,#00e0b71c,transparent 67%);pointer-events:none}
@@ -87,7 +93,7 @@
 .pano-credit-card.is-arriving-next{animation:pano-card-next .28s ease-out both}
 .pano-credit-card.is-arriving-prev{animation:pano-card-prev .28s ease-out both}
 .pano-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));align-items:stretch;gap:.38rem;margin-top:.46rem;min-width:0}
-.pano-stat{min-width:0;min-height:5rem;display:flex;align-items:center;justify-content:flex-start;padding:.49rem .45rem;text-align:left;border:1px solid #238f888a;border-radius:.64rem;background:linear-gradient(145deg,#062e34,#04242c);color:#f6fffc;transition:border-color .16s,background .16s}
+.pano-stat{min-width:0;min-height:5rem;display:flex;align-items:center;justify-content:flex-start;padding:.49rem .45rem;text-align:left;border:1px solid #238f888a;border-radius:.9rem;background:linear-gradient(145deg,#062e34,#04242c);color:#f6fffc;transition:border-color .16s,background .16s}
 .pano-stat:hover{background:#0b3940;border-color:#37dabb}
 .pano-stat-head{display:flex;align-items:center;gap:.43rem;min-width:0;width:100%}
 .pano-stat-icon{display:grid;place-items:center;width:2rem;height:2rem;flex:0 0 2rem;background:#0a5850;color:#49efc9;border-radius:.48rem}
@@ -113,7 +119,7 @@
 .pano-mid{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;align-items:stretch;gap:.5rem}
 .pano-benefits,.pano-actions{min-width:0;width:100%;align-self:stretch}
 .pano-benefits>.pano-panel-title>span{font-size:.7rem;line-height:1.25;max-width:11rem}
-.pano-benefit-card{position:relative;isolation:isolate;display:flex;align-items:stretch;width:100%;min-height:7rem;margin-top:.5rem;padding:0;overflow:hidden;border-radius:.6rem;border:1px solid #55d6b47a;background:#064138;color:white;text-align:left}
+.pano-benefit-card{position:relative;isolation:isolate;display:flex;align-items:stretch;width:100%;min-height:7rem;margin-top:.5rem;padding:0;overflow:hidden;border-radius:.9rem;border:1px solid #55d6b47a;background:#064138;color:white;text-align:left}
 .pano-benefit-card::before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#03242cf7 0%,#06483fbd 53%,#04483d19),url("https://images.unsplash.com/photo-1705140643816-2bb76d7ddeb1?auto=format&fit=crop&w=1250&q=84&fm=webp") right 45%/cover no-repeat}
 .pano-benefit-card::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(0deg,#02282285,transparent 54%);pointer-events:none}
 .pano-benefit-card:hover{border-color:#9af7d5}
@@ -142,7 +148,12 @@
 .pano-grid-heading{display:flex;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}
 .pano-grid-heading>.pano-panel-title h2{font-size:.86rem}
 .pano-grid-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.35rem}
-.pano-grid-actions button{display:inline-flex;align-items:center;justify-content:center;gap:.25rem;min-height:2.75rem;padding:.27rem .5rem;border:1px solid #299e966d;border-radius:.42rem;background:#063e46;color:#70f6df;font-size:.69rem}
+.pano-grid-actions button{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;
+ padding:0;border:1px solid #299e966d;border-radius:.85rem;
+ background:linear-gradient(145deg,#07434b,#062b35);color:#70f6df
+}
 .pano-grid:not(.is-filters-open) .meg-datagrid-toolbar{display:none}
 .pano-grid .meg-datagrid{min-width:0;border-color:#24686858!important;background:transparent!important;box-shadow:none!important}
 .pano-grid .meg-datagrid__viewport{flex:0 0 auto;min-height:8rem;height:auto;max-height:none;overflow:auto}
@@ -230,7 +241,7 @@
 .pano-card-indicator{margin-inline:auto}
 /* Os botões e SVGs do DataGrid recebem tratamento SOMENTE dentro da Home. */
 .pano-grid .pano-panel-title h2 svg{color:#70f5db;filter:drop-shadow(0 0 6px #1cf1c94d);stroke-width:2.05}
-.pano-grid-actions button{gap:.38rem;border-color:#398e89b8;background:linear-gradient(145deg,#08434b,#062b35);color:#abffed;font-weight:750}
+.pano-grid-actions button{border-color:#398e89b8;color:#abffed;font-weight:750}
 .pano-grid-actions button svg{color:#61e6d4;stroke-width:2.1}
 .pano-grid-actions button:hover,.pano-grid-actions button[aria-expanded=true]{border-color:#5ff1d7;background:#0b555d;box-shadow:0 0 12px #13d8b127}
 .pano-grid .meg-datagrid-sort-button{color:#72cfcb;transition:color .16s,background .16s}
@@ -243,6 +254,46 @@
 .pano-grid .meg-datagrid-pagination button:not(:disabled):hover{background:#0e5059;border-color:#62e7d0;box-shadow:0 0 10px #16cfb32b}
 .pano-grid .meg-datagrid-pagination button svg{stroke-width:2.35}
 @media(prefers-reduced-motion:reduce){.pano-card-control,.pano-grid .meg-datagrid-sort-button,.pano-grid .meg-datagrid-filter-button,.pano-grid .meg-datagrid-pagination button{transition:none!important}}
+
+/* Ações contextuais SVG com tooltip, foco e alvos de toque adequados. */
+.pano-root .pano-icon-action{
+ position:relative;display:inline-grid;place-items:center;
+ flex:0 0 2.75rem;width:2.75rem;height:2.75rem;min-height:2.75rem;
+ padding:0;border-radius:.85rem;
+ transition:border-color .16s,background .16s,box-shadow .16s,transform .16s
+}
+.pano-root .pano-icon-action svg{width:1.2rem;height:1.2rem;stroke-width:2.1}
+.pano-root .pano-icon-action:hover:not(:disabled),
+.pano-root .pano-icon-action[aria-expanded="true"]{
+ background:#0d6469;border-color:#79fbe2;box-shadow:0 0 16px rgba(28,228,197,.21);
+ transform:translateY(-1px)
+}
+.pano-root .pano-icon-action:active:not(:disabled){transform:translateY(0)}
+.pano-root .pano-icon-action:focus-visible{outline:2px solid #9dffeb;outline-offset:2px}
+.pano-root .pano-icon-action[data-tooltip]::after{
+ content:attr(data-tooltip);position:absolute;z-index:40;
+ right:0;bottom:calc(100% + 9px);pointer-events:none;
+ min-width:max-content;max-width:min(12rem,calc(100vw - 2rem));
+ padding:.4rem .6rem;border:1px solid rgba(119,244,225,.54);border-radius:.6rem;
+ background:#052c35;color:#e9fff9;font-size:.73rem;font-weight:750;
+ line-height:1.35;white-space:normal;text-align:center;
+ box-shadow:0 10px 24px rgba(0,0,0,.37);
+ opacity:0;visibility:hidden;transform:translateY(4px);
+ transition:opacity .16s,transform .16s,visibility .16s
+}
+.pano-root .pano-icon-action[data-tooltip]:is(:hover,:focus-visible)::after{
+ opacity:1;visibility:visible;transform:translateY(0)
+}
+.pano-icon-action__count{
+ position:absolute;top:-.3rem;right:-.25rem;
+ display:grid;place-items:center;min-width:1.05rem;height:1.05rem;
+ padding:0 .15rem;border-radius:50%;font-size:.58rem;font-weight:900;
+ color:#042f33;background:#7cffdf;border:1px solid #d8fff5
+}
+@media(prefers-reduced-motion:reduce){
+ .pano-root .pano-icon-action,.pano-root .pano-icon-action::after{transition:none!important}
+ .pano-root .pano-icon-action:hover:not(:disabled){transform:none}
+}
 
 /* Home 08: densidade pareada dos DataGrids, sem modificar a biblioteca compartilhada.
    Com três vencimentos, não esticar linhas até preencher artificialmente a coluna. */
@@ -333,32 +384,32 @@
   color:#ffda83;flex:0 0 auto;
 }
 
-/* Home 08 P0: vencimento acessível na primeira coluna, sem rolagem horizontal.
-   Somente apresentação. O estado vem de dueState da API, nunca de cálculo CSS/JS. */
+/* Estados canônicos da API em SVG, no mesmo eixo visual da data. */
 .pano-grid--commitments .pano-due-date{
- display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;
- gap:.2rem;min-width:0;max-width:100%;line-height:1.25;
+ display:inline-flex;flex-direction:row;align-items:center;justify-content:flex-start;
+ gap:.45rem;min-width:0;max-width:100%;line-height:1.15
 }
 .pano-grid--commitments .pano-due-date__value{
- color:#f1fffa;font-weight:760;font-variant-numeric:tabular-nums;
- white-space:nowrap;font-size:.83rem;
+ color:#f1fffa;font-weight:780;font-variant-numeric:tabular-nums;
+ white-space:nowrap;font-size:.83rem
 }
 .pano-grid--commitments .pano-due-date__urgency{
- display:inline-flex;align-items:center;gap:.22rem;max-width:100%;min-height:1.25rem;
- padding:.12rem .42rem;border:1px solid transparent;border-radius:.4rem;
- font-size:.72rem;line-height:1.2;font-weight:840;white-space:nowrap;
- letter-spacing:.005em;
+ display:inline-grid;place-items:center;flex:0 0 2rem;width:2rem;height:2rem;
+ padding:0;border:1px solid transparent;border-radius:.72rem
 }
 .pano-grid--commitments .pano-due-date__urgency.is-overdue{
- color:#ffd4da;background:#642233;border-color:#f18494;
+ color:#ffd1d9;background:rgba(155,44,65,.45);border-color:rgba(250,104,126,.72);
+ filter:drop-shadow(0 0 7px rgba(247,77,111,.30))
 }
 .pano-grid--commitments .pano-due-date__urgency.is-due-today{
- color:#ffe4af;background:#65440f;border-color:#e9ad4f;
+ color:#ffe29f;background:rgba(143,96,27,.43);border-color:rgba(245,191,75,.75);
+ filter:drop-shadow(0 0 7px rgba(246,177,75,.24))
 }
 .pano-grid--commitments .pano-due-date__urgency.is-upcoming{
- color:#a6e9dd;background:#0a4445;border-color:#3e958d;
+ color:#aaffdd;background:rgba(17,113,85,.38);border-color:rgba(61,221,166,.61);
+ filter:drop-shadow(0 0 6px rgba(34,220,156,.19))
 }
-.pano-grid--commitments .pano-due-date__urgency svg{flex:0 0 auto}
+.pano-grid--commitments .pano-due-date__urgency svg{flex:0 0 auto;stroke-width:2.1}
 .pano-finance-block .pano-grid--commitments .meg-datagrid-table td{
  font-size:.81rem;line-height:1.38;
 }
@@ -412,7 +463,7 @@
  .pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row) td{
   min-height:0;padding-block:.42rem;
  }
- .pano-grid--commitments .pano-due-date__urgency{font-size:.73rem}
+
 }
 
 
@@ -422,7 +473,7 @@
  width:min(62rem,calc(100vw - 1.5rem));max-width:calc(100vw - 1.5rem);
  max-height:calc(100dvh - 1.5rem);height:auto;
  margin:auto;padding:0;overflow:auto;box-sizing:border-box;
- border:1px solid #3bafa0;border-radius:.85rem;
+ border:1px solid #3bafa0;border-radius:1.35rem;
  background:#031f27;color:#effcf9;
  box-shadow:0 1.2rem 4rem #000d17cc;
  font-family:Inter,system-ui,sans-serif;
@@ -441,6 +492,14 @@
  min-height:2.75rem;padding:.45rem .75rem;border:1px solid #399b94;
  border-radius:.47rem;background:#09515a;color:#eafff6;
  font-size:.86rem;font-weight:770;cursor:pointer;
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close{
+ display:grid;place-items:center;flex:0 0 2.75rem;
+ width:2.75rem;height:2.75rem;padding:0;border-radius:50%;
+ color:#c5fff1;background:rgba(5,69,78,.73);border-color:rgba(110,220,206,.56)
+}
+.pano-commitments-dialog__header .pano-commitments-dialog__close:hover{
+ background:#0e6269;border-color:#8affdf;box-shadow:0 0 16px rgba(37,231,198,.24)
 }
 .pano-commitments-dialog__header button:focus-visible,
 .pano-commitments-dialog__footer button:focus-visible{
