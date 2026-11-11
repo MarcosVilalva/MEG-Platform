@@ -55,6 +55,25 @@ try {
     { id: 'p0-member-b', workspaceId: otherWorkspace, userId: otherOwner,
       role: 'ADMIN', status: 'ACTIVE', isActive: true },
   ] });
+  // A autenticação oficial GET /auth/me carrega o plano da workspace.
+  // São exclusivamente dados comerciais sintéticos no PostgreSQL descartável.
+  await prisma.plan.create({
+    data: {
+      id: 'p0-qa-plan',
+      code: 'QA_P0_ONLY',
+      name: 'Plano fictício isolado',
+      features: {},
+      maxMembers: 3,
+    },
+  });
+  await prisma.workspaceSubscription.createMany({
+    data: [
+      { id: 'p0-qa-sub-a', workspaceId: workspace, planId: 'p0-qa-plan',
+        status: 'ACTIVE' },
+      { id: 'p0-qa-sub-b', workspaceId: otherWorkspace, planId: 'p0-qa-plan',
+        status: 'ACTIVE' },
+    ],
+  });
   await prisma.paymentMethod.create({
     data: { id: 'p0-credit-method', userId: owner, name: 'Cartão fictício', type: 'credit' },
   });
