@@ -87,11 +87,12 @@ try{
  assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
  await success.page.getByRole('button',{name:'Ver todos os compromissos'}).click();
  const dialog=success.page.getByRole('dialog',{name:'Todos os compromissos'});
+ await dialog.getByText('3 compromissos carregados. Consulta concluída.',{exact:false}).waitFor({timeout:20000});
  const detailTable=dialog.getByRole('table',{name:'Todos os compromissos carregados'});
+ await detailTable.locator('thead th').first().waitFor({timeout:20000});
  assert.equal(await detailTable.locator('thead th').count(),5,
   'A listagem integral preserva as cinco colunas');
  await detailTable.getByText('Parcial',{exact:true}).first().waitFor({timeout:20000});
- await dialog.getByText('3 compromissos carregados. Consulta concluída.',{exact:false}).waitFor({timeout:20000});
  assert.ok(await dialog.getByText('Compromisso antigo fictício').filter({visible:true}).count()>0);
  assert.equal(success.count,4,'Resumo e diálogo devem percorrer páginas independentes');
  assert.equal(await dialog.getByRole('button',{name:'Carregar próximos compromissos'}).count(),0,
