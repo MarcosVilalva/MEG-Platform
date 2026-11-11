@@ -45,6 +45,39 @@ async function checkWindow(page,width,editing=false){
  assert(result.items.every(item=>item.left>=result.frame.left-2&&item.right<=result.frame.right+2),'cartão renderizado fora da janela: '+width);
  assert(result.editCount===0,'controles concorrentes não devem ficar dentro dos cards: '+width);
 
+ const bare=await page.locator([
+  '.pano-stat-icon','.pano-grid--commitments .pano-due-date__urgency',
+  '.pano-card-summary-icon','.pano-flow-open','.pano-grid-actions .pano-icon-action',
+  '.pano-view-all','.pano-quick-item-icon'
+ ].join(',')).evaluateAll(els=>els.filter(el=>el.getBoundingClientRect().width>0).map(el=>{
+  const s=getComputedStyle(el);return {c:typeof el.className==='string'?el.className:'svg',
+   bg:s.backgroundColor,border:s.borderTopWidth,shadow:s.boxShadow,svg:el.querySelectorAll('svg').length};
+ }));
+ assert(bare.length>=7&&bare.every(x=>x.bg==='rgba(0, 0, 0, 0)'&&x.border==='0px'&&x.shadow==='none'&&x.svg===1),
+  'ícones da Home sem caixas, medalhões ou sombras: '+width+' '+JSON.stringify(bare));
+ const layout=await page.evaluate(()=>{
+  const b=s=>{const el=document.querySelector(s);if(!el)return null;const r=el.getBoundingClientRect();
+   return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}};
+  return {spotlight:b('.pano-spotlight'),quick:b('.pano-quick'),finance:b('.pano-finance-block'),
+   flow:b('.pano-flow'),benefits:b('.pano-benefits'),
+   movements:b('.is-primary>.pano-grid'),due:b('.pano-grid--commitments'),
+   cardName:b('.pano-card-summary-copy strong'),issuer:b('.pano-card-summary-copy>span')};
+ });
+ assert(layout.spotlight&&layout.quick&&layout.finance&&
+  layout.spotlight.bottom+7<=layout.quick.top&&layout.quick.bottom+7<=layout.finance.top,
+  'distância uniforme entre seções sem sobreposição: '+width+' '+JSON.stringify(layout));
+ if(width>=1024){
+  assert(layout.flow&&layout.benefits&&layout.movements&&layout.due&&
+   Math.abs(layout.flow.top-layout.benefits.top)<=3&&
+   Math.abs(layout.movements.top-layout.due.top)<=3&&
+   Math.abs(layout.flow.bottom-layout.benefits.bottom)<=3&&
+   layout.flow.bottom+7<=layout.movements.top,
+   'malha financeira 2x2 simétrica, sem cards desencontrados: '+width+' '+JSON.stringify(layout));
+ }
+ assert(layout.cardName&&layout.issuer&&layout.issuer.top>=layout.cardName.bottom-1,
+  'nome e emissor do cartão não podem se sobrepor: '+width);
+
+
  const visual=await page.locator('.pano-quick-item:not(.pano-quick-add)').evaluateAll(nodes=>nodes.map(el=>{
   const icon=el.querySelector('.pano-quick-item-icon');
   const s=getComputedStyle(el),i=icon?getComputedStyle(icon):null;

@@ -20,8 +20,7 @@
 }
 .pano-quick-header-actions button:is(:hover,:focus-visible),
 .pano-quick-header-actions button.is-editing{
- border:0;color:#e8fff8;background:rgba(34,154,150,.15);
- transform:translateY(-1px)
+ border:0;color:#e8fff8;background:transparent;transform:none
 }
 .pano-quick-header-actions button:disabled{
  opacity:.38;cursor:not-allowed;background:transparent;transform:none
@@ -72,9 +71,7 @@
  transition:background .18s,border-color .18s,box-shadow .18s,transform .18s
 }
 .pano-quick-item:has(.pano-quick-link:hover),.pano-quick-item:focus-within{
- background:rgba(9,65,74,.88);border-color:rgba(98,234,215,.48);
- box-shadow:inset 0 1px rgba(222,255,251,.08),0 0 15px rgba(36,218,195,.09);
- transform:translateY(-1px)
+ background:rgba(9,65,74,.88);border-color:rgba(98,234,215,.35);box-shadow:inset 0 1px rgba(222,255,251,.05);transform:none
 }
 .pano-quick-item-content{
  display:flex;align-items:center;gap:.7rem;flex:1 1 auto;
@@ -118,7 +115,7 @@
  color:#7df6e2;background:transparent;opacity:.7
 }
 .pano-quick-manage-trigger:is(:hover,:focus-visible) .pano-quick-manage-indicator{
- background:rgba(46,186,167,.13);opacity:1
+ background:transparent;opacity:1
 }
 .pano-quick-item.pano-quick-add{
  display:flex;align-items:center;justify-content:flex-start;gap:.7rem;
@@ -264,16 +261,14 @@
  transition:color .18s,transform .18s
 }
 .pano-quick-picker-header .pano-quick-close-button::before{
- content:"";position:absolute;z-index:-1;inset:4px;border-radius:50%;
- background:linear-gradient(145deg,rgba(26,104,112,.55),rgba(4,42,55,.35));
- opacity:.32;transform:scale(.9);transition:opacity .18s,transform .18s
+ content:none
 }
 .pano-quick-picker-header .pano-quick-close-button:is(:hover,:focus-visible),
 .pano-quick-manage-dialog .pano-quick-picker-header .pano-quick-close-button:is(:hover,:focus-visible){
- color:#f7fffc;transform:scale(1.045);background:transparent
+ color:#f7fffc;transform:none;background:transparent
 }
 .pano-quick-picker-header .pano-quick-close-button:is(:hover,:focus-visible)::before{
- opacity:1;transform:scale(1)
+ opacity:0;transform:none
 }
 @media(prefers-reduced-motion:reduce){
  .pano-quick-picker-header .pano-quick-close-button,
