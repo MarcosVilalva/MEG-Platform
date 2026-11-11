@@ -212,13 +212,12 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     // A Home não compara datas nem altera situação de pagamento.
     const urgency=String(row.dueState??'');
     const urgencyLabel=urgency==='overdue'?'Vencido':urgency==='due_today'?'Vence hoje':urgency==='upcoming'?'A vencer':'';
-    return <span className="pano-due-date">
-      <span className="pano-due-date__value">{dateString(String(v??''))}</span>
-      {urgencyLabel&&<span className={'pano-due-date__urgency is-'+urgency.replaceAll('_','-')}
-        aria-label={urgencyLabel} title={urgencyLabel}>
-        {urgency!=='upcoming'&&<HomeGlyph name="alert" size={12}/>}
-        {urgencyLabel}
+    return <span className="pano-due-date" title={'Vencimento: '+dateString(String(v??''))+(urgencyLabel?' · '+urgencyLabel:'')}>
+      {urgencyLabel&&<span role="img" className={'pano-due-date__urgency is-'+urgency.replaceAll('_','-')}
+       aria-label={urgencyLabel} title={urgencyLabel}>
+       <HomeGlyph name={urgency==='overdue'?'siren':urgency==='due_today'?'timer':'checkCircle'} size={19}/>
       </span>}
+      <span className="pano-due-date__value">{dateString(String(v??''))}</span>
     </span>;
    }},
   {key:'description',label:'Descrição',type:'text',width:155,sortable:true,filterable:true,
@@ -251,7 +250,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  ];
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
-  {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso">×</button></div>}
+  {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso" title="Fechar aviso"><HomeGlyph name="x" size={18}/></button></div>}
   <div className="pano-spotlight" aria-label="Visão financeira e cartões">
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
@@ -275,7 +274,8 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
   </section>
    </div>
    <section ref={cardsSection} className="pano-panel pano-cards">
-    <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all" onClick={()=>move('cartoes')}>Ver todos <HomeGlyph name="arrow" size={14}/></button></div>
+    <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all pano-icon-action" onClick={()=>move('cartoes')}
+ aria-label="Ver todos os cartões" title="Ver todos os cartões" data-tooltip="Ver todos os cartões"><HomeGlyph name="list" size={20}/></button></div>
     {selectedCard?<>
       <div className="pano-card-stage" aria-label={'Cartão '+(activeCardIndex+1)+' de '+cardCount} tabIndex={cardCount>1?0:undefined}
        onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();stepCard(event.key==='ArrowLeft'?-1:1)}}}
@@ -331,17 +331,21 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    <div className="pano-finance-column is-primary">
     <section ref={flowSection} className="pano-panel pano-flow">
     <div className="pano-flow-head"><PanelTitle icon="chart" title="Fluxo financeiro"/>
-     <button type="button" className="pano-flow-open" onClick={()=>move('relatorios')} aria-label="Abrir relatórios financeiros">Ver relatórios <HomeGlyph name="arrow" size={16}/></button>
+     <button type="button" className="pano-flow-open pano-icon-action" onClick={()=>move('relatorios')}
+ aria-label="Abrir relatórios financeiros" title="Abrir relatórios financeiros" data-tooltip="Relatórios"><HomeGlyph name="chart" size={20}/></button>
     </div>
     <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
     <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
     <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
    </section>
     <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
-     <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" onClick={()=>setMovementMode('all')}>Limpar seleção</button>}
-      <button type="button" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters} aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'}>
-       <HomeGlyph name="filter" size={15}/>{showMovementFilters?'Ocultar filtros':'Mostrar filtros'}{movementFiltersCount>0?' ('+movementFiltersCount+')':''}
-      </button></div></div>
+     <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" className="pano-icon-action" onClick={()=>setMovementMode('all')}
+ aria-label="Limpar seleção" title="Limpar seleção" data-tooltip="Limpar seleção"><HomeGlyph name="x" size={19}/></button>}
+ <button type="button" className="pano-icon-action" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters}
+ aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'+(movementFiltersCount>0?' ('+movementFiltersCount+')':'')}
+ title={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'} data-tooltip={showMovementFilters?'Ocultar filtros':'Mostrar filtros'}>
+ <HomeGlyph name="filter" size={20}/>{movementFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{movementFiltersCount}</span>}
+ </button></div></div>
      <DataGrid data={movements} columns={movementColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
    </div>
    <div className="pano-finance-column is-secondary">
@@ -354,11 +358,13 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
     <section ref={dueSection} className={'pano-panel pano-grid pano-grid--commitments '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
-     <div className="pano-grid-actions"><button type="button"
-      onClick={()=>setShowAllCommitments(true)}
-      aria-label="Ver todos os compromissos">Ver todos <HomeGlyph name="arrow" size={14}/></button>
-     <button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
-      <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
+     <div className="pano-grid-actions"><button type="button" className="pano-icon-action" onClick={()=>setShowAllCommitments(true)}
+ aria-label="Ver todos os compromissos" title="Ver todos os compromissos" data-tooltip="Ver todos"><HomeGlyph name="list" size={20}/></button>
+ <button type="button" className="pano-icon-action" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters}
+ aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'+(dueFiltersCount>0?' ('+dueFiltersCount+')':'')}
+ title={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'} data-tooltip={showDueFilters?'Ocultar filtros':'Mostrar filtros'}>
+ <HomeGlyph name="filter" size={20}/>{dueFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{dueFiltersCount}</span>}
+ </button></div></div>
      <DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
    </div>
   </div>
