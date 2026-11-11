@@ -370,6 +370,11 @@
 .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table{
  width:100%;table-layout:fixed;
 }
+/* O DataGrid posiciona a alça 4px além da última coluna. Só no resumo
+   compacto, trazê-la para dentro impede rolagem indevida sem desativá-la. */
+.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table th:last-child .meg-datagrid-resizer{
+ right:0;
+}
 .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table td:last-child strong{
  display:inline-block;max-width:100%;white-space:nowrap;
  font-size:.82rem;font-variant-numeric:tabular-nums;
