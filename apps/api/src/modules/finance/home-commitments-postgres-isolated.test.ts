@@ -150,6 +150,9 @@ try {
     ['financialEvent:p0-secret-b', 'payable:p0-secret-payable-b'],
     'Workspace B nunca deve receber dados do A');
 
+  // Estatísticas coletadas APENAS no banco efêmero: o plano fica mais confiável.
+  await prisma.$executeRawUnsafe('ANALYZE "FinancialEvent"');
+  await prisma.$executeRawUnsafe('ANALYZE "Payable"');
   const explainQueries = [
     {
       name: 'FinancialEvent',
@@ -169,11 +172,26 @@ try {
     const details = parsed[0] as Record<string, unknown>;
     const plan = details['Plan'] as Record<string, unknown>;
     assert.ok(plan && typeof plan['Node Type'] === 'string');
+    const operators: Array<Record<string, unknown>> = [];
+    const inspect = (node: Record<string, unknown>): void => {
+      operators.push({
+        kind: node['Node Type'],
+        relation: node['Relation Name'],
+        index: node['Index Name'],
+        actualRows: node['Actual Rows'],
+        removedByFilter: node['Rows Removed by Filter'],
+        sharedHits: node['Shared Hit Blocks'],
+        sharedReads: node['Shared Read Blocks'],
+      });
+      const children = node['Plans'];
+      if (Array.isArray(children)) {
+        for (const child of children) inspect(child as Record<string, unknown>);
+      }
+    };
+    inspect(plan);
     planReports.push({
       source: query.name,
-      rootNode: plan['Node Type'],
-      estimatedRows: plan['Plan Rows'],
-      actualRows: plan['Actual Rows'],
+      operators: operators.slice(0, 8),
       executionMs: details['Execution Time'],
     });
   }
