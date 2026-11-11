@@ -9,6 +9,7 @@ import {HomeGlyph,type HomeIconName} from './HomeGlyph';
 import {CardBrandMark} from './CardBrandMark';
 import {QuickActions} from './QuickActions';
 import {readCanonicalHomeCommitments,type CanonicalHomeCommitment} from './home-commitments-read';
+import {HomeCommitmentsFullList} from './HomeCommitmentsFullList';
 import './home-dashboard.css';
 
 export type HomeFinancialData={
@@ -63,6 +64,17 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   cards:adapted.cards||[]
  };
 }
+// Conversão de exibição compartilhada pelo resumo e pela listagem paginada.
+ // Nenhuma regra financeira é recalculada: os valores e estados são da API.
+function commitmentGridRows(items:CanonicalHomeCommitment[]):Record<string,unknown>[] {
+ return items.map(item=>({
+  id:item.id,date:item.dueDate,description:item.description,
+  source:item.source==='payable'?'Conta a pagar':'Lançamento previsto',
+  value:Number(item.amount),
+  status:item.source==='payable'?(item.status==='partial'?'Parcial':'A pagar'):'Previsto',
+  dueState:item.dueState
+ }));
+}
 // Apenas iconografia da categoria existente. Sem classificação financeira ou mutação de dados.
 function categoryGlyph(label:string):HomeIconName{
  const normalized=label.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
@@ -83,6 +95,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  const [movementMode,setMovementMode]=useState<'all'|'income'|'expense'>('all');
  const [showMovementFilters,setShowMovementFilters]=useState(false);
  const [showDueFilters,setShowDueFilters]=useState(false);
+ const [showAllCommitments,setShowAllCommitments]=useState(false);
  const [movementFiltersCount,setMovementFiltersCount]=useState(0);
  const [dueFiltersCount,setDueFiltersCount]=useState(0);
  const [cardIndex,setCardIndex]=useState(0);
@@ -140,14 +153,8 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    value:t.amount,amount:t.signedAmount,status:t.status})),[data.transactions,categories,accounts,movementMode]);
  const commitments=useMemo<Record<string,unknown>[]>(()=>{
   if(data.canonicalCommitments){
-   // Somente formatação de exibição. Origem, status e urgência já vieram da API.
-   return data.canonicalCommitments.map(item=>({
-    id:item.id,date:item.dueDate,description:item.description,
-    source:item.source==='payable'?'Conta a pagar':'Lançamento previsto',
-    value:Number(item.amount),
-    status:item.source==='payable'?(item.status==='partial'?'Parcial':'A pagar'):'Previsto',
-    dueState:item.dueState
-   }));
+   // Resumo visual de até oito itens; consulta integral disponível sob demanda.
+   return commitmentGridRows(data.canonicalCommitments);
   }
   // EXCLUSIVO da prévia de dados fictícios que recebeu aprovação visual.
   // A sessão autenticada não utiliza este fallback e nunca recalcula vencidos.
@@ -311,11 +318,18 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
     <section ref={dueSection} className={'pano-panel pano-grid pano-grid--commitments '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
-     <div className="pano-grid-actions"><button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
+     <div className="pano-grid-actions"><button type="button"
+      onClick={()=>setShowAllCommitments(true)}
+      aria-label="Ver todos os compromissos">Ver todos <HomeGlyph name="arrow" size={14}/></button>
+     <button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
       <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
      <DataGrid data={commitments} columns={dueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
    </div>
   </div>
+  {showAllCommitments&&<HomeCommitmentsFullList
+    columns={dueColumns} mapRows={commitmentGridRows}
+    preview={preview} previewRows={commitments}
+    onDismiss={()=>setShowAllCommitments(false)}/>}
  </div>;
 }
 export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId}:Props){
