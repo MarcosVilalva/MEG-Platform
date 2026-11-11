@@ -67,6 +67,13 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
     'Oito registros de resumo não representam o total');
    assert.ok(await attention.getByText('Obrigação fictícia vencida').isVisible());
    assert.ok(await attention.getByText('Obrigação fictícia que vence hoje').isVisible());
+   if(width===1024){
+    const descWidths=await attention.locator('.pano-attention__description').evaluateAll(
+     nodes=>nodes.map(node=>node.getBoundingClientRect().width)
+    );
+    assert.ok(descWidths.length===2&&descWidths.every(value=>value>=105),
+     'Descrições de 1024px não podem ser esmagadas pela data, valor e CTA: '+JSON.stringify(descWidths));
+   }
    const spot=await page.locator('.pano-spotlight').boundingBox();
    const banner=await attention.boundingBox();
    const actions=await page.locator('.pano-actions').boundingBox();
