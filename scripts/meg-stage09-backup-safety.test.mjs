@@ -31,7 +31,7 @@ else if (q.includes('server_version_num')) console.log('170006');
 else if (q.includes('count(*)')) console.log(process.env.PGDATABASE==='meg_restore_drill' ? (require('node:fs').existsSync(process.env.MEG_MOCK_RESTORED_FLAG)?'32':'0'):'32');
 else process.exit(44);
 `);
-mock('pg_dump', `if (process.argv.includes('--version')) {console.log('pg_dump (PostgreSQL) 17.6');process.exit(0);} process.stdout.write('MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA');`);
+mock('pg_dump', `if (process.argv.includes('--version')) {console.log('pg_dump (PostgreSQL) 17.6');process.exit(0);} process.stdout.write('MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA' + 'Z'.repeat(8 * 1024 * 1024));`);
 mock('curl', `
 process.stdin.resume();
 process.stdin.on('end',()=>process.stdout.write('{"root_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'));
@@ -42,6 +42,7 @@ if (args.includes('-d')) {
   const file=args[args.length-1],v=fs.readFileSync(file,'utf8');
   if(!v.startsWith('MOCK-AGE-ENCRYPTED:')) process.exit(40);
   process.stdout.write(v.replace(/^MOCK-AGE-ENCRYPTED:/,''));
+  if(process.env.MEG_MOCK_AGE_AUTH_FAIL==='1') process.exitCode=59;
 } else {
   const dest=args[args.indexOf('-o')+1];
   let data='';process.stdin.setEncoding('utf8');
@@ -51,15 +52,17 @@ if (args.includes('-d')) {
 `);
 mock('pg_restore', `
 if (process.argv.includes('--version')) { console.log('pg_restore (PostgreSQL) 17.6'); process.exit(0); }
-const fs=require('node:fs'); let v='';
-process.stdin.setEncoding('utf8');process.stdin.on('data',c=>v+=c);
-process.stdin.on('end',()=>{
-  if(v!=='MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA') process.exit(55);
-  if(process.argv.includes('--list')) {
-    console.log('1; 0 1 TABLE DATA public Transaction postgres');
-    console.log('2; 0 1 TABLE DATA vault secrets postgres');
-  } else fs.writeFileSync(process.env.MEG_MOCK_RESTORED_FLAG,'YES');
-});
+const fs=require('node:fs');
+const expected='MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA';
+const header=Buffer.alloc(256);
+const n=fs.readSync(0,header,0,header.length,null);
+if(n < expected.length || !header.subarray(0,n).toString().startsWith(expected)) process.exit(55);
+// Deliberately reads only the beginning: real pg_restore --list may leave
+// the large table-data payload unread, so the verifier must drain stdin.
+if(process.argv.includes('--list')) {
+  console.log('1; 0 1 TABLE DATA public Transaction postgres');
+  console.log('2; 0 1 TABLE DATA vault secrets postgres');
+} else fs.writeFileSync(process.env.MEG_MOCK_RESTORED_FLAG,'YES');
 `);
 const env = {
   ...process.env,
@@ -84,6 +87,17 @@ try {
   assert.match(readFileSync(manifest,'utf8'),/vault_root_key_included=NO/);
   assert.match(readFileSync(manifest,'utf8'),/vault_secrets_table_found=yes/);
   assert.equal(readFileSync(manifest,'utf8').includes(env.PGPASSWORD),false);
+  // Age must finish the entire decrypted stream even when the catalog reader
+  // stops early. The mock archive has 8 MiB of trailing synthetic data.
+  const rejectedTarget = join(testDir, 'rejected-age-authentication');
+  mkdirSync(rejectedTarget, { mode: 0o700 });
+  chmodSync(rejectedTarget, 0o700);
+  r=run('meg-stage09-safe-backup.sh',{
+    MEG_BACKUP_DIR:rejectedTarget, MEG_MOCK_AGE_AUTH_FAIL:'1',
+  });
+  assert.notEqual(r.status,0,'failed age authentication must reject the archive');
+  assert.match(r.stderr,/AGE_RC=[1-9][0-9]*/);
+  assert.deepEqual(readdirSync(rejectedTarget),[],'invalid backup files must be discarded');
   // Os stubs nao sao PostgreSQL real e nao possuem socket Unix postgres.
   // A restauracao DEVE recusar o destino, em vez de confiar em localhost.
   r=run('meg-stage09-safe-restore-drill.sh',{
@@ -115,7 +129,7 @@ try {
     SUPABASE_ACCESS_TOKEN:'BAD\nINJECT', MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
   });
   assert.notEqual(r.status,0,'token injection must be rejected');
-  console.log('MEG backup contract: encrypted dump, Unix socket guard, TLS verification and Vault JSON OK (mock tools only)');
+  console.log('MEG backup contract: full age stream drain, authentication rejection, encrypted dump, Unix socket guard, TLS and Vault JSON OK (mock tools only)');
 } finally {
   rmSync(testDir,{force:true,recursive:true});
 }
