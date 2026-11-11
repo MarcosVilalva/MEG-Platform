@@ -313,3 +313,24 @@
   flex:1 1 auto;
  }
 }
+
+/* P0 compromissos: sinalizadores entregues pelo servidor, sem cálculo na Home. */
+.pano-due-status{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0}
+.pano-due-urgency{font-size:.64rem;font-weight:700;line-height:1.05;white-space:nowrap}
+.pano-due-urgency.is-overdue{color:#ff9bab}
+.pano-due-urgency.is-today{color:#ffd18d}
+.pano-commitments-warning{
+  padding:.55rem .7rem;margin:.45rem 0;border:1px solid rgba(246,165,91,.48);
+  border-radius:9px;background:rgba(91,49,14,.16);
+  color:#ffe1b8;font-size:.75rem;line-height:1.45;
+}
+.pano-load-more-commitments{
+  display:flex;align-items:center;justify-content:center;gap:.4rem;
+  min-height:44px;margin:.4rem auto .1rem;padding:.35rem .8rem;
+  border:1px solid rgba(91,218,200,.32);border-radius:11px;
+  color:#c4fcf0;background:rgba(5,77,79,.33);
+  font:inherit;font-size:.75rem;font-weight:650;cursor:pointer;
+}
+.pano-load-more-commitments:hover{border-color:#72f5dc;background:rgba(10,112,109,.45)}
+.pano-load-more-commitments:focus-visible{outline:2px solid #a5ffeb;outline-offset:2px}
+.pano-load-more-commitments:disabled{opacity:.56;cursor:progress}
