@@ -134,7 +134,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
    <button className={'pano-quick-edit-toggle'+(editing?' is-editing':'')} type="button"
     aria-label={editing?'Concluir personalização':'Personalizar ações rápidas'}
     data-tooltip={editing?'Concluir personalização':'Personalizar ações rápidas'}
-    aria-expanded={editing} aria-controls="pano-quick-rail"
+    aria-expanded={editing} aria-pressed={editing} aria-controls="pano-quick-rail"
     onClick={()=>{setEditing(!editing);setChoosing(false);setManaging(null);setMessage('')}}>
     <HomeGlyph name={editing?'check':'pencil'} size={20}/>
    </button>

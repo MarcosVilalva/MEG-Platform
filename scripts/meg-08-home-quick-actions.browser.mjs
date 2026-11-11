@@ -84,6 +84,14 @@ try{
    assert(Math.abs(left-right)<=3&&left<=65&&right<=65,
     'linhas dos dois DataGrids devem ter densidade equivalente: '+width+' '+JSON.stringify({left,right,rows}));
   }
+  const typeScale=await page.locator('.pano-quick-item:not(.pano-quick-add) .pano-quick-item-label').first().evaluate(el=>{
+    const strong=getComputedStyle(el.querySelector('strong'));
+    const small=getComputedStyle(el.querySelector('small'));
+    const card=el.closest('.pano-quick-item').getBoundingClientRect();
+    return {title:parseFloat(strong.fontSize),secondary:parseFloat(small.fontSize),lineHeight:parseFloat(small.lineHeight),height:card.height};
+  });
+  assert(typeScale.title>=13&&typeScale.secondary>=12&&typeScale.lineHeight>=14&&Math.abs(typeScale.height-75)<=2,
+   'tipografia legível sem aumentar o card: '+width+' '+JSON.stringify(typeScale));
   const initial=await names(page);
   await previous(page);
   assert((await names(page))[0]==='Adicionar','carrossel não volta circularmente ao fim: '+width);
@@ -95,10 +103,22 @@ try{
   const pencil=page.getByRole('button',{name:'Personalizar ações rápidas'});
   assert(await pencil.locator('svg').count()===1&&await pencil.innerText()==='','lápis deve ser apenas ícone: '+width);
   await pencil.click();
+  assert(await page.getByRole('button',{name:'Concluir personalização'}).getAttribute('aria-pressed')==='true',
+   'botão de personalização deve refletir estado ativo para leitores de tela: '+width);
   await checkWindow(page,width,true);
   assert(await page.getByRole('button',{name:'Organizar Transferência'}).count()===1,
    'edição precisa oferecer painel por atalho: '+width);
-  await page.getByRole('button',{name:'Organizar Transferência'}).click();
+  const trigger=page.getByRole('button',{name:'Organizar Transferência'});
+  await trigger.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  const focus=await trigger.evaluate(el=>{
+    const style=getComputedStyle(el);
+    return {visible:el.matches(':focus-visible'),outlineStyle:style.outlineStyle,outlineWidth:style.outlineWidth};
+  });
+  assert(focus.visible&&focus.outlineStyle==='solid'&&parseFloat(focus.outlineWidth)>=2,
+   'foco de teclado deve ficar visível nos atalhos: '+width+' '+JSON.stringify(focus));
+  await trigger.click();
   const organize=page.getByRole('dialog',{name:'Organizar atalho'});
   assert(await organize.getByText('Posição 1 de 4').isVisible(),'posição inicial deve ser clara: '+width);
   const areas=await organize.locator('button').evaluateAll(items=>items.map(el=>({
@@ -140,6 +160,8 @@ try{
   assert(JSON.stringify(await stored(page))===JSON.stringify(['transferencia','pendentes','relatorios','metas']),
    'restaurar padrão falhou: '+width);
   await page.getByRole('button',{name:'Concluir personalização'}).click();
+  assert(await page.getByRole('button',{name:'Personalizar ações rápidas'}).getAttribute('aria-pressed')==='false',
+   'estado desligado da personalização deve ser acessível: '+width);
   await checkWindow(page,width);
 
   if(width>=1024){
