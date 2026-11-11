@@ -184,7 +184,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
    onClose={()=>setManaging(null)}>
    <div className="pano-quick-picker-header">
     <h3 id="pano-quick-manage-title">Organizar atalho</h3>
-    <button type="button" aria-label="Fechar organização do atalho" onClick={()=>setManaging(null)}>×</button>
+    <button type="button" className="pano-quick-close-button" aria-label="Fechar organização do atalho" title="Fechar" onClick={()=>setManaging(null)}><HomeGlyph name="x" size={20}/></button>
    </div>
    <div className="pano-quick-manage-summary">
     <span className="pano-quick-manage-icon"><HomeGlyph name={managed.icon} size={23}/></span>
@@ -208,7 +208,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
   {choosing&&<div className="pano-quick-picker-backdrop" onClick={()=>setChoosing(false)}>
    <div ref={dialogRef} className="pano-quick-picker" role="dialog" aria-modal="true" aria-label="Adicionar funcionalidade"
     onClick={event=>event.stopPropagation()}>
-    <div className="pano-quick-picker-header"><strong>Adicionar funcionalidade</strong><button type="button" aria-label="Fechar seleção de atalhos" onClick={()=>setChoosing(false)}>×</button></div>
+    <div className="pano-quick-picker-header"><strong>Adicionar funcionalidade</strong><button type="button" className="pano-quick-close-button" aria-label="Fechar seleção de atalhos" title="Fechar" onClick={()=>setChoosing(false)}><HomeGlyph name="x" size={20}/></button></div>
     <p>Selecione uma funcionalidade para incluir no carrossel.</p>
     <div className="pano-quick-picker-options">
      {available.map(item=><button type="button" key={item.id} aria-label={'Adicionar '+item.title}

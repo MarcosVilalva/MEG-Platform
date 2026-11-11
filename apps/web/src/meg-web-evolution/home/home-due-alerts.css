@@ -19,19 +19,38 @@
 .meg-due-alert-dialog__emblem{
  display:grid;place-items:center;width:3.25rem;height:3.25rem;
  border:1px solid rgba(255,120,143,.65);border-radius:1.15rem;
- color:#ffc0ca;background:radial-gradient(circle at 28% 20%,#834456,#3d283b 80%);
+ color:#EF4444;background:radial-gradient(circle at 28% 20%,rgba(239,68,68,.18),rgba(61,40,59,.27) 80%);
  box-shadow:0 0 0 .32rem rgba(255,104,129,.08),0 0 22px rgba(244,101,130,.24)
 }
+/* Fechar: controle ghost sem moldura permanente; 44px, foco e SVG nítido. */
 .meg-due-alert-dialog__close,.meg-due-bell-panel header button,.meg-due-reminder button{
  display:grid;place-items:center;flex:0 0 2.75rem;width:2.75rem;height:2.75rem;
- padding:0;border:1px solid rgba(114,216,202,.4);border-radius:50%;
- color:#bff9ea;background:rgba(4,65,72,.62);cursor:pointer;
- box-shadow:inset 0 1px rgba(255,255,255,.08);
- transition:background .16s,border-color .16s,box-shadow .16s,transform .16s
+ position:relative;isolation:isolate;padding:0;border:0;border-radius:50%;
+ color:#b9e9e0;background:transparent;cursor:pointer;
+ box-shadow:none;transition:color .18s,transform .18s
+}
+.meg-due-alert-dialog__close::before,
+.meg-due-bell-panel header button::before,
+.meg-due-reminder button::before{
+ content:"";position:absolute;z-index:-1;inset:.23rem;border-radius:50%;
+ background:linear-gradient(145deg,rgba(26,104,112,.55),rgba(4,42,55,.35));
+ opacity:.32;transform:scale(.9);
+ transition:opacity .18s,transform .18s,box-shadow .18s
 }
 .meg-due-alert-dialog__close:hover,.meg-due-bell-panel header button:hover,.meg-due-reminder button:hover{
- color:#f3fffc;background:rgba(13,105,112,.80);border-color:#8af7e2;
- box-shadow:0 0 20px rgba(35,231,201,.22);transform:rotate(8deg)
+ color:#f7fffc;transform:scale(1.045)
+}
+.meg-due-alert-dialog__close:hover::before,
+.meg-due-bell-panel header button:hover::before,
+.meg-due-reminder button:hover::before,
+.meg-due-alert-dialog__close:focus-visible::before,
+.meg-due-bell-panel header button:focus-visible::before,
+.meg-due-reminder button:focus-visible::before{
+ opacity:1;transform:scale(1);
+ box-shadow:0 0 15px rgba(36,230,204,.13)
+}
+.meg-due-alert-dialog__close svg,.meg-due-bell-panel header button svg,.meg-due-reminder button svg{
+ position:relative;z-index:1;stroke-width:1.9
 }
 .meg-due-alert-dialog__eyebrow{
  display:block;margin-top:.85rem;font-size:.72rem;font-weight:850;
@@ -60,11 +79,11 @@
 .meg-due-alert-item__symbol{
  display:grid;place-items:center;width:2.55rem;height:2.55rem;
  border-radius:.82rem;border:1px solid rgba(255,140,159,.54);
- color:#ffc2ce;background:rgba(119,45,65,.51);
+ color:#EF4444;background:rgba(239,68,68,.08);
  filter:drop-shadow(0 0 6px rgba(252,96,120,.17))
 }
 .meg-due-alert-item.is-due-today .meg-due-alert-item__symbol{
- border-color:rgba(255,207,113,.62);color:#ffdf91;background:rgba(120,81,25,.54);
+ border-color:rgba(255,207,113,.62);color:#F59E0B;background:rgba(245,158,11,.09);
  filter:drop-shadow(0 0 6px rgba(255,197,85,.16))
 }
 .meg-due-alert-item__detail{display:flex;flex-direction:column;gap:.25rem;min-width:0}
@@ -164,4 +183,5 @@
 @media(prefers-reduced-motion:reduce){
  .meg-due-alert-dialog button,.meg-due-bell-panel button,.meg-due-reminder button,.meg-due-bell-button{transition:none!important}
  .meg-due-alert-dialog button:hover,.meg-due-bell-panel button:hover,.meg-due-reminder button:hover{transform:none!important}
+ .meg-due-alert-dialog__close::before,.meg-due-bell-panel header button::before,.meg-due-reminder button::before{transition:none!important}
 }

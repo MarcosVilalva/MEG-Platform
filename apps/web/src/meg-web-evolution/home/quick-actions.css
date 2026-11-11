@@ -220,3 +220,30 @@
   outline:2px solid rgba(149,255,233,.85);outline-offset:1px;
 }
 @media(prefers-reduced-motion:reduce){.pano-quick-dot span{transition:none}}
+
+/* Home: o mesmo fechar ghost em ambos os painéis de organização de atalhos. */
+.pano-quick-picker-header .pano-quick-close-button,
+.pano-quick-manage-dialog .pano-quick-picker-header .pano-quick-close-button{
+ display:grid;place-items:center;position:relative;isolation:isolate;
+ flex:0 0 44px;width:44px;height:44px;min-width:44px;min-height:44px;
+ padding:0;border:0;border-radius:50%;background:transparent;
+ color:#b9e9e0;box-shadow:none;cursor:pointer;
+ transition:color .18s,transform .18s
+}
+.pano-quick-picker-header .pano-quick-close-button::before{
+ content:"";position:absolute;z-index:-1;inset:4px;border-radius:50%;
+ background:linear-gradient(145deg,rgba(26,104,112,.55),rgba(4,42,55,.35));
+ opacity:.32;transform:scale(.9);transition:opacity .18s,transform .18s
+}
+.pano-quick-picker-header .pano-quick-close-button:is(:hover,:focus-visible),
+.pano-quick-manage-dialog .pano-quick-picker-header .pano-quick-close-button:is(:hover,:focus-visible){
+ color:#f7fffc;transform:scale(1.045);background:transparent
+}
+.pano-quick-picker-header .pano-quick-close-button:is(:hover,:focus-visible)::before{
+ opacity:1;transform:scale(1)
+}
+@media(prefers-reduced-motion:reduce){
+ .pano-quick-picker-header .pano-quick-close-button,
+ .pano-quick-picker-header .pano-quick-close-button::before{transition:none!important}
+ .pano-quick-picker-header .pano-quick-close-button:hover{transform:none!important}
+}

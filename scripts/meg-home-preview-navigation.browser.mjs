@@ -71,10 +71,23 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
     height:el.getBoundingClientRect().height,
     svg:el.querySelectorAll('svg').length,
    }));
+   const closeSurface=await closeButton.evaluate(el=>({
+    border:getComputedStyle(el).borderTopWidth,background:getComputedStyle(el).backgroundColor
+   }));
+   assert.ok(closeSurface.border==='0px'&&closeSurface.background==='rgba(0, 0, 0, 0)',
+    'Fechar sem moldura permanente, com superfície transparente: '+JSON.stringify(closeSurface));
    assert.ok(closeVisual.radius==='50%'&&closeVisual.width>=44&&closeVisual.height>=44&&closeVisual.svg===1,
     'Fechar precisa ser controle circular SVG com alvo adequado: '+JSON.stringify(closeVisual));
    assert.ok(await alert.locator('.meg-due-alert-item.is-overdue .meg-due-alert-item__symbol svg').count()>0,
     'Vencido precisa exibir sirene SVG');
+   const modalGlyphs=await alert.locator('.meg-due-alert-item__symbol').evaluateAll(nodes=>nodes.map(el=>({
+    color:getComputedStyle(el).color,
+    svg:el.querySelector('svg')?.innerHTML??''
+   })));
+   assert.ok(modalGlyphs.some(x=>x.color==='rgb(239, 68, 68)'&&x.svg.includes('circle')),
+    'Vencido tem SVG de alerta circular vermelho');
+   assert.ok(modalGlyphs.some(x=>x.color==='rgb(245, 158, 11)'&&x.svg.includes('polyline')),
+    'Vence hoje tem SVG de relógio circular âmbar');
    assert.ok(await alert.locator('.meg-due-alert-item.is-due-today .meg-due-alert-item__symbol svg').count()>0,
     'Vence hoje precisa exibir ícone amarelo SVG');
    assert.ok(await alert.getByText('Obrigação fictícia vencida').isVisible(),
