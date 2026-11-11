@@ -36,6 +36,19 @@ jobs:
             sleep 1
           done
           node scripts/meg-home-preview-navigation.browser.mjs
+      - name: Verificar Ações rápidas minimalistas em oito larguras
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+          MEG_PREVIEW_URL: http://127.0.0.1:4176
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4176 --bind 127.0.0.1 --directory apps/web/dist-home-p0-qa >/tmp/meg-home-quick-actions.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4176/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
           node scripts/meg-08-home-quick-actions.browser.mjs
       - name: Evidencias de navegador ficticio
         if: always()
