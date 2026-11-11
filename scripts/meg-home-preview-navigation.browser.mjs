@@ -35,7 +35,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
   assert.equal(await page.locator('.meg-integrated-preview').getAttribute('data-preview-view'),
    expectedView,'Versão inicial da Home incorreta');
   const originalCount=await commitments.locator('.meg-datagrid-table tbody tr:not(.meg-datagrid-group-row)').count();
-  const originalMoney=await commitments.getByText('R$ 43,20',{exact:false}).first().innerText();
+  const initialGridText=await commitments.locator('.meg-datagrid').innerText();
   const newButton=page.locator('.meg-topbar-new');
   assert.ok(await newButton.isVisible(),'Ação de novo lançamento indisponível');
   // Abrir e voltar pelo botão da esquerda.
@@ -64,8 +64,8 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    expectedView,'Fechar perdeu a versão da Home de origem');
   assert.match(await period.innerText(),new RegExp(expectedPeriod),
    'Fechar alterou o período da Home');
-  assert.equal(await commitments.getByText('R$ 43,20',{exact:false}).first().innerText(),
-   originalMoney,'Fechar alterou o valor fictício na visualização');
+  assert.equal(await commitments.locator('.meg-datagrid').innerText(),initialGridText,
+   'Fechar alterou os dados fictícios mostrados na Home');
   assert.equal(await page.getByRole('dialog',{name:'Novo lançamento'}).count(),0,
    'Modal de Novo lançamento continuou aberto');
   if(home==='home-p0'){
@@ -102,7 +102,7 @@ try{
   await runCase({width,home:'home-p0',expectedPeriod:'Novembro de 2026',
    expectedCommitment:'Obrigação fictícia vencida'});
   await runCase({width,home:'home',expectedPeriod:'Outubro de 2026',
-   expectedCommitment:'Aluguel'});
+   expectedCommitment:'Condomínio'});
  }
  console.log(JSON.stringify({test:'MEG Home preview: preserve navigation context',result:'PASS',results}));
 }catch(e){
