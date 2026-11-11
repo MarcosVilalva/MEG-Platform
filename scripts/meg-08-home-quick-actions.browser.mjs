@@ -184,17 +184,24 @@ try{
   assert(pageSizes.length===2&&pageSizes.every(x=>x.options.join(',')==='5,10'&&['5','10'].includes(x.value)),
    'Home deve oferecer apenas 5 ou 10 registros, sem 600: '+width+' '+JSON.stringify(pageSizes));
   if(width>=1024){
-   const rows=await page.evaluate(()=>{
+   const modes=await page.evaluate(()=>{
     const blocks=[...document.querySelectorAll('.pano-finance-block .pano-grid')];
     if(blocks.length!==2)return null;
-    return blocks.map(block=>[...block.querySelectorAll('.meg-datagrid-table tbody tr:not(.meg-datagrid-group-row)')]
-     .filter(el=>el.getBoundingClientRect().height>0)
-     .map(el=>el.getBoundingClientRect().height));
+    const visible=el=>{if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0};
+    return blocks.map(block=>({
+      rows:[...block.querySelectorAll('.meg-datagrid-table tbody tr:not(.meg-datagrid-group-row)')].filter(visible).map(el=>el.getBoundingClientRect().height),
+      cards:[...block.querySelectorAll('.meg-datagrid-card-row')].filter(visible).map(el=>el.getBoundingClientRect().height)
+    }));
    });
-   assert(rows&&rows[0].length>=3&&rows[1].length>=1,'DataGrid sem linhas de prévia: '+width+' '+JSON.stringify(rows));
-   const left=rows[0][0],right=rows[1][0];
-   assert(Math.abs(left-right)<=3&&left<=65&&right<=65,
-    'linhas dos dois DataGrids devem ter densidade equivalente: '+width+' '+JSON.stringify({left,right,rows}));
+   assert(modes&&modes[0].rows.length+modes[0].cards.length>=3&&modes[1].rows.length+modes[1].cards.length>=1,
+    'Ambos DataGrids devem ter registros visíveis em tabela ou cards: '+width+' '+JSON.stringify(modes));
+   assert(modes.every(v=>(v.rows.length>0)!==(v.cards.length>0)),
+    'Cada DataGrid deve ter um único modo visual ativo: '+width+' '+JSON.stringify(modes));
+   if(modes.every(v=>v.rows.length>0)){
+    const [left,right]=modes.map(v=>v.rows[0]);
+    assert(Math.abs(left-right)<=3&&left<=65&&right<=65,
+     'As linhas visíveis das duas tabelas devem ter densidade equivalente: '+width+' '+JSON.stringify(modes));
+   }
   }
   const typeScale=await page.locator('.pano-quick-item:not(.pano-quick-add) .pano-quick-item-label').first().evaluate(el=>{
     const strong=getComputedStyle(el.querySelector('strong'));

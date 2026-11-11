@@ -338,7 +338,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
     <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
    </section>
-    <section ref={movementSection} className={'pano-panel pano-grid '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
+    <section ref={movementSection} className={'pano-panel pano-grid pano-grid--movements '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
      <div className="pano-grid-actions">{movementMode!=='all'&&<button type="button" className="pano-icon-action" onClick={()=>setMovementMode('all')}
  aria-label="Limpar seleção" title="Limpar seleção" data-tooltip="Limpar seleção"><HomeGlyph name="x" size={19}/></button>}
  <button type="button" className="pano-icon-action" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters}
