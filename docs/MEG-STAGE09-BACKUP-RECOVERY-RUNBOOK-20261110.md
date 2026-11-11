@@ -84,9 +84,9 @@ O script de restore deve ser executado com o **mesmo usuário Unix que possui um
 ```bash
 # Estes comandos somente funcionam em PostgreSQL local Unix, sem herdar PGHOST remoto.
 local_user="$(id -un)"
-sudo -u postgres env -i PATH="$PATH" HOME=/var/lib/postgresql PGREQUIREPEER=postgres \\
+sudo -u postgres env -i PATH="$PATH" HOME=/var/lib/postgresql PGREQUIREPEER=postgres \
   createuser -h /var/run/postgresql -p 5432 --login --createdb "$local_user"
-sudo -u postgres env -i PATH="$PATH" HOME=/var/lib/postgresql PGREQUIREPEER=postgres \\
+sudo -u postgres env -i PATH="$PATH" HOME=/var/lib/postgresql PGREQUIREPEER=postgres \
   createdb -h /var/run/postgresql -p 5432 -O "$local_user" -T template0 meg_restore_drill
 ```
 
