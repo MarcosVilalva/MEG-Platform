@@ -131,6 +131,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
  return <section className="pano-panel pano-actions pano-quick" aria-label="Ações rápidas">
   <div className="pano-panel-title pano-quick-heading">
    <h2><HomeGlyph name="sparkle" size={19}/>Ações rápidas</h2>
+   <div className="pano-quick-header-actions">
    <button className={'pano-quick-edit-toggle'+(editing?' is-editing':'')} type="button"
     aria-label={editing?'Concluir personalização':'Personalizar ações rápidas'}
     data-tooltip={editing?'Concluir personalização':'Personalizar ações rápidas'}
@@ -142,6 +143,7 @@ export function QuickActions({userId,preview,onNavigate}:Props){
    <div className="pano-quick-carousel-controls" aria-label="Navegar nos atalhos">
     <button type="button" aria-label="Ver atalhos anteriores" data-tooltip="Anterior, volta ao final" disabled={sequence.length<=count} onClick={()=>cycle(-1)}><HomeGlyph name="chevronLeft" size={19}/></button>
     <button type="button" aria-label="Ver próximos atalhos" data-tooltip="Próximo, volta ao início" disabled={sequence.length<=count} onClick={()=>cycle(1)}><HomeGlyph name="chevronRight" size={19}/></button>
+   </div>
    </div>
   </div>
   <div ref={viewport} className="pano-quick-viewport" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}

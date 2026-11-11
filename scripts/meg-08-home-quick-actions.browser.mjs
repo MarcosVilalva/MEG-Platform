@@ -44,6 +44,36 @@ async function checkWindow(page,width,editing=false){
   'janela circular deve mostrar cartões inteiros, uma linha e sem overflow: '+width+' '+JSON.stringify(result));
  assert(result.items.every(item=>item.left>=result.frame.left-2&&item.right<=result.frame.right+2),'cartão renderizado fora da janela: '+width);
  assert(result.editCount===0,'controles concorrentes não devem ficar dentro dos cards: '+width);
+
+ const visual=await page.locator('.pano-quick-item:not(.pano-quick-add)').evaluateAll(nodes=>nodes.map(el=>{
+  const icon=el.querySelector('.pano-quick-item-icon');
+  const s=getComputedStyle(el),i=icon?getComputedStyle(icon):null;
+  return {kind:[...el.classList].find(c=>c.startsWith('is-')&&c!=='is-editing')??'',
+   border:s.borderTopColor,corner:s.borderTopLeftRadius,
+   iconBg:i?.backgroundColor??'',iconColor:i?.color??'',
+   iconWidth:icon?.getBoundingClientRect().width??0,
+   svg:icon?.querySelectorAll('svg').length??0
+  };
+ }));
+ const approvedColors={'is-blue':'rgb(101, 207, 255)','is-violet':'rgb(185, 163, 255)',
+  'is-amber':'rgb(244, 199, 107)','is-slate':'rgb(167, 221, 232)'};
+ assert(visual.length>0&&visual.every(item=>
+  item.iconBg==='rgba(0, 0, 0, 0)'&&item.svg===1&&item.iconWidth<=32&&
+  item.iconColor===approvedColors[item.kind]&&parseFloat(item.corner)>=14),
+  'atalhos devem usar SVG de cor isolada, sem quadrado interno: '+width+' '+JSON.stringify(visual));
+ assert(new Set(visual.map(item=>item.border)).size===1,
+  'cards devem usar uma borda sutil única, não quatro contornos coloridos: '+width);
+ const header=await page.locator('.pano-quick-header-actions').evaluate(el=>({
+  width:el.getBoundingClientRect().width,
+  buttons:[...el.querySelectorAll('button')].map(b=>({
+   w:b.getBoundingClientRect().width,h:b.getBoundingClientRect().height,
+   border:getComputedStyle(b).borderTopWidth,aria:b.getAttribute('aria-label')
+  }))
+ }));
+ assert(header.buttons.length===(editing?4:3)&&
+  header.buttons.every(b=>b.w>=44&&b.h>=44&&b.border==='0px'&&b.aria),
+  'ícones de personalização e carrossel precisam ser ghost e acessíveis: '+width+' '+JSON.stringify(header));
+
  assert(result.items.every(item=>Math.abs(item.bottom-item.top-75)<=2),
   'cards devem manter 75px também na edição: '+width);
 
