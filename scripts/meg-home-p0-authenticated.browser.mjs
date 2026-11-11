@@ -16,8 +16,8 @@ const items=[
  commitment('financialEvent','future-1','2026-12-01','90.34','planned','upcoming','Compromisso futuro fictício'),
 ];
 const json=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
-const create=async(fail=false)=>{
- const context=await browser.newContext({viewport:{width:1366,height:900}});
+const create=async(fail=false,viewport={width:1366,height:900})=>{
+ const context=await browser.newContext({viewport});
  const page=await context.newPage();
  await page.addInitScript(value=>sessionStorage.setItem('meg.auth.session',JSON.stringify(value)),session);
  const visited=[];let commitmentCalls=0;
@@ -67,12 +67,24 @@ try{
  // Evidência de QA: sessão e dados 100% fictícios; não publicar como Home homologada.
  await mkdir('artifacts/meg-home-p0-qa',{recursive:true});
  await success.page.screenshot({path:'artifacts/meg-home-p0-qa/urgencia-desktop-1366.png',fullPage:true});
- await success.page.setViewportSize({width:375,height:812});
- await success.page.screenshot({path:'artifacts/meg-home-p0-qa/urgencia-mobile-375.png',fullPage:true});
- const viewport=await success.page.evaluate(()=>({page:document.documentElement.scrollWidth,screen:window.innerWidth}));
+ await success.page.locator('.pano-grid').last().screenshot({
+  path:'artifacts/meg-home-p0-qa/compromissos-desktop-1366.png',
+ });
+ await success.context.close();
+
+ // Iniciar diretamente em 375px: redimensionar desktop com sidebar aberta
+ // não representa a experiência mobile no primeiro acesso.
+ const mobile=await create(false,{width:375,height:812});
+ await mobile.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
+ await mobile.page.getByText('Compromisso antigo fictício').first().waitFor({timeout:20000});
+ await mobile.page.locator('.pano-grid').last().screenshot({
+  path:'artifacts/meg-home-p0-qa/compromissos-mobile-375.png',
+ });
+ await mobile.page.screenshot({path:'artifacts/meg-home-p0-qa/urgencia-mobile-375.png',fullPage:true});
+ const viewport=await mobile.page.evaluate(()=>({page:document.documentElement.scrollWidth,screen:window.innerWidth}));
  assert.ok(viewport.page<=viewport.screen,
   'Home P0 não pode causar rolagem horizontal no mobile: '+JSON.stringify(viewport));
- await success.context.close();
+ await mobile.context.close();
 
  const failure=await create(true);
  await failure.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
