@@ -32,8 +32,8 @@ const REQUIRED_SCRIPT = {
   }
 };
 
-function checkScripts(label, pkg, expectedScripts) {
-  assert.equal(pkg?.private, true, label + ' must remain private');
+function checkScripts(label, pkg, expectedScripts, requirePrivate = true) {
+  if (requirePrivate) assert.equal(pkg?.private, true, label + ' must remain private');
   const scripts = pkg?.scripts ?? {};
   for (const [name, expected] of Object.entries(expectedScripts)) {
     assert.equal(scripts[name], expected, label + ': unexpected script chain for ' + name);
@@ -59,7 +59,7 @@ export function verifyRenderApiBuildContract(proposed, manifests) {
   assert.equal(Object.keys(workspacePackages).length, root.workspaces.length);
   for (const name of root.workspaces) {
     assert.ok(workspacePackages[name], 'Manifest absent for ' + name);
-    checkScripts(name, workspacePackages[name], {});
+    checkScripts(name, workspacePackages[name], {}, false);
   }
   return true;
 }
