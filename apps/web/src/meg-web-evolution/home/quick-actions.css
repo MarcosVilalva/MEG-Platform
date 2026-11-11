@@ -18,8 +18,7 @@
 .pano-quick-heading button:focus-visible,.pano-quick button:focus-visible,.pano-quick-rail:focus-visible{
   outline:2px solid #a6ffec;outline-offset:2px;
 }
-.pano-quick-heading button[data-tooltip]::after,
-.pano-quick-inline-controls button[data-tooltip]::after{
+.pano-quick-heading button[data-tooltip]::after{
   content:attr(data-tooltip);position:absolute;z-index:25;
   left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);
   border:1px solid rgba(104,226,207,.48);border-radius:9px;
@@ -28,8 +27,7 @@
   box-shadow:0 10px 22px rgba(0,0,0,.28);opacity:0;visibility:hidden;
   transition:opacity .15s ease,transform .15s ease,visibility .15s ease;
 }
-.pano-quick-heading button[data-tooltip]:is(:hover,:focus-visible)::after,
-.pano-quick-inline-controls button[data-tooltip]:not(:disabled):is(:hover,:focus-visible)::after{
+.pano-quick-heading button[data-tooltip]:is(:hover,:focus-visible)::after{
   opacity:1;visibility:visible;transform:translate(-50%,0)
 }
 .pano-quick-carousel-controls{display:flex;gap:.3rem;margin-left:auto;align-items:center}
@@ -84,19 +82,16 @@
 .pano-quick-item-label{display:flex;flex-direction:column;min-width:0;gap:.16rem}
 .pano-quick-item-label strong{color:#f1fffd;font-size:.77rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pano-quick-item-label small{color:#b6d9d3;font-size:.66rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pano-quick-item.is-editing{height:120px;min-height:120px;flex-direction:column}
-.pano-quick-item.is-editing .pano-quick-item-content{height:56px;flex:0 0 56px;padding-block:.45rem}
-.pano-quick-inline-controls{display:flex;align-items:center;gap:.35rem;padding:0 .6rem .45rem}
-.pano-quick-inline-controls button{
-  position:relative;display:grid;place-items:center;
-  flex:0 0 44px;width:44px;height:44px;min-height:44px;
-  border-radius:10px;border:1px solid rgba(69,176,167,.32);
-  background:rgba(4,65,70,.66);color:#c1f9ef;cursor:pointer
+.pano-quick-item.is-editing{border-color:rgba(116,247,216,.84)}
+.pano-quick-manage-trigger{cursor:pointer}
+.pano-quick-manage-indicator{
+ flex:0 0 28px;width:28px;height:28px;display:grid;place-items:center;
+ border:1px solid rgba(93,225,207,.5);border-radius:8px;color:#a8fff0;
+ background:rgba(10,99,105,.42)
 }
-.pano-quick-inline-controls button:is(:hover,:focus-visible){border-color:#6ee9d4;background:#0b545b}
-.pano-quick-inline-controls button:disabled{opacity:.28;cursor:not-allowed}
-.pano-quick-inline-controls button.is-remove{margin-left:auto;border-color:rgba(253,124,146,.4);color:#ffc9d2;background:rgba(89,37,54,.55)}
-.pano-quick-inline-controls button.is-remove:is(:hover,:focus-visible){background:rgba(140,42,69,.76);border-color:#ff91a2}
+.pano-quick-manage-trigger:is(:hover,:focus-visible) .pano-quick-manage-indicator{
+ background:rgba(11,132,133,.7);border-color:#8af8e3
+}
 .pano-quick-item.pano-quick-add{
   display:flex;align-items:center;justify-content:flex-start;gap:.55rem;
   border:1px dashed rgba(111,190,185,.50);border-radius:12px;
@@ -110,7 +105,7 @@
   border-color:#69e9d3;background:rgba(10,82,86,.65);
   box-shadow:0 0 16px rgba(13,200,178,.14)
 }
-.pano-quick-item.pano-quick-add.is-editing{height:120px;min-height:120px;justify-content:center}
+.pano-quick-item.pano-quick-add.is-editing{border-color:rgba(128,239,212,.75)}
 .pano-quick-status{display:block;font-size:.74rem;color:#a6e4d6;line-height:1.45}
 .pano-quick-status:empty{display:none}
 .pano-quick-picker-backdrop{
@@ -137,6 +132,40 @@
 .pano-quick-picker-options button svg{flex:0 0 auto}
 .pano-quick-picker-options button:is(:hover,:focus-visible){border-color:#7ff5df;background:#10505a}
 .pano-quick-picker .pano-quick-picker-note{font-size:.7rem;color:#a7ccc5}
+.pano-quick-manage-dialog{
+ box-sizing:border-box;width:min(28rem,calc(100vw - 2rem));max-width:calc(100vw - 2rem);
+ max-height:calc(100dvh - 2rem);overflow:auto;margin:auto;padding:1.05rem;
+ border:1px solid rgba(76,221,201,.58);border-radius:17px;
+ background:linear-gradient(155deg,#073c43,#021f28);color:#ecfffb;
+ box-shadow:0 20px 55px rgba(0,0,0,.55)
+}
+.pano-quick-manage-dialog::backdrop{background:rgba(0,13,19,.72);backdrop-filter:blur(5px)}
+.pano-quick-manage-dialog .pano-quick-picker-header h3{margin:0;font-size:1.06rem;font-weight:800}
+.pano-quick-manage-dialog .pano-quick-picker-header button{
+ display:grid;place-items:center;width:44px;min-width:44px;min-height:44px;
+ border:1px solid rgba(76,196,176,.4);border-radius:10px;
+ background:#06323b;color:#d8fff5;font-size:1.5rem;cursor:pointer
+}
+.pano-quick-manage-summary{display:flex;align-items:center;gap:.8rem;margin:.9rem 0;padding:.85rem;
+ border:1px solid rgba(71,173,162,.34);border-radius:12px;background:rgba(7,52,59,.72)}
+.pano-quick-manage-summary>span:last-child{display:flex;flex-direction:column;gap:.18rem;min-width:0}
+.pano-quick-manage-summary strong{font-size:.94rem}
+.pano-quick-manage-summary small{font-size:.77rem;color:#b6d9d3}
+.pano-quick-manage-icon{display:grid;place-items:center;flex:0 0 43px;width:43px;height:43px;
+ border-radius:11px;background:rgba(38,116,139,.65);color:#cafff6}
+.pano-quick-manage-move{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}
+.pano-quick-manage-move button,.pano-quick-manage-remove{
+ display:flex;align-items:center;justify-content:center;gap:.35rem;min-width:0;min-height:48px;
+ padding:.55rem;border:1px solid rgba(76,183,171,.45);border-radius:11px;
+ background:#083d45;color:#edfffb;font-size:.78rem;font-weight:750;cursor:pointer
+}
+.pano-quick-manage-move button:disabled{opacity:.37;cursor:not-allowed}
+.pano-quick-manage-remove{width:100%;margin-top:.75rem;border-color:rgba(253,124,146,.43);
+ color:#ffd8e1;background:rgba(89,37,54,.54)}
+.pano-quick-manage-dialog button:is(:hover,:focus-visible):not(:disabled){
+ border-color:#80f6e0;outline-offset:2px
+}
+.pano-quick-manage-remove:is(:hover,:focus-visible){background:rgba(139,38,70,.75)!important;border-color:#ff9bac!important}
 @media(max-width:639px){
 
  .pano-quick-heading{gap:.25rem;justify-content:flex-start}
@@ -148,7 +177,7 @@
  .pano-quick-picker-options{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){
- .pano-quick-item,.pano-quick-heading button,.pano-quick-heading button::after,.pano-quick-inline-controls button::after{transition:none!important}
+ .pano-quick-item,.pano-quick-heading button,.pano-quick-heading button::after{transition:none!important}
  .pano-quick-rail .pano-quick-item{animation:none!important}
 }
 

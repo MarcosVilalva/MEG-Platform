@@ -36,6 +36,7 @@ jobs:
             sleep 1
           done
           node scripts/meg-home-preview-navigation.browser.mjs
+          node scripts/meg-08-home-quick-actions.browser.mjs
       - name: Evidencias de navegador ficticio
         if: always()
         uses: actions/upload-artifact@v4
