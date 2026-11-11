@@ -5,7 +5,7 @@ umask 077
 
 fail() { printf 'ERRO: %s\n' "$*" >&2; exit 1; }
 require() { command -v "$1" >/dev/null 2>&1 || fail "Comando nao encontrado: $1"; }
-for tool in pg_dump pg_restore psql age sha256sum mktemp date grep awk wc tr stat; do require "$tool"; done
+for tool in pg_dump pg_restore psql age sha256sum mktemp date grep awk wc tr stat cat; do require "$tool"; done
 
 readonly project_ref='ugbiqzaqnrhulhetevby'
 : "${PGHOST:?Informe PGHOST (painel Supabase > Connect)}"
@@ -83,10 +83,30 @@ if ! pg_dump -w --format=custom --no-owner --no-privileges --no-tablespaces --co
 fi
 [[ -s "$archive" ]] || fail 'Arquivo criptografado vazio.'
 
-# age valida autenticidade durante o decrypt; pg_restore -l verifica estrutura
-# do formato custom sem gravar nada e sem extrair dados para um arquivo.
-if ! age -d -i "$MEG_AGE_IDENTITY" "$archive" | pg_restore --list >"$workdir/contents.txt" 2>"$workdir/verify.err"; then
-  fail 'Nao foi possivel decifrar e listar o archive. Guardar como FALHA, nao backup.'
+# pg_restore --list pode consumir apenas o TOC e encerrar antes dos dados.
+# Drenar o restante do stdin ate EOF impede EPIPE/SIGPIPE no age e exige
+# autenticacao completa do arquivo criptografado (incluindo o final do stream).
+# O dump descriptografado jamais e gravado em disco.
+set +e
+age -d -i "$MEG_AGE_IDENTITY" "$archive" 2>"$workdir/age-verify.err" | {
+  pg_restore --list >"$workdir/contents.txt" 2>"$workdir/verify.err"
+  catalog_rc=$?
+  cat >/dev/null
+  drain_rc=$?
+  printf '%s %s\n' "$catalog_rc" "$drain_rc" >"$workdir/verify-status.txt"
+  (( catalog_rc == 0 && drain_rc == 0 ))
+}
+verify_rc=( "${PIPESTATUS[@]}" )
+set -e
+if (( verify_rc[0] != 0 || verify_rc[1] != 0 )); then
+  catalog_rc='NAO_CONCLUIDO'
+  drain_rc='NAO_CONCLUIDO'
+  if [[ -s "$workdir/verify-status.txt" ]]; then
+    read -r catalog_rc drain_rc <"$workdir/verify-status.txt"
+  fi
+  printf 'DIAGNOSTICO_VERIFICACAO: AGE_RC=%s CATALOGO_RC=%s DRENO_RC=%s\n' \
+    "${verify_rc[0]}" "$catalog_rc" "$drain_rc" >&2
+  fail 'Falha na autenticacao do stream ou catalogo do archive. Guardar como FALHA, nao backup.'
 fi
 if ! grep -Eq 'TABLE DATA[[:space:]]+public[[:space:]]' "$workdir/contents.txt"; then
   fail 'Backup nao contem dados de tabelas public.'
