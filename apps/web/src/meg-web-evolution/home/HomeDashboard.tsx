@@ -8,6 +8,7 @@ import {HomeChart,type CashflowDay} from './HomeChart';
 import {HomeGlyph,type HomeIconName} from './HomeGlyph';
 import {CardBrandMark} from './CardBrandMark';
 import {QuickActions} from './QuickActions';
+import {readCanonicalHomeCommitments,type CanonicalHomeCommitment} from './home-commitments-read';
 import './home-dashboard.css';
 
 export type HomeFinancialData={
@@ -17,6 +18,8 @@ export type HomeFinancialData={
  available:{date:string;available:number;scope:'monetary'}|null;
  transactions:Array<{id:string;date:string;description:string;status:string;type:string;amount:number;signedAmount:number;categoryId?:string|null;accountId?:string|null}>;
  followingTransactions?:HomeFinancialData['transactions'];
+ /** Fonte exclusiva em sessão autenticada. Em prévia visual mantém dados fictícios existentes. */
+ canonicalCommitments?:CanonicalHomeCommitment[];
  payables:Array<{id:string;description:string;dueDate:string;status:string;openAmount:number;categoryId?:string|null}>;
  accounts:Array<{id:string;name:string;type?:string}>;
  categories:Array<{id:string;name:string}>;
@@ -33,7 +36,7 @@ const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,avai
 async function readHome(month:string):Promise<HomeFinancialData>{
  const following=new Date(month+'-01T12:00:00Z');following.setUTCMonth(following.getUTCMonth()+1);
  const followingMonth=following.toISOString().slice(0,7);
- const [summary,cashflow,benefit,events,payables,cards,accounts,categories,available,followingEvents]=await Promise.all([
+ const [summary,cashflow,benefit,events,payables,cards,accounts,categories,available,followingEvents,canonicalCommitments]=await Promise.all([
   authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
@@ -44,7 +47,9 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
   // Rota nova, canônica; até ser implantada na API retorna ausente, nunca estimado.
   authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
-  authenticatedRequest<unknown>('/finance/events/month?month='+followingMonth,{cache:'no-store'}).catch(()=>[])
+  authenticatedRequest<unknown>('/finance/events/month?month='+followingMonth,{cache:'no-store'}).catch(()=>[]),
+  // Falha de compromisso canônico é crítica: não mostrar um falso quadro vazio.
+  readCanonicalHomeCommitments()
  ]);
  const adapted=composeMegApiSnapshot([
   fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
@@ -54,7 +59,7 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   fromFinanceCatalogs({accounts,categories})
  ]) as HomeFinancialData & {readModels?:unknown};
  return {
-  summary,cashflow,benefit,available,
+  summary,cashflow,benefit,available,canonicalCommitments,
   transactions:adapted.transactions||[],
   followingTransactions:(fromFinancialEvents(followingEvents) as HomeFinancialData).transactions||[],
   payables:adapted.payables||[],
@@ -139,6 +144,19 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    account:t.accountId?accounts.get(t.accountId)||'—':'—',
    value:t.amount,amount:t.signedAmount,status:t.status})),[data.transactions,categories,accounts,movementMode]);
  const commitments=useMemo<Record<string,unknown>[]>(()=>{
+  if(data.canonicalCommitments){
+   // Somente formatação de exibição. Origem, status e urgência já vieram da API.
+   return data.canonicalCommitments.map(item=>({
+    id:item.id,date:item.dueDate,description:item.description,
+    source:item.source==='payable'?'Conta a pagar':'Lançamento previsto',
+    value:Number(item.amount),
+    status:item.source==='payable'?(item.status==='partial'?'Parcial':'A pagar'):'Previsto',
+    dueState:item.dueState
+   }));
+  }
+  // EXCLUSIVO da prévia de dados fictícios que recebeu aprovação visual.
+  // A sessão autenticada não utiliza este fallback e nunca recalcula vencidos.
+  if(!preview)return [];
   const planned=[...data.transactions,...(data.followingTransactions||[])].filter(t=>t.status==='planned'&&t.date>=dateNow()&&t.signedAmount<0)
    .map(t=>({id:'event:'+t.id,date:t.date,description:t.description,
     source:'Lançamento previsto',value:t.amount,status:'Previsto'}));
@@ -146,7 +164,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    .map(p=>({id:'payable:'+p.id,date:p.dueDate,description:p.description,
     source:'Conta a pagar',value:p.openAmount,status:p.status==='partial'?'Parcial':'A pagar'}));
   return [...planned,...payables].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).slice(0,8);
- },[data.transactions,data.followingTransactions,data.payables]);
+ },[data.canonicalCommitments,data.transactions,data.followingTransactions,data.payables,preview]);
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'date',label:'Data',type:'date',width:105,sortable:true,filterable:true},
   {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true,
@@ -169,7 +187,14 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
   {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
-   render:v=>{const label=String(v??'—');return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}>{label}</span>}}
+   render:(v,row)=>{const label=String(v??'—');const urgency=String(row.dueState??'');
+    const urgencyLabel=urgency==='overdue'?'Vencido':urgency==='due_today'?'Vence hoje':'';
+    return <span className={'pano-status'+(urgency==='overdue'?' is-overdue':urgency==='due_today'?' is-due-today':label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}
+      title={urgencyLabel?label+' · '+urgencyLabel:label}
+      aria-label={urgencyLabel?label+', '+urgencyLabel:label}>
+      {urgencyLabel&&<HomeGlyph name="alert" size={13}/>}
+      {label}
+     </span>}}
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
  const stats:{label:string;value:number|null|undefined;note:string;icon:HomeIconName;kind:string;action:Action}[]=[
@@ -299,7 +324,7 @@ export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId
   if(previewData)return;
   const id=++serial.current;setLoading(true);setError(null);
   try{const result=await readHome(current);if(serial.current===id)setData(result)}
-  catch{if(serial.current===id){setData(null);setError('Não foi possível consultar a API financeira. Nenhum saldo foi estimado.')}}
+  catch{if(serial.current===id){setData(null);setError('Não foi possível consultar as informações financeiras e compromissos abertos. Nenhum resultado foi estimado.')}}
   finally{if(serial.current===id)setLoading(false)}
  },[current,previewData]);
  useEffect(()=>{if(previewData){setData(previewData);return}void reload();const onRefresh=()=>void reload();window.addEventListener('meg:data-invalidated',onRefresh);window.addEventListener('focus',onRefresh);return()=>{serial.current++;window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh)}},[previewData,reload]);
