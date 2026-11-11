@@ -313,3 +313,22 @@
   flex:1 1 auto;
  }
 }
+
+/* A urgência é fornecida exclusivamente pela API financeira canônica.
+   Ícone e contraste sem mudar proporções homologadas do DataGrid da Home. */
+.pano-finance-block .pano-status.is-overdue{
+  display:inline-flex;align-items:center;gap:.22rem;
+  color:#ffc6cb;border-color:rgba(248,104,124,.55);
+  background:rgba(122,29,53,.22);
+}
+.pano-finance-block .pano-status.is-overdue svg{
+  color:#ffa8b6;flex:0 0 auto;
+}
+.pano-finance-block .pano-status.is-due-today{
+  display:inline-flex;align-items:center;gap:.22rem;
+  color:#ffe3a8;border-color:rgba(250,190,78,.54);
+  background:rgba(130,79,15,.22);
+}
+.pano-finance-block .pano-status.is-due-today svg{
+  color:#ffda83;flex:0 0 auto;
+}
