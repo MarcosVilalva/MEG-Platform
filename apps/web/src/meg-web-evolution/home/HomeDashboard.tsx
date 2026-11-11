@@ -236,7 +236,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
   {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso">×</button></div>}
-  <div className="pano-spotlight" aria-label="Visão financeira e cartões">
+  <div className={'pano-spotlight'+(attentionItems.length>0?' has-attention':'')} aria-label="Visão financeira e cartões">
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
    <div className="pano-balance" aria-label="Saldo disponível monetário">
@@ -258,6 +258,33 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    </button>)}
   </section>
    </div>
+  {attentionItems.length>0&&<section className="pano-attention"
+   aria-label="Compromissos que exigem atenção">
+   <div className="pano-attention__heading">
+    <HomeGlyph name="alert" size={18}/>
+    <strong>Atenção aos compromissos</strong>
+    <small>Destaques da consulta inicial</small>
+   </div>
+   <div className="pano-attention__items">
+    {attentionItems.map(item=><button type="button" key={item.id}
+      className={'pano-attention__item is-'+(item.dueState==='overdue'?'overdue':'due-today')}
+      onClick={()=>setShowAllCommitments(true)}
+      title={item.description+' · '+dateString(item.dueDate)+' · Abrir lista completa de compromissos'}
+      aria-label={(item.dueState==='overdue'?'Vencido':'Vence hoje')+
+       ': '+item.description+', '+dateString(item.dueDate)+
+       '. Consultar lista completa de compromissos'}>
+      <span className="pano-attention__state">{item.dueState==='overdue'?'Vencido':'Vence hoje'}</span>
+      <span className="pano-attention__description">{item.description}</span>
+      <span className="pano-attention__date">{dateString(item.dueDate)}</span>
+      <strong className="pano-attention__amount">{format(Number(item.amount),hidden)}</strong>
+    </button>)}
+   </div>
+   <button type="button" className="pano-attention__all"
+    onClick={()=>setShowAllCommitments(true)}
+    aria-label="Consultar lista completa de compromissos">
+    Ver todos <HomeGlyph name="arrow" size={15}/>
+   </button>
+  </section>}
    <section ref={cardsSection} className="pano-panel pano-cards">
     <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all" onClick={()=>move('cartoes')}>Ver todos <HomeGlyph name="arrow" size={14}/></button></div>
     {selectedCard?<>
@@ -307,33 +334,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
      </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
   </div>
-  {attentionItems.length>0&&<section className="pano-attention"
-   aria-label="Compromissos que exigem atenção">
-   <div className="pano-attention__heading">
-    <HomeGlyph name="alert" size={18}/>
-    <strong>Atenção aos compromissos</strong>
-    <small>Destaques da consulta inicial</small>
-   </div>
-   <div className="pano-attention__items">
-    {attentionItems.map(item=><button type="button" key={item.id}
-      className={'pano-attention__item is-'+(item.dueState==='overdue'?'overdue':'due-today')}
-      onClick={()=>setShowAllCommitments(true)}
-      title={item.description+' · '+dateString(item.dueDate)+' · Abrir lista completa de compromissos'}
-      aria-label={(item.dueState==='overdue'?'Vencido':'Vence hoje')+
-       ': '+item.description+', '+dateString(item.dueDate)+
-       '. Consultar lista completa de compromissos'}>
-      <span className="pano-attention__state">{item.dueState==='overdue'?'Vencido':'Vence hoje'}</span>
-      <span className="pano-attention__description">{item.description}</span>
-      <span className="pano-attention__date">{dateString(item.dueDate)}</span>
-      <strong className="pano-attention__amount">{format(Number(item.amount),hidden)}</strong>
-    </button>)}
-   </div>
-   <button type="button" className="pano-attention__all"
-    onClick={()=>setShowAllCommitments(true)}
-    aria-label="Consultar lista completa de compromissos">
-    Ver todos <HomeGlyph name="arrow" size={15}/>
-   </button>
-  </section>}
+
   {/* Quatro atalhos originais, configuráveis sem alterar o restante da Home. */}
   <QuickActions userId={userId} preview={preview} onNavigate={move}/>
 
