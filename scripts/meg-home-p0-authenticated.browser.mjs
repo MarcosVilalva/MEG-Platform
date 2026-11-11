@@ -57,7 +57,7 @@ try{
  const summaryHeaders=await table.locator('thead th').allTextContents();
  assert.equal(summaryHeaders.length,3,
   'Resumo precisa ter somente Vencimento, Descrição e Valor: '+JSON.stringify(summaryHeaders));
- assert.ok(summaryHeaders[0].includes('Vencimento')
+ assert.ok(summaryHeaders[0].includes('Vence em')
   && summaryHeaders[1].includes('Descrição')&&summaryHeaders[2].includes('Valor'),
   'O resumo deve priorizar data, descrição e valor');
  const compactViewport=success.page.locator('.pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid__viewport');
