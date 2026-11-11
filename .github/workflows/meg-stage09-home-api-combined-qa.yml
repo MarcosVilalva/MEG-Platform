@@ -60,7 +60,6 @@ jobs:
           npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
       - name: Regressao com dados sinteticos no PostgreSQL 17
         run: |
-          npx tsx scripts/meg-stage09-snapshot-postgres.integration.ts
           npx tsx apps/api/src/modules/finance/home-commitments-postgres-isolated.test.ts
           npx tsx apps/api/src/modules/finance/home-commitments-http-isolated.test.ts
       - name: Construir entrada da Home sem publicar
@@ -78,3 +77,38 @@ jobs:
               *) echo "ESCOPO PROIBIDO: $path"; exit 1;;
             esac
           done < /tmp/meg-stage09-readonly-merge.txt
+
+  stage09-snapshot-isolated:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://stage09:ci_local_only@127.0.0.1:5432/meg_stage09_ci?schema=public
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: stage09
+          POSTGRES_PASSWORD: ci_local_only
+          POSTGRES_DB: meg_stage09_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U stage09 -d meg_stage09_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Preparar Prisma em infraestrutura descartavel
+        run: |
+          npm ci --audit=false
+          npm run db:generate
+      - name: Conferir identidade exata do banco ficticio
+        run: |
+          test "$DATABASE_URL" = 'postgresql://stage09:ci_local_only@127.0.0.1:5432/meg_stage09_ci?schema=public' || { echo 'Destino Stage09 proibido'; exit 1; }
+          npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Testar snapshot e indicadores sem dados reais
+        run: npx tsx scripts/meg-stage09-snapshot-postgres.integration.ts
