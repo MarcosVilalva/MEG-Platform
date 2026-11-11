@@ -31,6 +31,23 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
   const period=page.locator('.meg-period');
   const commitments=page.locator('.pano-grid--commitments');
   await commitments.getByText(expectedCommitment,{exact:false}).filter({visible:true}).first().waitFor({timeout:20000});
+  if(home==='home-p0'){
+   const compactTable=commitments.getByRole('table',{name:'Próximos compromissos',includeHidden:true});
+   const titles=await compactTable.locator('thead th').allTextContents();
+   assert.equal(titles.length,3,'Resumo visual precisa ter 3 colunas: '+JSON.stringify(titles));
+   assert.ok(['Vencimento','Descrição','Valor'].every((label,i)=>titles[i].includes(label)),
+    'As colunas essenciais precisam preservar a ordem e seus rótulos');
+   if(width>=1024){
+    const viewport=commitments.locator('.meg-datagrid__viewport');
+    const dimensions=await viewport.evaluate(element=>({
+     available:element.clientWidth,scroll:element.scrollWidth,
+     right:element.getBoundingClientRect().right,
+     valueRight:element.querySelector('tbody tr td:last-child strong')?.getBoundingClientRect().right||0,
+    }));
+    assert.ok(dimensions.scroll<=dimensions.available+2&&dimensions.valueRight<=dimensions.right+1,
+      'Tabela compacta não pode esconder valor e vencimento: '+JSON.stringify(dimensions));
+   }
+  }
   assert.match(await period.innerText(),new RegExp(expectedPeriod),'Período inicial incorreto');
   assert.equal(await page.locator('.meg-integrated-preview').getAttribute('data-preview-view'),
    expectedView,'Versão inicial da Home incorreta');
@@ -76,6 +93,9 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    await full.waitFor({timeout:10000});
    assert.match(await full.locator('.pano-commitments-dialog__summary').innerText(),
     /8 compromissos carregados/,'Modal de compromissos perdeu os 8 itens fictícios');
+   const fullTable=full.getByRole('table',{name:'Todos os compromissos carregados',includeHidden:true});
+   assert.equal(await fullTable.locator('thead th').count(),5,
+    'O modal deve preservar as 5 colunas canônicas da consulta integral');
    await full.getByRole('button',{name:'Fechar lista de compromissos'}).click();
   }
   const dimensions=await page.evaluate(()=>({
