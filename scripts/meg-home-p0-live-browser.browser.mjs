@@ -217,6 +217,21 @@ try {
         const badges = dueGrid.locator('.pano-due-date__urgency').filter({ visible: true });
         assert.ok(await badges.count() >= 6,
           'Vencido/hoje/futuro devem aparecer por texto junto à data');
+        const attention=page.locator('.pano-attention');
+        await attention.waitFor({timeout:20000});
+        assert.equal(await attention.locator('.pano-attention__item').count(),2,
+          'Destaque da Home usa um vencido e um vencendo hoje, ambos canônicos');
+        assert.ok(await attention.getByText('Destaques da consulta inicial').isVisible(),
+          'Lista de oito não deve ser apresentada como total da dívida');
+        assert.ok(await attention.getByText('Obrigação fictícia p0-old').isVisible(),
+          'Compromisso vencido deve ser visível antes do DataGrid');
+        assert.ok(await attention.getByText('Obrigação fictícia p0-today').isVisible(),
+          'Compromisso do dia deve ser visível antes do DataGrid');
+        const spot=await page.locator('.pano-spotlight').boundingBox();
+        const alert=await attention.boundingBox();
+        const actions=await page.locator('.pano-actions').boundingBox();
+        assert.ok(spot&&alert&&actions&&alert.y>=spot.y+spot.height-2&&alert.y+alert.height<=actions.y+2,
+          'Aviso deve ocupar faixa compacta entre painel superior e Ações rápidas');
         for (const urgency of ['Vencido', 'Vence hoje', 'A vencer']) {
           const badge = dueGrid.locator('.pano-due-date__urgency').getByText(urgency, {exact:true}).filter({visible:true}).first();
           assert.ok(await badge.count() > 0, 'Estado canônico visível na coluna Vencimento: ' + urgency);
@@ -235,9 +250,15 @@ try {
         assert.equal(await dueGrid.getByText('Obrigação fictícia p0-old', { exact: false }).count(), 0,
           'Home B não pode mostrar dados da A');
       }
-      // Exercitar o botão "Ver todos" contra HTTP/JWT/PostgreSQL reais:
-      // a Home mostra 8 como resumo, mas a consulta sob demanda não truncará.
-      await page.getByRole('button', {name: 'Ver todos os compromissos'}).click();
+      // Exercitar acesso direto a partir da urgência, sem requisição adicional.
+      // A Home mostra 8 como resumo, mas a lista sob demanda não truncará.
+      if(name.startsWith('A')){
+        await page.locator('.pano-attention__item.is-overdue').first().click();
+      }else{
+        assert.equal(await page.locator('.pano-attention').getByText('Obrigação fictícia p0-old').count(),0,
+          'Atenção do usuário B não pode vazar descrição do usuário A');
+        await page.getByRole('button', {name: 'Ver todos os compromissos'}).click();
+      }
       const fullList = page.getByRole('dialog', {name: 'Todos os compromissos'});
       await fullList.waitFor({timeout: 20000});
       const detailedTable=fullList.getByRole('table',{name:'Todos os compromissos carregados',includeHidden:true});
