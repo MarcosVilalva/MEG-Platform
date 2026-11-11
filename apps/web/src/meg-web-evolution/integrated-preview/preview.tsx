@@ -37,6 +37,15 @@ const initialScreen: Screen =
 
 function FlowPreview() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  // A escolha de Novo lançamento é apenas um overlay de demonstração.
+  // Preserve a Home de origem para que o período e a fixture nunca mudem
+  // nem ao abrir o modal, nem ao voltar/fechar.
+  const [returnHome] = useState<'home' | 'home-p0'>(
+    initialScreen === 'home-p0' ? 'home-p0' : 'home',
+  );
+  const activeHome = screen === 'new-launch'
+    ? returnHome
+    : screen === 'home-p0' ? 'home-p0' : 'home';
   const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState('');
   const isLoading = screen === 'loading-entry' || screen === 'loading-initial';
@@ -78,7 +87,7 @@ function FlowPreview() {
     }
   };
 
-  const goHome = () => { setNotice(''); setScreen('home'); };
+  const goHome = () => { setNotice(''); setScreen(returnHome); };
 
   if (isLoading) {
     return <div className="meg-integrated-preview" data-preview-view={screen}>
@@ -108,9 +117,9 @@ function FlowPreview() {
 
   return <div className="meg-integrated-preview" data-preview-view={screen}
     onClickCapture={handleShellCapture}>
-    <AppShell periodLabel={screen === 'home-p0' ? 'Novembro de 2026' : undefined}>
-      <HomeDashboard previewData={screen === 'home-p0' ? homeP0QaPreviewFixture : homePreviewFixture}
-        month={screen === 'home-p0' ? '2026-11' : '2026-10'}
+    <AppShell periodLabel={activeHome === 'home-p0' ? 'Novembro de 2026' : undefined}>
+      <HomeDashboard previewData={activeHome === 'home-p0' ? homeP0QaPreviewFixture : homePreviewFixture}
+        month={activeHome === 'home-p0' ? '2026-11' : '2026-10'}
         onNavigate={target => {
           if (target === 'novo') { setNotice(''); setScreen('new-launch'); }
           else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
