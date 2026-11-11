@@ -387,27 +387,25 @@
   color:#ffdc96;border-color:rgba(214,155,56,.46);background:rgba(119,77,16,.20);
 }
 
-/* Home: malha compartilhada de duas colunas, sem deslocar a segunda linha.
-   Subgrid preserva os wrappers e mantém os rodapés das grades alinhados. */
+/* Home: quatro painéis na mesma malha 2x2, sem alturas artificiais.
+   display:contents é exclusivo do desktop e só remove caixas de layout. */
 @media(min-width:1024px){
  .pano-finance-block{
   grid-template-columns:minmax(0,7fr) minmax(0,5fr);
-  grid-template-rows:auto minmax(0,1fr);
-  align-items:stretch;gap:.75rem
+  grid-template-rows:auto auto;align-items:stretch;gap:.75rem
  }
- .pano-finance-block>.pano-finance-column{
-  display:grid;grid-template-rows:subgrid;grid-row:1 / span 2;
-  row-gap:.75rem;min-width:0;min-height:0
- }
- .pano-finance-block>.pano-finance-column.is-primary{grid-column:1}
- .pano-finance-block>.pano-finance-column.is-secondary{grid-column:2}
- .pano-finance-block>.pano-finance-column>.pano-grid{
-  align-self:stretch;min-height:0
- }
+ .pano-finance-block>.pano-finance-column{display:contents}
+ .pano-finance-block .pano-flow{grid-column:1;grid-row:1}
  .pano-finance-block .pano-benefits{
-  display:flex;flex-direction:column;min-height:0;align-self:stretch
+  grid-column:2;grid-row:1;display:flex;flex-direction:column;min-height:0;align-self:stretch
  }
  .pano-finance-block .pano-benefits .pano-benefit-card{flex:1 1 auto}
+ .pano-finance-block .is-primary>.pano-grid{
+  grid-column:1;grid-row:2;align-self:stretch;min-height:0
+ }
+ .pano-finance-block .is-secondary>.pano-grid--commitments{
+  grid-column:2;grid-row:2;align-self:stretch;min-height:0
+ }
 }
 
 /* A urgência é fornecida exclusivamente pela API financeira canônica.
