@@ -70,6 +70,8 @@ try{
  await failure.page.getByText('Não foi possível consultar as informações financeiras e compromissos abertos.',{exact:false}).waitFor({timeout:20000});
  assert.ok(await failure.page.getByRole('alert').count()>0,'Falha explícita precisa ter alerta');
  assert.equal(await failure.page.getByText('Nenhum compromisso cadastrado.',{exact:false}).count(),0,'Não transformar falha em estado vazio');
+ assert.equal(await failure.page.locator('.pano-grid').count(),0,'Falha crítica não deve renderizar DataGrids vazios abaixo do alerta');
+ assert.ok(await failure.page.getByRole('button',{name:/Tentar novamente/}).isVisible(),'Permitir repetição explícita após falha');
  await failure.context.close();
  console.log('Home P0 E2E fictício: sessão, vencido antigo, hoje, cursor vazio, falha fechada, sem Egress redundante.');
 }catch(e){console.error(e);process.exitCode=1}finally{await browser.close()}
