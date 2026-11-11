@@ -366,10 +366,10 @@
  font-size:.79rem;line-height:1.3;
 }
 .pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row){
- height:auto;max-height:none;
+ height:3rem;max-height:3rem;
 }
 .pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row) td{
- height:auto!important;min-height:3.55rem;padding-block:.48rem;
+ height:3rem!important;min-height:3rem;padding-block:.24rem;
 }
 .pano-grid--commitments .meg-datagrid-card-row dd{font-size:.89rem}
 .pano-grid--commitments .meg-datagrid-card-row .pano-due-date__value{font-size:.88rem}
