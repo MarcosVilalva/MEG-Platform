@@ -12,6 +12,8 @@ import {
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
 import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './phoenix-read';
+import { listCanonicalHomeCommitments } from './home-commitments-read';
+import { decodeCommitmentCursor } from './home-commitments-core';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
@@ -311,6 +313,20 @@ export async function financeRoutes(app: FastifyInstance) {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getPhoenixBenefitSummary(request.user.sub, parsed.data.month);
+  });
+
+  // Leitura limitada, autenticada, sem materialização ou mutação financeira.
+  app.get('/home-commitments', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      limit: z.coerce.number().int().min(1).max(50).default(8),
+      cursor: z.string().min(1).max(512).optional(),
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    if (parsed.data.cursor && !decodeCommitmentCursor(parsed.data.cursor)) {
+      return reply.code(400).send({ code: 'INVALID_HOME_COMMITMENTS_CURSOR' });
+    }
+    reply.header('Cache-Control', 'private, no-store');
+    return listCanonicalHomeCommitments(request.user.sub, parsed.data);
   });
 
   app.get('/events/month', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
