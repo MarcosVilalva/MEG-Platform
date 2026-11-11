@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {authenticatedRequest} from '../../app/auth-client';
 // @ts-expect-error Adaptador JavaScript da fonte única já validada na Etapa 02
-import {composeMegApiSnapshot,fromCanonicalReadModels,fromFinancialEvents,fromPayables,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
+import {composeMegApiSnapshot,fromCanonicalReadModels,fromFinancialEvents,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
 import {DataGrid} from '../datagrid/DataGrid';
 import type {DataGridColumn} from '../datagrid/types';
 import {HomeChart,type CashflowDay} from './HomeChart';
