@@ -394,7 +394,9 @@
  font-size:.82rem;font-variant-numeric:tabular-nums;
 }
 .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table td:nth-child(2) .pano-cell-text{
- max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ display:-webkit-box;max-width:100%;overflow:hidden;
+ -webkit-line-clamp:2;-webkit-box-orient:vertical;
+ white-space:normal;line-height:1.26;overflow-wrap:anywhere;
 }
 .pano-finance-block .pano-grid--commitments .meg-datagrid-table tbody tr:not(.meg-datagrid-group-row){
  height:3rem;max-height:3rem;
