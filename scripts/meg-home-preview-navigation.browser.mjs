@@ -43,6 +43,11 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
      available:element.clientWidth,scroll:element.scrollWidth,
      right:element.getBoundingClientRect().right,
      valueRight:element.querySelector('tbody tr td:last-child strong')?.getBoundingClientRect().right||0,
+     tableWidth:element.querySelector('table')?.getBoundingClientRect().width||0,
+     tableMinWidth:element.querySelector('table')?.style.minWidth||'',
+     tableComputedWidth:element.querySelector('table')?getComputedStyle(element.querySelector('table')).width:'',
+     colWidths:[...element.querySelectorAll('table col')].map(col=>col.getBoundingClientRect().width),
+     thWidths:[...element.querySelectorAll('table thead th')].map(th=>th.getBoundingClientRect().width),
     }));
     assert.ok(dimensions.scroll<=dimensions.available+2&&dimensions.valueRight<=dimensions.right+1,
       'Tabela compacta não pode esconder valor e vencimento: '+JSON.stringify(dimensions));
