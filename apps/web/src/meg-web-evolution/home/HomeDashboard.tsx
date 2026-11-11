@@ -175,21 +175,30 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    render:(v,row)=><strong className={Number(row.amount)<0?'pano-negative':'pano-positive'}>{Number(row.amount)<0?'− ':'+ '}{format(Number(v),hidden)}</strong>}
  ];
  const dueColumns:DataGridColumn<Record<string,unknown>>[]=[
-  {key:'date',label:'Vencimento',type:'date',width:150,sortable:true,filterable:true},
+  {key:'date',label:'Vencimento',type:'date',width:162,sortable:true,filterable:true,
+   render:(v,row)=>{
+    // O dia e o estado de urgência vêm prontos da autoridade financeira.
+    // A Home não compara datas nem altera situação de pagamento.
+    const urgency=String(row.dueState??'');
+    const urgencyLabel=urgency==='overdue'?'Vencido':urgency==='due_today'?'Vence hoje':urgency==='upcoming'?'A vencer':'';
+    return <span className="pano-due-date">
+      <span className="pano-due-date__value">{dateString(String(v??''))}</span>
+      {urgencyLabel&&<span className={'pano-due-date__urgency is-'+urgency.replaceAll('_','-')}
+        aria-label={urgencyLabel} title={urgencyLabel}>
+        {urgency!=='upcoming'&&<HomeGlyph name="alert" size={12}/>}
+        {urgencyLabel}
+      </span>}
+    </span>;
+   }},
   {key:'description',label:'Descrição',type:'text',width:155,sortable:true,filterable:true,
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'source',label:'Origem',type:'text',width:119,sortable:true,filterable:true,
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
   {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
-   render:(v,row)=>{const label=String(v??'—');const urgency=String(row.dueState??'');
-    const urgencyLabel=urgency==='overdue'?'Vencido':urgency==='due_today'?'Vence hoje':'';
-    return <span className={'pano-status'+(urgency==='overdue'?' is-overdue':urgency==='due_today'?' is-due-today':label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}
-      title={urgencyLabel?label+' · '+urgencyLabel:label}
-      aria-label={urgencyLabel?label+', '+urgencyLabel:label}>
-      {urgencyLabel&&<HomeGlyph name="alert" size={13}/>}
-      {label}
-     </span>}}
+   render:v=>{const label=String(v??'—');
+    return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}
+      title={label} aria-label={label}>{label}</span>}}
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
  const stats:{label:string;value:number|null|undefined;note:string;icon:HomeIconName;kind:string;action:Action}[]=[
@@ -301,7 +310,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     </button>
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
-    <section ref={dueSection} className={'pano-panel pano-grid '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
+    <section ref={dueSection} className={'pano-panel pano-grid pano-grid--commitments '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
      <div className="pano-grid-actions"><button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
       <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
      <DataGrid data={commitments} columns={dueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
