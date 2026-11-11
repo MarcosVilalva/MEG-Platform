@@ -409,6 +409,15 @@
  background:#07515a;color:#b7fff0;font-size:.78rem;font-weight:800;
 }
 .pano-attention__all:hover{background:#0b6167;border-color:#83e9d6}
+/* Descrições longas ocupam até duas linhas no mobile/tablet.
+   Não reduzir fonte nem prejudicar a leitura da data e do valor. */
+@media(max-width:1024px){
+ .pano-attention__description{
+  display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;white-space:normal;
+  overflow:hidden;line-height:1.25;
+ }
+}
 /* No painel intermediário, priorizar espaço para descrições.
    Header/ação em uma linha e destaques ocupando uma segunda linha. */
 @media(min-width:640px) and (max-width:1024px){
