@@ -214,7 +214,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
   .filter(column=>column.key==='date'||column.key==='description'||column.key==='value')
   .map(column=>({
    ...column,
-   width:column.key==='date'?143:column.key==='description'?157:124,
+   width:column.key==='date'?137:column.key==='description'?148:120,
    minWidth:column.key==='date'?130:column.key==='description'?128:104,
   }));
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
