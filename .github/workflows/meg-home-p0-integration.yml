@@ -50,6 +50,14 @@ jobs:
           test "$DATABASE_URL" = 'postgresql://meg_qa:meg_qa@127.0.0.1:5432/meg_home_p0_qa?schema=public' || { echo "Destino PostgreSQL proibido"; exit 1; }
           npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
           npx tsx apps/api/src/modules/finance/home-commitments-postgres-isolated.test.ts
+      - name: HTTP autenticado real e cliente Web contra PostgreSQL sintético
+        env:
+          NODE_ENV: test
+          JWT_SECRET: meg-home-p0-qa-only-fictitious-jwt-secret-2026
+          MEG_HOME_P0_HTTP_QA: '1'
+        run: |
+          test "$DATABASE_URL" = 'postgresql://meg_qa:meg_qa@127.0.0.1:5432/meg_home_p0_qa?schema=public' || { echo "Destino HTTP QA proibido"; exit 1; }
+          npx tsx apps/api/src/modules/finance/home-commitments-http-isolated.test.ts
       - name: Contrato do consumidor Home P0
         run: npx tsx apps/web/src/meg-web-evolution/home/home-commitments-read.contract.test.ts
       - name: Compilar preview da Home sem publicar
@@ -78,7 +86,7 @@ jobs:
           cat /tmp/meg-home-p0-integration-files.txt
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/meg-home-p0-integration.yml|apps/web/src/meg-web-evolution/home/HomeDashboard.tsx|apps/web/src/meg-web-evolution/home/home-dashboard.css|apps/web/src/meg-web-evolution/home/home-commitments-read.ts|apps/web/src/meg-web-evolution/home/home-commitments-read.contract.test.ts|apps/api/src/modules/finance/home-commitments-postgres-isolated.test.ts|apps/web/vite.fluxo-integrado-08.config.ts|scripts/meg-home-p0-authenticated.browser.mjs|docs/MEG-WEB-HOME-OVERDUE-READ-CONTRACT-20261110.md|MEG-WEB-CONTINUIDADE-OFICIAL.md)
+              .github/workflows/meg-home-p0-integration.yml|apps/web/src/meg-web-evolution/home/HomeDashboard.tsx|apps/web/src/meg-web-evolution/home/home-dashboard.css|apps/web/src/meg-web-evolution/home/home-commitments-read.ts|apps/web/src/meg-web-evolution/home/home-commitments-read.contract.test.ts|apps/api/src/modules/finance/home-commitments-postgres-isolated.test.ts|apps/api/src/modules/finance/home-commitments-http-isolated.test.ts|apps/web/vite.fluxo-integrado-08.config.ts|scripts/meg-home-p0-authenticated.browser.mjs|docs/MEG-WEB-HOME-OVERDUE-READ-CONTRACT-20261110.md|MEG-WEB-CONTINUIDADE-OFICIAL.md)
                 ;;
               *) echo "FORA DO ESCOPO: $path" >&2; exit 1;;
             esac
