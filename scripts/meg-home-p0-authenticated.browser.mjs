@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
 import {chromium} from '@playwright/test';
 
 const base=process.env.MEG_PREVIEW_URL||'http://127.0.0.1:4173';
@@ -63,6 +64,14 @@ try{
  assert.equal(success.visited.some(path=>path.startsWith('/payables/open')),false,'Não chamar payables/open redundante');
  assert.equal(success.visited.filter(path=>path.includes('/finance/events/month')).length,1,'Somente mês atual para movimentações');
  assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
+ // Evidência de QA: sessão e dados 100% fictícios; não publicar como Home homologada.
+ await mkdir('artifacts/meg-home-p0-qa',{recursive:true});
+ await success.page.screenshot({path:'artifacts/meg-home-p0-qa/urgencia-desktop-1366.png',fullPage:true});
+ await success.page.setViewportSize({width:375,height:812});
+ await success.page.screenshot({path:'artifacts/meg-home-p0-qa/urgencia-mobile-375.png',fullPage:true});
+ const viewport=await success.page.evaluate(()=>({page:document.documentElement.scrollWidth,screen:window.innerWidth}));
+ assert.ok(viewport.page<=viewport.screen,
+  'Home P0 não pode causar rolagem horizontal no mobile: '+JSON.stringify(viewport));
  await success.context.close();
 
  const failure=await create(true);
