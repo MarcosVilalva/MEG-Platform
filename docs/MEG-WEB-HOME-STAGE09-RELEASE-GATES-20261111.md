@@ -39,6 +39,17 @@
 
 **Procedimento:** criar branch de integração descartável baseada na autoridade aprovada da Web, inventariar patches de cada PR, aplicar as mudanças em ordem explícita, inspecionar conflitos, rodar todos os gates e comparar visuais oficiais. Nenhum merge em `main` ou alteração em Render até autorização posterior.
 
+
+### 3.1. Evidência de auditoria dos patches, sem executar integração
+
+A comparação efetiva dos patches confirmou que não se trata apenas de arquivos repetidos:
+
+1. **`finance/routes.ts`:** #668 adiciona a rota de leitura de compromissos `GET /home-commitments`, enquanto #663 adiciona `GET /events/history-snapshot`, `GET /events/filtered-summary` e a revisão ativa do histórico ao `sync-status`. #656 acrescenta as duas rotas de histórico e `capabilities`, mas **não carrega a mesma revisão ativa do token** presente em #663. No código integrado, preservar as três rotas e a revisão de sincronização, sem registros duplicados nem perda de proteção por workspace.
+2. **`history-filter.ts`:** #663 contém fallback de rótulos históricos provenientes de `sourcePayload` e de `importedRow.rawData`, ao passo que a versão paralela de #656 consultava apenas o `importedRow.rawData` nessa função auxiliar. Não substituir a implementação posterior pela versão antiga: testar categorias e formas de pagamento históricas sem IDs, preservando texto e seleção sem alterar valores.
+3. **`AppShell.tsx`:** #669 introduz `HomeDueAlertsProvider`, sino de vencimentos canônicos e `periodLabel`; #656 inclui navegação autenticada Home↔Lançamentos, perfil dinâmico e `onLogout/logoutPending`. A implementação final deve **compor as duas interfaces de props e o provider**, sem perder revogação de sessão, autenticação, alertas, acessibilidade, logout ou período. Regressão específica de início/sair/retorno e sino no desktop e mobile obrigatória.
+
+Esses achados são evidências de risco de integração, **não** afirmação de falha executada na aplicação. Nenhuma correção foi aplicada nesta auditoria de leitura.
+
 ## 4. Dependência de segurança no Render, bloqueio P0
 
 - Serviço de API **`meg-platform-api`**, ID `srv-d98k61daeets7384hvb0`, branch `main`, Auto Deploy **ON**. SHA LIVE observado `28703a95310c9b9b5f193ef4f3a0cbe80e121f07`, deploy `dep-dbm92b17lnhs738s0jr0`.
