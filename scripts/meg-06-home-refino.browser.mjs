@@ -23,7 +23,7 @@ async function measure(page){
     const r=e.getBoundingClientRect();
     return {x:r.x,y:r.y,width:r.width,height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right};
   };
-  const buttons=all('.pano-action');
+  const buttons=all('.pano-quick-link');
   const stage=one('.pano-card-stage');
   const summary=one('.pano-card-summary');
   const summaryName=one('.pano-card-summary-copy strong');
@@ -68,10 +68,10 @@ async function measure(page){
     grids:all('.pano-grid .meg-datagrid').length,
     actions:buttons.map(b=>({
       title:b.querySelector('strong')?.textContent?.trim(),
-      iconCount:b.querySelectorAll('.pano-action-icon svg').length,
+      iconCount:b.querySelectorAll('.pano-quick-item-icon svg').length,
       ...rect(b)
     })),
-    actionGap:panel?getComputedStyle(one('.pano-action-list')).gap:null,
+    actionGap:panel?getComputedStyle(one('.pano-quick-rail')).gap:null,
     cardStage:stage?rect(stage):null,
     activeCard:active?rect(active):null,
     cardCount:all('.pano-credit-card').length,
@@ -81,7 +81,7 @@ async function measure(page){
     cardPanelRect:one('.pano-cards')?rect(one('.pano-cards')):null,
     actionsPanelRect:panel?rect(panel):null,
     financePanelRect:one('.pano-finance-block')?rect(one('.pano-finance-block')):null,
-    descriptions:all('.pano-action small').map(el=>el.textContent?.trim()),
+    descriptions:all('.pano-quick-link small').map(el=>el.textContent?.trim()),
     summary:summary?rect(summary):null,
     summaryName:summaryName?.textContent?.trim(),
     summaryValue:summaryCard?.querySelector('strong')?.textContent?.trim(),
@@ -115,7 +115,25 @@ try {
   }
   const problems=[];
   if(changed.documentWidth>width+1)problems.push('rolagem horizontal da pagina');
-  if(changed.mainScrollWidth>changed.mainWidth+2)problems.push('rolagem horizontal indevida na Home');
+  // A faixa de atalhos possui scroll horizontal INTERNO, deliberado.
+  // main.scrollWidth pode refletir itens fora da viewport mesmo com main overflow-x:hidden;
+  // só é erro se o próprio carrossel escapar do container ou se a página rolar.
+  if(changed.mainScrollWidth>changed.mainWidth+2){
+    const containment=await page.evaluate(()=>{
+      const main=document.querySelector('.meg-main');
+      const rail=document.querySelector('.pano-quick-rail');
+      if(!main||!rail)return null;
+      const a=main.getBoundingClientRect(),b=rail.getBoundingClientRect();
+      return {mainOverflow:getComputedStyle(main).overflowX,
+        railOverflow:getComputedStyle(rail).overflowX,
+        viewportOverflow:getComputedStyle(rail.parentElement).overflowX,
+        clipped:b.left>=a.left-2&&b.right<=a.right+2,
+        documentWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+    });
+    if(!containment||containment.mainOverflow!=='hidden'||containment.viewportOverflow!=='hidden'||
+      !containment.clipped||containment.documentWidth>containment.viewport+1)
+      problems.push('rolagem horizontal indevida na Home: '+JSON.stringify(containment));
+  }
   if(width<1024 && changed.rootRect){
     for(const panel of changed.tablePanels){
       if(panel.right>changed.rootRect.right+2)
@@ -154,12 +172,14 @@ try {
       problems.push('quatro indicadores não estão distribuídos em 2x2');
   }
   const desired=['Transferência','Pagar conta','Relatórios','Configurações'];
-  if(changed.actions.length!==4 || changed.actions.some(x=>!x.title||x.iconCount!==1))
-    problems.push('quatro atalhos não preservados');
-  if(changed.actions.map(x=>x.title).join('|')!==desired.join('|'))
-    problems.push('atalhos não seguem imagem 01');
-  if(changed.descriptions.length!==4 || changed.descriptions.some(x=>!x))
-    problems.push('descrição de atalhos ausente');
+  // Novo contrato: janela de 1 a 4 cartões INTEIROS por viewport.
+  // Os quatro atalhos padrão continuam no catálogo e na preferência persistida.
+  if(changed.actions.length<1||changed.actions.length>4||changed.actions.some(x=>!x.title||x.iconCount!==1))
+    problems.push('janela circular sem cartões íntegros');
+  if(changed.actions.map(x=>x.title).join('|')!==desired.slice(0,changed.actions.length).join('|'))
+    problems.push('ordem inicial dos atalhos alterada');
+  if(changed.descriptions.length!==changed.actions.length||changed.descriptions.some(x=>!x))
+    problems.push('descrições dos atalhos visíveis ausentes');
   if(byName(baseline)!==byName(changed) || JSON.stringify(baseline.copy)!==JSON.stringify(changed.copy))
     problems.push('dados/rótulos financeiros mudaram durante refino CSS');
   if(changed.actions.some(x=>x.height<44))problems.push('area de toque menor que 44px');
@@ -217,18 +237,11 @@ try {
       changed.activeCard.bottom>changed.cardStage.bottom+2))
     problems.push('cartão central cortado no palco');
   if(api.length)problems.push('requisições API em modo visual');
-  if(width>=1024 && changed.actions.length===4){
+  // Carrossel de janela circular: só cartões completos, numa linha, sem corte.
+  if(changed.actions.length===4){
     const tops=changed.actions.map(x=>x.top);
     if(Math.max(...tops)-Math.min(...tops)>3)
-      problems.push('quatro atalhos não estão na mesma linha no desktop');
-  } else if(width>=640 && changed.actions.length===4){
-    const [a,b,c,d]=changed.actions;
-    if(Math.abs(a.top-b.top)>3||Math.abs(c.top-d.top)>3||c.top<=a.top+5)
-      problems.push('tablet não está em grade 2x2');
-  } else if(changed.actions.length===4){
-    const [a,b,c,d]=changed.actions;
-    if(!(b.top>a.top+5&&c.top>b.top+5&&d.top>c.top+5))
-      problems.push('mobile não empilha os quatro atalhos');
+      problems.push('os atalhos deixaram de ocupar uma única linha horizontal');
   }
   // O novo tamanho do cartão foi aprovado como proposta visual, mas
   // nunca pode cortar controles ou deslocar os KPIs/DataGrids.
@@ -253,7 +266,7 @@ try {
    const m=await measure(page);
    const problems=[];
    if(m.documentWidth>width+2)problems.push('rolagem horizontal com altura/zoom');
-   if(m.actions.length!==4)problems.push('atalhos desaparecem com altura/zoom');
+   if(m.actions.length<1||m.actions.length>4)problems.push('janela de atalhos inconsistente com altura/zoom');
    if(!m.topPlusVisible)problems.push('Novo lançamento do topo não visível');
    if(!m.chart||m.chart.height<165)problems.push('gráfico comprimido com altura/zoom');
    if(m.cardStage&&m.activeCard&&m.activeCard.bottom>m.cardStage.bottom+3)
@@ -273,7 +286,7 @@ try {
  if(before===after)throw Error('carrossel nao navegou');
  // Novo Lançamento deve permanecer no cabeçalho, sem duplicação no painel.
  if(!(await page.locator('.meg-topbar-new').isVisible()))throw Error('Novo lançamento no topo não visível');
- if(await page.locator('.pano-action').filter({hasText:'Novo lançamento'}).count())
+ if(await page.locator('.pano-quick-link').filter({hasText:'Novo lançamento'}).count())
    throw Error('Novo lançamento duplicado nas ações');
  await page.locator('.meg-topbar-new').click();
  await page.locator('[data-testid="new-launch-types"]').waitFor();

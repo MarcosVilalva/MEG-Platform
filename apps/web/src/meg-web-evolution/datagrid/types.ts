@@ -71,6 +71,8 @@ export type DataGridProps<T extends Record<string, unknown>> = {
   data: T[];
   columns: DataGridColumn<T>[];
   pageSize?: number;
+  /** Opcional por consumidor: limita escolhas sem alterar o padrão global do DataGrid. */
+  pageSizeOptions?: number[];
   groupBy?: keyof T & string;
   selectable?: boolean;
   footerAggregates?: boolean | Record<string, DataGridAggregate>;

@@ -126,7 +126,7 @@ function AuthGateway() {
 
   if (session) return (
     <AppShell>
-      <HomeDashboard />
+      <HomeDashboard userId={session.user.id} />
     </AppShell>
   );
 

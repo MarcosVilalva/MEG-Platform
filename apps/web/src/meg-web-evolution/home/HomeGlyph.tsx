@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 
-export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload'|'chevronLeft'|'chevronRight'|'filter'|'activity'|'calendarClock'|'basket'|'medical'|'house'|'car'|'tag';
+export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload'|'chevronLeft'|'chevronRight'|'chevronUp'|'chevronDown'|'trash'|'pencil'|'filter'|'activity'|'calendarClock'|'basket'|'medical'|'house'|'car'|'tag';
 const shapes:Record<HomeIconName,ReactNode>={
  wallet:<><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18M16 14h2"/></>,
  eye:<><path d="M2 12s3.7-6.5 10-6.5S22 12 22 12s-3.7 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.7"/></>,
@@ -25,6 +25,10 @@ const shapes:Record<HomeIconName,ReactNode>={
  reload:<><path d="M20 11a8 8 0 1 0-2 5.5M20 4v7h-7"/></>,
  chevronLeft:<><path d="m14.5 5.5-6.5 6.5 6.5 6.5"/><path d="M9 12h10" opacity=".5"/></>,
  chevronRight:<><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/><path d="M15 12H5" opacity=".5"/></>,
+ chevronUp:<path d="m6 15 6-6 6 6"/>,
+ chevronDown:<path d="m6 9 6 6 6-6"/>,
+ trash:<><path d="M4 7h16M10 4h4M7 7l1 13h8l1-13M10 11v5M14 11v5"/></>,
+ pencil:<><path d="m4 20 4.7-1 11-11a2.2 2.2 0 0 0-3.1-3.1l-11 11L4 20Z"/><path d="m14.8 6.8 3.1 3.1M4 20h5"/></>,
  filter:<><path d="M4 5.5h16l-6.3 7.1v5.5l-3.4 1.5v-7L4 5.5Z"/><path d="M8 4h8" opacity=".55"/></>,
  activity:<><path d="M3 6.5h7M3 12h7M3 17.5h7"/><rect x="12" y="3.5" width="9" height="17" rx="2"/><path d="M14.3 12h1.2l1.2-3 1.1 5 1-2h.6"/></>,
  calendarClock:<><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M7.5 2.5v4M16.5 2.5v4M3 9h18"/><circle cx="14.5" cy="15" r="3.25"/><path d="M14.5 13.25V15l1.25.85"/></>,

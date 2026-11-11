@@ -7,6 +7,7 @@ import type {DataGridColumn} from '../datagrid/types';
 import {HomeChart,type CashflowDay} from './HomeChart';
 import {HomeGlyph,type HomeIconName} from './HomeGlyph';
 import {CardBrandMark} from './CardBrandMark';
+import {QuickActions} from './QuickActions';
 import './home-dashboard.css';
 
 export type HomeFinancialData={
@@ -22,7 +23,7 @@ export type HomeFinancialData={
  cards:Array<{id:string;name:string;issuer?:string|null;brand?:string|null;lastFour?:string|null;creditLimit?:number;availableLimit?:number;usedLimit?:number;statementAmount?:number;payableStatementAmount?:number;dueDay?:number|null;isActive?:boolean}>;
 };
 type Action='novo'|'transferencia'|'pendentes'|'cartoes'|'lancamentos'|'beneficios'|'relatorios'|'metas';
-type Props={previewData?:HomeFinancialData;onNavigate?:(target:Action)=>void;month?:string};
+type Props={previewData?:HomeFinancialData;onNavigate?:(target:Action)=>void;month?:string;userId?:string};
 const currency=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 const monthFmt=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'});
 function dateNow(){const v=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(k:string)=>v.find(i=>i.type===k)?.value||'00';return get('year')+'-'+get('month')+'-'+get('day')}
@@ -76,7 +77,7 @@ function PanelTitle({icon,title,meta}:{icon:HomeIconName;title:string;meta?:stri
 function Money({value,hidden,className=''}:{value:number|null|undefined;hidden:boolean;className?:string}){
  return <span className={className}>{format(value,hidden)}</span>;
 }
-function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;month:string;preview:boolean;onNavigate?:Props['onNavigate']}){
+function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialData;month:string;preview:boolean;onNavigate?:Props['onNavigate'];userId?:string}){
  const [hidden,setHidden]=useState(false);
  const [notice,setNotice]=useState<string|null>(null);
  const [movementMode,setMovementMode]=useState<'all'|'income'|'expense'>('all');
@@ -168,7 +169,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     render:v=><span className="pano-cell-text" title={String(v??'—')}>{String(v??'—')}</span>},
   {key:'value',label:'Valor',type:'currency',width:112,sortable:true,filterable:true,render:v=><strong>{format(Number(v),hidden)}</strong>},
   {key:'status',label:'Situação',type:'text',width:124,sortable:true,filterable:true,
-   render:v=><span className="pano-status">{String(v??'—')}</span>}
+   render:v=>{const label=String(v??'—');return <span className={'pano-status'+(label==='Parcial'?' is-partial':label==='Previsto'?' is-planned':' is-payable')}>{label}</span>}}
  ];
  const period=monthFmt.format(new Date(month+'-01T12:00:00Z')).replace(/^./,s=>s.toLocaleUpperCase('pt-BR'));
  const stats:{label:string;value:number|null|undefined;note:string;icon:HomeIconName;kind:string;action:Action}[]=[
@@ -176,13 +177,6 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
   {label:'Despesas',value:data.summary?.expense,note:'',icon:'expense',kind:'expense',action:'lancamentos'},
   {label:'Pendências previstas',value:data.summary?.pendingAmount,note:data.summary?.pendingCount==null?'Sem leitura disponível':String(data.summary.pendingCount)+' registros',icon:'clock',kind:'pending',action:'pendentes'},
   {label:'Benefício',value:data.benefit?.balance,note:'Saldo separado das contas',icon:'gift',kind:'benefit',action:'beneficios'}
- ];
- // Home: Novo Lançamento fica no topo; 4 atalhos aprovados na imagem 01.
- const quick:{title:string;desc:string;icon:HomeIconName;action:Action;kind:string}[]=[
-  {title:'Transferência',desc:'Mover entre contas',icon:'transfer',action:'transferencia',kind:'blue'},
-  {title:'Pagar conta',desc:'Contas e boletos',icon:'receipt',action:'pendentes',kind:'violet'},
-  {title:'Relatórios',desc:'Extratos e análises',icon:'chart',action:'relatorios',kind:'amber'},
-  {title:'Configurações',desc:'Preferências do sistema',icon:'settings',action:'metas',kind:'slate'}
  ];
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
@@ -258,13 +252,8 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
      </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
   </div>
-  {/* Quatro atalhos em seção própria, após os cartões, conforme imagem 01. */}
-   <section className="pano-panel pano-actions">
-    <PanelTitle icon="sparkle" title="Ações rápidas"/>
-    <div className="pano-action-list">{quick.map(a=><button className={'pano-action is-'+a.kind} key={a.title} type="button" onClick={()=>move(a.action)}>
-      <span className="pano-action-icon"><HomeGlyph name={a.icon} size={17}/></span><strong>{a.title}</strong><small>{a.desc}</small>
-     </button>)}</div>
-   </section>
+  {/* Quatro atalhos originais, configuráveis sem alterar o restante da Home. */}
+  <QuickActions userId={userId} preview={preview} onNavigate={move}/>
 
   <div className="pano-finance-block" aria-label="Leitura gerencial do mês">
    <div className="pano-finance-column is-primary">
@@ -281,7 +270,7 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
       <button type="button" onClick={()=>setShowMovementFilters(v=>!v)} aria-expanded={showMovementFilters} aria-label={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'}>
        <HomeGlyph name="filter" size={15}/>{showMovementFilters?'Ocultar filtros':'Mostrar filtros'}{movementFiltersCount>0?' ('+movementFiltersCount+')':''}
       </button></div></div>
-     <DataGrid data={movements} columns={movementColumns} pageSize={5} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
+     <DataGrid data={movements} columns={movementColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
    </div>
    <div className="pano-finance-column is-secondary">
     <section ref={benefitSection} className="pano-panel pano-benefits">
@@ -295,12 +284,12 @@ function HomeContent({data,month,preview,onNavigate}:{data:HomeFinancialData;mon
     <section ref={dueSection} className={'pano-panel pano-grid '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
      <div className="pano-grid-actions"><button type="button" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters} aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'}>
       <HomeGlyph name="filter" size={15}/>{showDueFilters?'Ocultar filtros':'Mostrar filtros'}{dueFiltersCount>0?' ('+dueFiltersCount+')':''}</button></div></div>
-     <DataGrid data={commitments} columns={dueColumns} pageSize={5} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
+     <DataGrid data={commitments} columns={dueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-due" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
    </div>
   </div>
  </div>;
 }
-export function HomeDashboard({previewData,onNavigate,month:providedMonth}:Props){
+export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId}:Props){
  const current=providedMonth&&/^\d{4}-(0[1-9]|1[0-2])$/.test(providedMonth)?providedMonth:dateNow().slice(0,7);
  const [data,setData]=useState<HomeFinancialData|null>(previewData||null);
  const [error,setError]=useState<string|null>(null);
@@ -315,5 +304,5 @@ export function HomeDashboard({previewData,onNavigate,month:providedMonth}:Props
  },[current,previewData]);
  useEffect(()=>{if(previewData){setData(previewData);return}void reload();const onRefresh=()=>void reload();window.addEventListener('meg:data-invalidated',onRefresh);window.addEventListener('focus',onRefresh);return()=>{serial.current++;window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh)}},[previewData,reload]);
  return <>{error&&<div className="pano-error" role="alert">{error}<button type="button" onClick={()=>void reload()}><HomeGlyph name="reload" size={16}/> Tentar novamente</button></div>}
- {loading&&!data?<div className="pano-loading" role="status">Consultando seus dados financeiros...</div>:<HomeContent data={data||emptyState} month={current} preview={Boolean(previewData)} onNavigate={onNavigate}/>}</>;
+ {loading&&!data?<div className="pano-loading" role="status">Consultando seus dados financeiros...</div>:<HomeContent data={data||emptyState} month={current} preview={Boolean(previewData)} onNavigate={onNavigate} userId={userId}/>}</>;
 }

@@ -1,0 +1,51 @@
+name: MEG Home 08 - Acoes Rapidas Isoladas
+on:
+  push:
+    branches:
+      - 'preview/08-home-acoes-customizaveis-20261110'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quick-actions-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --audit=false
+      - name: Compilar preview isolado (sem publicacao)
+        run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Instalar Playwright sem alterar lockfile
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Contratos visuais da Home original e editor de atalhos
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4173 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-home-quick.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-06-home-refino.browser.mjs
+          node scripts/meg-08-home-quick-actions.browser.mjs
+      - name: Empacotar build interativo para inspeção local, sem deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-08-preview-estatico
+          path: apps/web/dist-fluxo-integrado-08/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Evidencias visuais
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-home-08-qa
+          path: artifacts/meg-home-refino-06/
+          if-no-files-found: warn

@@ -1,0 +1,182 @@
+/* Home PT2. Um único trilho para ver, reordenar, remover e adicionar. */
+.pano-quick{
+  position:relative;min-width:0;overflow:visible;
+}
+.pano-quick-heading{display:flex;align-items:center;gap:.55rem;min-width:0;max-width:100%;box-sizing:border-box;margin-bottom:.65rem}
+.pano-quick-heading h2{margin-right:0}
+.pano-quick-heading button{
+  flex:0 0 auto;display:inline-grid;place-items:center;position:relative;
+  width:42px;height:42px;min-width:42px;min-height:42px;padding:0;
+  border:1px solid rgba(46,211,193,.32);border-radius:12px;
+  color:#c4fff4;background:rgba(7,63,68,.55);cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;
+}
+.pano-quick-heading button:is(:hover,:focus-visible),.pano-quick-heading button.is-editing{
+  background:rgba(9,103,108,.72);border-color:#61e8d1;box-shadow:0 0 12px rgba(23,231,209,.15)
+}
+.pano-quick-heading button:disabled{opacity:.33;cursor:default;box-shadow:none}
+.pano-quick-heading button:focus-visible,.pano-quick button:focus-visible,.pano-quick-rail:focus-visible{
+  outline:2px solid #a6ffec;outline-offset:2px;
+}
+.pano-quick-heading button[data-tooltip]::after,
+.pano-quick-inline-controls button[data-tooltip]::after{
+  content:attr(data-tooltip);position:absolute;z-index:25;
+  left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);
+  border:1px solid rgba(104,226,207,.48);border-radius:9px;
+  background:#04282d;color:#effffb;white-space:nowrap;
+  font-size:.68rem;font-weight:700;padding:7px 9px;pointer-events:none;
+  box-shadow:0 10px 22px rgba(0,0,0,.28);opacity:0;visibility:hidden;
+  transition:opacity .15s ease,transform .15s ease,visibility .15s ease;
+}
+.pano-quick-heading button[data-tooltip]:is(:hover,:focus-visible)::after,
+.pano-quick-inline-controls button[data-tooltip]:not(:disabled):is(:hover,:focus-visible)::after{
+  opacity:1;visibility:visible;transform:translate(-50%,0)
+}
+.pano-quick-carousel-controls{display:flex;gap:.3rem;margin-left:auto;align-items:center}
+.pano-quick-carousel-controls button{width:38px;min-width:38px;height:38px;min-height:38px;border-radius:10px}
+.pano-quick-viewport{
+  box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+  overflow:hidden;touch-action:pan-y;
+}
+.pano-quick-rail{
+  display:grid;grid-template-columns:repeat(var(--quick-visible,1),minmax(0,1fr));
+  gap:.65rem;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+  padding:3px 2px 7px;margin:0;overflow:visible;
+}
+.pano-quick-rail[data-carousel-motion=right] .pano-quick-item{
+  animation:meg-quick-enter-right .19s ease-out both
+}
+.pano-quick-rail[data-carousel-motion=left] .pano-quick-item{
+  animation:meg-quick-enter-left .19s ease-out both
+}
+@keyframes meg-quick-enter-right{from{opacity:.72;transform:translateX(9px)}to{opacity:1;transform:none}}
+@keyframes meg-quick-enter-left{from{opacity:.72;transform:translateX(-9px)}to{opacity:1;transform:none}}
+.pano-quick-item{
+  position:relative;display:flex;width:100%;
+  min-width:0;box-sizing:border-box;
+  height:75px;min-height:75px;border:1px solid rgba(81,190,188,.48);
+  border-radius:12px;background:linear-gradient(150deg,rgba(6,46,54,.8),rgba(1,29,36,.94));
+  color:#eafff9;
+  transition:border-color .15s ease,background .15s ease,box-shadow .15s ease;
+}
+.pano-quick-item.is-blue{border-color:rgba(24,179,233,.75)}
+.pano-quick-item.is-violet{border-color:rgba(152,110,239,.75)}
+.pano-quick-item.is-amber{border-color:rgba(234,166,38,.77)}
+.pano-quick-item.is-slate{border-color:rgba(98,194,207,.70)}
+.pano-quick-item:has(.pano-quick-link:hover),.pano-quick-item:focus-within{
+  border-color:#70eadd;box-shadow:0 0 15px rgba(18,192,177,.12)
+}
+.pano-quick-item-content{
+  display:flex;align-items:center;gap:.55rem;flex:1 1 auto;min-width:0;
+  width:100%;height:100%;padding:.5rem .6rem;
+  border:0;background:transparent;color:inherit;text-align:left;
+  font:inherit;
+}
+.pano-quick-link{cursor:pointer}
+.pano-quick-item-icon{
+  display:grid;place-items:center;flex:0 0 39px;
+  width:39px;height:39px;border-radius:10px;
+  color:#eaffff;background:rgba(45,112,172,.60)
+}
+.is-violet .pano-quick-item-icon{background:rgba(117,81,198,.65)}
+.is-amber .pano-quick-item-icon{background:rgba(171,126,37,.70)}
+.is-slate .pano-quick-item-icon{background:rgba(72,114,136,.65)}
+.pano-quick-item-label{display:flex;flex-direction:column;min-width:0;gap:.16rem}
+.pano-quick-item-label strong{color:#f1fffd;font-size:.77rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pano-quick-item-label small{color:#b6d9d3;font-size:.66rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pano-quick-item.is-editing{height:120px;min-height:120px;flex-direction:column}
+.pano-quick-item.is-editing .pano-quick-item-content{height:56px;flex:0 0 56px;padding-block:.45rem}
+.pano-quick-inline-controls{display:flex;align-items:center;gap:.35rem;padding:0 .6rem .45rem}
+.pano-quick-inline-controls button{
+  position:relative;display:grid;place-items:center;
+  flex:0 0 44px;width:44px;height:44px;min-height:44px;
+  border-radius:10px;border:1px solid rgba(69,176,167,.32);
+  background:rgba(4,65,70,.66);color:#c1f9ef;cursor:pointer
+}
+.pano-quick-inline-controls button:is(:hover,:focus-visible){border-color:#6ee9d4;background:#0b545b}
+.pano-quick-inline-controls button:disabled{opacity:.28;cursor:not-allowed}
+.pano-quick-inline-controls button.is-remove{margin-left:auto;border-color:rgba(253,124,146,.4);color:#ffc9d2;background:rgba(89,37,54,.55)}
+.pano-quick-inline-controls button.is-remove:is(:hover,:focus-visible){background:rgba(140,42,69,.76);border-color:#ff91a2}
+.pano-quick-item.pano-quick-add{
+  display:flex;align-items:center;justify-content:flex-start;gap:.55rem;
+  border:1px dashed rgba(111,190,185,.50);border-radius:12px;
+  background:linear-gradient(150deg,rgba(7,53,59,.62),rgba(2,32,39,.88));
+  color:#e2f9f3;padding:.5rem .6rem;cursor:pointer;
+}
+.pano-quick-add-mark{flex:0 0 39px;width:39px;height:39px;display:grid;place-items:center;
+  border-radius:10px;background:rgba(10,117,109,.30);color:#78f0d9;
+}
+.pano-quick-add:is(:hover,:focus-visible){
+  border-color:#69e9d3;background:rgba(10,82,86,.65);
+  box-shadow:0 0 16px rgba(13,200,178,.14)
+}
+.pano-quick-item.pano-quick-add.is-editing{height:120px;min-height:120px;justify-content:center}
+.pano-quick-status{display:block;font-size:.74rem;color:#a6e4d6;line-height:1.45}
+.pano-quick-status:empty{display:none}
+.pano-quick-picker-backdrop{
+  position:fixed;inset:0;z-index:900;display:grid;place-items:center;
+  padding:1rem;background:rgba(0,13,19,.65);backdrop-filter:blur(4px);
+}
+.pano-quick-picker{
+  width:min(560px,100%);max-height:min(80vh,640px);overflow:auto;
+  padding:1rem;border:1px solid rgba(60,217,196,.55);border-radius:17px;
+  background:linear-gradient(155deg,#073c43,#021f28);color:#ecfffb;
+  box-shadow:0 20px 55px rgba(0,0,0,.55)
+}
+.pano-quick-picker-header{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.pano-quick-picker-header strong{font-size:.95rem}
+.pano-quick-picker-header button{display:grid;place-items:center;min-width:44px;min-height:44px;border:1px solid rgba(76,196,176,.4);border-radius:10px;background:#06323b;color:#d8fff5}
+.pano-quick-picker>p{color:#b9d8d3;font-size:.77rem;line-height:1.5;margin:.6rem 0}
+.pano-quick-picker-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin:.8rem 0}
+.pano-quick-picker-options button{
+  display:flex;align-items:center;gap:.55rem;min-width:0;min-height:54px;
+  border:1px solid rgba(76,183,171,.42);border-radius:11px;
+  background:#082f38;color:#e9fff9;padding:.55rem .7rem;
+  text-align:left;font-size:.79rem;font-weight:700
+}
+.pano-quick-picker-options button svg{flex:0 0 auto}
+.pano-quick-picker-options button:is(:hover,:focus-visible){border-color:#7ff5df;background:#10505a}
+.pano-quick-picker .pano-quick-picker-note{font-size:.7rem;color:#a7ccc5}
+@media(max-width:639px){
+
+ .pano-quick-heading{gap:.25rem;justify-content:flex-start}
+ .pano-quick-heading h2{font-size:.80rem;gap:.25rem;white-space:nowrap}
+ .pano-quick-heading h2 svg{width:15px;height:15px}
+ .pano-quick-heading button{min-width:40px;width:40px;height:40px;min-height:40px}
+ .pano-quick-carousel-controls{gap:.15rem}
+ .pano-quick-carousel-controls button{min-width:40px;width:40px;height:40px;min-height:40px}
+ .pano-quick-picker-options{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .pano-quick-item,.pano-quick-heading button,.pano-quick-heading button::after,.pano-quick-inline-controls button::after{transition:none!important}
+ .pano-quick-rail .pano-quick-item{animation:none!important}
+}
+
+
+
+/* Indicadores do carrossel: uma pílula acesa, demais pontos discretos.
+   Alvos acessíveis, com centro visual pequeno e hover/foco em halo. */
+.pano-quick-pagination{
+  display:flex;justify-content:center;align-items:center;gap:.22rem;
+  min-height:21px;padding:0;margin:.05rem 0 0;
+}
+.pano-quick-dot{
+  display:grid;place-items:center;min-width:29px;width:29px;min-height:23px;height:23px;
+  padding:0;border:0;border-radius:99px;background:transparent;
+  cursor:pointer;color:inherit;
+}
+.pano-quick-dot span{
+  display:block;width:5px;height:5px;border-radius:999px;
+  background:rgba(118,180,178,.50);transition:width .18s ease,background .18s ease,box-shadow .18s ease;
+}
+.pano-quick-dot.is-active span{
+  width:17px;height:5px;background:#60f5d5;
+  box-shadow:0 0 9px rgba(36,235,198,.48);
+}
+.pano-quick-dot:hover span,.pano-quick-dot:focus-visible span{
+  background:#a5ffe9;box-shadow:0 0 12px rgba(40,245,215,.54);
+}
+.pano-quick-dot:focus-visible{
+  outline:2px solid rgba(149,255,233,.85);outline-offset:1px;
+}
+@media(prefers-reduced-motion:reduce){.pano-quick-dot span{transition:none}}
