@@ -47,6 +47,7 @@ jobs:
           npm --workspace apps/api run test:finance
       - name: Integração PostgreSQL 17 descartável com dados fictícios
         run: |
+          test "$DATABASE_URL" = 'postgresql://meg_qa:meg_qa@127.0.0.1:5432/meg_home_p0_qa?schema=public' || { echo "Destino PostgreSQL proibido"; exit 1; }
           npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
           npx tsx apps/api/src/modules/finance/home-commitments-postgres-isolated.test.ts
       - name: Contrato do consumidor Home P0
@@ -87,6 +88,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: meg-home-p0-qa
-          path: artifacts/meg-home-refino-06/
+          path: |
+            artifacts/meg-home-refino-06/
+            artifacts/meg-home-p0-qa/
           if-no-files-found: warn
           retention-days: 7
