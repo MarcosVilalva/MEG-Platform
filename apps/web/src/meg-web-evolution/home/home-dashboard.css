@@ -370,6 +370,20 @@
 .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table{
  width:100%;table-layout:fixed;
 }
+/* A largura do painel é a autoridade da apresentação compacta.
+   Em 1024px o card direito tem ~295px: usar cards já existentes no DataGrid
+   em vez de cortar valor/data ou criar breakpoint global adicional. */
+.pano-grid--commitments:not(.pano-commitments-dialog__grid){
+ container-type:inline-size;
+}
+@container (max-width:26rem){
+ .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table{
+  display:none!important;
+ }
+ .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-cards{
+  display:grid!important;min-width:0;
+ }
+}
 /* O DataGrid posiciona a alça 4px além da última coluna. Só no resumo
    compacto, trazê-la para dentro impede rolagem indevida sem desativá-la. */
 .pano-grid--commitments:not(.pano-commitments-dialog__grid) .meg-datagrid-table th:last-child .meg-datagrid-resizer{
