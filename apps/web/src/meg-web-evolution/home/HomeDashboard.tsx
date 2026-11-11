@@ -34,35 +34,30 @@ const format=(n:number|null|undefined,hidden:boolean)=>hidden?'R$ ••••�
 const dateString=(s:string)=>/^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
 const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,available:null,transactions:[],payables:[],accounts:[],categories:[],cards:[]};
 async function readHome(month:string):Promise<HomeFinancialData>{
- const following=new Date(month+'-01T12:00:00Z');following.setUTCMonth(following.getUTCMonth()+1);
- const followingMonth=following.toISOString().slice(0,7);
- const [summary,cashflow,benefit,events,payables,cards,accounts,categories,available,followingEvents,canonicalCommitments]=await Promise.all([
+ const [summary,cashflow,benefit,events,cards,accounts,categories,available,canonicalCommitments]=await Promise.all([
   authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/payables/open',{cache:'no-store'}),
   authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
   authenticatedRequest<unknown>('/finance/accounts',{cache:'no-store'}),
   authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
   // Rota nova, canônica; até ser implantada na API retorna ausente, nunca estimado.
   authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
-  authenticatedRequest<unknown>('/finance/events/month?month='+followingMonth,{cache:'no-store'}).catch(()=>[]),
   // Falha de compromisso canônico é crítica: não mostrar um falso quadro vazio.
   readCanonicalHomeCommitments(authenticatedRequest)
  ]);
  const adapted=composeMegApiSnapshot([
   fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
   fromFinancialEvents(events),
-  fromPayables(payables),
   fromCards(cards),
   fromFinanceCatalogs({accounts,categories})
  ]) as HomeFinancialData & {readModels?:unknown};
  return {
   summary,cashflow,benefit,available,canonicalCommitments,
   transactions:adapted.transactions||[],
-  followingTransactions:(fromFinancialEvents(followingEvents) as HomeFinancialData).transactions||[],
-  payables:adapted.payables||[],
+  followingTransactions:[],
+  payables:[],
   accounts:adapted.accounts||[],
   categories:adapted.categories||[],
   cards:adapted.cards||[]
