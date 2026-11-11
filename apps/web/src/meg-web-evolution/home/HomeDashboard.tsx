@@ -167,6 +167,14 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     source:'Conta a pagar',value:p.openAmount,status:p.status==='partial'?'Parcial':'A pagar'}));
   return [...planned,...payables].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).slice(0,8);
  },[data.canonicalCommitments,data.transactions,data.followingTransactions,data.payables,preview]);
+ // Apenas destaque de itens recebidos da autoridade financeira.
+ // Selecionar "overdue" e "due_today" NÃO calcula vencimentos nem totais.
+ // Ausência desses estados nos primeiros oito NÃO significa ausência global.
+ const attentionItems:CanonicalHomeCommitment[]=data.canonicalCommitments
+  ? (['overdue','due_today'] as const)
+     .map(state=>data.canonicalCommitments?.find(item=>item.dueState===state))
+     .filter((item):item is CanonicalHomeCommitment=>Boolean(item))
+  : [];
  const movementColumns:DataGridColumn<Record<string,unknown>>[]=[
   {key:'date',label:'Data',type:'date',width:105,sortable:true,filterable:true},
   {key:'description',label:'Descrição',type:'text',width:165,sortable:true,filterable:true,
@@ -299,6 +307,33 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
      </>:<div className="pano-card-empty"><HomeGlyph name="card" size={27}/><p>Nenhum cartão cadastrado.</p><button type="button" onClick={()=>move('cartoes')}>Acessar cartões <HomeGlyph name="arrow" size={15}/></button></div>}
    </section>
   </div>
+  {attentionItems.length>0&&<section className="pano-attention"
+   aria-label="Compromissos que exigem atenção">
+   <div className="pano-attention__heading">
+    <HomeGlyph name="alert" size={18}/>
+    <strong>Atenção aos compromissos</strong>
+    <small>Destaques da consulta inicial</small>
+   </div>
+   <div className="pano-attention__items">
+    {attentionItems.map(item=><button type="button" key={item.id}
+      className={'pano-attention__item is-'+(item.dueState==='overdue'?'overdue':'due-today')}
+      onClick={()=>setShowAllCommitments(true)}
+      title={item.description+' · '+dateString(item.dueDate)+' · Abrir lista completa de compromissos'}
+      aria-label={(item.dueState==='overdue'?'Vencido':'Vence hoje')+
+       ': '+item.description+', '+dateString(item.dueDate)+
+       '. Consultar lista completa de compromissos'}>
+      <span className="pano-attention__state">{item.dueState==='overdue'?'Vencido':'Vence hoje'}</span>
+      <span className="pano-attention__description">{item.description}</span>
+      <span className="pano-attention__date">{dateString(item.dueDate)}</span>
+      <strong className="pano-attention__amount">{format(Number(item.amount),hidden)}</strong>
+    </button>)}
+   </div>
+   <button type="button" className="pano-attention__all"
+    onClick={()=>setShowAllCommitments(true)}
+    aria-label="Consultar lista completa de compromissos">
+    Ver todos <HomeGlyph name="arrow" size={15}/>
+   </button>
+  </section>}
   {/* Quatro atalhos originais, configuráveis sem alterar o restante da Home. */}
   <QuickActions userId={userId} preview={preview} onNavigate={move}/>
 
