@@ -10,6 +10,7 @@ import {AppShell} from '../shell/AppShell';
 import {Icon} from '../components/Icon';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homePreviewFixture} from '../home/preview.fixture';
+import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {LaunchTypePicker} from '../launches/LaunchTypePicker';
 import '../launches/new-launch.css';
 
@@ -23,11 +24,12 @@ import './choice-refinement.css';
  * - Escolha do Novo Lancamento da PR #648, com os arquivos e WebPs originais.
  * Nunca envia credenciais, grava transacoes ou substitui o gateway real.
  */
-type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'new-launch';
+type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'home-p0' | 'new-launch';
 const urlScreen = new URLSearchParams(window.location.search).get('tela');
 const initialScreen: Screen =
   urlScreen === 'login' ? 'login' :
   urlScreen === 'home' ? 'home' :
+  urlScreen === 'home-p0' ? 'home-p0' :
   urlScreen === 'novo' ? 'new-launch' :
   urlScreen === 'cadastro' ? 'register' :
   urlScreen === 'recuperar-senha' ? 'recover' :
@@ -107,7 +109,8 @@ function FlowPreview() {
   return <div className="meg-integrated-preview" data-preview-view={screen}
     onClickCapture={handleShellCapture}>
     <AppShell>
-      <HomeDashboard previewData={homePreviewFixture} month="2026-10"
+      <HomeDashboard previewData={screen === 'home-p0' ? homeP0QaPreviewFixture : homePreviewFixture}
+        month={screen === 'home-p0' ? '2026-11' : '2026-10'}
         onNavigate={target => {
           if (target === 'novo') { setNotice(''); setScreen('new-launch'); }
           else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
@@ -134,6 +137,10 @@ function FlowPreview() {
     </div>}
     {notice && <output className="meg-integrated-preview__notice" role="status">{notice}
       <button type="button" aria-label="Fechar aviso" onClick={() => setNotice('')}>×</button>
+    </output>}
+    {screen === 'home-p0' && <output className="meg-p0-qa-label" role="status"
+      style={{position:'fixed',bottom:14,left:14,zIndex:80,background:'#082a29',border:'1px solid #28cbb6',color:'#e6fffb',fontSize:11,padding:'7px 10px',borderRadius:8,maxWidth:'calc(100vw - 28px)'}}>
+      QA visual P0 · Dados fictícios · Sem conexão com API
     </output>}
     {screen === 'home' && <button type="button" className="meg-integrated-preview__restart"
       onClick={() => setScreen('loading-entry')}>Rever sequência</button>}
