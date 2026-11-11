@@ -72,7 +72,23 @@ async function checkWindow(page,width,editing=false){
    Math.abs(layout.movements.top-layout.due.top)<=3&&
    Math.abs(layout.flow.bottom-layout.benefits.bottom)<=3&&
    layout.flow.bottom+7<=layout.movements.top,
-   'malha financeira 2x2 simétrica, sem cards desencontrados: '+width+' '+JSON.stringify(layout));
+   'malha financeira 2x2 simétrica, sem cards desencontrados: '+width+' '+JSON.stringify(layout)+
+    ' CSSOM '+JSON.stringify(await page.evaluate(()=>{
+     const matches=[];
+     const scan=(rules,media='all')=>{
+      for(const r of Array.from(rules)){
+       if(r instanceof CSSMediaRule){if(/1008|1024|992/.test(r.conditionText))scan(r.cssRules,r.conditionText);continue}
+       if(r instanceof CSSStyleRule&&/pano-finance-block|pano-finance-column/.test(r.selectorText)){
+        matches.push({media,selector:r.selectorText,columns:r.style.gridTemplateColumns,
+         display:r.style.display,match:media==='all'||matchMedia(media).matches})
+       }
+      }
+     };
+     for(const sheet of Array.from(document.styleSheets)){
+      try{scan(sheet.cssRules)}catch{/* estilos de terceiros não são fontes da Home */}
+     }
+     return matches.slice(-28)
+    })));
  }
  assert(layout.cardName&&layout.issuer&&layout.issuer.top>=layout.cardName.bottom-1,
   'nome e emissor do cartão não podem se sobrepor: '+width);
