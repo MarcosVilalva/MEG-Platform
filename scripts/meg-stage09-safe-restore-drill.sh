@@ -59,9 +59,17 @@ identity="$(local_sql "SELECT current_database() || '|' || COALESCE(inet_server_
 empty="$(local_sql "SELECT (SELECT count(*) FROM pg_namespace WHERE nspname NOT IN ('public','information_schema') AND nspname NOT LIKE 'pg_%') + (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON c.relnamespace=n.oid WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S','f'))")" || fail 'Falha na verificacao de isolamento.'
 [[ "$empty" == '0' ]] || fail 'Destino possui objetos ou schemas adicionais. Restauracao bloqueada.'
 
-# Inspecionar estrutura e descriptografia sem produzir SQL plano no disco.
-if ! age -d -i "$MEG_AGE_IDENTITY" "$MEG_BACKUP_FILE" | pg_restore --list >/dev/null; then
-  fail 'Archive criptografado invalido; restauracao cancelada.'
+# pg_restore --list pode encerrar apos ler somente o catalogo. Drenar o resto
+# do stream ate EOF evita SIGPIPE e exige autenticacao completa do age.
+# Nenhum SQL descriptografado e gravado no disco.
+if ! age -d -i "$MEG_AGE_IDENTITY" "$MEG_BACKUP_FILE" | {
+  pg_restore --list >/dev/null
+  catalog_rc=$?
+  cat >/dev/null
+  drain_rc=$?
+  (( catalog_rc == 0 && drain_rc == 0 ))
+}; then
+  fail 'Archive criptografado invalido ou incompleto; restauracao cancelada.'
 fi
 
 printf 'Destino autenticado por socket Unix local, banco isolado vazio. Restaurando somente public.\n'
