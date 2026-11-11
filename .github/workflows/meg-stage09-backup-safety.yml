@@ -55,11 +55,23 @@ jobs:
           docker run -d --name meg-stage09-test-src -e POSTGRES_PASSWORD=LOCAL_TEST_ONLY postgres:17
           docker run -d --name meg-stage09-test-dst -e POSTGRES_PASSWORD=LOCAL_TEST_ONLY postgres:17
           for target in meg-stage09-test-src meg-stage09-test-dst; do
-            for i in $(seq 1 60); do
-              if docker exec "$target" pg_isready -U postgres >/dev/null 2>&1; then break; fi
+            ready=0
+            # O entrypoint postgres inicializa um servidor temporario e depois
+            # reinicia: uma unica resposta positiva do pg_isready nao basta.
+            for i in $(seq 1 80); do
+              if docker exec "$target" pg_isready -U postgres >/dev/null 2>&1; then
+                sleep 3
+                if docker exec "$target" pg_isready -U postgres >/dev/null 2>&1; then
+                  ready=1
+                  break
+                fi
+              fi
               sleep 1
             done
-            docker exec "$target" pg_isready -U postgres
+            if [[ "$ready" != 1 ]]; then
+              docker logs "$target" | tail -n 80
+              exit 1
+            fi
           done
       - name: Create synthetic financial schema and placeholder Vault
         shell: bash
