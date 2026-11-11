@@ -26,14 +26,16 @@ fi
 # -K / --config - le o cabecalho do stdin: PAT NAO aparece nos argumentos
 # do processo curl, na URL, nos logs ou em arquivos locais.
 key="$(printf 'header = "Authorization: Bearer %s"\n' "$SUPABASE_ACCESS_TOKEN" \
-  | curl -fSs --retry 0 --config - "https://api.supabase.com/v1/projects/${project_ref}/pgsodium" \
+  | curl --fail --silent --show-error --retry 0 --max-redirs 0 --connect-timeout 10 --max-time 30 --max-filesize 16384 --proto "=https" --config - "https://api.supabase.com/v1/projects/${project_ref}/pgsodium" \
   | python3 -c 'import sys,json,re
-v=sys.stdin.read().strip()
+v=sys.stdin.read(16385).strip()
+if len(v)>16384: raise SystemExit("Resposta Vault maior que limite")
 try: obj=json.loads(v)
-except json.JSONDecodeError: obj=v
-if not isinstance(obj,str) or re.fullmatch(r"[0-9a-fA-F]{64}",obj) is None:
-    raise SystemExit("API Vault nao retornou chave hexadecimal valida")
-sys.stdout.write(obj)')" || fail 'Falha na consulta LEITURA da chave-raiz do Vault.'
+except json.JSONDecodeError: raise SystemExit("Resposta Vault nao e JSON")
+key=obj.get("root_key") if isinstance(obj,dict) else None
+if not isinstance(key,str) or re.fullmatch(r"[0-9a-fA-F]{64}",key) is None:
+    raise SystemExit("root_key ausente ou invalida")
+sys.stdout.write(key)')" || fail 'Falha na consulta LEITURA da chave-raiz do Vault.'
 [[ "$key" =~ ^[0-9a-fA-F]{64}$ ]] || fail 'Chave-raiz fora do formato esperado.'
 
 stamp="$(date -u '+%Y%m%dT%H%M%SZ')"
