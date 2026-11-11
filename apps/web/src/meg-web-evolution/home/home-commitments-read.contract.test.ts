@@ -66,6 +66,9 @@ await assert.rejects(readCanonicalHomeCommitments(invalid),/INVALID_RESPONSE/);
 
 const home=readFileSync(new URL('./HomeDashboard.tsx',import.meta.url),'utf8');
 assert.match(home,/readCanonicalHomeCommitments\(authenticatedRequest\)/);
+const liveRead=home.slice(home.indexOf('async function readHome('),home.indexOf('// Apenas iconografia'));
+assert.doesNotMatch(liveRead,/\/payables\/open/,'Leitura autenticada não deve repetir contas a pagar da fonte canônica');
+assert.doesNotMatch(liveRead,/followingMonth/,'Leitura autenticada não deve buscar o mês seguinte só para compromissos');
 assert.match(home,/data\.canonicalCommitments/);
 assert.match(home,/if\(!preview\)return \[\]/,'Sem fallback financeiro na sessão real');
 assert.match(home,/dueState:item\.dueState/,'Urgência deve vir da API');
