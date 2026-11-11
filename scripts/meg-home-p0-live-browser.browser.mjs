@@ -172,6 +172,23 @@ try {
       const dueGrid = page.locator('.pano-panel.pano-grid').filter({ hasText: 'Próximos compromissos' });
       await dueGrid.waitFor({ timeout: 12000 });
       await dueGrid.getByText(expected, { exact: false }).filter({ visible: true }).first().waitFor({ timeout: 30000 });
+      const compactTable = dueGrid.getByRole('table', {name:'Próximos compromissos',includeHidden:true});
+      assert.equal(await compactTable.locator('thead th').count(),3,
+        'Resumo da Home tem apenas três colunas: vencimento, descrição e valor');
+      if (width >= 1024) {
+        const geometry = await dueGrid.locator('.meg-datagrid__viewport').evaluate(viewport=>({
+          available:viewport.clientWidth,scroll:viewport.scrollWidth,
+          right:viewport.getBoundingClientRect().right,
+          lastValueRight:viewport.querySelector('tbody tr td:last-child strong')?.getBoundingClientRect().right||0,
+        }));
+        assert.ok(geometry.scroll<=geometry.available+2 && geometry.lastValueRight<=geometry.right+1,
+          'Valor e vencimento precisam aparecer sem rolagem lateral no desktop: '+JSON.stringify(geometry));
+      } else {
+        const cards=dueGrid.locator('.meg-datagrid-cards');
+        assert.ok(await cards.isVisible(),'No celular os compromissos devem ser cards responsivos');
+        assert.ok(await cards.getByText('Valor',{exact:true}).count()>0,
+          'O valor precisa permanecer acessível no mobile');
+      }
       assert.ok(apiResponses.length >= 1 && apiResponses.length <= 4, 'Cliente não pode varrer histórico ilimitado');
       for (const response of apiResponses) {
         assert.equal(response.status(), 200, 'GET real canônico deve retornar 200');
@@ -223,6 +240,9 @@ try {
       await page.getByRole('button', {name: 'Ver todos os compromissos'}).click();
       const fullList = page.getByRole('dialog', {name: 'Todos os compromissos'});
       await fullList.waitFor({timeout: 20000});
+      const detailedTable=fullList.getByRole('table',{name:'Todos os compromissos carregados',includeHidden:true});
+      assert.equal(await detailedTable.locator('thead th').count(),5,
+        'Consulta completa deve manter Vencimento, Descrição, Origem, Valor e Situação');
       const countText = fullList.locator('.pano-commitments-dialog__summary');
       const loadedCount = async () => {
         const content = await countText.innerText();
