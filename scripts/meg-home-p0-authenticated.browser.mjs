@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict';
+import {chromium} from '@playwright/test';
+
+const base=process.env.MEG_PREVIEW_URL||'http://127.0.0.1:4173';
+const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
+const user={id:'qa-p0-user',name:'Usuário Fictício',email:'qa@example.invalid',role:'VIEWER',status:'ACTIVE',isActive:true};
+const session={user,accessToken:'qa-fictitious-token',refreshToken:'qa-fictitious-refresh',refreshExpiresAt:'2030-01-01T00:00:00.000Z'};
+function commitment(source,sourceId,date,amount,status,dueState,description){
+ return {id:source+':'+sourceId,source,sourceId,dueAt:date+'T00:00:00.000Z',
+  dueDate:date,description,amount,status,dueState};
+}
+const items=[
+ commitment('financialEvent','old-1','2026-07-05','43.20','planned','overdue','Compromisso antigo fictício'),
+ commitment('payable','today-1','2026-11-11','50.17','partial','due_today','Pagamento parcial fictício'),
+ commitment('financialEvent','future-1','2026-12-01','90.34','planned','upcoming','Compromisso futuro fictício'),
+];
+const json=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
+const create=async(fail=false)=>{
+ const context=await browser.newContext({viewport:{width:1366,height:900}});
+ const page=await context.newPage();
+ await page.addInitScript(value=>sessionStorage.setItem('meg.auth.session',JSON.stringify(value)),session);
+ const visited=[];let commitmentCalls=0;
+ await page.route('**/*',async route=>{
+  const request=route.request(),url=new URL(request.url()),pathname=url.pathname;
+  if(pathname==='/auth/me'){
+   assert.equal(request.headers().authorization,'Bearer qa-fictitious-token','Sessão autenticada');
+   return json(route,{user});
+  }
+  if(pathname==='/finance/home-commitments'){
+   commitmentCalls++;
+   visited.push(url.pathname+url.search);
+   assert.equal(request.headers().authorization,'Bearer qa-fictitious-token','Endpoint somente autenticado');
+   assert.equal(url.searchParams.get('limit'),'16');
+   if(fail)return json(route,{error:'SERVICE_UNAVAILABLE'},503);
+   if(commitmentCalls===1)return json(route,{asOf:'2026-11-11',items:[],hasMore:true,nextCursor:'fictitious-cursor'});
+   assert.equal(url.searchParams.get('cursor'),'fictitious-cursor');
+   return json(route,{asOf:'2026-11-11',items,hasMore:false,nextCursor:null});
+  }
+  if(pathname.startsWith('/finance/')||pathname.startsWith('/cards')||pathname.startsWith('/payables/')){
+   visited.push(url.pathname+url.search);
+   if(pathname==='/finance/summary')return json(route,{month:'2026-11',income:0,expense:0,realizedResult:0,projectedResult:0,pendingCount:0,pendingAmount:0});
+   if(pathname==='/finance/cashflow')return json(route,{month:'2026-11',days:[]});
+   if(pathname==='/finance/benefit-summary')return json(route,{month:'2026-11',balance:0,credits:0,used:0});
+   if(pathname==='/finance/home-available')return json(route,{date:'2026-11-11',available:0,scope:'monetary'});
+   return json(route,[]);
+  }
+  return route.continue();
+ });
+ return {page,context,visited,get count(){return commitmentCalls}};
+};
+try{
+ const success=await create();
+ await success.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
+ await success.page.getByText('Compromisso antigo fictício').waitFor({timeout:20000});
+ assert.equal(success.count,2,'Uma página filtrada vazia não significa ausência de compromissos');
+ await success.page.getByText('Pagamento parcial fictício').waitFor();
+ await success.page.getByText('Compromisso futuro fictício').waitFor();
+ assert.equal(await success.page.getByText('Vencido',{exact:false}).count()>0,true,'Vencido aparece em leitura autêntica');
+ assert.equal(await success.page.getByText('Parcial').count()>0,true,'Status parcial preservado');
+ const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
+ assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
+ assert.equal(success.visited.some(path=>path.startsWith('/payables/open')),false,'Não chamar payables/open redundante');
+ assert.equal(success.visited.filter(path=>path.includes('/finance/events/month')).length,1,'Somente mês atual para movimentações');
+ assert.equal(await success.page.locator('.pano-grid').count(),2,'Estrutura visual dos dois grids preservada');
+ await success.context.close();
+
+ const failure=await create(true);
+ await failure.page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
+ await failure.page.getByText('Não foi possível consultar as informações financeiras e compromissos abertos.',{exact:false}).waitFor({timeout:20000});
+ assert.ok(await failure.page.getByRole('alert').count()>0,'Falha explícita precisa ter alerta');
+ assert.equal(await failure.page.getByText('Nenhum compromisso cadastrado.',{exact:false}).count(),0,'Não transformar falha em estado vazio');
+ await failure.context.close();
+ console.log('Home P0 E2E fictício: sessão, vencido antigo, hoje, cursor vazio, falha fechada, sem Egress redundante.');
+}catch(e){console.error(e);process.exitCode=1}finally{await browser.close()}
