@@ -43,6 +43,7 @@ export async function listCanonicalHomeCommitments(
       select: {
         id: true, date: true, description: true, type: true, status: true,
         signedAmount: true,
+        payablePayment: { select: { id: true } },
         account: { select: { type: true } },
         paymentMethod: { select: { name: true, type: true } },
       },
@@ -80,7 +81,8 @@ export async function listCanonicalHomeCommitments(
       description: event.description,
       amount: event.signedAmount.abs().toFixed(2),
       status: event.status,
-      eligible: isMonetaryFinancialEvent(event)
+      eligible: !event.payablePayment
+        && isMonetaryFinancialEvent(event)
         && event.paymentMethod?.type?.toLowerCase() !== 'credit',
     })),
     ...payables.map((payable) => ({
