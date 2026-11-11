@@ -1,5 +1,3 @@
-import {authenticatedRequest} from '../../app/auth-client';
-
 export type CanonicalHomeCommitment={
  id:string;
  source:'financialEvent'|'payable';
@@ -47,7 +45,7 @@ function validPage(value:unknown):value is CommitmentPage{
  * exibir um quadro parcial como se todas as pendências fossem conhecidas.
  */
 export async function readCanonicalHomeCommitments(
- request: <T>(path:string,init?:RequestInit)=>Promise<T> = authenticatedRequest,
+ request: <T>(path:string,init?:RequestInit)=>Promise<T>,
 ):Promise<CanonicalHomeCommitment[]>{
  const items:CanonicalHomeCommitment[]=[];
  const ids=new Set<string>();
