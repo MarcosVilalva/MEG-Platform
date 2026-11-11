@@ -120,7 +120,7 @@ jobs:
           docker exec meg-stage09-test-dst psql -U postgres -d meg_restore_drill -Atc \
             'SELECT count(*) FROM public."FinancialEvent"' | grep -qx '3'
           docker exec meg-stage09-test-dst psql -U postgres -d meg_restore_drill -Atc \
-            "SELECT count(*) FROM pg_constraint WHERE conrelid='public.\\"FinancialEvent\\"'::regclass AND contype='f'" | grep -qx '1'
+            "SELECT count(*) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace WHERE n.nspname='public' AND t.relname='FinancialEvent' AND c.contype='f'" | grep -qx '1'
           docker exec meg-stage09-test-dst psql -U postgres -d meg_restore_drill -Atc \
             "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='financial_event_user_idx'" | grep -qx '1'
           docker exec meg-stage09-test-dst psql -U postgres -d meg_restore_drill -Atc \
