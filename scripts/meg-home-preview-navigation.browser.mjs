@@ -30,7 +30,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
   await page.goto(entry,{waitUntil:'networkidle'});
   const period=page.locator('.meg-period');
   const commitments=page.locator('.pano-grid--commitments');
-  await commitments.getByText(expectedCommitment,{exact:false}).first().waitFor({timeout:20000});
+  await commitments.getByText(expectedCommitment,{exact:false}).filter({visible:true}).first().waitFor({timeout:20000});
   assert.match(await period.innerText(),new RegExp(expectedPeriod),'Período inicial incorreto');
   assert.equal(await page.locator('.meg-integrated-preview').getAttribute('data-preview-view'),
    expectedView,'Versão inicial da Home incorreta');
@@ -46,7 +46,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    'new-launch','Modal não abriu');
   assert.match(await period.innerText(),new RegExp(expectedPeriod),
    'O mês mudou atrás do modal antes de fechar');
-  assert.ok(await commitments.getByText(expectedCommitment,{exact:false}).first().count()>0,
+  assert.ok(await commitments.getByText(expectedCommitment,{exact:false}).filter({visible:true}).first().count()>0,
    'Os lançamentos mudaram atrás do modal');
   assert.equal(await commitments.locator('.meg-datagrid-table tbody tr:not(.meg-datagrid-group-row)').count(),
    originalCount,'A estrutura mudou atrás do modal');
@@ -55,7 +55,7 @@ async function runCase({width,home,expectedPeriod,expectedCommitment}){
    expectedView,'Voltar perdeu a versão da Home de origem');
   assert.match(await period.innerText(),new RegExp(expectedPeriod),
    'Voltar alterou o período da Home');
-  assert.ok(await commitments.getByText(expectedCommitment,{exact:false}).first().isVisible(),
+  assert.ok(await commitments.getByText(expectedCommitment,{exact:false}).filter({visible:true}).first().isVisible(),
    'Voltar perdeu o registro original');
   // Segunda entrada, fechamento no X.
   await newButton.click();
