@@ -186,6 +186,9 @@ try {
       const viewport = await page.evaluate(() => ({ page: document.documentElement.scrollWidth, screen: innerWidth }));
       assert.ok(viewport.page <= viewport.screen, 'Rolagem horizontal da página é proibida: ' + JSON.stringify(viewport));
       if (name.startsWith('A')) {
+        // A tabela aprovada abre com cinco linhas; o parcial está na página 2.
+        // Expandir para dez é uma interação verdadeira do usuário, não mudança de UI.
+        await dueGrid.locator('select[name="meg-datagrid-page-size"]').selectOption('10');
         assert.ok(await dueGrid.getByText('Obrigação fictícia p0-old', { exact: false }).filter({ visible: true }).count() > 0,
           'Compromisso vencido deve aparecer na UI');
         assert.ok(await dueGrid.getByText('Conta fictícia p0-partial', { exact: false }).filter({ visible: true }).count() > 0,
