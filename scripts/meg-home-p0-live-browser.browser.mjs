@@ -170,7 +170,7 @@ try {
     try {
       await page.goto(frontendBase + '/web-evolution.html', { waitUntil: 'domcontentloaded' });
       const dueGrid = page.locator('.pano-panel.pano-grid').filter({ hasText: 'Próximos compromissos' });
-      await dueGrid.waitFor({ timeout: 30000 });
+      await dueGrid.waitFor({ timeout: 12000 });
       await dueGrid.getByText(expected, { exact: false }).filter({ visible: true }).first().waitFor({ timeout: 30000 });
       assert.ok(apiResponses.length >= 1 && apiResponses.length <= 4, 'Cliente não pode varrer histórico ilimitado');
       for (const response of apiResponses) {
@@ -207,6 +207,22 @@ try {
         fullPage: true, animations: 'disabled',
       });
       return { name, width, apiCalls: apiResponses.length, horizontalOverflow: false };
+    } catch (error) {
+      await page.screenshot({
+        path: 'artifacts/meg-home-p0-live/' + name + '-ERRO.png',
+        fullPage: true,
+      }).catch(() => {});
+      const visibleText = await page.locator('body').innerText({ timeout: 1500 }).catch(() => 'BODY_UNAVAILABLE');
+      console.error('MEG_HOME_P0_LIVE_DIAGNOSTIC', JSON.stringify({
+        name, error: String(error), pageUrl: page.url(),
+        visibleText: visibleText.slice(0, 1500),
+        jsErrors,
+        officialReads: audit.officialReads.slice(-12),
+        auxiliaryReads: audit.auxiliaryReads.slice(-15),
+        invalidRequests: audit.invalidRequests.slice(-12),
+        browserResponses: audit.browserResponses.slice(-10),
+      }));
+      throw error;
     } finally {
       await context.close();
     }
