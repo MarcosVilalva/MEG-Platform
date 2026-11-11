@@ -1,4 +1,5 @@
 name: MEG Home 08 P0 - Navegacao Visual Isolada
+# Reexecução de QA após recuperação do GitHub Actions em 11/11/2026; gates intactos.
 on:
   push:
     branches:
