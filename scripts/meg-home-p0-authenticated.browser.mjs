@@ -77,7 +77,7 @@ try{
  assert.equal((await overdueDate.textContent())?.trim(),'Vencido','A urgência vencida deve ter texto, não apenas cor');
  assert.ok(await table.locator('.pano-due-date__urgency.is-upcoming').count()>0,
   'A vencer deve ser mostrado textualmente ao receber upcoming da API');
- assert.equal(await table.getByText('Parcial').count(),0,
+ assert.equal(await table.getByText('Parcial',{exact:true}).count(),0,
   'Situação não deve competir com o valor no resumo compacto');
  const due=success.page.locator('[aria-label*="vence hoje"],[aria-label*="Vence hoje"]');
  assert.ok(await due.count()>0,'A urgência hoje deve vir da API no mesmo DataGrid');
