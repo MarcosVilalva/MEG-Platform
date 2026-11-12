@@ -127,3 +127,28 @@ Fontes principais consultadas em 12/11/2026: Supabase Billing FAQ, Pricing, Comp
 - **Gate 0 COMPLETO** quanto à cotação zero, identidade org, ref novo e separação da origem. **Gate 1 PARCIAL:** projeto provisionado e sem dados da aplicação, mas isolamento de saída externa/notificações, segredos, Auth settings, APIs e firewalls **não foi homologado**, somente metadados foram lidos. **Gate 2 NÃO INICIADO** (sem escrita ou testes sintéticos); Gate 3 (restore real) e Gate 4 (aceite) NO-GO.
 - **Próximo passo:** estabelecer isolamento lógico/externo do novo destino, definir allowlist rígida de IDs de produção e sandbox em roteiro específico, validar configuração inicial de Auth/Storage/Vault com dados **fictícios** antes de migrar qualquer dado. Nenhuma escrita remota foi realizada fora a criação do projeto vazio; produção intocada.
 - **Guardas invariantes:** source=`ugbiqzaqnrhulhetevby` somente leitura; target=`oxwmqbzeuiibdlkcbjzv` exclusivo de ensaio; não compartilhar credenciais, alterar `meg-evolution`, baixar/abrir root key ou PUT Vault, executar restauração de `public`/auth/storage, instalar `pg_cron`/`pg_net`, configurar Render, merge/deploy ou tocar Android/Web/banco WSL.
+
+
+### 9. Gate 1: checagem PostgreSQL somente leitura e limite das evidências (12/11/2026)
+
+- Após o usuário validar **a explicação didática com desenho** (não uma tela do MEG), foi executada **uma consulta SQL SELECT composta exclusivamente por subconsultas de contagem** no **destino novo** `oxwmqbzeuiibdlkcbjzv`. Nenhum `INSERT`, `UPDATE`, `DELETE`, `DDL`, migração, chave Vault ou dado real foi executado/lido. A explicação didática aprovada **não é um novo print oficial nem altera a identidade visual da Web**.
+- Valores verificados em `pg_catalog`, `auth`, `storage` e `vault` no **sandbox**:
+
+| Controle somente leitura | Contagem observada | Conclusão restrita |
+| --- | ---: | --- |
+| Relações do schema `public` (tabelas, views, materializadas, foreign) | 0 | Sem tabelas/aplicação importadas |
+| Funções e procedimentos em `public` | 0 | Sem funções customizadas nesse schema |
+| Triggers customizados ativos em relações `public` | 0 | Sem gatilhos próprios ativos nesse schema |
+| Políticas RLS em `public` | 0 | Normal com zero relações; não comprova futura segurança |
+| Tabelas `public` publicadas em Realtime | 0 | Nenhum objeto MEG publicado nesse schema |
+| Extensão `pg_net` instalada | 0 | Sem extensão HTTP do Postgres no sandbox |
+| Extensão `pg_cron` instalada | 0 | Sem extensão de agendamento Postgres no sandbox |
+| `auth.users` | 0 | Sem usuários cadastrados no destino |
+| `storage.buckets` | 0 | Sem buckets no destino |
+| `storage.objects` | 0 | Sem objetos no destino |
+| `vault.secrets` | 0 | Sem segredos Vault no destino |
+
+- **Importante:** `get_advisors(type=security)` em rodada anterior retornou `lints=[]`. As contagens acima e ausência de avisos **não** validam configurações de Auth (envio de e-mail/SMS), OAuth, webhooks de serviços gerenciados, portas/rede, CORS, JWT, URL de callback, funções fora de `public`, credenciais, conexões externas do runtime ou consumo real da cota Free. Não instalar `pg_net`/`pg_cron` ou ativar Email/SMS para ensaio antes de checar essas configurações.
+- **Gate 1: evidência parcial ampliada**: projeto distinto, vazio do MEG, sem componentes automáticos em `public`, sem `pg_net`/`pg_cron`, sem usuário/bucket/objeto/segredo. **Permanece PENDENTE** comprovar controles de comunicação de Auth, configurações do serviço, ausência de integrações externas e isolamento de egress antes de Gate 2.
+- **Próximo gate seguro:** revisão read-only no Dashboard do **projeto-alvo específico** das telas de Auth Providers, URL/Redirects, SMTP/SMS, integrações, webhooks, Storage policies e configuração geral. Registrar somente presença/ausência e condições de segurança, **não** valores secretos, endereços pessoais ou credenciais. Se o painel não permitir atestar a ausência de envio externo, configurar testes Auth sem disparar emails reais e manter bloqueadas escritas até aprovação pontual.
+- Projeto `meg-financas` continua origem apenas de leitura; nenhuma ação de escrita nela foi realizada. Issue #674 e #676 continuam abertas; PR #666 permanece Draft, sem merge/deploy.
