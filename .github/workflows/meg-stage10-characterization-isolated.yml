@@ -66,9 +66,12 @@ jobs:
           fi
           npm install --no-save --package-lock=false @playwright/test
           node scripts/meg-stage10-chooser.browser.mjs
+          node scripts/meg-stage10-expense.browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: stage10-type-chooser-visual-qa
-          path: artifacts/meg-stage10-type-chooser/
+          path: |
+            artifacts/meg-stage10-type-chooser/
+            artifacts/meg-stage10-expense-qa/
           if-no-files-found: ignore
