@@ -156,8 +156,29 @@ const statement = buildCanonicalCardStatement({
 });
 assert.equal(statement.credits, 62);
 assert.equal(statement.netAmount, -62);
-assert.equal(statement.creditBalance, 62);
+// O credito ja PAGO compoe o historico, mas nao e credito ABERTO de fatura.
+assert.equal(statement.creditBalance, 0);
 assert.equal(statement.payableAmount, 0);
+const openCreditStatement = buildCanonicalCardStatement({
+  month: '2026-09',
+  closingDay: 8,
+  dueDay: 16,
+  aliases: ['CARTAO TESTE'],
+  purchases: [],
+  events: [{
+    id: 'synthetic-card-credit-open',
+    description: 'Credito ficticio de fatura pendente',
+    type: 'expense',
+    status: 'planned',
+    date: '2026-10-02',
+    competence: '2026-09',
+    signedAmount: 62,
+    sourcePayload: { paymentMethod: 'CARTAO TESTE', modality: 'CREDITO' },
+  }],
+});
+assert.equal(openCreditStatement.credits, 62);
+assert.equal(openCreditStatement.creditBalance, 62);
+assert.equal(openCreditStatement.payableAmount, 0);
 assert.equal(cardInstallmentRemaining({ amount: 100, partialPaidAmount: 25, status: 'open' }), 75);
 assert.equal(cardInstallmentRemaining({ amount: 100, partialPaidAmount: 25, status: 'paid' }), 0);
 
