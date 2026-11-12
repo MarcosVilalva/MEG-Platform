@@ -769,7 +769,10 @@ export function DataGrid<T extends Record<string, unknown>>({
   groupBy,
   selectable = false,
   footerAggregates = false,
+  filterButtonLabel = 'Filtros',
   onFilterChange,
+  onClearAllFilters,
+  applySavedFilters,
   persistenceKey,
   rowKey,
   loading = false,
@@ -878,6 +881,17 @@ export function DataGrid<T extends Record<string, unknown>>({
     return () => media.removeEventListener('change', update);
   }, []);
   const visibleChipLimit = compactToolbar || compactMobileChips ? 1 : 2;
+  // Aplicacao opt-in de filtros salvos. Outros grids nao sao afetados.
+  const appliedRevision = useRef(0);
+  useEffect(() => {
+    if (!applySavedFilters || applySavedFilters.revision <= appliedRevision.current) return;
+    appliedRevision.current = applySavedFilters.revision;
+    const valid = sanitizePersistenceState({...persisted,filters:applySavedFilters.filters},columnKeys,pageSize).filters;
+    setFilters(valid);setSearchInput('');setSearchText('');setSearchExpanded(false);
+    setActiveFiltersOpen(false);setOpenFilterKey(null);setPageIndex(0);setSelected(new Set());
+    if (viewportRef.current) viewportRef.current.scrollTop = 0;
+    setScrollTop(0);
+  },[applySavedFilters,columnKeys,pageSize,persisted]);
 
   const getRowKey = useCallback((row: T) => {
     if (typeof rowKey === 'function') return String(rowKey(row));
@@ -1037,6 +1051,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   };
 
   const clearAllFilters = () => {
+    onClearAllFilters?.();
     setFilters({});
     setSearchInput('');
     setSearchText('');
@@ -1427,7 +1442,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             className={`meg-datagrid-tool meg-datagrid-mobile-filter ${activeFilterItems.length ? 'is-active' : ''}`}
             aria-expanded={mobileFiltersOpen}
             aria-haspopup="dialog"
-            aria-label={`Filtros (${activeFilterKeys.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
+            aria-label={`${filterButtonLabel} (${activeFilterKeys.length}). ${activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`}`}
             onMouseEnter={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
             onMouseLeave={(event) => hideTooltip(event.currentTarget)}
             onFocus={(event) => showTooltip(event.currentTarget, activeFilterItems.length === 1 ? '1 filtro ativo' : `${activeFilterItems.length} filtros ativos`)}
@@ -1441,7 +1456,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             }}
           >
             <GridIcon name="filter" />
-            <span className="meg-datagrid-filter-count-label">Filtros ({activeFilterKeys.length})</span>
+            <span className="meg-datagrid-filter-count-label">{filterButtonLabel} ({activeFilterKeys.length})</span>
           </button>
 
           {selectable && (

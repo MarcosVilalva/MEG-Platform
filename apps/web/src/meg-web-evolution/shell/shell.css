@@ -1412,7 +1412,7 @@
   box-shadow: 0 0 0 1px rgba(45, 212, 191, .35), 0 0 14px rgba(45, 212, 191, .35) !important;
 }
 
-/* Home PT2: marca solta conforme validação 10/11, sem molduras ou recortes.
+/* Shell único: marca solta aprovada na Home, sem molduras ou recortes, em TODAS as telas.
    A faixa de altura segue o topbar; ajuste óptico de -4px fica restrito à marca. */
 @media(min-width:1024px){
   .meg-shell.is-sidebar-collapsed .meg-brand{
@@ -1462,10 +1462,10 @@
 }
 
 
-/* Home 08, contrato visual único para os dois estados da navegação.
+/* Shell compartilhado: contrato visual Home para TODAS as telas, independente da seção ativa.
    Sem retângulos no item ativo; luz circular centralizada no ícone.
    Hover e Tab partilham a mesma linguagem, sem suprimir o foco visível. */
-.meg-sidebar .meg-nav .meg-nav-item {
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item {
   position:relative;
   isolation:isolate;
   border-color:transparent!important;
@@ -1475,7 +1475,7 @@
   outline:none!important;
   transition:color .18s ease;
 }
-.meg-sidebar .meg-nav .meg-nav-item::before {
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item::before {
   content:"";
   position:absolute;
   z-index:-1;
@@ -1491,29 +1491,29 @@
   box-shadow:0 0 16px rgba(22,212,193,.18);
   transition:opacity .17s ease,box-shadow .17s ease;
 }
-.meg-sidebar .meg-nav .meg-nav-item:is(.is-active,:hover,:focus-visible)::before{
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item:is(.is-active,:hover,:focus-visible)::before{
   opacity:1;
 }
-.meg-sidebar .meg-nav .meg-nav-item:is(:hover,:focus-visible)::before {
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item:is(:hover,:focus-visible)::before {
   background:radial-gradient(circle,rgba(42,247,215,.42) 0%,rgba(12,150,139,.21) 54%,transparent 78%);
   box-shadow:0 0 17px rgba(19,230,204,.29);
 }
-.meg-sidebar .meg-nav .meg-nav-item:focus-visible::before{
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item:focus-visible::before{
   outline:none;
   opacity:1;
   background:radial-gradient(circle,rgba(65,255,230,.56) 0%,rgba(16,177,158,.25) 56%,transparent 80%);
   box-shadow:0 0 22px rgba(29,255,215,.48),0 0 9px rgba(63,255,229,.24);
 }
-.meg-sidebar .meg-nav .meg-nav-item svg{
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item svg{
   position:relative;
   color:#b5e7e1;
   transition:color .17s ease,filter .17s ease;
 }
-.meg-sidebar .meg-nav .meg-nav-item:is(.is-active,:hover,:focus-visible) svg {
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item:is(.is-active,:hover,:focus-visible) svg {
   color:#bbfff4;
   filter:drop-shadow(0 0 5px rgba(35,245,216,.78));
 }
-.meg-sidebar .meg-nav .meg-nav-item.is-active span {
+.meg-shell .meg-sidebar .meg-nav .meg-nav-item.is-active span {
   color:#e8fff8;
 }
 .meg-shell.is-sidebar-collapsed .meg-sidebar .meg-nav .meg-nav-item::before{
@@ -1523,7 +1523,7 @@
   border-radius:0!important;
 }
 @media(prefers-reduced-motion:reduce){
-  .meg-sidebar .meg-nav .meg-nav-item,
-  .meg-sidebar .meg-nav .meg-nav-item::before,
-  .meg-sidebar .meg-nav .meg-nav-item svg{transition:none}
+  .meg-shell .meg-sidebar .meg-nav .meg-nav-item,
+  .meg-shell .meg-sidebar .meg-nav .meg-nav-item::before,
+  .meg-shell .meg-sidebar .meg-nav .meg-nav-item svg{transition:none}
 }

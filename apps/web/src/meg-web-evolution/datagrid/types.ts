@@ -76,7 +76,10 @@ export type DataGridProps<T extends Record<string, unknown>> = {
   groupBy?: keyof T & string;
   selectable?: boolean;
   footerAggregates?: boolean | Record<string, DataGridAggregate>;
+  filterButtonLabel?: string;
   onFilterChange?: (state: DataGridFilterChange) => void;
+  onClearAllFilters?: () => void;
+  applySavedFilters?: {revision:number;filters:DataGridFilterState};
   persistenceKey?: string;
   rowKey?: keyof T & string | ((row: T) => string);
   loading?: boolean;
