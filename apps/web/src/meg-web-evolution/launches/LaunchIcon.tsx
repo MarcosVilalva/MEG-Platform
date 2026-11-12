@@ -3,7 +3,7 @@ import {phosphorKpi} from './icon-packs/phosphor-kpi';
 import {phosphorCategoryA} from './icon-packs/phosphor-category-a';
 import {phosphorCategoryB} from './icon-packs/phosphor-category-b';
 import {phosphorControls} from './icon-packs/phosphor-controls';
-import {launchRefinedIcons} from './icon-packs/refined-action-icons';
+import {megPrismIcons} from './icon-packs/meg-prism-icons';
 import {categorySemanticExtended} from './icon-packs/category-semantic-extended';
 
 /**
@@ -32,15 +32,16 @@ import {categorySemanticExtended} from './icon-packs/category-semantic-extended'
  */
 
 export type LaunchIconName=
- 'trendUp'|'trendDown'|'chart'|'wallet'|'projectedChart'|'cashIn'|'cashOut'|'walletMinimal'|'eye'|
+ 'trendUp'|'trendDown'|'chart'|'wallet'|'projection3d'|'entry3d'|'exit3d'|'wallet3d'|'details3d'|
  'grocery'|'marketCart'|'motorcycle'|'petPaw'|'clothing'|'electronics'|'hygiene'|'schoolSupplies'|'debt'|'savings'|'beverages'|'fastFood'|'reimbursement'|'health'|'transport'|'home'|'income'|'generic'|'food'|'fuel'|
  'education'|'leisure'|'services'|'gift'|'card'|'work'|'subscriptions'|
  'plus'|'search'|'calendar'|'chevronDown'|'chevronLeft'|'list';
 
 const phosphorGlyphs={
- ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls,...categorySemanticExtended,...launchRefinedIcons
+ ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls,...categorySemanticExtended,...megPrismIcons
 } as Record<LaunchIconName,ReactNode>;
 
+const prismIcons:ReadonlySet<LaunchIconName>=new Set(['projection3d','entry3d','exit3d','wallet3d','details3d']);
 const megSemanticIcons:ReadonlySet<LaunchIconName>=new Set(['marketCart','motorcycle','petPaw','clothing','electronics','hygiene','schoolSupplies','debt','savings','beverages','fastFood','reimbursement']);
 type Props=SVGProps<SVGSVGElement>&{name:LaunchIconName};
 export function LaunchIcon({name,...props}:Props){
@@ -48,6 +49,6 @@ export function LaunchIcon({name,...props}:Props){
    viewBox="0 0 256 256"
    fill="currentColor"
    width={24} height={24} focusable="false" aria-hidden="true"
-   data-launch-icon={name} data-launch-pack={megSemanticIcons.has(name)?'meg-semantic':'phosphor'} {...props}
+   data-launch-icon={name} data-launch-pack={prismIcons.has(name)?'meg-prism-3d':megSemanticIcons.has(name)?'meg-semantic':'phosphor'} {...props}
   >{phosphorGlyphs[name]}</svg>;
 }
