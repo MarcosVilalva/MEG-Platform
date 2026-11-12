@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {NEW_LAUNCH_TYPES} from '../apps/web/src/meg-web-evolution/stage10/LaunchTypeChooser';
+import {NEW_LAUNCH_TYPES} from '../apps/web/src/meg-web-evolution/stage10/launch-type-options';
 
 const read=(name:string)=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const modal=read('apps/web/src/meg-web-evolution/stage10/LaunchTypeChooser.tsx');
