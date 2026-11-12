@@ -84,6 +84,10 @@ try{
    await open('carregamento');
    await page.locator('[data-meg-unified-screen="loading-entry"]').waitFor({state:'visible'});
    await page.locator('[data-meg-unified-screen="login"]').waitFor({state:'visible',timeout:12000});
+   // Atalho somente QA para inspeção direta da escolha, sem atravessar autenticação fictícia.
+   await page.goto(base+'/meg-unificado-qa.html?visual=prism&tela=lancamentos&modal=novo',{waitUntil:'domcontentloaded'});
+   await page.getByTestId('new-launch-types').waitFor({state:'visible'});
+   assert.equal(await page.getByRole('dialog',{name:'Novo lançamento'}).count(),1,'Acesso direto ao modal Prism');
    assert.deepEqual(realApi,[],'QA atingiu API real');
    assert.deepEqual(errors,[],'Erro de JavaScript na QA');
    console.log('MEG_UNIFIED_PRISM '+width+'x'+height+' PASS');
