@@ -26,3 +26,11 @@
 - Executar CI desta branch, investigar divergências, corrigir sem desabilitar gates.
 - Homologar visualmente a composição integrada, além das telas individuais.
 - Preparar a publicação operacional autorizada somente após backup real/restauração, remoção controlada do Build Command perigoso e review de todas as PRs empilhadas.
+
+
+### Regressão visual identificada pelo usuário, correção do modo público de QA (12/11)
+A homologação dos cinco pontos em 09/11/2026 (issue #660) referiu-se a **`web-evolution.html?tela=lancamentos`**, com `LaunchesStage09 mode="live"`. As URLs estáticas anteriores `fluxo-integrado-08.html?tela=lancamentos` usavam inadvertidamente o modo `preview`, sem vários recursos visualmente aprovados. Essa equivalência **não era coberta** pelo QA anterior.
+
+A QA isolada agora renderiza a MESMA composição `mode="live"` de `LaunchesStage09` com `homeP0QaPreviewFixture` sintética, período novembro/2026 e usuário fictício para salvar favoritos localmente; nenhum auth/API/writer é executado. Um marcador discreto identifica a simulação. O modo antigo é mantido apenas na rota de regressão `?tela=lancamentos-legado`. O Shell recebe `onNavigate` real e `activeSection=launches`, reproduzindo a classe `is-launches-operational`; menu móvel fecha naturalmente. Mantidos **byte a byte** os arquivos `LaunchesStage09.tsx`, `launches-stage09.css` e badges da PR #656.
+
+Gate novo `scripts/meg-stage09-approved-visual.browser.mjs` valida todos os cinco grupos (banner/KPIs, scroll compacto, filtros/favoritos, foco, categoria/pagamento/detalhes) em 8 viewports, zero API e writers. Só fazer novo deploy de QA após **CI integrada + CI estática** verdes e revisão; nunca considerar aprovado por testes.
