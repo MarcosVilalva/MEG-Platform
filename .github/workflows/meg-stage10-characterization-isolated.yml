@@ -1,0 +1,35 @@
+name: MEG Stage10 - Caracterizacao Financeira Isolada
+
+on:
+  push:
+    branches:
+      - 'stage10/novo-editar-lancamento-isolado-20261112'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  financial-characterization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependencias, sem banco e sem deploy
+        run: npm ci --audit=false
+      - name: Caracterizar contratos reais e politica pura
+        run: npx tsx --test scripts/meg-stage10-financial-characterization.test.ts
+      - name: Regressoes financeiras puras existentes
+        run: |
+          npm run test:core
+          npm run test:evolution-data
+      - name: Build Web sem publicacao
+        run: npm run build:web
