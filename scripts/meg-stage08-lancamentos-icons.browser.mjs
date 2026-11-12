@@ -42,7 +42,11 @@ try{
    const families=await stats.evaluateAll(items=>items.map(item=>item.querySelector('svg')?.getAttribute('data-launch-pack')));
    assert.deepEqual(families,['meg-prism-3d','meg-prism-3d','meg-prism-3d','meg-prism-3d'],'Pack 3D ausente');
    const directions=await stats.evaluateAll(items=>items.map(item=>item.querySelector('[data-financial-flow]')?.getAttribute('data-financial-flow')||null));
-   assert.deepEqual(directions,[null,'down','up',null],'Entradas devem descer e saídas devem subir');
+   assert.deepEqual(directions,[null,'up','down',null],'Entradas devem subir e saídas devem descer');
+   // Verifica o SVG renderizado: atributo de dados sozinho não prova a direção.
+   const arrows=await stats.evaluateAll(items=>items.map(item=>Array.from(item.querySelectorAll('[data-financial-flow] path')).slice(0,2).map(el=>el.getAttribute('transform')||'')));
+   assert.ok(arrows[1].length===2&&arrows[1].every(t=>t.includes('scale(1 -1)')),'Entrada verde não possui seta ascendente');
+   assert.ok(arrows[2].length===2&&arrows[2].every(t=>!t.includes('scale(1 -1)')),'Saída coral não possui seta descendente');
    const depth=await stats.evaluateAll(items=>items.map(item=>({gradients:item.querySelectorAll('svg linearGradient').length,prism:item.querySelectorAll('svg [data-meg-surface="prism"]').length,iconWidth:item.querySelector('svg')?.getBoundingClientRect().width||0})));
    assert.ok(depth.every(v=>v.gradients>=1&&v.prism===1&&v.iconWidth>=(width<640?19:22)),'Glifos sem camadas de profundidade ou pequenos demais');
    const values=await stats.evaluateAll(items=>items.map(x=>x.querySelector('strong')?.textContent?.trim()));
