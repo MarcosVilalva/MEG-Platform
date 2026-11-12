@@ -1,4 +1,4 @@
-import {useEffect, useRef, type ReactNode} from 'react';
+import {useLayoutEffect, useRef, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import './LaunchTypeChooser.css';
 
@@ -24,12 +24,16 @@ function Glyph({type}:{type:NewLaunchType}):ReactNode {
 export function LaunchTypeChooser({open,onClose,onSelect}:Props){
  const ref=useRef<HTMLDivElement>(null);
  const closeRef=useRef<HTMLButtonElement>(null);
- useEffect(()=>{
+ useLayoutEffect(()=>{
   if(!open)return;
   const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
   const formerOverflow=document.body.style.overflow;
   document.body.style.overflow='hidden';
-  closeRef.current?.focus();
+  // O diálogo é portalled ao body; bloqueie foco nos irmãos (inclusive outros overlays da Home).
+  const overlay=ref.current?.parentElement;
+  const siblings=Array.from(document.body.children).filter(element=>element!==overlay) as HTMLElement[];
+  const priorInert=siblings.map(element=>({element,inert:element.inert}));
+  for(const {element} of priorInert)element.inert=true;
   function keydown(event:KeyboardEvent){
    if(event.key==='Escape'){event.preventDefault();onClose();return;}
    if(event.key!=='Tab')return;
@@ -46,8 +50,10 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
   }
   document.addEventListener('keydown',keydown);
   document.addEventListener('focusin',keepFocusInside);
+  closeRef.current?.focus();
   return ()=>{
    document.body.style.overflow=formerOverflow;
+   for(const {element,inert} of priorInert)element.inert=inert;
    document.removeEventListener('keydown',keydown);
    document.removeEventListener('focusin',keepFocusInside);
    previous?.focus();
