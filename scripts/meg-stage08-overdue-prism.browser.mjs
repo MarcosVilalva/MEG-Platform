@@ -64,6 +64,16 @@ try{
    const horizontal=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,view:document.documentElement.clientWidth}));
    assert.ok(horizontal.doc<=horizontal.view+2,'Página apresenta scroll horizontal');
    await page.screenshot({path:resolve(output,'vencimentos-'+width+'.png'),fullPage:false});
+   // O DataGrid compacto deve compartilhar exatamente a mesma semântica dos alertas.
+   const commitments=page.getByRole('region',{name:'Próximos compromissos'}).or(page.locator('.pano-grid--commitments'));
+   const overdueDates=commitments.locator('.pano-due-date__urgency.is-overdue');
+   assert.ok(await overdueDates.count()>=1,'Home sem compromisso vencido no DataGrid');
+   assert.equal(await overdueDates.locator('svg[data-meg-due-warning="overdue-triangle"]').count(),await overdueDates.count(),'DataGrid não compartilha o triângulo Prism do sino/modal');
+   assert.equal(await overdueDates.locator('svg[data-home-glyph="siren"]').count(),0,'DataGrid ainda usa sirene antiga');
+   const todayDates=commitments.locator('.pano-due-date__urgency.is-due-today');
+   assert.ok(await todayDates.count()>=1,'Home sem vencimento hoje no DataGrid');
+   assert.equal(await todayDates.locator('svg[data-home-glyph="timer"]').count(),await todayDates.count(),'Relógio de hoje mudou no DataGrid');
+   assert.ok((await commitments.locator('.pano-due-date__value').allInnerTexts()).every(Boolean),'Datas de vencimento não devem desaparecer');
    await dlg.getByRole('button',{name:'Entendi'}).click();
    await page.getByRole('button',{name:'Notificações'}).click();
    const panel=page.locator('.meg-due-bell-panel');
