@@ -163,6 +163,13 @@ O script verifica SHA-256, autenticidade do socket local, identidade/versão do 
 - **Limites obrigatórios:** os testes de funções puras não validam precisão do PostgreSQL/Prisma, entradas reais individualizadas, concorrência, atomicidade, saldo real, writers, RLS nem recuperação integral Supabase. A segurança financeira exige futuros testes integrados em PostgreSQL descartável, depois da aprovação desta etapa offline. Logs de CI não devem ser interpretados como homologação de produção.
 - **Situação do gate:** teste versionado; verificar `MEG Platform CI` e `test:finance` no HEAD da PR antes de marcar aprovado. Sem merge, deploy, alteração no banco restaurado, Supabase, Vault ou Render.
 
+#### Resultado verificado da caracterização OFFLINE (CI)
+
+- Teste adicional **executado de verdade** na branch da PR #666, commit `22c67b78c4495b3deb598215dafc2cc509bc9601`. Logs de `MEG Platform CI` comprovam `Stage09 OFFLINE canonical financial characterization: PASS (synthetic only)`, testes `test:finance` concluídos e `build:web` + `build:api` finalizados com **SUCCESS**: [run #43197995593](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43197995593).
+- `MEG Stage09 Backup Recovery Safety (offline)` [run #43197995738](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43197995738) **SUCCESS**. Gate de CORS pontual [run #43197996019](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43197996019) **SUCCESS**. A workflow `MEG Web Evolution Foundation` foi `skipped` neste commit, não classificar como `success` de uma validação visual.
+- **Falha anterior de teste corrigida somente no arquivo de testes:** quando o evento de cartão estava `paid`, o histórico incluía o crédito, mas `creditBalance` aberto era 0; o primeiro teste exigia incorretamente 62 em aberto. A correção separou um cenário `paid` (histórico) de outro `planned` (fatura aberta), sem modificar `card-statement-canonical.ts` ou qualquer regra de negócio. Versão corrigida comprovada na CI acima.
+- **Gate aprovado:** caracterização de funções puras das regras canônicas com dados sintéticos, sem consultas a registros reais. **Gates não cobertos:** lógica de writer com transações, idempotência, saldo efetivo em Prisma/PostgreSQL, concorrência, segurança/RLS, recuperação integral Supabase, Vault root key e Render. A aprovação dos testes não autoriza merge/deploy; PR permanece DRAFT.
+
 ## 5. Vault e material secreto: gate separado e crítico
 
 A consulta agregada revelou **1 entrada em `vault.secrets`**. Pela documentação Supabase, a chave-raiz do projeto **não integra dumps**. Uma restauração lógica em novo projeto pode deixar segredos e colunas criptografadas ilegíveis sem a chave original.
