@@ -46,7 +46,6 @@ const events=fixture.transactions.map((item,index)=>({
 const canonical=fixture.canonicalCommitments?.map(item=>item.dueState==='due_today'
   ? {...item,dueDate:asOf,dueAt:asOf+'T12:00:00.000Z'} : item) ?? [];
 
-const nativeFetch=window.fetch.bind(window);
 const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{
   status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
 });
@@ -99,7 +98,4 @@ window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
 sessionStorage.setItem('meg.auth.session',JSON.stringify(session));
 localStorage.removeItem('meg.auth.session');
 // O bundle da aplicação real é carregado somente após isolar todas as chamadas.
-await import('../main');
-
-// A referência é mantida somente para demonstrar que a QA não usa a rede real.
-void nativeFetch;
+void import('../main');
