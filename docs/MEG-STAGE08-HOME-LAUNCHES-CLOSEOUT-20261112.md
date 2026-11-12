@@ -100,7 +100,7 @@ Este documento registra o escopo e as evidências antes do resultado do novo CI.
 ### Evidências verificadas
 - [Smoke QA isolada #43219345293](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345293): **SUCCESS**, commit de código `9dbe0b12aee39a209243e5f12958032b7e7ed883`, inclusive build estático e browser.
 - [Artefato de QA `meg-stage08-funcional-qa-pr677`](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345293/artifacts/13945176562), ID `13945176562`, ZIP **6,15 MiB**, expiração informada 12/12/2026. Inclui HTML, JS, CSS e recursos de demonstração, não instalador ou APK.
-- A bateria financeira/visual completa para este código roda separadamente em [#43219345431](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345431). **Confirmar status final antes de considerar este gate verde**, pois no momento da anotação estava em progresso.
+- A bateria financeira/visual completa [#43219345431](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345431) terminou **COMPLETED/SUCCESS** no mesmo SHA de código, incluindo API/financeiro, segurança, contratos, Home, Shell, Lançamentos, filtros favoritos, gateway, navegação de QA e gate de escopo.
 - Diversas tentativas iniciais de smoke falharam por carregar `localhost:3333` sob `NODE_ENV=test` ou por o modal inicial bloquear o clique do teste. Corrigidos a configuração de build da QA e **o teste**; não houve alteração na lógica de autenticação ou no componente de vencimentos.
 - Os únicos arquivos novos são da QA isolada, workflows e testes; visual homologado original, Android, writers, banco e Render produtivo **inalterados**.
 
