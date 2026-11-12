@@ -41,7 +41,7 @@ try{
    assert.deepEqual(icons,expected,'Novo conjunto de ícones não corresponde à aprovação');
    const values=await stats.evaluateAll(items=>items.map(x=>x.querySelector('strong')?.textContent?.trim()));
    assert.ok(values.every(v=>Boolean(v)&&v!=='—'),'Valores canônicos desapareceram na revisão');
-   const first=root.locator('button.meg-l09-row-view').first();
+   const first=root.locator('button.meg-l09-row-view:visible').first();
    await first.waitFor({state:'visible',timeout:15000});
    assert.equal((await first.textContent())?.trim(),'','O botão ainda mostra texto');
    assert.equal(await first.locator('[data-launch-icon="eye"]').count(),1,'Ação sem ícone de olho');
