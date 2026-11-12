@@ -110,3 +110,11 @@ test('Contexto por modalidade e conferência visual não criam regras financeira
  assert.match(code,/suggestions\.slice\(0,3\)/);
  assert.doesNotMatch(code,/calculateInvoice|calculateBalance|createCardPurchaseProtected\(/);
 });
+
+test('Resumo compacto mantém campos visíveis em desktops de altura reduzida',()=>{
+ assert.match(css,/max-height:820px/);
+ assert.match(css,/meg-t10-expense-summary dl\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(code,/Conferência do preenchimento/);
+ assert.match(code,/Status solicitado/);
+ assert.match(code,/Cartão \/ parcelas/);
+});
