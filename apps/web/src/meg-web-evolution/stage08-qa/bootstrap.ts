@@ -100,5 +100,11 @@ window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
 // Sessão fictícia sempre substitui qualquer sessão anterior neste domínio QA.
 sessionStorage.setItem('meg.auth.session',JSON.stringify(session));
 localStorage.removeItem('meg.auth.session');
-// O bundle da aplicação real é carregado somente após isolar todas as chamadas.
-void import('../main');
+// Experimento tipográfico da Etapa 08 só por flag explícita nesta QA.
+// Não altera CSS global, imports ou sessão da aplicação produtiva.
+if(new URLSearchParams(window.location.search).get('visual')==='prism'){
+  document.documentElement.dataset.megTypographyPilot='true';
+  void import('./prism-type-pilot.css').then(()=>import('../main'));
+}else{
+  void import('../main');
+}
