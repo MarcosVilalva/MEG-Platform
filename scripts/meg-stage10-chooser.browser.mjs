@@ -50,6 +50,8 @@ try{
   assert.ok(state.modal.x>=-1&&state.modal.x+state.modal.width<=width+1,'Modal deve caber no viewport');
   assert.equal(state.focusLabel,'Fechar','Foco inicial do diálogo');
   assert.deepEqual(state.optionLabels,['Despesa','Receita','Transferência','Benefício']);
+  const heading=await page.locator('.meg-stage10-intro h3').innerText();
+  assert.match(heading,/Mais controle\s+para o seu\s+dia a dia/,'Título deve preservar separação entre palavras em qualquer viewport');
   await page.screenshot({path:`${dir}/chooser-${width}x${height}.png`,fullPage:true});
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('[data-stage10-chooser]').count(),0,'Escape fecha diálogo');
