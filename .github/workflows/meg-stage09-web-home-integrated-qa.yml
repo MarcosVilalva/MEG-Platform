@@ -72,6 +72,17 @@ jobs:
           node --test scripts/meg-stage09-readonly-gateway.test.mjs
       - name: Instalar Playwright isoladamente
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: QA funcional estática Etapa 08 em navegador real
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/meg-stage08-static.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4175/stage08-funcional-qa.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage08-static-qa.browser.mjs
       - name: QA de Home, atalhos, Lancamentos e sessao em Chrome
         run: |
           set -euo pipefail
@@ -93,17 +104,6 @@ jobs:
           node scripts/meg-stage09-operational.browser.mjs
           node scripts/meg-stage09-home-p0-preservation.browser.mjs
           node scripts/meg-stage08-home-navigation.browser.mjs
-      - name: QA funcional estática Etapa 08 em navegador real
-        run: |
-          set -euo pipefail
-          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/meg-stage08-static.log 2>&1 &
-          PID=$!
-          trap 'kill "$PID" 2>/dev/null || true' EXIT
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4175/stage08-funcional-qa.html >/dev/null; then break; fi
-            sleep 1
-          done
-          node scripts/meg-stage08-static-qa.browser.mjs
       - name: Bloquear alteracoes fora da Web Stage09 isolada
         run: |
           set -euo pipefail
