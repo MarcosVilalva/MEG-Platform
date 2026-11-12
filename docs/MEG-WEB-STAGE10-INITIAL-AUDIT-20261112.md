@@ -121,3 +121,14 @@
 - Um novo ciclo de correções específicas do seletor e teste de preservação de foco foi submetido na mesma PR Draft; **não inferir aprovação do último SHA sem consultar a execução correspondente**.
 - A fidelidade artística ao print oficial (montanhas, curvas, cartões e densidade de informação) ainda precisa de comparação e ajustes em QA; a captura evidencia estrutura adequada, não identidade visual final.
 - Até resolver colisão de foco, testar mudanças com banco descartável e obter aprovação visual explícita: **NO-GO para declarar Etapa 10 validada, publicar Web autenticada, integrar writers, fazer merge ou deploy produtivo**.
+
+## Modal de tipo: sequência de overlays e CI final (12/11/2026)
+
+- **PR #678 Draft**, base homologada `760b7ad0e3217dbab70ea426df9cad67318f79ef`. Implementação isolada do seletor tipo, sem writer.
+- **Diagnóstico reproduzido:** prévia abria Home (com alerta canônico próprio) e modal Novo simultaneamente, gerando disputa de captura de foco entre dois diálogos. Tentativas de forçar foco da camada Novo foram descartadas para não criar competição persistente de listeners.
+- **Solução aplicada na prévia isolada:** modal inicia fechado. Ao entrar, a Home pode apresentar o alerta; o teste fecha esse aviso antes de acionar o seletor. Em sessão já apresentada, abre Novo por clique. A Home e sua lógica permaneceram intactas; um diálogo é operado por vez.
+- **Ajuste de texto:** espaços explícitos entre trechos divididos por `br` no título para preservar palavras em mobile quando os `br` são ocultados por CSS. Sem alterar regras financeiras.
+- **CI final verificado:** [GitHub Actions #43222823187](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43222823187) **completed/success** no commit `b329df0132bb282eda645460b87884d18f7732bd`. Passaram testes financeiros, autocomplete, contrato do modal, `test:core`, `test:evolution-data`, build Web e browser QA do modal em 390×844, 768×1024, 1366×768 e 1920×1080.
+- **Capturas:** [artefato #13947205375](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43222823187/artifacts/13947205375).
+- **Limitações:** testes de navegador não substituem inspeção visual humana nem comparativo pixel a pixel. Nenhuma URL de QA da Etapa 10 foi publicada. Funcionalidade de gravação e formulários Novo/Editar permanecem bloqueados por caracterização de writes e vínculo canônico Alimentação.
+- **Preservação:** sem mudanças no Android, API, Supabase, banco, deploy produtivo, Home, Shell, DataGrid ou Lançamentos homologados; PR continua Draft e sem merge.
