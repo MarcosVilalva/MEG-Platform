@@ -1,4 +1,4 @@
-import {useLayoutEffect, useRef, type ReactNode} from 'react';
+import {useEffect, useRef, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import './LaunchTypeChooser.css';
 
@@ -24,29 +24,12 @@ function Glyph({type}:{type:NewLaunchType}):ReactNode {
 export function LaunchTypeChooser({open,onClose,onSelect}:Props){
  const ref=useRef<HTMLDivElement>(null);
  const closeRef=useRef<HTMLButtonElement>(null);
- useLayoutEffect(()=>{
+ useEffect(()=>{
   if(!open)return;
   const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
   const formerOverflow=document.body.style.overflow;
   document.body.style.overflow='hidden';
-  // O diálogo é portalled ao body; bloqueie foco nos irmãos (inclusive outros overlays da Home).
-  const overlay=ref.current?.parentElement;
-  const priorInert=new Map<HTMLElement,boolean>();
-  function isolateBodySiblings(){
-   for(const element of Array.from(document.body.children) as HTMLElement[]){
-    if(element===overlay)continue;
-    if(!priorInert.has(element))priorInert.set(element,element.inert);
-    element.inert=true;
-   }
-  }
-  isolateBodySiblings();
-  // A Home pode montar seu próprio alerta depois deste modal. Isolar portais
-  // posteriores também, sem modificar o comportamento do alerta canônico.
-  const observer=new MutationObserver(()=>{
-   isolateBodySiblings();
-   if(ref.current && !ref.current.contains(document.activeElement))closeRef.current?.focus();
-  });
-  observer.observe(document.body,{childList:true});
+  closeRef.current?.focus();
   function keydown(event:KeyboardEvent){
    if(event.key==='Escape'){event.preventDefault();onClose();return;}
    if(event.key!=='Tab')return;
@@ -57,21 +40,16 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
   }
   function keepFocusInside(event:FocusEvent){
-   if(!ref.current || !(event.target instanceof Node))return;
-   // Impede que traps de outros diálogos, montados antes ou depois,
-   // capturem o foco do modal superior.
-   event.stopPropagation();
-   if(!ref.current.contains(event.target))closeRef.current?.focus();
+   if(ref.current && event.target instanceof Node && !ref.current.contains(event.target)){
+    closeRef.current?.focus();
+   }
   }
   document.addEventListener('keydown',keydown);
-  window.addEventListener('focusin',keepFocusInside,true);
-  closeRef.current?.focus();
+  document.addEventListener('focusin',keepFocusInside);
   return ()=>{
    document.body.style.overflow=formerOverflow;
-   observer.disconnect();
-   for(const [element,inert] of priorInert)element.inert=inert;
    document.removeEventListener('keydown',keydown);
-   window.removeEventListener('focusin',keepFocusInside,true);
+   document.removeEventListener('focusin',keepFocusInside);
    previous?.focus();
   };
  },[open,onClose]);
@@ -87,7 +65,7 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
     <div className="meg-stage10-content">
      <section className="meg-stage10-intro" aria-label="Novo lançamento">
       <span className="meg-stage10-eyebrow">NOVO LANÇAMENTO</span>
-      <h3>Mais controle <br/>para o seu <br/>dia a dia</h3>
+      <h3>Mais controle<br/>para o seu<br/>dia a dia</h3>
       <p>Escolha o tipo de lançamento e preencha as informações no formulário inteligente. O layout da versão Web se adapta automaticamente à largura da sua tela, oferecendo mais espaço, organização e agilidade.</p>
       <div className="meg-stage10-art" aria-hidden="true"><span className="meg-stage10-art-grid"/><span className="meg-stage10-art-line"/></div>
      </section>
