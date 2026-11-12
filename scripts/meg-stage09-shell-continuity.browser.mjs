@@ -60,7 +60,7 @@ for(const [width,height] of viewports){
   const home=await snapshot(page);
   assert.ok(home.pageWidth<=width+2,'Home com rolagem horizontal');
   const button=page.getByRole('button',{name:'Lançamentos',exact:true});
-  if(width<1024)await page.getByRole('button',{name:'Abrir menu'}).click();
+  if(await page.getByRole('button',{name:'Abrir menu'}).isVisible())await page.getByRole('button',{name:'Abrir menu'}).click();
   await button.click();
   await page.locator('.meg-l09.is-operational').waitFor();
   await page.mouse.move(width-5,height-5);
@@ -77,7 +77,7 @@ for(const [width,height] of viewports){
     const active=page.locator('.meg-nav-item.is-active');
     assert.equal(await active.getAttribute('aria-label'),'Lançamentos');
   }
-  if(width<1024)await page.getByRole('button',{name:'Abrir menu'}).click();
+  if(await page.getByRole('button',{name:'Abrir menu'}).isVisible())await page.getByRole('button',{name:'Abrir menu'}).click();
   await page.getByRole('button',{name:'Início',exact:true}).click();
   await page.locator('[data-preview-view="home-p0"]').waitFor();
   const returned=await snapshot(page);
