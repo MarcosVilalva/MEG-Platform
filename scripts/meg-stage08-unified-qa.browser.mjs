@@ -22,6 +22,7 @@ try{
    await page.locator('[data-meg-unified-screen="home"]').waitFor({state:'visible',timeout:12000});
    assert.ok(await page.locator('.pano-root').count()>0,'Home oficial indisponível');
    await page.screenshot({path:resolve(output,'home-'+width+'.png'),fullPage:false});
+   if(width<640)await page.getByRole('button',{name:'Abrir menu'}).click();
    await page.getByRole('button',{name:'Lançamentos',exact:true}).first().click();
    await page.locator('[data-meg-unified-screen="launches"]').waitFor({state:'visible'});
    assert.ok(await page.locator('.meg-l09').count()>0,'Lançamentos indisponíveis');
