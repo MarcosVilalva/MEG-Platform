@@ -1,0 +1,48 @@
+/* Etapa 10: camada exclusivamente visual, não altera Shell/Home/Lançamentos. */
+.meg-t10-expense-backdrop{position:fixed;inset:0;z-index:1800;display:grid;place-items:center;padding:.65rem;background:rgba(0,12,17,.76);backdrop-filter:blur(8px);font-family:Inter,system-ui,sans-serif;color:#eafbf8}
+.meg-t10-expense{box-sizing:border-box;width:min(92rem,100%);max-height:calc(100dvh - 1.3rem);overflow-y:auto;min-width:0;padding:1rem;border-radius:1rem;border:1px solid #16e4d4;background:radial-gradient(ellipse at 90% 0%,rgba(13,190,175,.2),transparent 42%),linear-gradient(115deg,#00262b,#00151d 65%,#002d30);box-shadow:0 1.5rem 4rem #000a}
+.meg-t10-expense *{box-sizing:border-box}
+.meg-t10-expense-header{display:flex;align-items:center;gap:1rem;min-width:0;padding:.3rem .3rem 1rem}
+.meg-t10-expense-header>button{width:3rem;min-height:3rem;flex:none;border:1px solid #13b9b4;background:#003b42;color:#ecffff;border-radius:.65rem;font-size:1.6rem;cursor:pointer}
+.meg-t10-expense-header>button:last-child{margin-left:auto}
+.meg-t10-expense-header h2{font-weight:800;font-size:clamp(1.5rem,2.4vw,2.5rem);margin:0}
+.meg-t10-expense-header p{color:#c6deda;margin:.4rem 0 0;font-size:.9rem}
+.meg-t10-expense-type{display:inline-flex;padding:.35rem .8rem;margin-right:1rem;border:1px solid #ff6274;border-radius:.5rem;color:#ff9cab;background:#4e182332;font-weight:700}
+.meg-t10-expense-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.98fr) minmax(0,1fr);gap:.7rem;align-items:stretch}
+.meg-t10-expense-panel{display:flex;flex-direction:column;gap:.65rem;min-width:0;padding:1rem;border:1px solid #078e90;border-radius:.9rem;background:linear-gradient(130deg,#003037e8,#011a24ec)}
+.meg-t10-expense-panel label,.meg-t10-expense-status legend,.meg-t10-expense-installments legend{font-weight:750;color:#e9fffc;font-size:.88rem}
+.meg-t10-expense-panel input,.meg-t10-expense-panel select,.meg-t10-expense-panel textarea{min-width:0;width:100%;min-height:3rem;padding:.7rem .8rem;border:1px solid #0a8d90;border-radius:.65rem;background:#011921;color:#f3fffc;font:inherit;color-scheme:dark}
+.meg-t10-expense-panel textarea{min-height:9rem;resize:vertical}
+.meg-t10-expense-panel select option{background:#04232a}
+.meg-t10-expense-row{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:.7rem}
+.meg-t10-expense-row>div{display:flex;flex-direction:column;gap:.55rem;min-width:0}
+.meg-t10-expense-count{text-align:right;color:#a3c5c4;font-size:.72rem}
+.meg-t10-expense-chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.meg-t10-expense-chips button{border:1px solid #188a98;border-radius:.6rem;padding:.7rem .65rem;background:#093141;color:#eafbf8;min-height:3rem;cursor:pointer}
+.meg-t10-expense-chips button[aria-pressed=true]{border-color:#ffd94c;background:#53441475;color:#ffe88a;box-shadow:0 0 .45rem #ffda4b55}
+.meg-t10-expense-status,.meg-t10-expense-installments{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;border:1px solid #137a81;border-radius:.75rem;padding:.75rem;margin:0}
+.meg-t10-expense-status legend,.meg-t10-expense-installments legend{padding:0 .35rem}
+.meg-t10-expense-status button{min-height:3.1rem;border:1px solid #138f92;background:#00232b;color:#eafffc;border-radius:.6rem;font-weight:750;cursor:pointer}
+.meg-t10-expense-status button[aria-pressed=true]{background:#13e6d7;color:#03171e}
+.meg-t10-expense-status small,.meg-t10-expense-installments small{grid-column:1/-1;color:#aed3d1;line-height:1.4}
+.meg-t10-expense-installments label{align-self:end}
+.meg-t10-expense-notice{border:1px solid #f7ba48;border-radius:.7rem;padding:.8rem;color:#ffdc93;background:#51431333;line-height:1.45}
+.meg-t10-expense-error{color:#ff9aa6;font-size:.85rem;margin:0}
+.meg-t10-expense-summary{background:linear-gradient(135deg,#004348,#00242b)}
+.meg-t10-expense-summary-toggle{display:flex;justify-content:space-between;align-items:center;gap:.7rem;border:none;background:transparent;color:#fff;text-align:left;font-size:1.2rem;font-weight:800;cursor:pointer;min-height:3rem}
+.meg-t10-expense-summary p{color:#cde6e3;font-size:.86rem;margin:.2rem 0 1rem}
+.meg-t10-expense-amount{display:block;color:#ff697e;font-size:clamp(1.7rem,3vw,2.5rem);font-variant-numeric:tabular-nums;margin:.6rem 0}
+.meg-t10-expense-summary dl{margin:.7rem 0 0}
+.meg-t10-expense-summary dl>div{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1fr);gap:.5rem;padding:.65rem 0;border-bottom:1px solid #1b6269;font-size:.82rem}
+.meg-t10-expense-summary dt{color:#bedbd7}.meg-t10-expense-summary dd{margin:0;font-weight:650;overflow-wrap:anywhere}
+.meg-t10-expense-frequent{margin-top:auto;padding-top:1rem;border-top:1px solid #166d73}
+.meg-t10-expense-frequent h3{font-size:1rem;margin:0 0 .75rem}
+.meg-t10-expense-footer{position:sticky;bottom:0;display:grid;grid-template-columns:1fr 1fr;gap:.6rem;padding:.9rem 0 .15rem;background:#002329}
+.meg-t10-expense-footer button{min-height:3.4rem;border-radius:.7rem;border:1px solid #16e1d3;font-weight:800;font-size:1rem;cursor:pointer}
+.meg-t10-expense-back{background:#034148;color:#eafdfb}.meg-t10-expense-save{background:#16e8da;color:#00252b}
+.meg-t10-expense-save:disabled{opacity:.52;cursor:not-allowed}
+.meg-t10-expense-footnote{text-align:center;color:#a8d3d1;font-size:.76rem;margin:.5rem 0 0}
+.meg-t10-expense :is(button,input,select,textarea):focus-visible{outline:2px solid #2affee;outline-offset:2px}
+@media(max-width:1023px){.meg-t10-expense-grid{grid-template-columns:1fr}.meg-t10-expense-summary{order:3}.meg-t10-expense-panel{padding:.85rem}}
+@media(max-width:639px){.meg-t10-expense-backdrop{padding:0}.meg-t10-expense{width:100%;max-height:100dvh;min-height:100dvh;border-radius:0;padding:.75rem}.meg-t10-expense-header{gap:.55rem}.meg-t10-expense-header p{font-size:.75rem}.meg-t10-expense-grid{gap:.5rem}.meg-t10-expense-row{grid-template-columns:1fr 1fr}.meg-t10-expense-footer{padding-bottom:max(.4rem,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){.meg-t10-expense *{scroll-behavior:auto}}
