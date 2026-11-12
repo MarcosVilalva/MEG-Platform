@@ -1,0 +1,178 @@
+/* MEG Web Evolution, Etapa 10: painel compacto e isolado, sem CSS legado. */
+.meg-t10-expense-backdrop{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:8px;background:rgba(0,15,19,.83);backdrop-filter:blur(10px);color:#e8faf8;font-family:Inter,system-ui,sans-serif}
+.meg-t10-expense{box-sizing:border-box;position:relative;width:min(1510px,100%);height:min(820px,calc(100dvh - 16px));min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;border:1px solid #17dfd1;border-radius:22px;background:radial-gradient(ellipse at 68% -25%,#0b6d7070,transparent 50%),linear-gradient(130deg,#032e33,#021820 61%,#063d3d);box-shadow:0 24px 75px #000b,0 0 32px #11d6c027,inset 0 1px #4cffee55}
+.meg-t10-expense *{box-sizing:border-box}
+.meg-t10-expense button{font:inherit;cursor:pointer}
+.meg-t10-expense button:disabled{cursor:not-allowed;opacity:.52}
+.meg-t10-expense :is(input,select,textarea,button):focus-visible{outline:2px solid #21fff0;outline-offset:2px}
+.meg-t10-expense-header{display:flex;align-items:center;gap:12px;padding:12px 16px 9px;min-height:82px;background:linear-gradient(110deg,#012b31c9,#02343b91 65%,#03464b75);border-bottom:1px solid #16d5c43d}
+.meg-t10-expense-head-icon{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:13px;border:1px solid #0cc6be;background:linear-gradient(#0b5559,#00353d);color:#edfffc;font-size:1.55rem;box-shadow:inset 0 1px #b4ffef30,0 5px 11px #0004}
+.meg-t10-expense svg{width:18px;height:18px;flex:none}
+.meg-t10-expense-head-icon svg{width:22px;height:22px}
+.meg-t10-expense-title{display:grid;gap:4px;min-width:0}
+.meg-t10-expense-title h2{margin:0;font-size:clamp(1.45rem,2vw,2.2rem);letter-spacing:-.045em;line-height:1.04;font-weight:850;color:#f2fffd}
+.meg-t10-expense-title small{display:flex;align-items:center;gap:12px;color:#c4e6e0;font-size:.74rem;line-height:1.4}
+.meg-t10-expense-type{display:inline-flex;align-items:center;gap:2px;border:1px solid #ff6e80;border-radius:10px;padding:5px 10px;color:#ffb8c0;background:#46202c55;font-size:.75rem;font-weight:850;letter-spacing:.03em}
+.meg-t10-expense-type svg{width:13px;height:13px}
+.meg-t10-expense-head-actions{margin-left:auto;display:flex;align-items:center;gap:9px}
+.meg-t10-expense-head-save{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:1px solid #11cdbf;border-radius:12px;background:linear-gradient(#27fff0,#0bc6be);color:#002c32;font-weight:850!important}
+.meg-t10-expense-head-save:disabled{background:#164a50;color:#a0cbca}
+.meg-t10-expense-grid{display:grid;grid-template-columns:minmax(0,1.31fr) minmax(0,.98fr) minmax(0,.96fr);min-height:0;min-width:0;gap:10px;padding:10px}
+.meg-t10-expense-panel{display:flex;flex-direction:column;min-width:0;min-height:0;gap:6px;padding:12px;border-radius:17px;border:1px solid #0c9ea0;background:linear-gradient(135deg,#023138,#001d27);box-shadow:inset 0 1px #cafffa13,inset 0 0 22px #00958d10,0 7px 16px #0004;overflow:hidden}
+.meg-t10-expense-primary{background:linear-gradient(135deg,#00333a,#001d25)}
+.meg-t10-expense-secondary{background:linear-gradient(135deg,#04313b,#001b25)}
+.meg-t10-expense-panel label,.meg-t10-expense-choice legend{display:flex;align-items:center;gap:5px;margin:0;font-size:.77rem;font-weight:800;color:#f3fffe}
+.meg-t10-expense-panel label svg{color:#23f9e9}
+.meg-t10-expense-panel input,.meg-t10-expense-panel select,.meg-t10-expense-panel textarea{display:block;min-height:35px;width:100%;min-width:0;border:1px solid #0b9ea3;border-radius:10px;padding:7px 10px;background:#001a23;color:#effffe;font:inherit;font-size:.78rem;box-shadow:inset 0 2px 7px #0004;color-scheme:dark}
+.meg-t10-expense-panel input::placeholder,.meg-t10-expense-panel textarea::placeholder{color:#789d9f}
+.meg-t10-expense-panel select option{background:#022a32}
+.meg-t10-expense-frequent{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:0 0 1px;min-height:57px}
+.meg-t10-expense-category{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:55px;padding:4px 2px;border:1px solid #197c95;border-radius:11px;color:#c3eeef;background:linear-gradient(140deg,#063d49,#00242b);font-size:.63rem!important;line-height:1.15;box-shadow:0 4px 8px #0004,inset 0 1px #ffffff10}
+.meg-t10-expense-category span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg-t10-category-glyph{width:21px!important;height:21px!important;color:#54c6ff}
+.meg-t10-expense-category:nth-child(1) .meg-t10-category-glyph{color:#ffd73f}
+.meg-t10-expense-category:nth-child(4) .meg-t10-category-glyph{color:#25ffbb}
+.meg-t10-expense-category:nth-child(5) .meg-t10-category-glyph{color:#ed9bff}
+.meg-t10-expense-category[aria-pressed=true],.meg-t10-expense-category:hover{border-color:#ffd34c;color:#ffe998;background:linear-gradient(145deg,#554419,#172d2c);box-shadow:inset 0 1px #ffe56b60,0 0 11px #ffd3335e}
+.meg-t10-expense-choice{min-width:0;border:1px solid #077f86;border-radius:12px;padding:8px 7px 7px;display:flex;gap:6px;align-items:stretch;margin:0}
+.meg-t10-expense-choice legend{padding:0 5px}
+.meg-t10-expense-choice button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;flex:1 1 0;padding:5px 6px;min-height:35px;border:1px solid #137780;border-radius:9px;background:linear-gradient(#064450,#00252e);color:#d9f4f2;font-size:.7rem;font-weight:750;box-shadow:inset 0 1px #ffffff19}
+.meg-t10-expense-choice button[aria-pressed=true]{color:#002a2d;border-color:#04ddc9;background:linear-gradient(#36fff0,#00cabb);box-shadow:inset 0 2px #dcfffa7a,0 0 11px #00ffe45b}
+.meg-t10-expense-bottom-fields{display:grid;grid-template-columns:1fr;gap:6px;margin-top:1px}
+.meg-t10-expense-bottom-fields>div{display:grid;gap:4px;min-width:0}
+.meg-t10-expense-dual{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.meg-t10-expense-dual>div{min-width:0;display:grid;gap:5px}
+.meg-t10-expense-money{display:flex;align-items:center;min-width:0;border-radius:10px}
+.meg-t10-expense-money>button{flex:none;height:35px;width:32px;border:1px solid #149da5;border-radius:10px 0 0 10px;background:#063f48;color:#35f9e9;font-weight:850}
+.meg-t10-expense-money>button[aria-pressed=true]{background:#713e36;color:#ffcd9d}
+.meg-t10-expense-money input{border-radius:0 10px 10px 0;border-left:0;text-align:right;font-size:1rem;font-weight:800;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.meg-t10-expense-money-note{font-size:.63rem;color:#96c8c5;text-align:right}
+.meg-t10-expense-money-note:has(+.meg-t10-expense-status){min-height:13px}
+.meg-t10-expense-status{margin-top:3px}
+.meg-t10-expense-credit{display:grid;gap:7px;padding:10px;border:1px solid #0d9096;border-radius:13px;background:linear-gradient(140deg,#053b44,#00242c)}
+.meg-t10-expense-credit-title{display:flex;align-items:center;gap:6px;font-weight:850;font-size:.81rem}
+.meg-t10-expense-credit-title svg{color:#22f4e6}
+.meg-t10-expense-credit-fields{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.8fr);gap:7px}
+.meg-t10-expense-credit-fields>div{display:grid;gap:4px;min-width:0}
+.meg-t10-expense-schedule-button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:36px;border:1px solid #18b8b5;border-radius:10px;background:linear-gradient(#074c56,#02313b);color:#e7fffd;font-weight:850;font-size:.75rem}
+.meg-t10-expense-schedule-button svg:last-child{margin-left:auto}
+.meg-t10-expense-notes{margin-top:3px}
+.meg-t10-expense-expand{display:flex;align-items:center;gap:7px;width:100%;min-height:34px;padding:6px 9px;border:1px solid #186e78;border-radius:10px;color:#dcf4f1;background:#083842;font-weight:750;font-size:.77rem}
+.meg-t10-expense-expand svg:last-child{margin-left:auto}
+.meg-t10-expense-notes textarea{margin-top:6px;min-height:69px;max-height:100px;resize:none}
+.meg-t10-expense-refund-warning,.meg-t10-expense-hint{margin:3px 0 0;color:#ffd6b0;font-size:.7rem;line-height:1.35}
+.meg-t10-expense-summary{background:linear-gradient(145deg,#064950,#00303a);border-color:#0cafa9}
+.meg-t10-expense-summary h3{display:flex;align-items:center;gap:8px;margin:2px 0 0;font-size:1.03rem;font-weight:850}
+.meg-t10-expense-summary h3 svg{color:#25ffef}
+.meg-t10-expense-summary>p{margin:0 0 2px;color:#c3e3df;font-size:.75rem}
+.meg-t10-expense-total{display:block;color:#ff677d;font-size:clamp(1.25rem,2.3vw,2rem);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.18;margin:6px 0}
+.meg-t10-expense-total.is-refund{color:#60e7ac}
+.meg-t10-expense-refund-tag{align-self:flex-start;border:1px solid #57d7ac;border-radius:50rem;padding:3px 10px;color:#88ffe0;font-size:.65rem;font-weight:900}
+.meg-t10-expense-summary dl{margin:0;min-height:0;display:grid;align-content:start}
+.meg-t10-expense-summary dl>div{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.16fr);gap:7px;padding:5px 1px;border-bottom:1px solid #168888;font-size:.73rem}
+.meg-t10-expense-summary dt{color:#b3d8d4}
+.meg-t10-expense-summary dd{margin:0;color:#f5fffd;font-weight:800;overflow-wrap:anywhere}
+.meg-t10-expense-summary-footer{display:flex;gap:7px;align-items:center;margin-top:auto;padding:8px;border:1px solid #0b7c7c;border-radius:9px;color:#a7d5d2;font-size:.67rem}
+.meg-t10-expense-mobile-nav{display:none}
+.meg-t10-expense-suboverlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:#001017c9;backdrop-filter:blur(9px);padding:12px}
+.meg-t10-expense-subdialog{width:min(680px,100%);max-height:calc(100% - 15px);overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:17px;border:1px solid #18e9d4;border-radius:20px;background:linear-gradient(145deg,#053e48,#001c25);box-shadow:0 15px 40px #0009}
+.meg-t10-expense-subdialog header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.meg-t10-expense-subdialog header h3{display:flex;align-items:center;gap:8px;margin:0;font-size:1.15rem}
+.meg-t10-expense-subdialog header button{border:1px solid #0c9996;background:#063a44;border-radius:9px;min-width:38px;min-height:38px;color:#fff;font-size:1.4rem}
+.meg-t10-expense-subdialog footer{display:flex;justify-content:space-between;align-items:center;gap:7px}
+.meg-t10-expense-subdialog footer button{border:1px solid #14b5ad;border-radius:9px;padding:8px 16px;background:#034a4d;color:#ecfffd}
+.meg-t10-expense-category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;overflow:hidden;min-height:0}
+.meg-t10-expense-category-grid button{display:grid;justify-items:center;align-content:center;gap:6px;min-height:75px;padding:7px;border:1px solid #207d8a;border-radius:12px;color:#fff;background:#043944;font-size:.72rem}
+.meg-t10-expense-category-grid button[aria-pressed=true]{border-color:#ffd449;color:#ffe784}
+.meg-t10-expense-schedule-list{min-height:0;overflow-y:auto}
+.meg-t10-expense-schedule-list p,.meg-t10-expense-schedule-unavailable{color:#c6e3df;font-size:.82rem;line-height:1.55}
+.meg-t10-expense-schedule-list>div{display:grid;grid-template-columns:1fr 1.25fr 1fr auto;gap:8px;padding:9px 0;border-bottom:1px solid #166769;font-size:.76rem}
+.meg-t10-expense-suggestions{position:absolute;z-index:20;display:grid;gap:4px;max-height:140px;max-width:400px;overflow-y:auto;background:#00353d;border:1px solid #15c2be;border-radius:12px;padding:5px;box-shadow:0 7px 18px #000a}
+.meg-t10-expense-suggestions button{display:grid;text-align:left;gap:3px;border:1px solid #145e64;border-radius:7px;padding:7px;background:#04343d;color:#fff;font-size:.78rem}
+.meg-t10-expense-suggestions small{font-size:.68rem;color:#bddfdb}
+@media(max-height:760px) and (min-width:1025px){.meg-t10-expense-header{min-height:65px;padding:7px 12px}.meg-t10-expense-grid{padding:7px;gap:7px}.meg-t10-expense-panel{padding:8px;gap:4px}.meg-t10-expense-frequent{min-height:48px}.meg-t10-expense-category{min-height:47px}.meg-t10-expense-choice{padding:5px}.meg-t10-expense-choice button{min-height:30px}.meg-t10-expense-panel :is(input,select){min-height:31px}.meg-t10-expense-summary dl>div{padding:5px 0}}
+@media(max-width:1024px){.meg-t10-expense{height:calc(100dvh - 12px);grid-template-rows:auto auto minmax(0,1fr)}.meg-t10-expense-grid{grid-template-columns:1fr;gap:0;padding:8px;min-height:0}.meg-t10-expense-panel{display:none}.meg-t10-expense-panel.is-step{display:flex;min-height:0;height:100%;justify-content:flex-start}.meg-t10-expense-mobile-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:7px 9px 0}.meg-t10-expense-mobile-nav button{min-height:37px;border:1px solid #0a9597;border-radius:10px;background:#033941;color:#d5f6f1;font-size:.8rem;font-weight:800}.meg-t10-expense-mobile-nav button[aria-current=step]{background:#13e5d5;color:#002b31}.meg-t10-expense-frequent{min-height:60px}.meg-t10-expense-category{min-height:57px}.meg-t10-expense-summary dl>div{padding:5px 4px}.meg-t10-expense-panel{padding:12px}}
+@media(max-width:639px){.meg-t10-expense-backdrop{padding:0}.meg-t10-expense{height:100dvh;border:0;border-radius:0}.meg-t10-expense-header{min-height:70px;padding:8px}.meg-t10-expense-title h2{font-size:1.3rem}.meg-t10-expense-title small{font-size:.66rem;gap:5px}.meg-t10-expense-head-icon{height:38px;width:36px}.meg-t10-expense-head-save{height:38px;min-height:38px;padding:0 9px}.meg-t10-expense-head-save span{display:none}.meg-t10-expense-grid{padding:7px}.meg-t10-expense-panel{padding:9px;gap:5px}.meg-t10-expense-choice button{font-size:.65rem}.meg-t10-expense-frequent{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:45px;min-height:95px}.meg-t10-expense-category{flex-direction:row;min-height:45px;padding:4px;justify-content:center;font-size:.67rem!important}.meg-t10-expense-category span{white-space:normal}.meg-t10-category-glyph{height:17px!important;width:17px!important}.meg-t10-expense-category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.meg-t10-expense-summary dl>div{padding:4px 2px}}
+
+/* Etapa 10: modalidade e seleção de cartão identificável. */
+.meg-t10-expense-modality{margin:3px 0 2px}
+.meg-t10-expense-modality button{min-height:40px;font-weight:850;font-size:.8rem}
+.meg-t10-credit-preview{display:flex;gap:12px;align-items:center;min-width:0;padding:8px;border:1px solid #18a5a5;border-radius:12px;background:linear-gradient(135deg,#06383c,#02252d);box-shadow:inset 0 1px #9bffed1f}
+.meg-t10-credit-mini{display:flex;flex-direction:column;justify-content:space-between;flex:0 0 135px;min-height:78px;max-width:135px;padding:9px;border:1px solid color-mix(in srgb,var(--meg-card-accent),white 18%);border-radius:12px;background:linear-gradient(145deg,color-mix(in srgb,var(--meg-card-accent),#00191f 75%),#011c28 90%);box-shadow:0 8px 13px #0008,inset 0 1px #f7fffa44;color:#f2fffc;overflow:hidden}
+.meg-t10-credit-mini-brand{font-size:.6rem;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-t10-credit-mini svg{height:15px;width:20px;opacity:.85}
+.meg-t10-credit-mini strong{font-size:.54rem;letter-spacing:.02em;text-transform:uppercase}
+.meg-t10-credit-mini small{font-size:.58rem;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.meg-t10-credit-details{min-width:0;display:grid;gap:5px;color:#bbdfdd;font-size:.68rem}
+.meg-t10-credit-details strong{font-size:.79rem;color:#f5fffa;overflow-wrap:anywhere}
+.meg-t10-expense-primary{gap:6px}
+.meg-t10-expense-secondary>.meg-t10-expense-dual{grid-template-columns:1fr}
+@media(max-height:760px) and (min-width:1025px){.meg-t10-credit-preview{padding:5px}.meg-t10-credit-mini{min-height:62px;flex-basis:110px}.meg-t10-credit-details{font-size:.61rem}}
+@media(max-width:639px){.meg-t10-credit-mini{flex-basis:120px;min-height:72px}.meg-t10-expense-modality button{min-height:36px}}
+
+/* Densidade do resumo: nenhuma informação é escondida para evitar rolagem. */
+.meg-t10-expense-summary{gap:4px}
+.meg-t10-expense-summary dl>div{padding:3px 1px;line-height:1.2}
+.meg-t10-expense-summary-footer{padding:5px;margin-top:5px}
+.meg-t10-expense-total{margin:2px 0;font-size:clamp(1.25rem,2.1vw,1.8rem)}
+@media(max-width:1024px){
+ .meg-t10-expense-summary{gap:3px;padding:8px}
+ .meg-t10-expense-summary dl>div{padding:2px 2px;font-size:.69rem;line-height:1.1}
+ .meg-t10-expense-summary-footer{font-size:.62rem;padding:4px;margin-top:3px}
+}
+@media(max-width:639px){.meg-t10-expense-summary dl>div{padding:2px 1px}}
+
+/* Revisão validada: a conta de baixa ocupa a etapa Pagamento, somente em À vista + Paga. */
+.meg-t10-expense-method-field{display:grid;gap:5px;min-width:0}
+.meg-t10-expense-method-control{position:relative;min-width:0}
+.meg-t10-expense-method-control>svg{position:absolute;z-index:1;left:11px;top:50%;transform:translateY(-50%);height:16px;width:16px;color:#46eddb;pointer-events:none}
+.meg-t10-expense-panel .meg-t10-expense-method-control>select{padding-left:36px}
+.meg-t10-expense-settlement-account{display:grid;gap:5px;min-width:0;padding:9px;border:1px solid #0c9999;border-radius:12px;background:linear-gradient(125deg,#05383f,#01262d);box-shadow:inset 0 1px #c6ffef22}
+.meg-t10-expense-settlement-account small{font-size:.68rem;color:#abddd5;line-height:1.3}
+.meg-t10-expense-secondary{gap:8px}
+@media(max-height:760px) and (min-width:1025px){
+ .meg-t10-expense-settlement-account{padding:6px;gap:3px}
+ .meg-t10-expense-secondary{gap:5px}
+}
+
+
+/* Data BR editável com seletor nativo, sem modificar as demais telas. */
+.meg-t10-expense-date-entry{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:5px;min-width:0}
+.meg-t10-expense-panel .meg-t10-expense-date-picker{width:38px;min-width:38px;padding:4px;color:#24eedf;cursor:pointer}
+.meg-t10-expense-date-hint{display:block;min-height:12px;color:#94c8c5;font-size:.61rem;line-height:1.1}
+.meg-t10-expense-panel input[aria-invalid=true]{border-color:#ff657b}
+.meg-t10-expense-panel input[aria-invalid=true]+.meg-t10-expense-date-picker{border-color:#ff657b}
+
+
+/* Etapa 10: espaço útil contextual, sem duplicar regras de negócio. */
+.meg-t10-expense-suggestions-title{display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:.7rem;color:#85ffeb}
+.meg-t10-expense-suggestions-title svg{width:14px;height:14px}
+.meg-t10-expense-payment-context{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #107b83;border-radius:11px;background:linear-gradient(135deg,#06454b77,#002c3577)}
+.meg-t10-expense-payment-context strong{display:flex;align-items:center;gap:6px;color:#9bfff2;font-weight:800;font-size:.72rem}
+.meg-t10-expense-payment-context strong svg{width:15px;height:15px}
+.meg-t10-expense-payment-context p{margin:0;color:#bddee0;font-size:.67rem;line-height:1.35}
+@media(max-height:760px) and (min-width:1025px){
+.meg-t10-expense-payment-context{padding:5px 7px;gap:2px}
+.meg-t10-expense-payment-context p{font-size:.62rem;line-height:1.2}
+}
+
+
+/* Em desktops de altura reduzida, as informações do resumo ocupam duas
+   colunas reais. Mantém rótulos e valores completos, sem cortes ou rolagem. */
+@media (min-width:1025px) and (max-height:820px){
+.meg-t10-expense-summary{gap:5px;padding:10px}
+.meg-t10-expense-summary>p{margin:0;font-size:.7rem}
+.meg-t10-expense-summary h3{font-size:.96rem;margin:0}
+.meg-t10-expense-summary dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:start}
+.meg-t10-expense-summary dl>div{display:flex;flex-direction:column;gap:3px;min-width:0;padding:6px 8px;font-size:.7rem;line-height:1.2;border:1px solid #136a72;border-radius:9px;background:#042d3570}
+.meg-t10-expense-summary dl>div dt,.meg-t10-expense-summary dl>div dd{min-width:0;overflow-wrap:anywhere}
+.meg-t10-expense-total{margin:3px 0;font-size:clamp(1.2rem,1.85vw,1.65rem);line-height:1.15}
+.meg-t10-expense-summary-footer{padding:6px 8px;margin-top:auto}
+}
+
+/* Conferência funcional integrada ao subtítulo do resumo, sem painel de altura extra. */
+.meg-t10-expense-summary>.meg-t10-expense-checkline{margin:0;line-height:1.2;overflow-wrap:anywhere;color:#c7e8e3}
+.meg-t10-expense-checkline strong{color:#8fffee;font-weight:800}
+
+/* Corrige overflow fantasma do flex: rodapé segue o conteúdo, sem margem automática expansiva. */
+.meg-t10-expense-summary>.meg-t10-expense-summary-footer{margin-top:4px;flex:0 0 auto}
