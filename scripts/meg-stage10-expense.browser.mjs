@@ -34,7 +34,7 @@ try{
   assert.equal(main.innerScrolling,false,'Janela do formulário sem rolagem');
   assert.ok(main.bounds.x>=-1&&main.bounds.x+main.bounds.width<=width+1,'Janela cabe na largura');
   assert.equal(await modal.getByRole('button',{name:'Salvar lançamento'}).isDisabled(),true);
-  if(width<1024)await modal.getByRole('button',{name:'Dados'}).click();
+  if(width<=1024)await modal.getByRole('button',{name:'Dados'}).click();
   async function captureStep(step){
    const geometry=await page.evaluate(()=>{
     const sections=Array.from(document.querySelectorAll('.meg-t10-expense-panel')).filter(e=>getComputedStyle(e).display!=='none');
@@ -62,10 +62,10 @@ try{
   await modal.getByLabel('Categoria *').selectOption('qa-category-food');
   await modal.getByLabel('Conta monetária *').selectOption('qa-account-money');
   await method.selectOption('qa-method-pix');
-  if(width<1024)await modal.getByRole('button',{name:'Pagamento'}).click();
+  if(width<=1024)await modal.getByRole('button',{name:'Pagamento'}).click();
   await plannedButton.click();
   assert.equal(await plannedButton.getAttribute('aria-pressed'),'true');
-  if(width<1024)await modal.getByRole('button',{name:'Dados'}).click();
+  if(width<=1024)await modal.getByRole('button',{name:'Dados'}).click();
   await modal.getByRole('button',{name:/Crédito/}).click();
   assert.equal(await plannedButton.getAttribute('aria-pressed'),'true');
   assert.equal(await paidButton.isDisabled(),true);
@@ -73,7 +73,7 @@ try{
   assert.ok((await options()).some(x=>x.includes('Crédito')));
   assert.ok(!(await options()).some(x=>x.includes('PIX')));
   await method.selectOption('qa-method-credit');
-  if(width<1024)await modal.getByRole('button',{name:'Pagamento'}).click();
+  if(width<=1024)await modal.getByRole('button',{name:'Pagamento'}).click();
   await modal.getByLabel('Cartão',{exact:true}).selectOption('qa-creditcard-1');
   assert.equal(await modal.getByLabel('Identificação do cartão selecionado').isVisible(),true);
   assert.ok(await modal.getByText('•••• 4587').count()>0);
@@ -82,7 +82,7 @@ try{
   await modal.getByLabel('Cartão',{exact:true}).selectOption('qa-creditcard-2');
   assert.ok(await modal.getByText('Fechamento: dia 12').count()>0);
   assert.ok(await modal.getByText('Vencimento: dia 20').count()>0);
-  if(width<1024)await modal.getByRole('button',{name:'Pagamento'}).click();
+  if(width<=1024)await modal.getByRole('button',{name:'Pagamento'}).click();
   await captureStep('pagamento');
   await modal.getByLabel('Observações (opcional)',{exact:true}).count().then(async count=>{if(count===0)await modal.getByRole('button',{name:/Observações/}).click();});
   await modal.getByLabel('Observações (opcional)').fill('estorno cartão');
@@ -100,11 +100,11 @@ try{
   assert.equal(await modal.getByRole('dialog',{name:'Mostrar parcelamento'}).isVisible(),true);
   assert.equal(await modal.getByText('Nenhuma parcela ou data será estimada pela tela.',{exact:false}).count()>0,true);
   await modal.getByRole('button',{name:'Fechar parcelamento'}).click();
-  if(width<1024)await modal.getByRole('button',{name:'Dados'}).click();
+  if(width<=1024)await modal.getByRole('button',{name:'Dados'}).click();
   await modal.getByRole('button',{name:'Mais categorias'}).click();
   assert.equal(await modal.getByRole('dialog',{name:'Todas as categorias'}).isVisible(),true);
   await modal.getByRole('button',{name:'Fechar categorias'}).click();
-  if(width<1024)await modal.getByRole('button',{name:'Resumo'}).click();
+  if(width<=1024)await modal.getByRole('button',{name:'Resumo'}).click();
   await captureStep('resumo');
   assert.deepEqual(writes,[],'Nenhuma requisição de mutação');
   results.push({width,height,zeroScroll:!main.overflowX&&!main.overflowY&&!main.innerScrolling,amountNegative:true,scheduleModal:true,writes:writes.length});
