@@ -66,7 +66,7 @@ const history:HistorySnapshot={protocol:'financial-history-v1',kind:'complete',i
 ]};
 function UnifiedQA(){
  const [screen,setScreen]=useState<Screen>(initial);
- const [overlay,setOverlay]=useState<Overlay>(null);
+ const [overlay,setOverlay]=useState<Overlay>(()=>initial==='launches'&&params.get('modal')==='novo'?'choice':null);
  const [progress,setProgress]=useState(0);
  const [notice,setNotice]=useState('');
  const loading=screen==='loading-entry'||screen==='loading-after';
