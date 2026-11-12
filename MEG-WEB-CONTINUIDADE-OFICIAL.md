@@ -2116,3 +2116,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Não implementado:** nenhuma nova UI ou integração de writer; não há preview da Etapa 10, aceite visual ou merge. Nenhuma alteração no Android, API, produção, banco ou nas telas homologadas.
 - **Próximo gate:** executar testes, caracterizar operações transacionais com dados fictícios em banco isolado, definir vínculo/autocomplete e resolver diferença de edição antes de permitir gravação; depois implementar uma tela por vez conforme prints oficiais e publicar QA sem cache para aprovação explícita.
 - **NO-GO produtivo:** PRs #656/#663/#666/#669/#672/#673 e gates de backup/segurança da Etapa 09 continuam independentes e não são liberados por esta preparação.
+
+## Etapa 10 — PR #678 e CI real: testes verdes, build bloqueado (12/11/2026)
+
+- **PR:** [#678 Draft](https://github.com/MarcosVilalva/MEG-Platform/pull/678), base isolada `preview/09-lancamentos-home-p0-qa-20261111@760b7ad0e3217dbab70ea426df9cad67318f79ef`. Nenhum merge ou deploy.
+- **Autocomplete read-only implementado isoladamente:** `apps/web/src/meg-web-evolution/stage10/autocomplete-history.ts`; cinco testes com fixture fictícia em `scripts/meg-stage10-autocomplete-history.test.ts`. Recupera descrição/categoria/conta/forma, sem valor, data, status ou competência. Ainda NÃO integrado aos formulários.
+- **GitHub Actions [#43215699989](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43215699989): FAILURE geral**, apesar de 17 testes financeiros + cinco de autocomplete aprovados, bem como `test:core` e `test:evolution-data` verdes.
+- **Bloqueador de build pré-existente e comprovado por blob idêntico com base visual aprovada:** `HomeDashboard.tsx:216` TS2550 (`replaceAll`); `home-commitments-read.ts:60,62` TS7022 (inferência `any`). Nenhum dos dois arquivos foi alterado nesta etapa. Não desabilitar o build nem alterar Home homologada silenciosamente. Corrigir de forma controlada/separada e comprovar não-regressão antes de considerar build verde.
+- **Outros bloqueios:** testes transacionais fictícios de gravação em PostgreSQL isolado, caminho seguro para edição/exclusão monetária, vínculo automático Alimentação (Conta Benefício + Verocard + Pago) e validação visual das telas novas. Sem UI final ou preview.
+- **Próximo passo exato:** tratar bloqueio técnico do build sem alterar visual homologado e continuar caracterização de writes em QA antes de integrar formulário de Novo/Editar. Etapa 10 NÃO validada.
