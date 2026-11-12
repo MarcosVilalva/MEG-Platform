@@ -62,6 +62,7 @@ jobs:
             cat /tmp/meg-stage10-preview.log
             exit 1
           fi
+          npm install --no-save --package-lock=false @playwright/test
           node scripts/meg-stage10-chooser.browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
