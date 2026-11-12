@@ -10,8 +10,7 @@ import type {HistorySnapshot} from './autocomplete-history';
 
 /** Catálogos sintéticos SOMENTE desta prévia, nunca IDs de produção. */
 const syntheticCatalogs:ExpenseCatalogs={
- benefitBinding:{categoryIds:['qa-category-food'],accountId:'qa-account-benefit',paymentMethodId:'qa-method-benefit'},
- creditCards:[{id:'qa-creditcard-1',name:'Cartão de demonstração (fictício)',active:true}],
+ creditCards:[{id:'qa-creditcard-1',name:'Cartão de demonstração (fictício)',issuer:'Banco fictício',brand:'VISA',lastFour:'4587',closingDay:25,dueDay:5,color:'#238b93',active:true},{id:'qa-creditcard-2',name:'Cartão secundário de demonstração',issuer:'Banco exemplo',brand:'MASTERCARD',lastFour:'9021',closingDay:12,dueDay:20,color:'#5a5aa8',active:true}],
  categories:[
   {id:'qa-category-food',name:'Alimentação',active:true},
   {id:'qa-category-house',name:'Casa',active:true},
@@ -22,16 +21,17 @@ const syntheticCatalogs:ExpenseCatalogs={
  ],
  accounts:[
   {id:'qa-account-money',name:'Conta corrente de demonstração',active:true,kind:'monetary'},
-  {id:'qa-account-benefit',name:'Conta Benefício (demonstração)',active:true,kind:'benefit'},
  ],
  paymentMethods:[
   {id:'qa-method-instant',name:'À vista',active:true,kind:'ordinary'},
-  {id:'qa-method-credit',name:'Cartão de crédito (demonstração)',active:true,kind:'credit'},
-  {id:'qa-method-benefit',name:'Verocard (demonstração)',active:true,kind:'benefit'},
+  {id:'qa-method-credit',name:'Crédito',active:true,kind:'credit'},
+  {id:'qa-method-pix',name:'PIX',active:true,kind:'ordinary'},
+  {id:'qa-method-boleto',name:'Boleto',active:true,kind:'ordinary'},
+  {id:'qa-method-debit',name:'Débito',active:true,kind:'ordinary'},
  ],
 };
 const syntheticHistory:HistorySnapshot={protocol:'financial-history-v1',kind:'complete',items:[
- {id:'qa-h-1',description:'Mercado fictício',date:'2026-09-01',amount:125.49,categoryId:'qa-category-food',accountId:'qa-account-benefit',paymentMethodId:'qa-method-benefit',category:{id:'qa-category-food',name:'Alimentação'},account:{id:'qa-account-benefit',name:'Conta Benefício (demonstração)'},paymentMethod:{id:'qa-method-benefit',name:'Verocard (demonstração)'}},
+ {id:'qa-h-1',description:'Mercado fictício',date:'2026-09-01',amount:125.49,categoryId:'qa-category-food',accountId:'qa-account-money',paymentMethodId:'qa-method-instant',category:{id:'qa-category-food',name:'Alimentação'},account:{id:'qa-account-money',name:'Conta corrente de demonstração'},paymentMethod:{id:'qa-method-instant',name:'À vista'}},
  {id:'qa-h-2',description:'Aluguel fictício',date:'2026-08-05',amount:600,categoryId:'qa-category-house',accountId:'qa-account-money',paymentMethodId:'qa-method-instant',category:{id:'qa-category-house',name:'Casa'},account:{id:'qa-account-money',name:'Conta corrente de demonstração'},paymentMethod:{id:'qa-method-instant',name:'À vista'}},
 ]};
 function ExpenseQA(){
