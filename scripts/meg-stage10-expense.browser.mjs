@@ -47,6 +47,24 @@ try{
    await page.screenshot({path:root+'/expense-'+step+'-'+width+'x'+height+'.png'});
   }
   await captureStep('dados');
+  // Dia e mês + Tab completam ano local; ano explícito não é substituído.
+  const dateField=modal.getByLabel('Data do lançamento *');
+  await dateField.fill('30/03');
+  await dateField.press('Tab');
+  const currentYear=await page.evaluate(()=>new Date().getFullYear());
+  assert.equal(await dateField.inputValue(),'30/03/'+currentYear);
+  await dateField.fill('15/08/2024');
+  await dateField.press('Tab');
+  assert.equal(await dateField.inputValue(),'15/08/2024');
+  await dateField.fill('31/02');
+  await dateField.press('Tab');
+  assert.equal(await dateField.getAttribute('aria-invalid'),'true','Data inexistente não é aceita');
+  await dateField.fill('29/02/2024');
+  await dateField.press('Tab');
+  assert.equal(await dateField.getAttribute('aria-invalid'),'false','Ano bissexto válido');
+  await dateField.fill('30/03');
+  await dateField.press('Tab');
+  assert.equal(await dateField.inputValue(),'30/03/'+currentYear);
   await modal.getByLabel('Descrição *').fill('compra de pão e maçã');
   assert.equal(await modal.getByLabel('Descrição *').inputValue(),'COMPRA DE PÃO E MAÇÃ');
   const method=modal.getByLabel('Forma de pagamento *');
