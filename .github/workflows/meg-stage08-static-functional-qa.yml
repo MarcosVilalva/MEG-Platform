@@ -1,0 +1,56 @@
+name: MEG Stage08 - QA funcional isolada PR677
+on:
+  push:
+    branches:
+      - 'stage08/home-launches-closeout-20261112'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage08-static-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      NODE_ENV: test
+      PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependências imutáveis
+        run: npm ci --audit=false
+      - name: Compilar QA isolada
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
+      - name: Instalar Playwright de teste
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Exercitar aplicativo autenticado com mocks e zero rede financeira
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/stage08-qa-static.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4175/stage08-funcional-qa.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage08-static-qa.browser.mjs
+      - name: Validar URL pública Render com navegador e sem acesso à API real
+        env:
+          MEG_STAGE08_QA_URL: https://meg-stage08-funcional-pr677.onrender.com
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 30 \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=571cc7aabecf96a44ecb44dee5043823e6f6ac29" \
+            -o /tmp/meg-stage08-public-html
+          grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-stage08-public-html
+          node scripts/meg-stage08-static-qa.browser.mjs
+      - name: Disponibilizar artefato estático validado da QA
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage08-funcional-qa-pr677
+          path: apps/web/dist-stage08-funcional-qa/
+          if-no-files-found: error
+          retention-days: 30
