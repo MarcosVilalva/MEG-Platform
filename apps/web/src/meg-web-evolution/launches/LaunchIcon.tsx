@@ -3,6 +3,7 @@ import {phosphorKpi} from './icon-packs/phosphor-kpi';
 import {phosphorCategoryA} from './icon-packs/phosphor-category-a';
 import {phosphorCategoryB} from './icon-packs/phosphor-category-b';
 import {phosphorControls} from './icon-packs/phosphor-controls';
+import {launchRefinedIcons} from './icon-packs/refined-action-icons';
 import {categorySemanticExtended} from './icon-packs/category-semantic-extended';
 
 /**
@@ -31,13 +32,13 @@ import {categorySemanticExtended} from './icon-packs/category-semantic-extended'
  */
 
 export type LaunchIconName=
- 'trendUp'|'trendDown'|'chart'|'wallet'|
+ 'trendUp'|'trendDown'|'chart'|'wallet'|'projectedChart'|'cashIn'|'cashOut'|'walletMinimal'|'eye'|
  'grocery'|'marketCart'|'motorcycle'|'petPaw'|'clothing'|'electronics'|'hygiene'|'schoolSupplies'|'debt'|'savings'|'beverages'|'fastFood'|'reimbursement'|'health'|'transport'|'home'|'income'|'generic'|'food'|'fuel'|
  'education'|'leisure'|'services'|'gift'|'card'|'work'|'subscriptions'|
  'plus'|'search'|'calendar'|'chevronDown'|'chevronLeft'|'list';
 
 const phosphorGlyphs={
- ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls,...categorySemanticExtended
+ ...phosphorKpi,...phosphorCategoryA,...phosphorCategoryB,...phosphorControls,...categorySemanticExtended,...launchRefinedIcons
 } as Record<LaunchIconName,ReactNode>;
 
 const megSemanticIcons:ReadonlySet<LaunchIconName>=new Set(['marketCart','motorcycle','petPaw','clothing','electronics','hygiene','schoolSupplies','debt','savings','beverages','fastFood','reimbursement']);
