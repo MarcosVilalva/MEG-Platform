@@ -36,9 +36,9 @@ jobs:
           }
           # Home P0 autorizada (PR #669)
           check_blob apps/web/src/meg-web-evolution/home/HomeDashboard.tsx 8e8bac894837f55ce55859740105cbb170439b25
-          # Lançamentos, layout e ícones oficiais (PR #656 / issue #660)
+          # Lançamentos (PR #656): apenas seletores do Shell retirados por solicitação do usuário; conteúdo interno e ícones preservados.
           check_blob apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx 6807bfa035a4976c23fe111cbf7705c8be60a828
-          check_blob apps/web/src/meg-web-evolution/launches/launches-stage09.css 92bc47ba815ba0139f1aeca7b7c7dc15fde4d7ff
+          check_blob apps/web/src/meg-web-evolution/launches/launches-stage09.css 4d859c2d1178e9e05b6e6a292bd914ffbcb02257
           check_blob apps/web/src/meg-web-evolution/launches/LaunchCategoryBadge.tsx 72a822a3fde5a38f5ec791af3e4f03527beb630b
           check_blob apps/web/src/meg-web-evolution/launches/LaunchPaymentBadge.tsx b276bb0fd422ea601ca91af4774c97646ba79055
       - name: Instalar dependencias e gerar Prisma sem banco
