@@ -106,3 +106,46 @@ test('caracteriza divergência entre criação protegida e edição monetária l
   assert.match(financeService, /return prisma\.\$transaction\(async \(tx\)/);
   // Este teste documenta o contrato atual. Não declara equivalência financeira com o writer protegido.
 });
+
+
+const historyService = sourceAt('apps/api/src/modules/finance/service.ts');
+const catalogScope = sourceAt('apps/api/src/modules/finance/catalog-scope.ts');
+
+test('histórico canônico disponível à UI inclui vínculos para autocomplete sem campo derivado fictício', () => {
+  assert.match(eventRoutes, /app\.get\('\/events\/history-snapshot'/);
+  assert.match(historyService, /protocol: 'financial-history-v1'/);
+  assert.match(historyService, /account: true, category: true, paymentMethod: true/);
+  assert.match(historyService, /FINANCIAL_HISTORY_SNAPSHOT_LIMIT = 5000/);
+  assert.match(historyService, /kind: 'limit-exceeded'/);
+});
+
+test('catálogos selecionados pertencem ao usuário e devem estar ativos', () => {
+  assert.match(catalogScope, /where: \{ id, userId, isActive: true \}/);
+  assert.match(eventWriter, /activeAccountForUser/);
+  assert.match(eventWriter, /activeCategoryForUser/);
+  assert.match(eventWriter, /activePaymentMethodForUser/);
+});
+
+test('rotas de escrita não autorizam VIEWER', () => {
+  assert.match(eventRoutes, /const writeRoles = \['ADMIN', 'MANAGER', 'OPERATOR'\]/);
+  assert.match(eventRoutes, /app\.post\('\/events', \{ preHandler: app\.authorize\(\[\.\.\.writeRoles\]\)/);
+  assert.match(eventRoutes, /app\.patch\('\/events\/:id', \{ preHandler: app\.authorize\(\[\.\.\.writeRoles\]\)/);
+  assert.match(benefitRoutes, /const writeRoles = \['ADMIN', 'MANAGER', 'OPERATOR'\]/);
+});
+
+test('benefício exige operação idempotente e vinculação ativa ao domínio benefício', () => {
+  assert.match(benefitRoutes, /operationId: z\.string\(\)\.trim\(\)\.min\(8\)/);
+  assert.match(benefitWriter, /normalizeText\(account\.type\) !== 'BENEFIT'/);
+  assert.match(benefitWriter, /isBenefitPaymentMethod\(paymentMethod\.name\)/);
+  assert.match(benefitWriter, /status: 'paid'/);
+});
+
+test('edição legada deve manter bloqueio até caracterização de concorrência e domínio', () => {
+  const update = financeService.slice(financeService.indexOf('export async function updateFinancialEvent'), financeService.indexOf('export async function deleteFinancialEvent'));
+  assert.match(update, /validateActiveReferences/);
+  assert.match(update, /FINANCIAL_EVENT_LINKED_DOMAIN/);
+  assert.match(update, /writeBackNormalizedEventsToAppState/);
+  assert.doesNotMatch(update, /resolveCanonicalFinancialStatus/);
+  assert.doesNotMatch(update, /expectedUpdatedAt/);
+  assert.doesNotMatch(update, /BENEFIT_CONTRACT_REQUIRED/);
+});
