@@ -2406,3 +2406,23 @@ https://meg-stage08-alerta-prism-pr685.onrender.com/stage08-funcional-qa.html?vi
 - A conexão Vercel retornou 403 no escopo `mvilalva87-3474` (time `team_q1mXZVqUpp2VJ8dzyXWd99ZL`), portanto não há permissão funcional para publicar preview por ela nesta sessão. Não usar outro escopo por suposição.
 - **Bloqueio atual:** distribuição da QA #686 e teste externo pendentes. Não confundir prévia #685 com código #686. Não criar serviços acima da quota, não reutilizar homologados, não excluir recursos, nem efetuar merge/deploy produtivo.
 - **Próximo passo:** obter capacidade segura no Render sem exclusões automáticas, ou autorização de escopo na Vercel; então publicar QA com dados fictícios, executar regressão em 390/960/1366, apresentar URL sem cache para homologação explícita.
+
+
+## 12/11/2026 — Etapa 08 | Política de QA reutilizável e consolidação da iconografia Prism
+
+**Decisão operacional autorizada:** deixar de criar um novo serviço Render por PR ou ajuste visual. Usar uma QA rotativa isolada para a Etapa 08, preservando por SHA a versão homologada, mantendo a QA de integração Home + Lançamentos separadamente protegida. Dados fictícios, sem conexão com API/banco real. Testes e CI não substituem homologação humana. Etapa 10 segue independente até a futura integração autorizada, com regressão financeira antes de mesclar qualquer código.
+
+**Serviço consolidado de QA Etapa 08:** `meg-stage08-alerta-prism-pr685` (ID `srv-dbr00b56e07s738n62n0`), reutilizado sem criar outra hospedagem. Auto Deploy **OFF**, branch `stage08/overdue-prism-warning-20261112` avançada por fast-forward seguro de `50cd18bb1ebca7f873a1676bab10bd2d07ca9fd8` a `90777706e9ab87d8b1c5713776f9b825cbe3c510`, trazendo **somente** ajuste da tabela Próximos compromissos, teste correspondente e atualização documental da PR #686. Não houve merge para main ou produção. Os commits prévios permanecem no GitHub.
+
+**Deploy QA:** `dep-dbr2gk6k1f9s73dpabl0`, Render **LIVE** no commit `90777706e9ab87d8b1c5713776f9b825cbe3c510`. URL com cache-busting: https://meg-stage08-alerta-prism-pr685.onrender.com/stage08-funcional-qa.html?visual=prism&v=90777706e9ab87d8b1c5713776f9b825cbe3c510 . O Render confirma deploy; inspeção funcional externa da página e CI no último commit **ainda não foram comprovadas**. NÃO registrar aprovação visual automática da tabela.
+
+**Infraestrutura:** inventário Render de 12/11 apontou **25 serviços** e nenhuma vaga; atualização acima reutilizou o serviço existente, mantendo 25. Nunca criar QA nova automaticamente em etapa ou PR.
+
+**Remoção somente após conferência de vínculos e autorização de exclusão:**
+- **Primeiros candidatos históricos:** `meg-pr648-visual-preview` (`srv-dbgh9dui0phs73aloha0`) e `meg-home-06-refino-pr655` (`srv-dblfrddbedkc73ah970g`), sem consumo mensurado de banda no período consultado.
+- **Candidatos da própria Etapa 08, APÓS homologação da QA consolidada e auditoria de dependências:** `meg-stage08-funcional-pr677`, `meg-stage08-icones-pr679`, `meg-stage08-prism-tipografia-pilot`, `meg-stage08-prism-rollout-pr684`; `meg-prism-designsystem-qa` só após confirmar que não serve a outra validação do design system.
+- **Outros a avaliar posteriormente:** `meg-web-evolution-preview` e serviços Phoenix legados. Tráfego baixo ou zero não prova ausência de dependência.
+- **PROTEGIDOS:** `meg-platform-api`, `meg-evolution-api` até descarte de dependências, `meg-stage09-home-launches-qa` (preview homologado), QA da Etapa 10 PR #678 e demais ambientes cuja dependência não foi auditada.
+**Nenhuma exclusão foi executada**.
+
+**Próximo passo:** obter CI e QA externa da nova branch; usuário inspecionar a URL sem cache e homologar explicitamente o DataGrid e conjunto Prism; preparar pacote de integração para o chat 10 com SHA, arquivos protegidos, dependências, status de gates e restrições, sem merge/deploy produtivo.
