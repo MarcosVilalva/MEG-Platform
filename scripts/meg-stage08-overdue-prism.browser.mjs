@@ -15,8 +15,9 @@ const browser=await chromium.launch({
 try{
  for(const [width,height] of [[390,844],[960,900],[1366,768]]){
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
-  const errors=[],finance=[],external=[];
+  const errors=[],finance=[],external=[],failedRequests=[];
   page.on('pageerror',e=>errors.push(String(e)));
+  page.on('requestfailed',req=>failedRequests.push({url:req.url(),reason:req.failure()?.errorText}));
   page.on('request',request=>{
    const u=new URL(request.url());
    if(/^\/(auth|finance|cards|payables)(\/|$)/.test(u.pathname))finance.push(request.url());
@@ -26,9 +27,20 @@ try{
    }
   });
   try{
-   await page.goto(origin+'/stage08-funcional-qa.html'+suffix,{waitUntil:'domcontentloaded'});
+   const response=await page.goto(origin+'/stage08-funcional-qa.html'+suffix,{waitUntil:'domcontentloaded'});
    const dlg=page.locator('.meg-due-alert-dialog');
-   await dlg.waitFor({state:'visible',timeout:30000});
+   try{
+    await dlg.waitFor({state:'visible',timeout:15000});
+   }catch(error){
+    const diagnostic={
+     status:response?.status(),url:page.url(),title:await page.title().catch(()=>null),
+     body:(await page.locator('body').innerText().catch(()=>'' )).slice(0,1400),
+     scripts:await page.locator('script[src]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('src'))),
+     errors,failedRequests,finance,external,
+    };
+    console.log('OVERDUE_QA_PUBLIC_DIAGNOSTIC '+JSON.stringify(diagnostic));
+    throw error;
+   }
    const expired=dlg.locator('.meg-due-alert-item.is-overdue');
    const today=dlg.locator('.meg-due-alert-item.is-due-today');
    assert.ok(await expired.count()>=1,'Nenhum item vencido no fixture canônico');
