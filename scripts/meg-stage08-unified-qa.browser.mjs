@@ -34,6 +34,27 @@ try{
    await page.getByRole('button',{name:'Escolher Despesa'}).click();
    await page.locator('.meg-t10-expense[role="dialog"]').waitFor({state:'visible'});
    assert.equal(await page.getByRole('button',{name:'Salvar lançamento'}).first().isDisabled(),true,'Gravação habilitada na QA');
+   // Contrato visual homologado da PR #678 deve chegar integralmente à QA unificada.
+   assert.equal(await page.evaluate(()=>document.documentElement.dataset.megPrismUi),'true','Prism ativo na QA integrada');
+   const dateField=page.getByLabel('Data do lançamento *');
+   await dateField.fill('30032026');
+   assert.equal(await dateField.inputValue(),'30/03/2026','Máscara em tempo real DD/MM/AAAA');
+   await dateField.fill('3003');
+   await dateField.press('Tab');
+   const year=await page.evaluate(()=>new Date().getFullYear());
+   assert.equal(await dateField.inputValue(),'30/03/'+year,'Dia e mês + Tab completam ano');
+   assert.equal(await page.locator('.meg-t10-expense-date-calendar > svg').count(),1,'Calendário apenas com ícone');
+   const notes=page.getByRole('button',{name:/Observações/});
+   const expectedExpanded=width>1024&&height>=760;
+   assert.equal(await notes.getAttribute('aria-expanded'),expectedExpanded?'true':'false','Observações usam tamanho da tela, não modalidade');
+   if(!expectedExpanded)await notes.click();
+   await page.getByLabel('Observações (opcional)').fill('texto fictício');
+   assert.equal(await page.getByLabel('Observações (opcional)').inputValue(),'TEXTO FICTÍCIO');
+   await page.getByRole('button',{name:/Crédito/}).click();
+   assert.equal(await page.getByLabel('Observações (opcional)').inputValue(),'TEXTO FICTÍCIO','Texto preservado entre modalidades');
+   const panel=await page.locator('.meg-t10-expense-primary').evaluate(el=>({height:el.clientHeight,scrollHeight:el.scrollHeight}));
+   assert.ok(panel.scrollHeight<=panel.height+2,'Dados não pode cortar Observações: '+JSON.stringify(panel));
+
    await page.screenshot({path:resolve(output,'nova-despesa-'+width+'.png'),fullPage:false});
    const dims=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:document.documentElement.clientWidth}));
    assert.ok(dims.w<=dims.v+2,'Rolagem horizontal inesperada em '+width);
