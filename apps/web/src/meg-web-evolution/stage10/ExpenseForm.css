@@ -51,3 +51,10 @@
 .meg-t10-expense-suggestions button{display:grid;gap:.2rem;min-height:3rem;border:1px solid #145e66;border-radius:.5rem;padding:.55rem .7rem;color:#f5ffff;background:#043941;text-align:left;cursor:pointer}
 .meg-t10-expense-suggestions button:hover,.meg-t10-expense-suggestions button:focus-visible{border-color:#26f8e4;background:#07565b}
 .meg-t10-expense-suggestions small{color:#b3d8d5}
+
+.meg-t10-expense-account-kind{display:flex;flex-wrap:wrap;gap:.4rem;margin:0;padding:.7rem;border:1px solid #117e86;border-radius:.7rem}
+.meg-t10-expense-account-kind legend{padding:0 .3rem;color:#f1fffd;font-size:.88rem;font-weight:800}
+.meg-t10-expense-account-kind button{flex:1 1 7.5rem;min-height:3rem;padding:.6rem;border:1px solid #147b85;border-radius:.65rem;background:#032a33;color:#eafaf8;cursor:pointer}
+.meg-t10-expense-account-kind button[aria-pressed=true]{color:#021b1e;background:#10e8d8;border-color:#10e8d8;font-weight:800}
+.meg-t10-expense-account-kind button:disabled{opacity:.75;cursor:not-allowed}
+.meg-t10-expense-account-kind small{flex:0 0 100%;color:#b2d3d0;font-size:.75rem}
