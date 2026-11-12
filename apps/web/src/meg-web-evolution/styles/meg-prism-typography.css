@@ -81,6 +81,18 @@ body:has(#meg-web-evolution-root){
 #meg-web-evolution-root .meg-l09.is-operational .meg-l09-filters :is(input,select){font-size:.87rem}
 #meg-web-evolution-root .meg-l09.is-operational .meg-l09-favorites-form label{font-size:.84rem;line-height:1.35}
 #meg-web-evolution-root .meg-l09.is-operational .meg-l09-grid-heading{font-size:.87rem}
+#meg-web-evolution-root .meg-l09.is-operational .meg-datagrid-table tbody td{
+ font-size:.84rem;line-height:1.4;
+}
+#meg-web-evolution-root .meg-l09.is-operational .meg-datagrid-table thead th{
+ font-size:.82rem;line-height:1.32;
+}
+#meg-web-evolution-root .meg-l09.is-operational .meg-datagrid-card-row dd{
+ font-size:.88rem;line-height:1.4;
+}
+#meg-web-evolution-root .meg-l09.is-operational .meg-datagrid-card-row dt{
+ font-size:.8rem;line-height:1.36;
+}
 #meg-web-evolution-root .meg-l09.is-operational .meg-l09-detail-body dl>div{font-size:.85rem;line-height:1.4}
 #meg-web-evolution-root .meg-l09.is-operational .meg-l09-modal-fields :is(dt,dd){font-size:.85rem;line-height:1.42}
 @media(max-width:639px){
