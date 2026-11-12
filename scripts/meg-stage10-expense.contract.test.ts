@@ -18,7 +18,7 @@ test('catálogos filtrados por ativo, sem IDs de produção no formulário',()=>
 });
 test('Alimentação obriga vínculos explícitos, pagamento pago e travamento do catálogo',()=>{
  assert.match(code,/benefitBinding/);
- assert.match(code,/binding\.categoryIds\.includes\(id\)/);
+ assert.match(code,/binding\?\.categoryIds\.includes\(id\)/);
  assert.match(code,/accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid'/);
  assert.match(code,/disabled=\{lockedBenefit\}/);
  assert.match(code,/requiresDomainReview=isCredit\|\|isBenefit/);
