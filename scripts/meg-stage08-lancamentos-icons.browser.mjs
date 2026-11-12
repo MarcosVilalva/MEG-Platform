@@ -35,6 +35,10 @@ try{
    const root=page.locator('.meg-l09.is-operational');
    await root.waitFor({timeout:15000});
    await root.locator('.meg-l09-grid-summary').waitFor({timeout:30000});
+   // A Home tem rolagem própria; restaurar a posição para inspecionar o
+   // banner em tamanho completo, sem confundir com o estado sticky compacto.
+   await page.locator('.meg-main').evaluate(el=>{el.scrollTop=0;el.dispatchEvent(new Event('scroll'))});
+   await page.waitForFunction(()=>!document.querySelector('.meg-l09.is-operational')?.classList.contains('is-header-compact'),{timeout:5000}).catch(()=>{});
    const stats=root.locator('.meg-l09-stat');
    assert.equal(await stats.count(),4,'Quatro indicadores canônicos devem permanecer');
    const icons=await stats.evaluateAll(items=>items.map(item=>item.querySelector('[data-launch-icon]')?.getAttribute('data-launch-icon')));

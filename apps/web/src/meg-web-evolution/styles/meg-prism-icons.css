@@ -1,0 +1,18 @@
+/* MEG Prism, acabamento unificado com superfícies do layout oficial. */
+#meg-web-evolution-root [data-meg-icon-pack="meg-prism-system"]{
+ flex-shrink:0;overflow:visible;
+ filter:drop-shadow(0 1px 1px rgba(0,18,28,.52));
+}
+#meg-web-evolution-root .meg-nav-item [data-meg-icon-pack="meg-prism-system"]{
+ filter:drop-shadow(0 1px 1px rgba(1,18,31,.65));
+}
+#meg-web-evolution-root .pano-root [data-meg-icon-pack="meg-prism-system"]{
+ filter:drop-shadow(0 1px 1px rgba(0,15,26,.48));
+}
+#meg-web-evolution-root .meg-l09.is-operational .meg-l09-category-mark svg,
+#meg-web-evolution-root .meg-l09.is-operational .meg-l09-payment-icon svg{
+ filter:drop-shadow(0 1px 1px rgba(0,9,20,.45));
+}
+@media(prefers-reduced-motion:reduce){
+ #meg-web-evolution-root [data-meg-icon-pack="meg-prism-system"]{transition:none}
+}
