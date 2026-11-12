@@ -2315,3 +2315,5 @@ https://meg-stage08-prism-tipografia-pilot.onrender.com/stage08-funcional-qa.htm
 **Validações que NÃO existem:** usuário ainda não aprovou visualmente a nova tipografia. O sucesso de testes e o deploy não comprovam acessibilidade em zoom 200%, nem aprovam a implantação transversal, nem autorizam merge. Fontes auto-hospedadas ainda não foram integradas à produção. **Nenhum outro módulo foi convertido a MEG Prism por esta PR.**
 
 **Próximo passo exato:** usuário inspecionar e validar ou rejeitar a proposta tipográfica com a URL sem cache, sobretudo leitura da Home, valores de KPIs, DataGrid, mobile e hierarquia visual. Após aceite, executar o rollout por tela em suas etapas, com gates e homologações independentes. Sem merge ou deploy produtivo sem autorização explícita.
+
+**Rastreabilidade global:** issue [#683](https://github.com/MarcosVilalva/MEG-Platform/issues/683) aberta para executar a iconografia/typografia MEG Prism 2.0 em toda a Web, etapa por etapa, sem reabrir telas homologadas fora da etapa autorizada. Até o momento, **somente o piloto da Etapa 08 foi codificado**; os demais módulos permanecem pendentes, não implementados e não validados.
