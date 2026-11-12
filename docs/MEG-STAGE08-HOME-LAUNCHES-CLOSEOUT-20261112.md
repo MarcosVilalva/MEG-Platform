@@ -62,13 +62,13 @@
 - Nenhuma estratégia de merge baseada apenas em `mergeable=true`; revalidar SHAs, diffs, flags Draft, CI e homologações antes da decisão. Não realizar merge nesta etapa.
 
 ## 6. Gates de aceite técnico
-- [ ] Build API/Web, testes financeiros, CORS e segurança no commit de código.
-- [ ] Testes de contratos e filtros favoritos.
-- [ ] Novo navegador autenticado Home → Lançamentos (1366/390) e fallback para destinos sem rota.
-- [ ] Regressões visuais existentes Home, QuickActions, Shell, DataGrid e Lançamentos (8 viewports onde aplicável).
-- [ ] Gate de hashes dos componentes visuais e escopo restrito de arquivos.
-- [ ] Resultado CI verificável no SHA do código e revisão de evidências.
-- [ ] Revisão do novo PR Draft; nenhuma incorporação da Etapa 10 ou backend produtivo.
+- [x] Build API/Web, testes financeiros, CORS e segurança no commit de código.
+- [x] Testes de contratos e filtros favoritos.
+- [x] Novo navegador autenticado Home → Lançamentos (1366/390) e fallback para destinos sem rota.
+- [x] Regressões visuais existentes Home, QuickActions, Shell, DataGrid e Lançamentos (8 viewports onde aplicável).
+- [x] Gate de hashes dos componentes visuais e escopo restrito de arquivos.
+- [x] Resultado CI verificável no SHA do código e revisão dos logs.
+- [ ] Revisão humana da PR Draft; nenhuma incorporação da Etapa 10 ou backend produtivo.
 
 ## 7. Backlog atribuído sem sobreposição entre chats
 - **Etapa 08:** navegação autorizada, leitura/contratos, testes regressivos, matriz de controles, revisão da cadeia de PRs e checkpoint.
@@ -79,3 +79,11 @@
 
 ## Status operacional
 Este documento registra o escopo e as evidências antes do resultado do novo CI. Não declarar gate verde sem conferir o run/commit correspondente. Nenhuma publicação, merge ou alteração em Render, Supabase, banco ou Android foi autorizada.
+
+### Evidência de CI após correção do teste móvel
+- Primeira execução [#43209146240](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43209146240) falhou **somente no novo teste**: tentativa de clicar num atalho que estava fora da janela móvel do carrossel. Build, financeiro, segurança, contratos, visual e Shell haviam passado. O componente de produção não foi alterado.
+- O teste foi corrigido para avançar o carrossel pela seta real em 390px, respeitando o estado de visibilidade. Resultado final **COMPLETED/SUCCESS** no [run #43209902280](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43209902280), SHA de código `7ce1c785583bd5d24a4b3a2db93e8b4d2bb05ae3`.
+- Logs: `STAGE08_HOME_NAVIGATION 1366x768 PASS` e `390x844 PASS`; fluxo de atalho, aviso de tela sem rota, retorno, persistência e zero writes; Home 16 cenários originais; QuickActions 700 verificações em 8 viewports; visual da #656 em 8 viewports; Shell em 7; teste operacional autenticado, filtros favoritos, logout, hash de blobs e gate de arquivos verdes.
+- O diff da PR Draft #677 cobre apenas dois arquivos de código (`HomeDashboard.tsx` e `main.tsx`), o teste novo, este documento e o workflow. **Nenhum JSX visual do HomeDashboard foi modificado**: alteração limitada à tipagem/semântica do callback; visual de Lançamentos, Shell, CSS, DataGrid e QuickActions preservados.
+- Não houve deploy Render, preview funcional nova, merge, migração, writer nem acesso a banco real. O preview oficialmente homologado ainda aponta para `760b7ad0e3217dbab70ea426df9cad67318f79ef`; ele NÃO contém a nova navegação da PR #677.
+- **Pendência de produto:** inspeção humana da candidata funcional em ambiente de QA autorizado antes de qualquer integração. **Pendência externa:** gates de publicação trabalhados na Etapa 09, sem alteração nesta branch.
