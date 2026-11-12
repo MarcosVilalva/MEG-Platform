@@ -308,8 +308,8 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    render:(value)=>/^\d{4}-\d{2}$/.test(String(value))?String(value).slice(5,7)+'/'+String(value).slice(0,4):readable(value)},
  ];
  return [
-  ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:104,minWidth:94,sortable:false,filterable:false,
-   render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Abrir detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} onClick={()=>openDetails(row.id)}><LaunchIcon name="list" width={16} height={16}/><span>Ver</span></button>} as DataGridColumn<Row>]:[]),
+  ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:82,minWidth:72,sortable:false,filterable:false,
+   render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Ver detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} data-tooltip="Ver detalhes" onClick={()=>openDetails(row.id)}><LaunchIcon name="eye" width={20} height={20}/></button>} as DataGridColumn<Row>]:[]),
   {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
   {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
@@ -370,7 +370,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  ];
  const statisticsView=(
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
-   <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart'} width={25} height={25} strokeWidth={1.9}/></span>
+   <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'cashIn',expense:'cashOut',balance:'walletMinimal',total:'projectedChart'} as Record<string,LaunchIconName>)[s.variant]||'projectedChart'} width={25} height={25}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
  );
@@ -387,7 +387,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    ? <div className="meg-l09-preview-warning meg-l09-verification" role="note">
       <details className="meg-l09-verification-details">
        <summary><span className="meg-l09-verification-icon" aria-hidden="true">✓</span>Histórico verificado <span className="meg-l09-verification-hint">Detalhes da consulta</span></summary>
-       <p>Histórico autenticado e verificado integralmente. Use “Ver” na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API canônica, inclusive sob filtros personalizados quando o backend confirmar suporte. Se a agregação não for segura, ficam indisponíveis. Nenhum lançamento é alterado.</p>
+       <p>Histórico autenticado e verificado integralmente. Use o ícone de visualização na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API canônica, inclusive sob filtros personalizados quando o backend confirmar suporte. Se a agregação não for segura, ficam indisponíveis. Nenhum lançamento é alterado.</p>
       </details>
       {onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
      </div>
