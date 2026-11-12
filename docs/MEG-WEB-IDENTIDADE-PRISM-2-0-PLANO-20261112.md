@@ -64,3 +64,6 @@ Branch isolada `stage08/prism-typography-system-pilot-20261112` derivada da PR #
 - [Sora, projeto da fonte e licença OFL](https://github.com/sora-xor/sora-font)
 - [Plus Jakarta Sans, Google Fonts, licença OFL](https://github.com/google/fonts/blob/main/ofl/plusjakartasans/upstream_info.md)
 - [W3C, WCAG 2.2, Resize Text 1.4.4](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)
+
+## Registro e rastreabilidade
+A expansão para todos os módulos da Web foi formalizada em [issue #683](https://github.com/MarcosVilalva/MEG-Platform/issues/683). A PR #682 permanece um **piloto da Etapa 08**, não uma alteração das demais telas.
