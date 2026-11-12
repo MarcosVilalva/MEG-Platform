@@ -67,7 +67,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stage10-type-chooser-visual-qa
+          name: stage10-nova-despesa-visual-qa
           path: |
             artifacts/meg-stage10-expense-qa/
           if-no-files-found: ignore
