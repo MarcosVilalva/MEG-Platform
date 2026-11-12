@@ -120,3 +120,19 @@ test('Resumo compacto mantém campos visíveis em desktops de altura reduzida',(
  assert.match(code,/Status solicitado/);
  assert.match(code,/Cartão \/ parcelas/);
 });
+
+test('Máscara de data brasileira, calendário com ícone e Observações na coluna Dados',()=>{
+ assert.match(code,/formatEntryDateTyping/);
+ assert.match(code,/setDateText\(formatEntryDateTyping\(e.target.value\)\)/);
+ assert.match(code,/normalizeEntryDate\(dateText,new Date\(\).getFullYear\(\)\)/);
+ assert.match(code,/meg-t10-expense-date-calendar/);
+ assert.match(code,/title="Selecionar data no calendário"/);
+ assert.match(code,/aria-label="Selecionar data no calendário"/);
+ const primary=code.indexOf("meg-t10-expense-primary");
+ const notes=code.indexOf('<div className="meg-t10-expense-notes">');
+ const secondary=code.indexOf("meg-t10-expense-secondary");
+ assert.ok(primary>=0&&notes>primary&&secondary>notes,'Observações ficam dentro de Dados');
+ assert.equal(code.indexOf('<div className="meg-t10-expense-notes">',secondary),-1,'Pagamento não duplica Observações');
+ assert.match(code,/setNotesOpen\(window.matchMedia/);
+ assert.match(css,/meg-t10-expense-primary>\.meg-t10-expense-notes/);
+});
