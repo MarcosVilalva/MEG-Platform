@@ -337,3 +337,12 @@ Documentação: [Supabase Backups](https://supabase.com/docs/guides/platform/bac
 - **Gate 0 concluído, Gate 1 parcialmente concluído:** destino criado sem custo cotado e vazio de dados do aplicativo, mas isolamento completo do tráfego, credenciais e efeitos externos ainda não validado; não executar Gate 2 (fixtures) nem Gate 3 (dados reais) enquanto isso permanecer pendente.
 - IDs obrigatórios para qualquer procedimento futuro: `SOURCE_REF=ugbiqzaqnrhulhetevby` somente leitura; `DEST_REF=oxwmqbzeuiibdlkcbjzv` permitido apenas para ensaio isolado. Nunca reaproveitar script `safe-restore-drill.sh` local em conexão externa; não fazer PUT de root key, alterar pg_net/cron na origem ou tentar restore antes dos gates.
 - Plano de controle completo: [`MEG-STAGE09-SUPABASE-MANAGED-RESTORE-DRILL-20261112.md`](./MEG-STAGE09-SUPABASE-MANAGED-RESTORE-DRILL-20261112.md). PR #666 permanece Draft, issues #674 e #676 abertas.
+
+
+## 14. Isolamento parcial verificado do sandbox por SQL read-only (12/11/2026)
+
+- Consulta única SELECT **somente no sandbox** `oxwmqbzeuiibdlkcbjzv`: zero relações, funções, triggers e políticas `public`, zero relações `public` publicadas em Realtime, zero extensões `pg_cron` e `pg_net`, zero linhas em `auth.users`, `storage.buckets`, `storage.objects` e `vault.secrets`. Advisor de segurança anterior retornou zero lints no sandbox vazio. Nenhuma consulta ou modificação na produção.
+- Estado: `GATE1_PUBLIC_BASELINE=PASS_READ_ONLY`, `GATE1_MANAGED_AUTH_EMAIL_SMS_HOOKS=NAO_VERIFICADO`, `GATE1_EGRESS_SERVICOS=NAO_VERIFICADO`, `GATE2_FICTICIOS=NAO_INICIADO`, `GATE3_RESTORE=NO_GO`, `GATE4_RECUPERACAO_VALIDADA=NAO`.
+- Não criar usuários de teste por e-mail nem acionar OTP/senha por email/SMS enquanto não houver evidência de que o destino não comunica com destinatários reais. Na revisão de Dashboard, ocultar credenciais/chaves/callbacks privados, registrar apenas estados gerais. Fonte Supabase de SMTP: https://supabase.com/docs/guides/auth/auth-smtp ; confirmação de e-mail hosted padrão: https://supabase.com/docs/guides/auth/passwords .
+- O responsável validou o uso de **explicações visuais e analogias educativas** para facilitar entendimento, sem validar telas da Web ou adicionar referência oficial de UI. Preservar a identidade visual soberana dos prints do Projeto para as telas reais.
+- Matriz completa do Gate 1 no documento `MEG-STAGE09-SUPABASE-MANAGED-RESTORE-DRILL-20261112.md` seção 9. Nada de merge, deploy, restauração ou alterações no Android, Web homologada, Render e banco WSL.
