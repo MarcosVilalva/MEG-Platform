@@ -126,7 +126,6 @@ function FlowPreview() {
       periodLabel={activeHome === 'home-p0' ? 'Novembro de 2026' : undefined}
       activeSection={operationalLaunches?'launches':'home'}
       onNavigate={legacyLaunches?undefined:(section)=>{setNotice('');setScreen(section==='home'?'home-p0':'launches');}}
-      visualVariant={launchesVisible?'launches':'home'}
     >
       {operationalLaunches
         ? <LaunchesStage09 data={homeP0QaPreviewFixture} mode="live" periodMonth="2026-11"

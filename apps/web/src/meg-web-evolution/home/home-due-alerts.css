@@ -1,6 +1,7 @@
-/* Home isolada: sino sem moldura. Demais telas preservam o estilo original. */
-.meg-shell:has(.pano-root) .meg-due-bell-button{border:0;border-radius:50%;background:transparent;box-shadow:none}
-.meg-shell:has(.pano-root) .meg-due-bell-button:is(:hover,[aria-expanded=true]){border:0;background:transparent;box-shadow:none;color:#91ffea}
+/* Sino único do Shell: apresentação visual homologada na Home, em todas as seções.
+ * O indicador continua estritamente derivado dos dados canônicos, nunca do layout. */
+.meg-shell .meg-due-bell-button{border:0;border-radius:50%;background:transparent;box-shadow:none}
+.meg-shell .meg-due-bell-button:is(:hover,[aria-expanded=true]){border:0;background:transparent;box-shadow:none;color:#91ffea}
 /* Home PT3 | Sistema visual de vencimentos. Sem cálculo de status na UI. */
 .meg-due-alert-dialog,.meg-due-bell-panel,.meg-due-reminder{
  font-family:Inter,system-ui,sans-serif;box-sizing:border-box;
