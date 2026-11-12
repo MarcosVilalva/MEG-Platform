@@ -11,6 +11,7 @@ import {QuickActions} from './QuickActions';
 import {readCanonicalHomeCommitments,type CanonicalHomeCommitment} from './home-commitments-read';
 import {HomeCommitmentsFullList} from './HomeCommitmentsFullList';
 import {useHomeDueAlertPublisher} from './HomeDueAlerts';
+import {HomeOverdueWarningIcon} from './HomeOverdueWarningIcon';
 import './home-dashboard.css';
 
 export type HomeFinancialData={
@@ -216,7 +217,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     return <span className="pano-due-date" title={'Vencimento: '+dateString(String(v??''))+(urgencyLabel?' · '+urgencyLabel:'')}>
       {urgencyLabel&&<span role="img" className={'pano-due-date__urgency is-'+urgency.replaceAll('_','-')}
        aria-label={urgencyLabel} title={urgencyLabel}>
-       <HomeGlyph name={urgency==='overdue'?'siren':urgency==='due_today'?'timer':'checkCircle'} size={19}/>
+       {urgency==='overdue'?<HomeOverdueWarningIcon size={19}/>:<HomeGlyph name={urgency==='due_today'?'timer':'checkCircle'} size={19}/>}
       </span>}
       <span className="pano-due-date__value">{dateString(String(v??''))}</span>
     </span>;
