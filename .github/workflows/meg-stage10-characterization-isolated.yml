@@ -1,0 +1,73 @@
+name: MEG Stage10 - Caracterizacao Financeira Isolada
+
+on:
+  push:
+    branches:
+      - 'stage10/novo-editar-lancamento-isolado-20261112'
+  pull_request:
+    branches:
+      - 'preview/09-lancamentos-home-p0-qa-20261111'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  financial-characterization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependencias, sem banco e sem deploy
+        run: npm ci --audit=false
+      - name: Caracterizar contratos reais e politica pura
+        run: npx tsx --test scripts/meg-stage10-financial-characterization.test.ts
+      - name: Caracterizar autocomplete de historico sem valores ou datas
+        run: npx tsx --test scripts/meg-stage10-autocomplete-history.test.ts
+      - name: Contratos Nova Despesa sem writer financeiro
+        run: npx tsx --test scripts/meg-stage10-expense.contract.test.ts
+      - name: Regressoes financeiras puras existentes
+        run: |
+          npm run test:core
+          npm run test:evolution-data
+      - name: Build Web sem publicacao
+        env:
+          VITE_PUBLIC_BASE_PATH: '/'
+        run: npm run build:web
+      - name: Browser QA isolado e capturas
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            npx playwright install chromium --with-deps
+            export PLAYWRIGHT_CHROME_PATH=""
+          fi
+          export VITE_PUBLIC_BASE_PATH='/'
+          npm --workspace apps/web run preview -- --host 127.0.0.1 --port 4173 > /tmp/meg-stage10-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
+          for n in $(seq 1 50); do
+            if curl --fail --silent http://127.0.0.1:4173/meg-stage10-expense-qa.html >/dev/null; then break; fi
+            sleep 1
+          done
+          if ! curl --fail --silent http://127.0.0.1:4173/meg-stage10-expense-qa.html >/dev/null; then
+            cat /tmp/meg-stage10-preview.log
+            exit 1
+          fi
+          npm install --no-save --package-lock=false @playwright/test
+          node scripts/meg-stage10-expense.browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage10-nova-despesa-visual-qa
+          path: |
+            artifacts/meg-stage10-expense-qa/
+          if-no-files-found: ignore

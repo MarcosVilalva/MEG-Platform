@@ -213,7 +213,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     const urgency=String(row.dueState??'');
     const urgencyLabel=urgency==='overdue'?'Vencido':urgency==='due_today'?'Vence hoje':urgency==='upcoming'?'A vencer':'';
     return <span className="pano-due-date" title={'Vencimento: '+dateString(String(v??''))+(urgencyLabel?' · '+urgencyLabel:'')}>
-      {urgencyLabel&&<span role="img" className={'pano-due-date__urgency is-'+urgency.replaceAll('_','-')}
+      {urgencyLabel&&<span role="img" className={'pano-due-date__urgency is-'+urgency.replace(/_/g,'-')}
        aria-label={urgencyLabel} title={urgencyLabel}>
        <HomeGlyph name={urgency==='overdue'?'siren':urgency==='due_today'?'timer':'checkCircle'} size={19}/>
       </span>}
