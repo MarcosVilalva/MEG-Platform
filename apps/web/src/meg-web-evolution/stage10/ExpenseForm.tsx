@@ -80,6 +80,9 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
    setAccountKind('benefit');
    // A prévia congela a seleção e exige vínculo resolvido pelo catálogo canônico.
    setDraft(current=>({...current,categoryId:id,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
+  }else if(lockedBenefit){
+   setAccountKind('monetary');
+   setDraft(current=>({...current,categoryId:id,accountId:'',paymentMethodId:'',creditCardId:''}));
   }else setDraft(current=>({...current,categoryId:id}));
  }
  useEffect(()=>{
