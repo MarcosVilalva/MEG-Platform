@@ -117,3 +117,15 @@ Este documento registra o escopo e as evidências antes do resultado do novo CI.
 4. Validar pelo usuário: botão `Adicionar` em Ações rápidas, inclusão do atalho `Lançamentos`, navegação, `Voltar à Home`, fallback para outro destino e persistência. A validação humana **não está registrada ainda**.
 
 **Status:** implementação e artefato de QA disponíveis; **publicação online e homologação humana ainda pendentes**. PR #677 segue Draft, sem merge/deploy.
+
+## 9. Prévia pública funcional publicada após limpeza de serviços no Render
+
+**Verificação realizada em 12/11/2026:** o workspace Render `tea-d98k1qhkh4rs73f4sfj0` passou de 25 para **20 serviços** por exclusões efetuadas pelo usuário. Foram preservados `meg-platform-api` (`srv-d98k61daeets7384hvb0`) e `meg-stage09-home-launches-qa` (`srv-dbqlth8n74is73cjq9a0`); nenhuma exclusão foi realizada por esta intervenção.
+
+**Serviço novo criado, sem reutilizar ou alterar existentes:** `meg-stage08-funcional-pr677`, ID `srv-dbqrgtu7bikc73aufrvg`, [Painel Render](https://dashboard.render.com/static/srv-dbqrgtu7bikc73aufrvg), URL de origem `https://meg-stage08-funcional-pr677.onrender.com`. Tipo static site, Auto Deploy **OFF**, branch `stage08/home-launches-closeout-20261112`, comando `npm ci --audit=false && cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts`, saída `apps/web/dist-stage08-funcional-qa`, sem variáveis de ambiente ou segredos.
+- **Deploy inicial:** `dep-dbqrgu67bikc73aufsv0`, estado **LIVE** confirmado via Render às `2026-11-12T13:02:02Z`, SHA publicado `571cc7aabecf96a44ecb44dee5043823e6f6ac29`. Esse SHA difere do SHA de CI `9dbe0b12aee39a209243e5f12958032b7e7ed883` exclusivamente por quatro commits **documentais**, como comprovado por comparação de commits.
+- **Link sem cache para inspeção:** https://meg-stage08-funcional-pr677.onrender.com/stage08-funcional-qa.html?v=571cc7aabecf96a44ecb44dee5043823e6f6ac29 . A página emprega sessão fictícia e bloqueia a API real; não usar credenciais reais. O teste local do bundle passou; o teste de navegador contra o domínio público está sendo executado no workflow [#43223667175](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43223667175), **verificar conclusão e registrar resultado posteriormente**.
+- A prévia oficial visual anterior permanece congelada em `760b7ad0e3217dbab70ea426df9cad67318f79ef`, no serviço `srv-dbqlth8n74is73cjq9a0`. A QA nova é apenas para homologação da navegação funcional; não substitui a aprovação do layout.
+- Nenhuma alteração de produção, Android, Supabase, banco, credenciais, PRs paralelas ou merge. PR #677 continua Draft. **Aceite manual da QA nova: pendente.**
+
+**Checklist para o operador:** abrir a URL sem cache; usar a sessão de demonstração; abrir Ações rápidas, clicar Lançamentos, conferir a tela real de leitura, voltar à Home, testar um destino ainda não disponível e confirmar persistência dos atalhos. Aprovação visual/funcional somente com manifestação explícita do usuário.
