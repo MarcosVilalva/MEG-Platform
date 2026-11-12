@@ -28,7 +28,8 @@ try{
    try{await page.locator('.pano-root').waitFor({timeout:15000});}
    catch(error){
     const body=await page.locator('body').innerText().catch(()=>'<body unavailable>');
-    throw new Error('QA_HOME_NOT_VISIBLE '+JSON.stringify({body:body.slice(0,2000),errors,consoleErrors,failedRequests,external,networkFinancial,cause:String(error)}));
+    const state=await page.evaluate(()=>({sessionIsPresent:Boolean(sessionStorage.getItem('meg.auth.session')),qaTrace:window.__MEG_STAGE08_QA_TRACE__||[],url:location.href}));
+    throw new Error('QA_HOME_NOT_VISIBLE '+JSON.stringify({body:body.slice(0,2000),state,errors,consoleErrors,failedRequests,external,networkFinancial,cause:String(error)}));
    }
    assert.match(await page.locator('.meg-stage08-qa-stamp').innerText(),/Dados fictícios/);
    assert.equal(await page.locator('.meg-profile-name').innerText(),'Usuário fictício QA');
