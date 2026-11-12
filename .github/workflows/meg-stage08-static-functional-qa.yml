@@ -4,6 +4,7 @@ on:
     branches:
       - 'stage08/home-launches-closeout-20261112'
       - 'stage08/lancamentos-icons-refinement-20261112'
+      - 'design/meg-prism-unified-typography-20261112'
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,6 +41,7 @@ jobs:
           done
           node scripts/meg-stage08-static-qa.browser.mjs
           node scripts/meg-stage08-lancamentos-icons.browser.mjs
+          node scripts/meg-stage08-prism-design-system.browser.mjs
       - name: Validar URL pública Render com navegador e sem acesso à API real
         env:
           MEG_STAGE08_QA_URL: https://meg-stage08-funcional-pr677.onrender.com
