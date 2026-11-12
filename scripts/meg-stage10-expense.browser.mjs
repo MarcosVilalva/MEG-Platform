@@ -114,5 +114,27 @@ try{
   assert.equal(await page.getByRole('dialog',{name:'Novo lançamento'}).count(),0);
   await page.close();
  }
+ // Caracterização adicional: nenhuma conta e múltiplas contas jamais são escolhidas por suposição.
+ for(const [query,expectedCount] of [['0',0],['2',2]]){
+  const page=await browser.newPage({viewport:{width:1366,height:768},reducedMotion:'reduce'});
+  await page.goto(host+'/meg-stage10-expense-qa.html?accounts='+query,{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:'Abrir Nova Despesa (QA)'}).click();
+  const modal=page.getByRole('dialog',{name:'Novo lançamento'});
+  const account=modal.getByLabel('Conta de saída do recurso *');
+  assert.equal(await account.isVisible(),true,'Paga exige conta em ambas configurações');
+  assert.equal(await account.locator('option').count(),expectedCount+1);
+  assert.equal(await account.inputValue(),'','Não selecionar conta quando há '+expectedCount+' contas');
+  if(query==='2'){
+   await account.selectOption('qa-account-money-second');
+   assert.equal(await account.inputValue(),'qa-account-money-second','Usuário escolhe segunda conta');
+  }else{
+   assert.ok(await modal.getByText('Nenhuma conta monetária ativa disponível.').isVisible());
+  }
+  await modal.locator('.meg-t10-expense-status button').nth(1).click();
+  assert.equal(await account.count(),0,'Pendente dispensa conta');
+  await modal.locator('.meg-t10-expense-status button').nth(0).click();
+  assert.equal(await account.inputValue(),'','Ao rebaixar para Paga com múltiplas contas, requer escolha novamente');
+  await page.close();
+ }
  writeFileSync(root+'/report.json',JSON.stringify(results,null,2));
 }finally{await browser.close();}
