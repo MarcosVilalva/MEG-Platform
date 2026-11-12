@@ -54,11 +54,14 @@ jobs:
           set -euo pipefail
           python3 -m http.server 4173 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-stage09-web-integration.log 2>&1 &
           PID=$!
-          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          python3 -m http.server 4174 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-stage09-auth-integration.log 2>&1 &
+          PID2=$!
+          trap 'kill "$PID" "$PID2" 2>/dev/null || true' EXIT
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null; then break; fi
+            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null && curl -fsS http://127.0.0.1:4174/web-evolution.html >/dev/null; then break; fi
             sleep 1
           done
+          curl -fsS http://127.0.0.1:4174/web-evolution.html >/dev/null
           node scripts/meg-06-home-refino.browser.mjs
           node scripts/meg-08-home-quick-actions.browser.mjs
           node scripts/meg-stage09-lancamentos.browser.mjs
