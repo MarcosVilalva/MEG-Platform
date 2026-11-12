@@ -252,12 +252,10 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       </div>}
       <button type="button" className="meg-t10-expense-schedule-button" onClick={()=>setParcelModal(true)}><Icon name="calendar"/> Mostrar parcelamento <Icon name="chevronRight"/></button>
      </div>}
-     <div className="meg-t10-expense-payment-context" aria-live="polite">
-      <strong><Icon name={isCredit?'card':'list'}/> {isCredit?'Informações do cartão':'Conta e baixa'}</strong>
-      {isCredit?
-       <p>{selectedCard?'Fechamento e vencimento conforme cadastro do cartão. Consulte Mostrar parcelamento para a programação canônica.':'Selecione um cartão para conferir identificação, fechamento e vencimento.'}</p>:
-       <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>}
-     </div>
+     {!isCredit&&<div className="meg-t10-expense-payment-context" aria-live="polite">
+      <strong><Icon name="list"/> Conta e baixa</strong>
+      <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
+     </div>}
      <div className="meg-t10-expense-notes">
       <button type="button" className="meg-t10-expense-expand" aria-expanded={notesOpen} onClick={()=>setNotesOpen(o=>!o)}><Icon name="list"/> Observações (opcional) <Icon name="chevronDown"/></button>
       {notesOpen&&<textarea id={formId+'notes'} aria-label="Observações (opcional)" value={draft.notes} maxLength={1000} onChange={e=>patch('notes',normalizeFinancialTextInput(e.target.value))} placeholder="OBSERVAÇÕES ADICIONAIS"/>}
