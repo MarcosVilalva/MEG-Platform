@@ -32,24 +32,33 @@ try{
    await page.getByRole('button',{name:'Novo lançamento'}).first().click();
    const picker=page.getByTestId('new-launch-types');
    await picker.waitFor({state:'visible'});
-   assert.equal(await picker.locator('.meg-prism-choice__card').count(),4,'Quatro tipos de lançamento preservados');
-   assert.equal(await picker.locator('svg[data-launch-icon="exit3d"]').count(),1,'Saídas com seta Prism coral');
-   assert.equal(await picker.locator('svg[data-launch-icon="entry3d"]').count(),1,'Entradas com seta Prism verde');
+   assert.equal(await picker.locator('.meg-choice__option').count(),4,'Quatro cards fotográficos originais preservados');
+   assert.equal(await picker.locator('.meg-choice__hero-photo').count(),1,'Hero original preservado');
+   assert.equal(await picker.getByRole('heading',{name:/Mais controle/}).count(),1,'Texto editorial original preservado');
+   assert.equal(await picker.locator('.meg-choice__feature').count(),3,'Faixa inferior de recursos preservada');
+   assert.equal(await picker.locator('.meg-choice__option-photo').count(),4,'Quatro imagens por modalidade preservadas');
+   assert.equal(await picker.locator('.meg-choice__option-next svg[data-meg-prism="icon-2"]').count(),4,'Ações com SVG Prism');
+   assert.equal(await picker.locator('.meg-choice__feature-icon svg[data-meg-prism="icon-2"]').count(),3,'Rodapé com SVG Prism');
+   assert.ok(await picker.locator('.meg-choice__tag-icon[data-meg-prism="icon-2"]').count()>=8,'Ícones semânticos nos chips');
+   assert.equal(await page.locator('.meg-new-launch__close svg[data-meg-prism="icon-2"]').count(),1,'Fechar com SVG Prism');
+   const photoBackground=await picker.locator('.meg-choice__option.is-expense .meg-choice__option-photo').evaluate(el=>getComputedStyle(el).backgroundImage);
+   assert.match(photoBackground,/expense\.webp/,'Imagem HD de Despesa preservada');
+
    assert.equal(await picker.getByRole('button',{name:'Transferência indisponível'}).isDisabled(),true);
    assert.equal(await picker.getByRole('button',{name:'Benefício indisponível'}).isDisabled(),true);
    assert.equal(await picker.getByRole('button',{name:'Escolher Despesa'}).isEnabled(),true);
    assert.equal(await picker.getByRole('button',{name:'Escolher Receita'}).isEnabled(),true);
    const choiceBounds=await picker.evaluate(el=>{
-    const cards=Array.from(el.querySelectorAll('.meg-prism-choice__card')).map(c=>c.getBoundingClientRect());
+    const cards=Array.from(el.querySelectorAll('.meg-choice__option')).map(c=>c.getBoundingClientRect());
     const rect=el.getBoundingClientRect();
     return {horizontal:el.scrollWidth>el.clientWidth+2,vertical:el.scrollHeight>el.clientHeight+2,
      rect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right},
      cards:cards.map(r=>({top:r.top,bottom:r.bottom,left:r.left,right:r.right}))};
    });
-   assert.equal(choiceBounds.horizontal,false,'Seletor Prism sem corte horizontal '+width);
-   assert.equal(choiceBounds.vertical,false,'Seletor Prism sem corte vertical '+width);
+   assert.equal(choiceBounds.horizontal,false,'Seletor original com ícones Prism sem corte horizontal '+width);
+   assert.equal(choiceBounds.vertical,false,'Seletor original com ícones Prism sem corte vertical '+width);
    assert.ok(choiceBounds.cards.every(c=>c.left>=choiceBounds.rect.left-2&&c.right<=choiceBounds.rect.right+2&&c.top>=choiceBounds.rect.top-2&&c.bottom<=choiceBounds.rect.bottom+2),'Cards inteiros visíveis '+width+': '+JSON.stringify(choiceBounds));
-   await page.screenshot({path:resolve(output,'seletor-prism-'+width+'.png'),fullPage:false});
+   await page.screenshot({path:resolve(output,'seletor-fotografico-prism-icons-'+width+'.png'),fullPage:false});
    await picker.getByRole('button',{name:'Escolher Despesa'}).click();
    await page.locator('.meg-t10-expense[role="dialog"]').waitFor({state:'visible'});
    assert.equal(await page.getByRole('button',{name:'Salvar lançamento'}).first().isDisabled(),true,'Gravação habilitada na QA');
