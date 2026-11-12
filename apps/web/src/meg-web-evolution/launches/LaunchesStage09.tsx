@@ -309,7 +309,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  ];
  return [
   ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:82,minWidth:72,sortable:false,filterable:false,
-   render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Ver detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} data-tooltip="Ver detalhes" onClick={()=>openDetails(row.id)}><LaunchIcon name="eye" width={20} height={20}/></button>} as DataGridColumn<Row>]:[]),
+   render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Ver detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} data-tooltip="Ver detalhes" onClick={()=>openDetails(row.id)}><LaunchIcon name="details3d" width={22} height={22}/></button>} as DataGridColumn<Row>]:[]),
   {key:'date',label:'Data',type:'date',width:128,minWidth:100,sortable:true,filterable:true,render:(value)=>dateFmt(String(value))},
   {key:'description',label:'Descrição',type:'text',width:218,minWidth:160,sortable:true,filterable:true,
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
@@ -371,7 +371,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const statisticsView=(
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
    <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={(mode==='live'
-    ? ({income:'cashIn',expense:'cashOut',balance:'walletMinimal',total:'projectedChart'} as Record<string,LaunchIconName>)[s.variant]||'projectedChart'
+    ? ({income:'entry3d',expense:'exit3d',balance:'wallet3d',total:'projection3d'} as Record<string,LaunchIconName>)[s.variant]||'projection3d'
     : ({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart')} width={25} height={25}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
