@@ -111,7 +111,7 @@ try {
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
   const api=[];
   page.on('request',r=>{if(/\/api\//.test(new URL(r.url()).pathname))api.push(r.url());});
-  await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
+  await page.goto(base+'/fluxo-integrado-08.html?tela=home-legado',{waitUntil:'networkidle'});
   await page.locator('.pano-actions').waitFor();
   // Baseline uses EXACTLY the same real DOM/fixtures and disables only the
   // candidate Home styling. The approved Novo Lançamento CSS is untouched.
@@ -283,7 +283,7 @@ try {
    [390,667,1],[1366,600,1],[1920,650,1],[1366,768,1.25],[1920,1080,1.25]
  ]){
    const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
-   await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
+   await page.goto(base+'/fluxo-integrado-08.html?tela=home-legado',{waitUntil:'networkidle'});
    await page.locator('.pano-actions').waitFor();
    if(zoom!==1)await page.evaluate(z=>{document.documentElement.style.zoom=String(z);},zoom);
    const m=await measure(page);
@@ -301,7 +301,7 @@ try {
  }
 
  const page=await browser.newPage({viewport:{width:1366,height:768}});
- await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
+ await page.goto(base+'/fluxo-integrado-08.html?tela=home-legado',{waitUntil:'networkidle'});
  await page.locator('.pano-actions').waitFor();
  const before=await page.locator('.pano-credit-card').innerText();
  await page.locator('.pano-card-control.is-next').click();

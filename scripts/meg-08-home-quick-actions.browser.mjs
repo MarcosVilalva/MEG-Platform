@@ -133,7 +133,7 @@ try{
  for(const width of [320,390,640,768,1024,1366,1920,2560]){
   const context=await browser.newContext({viewport:{width,height:Math.min(900,Math.max(640,width))},reducedMotion:'reduce'});
   const page=await context.newPage();
-  await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
+  await page.goto(base+'/fluxo-integrado-08.html?tela=home-legado',{waitUntil:'networkidle'});
   await page.waitForTimeout(180);
   assert(await page.locator('.pano-quick-rail').count()===1,'carrossel duplicado: '+width);
   assert(await page.locator('.meg-topbar-new').isVisible(),'Novo lançamento saiu do topo: '+width);
@@ -322,7 +322,7 @@ try{
  const context=await browser.newContext();
  await context.addInitScript(()=>localStorage.setItem('meg.web.home.quick-actions.v1.demo','["inexistente","transferencia"]'));
  const page=await context.newPage();
- await page.goto(base+'/fluxo-integrado-08.html?tela=home',{waitUntil:'networkidle'});
+ await page.goto(base+'/fluxo-integrado-08.html?tela=home-legado',{waitUntil:'networkidle'});
  assert(JSON.stringify(await names(page))===JSON.stringify(defaults.slice(0,await buttons(page).count())),'preferência inválida não restaurou padrão');
  await context.close();
  console.log('MEG Home Ações rápidas circular: '+checks+' verificações passaram; 8 viewports.');
