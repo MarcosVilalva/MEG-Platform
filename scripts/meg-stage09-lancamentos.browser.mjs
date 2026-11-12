@@ -13,7 +13,7 @@ for(const [width,height] of sizes){
  const calls=[];page.on('request',r=>{if(/\/api\//.test(new URL(r.url()).pathname))calls.push(r.url())});
  const issues=[];
  try{
-  await page.goto('http://127.0.0.1:4173/fluxo-integrado-08.html?tela=lancamentos',{waitUntil:'networkidle'});
+  await page.goto('http://127.0.0.1:4173/fluxo-integrado-08.html?tela=lancamentos-legado',{waitUntil:'networkidle'});
   await page.locator('.meg-l09').waitFor();
   const measurement=await page.evaluate(()=>{
    const main=document.querySelector('.meg-main'),root=document.querySelector('.meg-l09');

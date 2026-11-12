@@ -21,17 +21,20 @@ import './choice-refinement.css';
 
 /**
  * PREVIA VISUAL ISOLADA, SEM API:
- * - Telas 01-04 da PR #649, Home refinada da PR #653 (ainda candidata, nao homologada);
- * - Escolha do Novo Lancamento da PR #648, com os arquivos e WebPs originais.
+ * - Home P0 validada na PR #669;
+ * - Lançamentos no modo operacional visual da PR #656, com fixture sintética;
+ * - Modo legado exclusivo para testes da PR #656 (não para homologação nova).
+ * - Escolha de Novo Lançamento preservada, sem formulário financeiro.
  * Nunca envia credenciais, grava transacoes ou substitui o gateway real.
  */
-type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home-legacy' | 'home-p0' | 'launches' | 'new-launch';
+type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home-legacy' | 'home-p0' | 'launches' | 'launches-legacy' | 'new-launch';
 const urlScreen = new URLSearchParams(window.location.search).get('tela');
 const initialScreen: Screen =
   urlScreen === 'login' ? 'login' :
   urlScreen === 'home' || urlScreen === 'home-p0' ? 'home-p0' :
   urlScreen === 'home-legado' ? 'home-legacy' :
   urlScreen === 'lancamentos' ? 'launches' :
+  urlScreen === 'lancamentos-legado' ? 'launches-legacy' :
   urlScreen === 'novo' ? 'new-launch' :
   urlScreen === 'cadastro' ? 'register' :
   urlScreen === 'recuperar-senha' ? 'recover' :
@@ -41,7 +44,10 @@ function FlowPreview() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   // Home P0 da PR #669 e seu fixture original são o destino autorizado.
   // A Home legada só existe para regressões históricas internas.
-  const [returnScreen,setReturnScreen] = useState<'home-p0'|'home-legacy'|'launches'>('home-p0');
+  const [returnScreen,setReturnScreen] = useState<'home-p0'|'home-legacy'|'launches'|'launches-legacy'>('home-p0');
+  const operationalLaunches=screen==='launches'||(screen==='new-launch'&&returnScreen==='launches');
+  const legacyLaunches=screen==='launches-legacy'||(screen==='new-launch'&&returnScreen==='launches-legacy');
+  const launchesVisible=operationalLaunches||legacyLaunches;
   const activeHome = screen === 'home-legacy' || (screen === 'new-launch' && returnScreen === 'home-legacy')
     ? 'home-legacy' : 'home-p0';
   const [progress, setProgress] = useState(0);
@@ -74,15 +80,9 @@ function FlowPreview() {
     if (!(element instanceof Element)) return;
     const button = element.closest('button');
     if (!button) return;
-    if (button.getAttribute('aria-label') === 'Lançamentos') {
-      event.stopPropagation(); setNotice(''); setScreen('launches');
-    }
-    if (button.getAttribute('aria-label') === 'Início') {
-      event.stopPropagation(); setNotice(''); setScreen('home-p0');
-    }
     if (button.getAttribute('aria-label') === 'Novo lançamento') {
       event.stopPropagation(); setNotice('');
-      setReturnScreen(screen === 'launches' ? 'launches' : activeHome);
+      setReturnScreen(screen==='launches'||screen==='launches-legacy'?screen:activeHome);
       setScreen('new-launch');
     }
     if (button.classList.contains('meg-logout-button')) {
@@ -124,11 +124,19 @@ function FlowPreview() {
     onClickCapture={handleShellCapture}>
     <AppShell
       periodLabel={activeHome === 'home-p0' ? 'Novembro de 2026' : undefined}
-      visualVariant={screen === 'launches' || (screen === 'new-launch' && returnScreen === 'launches') ? 'launches' : 'home'}
+      activeSection={operationalLaunches?'launches':'home'}
+      onNavigate={legacyLaunches?undefined:(section)=>{setNotice('');setScreen(section==='home'?'home-p0':'launches');}}
+      visualVariant={launchesVisible?'launches':'home'}
     >
-      {screen === 'launches' || (screen === 'new-launch' && returnScreen === 'launches')
-        ? <LaunchesStage09 data={homePreviewFixture}
-            onNew={() => { setNotice(''); setReturnScreen('launches'); setScreen('new-launch'); }}
+      {operationalLaunches
+        ? <LaunchesStage09 data={homeP0QaPreviewFixture} mode="live" periodMonth="2026-11"
+            userId="qa-visual-only-stage09" exportUserName="Usuário fictício"
+            onRefresh={()=>setNotice('Amostra fictícia atualizada, sem consulta à API.')}
+            onNew={() => {setNotice('');setReturnScreen('launches');setScreen('new-launch');}}
+            onHome={goHome}/>
+        : legacyLaunches
+        ? <LaunchesStage09 data={homePreviewFixture} mode="preview"
+            onNew={()=>{setNotice('');setReturnScreen('launches-legacy');setScreen('new-launch');}}
             onHome={goHome}/>
         : <HomeDashboard previewData={activeHome === 'home-p0' ? homeP0QaPreviewFixture : homePreviewFixture}
             month={activeHome === 'home-p0' ? '2026-11' : '2026-10'}
@@ -161,6 +169,10 @@ function FlowPreview() {
     </div>}
     {notice && <output className="meg-integrated-preview__notice" role="status">{notice}
       <button type="button" aria-label="Fechar aviso" onClick={() => setNotice('')}>×</button>
+    </output>}
+    {screen === 'launches' && <output className="meg-p0-qa-label" role="status"
+      style={{position:'fixed',bottom:14,left:14,zIndex:80,background:'#082a29',border:'1px solid #28cbb6',color:'#e6fffb',fontSize:11,padding:'7px 10px',borderRadius:8,maxWidth:'calc(100vw - 28px)'}}>
+      QA visual Lançamentos · Dados fictícios · Sem conexão com API
     </output>}
     {screen === 'home-p0' && <output className="meg-p0-qa-label" role="status"
       style={{position:'fixed',bottom:14,left:14,zIndex:80,background:'#082a29',border:'1px solid #28cbb6',color:'#e6fffb',fontSize:11,padding:'7px 10px',borderRadius:8,maxWidth:'calc(100vw - 28px)'}}>

@@ -8,3 +8,7 @@
 - Render QA previsto em serviço estático novo, `autoDeploy=no`, branch isolada. Nunca reutilizar nem substituir a prévia homologada Home #9.
 - Android, API, DB, schema, writers, PR #666 e Render produtivo permanecem intocados.
 - Mesmo após Render LIVE, a composição integrada exige avaliação visual explícita do usuário; esta prévia não homologa funcionamento financeiro com dados reais.
+
+
+## 12/11 — Preservação do visual aprovado da tela operacional
+O usuário identificou que `?tela=lancamentos` mostrava o modo `preview` antigo, enquanto a validação visual de 09/11 na issue #660 usou `web-evolution.html?tela=lancamentos` com `mode="live"`. A entrada QA estática foi corrigida para apresentar o **mesmo modo operacional** com fixture P0 sintética de novembro e marcadores de demonstração; não publica HTML autenticado nem chama API ou realiza escrita. A rota `?tela=lancamentos-legado` preserva o cenário antigo para regressões. O novo teste em oito viewports verifica banner e quatro KPIs, cabeçalho compacto, filtros/favoritos, grid maximizado, ícones e pagamento, além de zero API. Só publicar depois dos gates verdes e aguardar aprovação explícita do usuário; produção e Android intocados.
