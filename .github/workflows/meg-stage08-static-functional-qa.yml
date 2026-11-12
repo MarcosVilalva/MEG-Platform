@@ -62,6 +62,24 @@ jobs:
             -o /tmp/stage08-icons-public-html
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/stage08-icons-public-html
           node scripts/meg-stage08-lancamentos-icons.browser.mjs
+      - name: Validar tipografia e ícones no site público MEG Prism PR680
+        env:
+          MEG_STAGE08_QA_URL: https://meg-prism-designsystem-qa.onrender.com
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 35 \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=30f5167b0498a6d11788a0f4fb27ae1d8b765ca6" \
+            -o /tmp/meg-prism-public-html
+          grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-prism-public-html
+          node scripts/meg-stage08-prism-design-system.browser.mjs
+      - name: Evidências visuais da tipografia Prism por viewport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-prism-typography-qa-pr680
+          path: artifacts/meg-prism-design-system/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Evidências visuais dos indicadores e botão de detalhes
         if: always()
         uses: actions/upload-artifact@v4
