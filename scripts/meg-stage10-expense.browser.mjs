@@ -41,7 +41,7 @@ try{
     return sections.map(e=>({scrollHeight:e.scrollHeight,clientHeight:e.clientHeight,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}));
    });
    for(const panel of geometry){
-    assert.ok(panel.scrollHeight<=panel.clientHeight+2,step+' sem conteúdo cortado na vertical: '+JSON.stringify(panel));
+    assert.ok(panel.scrollHeight<=panel.clientHeight+2,step+' '+width+'x'+height+' sem conteúdo cortado na vertical: '+JSON.stringify(panel));
     assert.ok(panel.scrollWidth<=panel.clientWidth+2,step+' sem conteúdo cortado na horizontal: '+JSON.stringify(panel));
    }
    await page.screenshot({path:root+'/expense-'+step+'-'+width+'x'+height+'.png'});
