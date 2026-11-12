@@ -2378,3 +2378,20 @@ https://meg-stage08-alerta-prism-pr685.onrender.com/stage08-funcional-qa.html?vi
 **Status:** proposta visual do símbolo autorizada; código e QA local aprovados, deploy QA LIVE; **inspeção visual humana do triângulo ainda pendente**, bem como gates técnicos que ainda estiverem em andamento. Nenhum merge, alteração do Android, API, Supabase, produção, escritores financeiros, banco ou das prévias homologadas. O Render tinha 24 serviços antes da criação desta QA; novo serviço ocupou a vaga restante, não excluir ou substituir serviços sem decisão específica.
 
 **Próximo passo exato:** usuário abrir URL LIVE sem cache e aprovar/reprovar visualmente o novo triângulo vermelho, conferindo emblema, itens e sino contra o relógio amarelo inalterado. Somente após autorização específica considerar incorporação na base #684, nunca em produção automaticamente.
+
+
+## 12/11/2026 — Etapa 08 | Iconografia Prism no DataGrid de Próximos compromissos
+
+**Origem:** usuário apontou no print que as linhas vencidas da tabela "Próximos compromissos" ainda tinham o círculo de alerta antigo. Inspeção do código confirmou que `HomeDashboard.tsx` usava `HomeGlyph name='siren'`, enquanto modal e sino já usavam o triângulo Prism da PR #685.
+
+**Branch isolada:** `stage08/commitments-grid-prism-icons-20261112`, derivada de `stage08/overdue-prism-warning-20261112` (PR #685), sem tocar nos serviços publicados.
+
+**Alteração mínima:** `apps/web/src/meg-web-evolution/home/HomeDashboard.tsx` importa e reutiliza `HomeOverdueWarningIcon` somente quando `dueState='overdue'` no DataGrid compacto, sem alterar datas, valores, contratos, critérios de urgência, layout ou cálculos financeiros. `due_today` preserva `timer`, e `upcoming` preserva `checkCircle`. O componente do triângulo não foi duplicado ou redesenhado.
+
+**Regressão adicionada:** `scripts/meg-stage08-overdue-prism.browser.mjs` verifica no DataGrid a presença de triângulo em todos os vencidos, ausência da sirene anterior, relógio intacto para vencimento hoje e existência das datas. Testes ainda dependem de execução e confirmação de CI; não registrar como aprovados previamente.
+
+**Aprovação:** proposta do ícone Prism e direção visual geral aprovadas; **este código ainda não foi homologado visualmente em preview próprio**. Não confundir aprovação do conceito com validação da versão publicada.
+
+**Restrições:** não modificar Android, API, Supabase, banco, writers, produção, PRs anteriores ou previews homologados. Sem merge/deploy produtivo.
+
+**Próximo passo:** executar CI e QA com fixture fictício, disponibilizar preview isolado sem cache somente quando houver capacidade/condições seguras, pedir homologação visual do DataGrid e então preparar integração sequencial na cadeia Prism mediante autorização.
