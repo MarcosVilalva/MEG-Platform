@@ -1,0 +1,70 @@
+name: MEG Stage09 - Preview Visual Ficticia Independente
+on:
+  push:
+    branches:
+      - 'preview/09-lancamentos-home-p0-qa-20261111'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Compilar apenas preview ficticia
+        run: |
+          npm ci --audit=false
+          cd apps/web
+          npx vite build --config vite.stage09-home-launches-qa.config.ts
+      - name: Bloquear publicaçao de HTML autenticado ou antigo
+        run: |
+          set -euo pipefail
+          test -f apps/web/dist-stage09-home-launches-qa/fluxo-integrado-08.html
+          test ! -e apps/web/dist-stage09-home-launches-qa/web-evolution.html
+          test ! -e apps/web/dist-stage09-home-launches-qa/phoenix.html
+          test ! -e apps/web/dist-stage09-home-launches-qa/index.html
+          if find apps/web/dist-stage09-home-launches-qa -type f -iname '*.html' | grep -v '/fluxo-integrado-08.html$'; then
+            echo "PREVIEW_QA_HTML_SCOPE_VIOLATION"; exit 1
+          fi
+      - name: Playwright isolado
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Regressoes Home e Lancamentos oito larguras, zero API
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory apps/web/dist-stage09-home-launches-qa >/tmp/meg-stage09-public-qa.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-06-home-refino.browser.mjs
+          node scripts/meg-08-home-quick-actions.browser.mjs
+          node scripts/meg-stage09-lancamentos.browser.mjs
+      - name: Gate de escopo isolado
+        run: |
+          set -euo pipefail
+          BASE=055b998aabb52a89203d798101d67380cade5434
+          CHANGES=$(git diff --name-only "$BASE" HEAD)
+          printf '%s\n' "$CHANGES"
+          test "$CHANGES" = "$(printf '.github/workflows/meg-stage09-static-qa.yml\napps/web/vite.stage09-home-launches-qa.config.ts\ndocs/MEG-STAGE09-HOME-LAUNCHES-STATIC-QA-20261111.md')"
+      - name: Evidencias de preview sem producao
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage09-static-qa
+          path: |
+            artifacts/meg-stage09-lancamentos/
+            artifacts/meg-home-refino-06/
+            artifacts/meg-home-p0-qa/
+          if-no-files-found: warn
+          retention-days: 7
