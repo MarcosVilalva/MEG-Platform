@@ -134,3 +134,11 @@
  .meg-t10-expense-settlement-account{padding:6px;gap:3px}
  .meg-t10-expense-secondary{gap:5px}
 }
+
+
+/* Data BR editável com seletor nativo, sem modificar as demais telas. */
+.meg-t10-expense-date-entry{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:5px;min-width:0}
+.meg-t10-expense-panel .meg-t10-expense-date-picker{width:38px;min-width:38px;padding:4px;color:#24eedf;cursor:pointer}
+.meg-t10-expense-date-hint{display:block;min-height:12px;color:#94c8c5;font-size:.61rem;line-height:1.1}
+.meg-t10-expense-panel input[aria-invalid=true]{border-color:#ff657b}
+.meg-t10-expense-panel input[aria-invalid=true]+.meg-t10-expense-date-picker{border-color:#ff657b}
