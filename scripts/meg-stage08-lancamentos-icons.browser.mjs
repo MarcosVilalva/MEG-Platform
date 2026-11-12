@@ -26,7 +26,8 @@ try{
      JSON.stringify(['lancamentos','pendentes','relatorios']));
   });
   try{
-   await page.goto(origin+'/stage08-funcional-qa.html',{waitUntil:'domcontentloaded'});
+   const version=process.env.MEG_STAGE08_QA_VERSION;
+   await page.goto(origin+'/stage08-funcional-qa.html'+(version?'?v='+encodeURIComponent(version):''),{waitUntil:'domcontentloaded'});
    await page.locator('.pano-root').waitFor({timeout:25000});
    const due=page.locator('.meg-due-alert-dialog');
    await due.waitFor({state:'visible',timeout:5000}).catch(()=>{});
