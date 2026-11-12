@@ -6,6 +6,7 @@ import {AppShell} from '../shell/AppShell';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {ExpenseForm,type ExpenseCatalogs} from './ExpenseForm';
+import type {HistorySnapshot} from './autocomplete-history';
 
 /** Catálogos sintéticos SOMENTE desta prévia, nunca IDs de produção. */
 const syntheticCatalogs:ExpenseCatalogs={
@@ -29,6 +30,10 @@ const syntheticCatalogs:ExpenseCatalogs={
   {id:'qa-method-benefit',name:'Verocard (demonstração)',active:true,kind:'benefit'},
  ],
 };
+const syntheticHistory:HistorySnapshot={protocol:'financial-history-v1',kind:'complete',items:[
+ {id:'qa-h-1',description:'Mercado fictício',date:'2026-09-01',amount:125.49,categoryId:'qa-category-food',accountId:'qa-account-benefit',paymentMethodId:'qa-method-benefit',category:{id:'qa-category-food',name:'Alimentação'},account:{id:'qa-account-benefit',name:'Conta Benefício (demonstração)'},paymentMethod:{id:'qa-method-benefit',name:'Verocard (demonstração)'}},
+ {id:'qa-h-2',description:'Aluguel fictício',date:'2026-08-05',amount:600,categoryId:'qa-category-house',accountId:'qa-account-money',paymentMethodId:'qa-method-instant',category:{id:'qa-category-house',name:'Casa'},account:{id:'qa-account-money',name:'Conta corrente de demonstração'},paymentMethod:{id:'qa-method-instant',name:'À vista'}},
+]};
 function ExpenseQA(){
  const [open,setOpen]=useState(false);
  return <div data-stage10-expense-qa="isolated" data-no-real-writers="true">
@@ -36,7 +41,7 @@ function ExpenseQA(){
    <HomeDashboard month="2026-11" previewData={homeP0QaPreviewFixture}/>
    {!open&&<button type="button" onClick={()=>setOpen(true)} style={{position:'fixed',zIndex:90,bottom:'1.4rem',right:'1.4rem',borderRadius:12,padding:'1rem',border:'1px solid #14e3c8',background:'#02444b',color:'#fff',cursor:'pointer'}}>Abrir Nova Despesa (QA)</button>}
   </AppShell>
-  {open&&<ExpenseForm catalogs={syntheticCatalogs} onBack={()=>setOpen(false)} saveEnabled={false}/>}
+  {open&&<ExpenseForm catalogs={syntheticCatalogs} historySnapshot={syntheticHistory} onBack={()=>setOpen(false)} saveEnabled={false}/>}
  </div>;
 }
 createRoot(document.getElementById('meg-stage10-expense-root')!).render(<ExpenseQA/>);
