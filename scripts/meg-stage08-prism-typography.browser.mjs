@@ -55,6 +55,7 @@ try{
    const flow=await stats.evaluateAll(items=>items.map(item=>item.querySelector('[data-financial-flow]')?.getAttribute('data-financial-flow')||null));
    assert.deepEqual(flow,[null,'up','down',null]);
    assert.ok(await launches.locator('[data-launch-pack="meg-prism-enhanced"]').count()>0,'Categorias e controles de Lançamentos não receberam o acabamento Prism');
+   assert.ok(await launches.locator('[data-payment-prism="true"]').count()>0,'Formas de pagamento não receberam acabamento Prism');
    const titleFont=await launches.locator('.meg-l09-hero h1').evaluate(el=>getComputedStyle(el).fontFamily);
    assert.match(titleFont,/Sora/);
    const kpiFont=await stats.first().locator('strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
