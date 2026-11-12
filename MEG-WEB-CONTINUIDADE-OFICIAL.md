@@ -2443,7 +2443,7 @@ O usuário aprovou explicitamente a prévia Prism 2.0 consolidada da Etapa 08 e 
 - A Etapa 10 continua no chat próprio, suas branches e seus serviços não foram modificados nesta junção.
 
 ### (3) Trabalho executado
-- Branch `stage08/unified-qa-stage05-08-10-20261112`, PR #687 Draft, derivada da cadeia Prism QA em `stage08/overdue-prism-warning-20261112`.
+- Branch `stage08/unified-qa-stage05-08-10-20261112`, PR #688 Draft, derivada da cadeia Prism QA em `stage08/overdue-prism-warning-20261112`.
 - Cinco arquivos da PR #678 (ExpenseForm.tsx, ExpenseForm.css, autocomplete-history.ts, brl-money-mask.ts, text-entry-policy.ts) foram importados **sem alteração** para `apps/web/src/meg-web-evolution/stage10/`; nenhuma alteração na PR #678.
 - Nova entrada isolada `apps/web/meg-unificado-qa.html`, `integrated-qa/unified-preview.tsx`, `integrated-qa/unified-qa.css`; entrada antiga da QA Prism preservada.
 - O Vite de QA passou a compilar duas entradas estáticas no **mesmo build** e serviço.
@@ -2456,7 +2456,7 @@ O usuário aprovou explicitamente a prévia Prism 2.0 consolidada da Etapa 08 e 
 ### (4) Testes comprovados
 - CI/build + Chrome local em 390 x 844, 960 x 900 e 1366 x 768: [run #43311594688](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43311594688) **completed/success** no SHA `2f71aae`. Testa entrada estática, Login demonstrativo, Loading pós-login, Home, Lançamentos, seletor Novo, formulário Nova Despesa, Cadastro, Recuperação, Loading inicial, ausência de APIs reais e de rolagem horizontal global.
 - Run #43310871993 falhou por teste clicando sidebar fechada em mobile; run #43311276180 falhou porque o modal de alertas já aprovado interceptava a navegação. Teste corrigido para abrir menu e reconhecer/fechar o modal; **nenhum código visual alterado para acomodar o teste**.
-- Render confirmou deploy LIVE. Teste independente no domínio Render está sendo acrescentado e seu status deve ser conferido antes de declarar QA pública tecnicamente homologada.
+- Render confirmou deploy LIVE. Teste público de navegador em domínio Render [#43312319058](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43312319058) **completed/success** no checkpoint documental `44224566`, com o mesmo código visual já publicado em `2f71aae`. CI repetida [#43312318950](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43312318950) **completed/success**, alterações posteriores ao deploy somente documentação e workflow externo.
 
 ### (5) Aprovações e não validados
 - Usuário homologou explicitamente **MEG Prism 2.0 | Ambiente de QA consolidado**, anterior a esta integração.
@@ -2464,7 +2464,7 @@ O usuário aprovou explicitamente a prévia Prism 2.0 consolidada da Etapa 08 e 
 - A Nova Despesa da PR #678 é uma demonstração visual com gravação bloqueada. Não presumir aprovações de funcionalidade real, Receita, Editar, cartão, transferência, beneficio ou writers.
 
 ### (6) Riscos e pendências
-- Conferir navegador externo do Render para a nova URL (a CI inicial cobriu servidor local).
+- Navegador externo Render conferido e aprovado tecnicamente; inspeção visual humana ainda pendente.
 - Conferir fidelidade Prism individualmente em Loading, Login, Cadastro, Recuperação, Loading pós-login, Home, Lançamentos, escolha do tipo e Nova Despesa. O CSS Prism foi aplicado na QA sem revalidar pixel a pixel as telas de autenticação.
 - Operações reais bloqueadas; integração de autenticação e escritores depende da autoridade financeira, validação isolada e gates próprios.
 - A home fixture é fictícia; período/resumos não representam dados reais.
@@ -2478,21 +2478,29 @@ O usuário aprovou explicitamente a prévia Prism 2.0 consolidada da Etapa 08 e 
 - Formulário e suporte: `apps/web/src/meg-web-evolution/stage10/` (cinco arquivos).
 - Build: `apps/web/vite.stage08-funcional-qa.config.ts`.
 - Teste e gate: `scripts/meg-stage08-unified-qa.browser.mjs`, `.github/workflows/meg-stage08-unified-qa.yml`.
-- PR #687: https://github.com/MarcosVilalva/MEG-Platform/pull/687
+- PR #688: https://github.com/MarcosVilalva/MEG-Platform/pull/688
 - Referência Prism anterior: SHA `90777706e9ab87d8b1c5713776f9b825cbe3c510`; este commit preserva a versão anterior, embora não mais publicada na URL rotativa.
 - Issues e PRs de origem: #683, #684, #685, #686, #678, #675; nenhuma delas foi mesclada em `main` por esta operação.
 
 ### (8) Repositório e refs
-`MarcosVilalva/MEG-Platform`; branch de integração `stage08/unified-qa-stage05-08-10-20261112`; PR #687 Draft contra `stage08/overdue-prism-warning-20261112`. Código QA testado e publicado `2f71aae9661eddbaefe5fca00c88f809a3df264e`; branch rotativa do Render agora aponta ao mesmo SHA. Não houve alteração no Android, API de produção, Supabase, banco, Render da Etapa 10, nem merge para main.
+`MarcosVilalva/MEG-Platform`; branch de integração `stage08/unified-qa-stage05-08-10-20261112`; PR #688 Draft contra baseline independente `stage08/prism-approved-baseline-20261112` (`a968c52`).. Código QA testado e publicado `2f71aae9661eddbaefe5fca00c88f809a3df264e`; branch rotativa do Render agora aponta ao mesmo SHA. Não houve alteração no Android, API de produção, Supabase, banco, Render da Etapa 10, nem merge para main.
 
 ### (9) Restrições
 Sem merge, deploy produtivo, real writer, credencial real, SQL, migrations, alteração do Android, exclusão de Render, mutação em produção ou edição da branch da Etapa 10. Não mover telas homologadas para release sem regressão financeira e nova homologação visual da integração.
 
 ### (10) Próximo passo exato para o chat 10
 1. Abrir a URL QA unificada sem cache e inspecionar todas as telas em desktop e celular; registrar aprovação visual explícita por tela e do percurso.
-2. Conferir a execução externa do Chrome contra o Render e o SHA de código publicado.
+2. Preservar as evidências do Chrome público #43312319058 e o SHA de código publicado (2f71aae) ao iniciar integração funcional.
 3. No **chat 10**, ler este checkpoint, a autoridade financeira canônica, docs da PR #678 e revisão #675; comparar a implementação isolada da Nova Despesa com a integração `PR #687` e decidir tecnicamente como incorporá-la, preservando código Prism e regras financeiras.
 4. Continuar Novo/Editar pela ordem autorizada, sem transformar a QA demonstrativa em writer de produção.
 5. Preparar lista final de serviços Render candidatos à exclusão apenas após homologação e auditoria de vínculos, sem eliminar a referência histórica de forma prematura.
 
-**Texto de retomada para copiar:** "Continuar MEG Finanças Web Evolution no chat 10 a partir do checkpoint de integração de 12/11/2026, branch stage08/unified-qa-stage05-08-10-20261112, PR #687 Draft, SHA de código 2f71aae9661eddbaefe5fca00c88f809a3df264e. Conferir QA unificada no Render, aprovações visuais e CI externa. Integrar somente os contratos autorizados da Etapa 10, preservando Home, Shell, Lançamentos, DataGrid, MEG Prism 2.0 e regras financeiras. Não fazer merge/deploy produtivo nem alterar Android/API/banco." 
+**Texto de retomada para copiar:** "Continuar MEG Finanças Web Evolution no chat 10 a partir do checkpoint de integração de 12/11/2026, branch stage08/unified-qa-stage05-08-10-20261112, PR #688 Draft, SHA de código 2f71aae9661eddbaefe5fca00c88f809a3df264e. Conferir QA unificada no Render, aprovações visuais e CI externa. Integrar somente os contratos autorizados da Etapa 10, preservando Home, Shell, Lançamentos, DataGrid, MEG Prism 2.0 e regras financeiras. Não fazer merge/deploy produtivo nem alterar Android/API/banco." 
+
+
+### Correção do controle de PRs e do registro final
+- **PR #687** foi marcada pelo GitHub como `merged=true` em 12/11/2026 21:36 UTC, porque a branch-base rotativa de Render (`stage08/overdue-prism-warning-20261112`) foi avançada por fast-forward ao mesmo SHA da integração. Isso representa incorporação **na branch isolada de QA**, **não em `main`** nem publicação produtiva. A ação desviou do controle ideal de revisão PR e não deve ser repetida.
+- Baseline Prism estável criado sem hospedagem adicional: `stage08/prism-approved-baseline-20261112`, SHA `a968c52fc7482f1e65d7cd1f3c2269be277b7235`.
+- **PR substituta de revisão #688 Draft**, cabeça `stage08/unified-qa-stage05-08-10-20261112`, base baseline Prism estável, **sem merge**. https://github.com/MarcosVilalva/MEG-Platform/pull/688 .
+- Para futuras QA rotativas, **não avançar uma branch que é base de PR ativa**, pois o GitHub pode marcá-la como integrada automaticamente. Preferir branch de QA dedicada, desvinculada de revisões, quando houver meio autorizado de reconfigurar o serviço de hospedagem.
+- Run local [#43312318950](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43312318950): **SUCCESS** no commit documental `44224566`. Run de verificação pública [#43312319058](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43312319058): **SUCCESS** no Chrome via Render, 390/960/1366 px. A QA permanece não homologada visualmente pelo usuário.
