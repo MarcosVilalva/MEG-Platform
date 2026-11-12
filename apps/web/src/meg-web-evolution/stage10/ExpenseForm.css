@@ -121,3 +121,16 @@
  .meg-t10-expense-summary-footer{font-size:.62rem;padding:4px;margin-top:3px}
 }
 @media(max-width:639px){.meg-t10-expense-summary dl>div{padding:2px 1px}}
+
+/* Revisão validada: a conta de baixa ocupa a etapa Pagamento, somente em À vista + Paga. */
+.meg-t10-expense-method-field{display:grid;gap:5px;min-width:0}
+.meg-t10-expense-method-control{position:relative;min-width:0}
+.meg-t10-expense-method-control>svg{position:absolute;z-index:1;left:11px;top:50%;transform:translateY(-50%);height:16px;width:16px;color:#46eddb;pointer-events:none}
+.meg-t10-expense-panel .meg-t10-expense-method-control>select{padding-left:36px}
+.meg-t10-expense-settlement-account{display:grid;gap:5px;min-width:0;padding:9px;border:1px solid #0c9999;border-radius:12px;background:linear-gradient(125deg,#05383f,#01262d);box-shadow:inset 0 1px #c6ffef22}
+.meg-t10-expense-settlement-account small{font-size:.68rem;color:#abddd5;line-height:1.3}
+.meg-t10-expense-secondary{gap:8px}
+@media(max-height:760px) and (min-width:1025px){
+ .meg-t10-expense-settlement-account{padding:6px;gap:3px}
+ .meg-t10-expense-secondary{gap:5px}
+}
