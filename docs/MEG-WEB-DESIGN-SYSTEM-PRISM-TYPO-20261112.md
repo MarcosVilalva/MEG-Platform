@@ -53,6 +53,8 @@
 
 ## 6. Entrega e continuidade
 
-- PR candidata: **#680** (Draft), baseada na PR #679. Prévia pública isolada Render: `meg-prism-designsystem-qa`, Auto Deploy OFF; URL e SHA somente quando comprovados LIVE.
+- PR candidata: **[#680](https://github.com/MarcosVilalva/MEG-Platform/pull/680)** (Draft), baseada na PR #679; rollout global registrado na **[issue #681](https://github.com/MarcosVilalva/MEG-Platform/issues/681)**.
+- **QA pública isolada** `meg-prism-designsystem-qa`, Auto Deploy OFF, deploy `dep-dbqt35afngtc738loqt0` confirmado LIVE no SHA `30f5167b0498a6d11788a0f4fb27ae1d8b765ca6`. [Prévia sem cache](https://meg-prism-designsystem-qa.onrender.com/stage08-funcional-qa.html?v=30f5167b0498a6d11788a0f4fb27ae1d8b765ca6).
+- [CI integrada #43241572714](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43241572714) e [teste da QA pública #43241572656](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43241572656) ambos **COMPLETED/SUCCESS**. [Capturas dos três viewports](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43241572656/artifacts/13954169722).
 - Referências protegidas: PR #673 (integração), PR #677 (navegação funcional), PR #679 (Prism 3D original) e commit homologado `760b7ad0e3217dbab70ea426df9cad67318f79ef`.
 - Próximo gate: concluir CI, comprovar prévia no navegador público, obter aprovação/reprovação visual de **Home, Shell e Lançamentos**. Após homologação, produzir plano de migração dos módulos restantes, separando etapas e PRs.
