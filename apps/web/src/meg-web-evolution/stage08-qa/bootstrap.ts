@@ -104,6 +104,7 @@ localStorage.removeItem('meg.auth.session');
 // Não altera CSS global, imports ou sessão da aplicação produtiva.
 if(new URLSearchParams(window.location.search).get('visual')==='prism'){
   document.documentElement.dataset.megTypographyPilot='true';
+  document.documentElement.dataset.megPrismUi='true';
   void import('./prism-type-pilot.css').then(()=>import('../main'));
 }else{
   void import('../main');
