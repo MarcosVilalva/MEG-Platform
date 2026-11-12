@@ -109,3 +109,15 @@
 .meg-t10-expense-secondary>.meg-t10-expense-dual{grid-template-columns:1fr}
 @media(max-height:760px) and (min-width:1024px){.meg-t10-credit-preview{padding:5px}.meg-t10-credit-mini{min-height:62px;flex-basis:110px}.meg-t10-credit-details{font-size:.61rem}}
 @media(max-width:639px){.meg-t10-credit-mini{flex-basis:120px;min-height:72px}.meg-t10-expense-modality button{min-height:36px}}
+
+/* Densidade do resumo: nenhuma informação é escondida para evitar rolagem. */
+.meg-t10-expense-summary{gap:4px}
+.meg-t10-expense-summary dl>div{padding:3px 1px;line-height:1.2}
+.meg-t10-expense-summary-footer{padding:5px;margin-top:5px}
+.meg-t10-expense-total{margin:2px 0;font-size:clamp(1.25rem,2.1vw,1.8rem)}
+@media(max-width:1023px){
+ .meg-t10-expense-summary{gap:3px;padding:8px}
+ .meg-t10-expense-summary dl>div{padding:2px 2px;font-size:.69rem;line-height:1.1}
+ .meg-t10-expense-summary-footer{font-size:.62rem;padding:4px;margin-top:3px}
+}
+@media(max-width:639px){.meg-t10-expense-summary dl>div{padding:2px 1px}}
