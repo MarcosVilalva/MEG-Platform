@@ -22,7 +22,7 @@ jobs:
       - name: Instalar dependências imutáveis
         run: npm ci --audit=false
       - name: Compilar QA isolada
-        run: cd apps/web && npx vite build --config vite.stage08-funcional-qa.config.ts
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
       - name: Instalar Playwright de teste
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
       - name: Exercitar aplicativo autenticado com mocks e zero rede financeira
