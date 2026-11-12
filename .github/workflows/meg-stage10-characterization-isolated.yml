@@ -32,6 +32,8 @@ jobs:
         run: npx tsx --test scripts/meg-stage10-financial-characterization.test.ts
       - name: Caracterizar autocomplete de historico sem valores ou datas
         run: npx tsx --test scripts/meg-stage10-autocomplete-history.test.ts
+      - name: Contrato do modal de escolha sem escrita financeira
+        run: npx tsx --test scripts/meg-stage10-chooser.contract.test.ts
       - name: Regressoes financeiras puras existentes
         run: |
           npm run test:core
