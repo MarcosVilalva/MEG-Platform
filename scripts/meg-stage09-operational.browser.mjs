@@ -363,8 +363,8 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
    await sum.filter({hasText:`${totalText} de ${totalText} registros do histórico autorizado`}).waitFor();
   }
   if(!(await page.locator('.meg-l09[data-icon-pack="phosphor"] .meg-l09-stat.is-income [data-launch-pack="phosphor"]').count()))issues.push('Phosphor nao foi adotado como padrao autenticado');
-  if(!(await page.locator('.meg-l09-stat.is-income [data-launch-icon="cashIn"]').count()))issues.push('Entrada sem ícone direcional refinado');
-  if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="cashOut"]').count()))issues.push('Saída sem ícone direcional refinado');
+  if(!(await page.locator('.meg-l09-stat.is-income [data-launch-icon="entry3d"]').count()))issues.push('Entrada sem ícone direcional refinado');
+  if(!(await page.locator('.meg-l09-stat.is-expense [data-launch-icon="exit3d"]').count()))issues.push('Saída sem ícone direcional refinado');
   // Registros sintéticos com categoria Saúde devem ganhar tratamento visual
   // semanticamente reconhecível, enquanto rótulo legado desconhecido é neutro.
   const semanticHealth=page.locator('.meg-l09-grid-panel .meg-l09-category-chip[data-category-glyph="health"][data-category-tone="rose"]');
