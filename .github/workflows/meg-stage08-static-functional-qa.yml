@@ -85,10 +85,11 @@ jobs:
       - name: Validar ícones globais Prism e correção das setas na QA pública PR684
         env:
           MEG_STAGE08_QA_URL: https://meg-stage08-prism-rollout-pr684.onrender.com
+          MEG_STAGE08_QA_VERSION: d857fcffb2dd3e98a18c3d349f899b18e5b6f311
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --max-time 35 \
-            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?visual=prism&v=e7b45864662ff35885c4f4e82f058b1f95f3e793" \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?visual=prism&v=d857fcffb2dd3e98a18c3d349f899b18e5b6f311" \
             -o /tmp/meg-prism-rollout-public
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-prism-rollout-public
           node scripts/meg-stage08-prism-typography.browser.mjs
