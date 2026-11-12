@@ -48,6 +48,24 @@ jobs:
             -o /tmp/meg-stage08-public-html
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-stage08-public-html
           node scripts/meg-stage08-static-qa.browser.mjs
+      - name: Validar revisão de ícones na URL pública independente PR679
+        env:
+          MEG_STAGE08_QA_URL: https://meg-stage08-icones-pr679.onrender.com
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 35 \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=c1133b6c246a1652d3f3e3712fe5c612f8689c88" \
+            -o /tmp/stage08-icons-public-html
+          grep -q 'data-meg-stage08-qa="isolated"' /tmp/stage08-icons-public-html
+          node scripts/meg-stage08-lancamentos-icons.browser.mjs
+      - name: Evidências visuais dos indicadores e botão de detalhes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage08-icons-visual-pr679
+          path: artifacts/meg-stage08-lancamentos-icons/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Disponibilizar artefato estático validado da QA
         if: success()
         uses: actions/upload-artifact@v4
