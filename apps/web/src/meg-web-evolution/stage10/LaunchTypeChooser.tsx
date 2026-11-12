@@ -31,9 +31,22 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
   document.body.style.overflow='hidden';
   // O diálogo é portalled ao body; bloqueie foco nos irmãos (inclusive outros overlays da Home).
   const overlay=ref.current?.parentElement;
-  const siblings=Array.from(document.body.children).filter(element=>element!==overlay) as HTMLElement[];
-  const priorInert=siblings.map(element=>({element,inert:element.inert}));
-  for(const {element} of priorInert)element.inert=true;
+  const priorInert=new Map<HTMLElement,boolean>();
+  function isolateBodySiblings(){
+   for(const element of Array.from(document.body.children) as HTMLElement[]){
+    if(element===overlay)continue;
+    if(!priorInert.has(element))priorInert.set(element,element.inert);
+    element.inert=true;
+   }
+  }
+  isolateBodySiblings();
+  // A Home pode montar seu próprio alerta depois deste modal. Isolar portais
+  // posteriores também, sem modificar o comportamento do alerta canônico.
+  const observer=new MutationObserver(()=>{
+   isolateBodySiblings();
+   if(ref.current && !ref.current.contains(document.activeElement))closeRef.current?.focus();
+  });
+  observer.observe(document.body,{childList:true});
   function keydown(event:KeyboardEvent){
    if(event.key==='Escape'){event.preventDefault();onClose();return;}
    if(event.key!=='Tab')return;
@@ -53,7 +66,8 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
   closeRef.current?.focus();
   return ()=>{
    document.body.style.overflow=formerOverflow;
-   for(const {element,inert} of priorInert)element.inert=inert;
+   observer.disconnect();
+   for(const [element,inert] of priorInert)element.inert=inert;
    document.removeEventListener('keydown',keydown);
    document.removeEventListener('focusin',keepFocusInside);
    previous?.focus();
