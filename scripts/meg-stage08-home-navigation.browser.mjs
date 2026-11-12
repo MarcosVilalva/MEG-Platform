@@ -15,7 +15,7 @@ try{
   page.on('pageerror',error=>failures.push(String(error)));
   await page.addInitScript(({session,userId})=>{
    sessionStorage.setItem('meg.auth.session',JSON.stringify(session));
-   localStorage.setItem('meg.web.home.quick-actions.v1.user.'+encodeURIComponent(userId),JSON.stringify(['lancamentos','pendentes','cartoes']));
+   localStorage.setItem('meg.web.home.quick-actions.v1.user.'+encodeURIComponent(userId),JSON.stringify(['pendentes','lancamentos','cartoes']));
   },{session,userId:identity.id});
   await page.route('**/auth/me',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({user:identity})}));
   await page.route('**/finance/**',async route=>{
@@ -46,6 +46,7 @@ try{
    await quick.getByRole('button',{name:/Pagar conta/}).click();
    await page.getByRole('status').filter({hasText:'Pendentes ainda não está disponível nesta etapa da Web.'}).waitFor();
    assert.equal(await page.locator('.meg-l09').count(),0,'Atalho não autorizado abriu tela nova');
+   if(width<640)await page.getByRole('button',{name:'Ver próximos atalhos'}).click();
    await quick.getByRole('button',{name:/Lançamentos/}).click();
    await page.locator('.meg-l09').waitFor({timeout:12000});
    assert.equal(await page.locator('.meg-nav-item[aria-label="Lançamentos"].is-active').count(),1,'Seção ativa não mudou');
@@ -54,9 +55,10 @@ try{
    await page.locator('.meg-sidebar .meg-nav-item[aria-label="Início"]').click();
    await quick.waitFor({timeout:20000});
    assert.equal(await page.locator('.meg-nav-item[aria-label="Início"].is-active').count(),1,'Retorno à Home perdeu navegação');
+   if(width<640)await page.getByRole('button',{name:'Ver próximos atalhos'}).click();
    assert.equal(await quick.getByRole('button',{name:/Lançamentos/}).count(),1,'Atalho do usuário não foi preservado');
    const saved=await page.evaluate(id=>localStorage.getItem('meg.web.home.quick-actions.v1.user.'+encodeURIComponent(id)),identity.id);
-   assert.deepEqual(JSON.parse(saved),['lancamentos','pendentes','cartoes'],'Preferência de atalhos foi modificada');
+   assert.deepEqual(JSON.parse(saved),['pendentes','lancamentos','cartoes'],'Preferência de atalhos foi modificada');
    const dimensions=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
    assert.ok(dimensions.doc<=dimensions.viewport+2,'Rolagem horizontal na Home após voltar');
    assert.deepEqual(methods.filter(x=>x.method!=='GET'),[],'A navegação produziu escrita financeira');
