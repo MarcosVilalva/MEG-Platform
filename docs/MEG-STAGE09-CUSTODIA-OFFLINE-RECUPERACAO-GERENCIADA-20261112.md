@@ -105,3 +105,14 @@ Após a prova, o operador confirma fora do terminal: (a) que a mídia é **físi
 - https://supabase.com/changelog.md (CLI v3, 04/11/2026: padrão local; não atualizar nem executar migração neste gate).
 
 **Nota de limites:** documentação oficial pode mudar; rever na data do ensaio. Nenhuma afirmação acima equivale à execução de Vault GET, download de segredos ou restauração em projeto novo.
+
+### 8. Evidência posterior: custódia da identidade age operacional (12/11/2026)
+
+Esta seção **atualiza** a linha de base inicial deste documento, que havia sido escrita antes da conferência real do USB. Os estados de planejamento acima devem ser lidos como históricos, e não como o último resultado do gate da identidade `age`.
+
+- Identidade privada `age` no WSL: ferramentas, permissões e identidade local reportadas `OK` pela versão 2 do verificador, executada no notebook.
+- Pendrive E: USB, FAT32, aproximadamente 7,26 GiB, sem BitLocker; copiado **somente o criptograma** `identidade.age` protegido por `age -p` e senha, sem formatar e sem modificar os arquivos antigos conforme os relatórios do operador.
+- Verificação criptográfica da cópia: `HASH_CIFRADO_USB=OK`, `RECUPERACAO_USB=OK`, `LIMPEZA_STAGE_WSL=OK`, `RESULTADO=COPIA_CIFRADA_E_RECUPERACAO_OK`.
+- Custódia física: operador atestou retirada física, senha separada e pendrive guardado separado. Diagnóstico final read-only retornou `CANDIDATOS_CAPACIDADE_7_26GB=0`, `UNIDADE_E_PRESENTE=False`, embora outro disco USB continue conectado, o que não interfere na conferência do pendrive-alvo.
+- **Aceite restrito:** `CUSTODIA_OFFLINE_IDENTIDADE_AGE=OPERACIONAL_COM_EVIDENCIAS_E_ATESTADO_DO_OPERADOR`. Aceite não equivale a prova forense independente, criptografia do volume FAT32, backup integral do Supabase, resgate da chave-raiz Vault ou continuidade de todos os serviços gerenciados.
+- **Pendências obrigatórias:** custódia da chave-raiz Vault, recuperação de Auth/Storage/extensões/funções e demais componentes gerenciados, testes de recuperação integral, políticas de backup recorrente e questões #674/#676. Não realizar GET Vault, restaurar, conectar ao banco ou alterar produção sem autorização específica; PR #666 permanece Draft sem merge/deploy.
