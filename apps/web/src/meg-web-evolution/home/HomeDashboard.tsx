@@ -28,7 +28,7 @@ export type HomeFinancialData={
  cards:Array<{id:string;name:string;issuer?:string|null;brand?:string|null;lastFour?:string|null;creditLimit?:number;availableLimit?:number;usedLimit?:number;statementAmount?:number;payableStatementAmount?:number;dueDay?:number|null;isActive?:boolean}>;
 };
 type Action='novo'|'transferencia'|'pendentes'|'cartoes'|'lancamentos'|'beneficios'|'relatorios'|'metas';
-type Props={previewData?:HomeFinancialData;onNavigate?:(target:Action)=>void;month?:string;userId?:string};
+type Props={previewData?:HomeFinancialData;onNavigate?:(target:Action)=>void|boolean;month?:string;userId?:string};
 const currency=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 const monthFmt=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'});
 function dateNow(){const v=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(k:string)=>v.find(i=>i.type===k)?.value||'00';return get('year')+'-'+get('month')+'-'+get('day')}
@@ -160,8 +160,11 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  };
 
  const move=(target:Action)=>{
-  if(onNavigate)onNavigate(target);
-  else {
+  // Um destino sem rota autorizada conserva o aviso original da Home.
+  // Callbacks históricos que retornam void continuam tratados como atendidos.
+  const handled=onNavigate?.(target);
+  if(onNavigate && handled!==false)return;
+  {
    const labels:Record<Action,string>={novo:'Novo lançamento',transferencia:'Transferência',pendentes:'Pendentes',cartoes:'Cartões',lancamentos:'Lançamentos',beneficios:'Benefícios',relatorios:'Relatórios',metas:'Configurações'};
    setNotice(labels[target]+' ainda não está disponível nesta etapa da Web. A Home continua navegável para os detalhes já implementados.');
   }
