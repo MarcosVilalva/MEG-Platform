@@ -2165,3 +2165,14 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Gate completo:** [Actions #43222823187](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43222823187) **SUCCESS** no código `b329df0132bb282eda645460b87884d18f7732bd`, incluindo 17 caracterizações financeiras, cinco autocomplete, cinco contratos do seletor, core, dados, build Web e Playwright em quatro resoluções.
 - Evidência screenshots: [artifact #13947205375](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43222823187/artifacts/13947205375). Não declarar homologação visual ou testes bancários transacionais.
 - **Pendente:** apresentar preview QA isolada com URL sem cache para aprovação humana; só depois avançar ao formulário Despesa. Testes reais de criação/edição/exclusão com PostgreSQL descartável e regra Alimentação permanecem necessários antes de conectar writers. Sem merge, produção, Android ou alterações da API.
+
+## Etapa 10 — Preview QA Render publicado, aguardando aceite visual (12/11/2026)
+
+- Usuário confirmou explicitamente workspace Render `My Workspace` (`tea-d98k1qhkh4rs73f4sfj0`) e autorizou exclusivamente criar/publicar **novo QA isolado** da Etapa 10, sem modificar serviços preexistentes ou produção.
+- Serviço criado: `meg-stage10-novo-launch-qa-pr678`, ID `srv-dbqrn03bc2fs73e88bt0`; branch `stage10/novo-editar-lancamento-isolado-20261112`; **autoDeploy=no / trigger=off**; public static site, sem secrets, variáveis API, writers financeiros ou banco.
+- Build publicado somente de `apps/web/dist/meg-stage10-qa.html` como `index.html`, mais assets necessários em `apps/web/dist-stage10-qa`. As demais entradas HTML do monorepo não foram publicadas no novo serviço.
+- Render deploy `dep-dbqrn0bbc2fs73e88cf0` concluído `status=live` em **2026-11-12T13:14:40Z**, commit `84932a231b43c4eb23eb6e3b63a0e39957086d89`.
+- URL de validação sem cache: https://meg-stage10-novo-launch-qa-pr678.onrender.com/?v=84932a231b43c4eb23eb6e3b63a0e39957086d89 . Fechar aviso de vencimentos da Home e clicar em **Abrir seleção de tipo**, então conferir Despesa/Receita/Transferência/Benefício em desktop/mobile.
+- Verificação HTTP externa independente não concluída neste runtime (rede indisponível); a evidência disponível é o deploy LIVE do Render e os testes de navegador em CI no commit de código anterior.
+- **Ainda NÃO HOMOLOGADO visualmente**. Não interpretar deploy LIVE ou gate verde como aprovação humana, e não avançar ao formulário Despesa até obter aceite explícito. PR #678 permanece Draft, sem merge.
+- Render serviços existentes não foram modificados. Sem operações financeiras, alterações API, banco, Android ou deploy produtivo.
