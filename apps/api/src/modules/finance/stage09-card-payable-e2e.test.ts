@@ -128,6 +128,8 @@ async function main() {
   assert.equal(await prisma.cloudMutationReceipt.count({
     where: { workspaceId: workspace.id, operationId: noFundsOp },
   }), 0);
+  assert.equal(await prisma.ledgerEntry.count({ where: { accountId: emptyAccount.id } }), 0,
+    'Baixa recusada nao pode criar lancamento no razao.');
 
   const paymentOp = `payable-partial-${suffix}`;
   const partialInput = {
@@ -145,10 +147,21 @@ async function main() {
   assert.equal(money(savedPartial.interestAmount), 0.2);
   assert.equal(money(savedPartial.fineAmount), 0.3);
   assert.equal(money(savedPartial.financialEvent?.signedAmount), -10.5);
+  const partialLedger = await prisma.ledgerEntry.findMany({
+    where: { eventId: partial.financialEventId as string },
+  });
+  assert.equal(partialLedger.length, 1, 'Baixa parcial realizada deve gerar UMA contrapartida no razao.');
+  assert.equal(partialLedger[0].accountId, account.id);
+  assert.equal(money(partialLedger[0].debit), 0);
+  assert.equal(money(partialLedger[0].credit), 10.5,
+    'Razao deve incluir principal, juros e multa do pagamento efetivo.');
   assert.equal(await prisma.payablePayment.count({ where: { payableId } }), 1);
   const partialReplay = shape(await payPayableProtected(user.id, payableId, partialInput));
   assert.equal(partialReplay.financialEventId, partial.financialEventId);
   assert.equal(await prisma.payablePayment.count({ where: { payableId } }), 1);
+  assert.equal(await prisma.ledgerEntry.count({
+    where: { eventId: partial.financialEventId as string },
+  }), 1, 'Replay nao pode duplicar razao.');
   assert.equal(await prisma.cloudMutationReceipt.count({
     where: { workspaceId: workspace.id, operationId: paymentOp },
   }), 1);
@@ -174,13 +187,20 @@ async function main() {
   assert.equal(money(closedPayable.openAmount), 0);
   assert.equal(closedPayable.status, 'paid');
   assert.equal(await prisma.payablePayment.count({ where: { payableId } }), 2);
-  // Observação: writer de baixa de pendentes cria FinancialEvent mas seu
-  // código atual nao cria LedgerEntry, diferentemente do writer de fatura.
-  // Nao codificar a ausencia como regra aprovada. Reportar para auditoria.
-  const payableLedgerCount = await prisma.ledgerEntry.count({
+  // #674: cada baixa realizada deve escriturar uma contrapartida, na
+  // MESMA transacao que o evento e o PayablePayment, sem duplicar no replay.
+  const payableLedger = await prisma.ledgerEntry.findMany({
     where: { eventId: { in: [partial.financialEventId as string, finalPayable.financialEventId as string] } },
+    orderBy: { createdAt: 'asc' },
   });
-  console.log(`STAGE09_PAYABLE_LEDGER_ROWS_OBSERVED=${payableLedgerCount}`);
+  assert.equal(payableLedger.length, 2, 'Duas baixas realizadas devem gerar dois lancamentos de razao.');
+  const ledgerByEvent = new Map(payableLedger.map((entry) => [entry.eventId, entry]));
+  const finalLedger = ledgerByEvent.get(finalPayable.financialEventId as string);
+  assert.ok(finalLedger);
+  assert.equal(money(finalLedger.debit), 0);
+  assert.equal(money(finalLedger.credit), 23.34);
+  assert.equal(money(payableLedger.reduce((sum, entry) => sum + number(entry.credit), 0)), 33.84);
+  console.log('STAGE09_PAYABLE_LEDGER_ROWS_VERIFIED=2');
 
   // Compra parcelada canônica: um centavo residual vai à primeira parcela.
   const purchaseOp = `card-purchase-${suffix}`;
