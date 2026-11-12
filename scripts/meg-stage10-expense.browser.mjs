@@ -68,6 +68,16 @@ try{
   await dateField.press('Tab');
   const currentYear=await page.evaluate(()=>new Date().getFullYear());
   assert.equal(await dateField.inputValue(),'30/03/'+currentYear);
+  await dateField.fill('30032026');
+  assert.equal(await dateField.inputValue(),'30/03/2026','Máscara imediata ao digitar oito números');
+  await dateField.press('Tab');
+  assert.equal(await dateField.getAttribute('aria-invalid'),'false');
+  await dateField.fill('3003');
+  assert.equal(await dateField.inputValue(),'30/03','Quatro números => DD/MM');
+  await dateField.press('Tab');
+  assert.equal(await dateField.inputValue(),'30/03/'+currentYear);
+  assert.equal(await modal.getByLabel('Selecionar data no calendário').getAttribute('title'),'Selecionar data no calendário');
+  assert.equal(await modal.locator('.meg-t10-expense-date-calendar > svg').count(),1,'Ícone único de calendário');
   await dateField.fill('15/08/2024');
   await dateField.press('Tab');
   assert.equal(await dateField.inputValue(),'15/08/2024');
@@ -80,6 +90,13 @@ try{
   await dateField.fill('30/03');
   await dateField.press('Tab');
   assert.equal(await dateField.inputValue(),'30/03/'+currentYear);
+  const noteButton=modal.getByRole('button',{name:/Observações/});
+  assert.equal(await noteButton.getAttribute('aria-expanded'),width>1024&&height>=760?'true':'false','Desktop abre observações; mobile inicia recolhido');
+  if(await noteButton.getAttribute('aria-expanded')==='false')await noteButton.click();
+  await modal.getByLabel('Observações (opcional)').fill('estorno cartão');
+  assert.equal(await modal.getByLabel('Observações (opcional)').inputValue(),'ESTORNO CARTÃO');
+  if(width<=1024)await noteButton.click(); // layout compacto: recolher preservando texto
+  await captureStep('dados-observacoes');
   await modal.getByLabel('Descrição *').fill('compra de pão e maçã');
   assert.equal(await modal.getByLabel('Descrição *').inputValue(),'COMPRA DE PÃO E MAÇÃ');
   const method=modal.getByLabel('Forma de pagamento *');
@@ -103,6 +120,7 @@ try{
   assert.equal(await modal.getByLabel('Conta de saída do recurso *').inputValue(),'qa-account-money','Retornar a Paga repõe conta única');
   if(width<=1024)await modal.getByRole('button',{name:'Dados'}).click();
   await modal.getByRole('button',{name:/Crédito/}).click();
+  assert.equal(await noteButton.getAttribute('aria-expanded'),width>1024&&height>=760?'true':'false','Troca de modalidade mantém estado das observações');
   assert.equal(await modal.getByLabel('Forma de pagamento *').count(),0,'Crédito não exibe meio de pagamento');
   if(width<=1024)await modal.getByRole('button',{name:'Pagamento'}).click();
   assert.equal(await plannedButton.getAttribute('aria-pressed'),'true');
@@ -119,9 +137,10 @@ try{
   assert.ok(await modal.getByText('Vencimento: dia 20').count()>0);
   if(width<=1024)await modal.getByRole('button',{name:'Pagamento'}).click();
   await captureStep('pagamento');
-  await modal.getByLabel('Observações (opcional)',{exact:true}).count().then(async count=>{if(count===0)await modal.getByRole('button',{name:/Observações/}).click();});
-  await modal.getByLabel('Observações (opcional)').fill('estorno cartão');
-  assert.equal(await modal.getByLabel('Observações (opcional)').inputValue(),'ESTORNO CARTÃO');
+  if(width<=1024)await modal.getByRole('button',{name:'Dados'}).click();
+  if(await noteButton.getAttribute('aria-expanded')==='false')await noteButton.click();
+  assert.equal(await modal.getByLabel('Observações (opcional)').inputValue(),'ESTORNO CARTÃO','Observações preservadas ao trocar modalidade');
+  if(width<=1024){await noteButton.click();await modal.getByRole('button',{name:'Pagamento'}).click();}
   const money=modal.getByLabel('Valor *');
   await money.focus();
   for(const digit of '100')await page.keyboard.press(digit);
