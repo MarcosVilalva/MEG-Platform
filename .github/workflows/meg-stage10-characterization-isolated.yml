@@ -1,0 +1,63 @@
+name: MEG Stage10 - Caracterizacao isolada sem writes
+on:
+  push:
+    branches:
+      - 'stage10/new-edit-launch-20261112'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  caracterizacao:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_ENV: test
+    steps:
+      - name: Checkout somente da branch da Etapa 10
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependencias locais sem banco remoto
+        run: npm ci --audit=false
+      - name: Caracterizacao financeira existente e Etapa 10
+        run: |
+          npx tsx scripts/meg-stage09-card-nextstage-characterization.test.ts
+          npx tsx scripts/meg-stage10-write-contract-characterization.test.ts
+      - name: Preservar Shell, Home e DataGrid homologados
+        run: |
+          set -euo pipefail
+          BASE=760b7ad0e3217dbab70ea426df9cad67318f79ef
+          git diff --name-only "$BASE" HEAD | tee /tmp/stage10-changed.txt
+          while IFS= read -r path; do
+            case "$path" in
+              docs/MEG-WEB-STAGE10-*|scripts/meg-stage10-*.test.ts|.github/workflows/meg-stage10-*.yml|apps/web/src/meg-web-evolution/launches/stage10/*|apps/web/src/meg-web-evolution/integrated-preview/preview.tsx|MEG-WEB-CONTINUIDADE-OFICIAL.md)
+                ;;
+              *)
+                echo "FORA DO ESCOPO DA ETAPA 10: $path"
+                exit 1
+                ;;
+            esac
+          done < /tmp/stage10-changed.txt
+          for path in \
+            apps/web/src/meg-web-evolution/home/HomeDashboard.tsx \
+            apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx \
+            apps/web/src/meg-web-evolution/launches/LaunchTypePicker.tsx \
+            apps/web/src/meg-web-evolution/shell/AppShell.tsx \
+            apps/web/src/meg-web-evolution/shell/shell.css \
+            apps/web/src/meg-web-evolution/datagrid/DataGrid.tsx; do
+            test "$(git rev-parse "$BASE:$path")" = "$(git rev-parse "HEAD:$path")" || {
+              echo "ARQUIVO HOMOLOGADO MODIFICADO: $path"; exit 1;
+            }
+          done
+      - name: Builds da Web e API sem banco remoto
+        run: |
+          npm run db:generate
+          npm run build:web
+          npm run build:api
