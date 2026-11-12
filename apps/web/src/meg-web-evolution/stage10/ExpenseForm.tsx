@@ -187,10 +187,14 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
       <dl>
        <div><dt>Tipo</dt><dd>Despesa</dd></div>
        <div><dt>Categoria</dt><dd>{catalogName(categories,draft.categoryId)}</dd></div>
+       <div><dt>Classificação da conta</dt><dd>{accountClassification==='general'?'Contas gerais':accountClassification==='investment'?'Investimentos':'Benefício'}</dd></div>
+       <div><dt>Tipo de conta</dt><dd>{accountKind==='benefit'?'Conta benefício':'Conta monetária'}</dd></div>
        <div><dt>Conta</dt><dd>{catalogName(accounts,draft.accountId)}</dd></div>
        <div><dt>Forma de pagamento</dt><dd>{catalogName(methods,draft.paymentMethodId)}</dd></div>
-       <div><dt>Data</dt><dd>{draft.date||'Não informada'}</dd></div>
+       <div><dt>Data</dt><dd>{draft.date?draft.date.slice(8)+'/'+draft.date.slice(5,7)+'/'+draft.date.slice(0,4):'Não informada'}</dd></div>
        <div><dt>Status solicitado</dt><dd>{draft.requestedStatus==='paid'?'Paga':'Pendente'}</dd></div>
+       {isCredit&&<div><dt>Cartão</dt><dd>{catalogName(cards,draft.creditCardId)}</dd></div>}
+       {isCredit&&<div><dt>Parcelas solicitadas</dt><dd>{draft.installmentsInput||'Não informado'}</dd></div>}
       </dl>
      </div>}
      {categories.length>0&&<div className="meg-t10-expense-frequent"><h3>Categorias disponíveis</h3><div className="meg-t10-expense-chips">{categories.slice(0,6).map(x=><button key={x.id} type="button" aria-pressed={draft.categoryId===x.id} onClick={()=>chooseCategory(x.id)}>{x.name}</button>)}</div></div>}
