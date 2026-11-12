@@ -157,3 +157,24 @@ Este documento registra o escopo e as evidências antes do resultado do novo CI.
 - [x] Referências visuais anteriores preservadas, nenhuma modificação em Render produtivo.
 - [ ] **Homologação visual explícita da nova prévia pela pessoa usuária**, distinta da aprovação da proposta.
 - [ ] Incorporação da PR #679 e da PR #677 somente após autorização e gates externos; **sem merge/deploy produtivo**.
+
+## 11. Retrabalho obrigatório PR #679: pack antigo reprovado, MEG Prism 3D
+
+**Feedback explícito do usuário (12/11/2026):** a primeira publicação iconográfica da PR #679 foi **REPROVADA**. O usuário apontou setas visualmente invertidas/ambíguas e acabamento linear pobre; determinou substituição por padrão mais 3D, arredondado, nítido e adequado à identidade oficial. Em seguida autorizou: **"siga"** / **"seguir"**. A aprovação anterior dizia respeito à proposta inicial, **não** à implementação rejeitada.
+
+**Implementação corretiva, exclusivamente na branch Draft da PR #679:**
+- Criado `apps/web/src/meg-web-evolution/launches/icon-packs/meg-prism-icons.tsx` com cinco SVGs escaláveis originais: `projection3d`, `entry3d`, `exit3d`, `wallet3d`, `details3d`, usando camadas de profundidade, cores por significado, gradientes lineares/radiais, brilhos de superfície e raios generosos. **Removido da branch** o módulo reprovado `refined-action-icons.tsx`; `LaunchIcon.tsx` agora registra `data-launch-pack="meg-prism-3d"` só para esses cinco, preservando os demais pacotes/ícones.
+- **Entradas**: seta grossa **vertical para baixo**, entrando em bandeja (`data-financial-flow="down"`). **Saídas**: seta grossa **vertical para cima**, saindo da bandeja (`data-financial-flow="up"`). Eliminadas diagonais ambíguas.
+- `LaunchesStage09.tsx`: alteração dos quatro pictogramas do banner **apenas em `mode=live`** e da ação icon-only `details3d`, mantendo valores canônicos da API, texto dos indicadores, modal de consulta e `aria-label`. Prévia histórica da #656 mantém os seus glifos originais.
+- `launches-stage09.css`: SVG maior dentro das mesmas caixas sem alterar dimensões ou breakpoints; superfície prismática e botão com tooltip, hover/foco e 44×44 px em mobile. Corrigido clipping do tooltip **somente na célula Ações**, sem alterar o CSS do DataGrid global.
+- `scripts/meg-stage08-lancamentos-icons.browser.mjs`: verificação de nova fonte de glifos, sentido vertical (down/up), gradientes e camadas, tamanho, tooltip mouse/teclado, modal, valores financeiros e zero chamadas reais em 1366/960/390. `scripts/meg-stage09-operational.browser.mjs`: atualizado o contrato somente para o KPI live, permanecendo Phosphor nas categorias e na prévia histórica. Nenhum writer ou regra financeira alterados.
+- Diretriz para telas **futuras** em `docs/MEG-WEB-ICONOGRAFIA-PRISM-20261112.md`, sem autorização para revisão global automática de telas homologadas.
+
+**Testes e evidências:**
+- [QA pública #43233865891](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43233865891) **SUCCESS** contra o novo deploy. O teste verificou via Chrome o site externo, o fluxo de navegação e cinco glifos em três larguras, preservando ausência de API real. A primeira bateria local de código `5d296e72922ea25d37aac9df57cac74a51b75374` passou integralmente em navegador; o teste da URL pública só passou após redeploy, como esperado com Auto Deploy desligado.
+- A CI integrada inicial da revisão chegou aos testes operacionais e falhou por **expectativa obsoleta** que ainda exigia `data-launch-pack="phosphor"` no KPI live. Corrigido só o teste, preservando Phosphor nos demais elementos. Rodada integral final [#43234013513](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43234013513): **confirmar resultado antes de marcar SUCCESS**.
+- Run da QA pública mais recente [#43234013218](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43234013218): **confirmar resultado final**. Os commits posteriores ao deploy são de testes e documentação, não alteram o bundle publicado.
+- **Render QA isolada atualizada:** `meg-stage08-icones-pr679`, ID `srv-dbqrr7qfngtc738gae3g`, Auto Deploy OFF. Deploy `dep-dbqsf9gn74is73d3vn90` **LIVE**, commit de código `5d296e72922ea25d37aac9df57cac74a51b75374`. **URL sem cache:** https://meg-stage08-icones-pr679.onrender.com/stage08-funcional-qa.html?v=5d296e72922ea25d37aac9df57cac74a51b75374
+- Não foram modificados os serviços `meg-stage08-funcional-pr677`, `meg-stage09-home-launches-qa`, API de produção, Android ou banco. PR #679 ainda **Draft, sem merge**.
+
+**Homologação visual desta nova revisão: NÃO CONCEDIDA.** O usuário deverá analisar a URL e aprovar especificamente os novos pictogramas, não apenas a proposta. Migração global do estilo para outras telas requer escopo e aprovação por etapa.
