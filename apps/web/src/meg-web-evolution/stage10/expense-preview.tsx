@@ -3,7 +3,7 @@ import {createRoot} from 'react-dom/client';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import {AppShell} from '../shell/AppShell';
-import {HomeDashboard} from '../home/HomeDashboard';
+import {LaunchesStage09} from '../launches/LaunchesStage09';
 import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {ExpenseForm,type ExpenseCatalogs} from './ExpenseForm';
 import type {HistorySnapshot} from './autocomplete-history';
@@ -38,7 +38,7 @@ function ExpenseQA(){
  const [open,setOpen]=useState(false);
  return <div data-stage10-expense-qa="isolated" data-no-real-writers="true">
   <AppShell periodLabel="Novembro de 2026" activeSection="launches">
-   <HomeDashboard month="2026-11" previewData={homeP0QaPreviewFixture}/>
+   <LaunchesStage09 data={homeP0QaPreviewFixture} mode="live" periodMonth="2026-11" userId="qa-visual-only-stage10" exportUserName="Usuário fictício" onRefresh={()=>{}} onNew={()=>setOpen(true)} onHome={()=>{}}/>
    {!open&&<button type="button" onClick={()=>setOpen(true)} style={{position:'fixed',zIndex:90,bottom:'1.4rem',right:'1.4rem',borderRadius:12,padding:'1rem',border:'1px solid #14e3c8',background:'#02444b',color:'#fff',cursor:'pointer'}}>Abrir Nova Despesa (QA)</button>}
   </AppShell>
   {open&&<ExpenseForm catalogs={syntheticCatalogs} historySnapshot={syntheticHistory} onBack={()=>setOpen(false)} saveEnabled={false}/>}
