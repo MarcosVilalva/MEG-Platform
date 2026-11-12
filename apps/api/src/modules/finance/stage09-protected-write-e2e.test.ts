@@ -23,6 +23,51 @@ function assertDisposableDatabase() {
   assert.equal(url.searchParams.get('schema'), 'public');
 }
 
+type FinancialEventResult = {
+  id: string;
+  idempotentReplay: boolean;
+  status: string;
+  competence: string;
+  amount: unknown;
+  signedAmount: unknown;
+  ledgerEntries: Array<{ debit: unknown; credit: unknown }>;
+};
+
+function assertFinancialEventResult(value: unknown): asserts value is FinancialEventResult {
+  assert.ok(value && typeof value === 'object');
+  const result = value as Record<string, unknown>;
+  assert.equal(typeof result.id, 'string');
+  assert.equal(typeof result.idempotentReplay, 'boolean');
+  assert.equal(typeof result.status, 'string');
+  assert.equal(typeof result.competence, 'string');
+  assert.ok(Array.isArray(result.ledgerEntries));
+}
+
+type FullTransferResult = {
+  transferId: string;
+  sourceEventId: string;
+  destinationEventId: string;
+  sourceAccountId: string;
+  destinationAccountId: string;
+  amount: number;
+  date: string;
+  sourceBalanceBefore: number;
+  sourceBalanceAfter: number;
+  idempotentReplay: boolean;
+};
+
+function assertFullTransferResult(value: unknown): asserts value is FullTransferResult {
+  assert.ok(value && typeof value === 'object');
+  const result = value as Record<string, unknown>;
+  for (const key of ['transferId', 'sourceEventId', 'destinationEventId']) {
+    assert.equal(typeof result[key], 'string');
+  }
+  for (const key of ['amount', 'sourceBalanceBefore', 'sourceBalanceAfter']) {
+    assert.equal(typeof result[key], 'number');
+  }
+  assert.equal(typeof result.idempotentReplay, 'boolean');
+}
+
 function hasCode(expected: string) {
   return (error: unknown) =>
     error instanceof Error
@@ -82,6 +127,7 @@ async function main() {
   };
 
   const income = await createFinancialEventProtected(user.id, incomeInput);
+  assertFinancialEventResult(income);
   assert.equal(income.idempotentReplay, false);
   assert.equal(income.status, 'paid', 'Receita deve entrar realizada mesmo solicitada planned.');
   assert.equal(income.competence, '2026-10', 'Competência informada deve prevalecer sobre data.');
@@ -92,6 +138,7 @@ async function main() {
 
   // Mesmo operationId e payload não podem gerar novo lançamento ou novo razão.
   const replay = await createFinancialEventProtected(user.id, incomeInput);
+  assertFinancialEventResult(replay);
   assert.equal(replay.id, income.id);
   assert.equal(replay.idempotentReplay, true);
   assert.equal(await prisma.financialEvent.count({ where: { workspaceId: workspace.id, id: income.id } }), 1);
@@ -113,6 +160,7 @@ async function main() {
     accountId: source.id,
     operationId: `stage09-refund-${suffix}`,
   });
+  assertFinancialEventResult(refund);
   assert.equal(Number(refund.amount), 25);
   assert.equal(Number(refund.signedAmount), 25);
   assert.equal(Number(refund.ledgerEntries[0].debit), 25);
@@ -128,6 +176,7 @@ async function main() {
     paymentMethodId: creditMethod.id,
     operationId: `stage09-credit-${suffix}`,
   });
+  assertFinancialEventResult(plannedCredit);
   assert.equal(plannedCredit.status, 'planned');
   assert.equal(plannedCredit.ledgerEntries.length, 0);
 
@@ -179,6 +228,7 @@ async function main() {
     description: 'Transferência fictícia',
   };
   const transfer = await createFinancialTransfer(user.id, transferInput);
+  assertFullTransferResult(transfer);
   assert.equal(transfer.idempotentReplay, false);
   assert.equal(transfer.sourceBalanceBefore, 225);
   assert.equal(transfer.sourceBalanceAfter, 175);
@@ -190,6 +240,7 @@ async function main() {
   assert.equal(legs.reduce((sum, event) => sum + Number(event.signedAmount), 0), 0);
   assert.equal(legs.reduce((sum, event) => sum + event.ledgerEntries.length, 0), 2);
   const transferReplay = await createFinancialTransfer(user.id, transferInput);
+  assertFullTransferResult(transferReplay);
   assert.equal(transferReplay.idempotentReplay, true);
   assert.equal(transferReplay.sourceEventId, transfer.sourceEventId);
   assert.equal(transferReplay.destinationEventId, transfer.destinationEventId);
