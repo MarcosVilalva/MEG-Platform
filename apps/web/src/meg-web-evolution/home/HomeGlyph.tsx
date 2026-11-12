@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import {PrismLineIcon} from '../components/PrismLineIcon';
 
 export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload'|'chevronLeft'|'chevronRight'|'chevronUp'|'chevronDown'|'trash'|'pencil'|'filter'|'activity'|'calendarClock'|'basket'|'medical'|'house'|'car'|'tag'|'x'|'siren'|'timer'|'checkCircle'|'list';
 const shapes:Record<HomeIconName,ReactNode>={
@@ -6,8 +7,8 @@ const shapes:Record<HomeIconName,ReactNode>={
  eye:<><path d="M2 12s3.7-6.5 10-6.5S22 12 22 12s-3.7 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.7"/></>,
  eyeOff:<><path d="m3 3 18 18M10.6 5.6c.5-.1.9-.1 1.4-.1 6.3 0 10 6.5 10 6.5a15 15 0 0 1-3 3.7M6.2 6.9A15 15 0 0 0 2 12s3.7 6.5 10 6.5a10 10 0 0 0 3.3-.6"/><path d="M10 10a2.8 2.8 0 0 0 4 4"/></>,
  arrow:<><path d="M5 12h14m-6-6 6 6-6 6"/></>,
- income:<><path d="m5 13 7-7 7 7M12 6v13"/></>,
- expense:<><path d="m5 11 7 7 7-7M12 18V5"/></>,
+ income:<><path d="m5 11 7 7 7-7M12 18V5"/></>,
+ expense:<><path d="m5 13 7-7 7 7M12 6v13"/></>,
  receipt:<><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/></>,
  card:<><rect x="2.5" y="5" width="19" height="14" rx="2.7"/><path d="M2.5 10h19M7 15h4"/></>,
  clock:<><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></>,
@@ -44,5 +45,7 @@ const shapes:Record<HomeIconName,ReactNode>={
  list:<><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></>
 };
 export function HomeGlyph({name,size=20,className=''}:{name:HomeIconName;size?:number;className?:string}){
- return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={name==='siren'||name==='timer'||name==='checkCircle'?2:1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{shapes[name]}</svg>;
+ return <PrismLineIcon className={className} name={name} shape={shapes[name]} width={size} height={size}
+  strokeWidth={name==='siren'||name==='timer'||name==='checkCircle'?2.1:2}
+  data-financial-flow={name==='income'?'down':name==='expense'?'up':undefined}/>;
 }
