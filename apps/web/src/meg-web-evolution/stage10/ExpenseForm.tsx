@@ -266,7 +266,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
     </section>
     <aside className={'meg-t10-expense-panel meg-t10-expense-summary'+(mobileStep==='summary'?' is-step':'')} aria-label="Resumo do lançamento">
      <h3><Icon name="list"/> Resumo do lançamento</h3>
-     <p>Confira os dados antes de salvar.</p>
+     <p className="meg-t10-expense-checkline" aria-live="polite"><strong>Conferência:</strong> {missingRequired.length===0?'Campos obrigatórios preenchidos.':'Faltam: '+missingRequired.join(', ')+'.'}</p>
      <strong className={'meg-t10-expense-total'+(isRefund?' is-refund':'')}>{requestedAmount?fmt.format(Number(requestedAmount)):'VALOR NÃO INFORMADO'}</strong>
      {isRefund&&<span className="meg-t10-expense-refund-tag">ESTORNO</span>}
      <dl>
@@ -280,11 +280,6 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       {isCredit&&<div><dt>Cartão / parcelas</dt><dd>{nameOf(cards,draft.creditCardId)} · {draft.installmentsInput||'1'}x</dd></div>}
       {isCredit&&selectedCard&&<div><dt>Fecha / vence</dt><dd>{selectedCard.closingDay||'?' } / {selectedCard.dueDay||'?'}</dd></div>}
      </dl>
-     <div className="meg-t10-expense-checklist" aria-live="polite">
-      <strong><Icon name="list"/> Conferência do preenchimento</strong>
-      {missingRequired.length===0?<p className="is-complete">Campos obrigatórios preenchidos. A gravação continua desativada no QA.</p>:
-       <p>Faltam: {missingRequired.join(', ')}.</p>}
-     </div>
      <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> Prévia fictícia, sem operações financeiras.</div>
     </aside>
    </div>
