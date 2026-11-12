@@ -39,8 +39,19 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
   }
+  function keepFocusInside(event:FocusEvent){
+   if(ref.current && event.target instanceof Node && !ref.current.contains(event.target)){
+    closeRef.current?.focus();
+   }
+  }
   document.addEventListener('keydown',keydown);
-  return ()=>{document.body.style.overflow=formerOverflow;document.removeEventListener('keydown',keydown);previous?.focus();};
+  document.addEventListener('focusin',keepFocusInside);
+  return ()=>{
+   document.body.style.overflow=formerOverflow;
+   document.removeEventListener('keydown',keydown);
+   document.removeEventListener('focusin',keepFocusInside);
+   previous?.focus();
+  };
  },[open,onClose]);
  if(!open)return null;
  return createPortal(
