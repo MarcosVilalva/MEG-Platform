@@ -34,7 +34,15 @@ else process.exit(44);
 mock('pg_dump', `if (process.argv.includes('--version')) {console.log('pg_dump (PostgreSQL) 17.6');process.exit(0);} process.stdout.write('MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA' + 'Z'.repeat(8 * 1024 * 1024));`);
 mock('curl', `
 process.stdin.resume();
-process.stdin.on('end',()=>process.stdout.write('{"root_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'));
+process.stdin.on('end',()=>{
+  const mode=process.env.MEG_MOCK_VAULT_RESPONSE || 'valid';
+  if(mode==='http_error') {process.stderr.write('synthetic HTTP error\\n');process.exitCode=22;return;}
+  if(mode==='malformed') {process.stdout.write('{not valid json');return;}
+  if(mode==='missing') {process.stdout.write(JSON.stringify({message:'synthetic no key'}));return;}
+  if(mode==='short') {process.stdout.write(JSON.stringify({root_key:'abcd'}));return;}
+  if(mode==='too_large') {process.stdout.write(JSON.stringify({root_key:'a'.repeat(17000)}));return;}
+  process.stdout.write(JSON.stringify({root_key:'a'.repeat(64)}));
+});
 `);
 mock('age', `
 const fs=require('node:fs'); const args=process.argv.slice(2);
@@ -129,6 +137,31 @@ try {
     SUPABASE_ACCESS_TOKEN:'BAD\nINJECT', MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
   });
   assert.notEqual(r.status,0,'token injection must be rejected');
+  // Every negative case must fail closed without publishing a partial key file.
+  // All values and credentials in this block are synthetic test fixtures.
+  const baselineVaultFiles = readdirSync(vaultTarget).sort();
+  for (const scenario of ['malformed','missing','short','too_large','http_error']) {
+    r=run('meg-stage09-safe-vault-rootkey.sh',{
+      SUPABASE_ACCESS_TOKEN:'TEST-PRIVATE-TOKEN-NOT-REAL',
+      MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+      MEG_MOCK_VAULT_RESPONSE:scenario,
+    });
+    assert.notEqual(r.status,0,`Vault scenario ${scenario} should fail closed`);
+    assert.deepEqual(readdirSync(vaultTarget).sort(),baselineVaultFiles,`Vault scenario ${scenario} must not publish any artifact`);
+    assert.equal((r.stdout+r.stderr).includes('TEST-PRIVATE-TOKEN-NOT-REAL'),false,`No PAT in ${scenario} diagnostics`);
+    assert.equal((r.stdout+r.stderr).includes('aaaaaaaaaaaaaaaa'),false,`No root key in ${scenario} diagnostics`);
+  }
+  r=run('meg-stage09-safe-vault-rootkey.sh',{
+    SUPABASE_ACCESS_TOKEN:'TEST-PRIVATE-TOKEN-NOT-REAL',
+    MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+    MEG_MOCK_AGE_AUTH_FAIL:'1',
+  });
+  assert.notEqual(r.status,0,'failed age authentication must reject the Vault key archive');
+  assert.deepEqual(readdirSync(vaultTarget).sort(),baselineVaultFiles,'Vault age failure must not publish an artifact');
+  assert.equal((r.stdout+r.stderr).includes('TEST-PRIVATE-TOKEN-NOT-REAL'),false,'No PAT on age failure');
+  assert.equal((r.stdout+r.stderr).includes('aaaaaaaaaaaaaaaa'),false,'No raw root key on age failure');
+  console.log('MEG Stage09 Vault negative contracts: invalid JSON, missing/short key, oversized/HTTP errors and age authentication rejection OK (mock only)');
+
   console.log('MEG backup contract: full age stream drain, authentication rejection, encrypted dump, Unix socket guard, TLS and Vault JSON OK (mock tools only)');
 } finally {
   rmSync(testDir,{force:true,recursive:true});
