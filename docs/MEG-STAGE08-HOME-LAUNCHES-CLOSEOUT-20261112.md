@@ -87,3 +87,33 @@ Este documento registra o escopo e as evidências antes do resultado do novo CI.
 - O diff da PR Draft #677 cobre apenas dois arquivos de código (`HomeDashboard.tsx` e `main.tsx`), o teste novo, este documento e o workflow. **Nenhum JSX visual do HomeDashboard foi modificado**: alteração limitada à tipagem/semântica do callback; visual de Lançamentos, Shell, CSS, DataGrid e QuickActions preservados.
 - Não houve deploy Render, preview funcional nova, merge, migração, writer nem acesso a banco real. O preview oficialmente homologado ainda aponta para `760b7ad0e3217dbab70ea426df9cad67318f79ef`; ele NÃO contém a nova navegação da PR #677.
 - **Pendência de produto:** inspeção humana da candidata funcional em ambiente de QA autorizado antes de qualquer integração. **Pendência externa:** gates de publicação trabalhados na Etapa 09, sem alteração nesta branch.
+
+## 8. QA funcional isolada 12/11/2026, publicação externa bloqueada
+
+### Implementado exclusivamente na PR #677
+- Entrada QA `apps/web/stage08-funcional-qa.html` e `apps/web/src/meg-web-evolution/stage08-qa/bootstrap.ts`: carregam **o mesmo `main.tsx` autenticado da Web** após instalar respostas fictícias na própria origem. Tokens de QA são constantes inválidas em backend real; não há credenciais ou dados reais.
+- O bootstrap bloqueia `fetch` para qualquer origem externa e toda rota fora da lista de leituras fictícias; `POST /auth/logout` é apenas a revogação simulada de um token fictício. HTML usa CSP `connect-src 'self'`; `img-src` permite só imagens do próprio site e as fotografias de referência visual de `images.unsplash.com`.
+- Build `apps/web/vite.stage08-funcional-qa.config.ts`, executado com `NODE_ENV=production` para que o cliente use origem relativa em vez do fallback de desenvolvimento `localhost:3333`. Não configura nem consulta o endereço de API produtiva.
+- Só ativos públicos necessários ao teste são copiados; a pasta `public/downloads` é excluída **do pacote de QA**, sem remoção no repositório ou na Web real.
+- Teste em navegador `scripts/meg-stage08-static-qa.browser.mjs`, desktop 1366 e mobile 390: login fictício validado no gateway existente, painel Home, alerta inicial fechado pela interação normal, atalho Lançamentos, retorno, aviso para destino sem rota, persistência dos atalhos, ausência de overflow, zero erros JS e **zero consultas financeiras pela rede**.
+
+### Evidências verificadas
+- [Smoke QA isolada #43219345293](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345293): **SUCCESS**, commit de código `9dbe0b12aee39a209243e5f12958032b7e7ed883`, inclusive build estático e browser.
+- [Artefato de QA `meg-stage08-funcional-qa-pr677`](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345293/artifacts/13945176562), ID `13945176562`, ZIP **6,15 MiB**, expiração informada 12/12/2026. Inclui HTML, JS, CSS e recursos de demonstração, não instalador ou APK.
+- A bateria financeira/visual completa para este código roda separadamente em [#43219345431](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345431). **Confirmar status final antes de considerar este gate verde**, pois no momento da anotação estava em progresso.
+- Diversas tentativas iniciais de smoke falharam por carregar `localhost:3333` sob `NODE_ENV=test` ou por o modal inicial bloquear o clique do teste. Corrigidos a configuração de build da QA e **o teste**; não houve alteração na lógica de autenticação ou no componente de vencimentos.
+- Os únicos arquivos novos são da QA isolada, workflows e testes; visual homologado original, Android, writers, banco e Render produtivo **inalterados**.
+
+### Bloqueio de publicação no Render
+- Tentativa de criar o serviço novo `meg-stage08-funcional-pr677` no workspace oficial com `autoDeploy=no`, branch própria e saída `dist-stage08-funcional-qa`.
+- A API Render **recusou o pedido com HTTP 400: `Hobby Tier is limited to 25 services`**. **Nenhum novo serviço foi criado.** Não houve deploy ou mudança em qualquer serviço existente, inclusive a QA visual homologada `meg-stage09-home-launches-qa`.
+- Não foi fornecida uma URL pública interativa, pois não há serviço LIVE que contenha este novo build. Não divulgar a prévia homologada anterior como se mostrasse a nova funcionalidade.
+- Alternativas futuras dependem de ação/autorização separada: conectar hospedagem alternativa como Vercel; ou liberar capacidade do Render sem exclusões implícitas. Não remover serviços ou alterar planos sem aprovação.
+
+### Validação local segura com o ZIP
+1. Baixar o artefato ZIP do GitHub Actions e extrair para uma pasta vazia (exemplo `~/meg-stage08-qa` no Ubuntu WSL).
+2. Executar `python3 -m http.server 4175 --directory ~/meg-stage08-qa`.
+3. Abrir `http://localhost:4175/stage08-funcional-qa.html` no navegador Windows. A aplicação é fictícia e usa HTTP apenas para servir seus arquivos estáticos. As fotografias de referência, se acessíveis, podem vir de `images.unsplash.com`.
+4. Validar pelo usuário: botão `Adicionar` em Ações rápidas, inclusão do atalho `Lançamentos`, navegação, `Voltar à Home`, fallback para outro destino e persistência. A validação humana **não está registrada ainda**.
+
+**Status:** implementação e artefato de QA disponíveis; **publicação online e homologação humana ainda pendentes**. PR #677 segue Draft, sem merge/deploy.
