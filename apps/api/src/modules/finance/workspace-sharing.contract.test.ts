@@ -69,8 +69,10 @@ assert.match(routes, /prisma\.paymentMethod\.findMany\(\{ where: \{ userId: data
   'Formas de pagamento devem ser compartilhadas entre membros autorizados.');
 assert.match(routes, /app\.get\('\/sync-status'[\s\S]*Promise\.all\(\[[\s\S]*prisma\.account\.findFirst[\s\S]*prisma\.category\.findFirst[\s\S]*prisma\.paymentMethod\.findFirst[\s\S]*prisma\.creditCard\.findFirst/,
   'Pulso de sincronização deve detectar alterações de contas, categorias, formas de pagamento e cartões mesmo sem mutation receipt.');
-assert.match(routes, /token: `\$\{mutationToken\}\|\$\{catalogToken\}`/,
-  'Token de sincronização deve combinar mutações financeiras protegidas com o estado mais recente dos cadastros.');
+assert.match(routes, /token: `\$\{mutationToken\}\|\$\{catalogToken\}\|\$\{activeHistoryRevision\}`/,
+  'Token de sincronização deve combinar recibos, cadastros e a revisão dos eventos ativos do titular.');
+assert.match(routes, /getActiveFinancialHistoryRevision\(dataOwnerId\)/,
+  'O token deve invalidar também em edições de FinancialEvent que não geram mutation receipt.');
 assert.match(routes, /mutationType: catalogIsNewest \? 'CATALOG_SYNC'/,
   'Outro dispositivo deve conseguir identificar que a mudança mais recente veio de um cadastro.');
 
