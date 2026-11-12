@@ -1,0 +1,20 @@
+/* Somente QA integrada, sem alterar CSS aprovado das telas. */
+.meg-unified-auth{min-height:100dvh}
+.meg-unified-demo-enter{position:fixed;right:1rem;bottom:1rem;z-index:200;border:1px solid #14e3c8;background:#043e3d;color:#eafff8;border-radius:.75rem;padding:.8rem 1rem;font:600 .85rem 'Plus Jakarta Sans',system-ui,sans-serif;cursor:pointer}
+.meg-unified-choice-overlay{z-index:180}
+.meg-unified-stamp{position:fixed;bottom:.65rem;left:.65rem;z-index:160;background:#062b2a;color:#eafff8;border:1px solid #18a995;border-radius:.55rem;padding:.38rem .65rem;font:600 .68rem 'Plus Jakarta Sans',system-ui,sans-serif;pointer-events:none;max-width:calc(100vw - 2rem)}
+.meg-unified-notice{position:fixed;right:1rem;bottom:4rem;z-index:180;background:#072b30;color:#eafff8;border:1px solid #19d8ba;padding:.75rem 1rem;border-radius:.65rem;max-width:min(28rem,calc(100vw - 2rem))}
+.meg-unified-notice button{margin-left:1rem;background:transparent;color:inherit;border:0;cursor:pointer}
+html[data-meg-typography-pilot="true"] .meg-login,
+html[data-meg-typography-pilot="true"] .meg-auth-layout,
+html[data-meg-typography-pilot="true"] .meg-t10-expense,
+html[data-meg-typography-pilot="true"] .meg-new-launch{
+ font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif
+}
+html[data-meg-typography-pilot="true"] .meg-login h1,
+html[data-meg-typography-pilot="true"] .meg-auth-layout h1,
+html[data-meg-typography-pilot="true"] .meg-t10-expense h2,
+html[data-meg-typography-pilot="true"] .meg-new-launch h2{
+ font-family:'Sora','Plus Jakarta Sans',system-ui,sans-serif
+}
+@media(max-width:639px){.meg-unified-demo-enter{bottom:1rem;left:1rem;right:1rem}.meg-unified-stamp{font-size:.59rem}}
