@@ -1,4 +1,4 @@
-import {useEffect,useId,useMemo,useState} from 'react';
+import {useEffect,useId,useMemo,useRef,useState} from 'react';
 import './ExpenseForm.css';
 
 /** Etapa 10: formulário visual de despesa, sem nenhuma operação financeira.
@@ -33,6 +33,7 @@ function catalogName(items:readonly ExpenseCatalogOption[],id:string){return ite
 export function ExpenseForm({catalogs,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
  const [draft,setDraft]=useState<ExpenseDraft>(EMPTY_EXPENSE_DRAFT);
  const [summaryOpen,setSummaryOpen]=useState(true);
+ const dialogRef=useRef<HTMLElement>(null);
  const formId=useId();
  const categories=useMemo(()=>catalogs.categories.filter(x=>x.active),[catalogs.categories]);
  const accounts=useMemo(()=>catalogs.accounts.filter(x=>x.active),[catalogs.accounts]);
@@ -57,9 +58,25 @@ export function ExpenseForm({catalogs,onBack,onRequestSave,saveEnabled=false}:Ex
    setDraft(current=>({...current,categoryId:id,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
   }else setDraft(current=>({...current,categoryId:id}));
  }
- useEffect(()=>{function esc(event:KeyboardEvent){if(event.key==='Escape')onBack();}document.addEventListener('keydown',esc);return()=>document.removeEventListener('keydown',esc);},[onBack]);
+ useEffect(()=>{
+  const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+  const oldOverflow=document.body.style.overflow;
+  document.body.style.overflow='hidden';
+  dialogRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+  function keys(event:KeyboardEvent){
+   if(event.key==='Escape'){event.preventDefault();onBack();return;}
+   if(event.key!=='Tab')return;
+   const controls=Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled])')??[]);
+   if(!controls.length)return;
+   const first=controls[0],last=controls[controls.length-1];
+   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  }
+  document.addEventListener('keydown',keys);
+  return()=>{document.body.style.overflow=oldOverflow;document.removeEventListener('keydown',keys);previous?.focus();};
+ },[onBack]);
  return <div className="meg-t10-expense-backdrop">
-  <section className="meg-t10-expense" role="dialog" aria-modal="true" aria-labelledby={formId+'title'} aria-describedby={formId+'help'}>
+  <section className="meg-t10-expense" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={formId+'title'} aria-describedby={formId+'help'}>
    <header className="meg-t10-expense-header">
     <button type="button" aria-label="Voltar à escolha do tipo" onClick={onBack}>‹</button>
     <div><h2 id={formId+'title'}>Novo lançamento</h2><p id={formId+'help'}><span className="meg-t10-expense-type">↓ Despesa</span> Registre uma nova movimentação financeira.</p></div>
