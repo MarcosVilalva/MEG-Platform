@@ -5,6 +5,7 @@ on:
       - 'stage08/home-launches-closeout-20261112'
       - 'stage08/lancamentos-icons-refinement-20261112'
       - 'stage08/prism-typography-system-pilot-20261112'
+      - 'stage08/prism-ui-rollout-and-flow-fix-20261112'
   workflow_dispatch:
 permissions:
   contents: read
@@ -50,16 +51,17 @@ jobs:
             -o /tmp/meg-stage08-public-html
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-stage08-public-html
           node scripts/meg-stage08-static-qa.browser.mjs
-      - name: Validar revisão de ícones na URL pública independente PR679
+      - name: Verificar que a QA anterior da PR679 permanece independente
         env:
           MEG_STAGE08_QA_URL: https://meg-stage08-icones-pr679.onrender.com
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --max-time 35 \
-            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=c1133b6c246a1652d3f3e3712fe5c612f8689c88" \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=5d296e72922ea25d37aac9df57cac74a51b75374" \
             -o /tmp/stage08-icons-public-html
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/stage08-icons-public-html
-          node scripts/meg-stage08-lancamentos-icons.browser.mjs
+          # Não impor a nova direção visual à publicação histórica imutável.
+          node scripts/meg-stage08-static-qa.browser.mjs
       - name: Evidências visuais dos indicadores e botão de detalhes
         if: always()
         uses: actions/upload-artifact@v4
