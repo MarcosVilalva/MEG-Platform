@@ -129,6 +129,14 @@ O script verifica SHA-256, autenticidade do socket local, identidade/versão do 
 - **Teste de seguranca e SQL real com dados sinteticos:** CI `financial-invariants-postgres17` na workflow de Backup Safety usa contêiner PostgreSQL 17 descartavel, compara SQL em dados ficticios consistentes e apos insercao de inconsistencias artificiais. **Nao testa os dados reais nem executa a API financeira.** Verificar job e SHA do ultimo commit antes de anunciar resultado da CI.
 - **Estado:** script preparado e versionado, **diagnostico dos dados reais nao executado neste chat**; aguardar relatorio do operador e tratar qualquer contagem nao nula como investigacao, sem mudar o banco. Uma leitura de invariantes nao homologa servicos de transferencia, pagamento, beneficio, parcelamento, saldo e relatorios: testes funcionais dos modulos canonicos e nova plataforma Supabase continuam pendentes.
 
+### Resultado V5 no backup real restaurado, 12/11/2026
+
+- **Execucao aprovada em ambiente local isolado e somente leitura**: `CODIGO_LINUX=0`, snapshot PostgreSQL 17 `meg_restore_drill` via Unix socket peer. 6.576 eventos totais, 3.731 ativos.
+- **Pendencias de investigacao (nao erros comprovados)**: 38 despesas ativas com `signedAmount>0`, 140 eventos ativos com fracao subcentavo em `amount` ou `signedAmount`, 5 registros ativos com `competence` diferente do mes da data; nenhuma magnitude `abs(signedAmount)!=amount`; nenhuma receita negativa.
+- **Amostra insuficiente:** 0 transferencias modernas ativas e 0 `Payable`, logo as contagens de inconsistencias iguais a zero nao exercitam as regras de transferência ou de pendentes; 0 eventos ativos de saldo inicial `opening-balance:` nao implica erro porque existe fallback de migracao. Beneficio: 315 eventos ativos na conta e 0 Verocard fora de conta beneficio; 23 parcelas de cartao com testes de consistencia basica sem achados; 219 registros de razao sem violacao dos tres testes simples; 254 recibos de mutacao.
+- **Regra de seguranca:** nao alterar dados restaurados, nao recalcular saldo/fatura com SQL paralelo e nao confundir consulta de invariantes com execucao das regras financeiras canônicas. Usar primeiro triagem agregada por status, dominio beneficio, origem legada e tipo de operacao. Roteiro V6 local desta conversa, não commitado/não executado no WSL até relatório do usuário. Proximo gate exige analise dos resultados antes de qualquer mudanca de regra ou de dado.
+- **Homologacao funcional continua pendente**, assim como Vault root key, schemas Supabase gerenciados, Render e Egress. Sem merge/deploy na PR #666.
+
 ## 5. Vault e material secreto: gate separado e crítico
 
 A consulta agregada revelou **1 entrada em `vault.secrets`**. Pela documentação Supabase, a chave-raiz do projeto **não integra dumps**. Uma restauração lógica em novo projeto pode deixar segredos e colunas criptografadas ilegíveis sem a chave original.
