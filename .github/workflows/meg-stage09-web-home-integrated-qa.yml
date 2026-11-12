@@ -34,7 +34,6 @@ jobs:
       - name: Contratos de Lancamentos e Home
         run: |
           npx tsx scripts/meg-stage09-history-snapshot.contract.test.ts
-          node --test scripts/meg-stage09-readonly-gateway.test.mjs
           npx tsx scripts/meg-stage09-category-visual.contract.test.ts
           npx tsx scripts/meg-stage09-saved-filters.contract.test.ts
           npx tsx scripts/meg-stage09-card-nextstage-characterization.test.ts
@@ -42,6 +41,12 @@ jobs:
           npx tsx scripts/meg-stage09-filtered-summary.contract.test.ts
       - name: Build da preview e entrada autenticada sem publicar
         run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Testar gateway somente leitura com artefatos locais do build
+        run: |
+          set -euo pipefail
+          mkdir -p apps/web/dist
+          cp -a apps/web/dist-fluxo-integrado-08/. apps/web/dist/
+          node --test scripts/meg-stage09-readonly-gateway.test.mjs
       - name: Instalar Playwright isoladamente
         run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
       - name: QA de Home, atalhos, Lancamentos e sessao em Chrome
