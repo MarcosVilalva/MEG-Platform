@@ -1,0 +1,50 @@
+name: MEG | QA integrada Prism Stage05 + Stage08 + Stage10
+on:
+  push:
+    branches:
+      - 'stage08/unified-qa-stage05-08-10-20261112'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integrated-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install immutable dependencies
+        run: npm ci --audit=false
+      - name: Build isolated multi-entry static QA
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
+      - name: Static asset and source isolation gate
+        run: |
+          set -euo pipefail
+          test -f apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
+          test -f apps/web/dist-stage08-funcional-qa/stage08-funcional-qa.html
+          ! grep -q 'src/meg-web-evolution/integrated-qa/unified-preview.tsx' apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
+          ! grep -R -E '(https?://[^ ]*/(auth/login|finance/))' apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
+      - name: Install isolated browser runner
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Test entire synthetic flow in Chrome
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/meg-unified-static.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4175/meg-unificado-qa.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage08-unified-qa.browser.mjs
+      - name: Preserve QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-unified-prism-qa
+          path: artifacts/meg-unified-prism/
+          retention-days: 7
+          if-no-files-found: warn
