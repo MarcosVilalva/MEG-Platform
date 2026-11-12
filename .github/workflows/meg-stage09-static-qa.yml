@@ -50,13 +50,15 @@ jobs:
           node scripts/meg-06-home-refino.browser.mjs
           node scripts/meg-08-home-quick-actions.browser.mjs
           node scripts/meg-stage09-lancamentos.browser.mjs
+          node scripts/meg-stage09-home-p0-preservation.browser.mjs
       - name: Gate de escopo isolado
         run: |
           set -euo pipefail
           BASE=055b998aabb52a89203d798101d67380cade5434
           CHANGES=$(git diff --name-only "$BASE" HEAD)
           printf '%s\n' "$CHANGES"
-          test "$CHANGES" = "$(printf '.github/workflows/meg-stage09-static-qa.yml\napps/web/vite.stage09-home-launches-qa.config.ts\ndocs/MEG-STAGE09-HOME-LAUNCHES-STATIC-QA-20261111.md')"
+          EXPECTED=$(printf '.github/workflows/meg-stage09-static-qa.yml\napps/web/src/meg-web-evolution/home/home-p0-qa.preview.fixture.ts\napps/web/src/meg-web-evolution/integrated-preview/preview.tsx\napps/web/vite.stage09-home-launches-qa.config.ts\ndocs/MEG-STAGE09-HOME-LAUNCHES-STATIC-QA-20261111.md\nscripts/meg-stage09-home-p0-preservation.browser.mjs')
+          test "$CHANGES" = "$EXPECTED"
       - name: Evidencias de preview sem producao
         if: always()
         uses: actions/upload-artifact@v4
