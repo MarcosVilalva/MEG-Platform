@@ -97,3 +97,26 @@
  .meg-stage10-footer .meg-stage10-back{font-size:.8rem;padding:.3rem}
 }
 @media(prefers-reduced-motion:reduce){.meg-stage10-dialog *, .meg-stage10-dialog *::before,.meg-stage10-dialog *::after{animation:none!important;transition:none!important}}
+
+/* Edição reproduz duas regiões do print: formulário e resumo. */
+.meg-stage10-dialog.is-edit{width:min(100%,69rem)}
+.meg-stage10-dialog.is-edit .meg-stage10-main{
+ grid-template-columns:minmax(0,1.42fr) minmax(0,.98fr);
+ grid-template-areas:"fields side" "details side";
+ align-content:start;
+}
+.meg-stage10-dialog.is-edit .meg-stage10-fields{grid-area:fields}
+.meg-stage10-dialog.is-edit .meg-stage10-details{grid-area:details}
+.meg-stage10-dialog.is-edit .meg-stage10-aside{grid-area:side}
+.meg-stage10-dialog.is-edit .meg-stage10-favorites{display:none}
+.meg-stage10-dialog.is-edit .meg-stage10-category-chips{display:none}
+.meg-stage10-dialog.is-edit .meg-stage10-fields>.meg-stage10-segmented{display:none}
+.meg-stage10-dialog.is-edit .meg-stage10-summary{min-height:100%}
+.meg-stage10-category-chips svg,.meg-stage10-favorites svg{width:1.25rem;height:1.25rem;flex:none}
+@media(max-width:1023px){
+ .meg-stage10-dialog.is-edit .meg-stage10-main{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-areas:"fields" "details" "side";
+ }
+ .meg-stage10-dialog.is-edit .meg-stage10-summary{min-height:0}
+}
