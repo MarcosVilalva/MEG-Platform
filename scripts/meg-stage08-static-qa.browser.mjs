@@ -36,6 +36,7 @@ try{
    // A Home aprovada exibe alerta canônico inicial na sessão, não o suprimir.
    // Fechá-lo pela interação normal antes de testar o carrossel.
    const dueDialog=page.locator('.meg-due-alert-dialog');
+   await dueDialog.waitFor({state:'visible',timeout:5000}).catch(()=>{});
    if(await dueDialog.isVisible())await page.getByRole('button',{name:'Entendi'}).click();
    const quick=page.getByRole('region',{name:'Atalhos da Home'});
    await quick.getByRole('button',{name:/Lançamentos/}).click();
