@@ -89,7 +89,7 @@ function AppShellView({children,periodLabel,activeSection='home',onNavigate,prof
   const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
 
   return (
-    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${onNavigate && activeSection==='launches'?'is-launches-operational':'' visualVariant==='launches'?'is-launches-visual-preview':''}`}>
+    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${onNavigate && activeSection==='launches'?'is-launches-operational':''} ${visualVariant==='launches'?'is-launches-visual-preview':''}`}>
       <div className="meg-sidebar-wrap">
         <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand" aria-label="MEG Finanças">
