@@ -26,6 +26,19 @@ try{
    assert.match(font,/Plus Jakarta Sans/);
    let heading=await page.locator('.pano-root h1').first().evaluate(el=>getComputedStyle(el).fontFamily);
    assert.match(heading,/Sora/);
+   // A família estar no CSS não prova que o navegador baixou os glifos.
+   await page.evaluate(()=>document.fonts.ready);
+   const loaded=await page.evaluate(async()=>{
+     const jobs=await Promise.all([
+       document.fonts.load('600 16px "Sora"'),
+       document.fonts.load('600 16px "Plus Jakarta Sans"'),
+     ]);
+     const fonts=Array.from(document.fonts).map(face=>({name:face.family,status:face.status}));
+     return {jobs:jobs.map(faces=>faces.length),fonts};
+   });
+   assert.ok(loaded.jobs.every(count=>count>0),'O navegador não encontrou as fontes do piloto');
+   assert.ok(loaded.fonts.some(face=>face.name==='Sora'&&face.status==='loaded'),'Sora não carregou');
+   assert.ok(loaded.fonts.some(face=>face.name==='Plus Jakarta Sans'&&face.status==='loaded'),'Plus Jakarta Sans não carregou');
    const dialog=page.locator('.meg-due-alert-dialog');
    await dialog.waitFor({state:'visible',timeout:5000}).catch(()=>{});
    if(await dialog.isVisible())await page.getByRole('button',{name:'Entendi'}).click();
