@@ -83,7 +83,7 @@ test('Layout sem footer fixo, com navegação alternativa mobile, ícones e moda
  assert.match(code,/meg-t10-expense-mobile-nav/);
  assert.match(css,/height:min\(820px,calc\(100dvh - 16px\)\)/);
  assert.match(css,/overflow:hidden/);
- assert.match(css,/@media\(max-width:1023px\)/);
+ assert.match(css,/@media\(max-width:1024px\)/);
  assert.match(css,/@media\(max-width:639px\)/);
  assert.match(code,/aria-modal="true"/);
 });
