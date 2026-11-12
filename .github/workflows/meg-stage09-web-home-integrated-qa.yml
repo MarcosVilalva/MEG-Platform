@@ -38,9 +38,9 @@ jobs:
           }
           # Home P0 autorizada (PR #669)
           check_blob apps/web/src/meg-web-evolution/home/HomeDashboard.tsx 9ccb041d72088db1f071bad2c82965c564f73743
-          # Lançamentos: revisão específica de pictogramas e botão Ações AUTORIZADA em 12/11/2026, apenas branch isolada. Nenhuma alteração financeira ou estrutural.
-          check_blob apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx c0e8971bcd90e8bf69a340d052fde820762607b4
-          check_blob apps/web/src/meg-web-evolution/launches/launches-stage09.css 6c4067b8feed4002932831d26186952e2fce7a0a
+          # Revisão da PR #679: pack anterior reprovado; MEG Prism 3D na versão autenticada, somente novos glifos e estilo do botão. Aprovação visual ainda pendente.
+          check_blob apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx d95227c074a5f458e1981a06d71f73105661b6e5
+          check_blob apps/web/src/meg-web-evolution/launches/launches-stage09.css 650d5dcfe4a8fdeb4d9fceda335c82c42b89b86c
           check_blob apps/web/src/meg-web-evolution/launches/LaunchCategoryBadge.tsx 72a822a3fde5a38f5ec791af3e4f03527beb630b
           check_blob apps/web/src/meg-web-evolution/launches/LaunchPaymentBadge.tsx b276bb0fd422ea601ca91af4774c97646ba79055
       - name: Instalar dependencias e gerar Prisma sem banco
