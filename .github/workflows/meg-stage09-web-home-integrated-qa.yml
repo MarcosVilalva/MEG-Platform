@@ -4,6 +4,7 @@ on:
     branches:
       - 'integration/09-web-home-p0-20261111'
       - 'stage08/home-launches-closeout-20261112'
+      - 'stage08/lancamentos-icons-refinement-20261112'
   workflow_dispatch:
 permissions:
   contents: read
@@ -37,9 +38,9 @@ jobs:
           }
           # Home P0 autorizada (PR #669)
           check_blob apps/web/src/meg-web-evolution/home/HomeDashboard.tsx 9ccb041d72088db1f071bad2c82965c564f73743
-          # Lançamentos (PR #656): apenas seletores do Shell retirados por solicitação do usuário; conteúdo interno e ícones preservados.
-          check_blob apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx 6807bfa035a4976c23fe111cbf7705c8be60a828
-          check_blob apps/web/src/meg-web-evolution/launches/launches-stage09.css 4d859c2d1178e9e05b6e6a292bd914ffbcb02257
+          # Lançamentos: revisão específica de pictogramas e botão Ações AUTORIZADA em 12/11/2026, apenas branch isolada. Nenhuma alteração financeira ou estrutural.
+          check_blob apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx c0e8971bcd90e8bf69a340d052fde820762607b4
+          check_blob apps/web/src/meg-web-evolution/launches/launches-stage09.css 6c4067b8feed4002932831d26186952e2fce7a0a
           check_blob apps/web/src/meg-web-evolution/launches/LaunchCategoryBadge.tsx 72a822a3fde5a38f5ec791af3e4f03527beb630b
           check_blob apps/web/src/meg-web-evolution/launches/LaunchPaymentBadge.tsx b276bb0fd422ea601ca91af4774c97646ba79055
       - name: Instalar dependencias e gerar Prisma sem banco
@@ -83,6 +84,7 @@ jobs:
             sleep 1
           done
           node scripts/meg-stage08-static-qa.browser.mjs
+          node scripts/meg-stage08-lancamentos-icons.browser.mjs
       - name: QA de Home, atalhos, Lancamentos e sessao em Chrome
         run: |
           set -euo pipefail
@@ -112,7 +114,7 @@ jobs:
           cat /tmp/stage09-web-files.txt
           while IFS= read -r path; do
             case "$path" in
-              apps/web/src/meg-web-evolution/launches/*|apps/web/src/meg-web-evolution/main.tsx|apps/web/src/meg-web-evolution/home/HomeDashboard.tsx|apps/web/src/meg-web-evolution/stage08-qa/*|apps/web/stage08-funcional-qa.html|apps/web/vite.stage08-funcional-qa.config.ts|apps/web/src/meg-web-evolution/shell/AppShell.tsx|apps/web/src/meg-web-evolution/shell/shell.css|apps/web/src/meg-web-evolution/datagrid/DataGrid.tsx|apps/web/src/meg-web-evolution/datagrid/types.ts|apps/web/src/app/finance-client.ts|apps/web/src/meg-web-evolution/integrated-preview/preview.tsx|apps/web/src/meg-web-evolution/home/home-p0-qa.preview.fixture.ts|apps/web/src/meg-web-evolution/home/home-due-alerts.css|apps/web/src/meg-web-evolution/auth/login.css|scripts/meg-06-home-refino.browser.mjs|scripts/meg-08-home-quick-actions.browser.mjs|scripts/meg-stage09-*.browser.mjs|scripts/meg-stage08-home-navigation.browser.mjs|scripts/meg-stage08-static-qa.browser.mjs|scripts/meg-stage09-readonly-gateway.mjs|scripts/meg-stage09-readonly-gateway.test.mjs|scripts/meg-stage09-*contract.test.ts|scripts/meg-stage09-card-nextstage-characterization.test.ts|.github/workflows/meg-stage08-static-functional-qa.yml|.github/workflows/meg-stage09-web-home-integrated-qa.yml|docs/MEG-STAGE08-HOME-LAUNCHES-CLOSEOUT-20261112.md|docs/MEG-STAGE09-WEB-HOME-INTEGRATION-QA-20261111.md|MEG-WEB-CONTINUIDADE-OFICIAL.md)
+              apps/web/src/meg-web-evolution/launches/*|apps/web/src/meg-web-evolution/main.tsx|apps/web/src/meg-web-evolution/home/HomeDashboard.tsx|apps/web/src/meg-web-evolution/stage08-qa/*|apps/web/stage08-funcional-qa.html|apps/web/vite.stage08-funcional-qa.config.ts|apps/web/src/meg-web-evolution/shell/AppShell.tsx|apps/web/src/meg-web-evolution/shell/shell.css|apps/web/src/meg-web-evolution/datagrid/DataGrid.tsx|apps/web/src/meg-web-evolution/datagrid/types.ts|apps/web/src/app/finance-client.ts|apps/web/src/meg-web-evolution/integrated-preview/preview.tsx|apps/web/src/meg-web-evolution/home/home-p0-qa.preview.fixture.ts|apps/web/src/meg-web-evolution/home/home-due-alerts.css|apps/web/src/meg-web-evolution/auth/login.css|scripts/meg-06-home-refino.browser.mjs|scripts/meg-08-home-quick-actions.browser.mjs|scripts/meg-stage09-*.browser.mjs|scripts/meg-stage08-home-navigation.browser.mjs|scripts/meg-stage08-lancamentos-icons.browser.mjs|scripts/meg-stage08-static-qa.browser.mjs|scripts/meg-stage09-readonly-gateway.mjs|scripts/meg-stage09-readonly-gateway.test.mjs|scripts/meg-stage09-*contract.test.ts|scripts/meg-stage09-card-nextstage-characterization.test.ts|.github/workflows/meg-stage08-static-functional-qa.yml|.github/workflows/meg-stage09-web-home-integrated-qa.yml|docs/MEG-STAGE08-HOME-LAUNCHES-CLOSEOUT-20261112.md|docs/MEG-STAGE09-WEB-HOME-INTEGRATION-QA-20261111.md|MEG-WEB-CONTINUIDADE-OFICIAL.md)
                 ;;
               *) echo "MUDANCA NAO AUTORIZADA: $path"; exit 1;;
             esac
@@ -126,6 +128,7 @@ jobs:
             artifacts/meg-stage09-lancamentos/
             artifacts/meg-stage09-approved/
             artifacts/meg-stage09-operational/
+            artifacts/meg-stage08-lancamentos-icons/
             artifacts/meg-home-refino-06/
             artifacts/meg-home-p0-qa/
           if-no-files-found: warn
