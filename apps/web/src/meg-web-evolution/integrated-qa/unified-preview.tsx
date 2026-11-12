@@ -10,7 +10,7 @@ import {AppShell} from '../shell/AppShell';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
-import {LaunchTypePicker} from '../launches/LaunchTypePicker';
+import {PrismLaunchChoice} from './PrismLaunchChoice';
 import {ExpenseForm,type ExpenseCatalogs} from '../stage10/ExpenseForm';
 import type {HistorySnapshot} from '../stage10/autocomplete-history';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
@@ -119,7 +119,7 @@ function UnifiedQA(){
        <div className="meg-new-launch__headline"><h2 id="meg-unified-new-title">Novo lançamento</h2><p>Escolha o tipo de lançamento.</p></div>
        <button type="button" className="meg-new-launch__close" aria-label="Fechar novo lançamento" onClick={()=>setOverlay(null)}>×</button>
       </header>
-      <LaunchTypePicker onBack={()=>setOverlay(null)} onChoose={type=>{
+      <PrismLaunchChoice onBack={()=>setOverlay(null)} onChoose={type=>{
         if(type==='expense')setOverlay('expense');
         else setNotice('Receita permanece fora do formulário de despesa autorizado.');
       }}/>
