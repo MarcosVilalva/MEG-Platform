@@ -19,6 +19,13 @@ try{
    if(url.startsWith(base)||url.startsWith('data:'))return route.continue();
    return route.abort();
   });
+  // QA visual do seletor: o alerta canônico da Home já foi apresentado
+  // nesta sessão sintética. Não altera a lógica real de notificações.
+  await page.addInitScript(()=>{
+   const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+   const get=(k)=>parts.find(p=>p.type===k)?.value||'00';
+   sessionStorage.setItem('meg-due-entry-alert:qa-preview:'+get('year')+get('month')+get('day'),'1');
+  });
   await page.goto(base+'/meg-stage10-qa.html',{waitUntil:'domcontentloaded'});
   await page.locator('[data-stage10-chooser]').waitFor();
   const optionCount=await page.locator('.meg-stage10-choice').count();
