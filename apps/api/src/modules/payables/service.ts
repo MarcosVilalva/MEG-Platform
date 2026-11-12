@@ -314,6 +314,17 @@ export async function payPayableProtected(userId: string, payableId: string, inp
       paymentMethodId: input.paymentMethodId,
       notes: input.notes,
     } });
+    // A baixa financeira realizada deve escriturar o mesmo valor total do
+    // evento (principal + juros + multa), como os demais writers canônicos.
+    // Mantida na transação serializável do pagamento para rollback e idempotência.
+    await tx.ledgerEntry.create({ data: {
+      eventId: event.id,
+      date: event.date,
+      accountId: account.id,
+      debit: 0,
+      credit: paidTotal,
+      memo: event.description,
+    } });
     const payment = await tx.payablePayment.create({ data: {
       payableId,
       amount: principal,
