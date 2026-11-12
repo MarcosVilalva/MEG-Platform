@@ -164,10 +164,8 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
   // Callbacks históricos que retornam void continuam tratados como atendidos.
   const handled=onNavigate?.(target);
   if(onNavigate && handled!==false)return;
-  {
-   const labels:Record<Action,string>={novo:'Novo lançamento',transferencia:'Transferência',pendentes:'Pendentes',cartoes:'Cartões',lancamentos:'Lançamentos',beneficios:'Benefícios',relatorios:'Relatórios',metas:'Configurações'};
-   setNotice(labels[target]+' ainda não está disponível nesta etapa da Web. A Home continua navegável para os detalhes já implementados.');
-  }
+  const labels:Record<Action,string>={novo:'Novo lançamento',transferencia:'Transferência',pendentes:'Pendentes',cartoes:'Cartões',lancamentos:'Lançamentos',beneficios:'Benefícios',relatorios:'Relatórios',metas:'Configurações'};
+  setNotice(labels[target]+' ainda não está disponível nesta etapa da Web. A Home continua navegável para os detalhes já implementados.');
  };
  const categories=useMemo(()=>new Map(data.categories.map(c=>[c.id,c.name])),[data.categories]);
  const accounts=useMemo(()=>new Map(data.accounts.map(a=>[a.id,a.name])),[data.accounts]);
