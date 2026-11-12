@@ -35,7 +35,11 @@ try{
    assert.equal(await picker.locator('.meg-choice__option').count(),4,'Quatro cards fotográficos originais preservados');
    assert.equal(await picker.locator('.meg-choice__hero-photo').count(),1,'Hero original preservado');
    assert.equal(await picker.getByRole('heading',{name:/Mais controle/}).count(),1,'Texto editorial original preservado');
-   assert.equal(await picker.locator('.meg-choice__feature').count(),3,'Faixa inferior de recursos preservada');
+   assert.equal(await picker.locator('.meg-choice__feature').count(),3,'Três células inferiores preservadas');
+   for(const [index,text] of ['01 · Escolha','02 · Preencha','03 · Confira'].entries()){
+    assert.match(await picker.locator('.meg-choice__feature').nth(index).innerText(),new RegExp(text),'Etapas funcionais do lançamento');
+   }
+   assert.doesNotMatch(await picker.locator('.meg-choice__footer').innerText(),/Dimensionamento automático|Tipografia ampliada|Responsivo para Web/,'Remover anúncios de CSS do rodapé');
    assert.equal(await picker.locator('.meg-choice__option-photo').count(),4,'Quatro imagens por modalidade preservadas');
    assert.equal(await picker.locator('.meg-choice__option-next svg[data-meg-prism="icon-2"]').count(),4,'Ações com SVG Prism');
    assert.equal(await picker.locator('.meg-choice__feature-icon svg[data-meg-prism="icon-2"]').count(),3,'Rodapé com SVG Prism');
@@ -43,6 +47,17 @@ try{
    assert.equal(await page.locator('.meg-new-launch__close svg[data-meg-prism="icon-2"]').count(),1,'Fechar com SVG Prism');
    const photoBackground=await picker.locator('.meg-choice__option.is-expense .meg-choice__option-photo').evaluate(el=>getComputedStyle(el).backgroundImage);
    assert.match(photoBackground,/expense\.webp/,'Imagem HD de Despesa preservada');
+   const photoClip=await picker.locator('.meg-choice__option.is-expense').evaluate(card=>{
+    const photo=card.querySelector('.meg-choice__option-photo');
+    if(!photo)return null;
+    const outer=card.getBoundingClientRect(),inner=photo.getBoundingClientRect(),computed=getComputedStyle(card);
+    return {clipped:computed.overflowX==='hidden'&&computed.overflowY==='hidden',
+      borderRadius:computed.borderRadius,leftBleed:outer.left-inner.left,rightBleed:inner.right-outer.right,
+      topBleed:outer.top-inner.top,bottomBleed:inner.bottom-outer.bottom};
+   });
+   assert.ok(photoClip?.clipped&&photoClip.leftBleed>=20&&photoClip.rightBleed>=20&&photoClip.topBleed>=10&&photoClip.bottomBleed>=10,
+    'Arte deve sangrar sob o contorno e ser recortada pelo card '+width+': '+JSON.stringify(photoClip));
+
 
    assert.equal(await picker.getByRole('button',{name:'Transferência indisponível'}).isDisabled(),true);
    assert.equal(await picker.getByRole('button',{name:'Benefício indisponível'}).isDisabled(),true);
