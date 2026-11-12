@@ -51,11 +51,14 @@ const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{
 });
 const deny=(status:number,reason:string)=>json({error:reason},status);
 const localOrigin=window.location.origin;
+const qaTrace:string[]=[];
+(window as typeof window & {__MEG_STAGE08_QA_TRACE__?:string[]}).__MEG_STAGE08_QA_TRACE__=qaTrace;
 
 window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
   const path=typeof input==='string'||input instanceof URL?String(input):input.url;
   const url=new URL(path,window.location.href);
   // Bloqueio completo de API externa ou não listada. Sem rede financeira real.
+  qaTrace.push((init?.method||'GET')+' '+url.origin+url.pathname);
   if(url.origin!==localOrigin)return deny(403,'QA_EXTERNAL_REQUEST_BLOCKED');
   const method=(init?.method||(input instanceof Request?input.method:'GET')).toUpperCase();
   if(init?.signal?.aborted)throw new DOMException('Consulta cancelada','AbortError');
