@@ -9,8 +9,10 @@ const browser=await chromium.launch({
 try{
  for(const [width,height] of [[1366,768],[390,844]]){
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
-  const external=[],networkFinancial=[],errors=[];
+  const external=[],networkFinancial=[],errors=[],consoleErrors=[],failedRequests=[];
   page.on('pageerror',error=>errors.push(String(error)));
+  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});
+  page.on('requestfailed',request=>failedRequests.push({url:request.url(),reason:request.failure()?.errorText}));
   page.on('request',req=>{
     const u=new URL(req.url());
     // Apenas as fotografias de referência visual são recursos externos permitidos.
@@ -23,7 +25,11 @@ try{
   });
   try{
    await page.goto(origin+'/stage08-funcional-qa.html',{waitUntil:'domcontentloaded'});
-   await page.locator('.pano-root').waitFor({timeout:15000});
+   try{await page.locator('.pano-root').waitFor({timeout:15000});}
+   catch(error){
+    const body=await page.locator('body').innerText().catch(()=>'<body unavailable>');
+    throw new Error('QA_HOME_NOT_VISIBLE '+JSON.stringify({body:body.slice(0,2000),errors,consoleErrors,failedRequests,external,networkFinancial,cause:String(error)}));
+   }
    assert.match(await page.locator('.meg-stage08-qa-stamp').innerText(),/Dados fictícios/);
    assert.equal(await page.locator('.meg-profile-name').innerText(),'Usuário fictício QA');
    const quick=page.getByRole('region',{name:'Atalhos da Home'});
