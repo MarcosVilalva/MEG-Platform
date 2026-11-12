@@ -33,6 +33,10 @@ try{
    }
    assert.match(await page.locator('.meg-stage08-qa-stamp').innerText(),/Dados fictícios/);
    assert.equal(await page.locator('.meg-profile-name').innerText(),'Usuário fictício QA');
+   // A Home aprovada exibe alerta canônico inicial na sessão, não o suprimir.
+   // Fechá-lo pela interação normal antes de testar o carrossel.
+   const dueDialog=page.locator('.meg-due-alert-dialog');
+   if(await dueDialog.isVisible())await page.getByRole('button',{name:'Entendi'}).click();
    const quick=page.getByRole('region',{name:'Atalhos da Home'});
    await quick.getByRole('button',{name:/Lançamentos/}).click();
    await page.locator('.meg-l09.is-operational').waitFor({timeout:20000});
