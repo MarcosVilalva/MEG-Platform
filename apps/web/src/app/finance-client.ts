@@ -78,6 +78,12 @@ export type FinancialEventPage = {
   page: number;
   pageSize: number;
 };
+export type FinancialHistorySnapshot =
+ | {kind:'complete';protocol:'financial-history-v1';consistency:'repeatable-read';items:FinancialEvent[];total:number}
+ | {kind:'limit-exceeded';protocol:'financial-history-v1';total:number;limit:number};
+export type CanonicalFilteredHistorySummary =
+ | {kind:'complete';protocol:'financial-filter-summary-v1';consistency:'repeatable-read';total:number;filteredCount:number;income:number;expense:number;projectedResult:number;realizedResult:number}
+ | {kind:'limit-exceeded';protocol:'financial-filter-summary-v1';total:number;limit:number};
 
 export type FinancialAuditEntry = {
   id: string;
@@ -238,11 +244,16 @@ export const financeClient = {
   listEventsForMonth: (month: string) =>
     authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   getSyncStatus: () =>
-    authorizedRequest<{ token: string; changedAt: string | null; mutationType: string | null }>('/finance/sync-status', { cache: 'no-store' }),
-  listEvents: (page = 1, pageSize = 50, search = '') =>
-    authorizedRequest<FinancialEventPage>(
-      `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
-    ),
+    authorizedRequest<{token:string;changedAt:string|null;mutationType:string|null;capabilities?:{historySnapshotV1?:boolean;filteredSummaryV1?:boolean}}>('/finance/sync-status',{cache:'no-store'}),
+  getHistorySnapshot: (signal?:AbortSignal) =>
+    authorizedRequest<FinancialHistorySnapshot>('/finance/events/history-snapshot',{cache:'no-store',signal}),
+  getFilteredHistorySummary: (selection:unknown,signal?:AbortSignal) => {
+    const raw=JSON.stringify(selection);
+    if(raw.length>6000)throw new Error('Filtros extensos demais para consultar indicadores com segurança.');
+    return authorizedRequest<CanonicalFilteredHistorySummary>('/finance/events/filtered-summary?filter='+encodeURIComponent(raw),{cache:'no-store',signal});
+  },
+  listEvents: (page = 1,pageSize = 50,search = '',signal?:AbortSignal) =>
+    authorizedRequest<FinancialEventPage>(`/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`,{cache:'no-store',signal}),
   listAudit: (page = 1, pageSize = 100, filters: { action?: string; entity?: string } = {}) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (filters.action) params.set('action', filters.action);
