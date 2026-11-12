@@ -44,3 +44,12 @@
 - Sem merge, deploy produtivo, alteração no Android, API ou banco.
 
 **Status:** apenas auditoria documental iniciada. Testes novos, implementação visual, preview e aprovação da Etapa 10 ainda pendentes.
+
+## Caracterização adicionada nesta continuação (12/11/2026)
+
+- Arquivo `scripts/meg-stage10-financial-characterization.test.ts`: 12 testes de contrato, incluindo execução real da política pura de status, benefício e decisão monetária em centavos, além de asserções estruturais de writers/rotas existentes. **Asserção estrutural não demonstra atomicidade transacional real**; os testes de integração com PostgreSQL descartável permanecem necessários.
+- Workflow `.github/workflows/meg-stage10-characterization-isolated.yml`: CI restrita à branch `stage10/novo-editar-lancamento-isolado-20261112`, sem banco, segredos, deploy ou alterações de produção. Executa TSX, testes core/dados e build Web.
+- Não foi comprovado o resultado verde da execução GitHub Actions nesta rodada. Não considerar caracterização completa ou UI liberada por essa simples inclusão dos arquivos.
+- Criação, edição e exclusão no banco de QA devem ser testadas posteriormente com fixtures fictícias, rollback/retry/conflito real, papéis de autorização e domínio específico.
+- O caminho de autocomplete de descrição histórica ainda requer confirmação operacional da leitura/autorização. Não conectar dados históricos legados diretamente a formulário novo.
+- Alerta: a rota de edição monetária em `finance/service.ts` não foi promovida à autoridade da nova Web.
