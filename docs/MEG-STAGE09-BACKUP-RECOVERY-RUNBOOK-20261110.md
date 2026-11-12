@@ -264,3 +264,15 @@ Documentação: [Supabase Backups](https://supabase.com/docs/guides/platform/bac
 - [ ] Build Command Render seguro e recuperação das cotas liberados antes do deploy das PRs #665/#663, mantendo #656 e Home PT2 em seus escopos.
 
 **Estado atualizado em 12/11/2026:** o MEG continua na **Etapa 09**, com **backup real criptografado, restauração do schema `public` e auditoria estrutural independente comprovados** em WSL isolado, mas sem recuperação integral do Supabase ou homologação funcional financeira. O kit não alterou produção, API, Android, frontend, regras financeiras ou Render, e não configura backup automático. PR #666 Draft, sem merge; NO-GO de deploy até concluir os demais gates.
+
+
+## 7. Plano de custódia offline e recuperação gerenciada (12/11/2026)
+
+**Documento operacional novo:** [Custódia offline e recuperação Supabase gerenciada](./MEG-STAGE09-CUSTODIA-OFFLINE-RECUPERACAO-GERENCIADA-20261112.md).
+
+- Esta entrega é **documental**, restrita à branch da PR #666 Draft: prepara um teste local com conteúdo **inteiramente sintético**, sem ler banco restaurado ou produtivo, sem executar pg_dump, sem Vault GET, sem alterar secrets, RLS, grants, Storage, Render, Android ou Web.
+- A cópia OneDrive do arquivo criptografado continua comprovada por hash no limite documentado. **OneDrive não é custódia física offline da identidade privada age.** A identidade original WSL e eventual cópia cifrada em nuvem não validam existência, acesso nem conservação de mídia externa desconectada.
+- **PENDENTE:** operador comprovar a mídia criptografada offline, equivalência da chave pública, desafio criptográfico com canário fictício, desbloqueio independente e desconexão física; não receber segredo/identidade no chat.
+- **PENDENTE:** autorização específica para consultar e criptografar a chave-raiz Vault real por GET oficial; não executar scripts/meg-stage09-safe-vault-rootkey.sh agora.
+- **PENDENTE:** projeto Supabase novo e isolado sujeito a autorização/custo para testar Auth, Storage (bytes fora do dump), Vault, extensões, pg_net/watchdog, cron, Realtime, funções, roles/RLS, API keys e configurações externas.
+- **Governança:** #674 e #676 abertas; PR #666 Draft, NO-GO merge/deploy. Testes financeiros e estrutura public anteriores permanecem preservados; sem equivalência comprovada de recuperação gerenciada.
