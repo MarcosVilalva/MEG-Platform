@@ -38,7 +38,7 @@ try{
   async function captureStep(step){
    const geometry=await page.evaluate(()=>{
     const sections=Array.from(document.querySelectorAll('.meg-t10-expense-panel')).filter(e=>getComputedStyle(e).display!=='none');
-    return sections.map(e=>({scrollHeight:e.scrollHeight,clientHeight:e.clientHeight,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}));
+    return sections.map(e=>({panel:e.className,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}));
    });
    for(const panel of geometry){
     if(panel.scrollHeight>panel.clientHeight+2){
@@ -47,7 +47,14 @@ try{
       const dl=summary?.querySelector('dl');
       return {innerHeight:window.innerHeight,summaryCss:summary?{display:getComputedStyle(summary).display,gap:getComputedStyle(summary).gap,padding:getComputedStyle(summary).padding}:null,dlCss:dl?{display:getComputedStyle(dl).display,columns:getComputedStyle(dl).gridTemplateColumns,height:dl.getBoundingClientRect().height}:null,children:summary?Array.from(summary.children).map(x=>({tag:x.tagName,className:x.className,height:Math.round(x.getBoundingClientRect().height),top:Math.round(x.getBoundingClientRect().top-summary.getBoundingClientRect().top),bottom:Math.round(x.getBoundingClientRect().bottom-summary.getBoundingClientRect().top),marginTop:getComputedStyle(x).marginTop,marginBottom:getComputedStyle(x).marginBottom})):[],dlRows:dl?Array.from(dl.children).map(x=>({text:(x.textContent||'').slice(0,45),top:Math.round(x.getBoundingClientRect().top-summary.getBoundingClientRect().top),bottom:Math.round(x.getBoundingClientRect().bottom-summary.getBoundingClientRect().top),height:Math.round(x.getBoundingClientRect().height)})):[]};
      });
-     console.error('STAGE10_SUMMARY_LAYOUT_DIAGNOSTICS',JSON.stringify(diagnostics));
+     const target=await page.evaluate(()=>{
+       const p=Array.from(document.querySelectorAll('.meg-t10-expense-panel')).find(e=>getComputedStyle(e).display!=='none'&&e.scrollHeight>e.clientHeight+2);
+       if(!p)return null;
+       const rect=p.getBoundingClientRect();
+       return {panel:p.className,scrollHeight:p.scrollHeight,clientHeight:p.clientHeight,scrollTop:p.scrollTop,children:Array.from(p.children).map(e=>({className:e.className,tag:e.tagName,top:Math.round(e.getBoundingClientRect().top-rect.top),bottom:Math.round(e.getBoundingClientRect().bottom-rect.top),height:Math.round(e.getBoundingClientRect().height),marginTop:getComputedStyle(e).marginTop}))};
+      });
+      console.error('STAGE10_OVERFLOWING_PANEL_DIAGNOSTICS',JSON.stringify(target));
+      console.error('STAGE10_SUMMARY_LAYOUT_DIAGNOSTICS',JSON.stringify(diagnostics));
     }
     assert.ok(panel.scrollHeight<=panel.clientHeight+2,step+' '+width+'x'+height+' sem conteúdo cortado na vertical: '+JSON.stringify(panel));
     assert.ok(panel.scrollWidth<=panel.clientWidth+2,step+' sem conteúdo cortado na horizontal: '+JSON.stringify(panel));
