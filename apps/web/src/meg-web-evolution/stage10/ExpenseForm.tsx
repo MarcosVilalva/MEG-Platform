@@ -1,5 +1,6 @@
 import {useEffect,useId,useMemo,useRef,useState} from 'react';
 import './ExpenseForm.css';
+import {suggestionsFromCanonicalHistory,type HistorySnapshot} from './autocomplete-history';
 
 /** Etapa 10: formulário visual de despesa, sem nenhuma operação financeira.
  * IDs e rótulos de catálogos sempre vêm da fonte autorizada do chamador.
@@ -21,6 +22,7 @@ export type ExpenseDraft={
 };
 export type ExpenseFormProps={
  catalogs:ExpenseCatalogs;
+ historySnapshot?:HistorySnapshot;
  onBack:()=>void;
  onRequestSave?:(draft:ExpenseDraft)=>void;
  saveEnabled?:boolean;
@@ -30,12 +32,14 @@ export const EMPTY_EXPENSE_DRAFT:ExpenseDraft={
  date:'',amountInput:'',requestedStatus:'paid',creditCardId:'',notes:'',installmentsInput:'1',firstInstallmentDate:'',
 };
 function catalogName(items:readonly ExpenseCatalogOption[],id:string){return items.find(x=>x.id===id)?.name??'Não selecionado';}
-export function ExpenseForm({catalogs,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
+export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
  const [draft,setDraft]=useState<ExpenseDraft>(EMPTY_EXPENSE_DRAFT);
  const [summaryOpen,setSummaryOpen]=useState(true);
  const dialogRef=useRef<HTMLElement>(null);
  const formId=useId();
  const categories=useMemo(()=>catalogs.categories.filter(x=>x.active),[catalogs.categories]);
+ const suggestions=useMemo(()=>historySnapshot?suggestionsFromCanonicalHistory(historySnapshot,draft.description,6):[],[historySnapshot,draft.description]);
+ const [suggestionsOpen,setSuggestionsOpen]=useState(false);
  const accounts=useMemo(()=>catalogs.accounts.filter(x=>x.active),[catalogs.accounts]);
  const methods=useMemo(()=>catalogs.paymentMethods.filter(x=>x.active),[catalogs.paymentMethods]);
  const cards=useMemo(()=>catalogs.creditCards?.filter(x=>x.active)??[],[catalogs.creditCards]);
@@ -52,6 +56,15 @@ export function ExpenseForm({catalogs,onBack,onRequestSave,saveEnabled=false}:Ex
  const requiresDomainReview=isCredit||isBenefit||account?.kind==='investment';
  const canRequestSave=saveEnabled&&Boolean(onRequestSave)&&hasRequired&&amountValid&&!requiresDomainReview;
  function patch<K extends keyof ExpenseDraft>(key:K,value:ExpenseDraft[K]){setDraft(current=>({...current,[key]:value}));}
+ function selectSuggestion(suggestion:(typeof suggestions)[number]){
+  const categoryId=categories.some(x=>x.id===suggestion.categoryId)?suggestion.categoryId??'':'';
+  const accountId=accounts.some(x=>x.id===suggestion.accountId)?suggestion.accountId??'':'';
+  const paymentMethodId=methods.some(x=>x.id===suggestion.paymentMethodId)?suggestion.paymentMethodId??'':'';
+  if(categoryId&&binding?.categoryIds.includes(categoryId)){
+   setDraft(current=>({...current,description:suggestion.description,categoryId,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
+  }else setDraft(current=>({...current,description:suggestion.description,categoryId,accountId,paymentMethodId,creditCardId:''}));
+  setSuggestionsOpen(false);
+ }
  function chooseCategory(id:string){
   if(id&&binding?.categoryIds.includes(id)){
    // A prévia congela a seleção e exige vínculo resolvido pelo catálogo canônico.
@@ -85,7 +98,8 @@ export function ExpenseForm({catalogs,onBack,onRequestSave,saveEnabled=false}:Ex
    <div className="meg-t10-expense-grid">
     <div className="meg-t10-expense-panel">
      <label htmlFor={formId+'description'}>Descrição *</label>
-     <input id={formId+'description'} maxLength={160} value={draft.description} onChange={e=>patch('description',e.target.value)} placeholder="Descreva a despesa" autoFocus/>
+     <input id={formId+'description'} maxLength={160} value={draft.description} onChange={e=>{patch('description',e.target.value);setSuggestionsOpen(true);}} placeholder="Descreva a despesa" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'} autoFocus/>
+     {suggestionsOpen&&suggestions.length>0&&<div id={formId+'suggestions'} className="meg-t10-expense-suggestions" role="listbox" aria-label="Descrições do histórico">{suggestions.map(s=><button type="button" role="option" aria-selected={false} key={s.sourceEventId} onClick={()=>selectSuggestion(s)}><strong>{s.description}</strong><small>{s.categoryName??'Categoria não disponível'} · {s.accountName??'Conta não disponível'}</small></button>)}</div>}
      <small className="meg-t10-expense-count">{draft.description.length}/160</small>
      <label htmlFor={formId+'category'}>Categoria *</label>
      <select id={formId+'category'} value={draft.categoryId} onChange={e=>chooseCategory(e.target.value)}>
