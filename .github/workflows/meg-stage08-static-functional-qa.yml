@@ -68,6 +68,16 @@ jobs:
           path: artifacts/meg-stage08-lancamentos-icons/
           if-no-files-found: warn
           retention-days: 14
+      - name: Verificar fontes reais e tipografia na URL pública do piloto Prism
+        env:
+          MEG_STAGE08_QA_URL: https://meg-stage08-prism-tipografia-pilot.onrender.com
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 35 \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?visual=prism&v=d2b45a72c6605467aa7f4377c8433282352b74fd" \
+            -o /tmp/meg-prism-pilot-public
+          grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-prism-pilot-public
+          node scripts/meg-stage08-prism-typography.browser.mjs
       - name: Evidências da tipografia Prism em três larguras
         if: always()
         uses: actions/upload-artifact@v4
