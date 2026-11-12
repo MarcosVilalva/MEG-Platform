@@ -370,7 +370,9 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  ];
  const statisticsView=(
   <div className="meg-l09-stats">{stats.map(s=><section key={s.name} className={'meg-l09-stat is-'+s.variant}>
-   <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={({income:'cashIn',expense:'cashOut',balance:'walletMinimal',total:'projectedChart'} as Record<string,LaunchIconName>)[s.variant]||'projectedChart'} width={25} height={25}/></span>
+   <span className="meg-l09-stat-icon" aria-hidden="true"><LaunchIcon name={(mode==='live'
+    ? ({income:'cashIn',expense:'cashOut',balance:'walletMinimal',total:'projectedChart'} as Record<string,LaunchIconName>)[s.variant]||'projectedChart'
+    : ({income:'trendUp',expense:'trendDown',balance:'wallet',total:'chart'} as Record<string,LaunchIconName>)[s.variant]||'chart')} width={25} height={25}/></span>
    <div><h2>{s.name}</h2><strong>{blank?'—':currency(s.value)}</strong><small>{blank?'Aguardando total da autoridade financeira':s.tag}</small></div>
   </section>)}</div>
  );
