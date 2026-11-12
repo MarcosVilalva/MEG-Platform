@@ -50,7 +50,7 @@ try{
    if(!expectedExpanded)await notes.click();
    await page.getByLabel('Observações (opcional)').fill('texto fictício');
    assert.equal(await page.getByLabel('Observações (opcional)').inputValue(),'TEXTO FICTÍCIO');
-   await page.getByRole('button',{name:/Crédito/}).click();
+   await page.locator('.meg-t10-expense').getByRole('button',{name:'Crédito',exact:true}).click();
    assert.equal(await page.getByLabel('Observações (opcional)').inputValue(),'TEXTO FICTÍCIO','Texto preservado entre modalidades');
    const panel=await page.locator('.meg-t10-expense-primary').evaluate(el=>({height:el.clientHeight,scrollHeight:el.scrollHeight}));
    assert.ok(panel.scrollHeight<=panel.height+2,'Dados não pode cortar Observações: '+JSON.stringify(panel));
