@@ -18,3 +18,27 @@ html[data-meg-typography-pilot="true"] .meg-new-launch h2{
  font-family:'Sora','Plus Jakarta Sans',system-ui,sans-serif
 }
 @media(max-width:639px){.meg-unified-demo-enter{bottom:1rem;left:1rem;right:1rem}.meg-unified-stamp{font-size:.59rem}}
+
+
+/* Etapa 10: somente acabamento de SVG Prism dentro do seletor fotográfico original.
+ * Sem redefinir grid, dimensão, tipografia, cards, imagens nem espaçamentos aprovados.
+ */
+.meg-unified-choice-overlay .meg-choice__tag-icon{
+ width:12px;height:12px;flex:none;display:inline-block;vertical-align:middle;
+ margin-right:3px;filter:drop-shadow(0 1px 1px rgba(0,12,22,.5))
+}
+.meg-unified-choice-overlay .meg-choice__action-glyph{
+ width:clamp(20px,2.2vw,27px);height:clamp(20px,2.2vw,27px);
+ filter:drop-shadow(0 2px 2px rgba(0,10,18,.48))
+}
+.meg-unified-choice-overlay .meg-choice__feature-icon svg{
+ width:clamp(20px,2vw,25px);height:clamp(20px,2vw,25px);
+ filter:drop-shadow(0 2px 2px rgba(0,12,20,.44))
+}
+.meg-unified-choice-overlay .meg-choice__back-arrow svg,
+.meg-unified-choice-overlay .meg-prism-close-glyph{
+ display:block;filter:drop-shadow(0 2px 2px rgba(0,12,21,.4))
+}
+.meg-unified-choice-overlay .meg-new-launch__close:focus-visible{
+ outline:2px solid #c2fff4;outline-offset:2px
+}
