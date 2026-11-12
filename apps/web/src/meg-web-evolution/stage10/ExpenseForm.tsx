@@ -47,6 +47,15 @@ export function normalizeEntryDate(text:string,currentYear:number):{display:stri
  const pad=(n:number)=>String(n).padStart(2,'0');
  return {display:pad(day)+'/'+pad(month)+'/'+String(year).padStart(4,'0'),iso:String(year).padStart(4,'0')+'-'+pad(month)+'-'+pad(day)};
 }
+/** Máscara de digitação, sem interpretar data inválida como válida. */
+export function formatEntryDateTyping(text:string):string{
+ const normalized=text.replace(/[.-]/g,'/').trim();
+ if(/^\d{1,2}\/\d{0,2}(?:\/\d{0,4})?$/.test(normalized))return normalized;
+ const digits=normalized.replace(/\D/g,'').slice(0,8);
+ if(digits.length<=2)return digits;
+ if(digits.length<=4)return digits.slice(0,2)+'/'+digits.slice(2);
+ return digits.slice(0,2)+'/'+digits.slice(2,4)+'/'+digits.slice(4);
+}
 function nameOf(items:readonly ExpenseCatalogOption[],id:string){return items.find(x=>x.id===id)?.name??'Não selecionado';}
 function CategoryGlyph({name}:{name:string}){
  const slug=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -94,6 +103,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const [mobileStep,setMobileStep]=useState<'data'|'payment'|'summary'>('data');
  const [suggestionsOpen,setSuggestionsOpen]=useState(false);
  const [notesOpen,setNotesOpen]=useState(false);
+ useEffect(()=>{setNotesOpen(window.matchMedia('(min-width: 1025px) and (min-height: 760px)').matches);},[]);
  const formId=useId();
  const root=useRef<HTMLElement>(null);
  const categories=useMemo(()=>catalogs.categories.filter(x=>x.active),[catalogs.categories]);
@@ -210,8 +220,11 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
 
      <label htmlFor={formId+'date'}><Icon name="calendar"/> Data do lançamento *</label>
      <div className="meg-t10-expense-date-entry">
-      <input id={formId+'date'} type="text" inputMode="numeric" autoComplete="off" maxLength={10} placeholder="DD/MM/AAAA" value={dateText} aria-invalid={dateError} aria-describedby={formId+'datehint'} onChange={e=>{setDateText(e.target.value);patch('date','');setDateError(false);}} onBlur={completeDate}/>
-      <input type="date" className="meg-t10-expense-date-picker" aria-label="Selecionar data no calendário" title="Selecionar data no calendário" value={draft.date} onChange={e=>{const value=e.target.value;patch('date',value);setDateText(dateBR(value)==='Não informada'?'':dateBR(value));setDateError(false);}}/>
+      <input id={formId+'date'} type="text" inputMode="numeric" autoComplete="off" maxLength={10} placeholder="DD/MM/AAAA" value={dateText} aria-invalid={dateError} aria-describedby={formId+'datehint'} onChange={e=>{setDateText(formatEntryDateTyping(e.target.value));patch('date','');setDateError(false);}} onBlur={completeDate}/>
+      <div className="meg-t10-expense-date-calendar" title="Selecionar data no calendário">
+       <Icon name="calendar"/>
+       <input type="date" className="meg-t10-expense-date-picker" aria-label="Selecionar data no calendário" title="Selecionar data no calendário" value={draft.date} onChange={e=>{const value=e.target.value;patch('date',value);setDateText(dateBR(value)==='Não informada'?'':dateBR(value));setDateError(false);}}/>
+      </div>
      </div>
      <small className="meg-t10-expense-date-hint" id={formId+'datehint'}>{dateError?'Data inválida. Confira dia, mês e ano.':'Digite dia/mês e pressione Tab para completar o ano.'}</small>
      <label htmlFor={formId+'category'}><Icon name="list"/> Categoria *</label>
@@ -221,6 +234,10 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      <div className="meg-t10-expense-frequent" aria-label="Categorias usadas com maior frequência">
       {frequent.map(c=><button key={c.id} type="button" className="meg-t10-expense-category" aria-pressed={draft.categoryId===c.id} onClick={()=>chooseCategory(c.id)}><CategoryGlyph name={c.name}/><span>{c.name}</span></button>)}
       {categories.length>5&&<button type="button" className="meg-t10-expense-category" aria-label="Mais categorias" onClick={()=>setCategoryPicker(true)}><Icon name="menu"/><span>Mais</span></button>}
+     </div>
+     <div className="meg-t10-expense-notes">
+      <button type="button" className="meg-t10-expense-expand" aria-expanded={notesOpen} onClick={()=>setNotesOpen(o=>!o)}><Icon name="list"/> Observações (opcional) <Icon name="chevronDown"/></button>
+      {notesOpen&&<textarea id={formId+'notes'} aria-label="Observações (opcional)" value={draft.notes} maxLength={1000} onChange={e=>patch('notes',normalizeFinancialTextInput(e.target.value))} placeholder="OBSERVAÇÕES ADICIONAIS"/>}
      </div>
     </section>
     <section className={'meg-t10-expense-panel meg-t10-expense-secondary'+(mobileStep==='payment'?' is-step':'')} aria-label="Dados de pagamento">
@@ -256,10 +273,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       <strong><Icon name="list"/> Conta e baixa</strong>
       <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
      </div>}
-     <div className="meg-t10-expense-notes">
-      <button type="button" className="meg-t10-expense-expand" aria-expanded={notesOpen} onClick={()=>setNotesOpen(o=>!o)}><Icon name="list"/> Observações (opcional) <Icon name="chevronDown"/></button>
-      {notesOpen&&<textarea id={formId+'notes'} aria-label="Observações (opcional)" value={draft.notes} maxLength={1000} onChange={e=>patch('notes',normalizeFinancialTextInput(e.target.value))} placeholder="OBSERVAÇÕES ADICIONAIS"/>}
-     </div>
+
      {isRefund&&<p className="meg-t10-expense-refund-warning">Estorno sinalizado. A gravação deverá seguir o contrato financeiro específico, inclusive o do cartão.</p>}
     </section>
     <aside className={'meg-t10-expense-panel meg-t10-expense-summary'+(mobileStep==='summary'?' is-step':'')} aria-label="Resumo do lançamento">
