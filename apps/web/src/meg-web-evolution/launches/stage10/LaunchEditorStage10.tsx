@@ -236,7 +236,7 @@ export function LaunchEditorStage10({kind,mode='create',onBack,onClose,onInspect
        <p>Selecione uma categoria para preencher rapidamente.</p>
        <div>{categories.slice(0,6).map(cat=><button type="button" key={cat.id}
         className={categoryId===cat.id?'is-active':''} onClick={()=>chooseCategory(cat.id)}>
-         <span aria-hidden="true">{categoryGlyph[cat.id]}</span>{cat.name}</button>)}</div>
+         <span aria-hidden="true"><CategoryGlyph id={cat.id}/></span>{cat.name}</button>)}</div>
       </section>
       {onInspectEdit&&!isEdit&&<button type="button" className="meg-stage10-inspect-edit"
        onClick={onInspectEdit}>Visualizar Editar lançamento (dados fictícios)</button>}
