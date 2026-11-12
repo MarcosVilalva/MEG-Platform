@@ -19,7 +19,8 @@ try{
   });
   await page.addInitScript(()=>localStorage.setItem('meg.web.home.quick-actions.v1.user.qa-stage08-user',JSON.stringify(['lancamentos','pendentes','relatorios'])));
   try{
-   const response=await page.goto(origin+'/stage08-funcional-qa.html?visual=prism',{waitUntil:'domcontentloaded'});
+   const version=process.env.MEG_STAGE08_QA_VERSION;
+   const response=await page.goto(origin+'/stage08-funcional-qa.html?visual=prism'+(version?'&v='+encodeURIComponent(version):''),{waitUntil:'domcontentloaded'});
    try{
      await page.locator('.pano-root').waitFor({timeout:15000});
    }catch(error){
