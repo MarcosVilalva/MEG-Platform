@@ -9,6 +9,8 @@ import {ExpenseForm,type ExpenseCatalogs} from './ExpenseForm';
 
 /** Catálogos sintéticos SOMENTE desta prévia, nunca IDs de produção. */
 const syntheticCatalogs:ExpenseCatalogs={
+ benefitBinding:{categoryIds:['qa-category-food'],accountId:'qa-account-benefit',paymentMethodId:'qa-method-benefit'},
+ creditCards:[{id:'qa-creditcard-1',name:'Cartão de demonstração (fictício)',active:true}],
  categories:[
   {id:'qa-category-food',name:'Alimentação',active:true},
   {id:'qa-category-house',name:'Casa',active:true},
