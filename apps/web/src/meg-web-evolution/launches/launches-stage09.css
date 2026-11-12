@@ -209,7 +209,14 @@
  border-color:#81ffeb;background:linear-gradient(150deg,rgba(45,156,142,.6),rgba(5,65,74,.98));
  box-shadow:inset 0 1px 0 rgba(245,255,250,.3),0 0 12px rgba(50,237,210,.22);
 }
-.meg-l09-row-view svg{flex:none}
+/* A tabela usa overflow:hidden nas células. Liberar só a célula de consulta
+ * impede que o tooltip aprovado seja cortado, sem mudar o DataGrid global. */
+.meg-l09.is-operational .meg-datagrid-table td[data-column="id"]{overflow:visible}
+.meg-l09.is-operational .meg-datagrid-table td[data-column="id"]:hover,
+.meg-l09.is-operational .meg-datagrid-table td[data-column="id"]:focus-within{
+ position:relative;z-index:5;
+}
+.meg-l09-row-view svg{flex:none;filter:drop-shadow(0 1px 1px rgba(0,12,23,.35))}
 .meg-l09-row-view::after{
  content:attr(data-tooltip);position:absolute;left:calc(100% + .55rem);top:50%;
  transform:translateY(-50%);z-index:15;pointer-events:none;
