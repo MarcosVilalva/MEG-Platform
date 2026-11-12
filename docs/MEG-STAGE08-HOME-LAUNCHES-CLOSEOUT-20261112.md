@@ -129,3 +129,52 @@ Este documento registra o escopo e as evidências antes do resultado do novo CI.
 - Nenhuma alteração de produção, Android, Supabase, banco, credenciais, PRs paralelas ou merge. PR #677 continua Draft. **Aceite manual da QA nova: pendente.**
 
 **Checklist para o operador:** abrir a URL sem cache; usar a sessão de demonstração; abrir Ações rápidas, clicar Lançamentos, conferir a tela real de leitura, voltar à Home, testar um destino ainda não disponível e confirmar persistência dos atalhos. Aprovação visual/funcional somente com manifestação explícita do usuário.
+
+## 10. Revisão iconográfica de Lançamentos aprovada em 12/11/2026 (PR #679)
+
+**Aprovação explícita do usuário:** após visualizar uma proposta de quatro ícones dos KPIs (projeção, entradas, saídas, resultado realizado) e substituição do botão textual `Ver` por ícone de olho com tooltip, o usuário respondeu **"validado, prosseguir"**. Isto autoriza a implementação da proposta, **não equivale a homologação visual automática do novo deploy**.
+
+**Isolamento:** branch `stage08/lancamentos-icons-refinement-20261112`, baseada na PR #677, PR [#679](https://github.com/MarcosVilalva/MEG-Platform/pull/679) Draft, sem merge.
+- Novo `icon-packs/refined-action-icons.tsx`, glifos SVG locais originais com desenho uniforme e sem CDN: `projectedChart`, `cashIn`, `cashOut`, `walletMinimal` e `eye`. `LaunchIcon.tsx` foi estendido preservando os nomes anteriores.
+- `LaunchesStage09.tsx`: **somente `mode=live`** usa novos KPIs; a prévia histórica permanece com os ícones originais. Botão `Ver` substituído por `eye`, sem texto visível, mantendo `title`, `aria-label` individual e tooltip `data-tooltip`. O modal anterior mantém o contrato somente leitura. A coluna Ações ficou mais compacta.
+- `launches-stage09.css`: acabamento menos brilhante dos pictogramas do banner autenticado; botão de olho 36×36 px no desktop, mínimo 44×44 px no celular; tooltip no hover e no foco, com fallback `title`. Nenhuma alteração de Shell, Home, DataGrid, API, banco, Android, writers, filtros ou cálculos.
+- Teste `scripts/meg-stage08-lancamentos-icons.browser.mjs` usa sessão e dados fictícios, verifica quatro ícones, legendas, tooltip, acesso por teclado, modal de detalhes, integridade dos quatro valores e ausência de API financeira externa em 1366×768, 960×900 e 390×844. O primeiro teste falhou porque selecionava um elemento da tabela oculta na versão de cartões do DataGrid; corrigido **somente o seletor do teste**, sem forçar o DataGrid a apresentar coluna que não era visível.
+- Teste operacional existente teve as expectativas de glifos live atualizadas; teste da prévia histórica segue cobrando `trendUp/trendDown`, sem alterações funcionais. Workflows na branch foram ampliados preservando gates financeiros, hashes dos demais componentes e testes anteriores.
+
+**Resultados comprovados:**
+- [CI integral #43226129382](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43226129382): **COMPLETED/SUCCESS** em `c1133b6c246a1652d3f3e3712fe5c612f8689c88`.
+- [QA estática #43226129447](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43226129447): **SUCCESS** no mesmo SHA; testes de desktop, 960 px e celular verdes.
+- [QA pública #43226911114](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43226911114): **COMPLETED/SUCCESS**, com navegador real na URL externa do novo Render e nenhuma consulta financeira real. Capturas no artefato [`meg-stage08-icons-visual-pr679`](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43226911114/artifacts/13948775773), ID `13948775773`. O run contém um commit adicional de workflow, mas o **bundle implantado** corresponde exatamente ao SHA testado `c1133b6`.
+- **Render QA dedicado:** `meg-stage08-icones-pr679`, ID `srv-dbqrr7qfngtc738gae3g`, [painel](https://dashboard.render.com/static/srv-dbqrr7qfngtc738gae3g), `autoDeploy=no`, branch própria, sem segredos e sem backend.
+- **Deploy confirmado LIVE:** `dep-dbqrr82fngtc738gaee0` em 12/11/2026 13:23:26 UTC, commit `c1133b6c246a1652d3f3e3712fe5c612f8689c88`. **URL sem cache:**
+  https://meg-stage08-icones-pr679.onrender.com/stage08-funcional-qa.html?v=c1133b6c246a1652d3f3e3712fe5c612f8689c88
+- O preview homologado Home + Lançamentos no commit `760b7ad0e3217dbab70ea426df9cad67318f79ef` permanece intocado. A QA da PR #677 também permanece no seu serviço independente.
+
+**Checklist final:**
+- [x] Implementação iconográfica pontual, isolada e acessível.
+- [x] Build, contratos e testes financeiros; integração e regressão visual; responsive; gateway fictício; zero writes.
+- [x] Prévia separada LIVE e navegador externo verificado.
+- [x] Referências visuais anteriores preservadas, nenhuma modificação em Render produtivo.
+- [ ] **Homologação visual explícita da nova prévia pela pessoa usuária**, distinta da aprovação da proposta.
+- [ ] Incorporação da PR #679 e da PR #677 somente após autorização e gates externos; **sem merge/deploy produtivo**.
+
+## 11. Retrabalho obrigatório PR #679: pack antigo reprovado, MEG Prism 3D
+
+**Feedback explícito do usuário (12/11/2026):** a primeira publicação iconográfica da PR #679 foi **REPROVADA**. O usuário apontou setas visualmente invertidas/ambíguas e acabamento linear pobre; determinou substituição por padrão mais 3D, arredondado, nítido e adequado à identidade oficial. Em seguida autorizou: **"siga"** / **"seguir"**. A aprovação anterior dizia respeito à proposta inicial, **não** à implementação rejeitada.
+
+**Implementação corretiva, exclusivamente na branch Draft da PR #679:**
+- Criado `apps/web/src/meg-web-evolution/launches/icon-packs/meg-prism-icons.tsx` com cinco SVGs escaláveis originais: `projection3d`, `entry3d`, `exit3d`, `wallet3d`, `details3d`, usando camadas de profundidade, cores por significado, gradientes lineares/radiais, brilhos de superfície e raios generosos. **Removido da branch** o módulo reprovado `refined-action-icons.tsx`; `LaunchIcon.tsx` agora registra `data-launch-pack="meg-prism-3d"` só para esses cinco, preservando os demais pacotes/ícones.
+- **Entradas**: seta grossa **vertical para baixo**, entrando em bandeja (`data-financial-flow="down"`). **Saídas**: seta grossa **vertical para cima**, saindo da bandeja (`data-financial-flow="up"`). Eliminadas diagonais ambíguas.
+- `LaunchesStage09.tsx`: alteração dos quatro pictogramas do banner **apenas em `mode=live`** e da ação icon-only `details3d`, mantendo valores canônicos da API, texto dos indicadores, modal de consulta e `aria-label`. Prévia histórica da #656 mantém os seus glifos originais.
+- `launches-stage09.css`: SVG maior dentro das mesmas caixas sem alterar dimensões ou breakpoints; superfície prismática e botão com tooltip, hover/foco e 44×44 px em mobile. Corrigido clipping do tooltip **somente na célula Ações**, sem alterar o CSS do DataGrid global.
+- `scripts/meg-stage08-lancamentos-icons.browser.mjs`: verificação de nova fonte de glifos, sentido vertical (down/up), gradientes e camadas, tamanho, tooltip mouse/teclado, modal, valores financeiros e zero chamadas reais em 1366/960/390. `scripts/meg-stage09-operational.browser.mjs`: atualizado o contrato somente para o KPI live, permanecendo Phosphor nas categorias e na prévia histórica. Nenhum writer ou regra financeira alterados.
+- Diretriz para telas **futuras** em `docs/MEG-WEB-ICONOGRAFIA-PRISM-20261112.md`, sem autorização para revisão global automática de telas homologadas.
+
+**Testes e evidências:**
+- [QA pública #43233865891](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43233865891) **SUCCESS** contra o novo deploy. O teste verificou via Chrome o site externo, o fluxo de navegação e cinco glifos em três larguras, preservando ausência de API real. A primeira bateria local de código `5d296e72922ea25d37aac9df57cac74a51b75374` passou integralmente em navegador; o teste da URL pública só passou após redeploy, como esperado com Auto Deploy desligado.
+- A CI integrada inicial da revisão chegou aos testes operacionais e falhou por **expectativa obsoleta** que ainda exigia `data-launch-pack="phosphor"` no KPI live. Corrigido só o teste, preservando Phosphor nos demais elementos. Rodada integral final [#43234013513](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43234013513): **COMPLETED/SUCCESS**, SHA `a04c1b819c9148b1931ba527f15cb3faddd886d9`, com contratos financeiros, Home, atalhos, Shell, DataGrid, visual legado de Lançamentos, QA fictícia 3D e gate de arquivos verdes.
+- Run da QA pública mais recente [#43234013218](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43234013218): **confirmar resultado final**. Os commits posteriores ao deploy são de testes e documentação, não alteram o bundle publicado.
+- **Render QA isolada atualizada:** `meg-stage08-icones-pr679`, ID `srv-dbqrr7qfngtc738gae3g`, Auto Deploy OFF. Deploy `dep-dbqsf9gn74is73d3vn90` **LIVE**, commit de código `5d296e72922ea25d37aac9df57cac74a51b75374`. **URL sem cache:** https://meg-stage08-icones-pr679.onrender.com/stage08-funcional-qa.html?v=5d296e72922ea25d37aac9df57cac74a51b75374
+- Não foram modificados os serviços `meg-stage08-funcional-pr677`, `meg-stage09-home-launches-qa`, API de produção, Android ou banco. PR #679 ainda **Draft, sem merge**.
+
+**Homologação visual desta nova revisão: NÃO CONCEDIDA.** O usuário deverá analisar a URL e aprovar especificamente os novos pictogramas, não apenas a proposta. Migração global do estilo para outras telas requer escopo e aprovação por etapa.
