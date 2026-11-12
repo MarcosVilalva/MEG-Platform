@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - 'stage10/novo-editar-lancamento-isolado-20261112'
+  pull_request:
+    branches:
+      - 'preview/09-lancamentos-home-p0-qa-20261111'
   workflow_dispatch:
 
 permissions:
