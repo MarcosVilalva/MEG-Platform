@@ -16,10 +16,20 @@ const previewDate='2026-11-12'; // data de fixture, não indicador de vencimento
 const sample=stage10Fixture.transactions[0];
 const moneyMask=(raw:string)=>raw.replace(/[^0-9,]/g,'').slice(0,12);
 const formatDate=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)?s.slice(8)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
-const categoryGlyph:Record<string,string>={
- 'qa-food':'♜','qa-home':'⌂','qa-transport':'▣','qa-health':'♡',
- 'qa-shopping':'▢','qa-fixed':'◷','qa-salary':'↗'
-};
+function CategoryGlyph({id}:{id:string}){
+ const paths:Record<string,React.ReactNode>={
+  'qa-food':<><path d="M4 3v8M7 3v8M10 3v8M4 7h6M7 11v10M16 3c-3 4-3 8 0 11h3V3M19 14v7"/></>,
+  'qa-home':<><path d="m3 11 9-8 9 8M5 10v10h14V10M9 20v-6h6v6"/></>,
+  'qa-transport':<><path d="m4 15 2-7h12l2 7M3 15h18v5H3zM6 20v2M18 20v2M7 11h10"/></>,
+  'qa-health':<path d="M20 8c0-4-5-6-8-2-3-4-8-2-8 2 0 5 8 11 8 11s8-6 8-11Z"/>,
+  'qa-shopping':<><path d="M4 8h16l-1 13H5L4 8ZM9 9V6a3 3 0 0 1 6 0v3"/></>,
+  'qa-fixed':<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
+  'qa-salary':<><path d="M3 6h18v12H3zM8 12h8M12 9v6M4 3h16"/></>,
+ };
+ return <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+  stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+  aria-hidden="true" focusable="false">{paths[id]||paths['qa-shopping']}</svg>;
+}
 
 export function LaunchEditorStage10({kind,mode='create',onBack,onClose,onInspectEdit}:Props){
  const isEdit=mode==='edit';
@@ -28,7 +38,7 @@ export function LaunchEditorStage10({kind,mode='create',onBack,onClose,onInspect
  const [accountId,setAccountId]=useState(isEdit?sample.accountId:'qa-current');
  const [methodId,setMethodId]=useState(isEdit?sample.paymentMethodId:'qa-pix');
  const [date,setDate]=useState(isEdit?sample.date:previewDate);
- const [amount,setAmount]=useState(isEdit?'187,65':'');
+ const [amount,setAmount]=useState(isEdit?sample.amount.replace('.',','):'');
  const [status,setStatus]=useState<'paid'|'planned'>(isEdit?'planned':kind==='income'?'paid':'planned');
  const [notes,setNotes]=useState('');
  const [installments,setInstallments]=useState(1);
@@ -100,7 +110,7 @@ export function LaunchEditorStage10({kind,mode='create',onBack,onClose,onInspect
  },[onClose]);
  return createPortal(
  <div className="meg-stage10-backdrop" data-testid="stage10-visual-only">
-  <section className="meg-stage10-dialog" ref={dialogRef} role="dialog" aria-modal="true"
+  <section className={'meg-stage10-dialog'+(isEdit?' is-edit':'')} ref={dialogRef} role="dialog" aria-modal="true"
    aria-labelledby="stage10-title" aria-describedby="stage10-description" tabIndex={-1}>
    <header className="meg-stage10-header">
     <button type="button" className="meg-stage10-icon-button" aria-label="Voltar à escolha" onClick={onBack}>‹</button>
@@ -136,7 +146,7 @@ export function LaunchEditorStage10({kind,mode='create',onBack,onClose,onInspect
       <div className="meg-stage10-category-chips" aria-label="Categorias mais usadas">
        {categories.slice(0,5).map(cat=><button type="button" key={cat.id} onClick={()=>chooseCategory(cat.id)}
         aria-pressed={categoryId===cat.id} className={categoryId===cat.id?'is-active':''}>
-        <span aria-hidden="true">{categoryGlyph[cat.id]}</span>{cat.name}</button>)}
+        <span aria-hidden="true"><CategoryGlyph id={cat.id}/></span>{cat.name}</button>)}
       </div>
       <span className="meg-stage10-label">Classificação da conta</span>
       <div className="meg-stage10-segmented">
