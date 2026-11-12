@@ -65,7 +65,7 @@ try{
    assert.ok(horizontal.doc<=horizontal.view+2,'Página apresenta scroll horizontal');
    await page.screenshot({path:resolve(output,'vencimentos-'+width+'.png'),fullPage:false});
    // O DataGrid compacto deve compartilhar exatamente a mesma semântica dos alertas.
-   const commitments=page.getByRole('region',{name:'Próximos compromissos'}).or(page.locator('.pano-grid--commitments'));
+   const commitments=page.locator('.pano-grid--commitments');
    const overdueDates=commitments.locator('.pano-due-date__urgency.is-overdue');
    assert.ok(await overdueDates.count()>=1,'Home sem compromisso vencido no DataGrid');
    assert.equal(await overdueDates.locator('svg[data-meg-due-warning="overdue-triangle"]').count(),await overdueDates.count(),'DataGrid não compartilha o triângulo Prism do sino/modal');
