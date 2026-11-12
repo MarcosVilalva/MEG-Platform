@@ -173,3 +173,6 @@
 /* Conferência funcional integrada ao subtítulo do resumo, sem painel de altura extra. */
 .meg-t10-expense-summary>.meg-t10-expense-checkline{margin:0;line-height:1.2;overflow-wrap:anywhere;color:#c7e8e3}
 .meg-t10-expense-checkline strong{color:#8fffee;font-weight:800}
+
+/* Corrige overflow fantasma do flex: rodapé segue o conteúdo, sem margem automática expansiva. */
+.meg-t10-expense-summary>.meg-t10-expense-summary-footer{margin-top:4px;flex:0 0 auto}
