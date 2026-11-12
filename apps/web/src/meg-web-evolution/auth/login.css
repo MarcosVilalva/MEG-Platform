@@ -587,3 +587,12 @@ body:has(.meg-login-welcome),
     transition: none !important;
   }
 }
+
+/* Aviso de revogação remota não confirmada: exclusivo do Login autenticado. */
+.meg-auth-logout-warning {
+ position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);
+ z-index:5000;max-width:min(36rem,calc(100vw - 2rem));padding:.8rem 1rem;
+ border:1px solid rgba(245,190,95,.45);border-radius:12px;
+ background:#133233;color:#f1e5c7;font-size:.9rem;line-height:1.45;
+ box-shadow:0 10px 30px rgba(0,0,0,.32);
+}

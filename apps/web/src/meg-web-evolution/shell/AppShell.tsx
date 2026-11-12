@@ -25,11 +25,14 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({children,periodLabel}:{children:ReactNode;periodLabel?:string}){
- return <HomeDueAlertsProvider><AppShellView periodLabel={periodLabel}>{children}</AppShellView></HomeDueAlertsProvider>;
+export type ShellSection = 'home'|'launches';
+type ShellProps={children:ReactNode;periodLabel?:string;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
+export function AppShell(props:ShellProps){
+ return <HomeDueAlertsProvider><AppShellView {...props}/></HomeDueAlertsProvider>;
 }
-
-function AppShellView({ children, periodLabel }: { children: ReactNode; periodLabel?: string }) {
+function AppShellView({children,periodLabel,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
+  const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
+  const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -86,7 +89,7 @@ function AppShellView({ children, periodLabel }: { children: ReactNode; periodLa
   const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
 
   return (
-    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${onNavigate && activeSection==='launches'?'is-launches-operational':''}`}>
       <div className="meg-sidebar-wrap">
         <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand" aria-label="MEG Finanças">
@@ -108,8 +111,13 @@ function AppShellView({ children, periodLabel }: { children: ReactNode; periodLa
           {navigation.map(([icon, label], index) => (
             <button
               key={label}
-              className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`}
+              className={`meg-nav-item ${(activeSection==='home' ? index===0 : index===1) ? 'is-active' : ''}`}
               type="button"
+              aria-current={onNavigate&&(activeSection==='home'?index===0:index===1)?'page':undefined}
+              onClick={() => {
+                if(!onNavigate || (index!==0&&index!==1))return;
+                setDrawerOpen(false);onNavigate(index===0?'home':'launches');
+              }}
               aria-label={label}
               data-tooltip={label}
               onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, label, 'right')}
@@ -196,7 +204,10 @@ function AppShellView({ children, periodLabel }: { children: ReactNode; periodLa
           <button
             type="button"
             className="meg-nav-item meg-logout-button"
-            aria-label="Sair"
+            aria-label={logoutPending?'Encerrando sessão':'Sair'}
+            aria-busy={logoutPending}
+            disabled={Boolean(onLogout)&&logoutPending}
+            onClick={()=>{if(onLogout&&!logoutPending){setDrawerOpen(false);hideTooltip();onLogout();}}}
             data-tooltip="Sair"
             onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
             onMouseLeave={hideTooltip}
@@ -204,7 +215,7 @@ function AppShellView({ children, periodLabel }: { children: ReactNode; periodLa
             onBlur={hideTooltip}
           >
             <Icon name="logOut" width={20} height={20} strokeWidth={1.75} />
-            <span>Sair</span>
+            <span>{logoutPending?'Saindo...':'Sair'}</span>
           </button>
         </div>
 
@@ -279,8 +290,8 @@ function AppShellView({ children, periodLabel }: { children: ReactNode; periodLa
 
             <HomeDueAlertsBell/>
             <button type="button" className="meg-profile">
-              <span className="meg-avatar">MV</span>
-              <span className="meg-profile-name">Marcos de Andrade Vilalva</span>
+              <span className="meg-avatar">{avatarInitials}</span>
+              <span className="meg-profile-name">{profileName||'Marcos de Andrade Vilalva'}</span>
               <Icon name="chevronDown" />
             </button>
           </div>

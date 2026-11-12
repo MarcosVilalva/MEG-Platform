@@ -11,6 +11,7 @@ import {Icon} from '../components/Icon';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homePreviewFixture} from '../home/preview.fixture';
 import {LaunchTypePicker} from '../launches/LaunchTypePicker';
+import {LaunchesStage09} from '../launches/LaunchesStage09';
 import '../launches/new-launch.css';
 
 import './integrated-preview.css';
@@ -23,11 +24,12 @@ import './choice-refinement.css';
  * - Escolha do Novo Lancamento da PR #648, com os arquivos e WebPs originais.
  * Nunca envia credenciais, grava transacoes ou substitui o gateway real.
  */
-type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'new-launch';
+type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'launches' | 'new-launch';
 const urlScreen = new URLSearchParams(window.location.search).get('tela');
 const initialScreen: Screen =
   urlScreen === 'login' ? 'login' :
   urlScreen === 'home' ? 'home' :
+  urlScreen === 'lancamentos' ? 'launches' :
   urlScreen === 'novo' ? 'new-launch' :
   urlScreen === 'cadastro' ? 'register' :
   urlScreen === 'recuperar-senha' ? 'recover' :
@@ -35,6 +37,7 @@ const initialScreen: Screen =
 
 function FlowPreview() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [returnScreen,setReturnScreen] = useState<'home'|'launches'>('home');
   const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState('');
   const isLoading = screen === 'loading-entry' || screen === 'loading-initial';
@@ -65,9 +68,15 @@ function FlowPreview() {
     if (!(element instanceof Element)) return;
     const button = element.closest('button');
     if (!button) return;
+    if (button.getAttribute('aria-label') === 'Lançamentos') {
+      event.stopPropagation();setNotice('');setScreen('launches');
+    }
+    if (button.getAttribute('aria-label') === 'Início') {
+      event.stopPropagation();setNotice('');setScreen('home');
+    }
     if (button.getAttribute('aria-label') === 'Novo lançamento') {
-      event.stopPropagation();
-      setNotice('');
+      event.stopPropagation();setNotice('');
+      setReturnScreen(screen==='launches'?'launches':'home');
       setScreen('new-launch');
     }
     if (button.classList.contains('meg-logout-button')) {
@@ -76,7 +85,8 @@ function FlowPreview() {
     }
   };
 
-  const goHome = () => { setNotice(''); setScreen('home'); };
+  const goHome = () => {setNotice('');setScreen('home');};
+  const closeNew = () => {setNotice('');setScreen(returnScreen);};
 
   if (isLoading) {
     return <div className="meg-integrated-preview" data-preview-view={screen}>
@@ -107,29 +117,35 @@ function FlowPreview() {
   return <div className="meg-integrated-preview" data-preview-view={screen}
     onClickCapture={handleShellCapture}>
     <AppShell>
-      <HomeDashboard previewData={homePreviewFixture} month="2026-10"
-        onNavigate={target => {
-          if (target === 'novo') { setNotice(''); setScreen('new-launch'); }
-          else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
-        }}/>
+      {screen==='launches'||(screen==='new-launch'&&returnScreen==='launches')
+        ? <LaunchesStage09 data={homePreviewFixture}
+            onNew={() => {setNotice('');setReturnScreen('launches');setScreen('new-launch');}}
+            onHome={goHome}/>
+        : <HomeDashboard previewData={homePreviewFixture} month="2026-10"
+          onNavigate={target => {
+            if(target==='novo'){setNotice('');setReturnScreen('home');setScreen('new-launch');}
+            else if(target==='lancamentos'){setNotice('');setScreen('launches');}
+            else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
+          }}/>}
+
     </AppShell>
     {screen === 'new-launch' && <div className="meg-new-launch__overlay is-choice-overlay meg-integrated-preview__choice-overlay">
       <section className="meg-new-launch is-choose" role="dialog" aria-modal="true" aria-labelledby="meg-integrated-new-title">
         <header className="meg-new-launch__header">
-          <button className="meg-new-launch__back-icon" aria-label="Voltar à Home" type="button" onClick={goHome}>
+          <button className="meg-new-launch__back-icon" aria-label="Voltar à Home" type="button" onClick={closeNew}>
             <Icon name="chevronLeft" width={25} height={25}/>
           </button>
           <div className="meg-new-launch__headline">
             <h2 id="meg-integrated-new-title">Novo lançamento</h2>
             <p>Escolha o tipo de lançamento e siga com um formulário inteligente para Web.</p>
           </div>
-          <button className="meg-new-launch__close" aria-label="Fechar novo lançamento" type="button" onClick={goHome}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 5 19 19M19 5 5 19"/></svg></button>
+          <button className="meg-new-launch__close" aria-label="Fechar novo lançamento" type="button" onClick={closeNew}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 5 19 19M19 5 5 19"/></svg></button>
         </header>
         <LaunchTypePicker
           onChoose={type => setNotice(type === 'expense'
             ? 'Despesa escolhida. O formulário protegido da PR #648 não é executado nesta prévia sem API.'
             : 'Receita escolhida. O formulário protegido da PR #648 não é executado nesta prévia sem API.')}
-          onBack={goHome}/>
+          onBack={closeNew}/>
       </section>
     </div>}
     {notice && <output className="meg-integrated-preview__notice" role="status">{notice}
