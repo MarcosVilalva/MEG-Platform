@@ -10,7 +10,7 @@ import {AppShell} from '../shell/AppShell';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
-import {PrismLaunchChoice} from './PrismLaunchChoice';
+import {PrismLaunchChoice,PrismCloseGlyph} from './PrismLaunchChoice';
 import {ExpenseForm,type ExpenseCatalogs} from '../stage10/ExpenseForm';
 import type {HistorySnapshot} from '../stage10/autocomplete-history';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
@@ -117,7 +117,7 @@ function UnifiedQA(){
     <section className="meg-new-launch is-choose" role="dialog" aria-modal="true" aria-labelledby="meg-unified-new-title">
       <header className="meg-new-launch__header">
        <div className="meg-new-launch__headline"><h2 id="meg-unified-new-title">Novo lançamento</h2><p>Escolha o tipo de lançamento.</p></div>
-       <button type="button" className="meg-new-launch__close" aria-label="Fechar novo lançamento" onClick={()=>setOverlay(null)}>×</button>
+       <button type="button" className="meg-new-launch__close" aria-label="Fechar novo lançamento" title="Fechar novo lançamento" onClick={()=>setOverlay(null)}><PrismCloseGlyph/></button>
       </header>
       <PrismLaunchChoice onBack={()=>setOverlay(null)} onChoose={type=>{
         if(type==='expense')setOverlay('expense');
