@@ -36,6 +36,16 @@ jobs:
             sleep 1
           done
           node scripts/meg-stage08-static-qa.browser.mjs
+      - name: Validar URL pública Render com navegador e sem acesso à API real
+        env:
+          MEG_STAGE08_QA_URL: https://meg-stage08-funcional-pr677.onrender.com
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 30 \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=571cc7aabecf96a44ecb44dee5043823e6f6ac29" \
+            -o /tmp/meg-stage08-public-html
+          grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-stage08-public-html
+          node scripts/meg-stage08-static-qa.browser.mjs
       - name: Disponibilizar artefato estático validado da QA
         if: success()
         uses: actions/upload-artifact@v4
