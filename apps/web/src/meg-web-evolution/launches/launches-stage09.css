@@ -200,12 +200,14 @@
 .meg-l09-row-view{
  position:relative;display:inline-flex;align-items:center;justify-content:center;
  width:2.25rem;min-width:2.25rem;height:2.25rem;min-height:2.25rem;padding:0;
- border:1px solid rgba(36,203,186,.43);border-radius:.62rem;
- background:rgba(3,54,60,.65);color:#bffff4;
- letter-spacing:0;transition:background .16s ease,border-color .16s ease;
+ border:1px solid rgba(82,226,205,.58);border-radius:.72rem;
+ background:linear-gradient(150deg,rgba(43,136,133,.38),rgba(6,49,62,.9) 55%,rgba(3,31,46,.98));
+ color:#d2fff5;box-shadow:inset 0 1px 0 rgba(235,255,249,.2),0 2px 7px rgba(0,13,23,.24);
+ letter-spacing:0;transition:background .16s ease,border-color .16s ease,box-shadow .16s ease;
 }
 .meg-l09-row-view:hover,.meg-l09-row-view:focus-visible{
- border-color:#4de6d4;background:rgba(9,96,95,.9)
+ border-color:#81ffeb;background:linear-gradient(150deg,rgba(45,156,142,.6),rgba(5,65,74,.98));
+ box-shadow:inset 0 1px 0 rgba(245,255,250,.3),0 0 12px rgba(50,237,210,.22);
 }
 .meg-l09-row-view svg{flex:none}
 .meg-l09-row-view::after{
@@ -642,20 +644,28 @@
 }
 /* Caixas de pictograma discretas: mantêm a faixa e a escala homologadas. */
 .meg-l09.is-operational .meg-l09-hero .meg-l09-stat-icon{
- width:2.04rem;height:2.04rem;flex:0 0 2.04rem;
- border-radius:.52rem;box-shadow:none;
- background:rgba(9,68,74,.28);border-color:rgba(53,177,177,.4);color:#57dfd8;
+ position:relative;width:2.04rem;height:2.04rem;flex:0 0 2.04rem;
+ border-radius:.7rem;
+ background:linear-gradient(145deg,rgba(60,165,167,.27),rgba(6,58,70,.48) 52%,rgba(4,31,47,.75));
+ border-color:rgba(86,217,205,.54);color:#a4fff2;
+ box-shadow:inset 0 1px 0 rgba(235,255,250,.3),inset 0 -2px 4px rgba(0,17,33,.4),0 2px 5px rgba(0,10,20,.2);
 }
 .meg-l09.is-operational .meg-l09-hero .meg-l09-stat.is-income .meg-l09-stat-icon{
- background:rgba(5,76,53,.23);border-color:rgba(27,175,120,.38);color:#35ecaf;
+ background:linear-gradient(145deg,rgba(66,172,130,.28),rgba(3,61,53,.72));
+ border-color:rgba(55,222,159,.52);color:#afffe0;
 }
 .meg-l09.is-operational .meg-l09-hero .meg-l09-stat.is-expense .meg-l09-stat-icon{
- background:rgba(102,30,43,.21);border-color:rgba(227,95,106,.39);color:#ff8087;
+ background:linear-gradient(145deg,rgba(198,90,104,.29),rgba(79,24,47,.72));
+ border-color:rgba(255,141,151,.55);color:#ffd0cb;
 }
 .meg-l09.is-operational .meg-l09-hero .meg-l09-stat.is-balance .meg-l09-stat-icon{
- background:rgba(105,85,27,.2);border-color:rgba(217,177,55,.4);color:#ffde78;
+ background:linear-gradient(145deg,rgba(197,170,77,.29),rgba(67,55,22,.72));
+ border-color:rgba(250,208,95,.57);color:#fff0bb;
 }
-.meg-l09.is-operational .meg-l09-hero .meg-l09-stat-icon svg{width:1.16rem;height:1.16rem}
+.meg-l09.is-operational .meg-l09-hero .meg-l09-stat-icon svg{
+ position:relative;z-index:1;width:1.48rem;height:1.48rem;
+ filter:drop-shadow(0 1px 1px rgba(0,17,25,.4));
+}
 .meg-l09.is-operational .meg-l09-hero .meg-l09-stat>div{min-width:0}
 .meg-l09.is-operational .meg-l09-hero .meg-l09-stat h2{
  font-size:.66rem;line-height:1.15;font-weight:700;white-space:normal;
@@ -708,7 +718,7 @@
   width:1.65rem;height:1.65rem;flex:0 0 1.65rem;
  }
  .meg-l09.is-operational .meg-l09-hero .meg-l09-stat-icon svg{
-  width:1rem;height:1rem;
+  width:1.29rem;height:1.29rem;
  }
  .meg-l09.is-operational .meg-l09-hero .meg-l09-stat h2{font-size:.59rem}
  .meg-l09.is-operational .meg-l09-hero .meg-l09-stat strong{
