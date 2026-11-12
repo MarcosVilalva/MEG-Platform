@@ -57,19 +57,21 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
   }
   function keepFocusInside(event:FocusEvent){
-   if(ref.current && event.target instanceof Node && !ref.current.contains(event.target)){
-    closeRef.current?.focus();
-   }
+   if(!ref.current || !(event.target instanceof Node))return;
+   // Impede que traps de outros diálogos, montados antes ou depois,
+   // capturem o foco do modal superior.
+   event.stopPropagation();
+   if(!ref.current.contains(event.target))closeRef.current?.focus();
   }
   document.addEventListener('keydown',keydown);
-  document.addEventListener('focusin',keepFocusInside);
+  window.addEventListener('focusin',keepFocusInside,true);
   closeRef.current?.focus();
   return ()=>{
    document.body.style.overflow=formerOverflow;
    observer.disconnect();
    for(const [element,inert] of priorInert)element.inert=inert;
    document.removeEventListener('keydown',keydown);
-   document.removeEventListener('focusin',keepFocusInside);
+   window.removeEventListener('focusin',keepFocusInside,true);
    previous?.focus();
   };
  },[open,onClose]);
