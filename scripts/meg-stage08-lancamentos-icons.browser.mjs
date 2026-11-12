@@ -54,7 +54,7 @@ try{
    assert.match(await first.getAttribute('aria-label')||'',/^Ver detalhes de /);
    assert.equal(await first.getAttribute('data-tooltip'),'Ver detalhes');
    assert.equal(await first.getAttribute('title'),'Ver detalhes do lançamento');
-   assert.equal(await first.locator('svg linearGradient').count(),2,'Ícone de consulta sem acabamento 3D');
+   assert.equal(await first.locator('svg linearGradient, svg radialGradient').count(),2,'Ícone de consulta sem dois acabamentos de luz e profundidade');
    const rect=await first.boundingBox();
    assert.ok(rect && rect.width>=(width<=639?43:34) && rect.height>=(width<=639?43:34),'Alvo de toque menor que o aprovado');
    if(width>639){
