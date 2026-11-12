@@ -41,6 +41,14 @@ try{
     return sections.map(e=>({scrollHeight:e.scrollHeight,clientHeight:e.clientHeight,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}));
    });
    for(const panel of geometry){
+    if(panel.scrollHeight>panel.clientHeight+2){
+     const diagnostics=await page.evaluate(()=>{
+      const summary=document.querySelector('.meg-t10-expense-summary');
+      const dl=summary?.querySelector('dl');
+      return {innerHeight:window.innerHeight,summaryCss:summary?{display:getComputedStyle(summary).display,gap:getComputedStyle(summary).gap,padding:getComputedStyle(summary).padding}:null,dlCss:dl?{display:getComputedStyle(dl).display,columns:getComputedStyle(dl).gridTemplateColumns,height:dl.getBoundingClientRect().height}:null,children:summary?Array.from(summary.children).map(x=>({tag:x.tagName,className:x.className,height:Math.round(x.getBoundingClientRect().height)})):[]};
+     });
+     console.error('STAGE10_SUMMARY_LAYOUT_DIAGNOSTICS',JSON.stringify(diagnostics));
+    }
     assert.ok(panel.scrollHeight<=panel.clientHeight+2,step+' '+width+'x'+height+' sem conteúdo cortado na vertical: '+JSON.stringify(panel));
     assert.ok(panel.scrollWidth<=panel.clientWidth+2,step+' sem conteúdo cortado na horizontal: '+JSON.stringify(panel));
    }
