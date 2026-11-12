@@ -2221,3 +2221,21 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 5. Gates externos de backup, cota Supabase, segurança do Build Command e integridade financeira são responsabilidade do outro chat da Etapa 09. Nenhuma alteração nesses itens foi executada por esta branch.
 
 **Status:** sete atividades do checklist foram tratadas no escopo autorizado e o **CI do código está verde**; a integração funcional permanece **candidata em PR Draft**, aguardando verificação humana/autorização de incorporação. A Etapa 08 **não equivale a publicação produtiva** e o projeto não perde qualquer homologação visual anterior.
+
+## 12/11/2026 — Etapa 08 | QA funcional estática PR #677
+
+**Autorização:** usuário pediu executar uma prévia da navegação Home → Lançamentos. A branch isolada stage08/home-launches-closeout-20261112 e a PR #677 Draft permanecem separadas das frentes Etapa 09 (backup/auditoria) e Etapa 10 (Novo/Editar). Nenhuma autorização de merge ou deploy produtivo.
+
+**Implementado apenas para QA:** apps/web/stage08-funcional-qa.html, vite.stage08-funcional-qa.config.ts, stage08-qa/bootstrap.ts, scripts/meg-stage08-static-qa.browser.mjs e workflow isolado meg-stage08-static-functional-qa.yml. A página usa a entrada autenticada real main.tsx com sessão e respostas financeiras fictícias. O bootstrap bloqueia a rede externa e operações financeiras de escrita. A CSP permite apenas conexão à mesma origem; fotografias do layout aprovado podem vir de images.unsplash.com. Nenhum dado real, segredo, Supabase, API produtiva ou banco acessados.
+
+**Correções restritas ao teste e à build fictícia:** NODE_ENV=production para não usar o endpoint de desenvolvimento localhost:3333; aguardada a abertura e fechamento regular do alerta inicial de vencimentos; excluída a cópia de public/downloads do artefato estático (arquivos originais intactos). Os elementos homologados da Home, Shell e Lançamentos não foram alterados.
+
+**Evidência de QA:** [smoke GitHub Actions #43219345293](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345293), SUCCESS, SHA 9dbe0b12aee39a209243e5f12958032b7e7ed883. Inclui fluxo real de navegador em 1366x768 e 390x844, retorno à Home, fallback de rotas ainda indisponíveis, persistência e zero requisições de API pela rede. Artefato [meg-stage08-funcional-qa-pr677](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345293/artifacts/13945176562), ID 13945176562, ZIP 6,15 MiB, expiração indicada em 12/12/2026. [CI integrada #43219345431](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345431): conferir conclusão do job; até a última inspeção, o gate de navegador da QA já estava SUCCESS e a regressão mais longa seguia em execução.
+
+**Bloqueio de hospedagem:** tentativa de criar um NOVO site Render meg-stage08-funcional-pr677 com Auto Deploy NO foi recusada com HTTP 400, mensagem exata: Hobby Tier is limited to 25 services. Nenhum serviço foi criado, excluído, reconfigurado ou publicado. A prévia homologada meg-stage09-home-launches-qa, SHA 760b7ad0e3217dbab70ea426df9cad67318f79ef, permanece íntegra e não representa o novo teste funcional.
+
+**Alternativas:** ZIP pode ser servido localmente no WSL com python3 -m http.server 4175 --directory ~/meg-stage08-qa após extração, abrindo http://localhost:4175/stage08-funcional-qa.html no Windows. Hospedagem alternativa (Vercel) exige conexão explícita do usuário. Não apagar serviços do Render nem alterar a assinatura sem autorização adicional.
+
+**Status:** teste funcional sintético comprovado e pacote estático entregue; URL pública LIVE e homologação humana ainda PENDENTES. Sem merge, API produtiva, banco, Android, Render homologado ou writer financeiro. Ver docs/MEG-STAGE08-HOME-LAUNCHES-CLOSEOUT-20261112.md para matriz, instruções e evidências.
+
+**Próximo passo:** hospedar a QA por serviço adicional previamente autorizado ou validar localmente o ZIP; registrar aceitação humana de navegação e comportamento; só então preparar eventual incorporação sob gates externos e autorização separada.
