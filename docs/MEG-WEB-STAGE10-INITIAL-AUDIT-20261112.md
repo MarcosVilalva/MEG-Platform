@@ -75,3 +75,13 @@
 - Workflow exclusivo `MEG Stage10 - Caracterizacao Financeira Isolada` foi reconhecido e entrou na fila do GitHub Actions: execução **#43215699989** no SHA `79005159d30842ae3d59df008d501b8247ef1619` (status inicialmente queued/in_progress).
 - Este adaptador ainda não foi integrado visualmente: exige confirmação dos catálogos ativos pelo formulário; a tela não pode usar identificação implícita do Verocard por nome em substituição aos vínculos obrigatórios.
 - Edição monetária, exclusão, saldo insuficiente comum e testes transacionais continuam **pendentes**. Sem alterações de API, banco, Android, telas homologadas ou deploy.
+
+## Execução comprovada de CI e bloqueio de build (12/11/2026)
+
+- [GitHub Actions #43215699989](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43215699989): **conclusion=failure** no SHA `79005159d30842ae3d59df008d501b8247ef1619`.
+- Etapa `Caracterizar contratos reais e politica pura`: **SUCCESS**, 17/17.
+- Etapa `Caracterizar autocomplete de historico sem valores ou datas`: **SUCCESS**, 5/5.
+- `npm run test:core`: **SUCCESS**; `npm run test:evolution-data`: **SUCCESS**.
+- **Build Web FAILURE:** `HomeDashboard.tsx:216` usa `replaceAll` sem lib TS apropriada (TS2550); `home-commitments-read.ts:60` e `:62` têm inferência implícita `any` (TS7022). Esses arquivos têm blobs exatamente iguais na base homologada `760b7ad0e3217dbab70ea426df9cad67318f79ef` e na branch Etapa 10: `HomeDashboard.tsx@8e8bac894837f55ce55859740105cbb170439b25`; `home-commitments-read.ts@d0dd35584ca70841a0f0d1e1259c620447ae1c9d`. **Falha pré-existente na base, não introduzida pelo adaptador.**
+- **Decisão de proteção:** não alterar Home homologada e não flexibilizar/suprimir build na CI para esconder o erro. Tratar a correção tipada e visualmente neutra em intervenção separada, com verificação de não regressão, antes de dar GO à etapa de build/preview.
+- Persistem testes transacionais reais em PostgreSQL isolado para validar autorização, saldo, atomicidade e edição monetária; não foi obtida aprovação para promover `service.ts` a writer canônico.
