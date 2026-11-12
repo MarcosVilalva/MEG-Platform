@@ -81,6 +81,12 @@ assert.ok(cards.includes('CARD_INSTALLMENT_PARTIALLY_PAID'));
 assert.ok(cardService.includes('createCardPurchaseProtected'));
 assert.ok(cards.includes('serializableFinancialTransaction'));
 
+// Previnir regressão de SVG: a prévia não deve referenciar mapa de ícones removido.
+const editorVisual=src('apps/web/src/meg-web-evolution/launches/stage10/LaunchEditorStage10.tsx');
+assert.ok(editorVisual.includes('function CategoryGlyph('));
+assert.ok(!editorVisual.includes('categoryGlyph['));
+assert.ok(editorVisual.includes('stage10Fixture'));
+
 // Seletor visual homologado deve continuar presente, inclusive benefícios
 // genéricos, sem ativar transferência/benefício por um writer improvisado.
 assert.ok(picker.includes("title: 'Despesa'"));
