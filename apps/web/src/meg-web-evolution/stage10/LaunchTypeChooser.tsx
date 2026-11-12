@@ -65,7 +65,7 @@ export function LaunchTypeChooser({open,onClose,onSelect}:Props){
     <div className="meg-stage10-content">
      <section className="meg-stage10-intro" aria-label="Novo lançamento">
       <span className="meg-stage10-eyebrow">NOVO LANÇAMENTO</span>
-      <h3>Mais controle<br/>para o seu<br/>dia a dia</h3>
+      <h3>Mais controle{' '}<br/>para o seu{' '}<br/>dia a dia</h3>
       <p>Escolha o tipo de lançamento e preencha as informações no formulário inteligente. O layout da versão Web se adapta automaticamente à largura da sua tela, oferecendo mais espaço, organização e agilidade.</p>
       <div className="meg-stage10-art" aria-hidden="true"><span className="meg-stage10-art-grid"/><span className="meg-stage10-art-line"/></div>
      </section>
