@@ -36,6 +36,17 @@ export const EMPTY_EXPENSE_DRAFT:ExpenseDraft={
 };
 const fmt=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function dateBR(s:string){return /^\d{4}-\d{2}-\d{2}$/.test(s)?s.slice(8)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'Não informada';}
+
+export function normalizeEntryDate(text:string,currentYear:number):{display:string;iso:string}|null{
+ const match=text.trim().match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{4}))?$/);
+ if(!match)return null;
+ const day=Number(match[1]),month=Number(match[2]),year=match[3]?Number(match[3]):currentYear;
+ if(year<1||year>9999||month<1||month>12||day<1||day>31)return null;
+ const actual=new Date(0);actual.setFullYear(year,month-1,day);actual.setHours(12,0,0,0);
+ if(actual.getFullYear()!==year||actual.getMonth()!==month-1||actual.getDate()!==day)return null;
+ const pad=(n:number)=>String(n).padStart(2,'0');
+ return {display:pad(day)+'/'+pad(month)+'/'+String(year).padStart(4,'0'),iso:String(year).padStart(4,'0')+'-'+pad(month)+'-'+pad(day)};
+}
 function nameOf(items:readonly ExpenseCatalogOption[],id:string){return items.find(x=>x.id===id)?.name??'Não selecionado';}
 function CategoryGlyph({name}:{name:string}){
  const slug=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -74,6 +85,8 @@ function OverlayKeys({root,onClose}:{root:RefObject<HTMLElement|null>;onClose:()
 export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
  const [draft,setDraft]=useState<ExpenseDraft>(EMPTY_EXPENSE_DRAFT);
  const [money,setMoney]=useState<BRLInput>(EMPTY_BRL_INPUT);
+ const [dateText,setDateText]=useState('');
+ const [dateError,setDateError]=useState(false);
 
  const [categoryPicker,setCategoryPicker]=useState(false);
  const [categoryPage,setCategoryPage]=useState(0);
@@ -103,6 +116,12 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const currentSchedule=Boolean(schedule&&schedule.source==='canonical'&&schedule.cardId===draft.creditCardId&&schedule.purchaseDate===draft.date&&schedule.installments===Number(draft.installmentsInput)&&schedule.amountDecimal===requestedAmount&&schedule.rows.length===Number(draft.installmentsInput));
  const chosenCategory=categories.find(x=>x.id===draft.categoryId);
  function patch<K extends keyof ExpenseDraft>(key:K,value:ExpenseDraft[K]){setDraft(old=>({...old,[key]:value}));}
+ function completeDate(){
+  if(!dateText.trim()){patch('date','');setDateError(false);return;}
+  const parsed=normalizeEntryDate(dateText,new Date().getFullYear());
+  if(parsed){setDateText(parsed.display);patch('date',parsed.iso);setDateError(false);}
+  else{patch('date','');setDateError(true);}
+ }
  function chooseCategory(id:string){patch('categoryId',id);setCategoryPicker(false);}
  function chooseModality(modality:'cash'|'credit'){
   setDraft(old=>({...old,modality,requestedStatus:modality==='credit'?'planned':'paid',accountId:modality==='cash'&&accounts.length===1?accounts[0].id:'',paymentMethodId:'',creditCardId:'',installmentsInput:'1'}));
@@ -171,7 +190,13 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
        <select id={formId+'method'} value={draft.paymentMethodId} onChange={e=>patch('paymentMethodId',e.target.value)}><option value="">SELECIONE A FORMA</option>{visibleMethods.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
       </div>
      </div>}
-     <label htmlFor={formId+'date'}><Icon name="calendar"/> Data do lançamento *</label><input id={formId+'date'} type="date" value={draft.date} onChange={e=>patch('date',e.target.value)}/>
+
+     <label htmlFor={formId+'date'}><Icon name="calendar"/> Data do lançamento *</label>
+     <div className="meg-t10-expense-date-entry">
+      <input id={formId+'date'} type="text" inputMode="numeric" autoComplete="off" maxLength={10} placeholder="DD/MM/AAAA" value={dateText} aria-invalid={dateError} aria-describedby={formId+'datehint'} onChange={e=>{setDateText(e.target.value);patch('date','');setDateError(false);}} onBlur={completeDate}/>
+      <input type="date" className="meg-t10-expense-date-picker" aria-label="Selecionar data no calendário" title="Selecionar data no calendário" value={draft.date} onChange={e=>{const value=e.target.value;patch('date',value);setDateText(dateBR(value)==='Não informada'?'':dateBR(value));setDateError(false);}}/>
+     </div>
+     <small className="meg-t10-expense-date-hint" id={formId+'datehint'}>{dateError?'Data inválida. Confira dia, mês e ano.':'Digite dia/mês e pressione Tab para completar o ano.'}</small>
      <label htmlFor={formId+'category'}><Icon name="list"/> Categoria *</label>
      <select id={formId+'category'} value={draft.categoryId} onChange={e=>chooseCategory(e.target.value)}>
       <option value="">SELECIONE UMA CATEGORIA</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
