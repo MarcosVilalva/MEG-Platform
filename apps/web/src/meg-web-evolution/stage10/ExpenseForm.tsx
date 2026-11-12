@@ -1,4 +1,4 @@
-import {useEffect,useId,useMemo,useRef,useState,type ClipboardEvent,type KeyboardEvent} from 'react';
+import {useEffect,useId,useMemo,useRef,useState,type ClipboardEvent,type KeyboardEvent,type RefObject} from 'react';
 import {Icon} from '../components/Icon';
 import {suggestionsFromCanonicalHistory,type HistorySnapshot} from './autocomplete-history';
 import {normalizeFinancialTextInput} from './text-entry-policy';
@@ -50,14 +50,16 @@ function CategoryGlyph({name}:{name:string}){
  <><path d="m3 12 9-9h9v9l-9 9-9-9Z"/><circle cx="17" cy="7" r="1"/></>}
  </svg>;
 }
-function OverlayKeys({root,onClose}:{root:React.RefObject<HTMLElement|null>;onClose:()=>void}){
+function OverlayKeys({root,onClose}:{root:RefObject<HTMLElement|null>;onClose:()=>void}){
+ const onCloseRef=useRef(onClose);
+ onCloseRef.current=onClose;
  useEffect(()=>{
   const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
   const old=document.body.style.overflow;
   document.body.style.overflow='hidden';
   root.current?.querySelector<HTMLElement>('input:not(:disabled),button:not(:disabled)')?.focus();
   function keys(event:globalThis.KeyboardEvent){
-   if(event.key==='Escape'){event.preventDefault();onClose();return;}
+   if(event.key==='Escape'){event.preventDefault();onCloseRef.current();return;}
    if(event.key!=='Tab')return;
    const all=Array.from(root.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)')??[]).filter(x=>x.getClientRects().length>0);
    if(!all.length)return;
@@ -66,7 +68,7 @@ function OverlayKeys({root,onClose}:{root:React.RefObject<HTMLElement|null>;onCl
   }
   document.addEventListener('keydown',keys);
   return()=>{document.body.style.overflow=old;document.removeEventListener('keydown',keys);previous?.focus();};
- },[root,onClose]);
+ },[root]);
  return null;
 }
 export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
