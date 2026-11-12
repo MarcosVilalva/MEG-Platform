@@ -44,7 +44,7 @@ jobs:
           check_blob apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx d95227c074a5f458e1981a06d71f73105661b6e5
           check_blob apps/web/src/meg-web-evolution/launches/launches-stage09.css 650d5dcfe4a8fdeb4d9fceda335c82c42b89b86c
           check_blob apps/web/src/meg-web-evolution/launches/LaunchCategoryBadge.tsx 72a822a3fde5a38f5ec791af3e4f03527beb630b
-          check_blob apps/web/src/meg-web-evolution/launches/LaunchPaymentBadge.tsx b276bb0fd422ea601ca91af4774c97646ba79055
+          check_blob apps/web/src/meg-web-evolution/launches/LaunchPaymentBadge.tsx bf04ea8c32a3dcbbde91278536c02782e2ce4f7c
       - name: Instalar dependencias e gerar Prisma sem banco
         run: |
           npm ci --audit=false
