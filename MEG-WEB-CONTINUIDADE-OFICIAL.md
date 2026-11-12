@@ -2395,3 +2395,14 @@ https://meg-stage08-alerta-prism-pr685.onrender.com/stage08-funcional-qa.html?vi
 **Restrições:** não modificar Android, API, Supabase, banco, writers, produção, PRs anteriores ou previews homologados. Sem merge/deploy produtivo.
 
 **Próximo passo:** executar CI e QA com fixture fictício, disponibilizar preview isolado sem cache somente quando houver capacidade/condições seguras, pedir homologação visual do DataGrid e então preparar integração sequencial na cadeia Prism mediante autorização.
+
+
+### 12/11/2026 — Retomada da publicação PR #686, verificação de infraestrutura
+
+- Workspace Render confirmado pelo usuário: `My Workspace` (`tea-d98k1qhkh4rs73f4sfj0`). A permissão prévia para previews isolados foi reiterada; não pedir autorização repetidamente para o mesmo tipo de QA.
+- Inventário ao vivo: **25/25 serviços** no Render. A PR #685 ocupa `meg-stage08-alerta-prism-pr685`; outras QA e a API principal também existem. **Nenhum serviço foi eliminado ou modificado** e não há vaga para criar outra QA isolada sem limpeza expressamente autorizada.
+- GitHub no SHA `0b841d3a809db73e5c3b4f5ee3e1af65afb8e149`: consulta de runs e status retornou listas vazias. Isso não comprova aprovação da CI; testes adicionados ainda **não foram executados e confirmados**.
+- Git CLI no ambiente disponível não conseguiu resolver `github.com`; não foi possível executar build ou Playwright local por clone.
+- A conexão Vercel retornou 403 no escopo `mvilalva87-3474` (time `team_q1mXZVqUpp2VJ8dzyXWd99ZL`), portanto não há permissão funcional para publicar preview por ela nesta sessão. Não usar outro escopo por suposição.
+- **Bloqueio atual:** distribuição da QA #686 e teste externo pendentes. Não confundir prévia #685 com código #686. Não criar serviços acima da quota, não reutilizar homologados, não excluir recursos, nem efetuar merge/deploy produtivo.
+- **Próximo passo:** obter capacidade segura no Render sem exclusões automáticas, ou autorização de escopo na Vercel; então publicar QA com dados fictícios, executar regressão em 390/960/1366, apresentar URL sem cache para homologação explícita.
