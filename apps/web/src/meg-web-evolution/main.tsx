@@ -170,7 +170,13 @@ function AuthGateway() {
       >
         {section==='launches'
           ? <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>
-          : <HomeDashboard userId={session.user.id}/>}
+          : <HomeDashboard userId={session.user.id} onNavigate={target => {
+              // Só Lançamentos possui destino operacional autorizado nesta integração.
+              // Os demais atalhos conservam o aviso da Home, sem rotas fictícias.
+              if(target!=='lancamentos')return false;
+              setSection('launches');
+              return true;
+            }}/>}
       </AppShell>
     );
   }
