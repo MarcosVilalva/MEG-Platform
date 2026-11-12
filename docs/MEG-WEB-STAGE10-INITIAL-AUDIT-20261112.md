@@ -95,3 +95,18 @@
 - **Gate comprovado:** [Actions #43216531856](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43216531856), job `financial-characterization` **completed/success** no commit `f49bdbfff236015fad1ebe990be8b9f4227635e4`. Passaram 17 testes de política/contrato, cinco de autocomplete, `test:core`, `test:evolution-data` e `npm run build:web`.
 - **Limite de prova:** build e contratos verdes não equivalem a comparação de pixels com a Home aprovada ou a aprovação humana de mudança visual. Como as transformações são equivalentes e os tipos são apagados em runtime, não se espera mudança visual, mas isso é inferência técnica, não homologação.
 - **Ainda bloqueado:** edição/exclusão monetária canônica e saldo insuficiente, testes transacionais em PostgreSQL descartável, automação Alimentação, formulários e preview Etapa 10. **Sem merge ou deploy.**
+
+## Primeiro modal visual isolado: escolha do tipo (12/11/2026)
+
+- **Referência oficial:** print do projeto `Imagem do ChatGPT 3 de out. de 2026, 17_31_26.png`: modal de seleção Novo lançamento, composição esquerda informativa + quatro cards à direita (Despesa, Receita, Transferência, Benefício), rodapé informativo. Foi inspecionado o print original e implementada candidata visual, ainda **sem comparação pixel a pixel**.
+- **Arquivos exclusivos da Etapa 10:**
+  - `apps/web/src/meg-web-evolution/stage10/launch-type-options.ts` lista os quatro tipos, sem Crediário;
+  - `LaunchTypeChooser.tsx` modal com `role=dialog`, `aria-modal`, captura de foco/Tab, Escape, clique na máscara, seleção por callback;
+  - `LaunchTypeChooser.css` estilos próprios e breakpoints 639/1023 (equivalentes a min-width 640/1024), sem sobrescrever o Shell homologado;
+  - `preview.tsx` QA usando `AppShell` e `HomeDashboard` com `homeP0QaPreviewFixture` fictícia e bloqueio de writers;
+  - `apps/web/meg-stage10-qa.html` entrada separada, incluída na configuração Vite sem alterar a entrada principal;
+  - `scripts/meg-stage10-chooser.contract.test.ts` cinco contratos estruturais e de segurança.
+- **Gates comprovados:** [Actions #43218480259](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43218480259), SUCCESS no código `d7d193194cc7a2e68a344b720d063b1acc34c969`: 17 testes de caracterização financeira, 5 de autocomplete, 5 do modal, `test:core`, `test:evolution-data`, `build:web`. O teste de Node inicialmente falhou ao importar CSS de React; foi corrigido estruturalmente extraindo metadados puros. Uma asserção de Tab foi alinhada à implementação sem alterar lógica.
+- **Não declarado:** homologação visual, responsividade verificada por Playwright, deploy de QA, integração com fluxo real ou gravação financeira. QA HTML existe no build, **não há URL publicada da Etapa 10**.
+- **Proteções:** a nova tela não chama API ou writer, não calcula saldo/parcela/fatura, não usa dados reais. Home/Shell/Lançamentos/DataGrid não foram modificados nesta rodada; a mudança no Vite se limita a adicionar entrada QA, sem mudar as demais.
+- **Próxima ação:** inspecionar capturas Playwright do primeiro modal nos viewports 390/768/1366/1920, ajustar fidelidade conforme o print sem alterar UI homologada, publicar QA isolada somente mediante estratégia de preview segura e submeter ao usuário para aceite. Em paralelo, preparar integração transacional com PostgreSQL descartável antes dos formulários com Salvar.
