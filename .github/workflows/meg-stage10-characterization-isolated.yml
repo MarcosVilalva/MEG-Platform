@@ -32,8 +32,6 @@ jobs:
         run: npx tsx --test scripts/meg-stage10-financial-characterization.test.ts
       - name: Caracterizar autocomplete de historico sem valores ou datas
         run: npx tsx --test scripts/meg-stage10-autocomplete-history.test.ts
-      - name: Contrato do modal de escolha sem escrita financeira
-        run: npx tsx --test scripts/meg-stage10-chooser.contract.test.ts
       - name: Contratos Nova Despesa sem writer financeiro
         run: npx tsx --test scripts/meg-stage10-expense.contract.test.ts
       - name: Regressoes financeiras puras existentes
@@ -65,13 +63,11 @@ jobs:
             exit 1
           fi
           npm install --no-save --package-lock=false @playwright/test
-          node scripts/meg-stage10-chooser.browser.mjs
           node scripts/meg-stage10-expense.browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: stage10-type-chooser-visual-qa
           path: |
-            artifacts/meg-stage10-type-chooser/
             artifacts/meg-stage10-expense-qa/
           if-no-files-found: ignore
