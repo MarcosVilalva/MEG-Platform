@@ -35,6 +35,7 @@ function catalogName(items:readonly ExpenseCatalogOption[],id:string){return ite
 export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
  const [draft,setDraft]=useState<ExpenseDraft>(EMPTY_EXPENSE_DRAFT);
  const [summaryOpen,setSummaryOpen]=useState(true);
+ const [accountKind,setAccountKind]=useState<'monetary'|'benefit'|'investment'>('monetary');
  const dialogRef=useRef<HTMLElement>(null);
  const formId=useId();
  const categories=useMemo(()=>catalogs.categories.filter(x=>x.active),[catalogs.categories]);
@@ -56,17 +57,27 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
  const requiresDomainReview=isCredit||isBenefit||account?.kind==='investment';
  const canRequestSave=saveEnabled&&Boolean(onRequestSave)&&hasRequired&&amountValid&&!requiresDomainReview;
  function patch<K extends keyof ExpenseDraft>(key:K,value:ExpenseDraft[K]){setDraft(current=>({...current,[key]:value}));}
+ function chooseAccountKind(kind:'monetary'|'benefit'|'investment'){
+  if(lockedBenefit)return;
+  setAccountKind(kind);
+  setDraft(current=>({...current,accountId:'',paymentMethodId:'',creditCardId:''}));
+ }
  function selectSuggestion(suggestion:(typeof suggestions)[number]){
   const categoryId=categories.some(x=>x.id===suggestion.categoryId)?suggestion.categoryId??'':'';
   const accountId=accounts.some(x=>x.id===suggestion.accountId)?suggestion.accountId??'':'';
   const paymentMethodId=methods.some(x=>x.id===suggestion.paymentMethodId)?suggestion.paymentMethodId??'':'';
   if(categoryId&&binding?.categoryIds.includes(categoryId)){
+   setAccountKind('benefit');
    setDraft(current=>({...current,description:suggestion.description,categoryId,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
-  }else setDraft(current=>({...current,description:suggestion.description,categoryId,accountId,paymentMethodId,creditCardId:''}));
+  }else {
+   setAccountKind(accounts.find(x=>x.id===accountId)?.kind??'monetary');
+   setDraft(current=>({...current,description:suggestion.description,categoryId,accountId,paymentMethodId,creditCardId:''}));
+  }
   setSuggestionsOpen(false);
  }
  function chooseCategory(id:string){
   if(id&&binding?.categoryIds.includes(id)){
+   setAccountKind('benefit');
    // A prévia congela a seleção e exige vínculo resolvido pelo catálogo canônico.
    setDraft(current=>({...current,categoryId:id,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
   }else setDraft(current=>({...current,categoryId:id}));
@@ -109,10 +120,14 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
      <div className="meg-t10-expense-chips" aria-label="Categorias disponíveis">
       {categories.slice(0,5).map(x=><button key={x.id} type="button" aria-pressed={draft.categoryId===x.id} onClick={()=>chooseCategory(x.id)}>{x.name}</button>)}
      </div>
+     <fieldset className="meg-t10-expense-account-kind"><legend>Tipo de conta</legend>
+      {([['monetary','Conta monetária'],['benefit','Conta benefício'],['investment','Investimentos']] as const).map(([kind,label])=><button type="button" key={kind} disabled={lockedBenefit} aria-pressed={accountKind===kind} onClick={()=>chooseAccountKind(kind)}>{label}</button>)}
+      <small>Filtro visual por tipo de conta. A classificação financeira permanece responsabilidade do domínio.</small>
+     </fieldset>
      <label htmlFor={formId+'account'}>Conta *</label>
      <select id={formId+'account'} value={draft.accountId} disabled={lockedBenefit} onChange={e=>patch('accountId',e.target.value)}>
       <option value="">Selecione a conta</option>
-      {accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
+      {accounts.filter(x=>x.kind===accountKind).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
      </select>
      <label htmlFor={formId+'method'}>Forma de pagamento *</label>
      <select id={formId+'method'} value={draft.paymentMethodId} disabled={lockedBenefit} onChange={e=>patch('paymentMethodId',e.target.value)}>
