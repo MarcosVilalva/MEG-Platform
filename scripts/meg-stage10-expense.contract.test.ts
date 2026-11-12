@@ -20,12 +20,26 @@ test('Categorias e contas são provenientes dos catálogos ativos, sem IDs fixos
  assert.match(code,/frequencyRank/);
  assert.match(code,/CategoryGlyph/);
 });
-test('Alimentação vinculada explicitamente e sem permitir alterar conta, método e pago',()=>{
- assert.match(code,/benefitBinding/);
- assert.match(code,/binding\?\.categoryIds\.includes\(id\)/);
- assert.match(code,/accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid'/);
- assert.match(code,/disabled=\{lockedBenefit\}/);
- assert.match(code,/!isCredit&&!isBenefit/);
+test('Nova Despesa não expõe Benefício e usa apenas contas monetárias',()=>{
+ assert.doesNotMatch(code,/benefitBinding|lockedBenefit|Conta benefício|Benefício requer contrato/);
+ assert.match(code,/x.active&&x.kind==='monetary'/);
+ assert.match(code,/x.active&&x.kind!=='benefit'/);
+});
+test('Modalidade filtra meios e governa status como política financeira',()=>{
+ assert.match(code,/Modalidade de pagamento/);
+ assert.match(code,/chooseModality\('credit'\)/);
+ assert.match(code,/chooseModality\('cash'\)/);
+ assert.match(code,/requestedStatus:modality==='credit'\?'planned':'paid'/);
+ assert.match(code,/draft.modality==='credit'\?x.kind==='credit':x.kind==='ordinary'/);
+ assert.match(code,/disabled=\{isCredit\}/);
+ const policy=read('apps/api/src/modules/finance/financial-policy.ts');
+ assert.match(policy,/paymentType === 'CREDIT'\) return 'planned'/);
+});
+test('Miniatura do cartão utiliza apenas metadados reais fornecidos pelo catálogo',()=>{
+ for(const mark of ['lastFour','closingDay','dueDay','issuer','brand','selectedCard','meg-t10-credit-mini'])assert.ok(code.includes(mark),mark);
+ assert.match(code,/cards.find\(x=>x.id===draft.creditCardId\)/);
+ assert.match(preview,/closingDay:25,dueDay:5/);
+ assert.match(preview,/closingDay:12,dueDay:20/);
 });
 test('Valores em centavos sem erros de float e máscara crescente',()=>{
  let state=EMPTY_BRL_INPUT;
@@ -52,11 +66,10 @@ test('Parcelamento abre modal, mas só recebe vencimentos do contrato canônico'
  assert.match(code,/Nenhuma parcela ou data será estimada pela tela/);
  assert.doesNotMatch(code,/addMonths|new Date\(draft.date\)|Math\.round\(|baseCents/);
 });
-test('Classificação da conta e tipo de conta são controles separados',()=>{
- for(const label of ['Classificação da conta','Contas gerais','Investimentos','Benefício','Tipo de conta','Conta monetária','Conta benefício'])assert.ok(code.includes(label),label);
- assert.match(code,/setClassification/);
- assert.match(code,/setKind/);
- assert.doesNotMatch(code,/classificationId:/);
+test('Modalidade, forma e data seguem ordem definida',()=>{
+ const positions=['Descrição *','Modalidade de pagamento *','Forma de pagamento *','Data do lançamento *'].map(x=>code.indexOf(x));
+ assert.ok(positions.every(x=>x>=0),JSON.stringify(positions));
+ assert.ok(positions.every((x,i)=>i===0||x>positions[i-1]),JSON.stringify(positions));
 });
 test('Texto em maiúsculas, mas IDs, data e montante sem conversão',()=>{
  assert.equal(normalizeFinancialTextInput('pão de açúcar, almoço çá'),'PÃO DE AÇÚCAR, ALMOÇO ÇÁ');
