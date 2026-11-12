@@ -31,10 +31,11 @@ const options: LaunchOption[] = [
     enabled: false,
   },
 ];
+/** Três passos reais, sem publicidade sobre a tecnologia da interface. */
 const features = [
-  ['Dimensionamento automático', 'O layout se adapta à largura da sua tela.'],
-  ['Tipografia ampliada', 'Mais legibilidade e conforto visual.'],
-  ['Responsivo para Web', 'Mais espaço e organização.'],
+  ['01 · Escolha', 'Selecione o tipo de movimentação.'],
+  ['02 · Preencha', 'Informe os dados do lançamento.'],
+  ['03 · Confira', 'Revise o resumo antes de continuar.'],
 ] as const;
 
 
@@ -80,9 +81,9 @@ function ChoiceFeatureGlyph({index}:{index:number}){
   <defs><linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
    <stop offset="0" stopColor="#fff"/><stop offset=".45" stopColor="#91fff1"/>
    <stop offset="1" stopColor="#04b8bc"/></linearGradient></defs>
-  {index===0?<><rect x="3" y="4.5" width="18" height="13" rx="2"/><path d="M8 21h8m-4-3.5V21"/></>:
-   index===1?<><path d="m4 18 5-12 5 12M6 14h6m4 3h5m-2.5-9v9"/></>:
-   <><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9h17m-11 0v11"/></>}
+  {index===0?<><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12 3 3 5-6"/></>:
+   index===1?<><path d="M7 3.5h8l4 4v12a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-14A2 2 0 0 1 7 3.5Z"/><path d="M14.5 3.5v4h4M8 12h8m-8 4h5"/></>:
+   <><rect x="4" y="3" width="16" height="18" rx="3"/><path d="m7 10 1.5 1.5L11 9m2 1h4M7 16l1.5 1.5L11 15m2 1h4"/></>}
  </svg>;
 }
 function ChoiceBackGlyph(){
@@ -156,7 +157,7 @@ export function PrismLaunchChoice({
           ))}
         </div>
       </div>
-      <footer className="meg-choice__footer" aria-label="Informações sobre a experiência Web">
+      <footer className="meg-choice__footer" aria-label="Como registrar um lançamento">
         {features.map(([title, description], index) => (
           <div className="meg-choice__feature" key={title}>
             <span className="meg-choice__feature-icon" aria-hidden="true"><ChoiceFeatureGlyph index={index}/></span>
