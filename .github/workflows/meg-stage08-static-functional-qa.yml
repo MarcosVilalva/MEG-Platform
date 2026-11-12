@@ -70,7 +70,7 @@ jobs:
           path: artifacts/meg-stage08-lancamentos-icons/
           if-no-files-found: warn
           retention-days: 14
-      - name: Verificar fontes reais e tipografia na URL pública do piloto Prism
+      - name: Preservar a QA tipográfica homologada da PR682 sem impor ícones novos
         env:
           MEG_STAGE08_QA_URL: https://meg-stage08-prism-tipografia-pilot.onrender.com
         run: |
@@ -79,7 +79,9 @@ jobs:
             "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?visual=prism&v=d2b45a72c6605467aa7f4377c8433282352b74fd" \
             -o /tmp/meg-prism-pilot-public
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-prism-pilot-public
-          node scripts/meg-stage08-prism-typography.browser.mjs
+          # O run #43244463748 comprovou as fontes na publicação histórica.
+          # Novos ícones e novas direções pertencem apenas à QA da PR684.
+          node scripts/meg-stage08-static-qa.browser.mjs
       - name: Evidências da tipografia Prism em três larguras
         if: always()
         uses: actions/upload-artifact@v4
