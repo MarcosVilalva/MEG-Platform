@@ -30,10 +30,22 @@ test('Modalidade filtra meios e governa status como política financeira',()=>{
  assert.match(code,/chooseModality\('credit'\)/);
  assert.match(code,/chooseModality\('cash'\)/);
  assert.match(code,/requestedStatus:modality==='credit'\?'planned':'paid'/);
- assert.match(code,/draft.modality==='credit'\?x.kind==='credit':x.kind==='ordinary'/);
+ assert.match(code,/methods.filter\(x=>x.kind==='ordinary'\)/);
+ assert.match(code,/!isCredit&&<div className="meg-t10-expense-method-field"/);
  assert.match(code,/disabled=\{isCredit\}/);
  const policy=read('apps/api/src/modules/finance/financial-policy.ts');
  assert.match(policy,/paymentType === 'CREDIT'\) return 'planned'/);
+});
+test('Conta monetária somente na baixa À vista Paga e preenchimento único',()=>{
+ assert.match(code,/const showSettlementAccount=!isCredit&&draft.requestedStatus==='paid'/);
+ assert.match(code,/showSettlementAccount&&<div className="meg-t10-expense-settlement-account"/);
+ assert.match(code,/accounts.length===1\?accounts\[0\].id:''/);
+ assert.match(code,/requestedStatus:status,accountId:status==='paid'/);
+ assert.match(code,/modality,requestedStatus:modality==='credit'\?'planned':'paid',accountId:/);
+ assert.match(code,/setDraft\(old=>\(\{\.\.\.old,requestedStatus:status/);
+ assert.match(code,/const expected=selectedValid\?draft.accountId:accounts.length===1/);
+ assert.match(code,/!showSettlementAccount\|\|Boolean\(selectedAccount\)/);
+ assert.doesNotMatch(code,/benefitBinding|Conta benefício|lockedBenefit/);
 });
 test('Miniatura do cartão utiliza apenas metadados reais fornecidos pelo catálogo',()=>{
  for(const mark of ['lastFour','closingDay','dueDay','issuer','brand','selectedCard','meg-t10-credit-mini'])assert.ok(code.includes(mark),mark);
