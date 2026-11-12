@@ -13,7 +13,8 @@ try{
   page.on('pageerror',error=>errors.push(String(error)));
   page.on('request',req=>{
     const u=new URL(req.url());
-    if(u.origin!==new URL(origin).origin)external.push(req.url());
+    // Apenas as fotografias de referência visual são recursos externos permitidos.
+    if(u.origin!==new URL(origin).origin && u.origin!=='https://images.unsplash.com')external.push(req.url());
     if(/^\/(finance|auth|cards|payables)(\/|$)/.test(u.pathname))networkFinancial.push(req.url());
   });
   await page.addInitScript(()=>{
