@@ -2105,3 +2105,14 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Status:** API combinada **validada tecnicamente SOMENTE no QA sintético**. **Não houve merge, deploy no Render, migração, escrita no Supabase nem homologação operacional com usuários reais**. A nova PR #672 permanece Draft; a PR #669 e todas as predecessoras permanecem protegidas.
 - **Próximo passo na Etapa 09:** integrar isoladamente o frontend homologado da PR #656 à base da Home #9/#672, reconciliando `AppShell` (navegação autenticada + sino), `DataGrid`, `main.tsx` e filtros; repetir CI financeiro, QA visual em múltiplas larguras e teste autenticado com banco sintético. Não fazer merge ou deploy sem o gate independente de backup/restore real da PR #666 e correção autorizada do Build Command do Render.
 - **Limites persistentes:** o serviço `meg-platform-api` ainda possui `db:prepare:production` e `db:push:production` em build com Auto Deploy ON. **NO-GO produtivo**. Não iniciar Etapa 10 antes do encerramento formal da Etapa 09.
+
+
+## Etapa 10 — abertura e auditoria de Novo/Editar Lançamento (12/11/2026)
+
+- **Autorização:** após homologação visual do Shell integrado, usuário autorizou a Etapa 10 em chat próprio; auditoria financeira obrigatória antes da implementação. Preservar Home, Lançamentos, Shell e DataGrid.
+- **Branch isolada:** `stage10/novo-editar-lancamento-isolado-20261112`, criada do commit visual aprovado `760b7ad0e3217dbab70ea426df9cad67318f79ef`.
+- **Auditoria detalhada:** `docs/MEG-WEB-STAGE10-INITIAL-AUDIT-20261112.md`; **17 testes** versionados em `scripts/meg-stage10-financial-characterization.test.ts`; gate restrito à branch em `.github/workflows/meg-stage10-characterization-isolated.yml`. Testes ainda **sem comprovação de execução SUCCESS**.
+- **Achados:** writer serializável de criação monetária; writer próprio de benefício com proteção de saldo e idempotência; compra de cartão e parcelas com writer próprio; edição/exclusão monetárias por caminho genérico legado sem equivalência demonstrada; histórico snapshot tem vínculos necessários ao autocomplete, porém sem contrato específico de preenchimento; Alimentação exige Conta Benefício + Verocard + Pago e não pode contaminar saldo monetário.
+- **Não implementado:** nenhuma nova UI ou integração de writer; não há preview da Etapa 10, aceite visual ou merge. Nenhuma alteração no Android, API, produção, banco ou nas telas homologadas.
+- **Próximo gate:** executar testes, caracterizar operações transacionais com dados fictícios em banco isolado, definir vínculo/autocomplete e resolver diferença de edição antes de permitir gravação; depois implementar uma tela por vez conforme prints oficiais e publicar QA sem cache para aprovação explícita.
+- **NO-GO produtivo:** PRs #656/#663/#666/#669/#672/#673 e gates de backup/segurança da Etapa 09 continuam independentes e não são liberados por esta preparação.
