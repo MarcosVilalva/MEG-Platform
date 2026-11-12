@@ -296,3 +296,12 @@ Documentação: [Supabase Backups](https://supabase.com/docs/guides/platform/bac
 - **Status:** salvaguarda **local** da chave-raiz Vault confirmada por relatório; **cópia offsite e revogação de PAT ainda não atestadas**. Uma pasta local criptografada não protege contra perda do notebook. A identidade age já possui pendrive offline verificado e segregado; não misturar chaves privada, criptograma Vault e credenciais de serviço.
 - Prioridade: operador revogar PAT temporário, depois realizar somente transferência do criptograma e manifesto para repositório offsite próprio, validar SHA em destino sem imprimir valores secretos e registrar atestados. Nenhum PUT, reexportação de root_key, SQL, restore real, deploy, merge ou alteração de serviços produtivos autorizado.
 - O teste de restauração integral do Vault e de componentes gerenciados do Supabase segue não realizado. PR #666 continua Draft; issues #674/#676 abertas.
+
+
+## 10. Falha de leitura de manifesto Vault e revogação de token (12/11/2026)
+
+- **PAT para GET:** revogação confirmada apenas por atestado do operador no PowerShell (`PAT_REVOGADO=ATESTADO_PELO_OPERADOR`), não por consulta independente à conta Supabase.
+- **Preflight local read-only do Vault:** encontrou 1 arquivo `.rootkey.age` e 1 manifesto, mas retornou `PARES_CIFRADO_MANIFESTO_VALIDOS=0` e `ORIGEM_VAULT=NAO_VALIDADA`. Causa de software identificada no diagnóstico fornecido em chat: a expressão `^([a-z_]+)=(.*)$` não reconhecia a chave `archive_sha256`, mesmo quando escrita corretamente pelo exportador. Isto não representa falha comprovada do criptograma.
+- **Correção do diagnóstico:** fazer parsing das chaves de manifesto com `^([a-z_][a-z0-9_]*)=(.*)$`, restringir nome do arquivo ao formato seguro produzido pelo exportador e verificar `archive_sha256` calculado a partir do arquivo cifrado, sem exibir hashes, caminhos ou conteúdo. O procedimento não abre a identidade age, não faz GET, PUT, SQL nem escreve no USB ou OneDrive.
+- **Nenhuma cópia offsite realizada** nesta fase, e existência de uma pasta OneDrive local não comprova upload/download. A transferência só poderá ser validada após origem íntegra, cópia controlada do criptograma e manifesto, hash no destino e prova de disponibilidade independente na nuvem.
+- **Status:** `VAULT_ROOTKEY_CIFRADA_LOCAL=VALIDADA_POR_EXECUCAO_ANTERIOR`, `VAULT_ORIGEM_PREFLIGHT=REVERIFICACAO_PENDENTE`, `PAT_REVOGACAO=ATESTADA`, `VAULT_OFFSITE=PENDENTE`, `VAULT_RESTORE_ISOLADO=NAO_TESTADO`. Etapa 09 aberta, PR #666 Draft sem merge/deploy, produção intocada.
