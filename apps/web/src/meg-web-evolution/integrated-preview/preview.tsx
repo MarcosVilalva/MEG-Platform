@@ -122,7 +122,10 @@ function FlowPreview() {
 
   return <div className="meg-integrated-preview" data-preview-view={screen}
     onClickCapture={handleShellCapture}>
-    <AppShell periodLabel={activeHome === 'home-p0' ? 'Novembro de 2026' : undefined}>
+    <AppShell
+      periodLabel={activeHome === 'home-p0' ? 'Novembro de 2026' : undefined}
+      visualVariant={screen === 'launches' || (screen === 'new-launch' && returnScreen === 'launches') ? 'launches' : 'home'}
+    >
       {screen === 'launches' || (screen === 'new-launch' && returnScreen === 'launches')
         ? <LaunchesStage09 data={homePreviewFixture}
             onNew={() => { setNotice(''); setReturnScreen('launches'); setScreen('new-launch'); }}
