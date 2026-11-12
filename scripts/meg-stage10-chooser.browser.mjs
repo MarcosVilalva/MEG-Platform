@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {chromium} from '@playwright/test';
 
 const dir='artifacts/meg-stage10-type-chooser';
 mkdirSync(dir,{recursive:true});
-const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
+const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||(existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':undefined),args:['--no-sandbox']});
 const base=process.env.MEG_STAGE10_QA_URL||'http://127.0.0.1:4173';
 const viewports=[[390,844],[768,1024],[1366,768],[1920,1080]];
 const reports=[];
