@@ -42,7 +42,7 @@ try{
   await page.screenshot({path:root+'/expense-'+width+'x'+height+'.png',fullPage:true});
   await page.getByLabel('Categoria *').selectOption('qa-category-house');
   await page.getByLabel('Forma de pagamento *').selectOption('qa-method-credit');
-  assert.equal(await page.getByLabel('Cartão').isVisible(),true,'Cartão aparece só na forma crédito');
+  assert.equal(await page.getByRole('dialog',{name:'Novo lançamento'}).getByLabel('Cartão',{exact:true}).isVisible(),true,'Cartão aparece só na forma crédito');
   assert.equal(await page.getByLabel('Número de parcelas').isVisible(),true,'Parcelas condicionais');
   assert.equal(await page.getByRole('button',{name:/Salvar lançamento/}).isDisabled(),true);
   assert.deepEqual(writes,[],'Nenhum POST/PATCH/DELETE no QA');
