@@ -36,3 +36,11 @@ jobs:
             sleep 1
           done
           node scripts/meg-stage08-static-qa.browser.mjs
+      - name: Disponibilizar artefato estático validado da QA
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage08-funcional-qa-pr677
+          path: apps/web/dist-stage08-funcional-qa/
+          if-no-files-found: error
+          retention-days: 30
