@@ -113,6 +113,20 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   await page.locator('.meg-sidebar .meg-nav-item[aria-label="Lançamentos"]').waitFor();
   if(!/Usuário de Teste/.test(await page.locator('.meg-profile-name').textContent()||''))issues.push('Perfil exibiu identidade fixa de demonstracao');
   if(width<640)await page.getByRole('button',{name:'Abrir menu'}).click();
+  // Referência imutável da sidebar: a Home autenticada ANTES da navegação.
+  // Lançamentos não pode distribuir ícones, trocar a marca ou o Shell.
+  const shellMetrics=()=>page.locator('.meg-sidebar .meg-nav').evaluate(nav=>{
+   const links=[...nav.querySelectorAll('.meg-nav-item')];
+   const ys=links.map(link=>{const r=link.getBoundingClientRect();return r.top+r.height/2});
+   const steps=ys.slice(1).map((y,index)=>y-ys[index]);
+   const footer=document.querySelector('.meg-sidebar-footer')?.getBoundingClientRect();
+   const art=document.querySelector('.meg-sidebar .sidebar__art');
+   return {spread:Math.max(...steps)-Math.min(...steps),
+    coverage:(ys[ys.length-1]-ys[0])/nav.getBoundingClientRect().height,
+    footerGap:footer?footer.top-ys[ys.length-1]:null,
+    artHidden:art?getComputedStyle(art).display==='none':false};
+  });
+  const homeShell=width===960?await shellMetrics():null;
   await page.locator('.meg-sidebar .meg-nav-item[aria-label="Lançamentos"]').click();
   const loading=page.locator('.meg-l09-loading-panel');
   await loading.waitFor({timeout:12000});
@@ -120,20 +134,13 @@ for(const [width,height] of [[1366,768],[960,900],[390,844]]){
   if(!(await page.locator('.meg-l09-loading-placeholders').count()))issues.push('Leitura integral sem estrutura visual provisória');
   if(await page.locator('.meg-l09-grid-panel').count())issues.push('Grade exibiu registros antes da segunda leitura');
   if(width===960){
-   const spacing=await page.locator('.meg-sidebar .meg-nav').evaluate(nav=>{
-    const links=[...nav.querySelectorAll('.meg-nav-item')];
-    const ys=links.map(link=>{const r=link.getBoundingClientRect();return r.top+r.height/2});
-    const steps=ys.slice(1).map((y,index)=>y-ys[index]);
-    const footer=document.querySelector('.meg-sidebar-footer')?.getBoundingClientRect();
-    const art=document.querySelector('.meg-sidebar .sidebar__art');
-    return {spread:Math.max(...steps)-Math.min(...steps),
-     coverage:(ys[ys.length-1]-ys[0])/nav.getBoundingClientRect().height,
-     footerGap:footer?footer.top-ys[ys.length-1]:null,
-     artHidden:art?getComputedStyle(art).display==='none':false};
-   });
-   if(spacing.spread>12||spacing.coverage<.75||spacing.artHidden!==true||
-      spacing.footerGap===null||spacing.footerGap>165)
-    issues.push('Ícones compactos não usam toda a altura útil: '+JSON.stringify(spacing));
+   const launchesShell=await shellMetrics();
+   const same=(a,b)=>Math.abs(a-b)<2;
+   if(!homeShell||!same(homeShell.spread,launchesShell.spread)||
+      !same(homeShell.coverage,launchesShell.coverage)||
+      !same(homeShell.footerGap??-1,launchesShell.footerGap??-1)||
+      homeShell.artHidden!==launchesShell.artHidden)
+    issues.push('Shell mudou em 960 px: Home '+JSON.stringify(homeShell)+' Lançamentos '+JSON.stringify(launchesShell));
   }
   await page.screenshot({path:resolve(output,'carregando-'+width+'x'+height+'.png'),fullPage:true});
   const sum=page.locator('.meg-l09-grid-summary');
