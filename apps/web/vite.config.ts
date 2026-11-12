@@ -80,7 +80,8 @@ const webInputs = process.env.CAPACITOR_BUILD
       phoenix: path.resolve(__dirname, 'phoenix.html'),
       evolution: path.resolve(__dirname, 'evolution.html'),
       webEvolution: path.resolve(__dirname, 'web-evolution.html'),
-      dataGridHarness: path.resolve(__dirname, 'datagrid-harness.html')
+      dataGridHarness: path.resolve(__dirname, 'datagrid-harness.html'),
+      stage10Qa: path.resolve(__dirname, 'meg-stage10-qa.html')
     };
 
 export default defineConfig({
