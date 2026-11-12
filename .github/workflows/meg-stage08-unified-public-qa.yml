@@ -1,0 +1,38 @@
+name: MEG | Verificacao publica QA unificada Prism
+on:
+  push:
+    branches:
+      - 'stage08/unified-qa-stage05-08-10-20261112'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      MEG_STAGE08_UNIFIED_QA_URL: https://meg-stage08-alerta-prism-pr685.onrender.com
+      PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install tested browser dependencies
+        run: |
+          npm ci --audit=false
+          npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: Verify public Render entry and full synthetic navigation
+        run: |
+          set -euo pipefail
+          curl -fsS "$MEG_STAGE08_UNIFIED_QA_URL/meg-unificado-qa.html?visual=prism&v=2f71aae9661eddbaefe5fca00c88f809a3df264e" >/dev/null
+          node scripts/meg-stage08-unified-qa.browser.mjs
+      - name: Retain external screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-unified-prism-public-qa
+          path: artifacts/meg-unified-prism/
+          retention-days: 7
+          if-no-files-found: warn
