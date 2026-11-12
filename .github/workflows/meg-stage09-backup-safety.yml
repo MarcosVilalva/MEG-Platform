@@ -6,6 +6,7 @@ on:
       - 'scripts/meg-stage09-safe-backup.sh'
       - 'scripts/meg-stage09-safe-restore-drill.sh'
       - 'scripts/meg-stage09-safe-vault-rootkey.sh'
+      - 'scripts/meg-stage09-audit-financial-invariants.sh'
       - 'scripts/meg-stage09-backup-safety.test.mjs'
       - 'docs/MEG-STAGE09-BACKUP-RECOVERY-RUNBOOK-20261110.md'
       - '.github/workflows/meg-stage09-backup-safety.yml'
@@ -33,6 +34,7 @@ jobs:
           bash -n scripts/meg-stage09-safe-backup.sh
           bash -n scripts/meg-stage09-safe-restore-drill.sh
           bash -n scripts/meg-stage09-safe-vault-rootkey.sh
+          bash -n scripts/meg-stage09-audit-financial-invariants.sh
       - name: Run synthetic safety contract with mocked tools
         shell: bash
         run: node scripts/meg-stage09-backup-safety.test.mjs
@@ -164,3 +166,100 @@ jobs:
         run: |
           docker rm -f meg-stage09-test-src meg-stage09-test-dst 2>/dev/null || true
           rm -rf "$RUNNER_TEMP/meg-local-recovery"
+
+  financial-invariants-postgres17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout no production credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start disposable PostgreSQL 17
+        shell: bash
+        run: |
+          docker run -d --name meg-stage09-invariants-pg17 -e POSTGRES_PASSWORD=TEST_ONLY postgres:17
+          for i in $(seq 1 45); do
+            if docker exec meg-stage09-invariants-pg17 pg_isready -U postgres >/dev/null 2>&1; then
+              sleep 3
+              if docker exec meg-stage09-invariants-pg17 pg_isready -U postgres >/dev/null 2>&1; then
+                exit 0
+              fi
+            fi
+            sleep 1
+          done
+          echo 'PostgreSQL 17 synthetic fixture unavailable' >&2
+          exit 1
+      - name: Create entirely fictitious finance fixture
+        shell: bash
+        run: |
+          docker exec -i meg-stage09-invariants-pg17 psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE public."User" (id text PRIMARY KEY);
+          CREATE TABLE public."AppState" (id text PRIMARY KEY);
+          CREATE TABLE public."Account" (id text PRIMARY KEY, type text);
+          CREATE TABLE public."PaymentMethod" (id text PRIMARY KEY, name text);
+          CREATE TABLE public."FinancialEvent" (
+            id text PRIMARY KEY, "workspaceId" text, "accountId" text,
+            "paymentMethodId" text, "legacyTransactionId" text,
+            "sourcePayload" jsonb, "archivedAt" timestamptz,
+            type text NOT NULL, status text NOT NULL, date timestamptz NOT NULL,
+            competence text NOT NULL, amount numeric NOT NULL, "signedAmount" numeric NOT NULL
+          );
+          CREATE TABLE public."LedgerEntry" (id text PRIMARY KEY, debit numeric NOT NULL, credit numeric NOT NULL);
+          CREATE TABLE public."CardPurchase" (id text PRIMARY KEY, installments integer NOT NULL, "totalAmount" numeric NOT NULL);
+          CREATE TABLE public."CardInstallment" (
+            id text PRIMARY KEY, "purchaseId" text, number integer NOT NULL,
+            amount numeric NOT NULL, "partialPaidAmount" numeric NOT NULL
+          );
+          CREATE TABLE public."Payable" (
+            id text PRIMARY KEY, "openAmount" numeric NOT NULL, "totalAmount" numeric NOT NULL,
+            "installmentNo" integer NOT NULL, "installmentQty" integer NOT NULL
+          );
+          CREATE TABLE public."CloudMutationReceipt" (id text PRIMARY KEY);
+          INSERT INTO public."User" VALUES ('synthetic-user');
+          INSERT INTO public."AppState" VALUES ('synthetic-state');
+          INSERT INTO public."Account" VALUES ('a','checking'),('b','cash'),('c','benefit');
+          INSERT INTO public."PaymentMethod" VALUES ('pm','VEROCARD');
+          INSERT INTO public."FinancialEvent" (id,"workspaceId","accountId","paymentMethodId","legacyTransactionId","sourcePayload",type,status,date,competence,amount,"signedAmount") VALUES
+          ('in','w','a',NULL,NULL,NULL,'income','paid','2026-11-01T12:00:00Z','2026-11',10,10),
+          ('out','w','a',NULL,NULL,NULL,'expense','paid','2026-11-01T12:00:00Z','2026-11',4,-4),
+          ('source','w','a',NULL,NULL,'{"transferId":"t-12345678","transferLeg":"source","counterpartyAccountId":"b"}','transfer','paid','2026-11-01T12:00:00Z','2026-11',3,-3),
+          ('dest','w','b',NULL,NULL,'{"transferId":"t-12345678","transferLeg":"destination","counterpartyAccountId":"a"}','transfer','paid','2026-11-01T12:00:00Z','2026-11',3,3),
+          ('opening','w','a',NULL,'opening-balance:a',NULL,'income','paid','2026-11-01T12:00:00Z','2026-11',2,2),
+          ('benefit','w','c','pm',NULL,NULL,'income','paid','2026-11-01T12:00:00Z','2026-11',5,5);
+          INSERT INTO public."LedgerEntry" VALUES ('l1',10,0),('l2',0,4);
+          INSERT INTO public."CardPurchase" VALUES ('purchase',2,20);
+          INSERT INTO public."CardInstallment" VALUES ('i1','purchase',1,10,2),('i2','purchase',2,10,0);
+          INSERT INTO public."Payable" VALUES ('pay',25,50,1,1);
+          INSERT INTO public."CloudMutationReceipt" VALUES ('receipt');
+          SQL
+      - name: Parse real audit SQL and detect both clean and damaged synthetic records
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          script=scripts/meg-stage09-audit-financial-invariants.sh
+          bash -n "$script"
+          sed -n "/<<'SQL'/,/^SQL$/p" "$script" | sed '1d;$d' > "$RUNNER_TEMP/meg-fin-invariants.sql"
+          test -s "$RUNNER_TEMP/meg-fin-invariants.sql"
+          if grep -Ein '^[[:space:]]*(INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER|CREATE|GRANT|REVOKE|COPY)[[:space:]]' "$RUNNER_TEMP/meg-fin-invariants.sql"; then
+            echo 'Unexpected write operation in audit SQL' >&2
+            exit 1
+          fi
+          docker exec -i meg-stage09-invariants-pg17 psql -qAt -U postgres -d postgres -v ON_ERROR_STOP=1 < "$RUNNER_TEMP/meg-fin-invariants.sql" > "$RUNNER_TEMP/baseline.txt"
+          grep -qx 'TRANSFER_GRUPOS_MODERNOS=1' "$RUNNER_TEMP/baseline.txt"
+          grep -qx 'TRANSFER_GRUPOS_SUSPEITOS=0' "$RUNNER_TEMP/baseline.txt"
+          grep -qx 'CARTAO_COMPRAS_DIVERGENTES=0' "$RUNNER_TEMP/baseline.txt"
+          grep -qx 'EVENTOS_DESPESA_COM_SINAL_POSITIVO=0' "$RUNNER_TEMP/baseline.txt"
+          docker exec -i meg-stage09-invariants-pg17 psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO public."FinancialEvent" (id,"workspaceId","accountId",type,status,date,competence,amount,"signedAmount")
+          VALUES ('synthetic-bad-expense','w','a','expense','paid','2026-11-01T12:00:00Z','2026-11',5,5);
+          UPDATE public."CardInstallment" SET "partialPaidAmount"=11 WHERE id='i1';
+          SQL
+          docker exec -i meg-stage09-invariants-pg17 psql -qAt -U postgres -d postgres -v ON_ERROR_STOP=1 < "$RUNNER_TEMP/meg-fin-invariants.sql" > "$RUNNER_TEMP/anomalies.txt"
+          grep -qx 'EVENTOS_DESPESA_COM_SINAL_POSITIVO=1' "$RUNNER_TEMP/anomalies.txt"
+          grep -qx 'CARTAO_PARCELAS_PAGO_PARCIAL_INCONSISTENTE=1' "$RUNNER_TEMP/anomalies.txt"
+          echo 'REAL PostgreSQL 17 synthetic financial invariant SQL: PASSED'
+      - name: Remove disposable fixture
+        if: always()
+        shell: bash
+        run: docker rm -f meg-stage09-invariants-pg17 2>/dev/null || true
