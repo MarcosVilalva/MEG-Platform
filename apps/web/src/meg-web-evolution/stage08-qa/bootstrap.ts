@@ -1,4 +1,5 @@
 import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
+import prismCssText from './prism-type-pilot.css?inline';
 
 // Exclusivo da QA estática da Etapa 08. O main.tsx autenticado NÃO é alterado.
 // Os tokens são marcadores fictícios, sem validade em qualquer backend.
@@ -104,7 +105,13 @@ localStorage.removeItem('meg.auth.session');
 // Não altera CSS global, imports ou sessão da aplicação produtiva.
 if(new URLSearchParams(window.location.search).get('visual')==='prism'){
   document.documentElement.dataset.megTypographyPilot='true';
-  void import('./prism-type-pilot.css').then(()=>import('../main'));
-}else{
-  void import('../main');
+  document.documentElement.dataset.megPrismUi='true';
+  // O CSS pertence somente a este bundle de QA: não criar chunk assíncrono
+  // cuja falha de preload possa impedir o main autenticado de abrir no Render.
+  const prismStyle=document.createElement('style');
+  prismStyle.dataset.megPrismStyle='inline-qa';
+  prismStyle.textContent=prismCssText;
+  document.head.appendChild(prismStyle);
 }
+// O aplicativo sempre inicializa; ausência das fontes é reprovada pelo teste.
+void import('../main');

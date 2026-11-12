@@ -5,8 +5,8 @@ import type {ReactNode} from 'react';
  * profundidade por camadas e brilho de borda. Não usa fontes, CDN nem imagens.
  * Coordenadas 256x256, escaláveis sem perda de nitidez.
  *
- * Semântica: entrada = seta VERTICAL PARA BAIXO (entra no caixa),
- * saída = seta VERTICAL PARA CIMA (sai do caixa).
+ * Convenção visual validada: ENTRADAS = seta PARA CIMA (verde),
+ * SAÍDAS = seta PARA BAIXO (coral), como em gráficos financeiros.
  * Não altera nenhum dado, status ou cálculo financeiro.
  */
 const downArrow = 'M114 33h28a14 14 0 0 1 14 14v89h23a13 13 0 0 1 10 22l-51 57a14 14 0 0 1-21 0l-51-57a13 13 0 0 1 10-22h24V47a14 14 0 0 1 14-14Z';
@@ -47,11 +47,11 @@ export const megPrismIcons:Record<string,ReactNode> = {
         <stop stopColor="#cefff0"/><stop offset=".5" stopColor="#35cfa4"/><stop offset="1" stopColor="#08745d"/>
       </linearGradient>
     </defs>
-    <g data-financial-flow="down" data-meg-surface="prism">
-      <path d={downArrow} transform="translate(0 8)" fill="#003f3e" opacity=".85"/>
-      <path d={downArrow} fill="url(#meg-prism-entry-face)"/>
-      <path d="M113 57v83" stroke="#f3fffa" strokeWidth="10" strokeLinecap="round" opacity=".6"/>
-      <path d="M80 155 128 208" fill="none" stroke="#eafff3" strokeWidth="7" strokeLinecap="round" opacity=".44"/>
+    <g data-financial-flow="up" data-meg-surface="prism">
+      <path d={downArrow} transform="translate(0 264) scale(1 -1)" fill="#003f3e" opacity=".85"/>
+      <path d={downArrow} transform="translate(0 256) scale(1 -1)" fill="url(#meg-prism-entry-face)"/>
+      <path d="M113 202v-82" stroke="#f3fffa" strokeWidth="10" strokeLinecap="round" opacity=".6"/>
+      <path d="M80 99 128 46" fill="none" stroke="#eafff3" strokeWidth="7" strokeLinecap="round" opacity=".44"/>
       <rect x="36" y="229" width="184" height="17" rx="8.5" fill="#003e3b" opacity=".88"/>
       <rect x="36" y="222" width="184" height="17" rx="8.5" fill="url(#meg-prism-entry-tray)"/>
     </g>
@@ -67,11 +67,11 @@ export const megPrismIcons:Record<string,ReactNode> = {
         <stop offset="1" stopColor="#97374b"/>
       </linearGradient>
     </defs>
-    <g data-financial-flow="up" data-meg-surface="prism">
-      <path d={downArrow} transform="translate(0 264) scale(1 -1)" fill="#4a1d37" opacity=".88"/>
-      <path d={downArrow} transform="translate(0 256) scale(1 -1)" fill="url(#meg-prism-exit-face)"/>
-      <path d="M113 201v-80" stroke="#fff2ed" strokeWidth="10" strokeLinecap="round" opacity=".6"/>
-      <path d="M80 101 128 48" fill="none" stroke="#fff1e8" strokeWidth="7" strokeLinecap="round" opacity=".42"/>
+    <g data-financial-flow="down" data-meg-surface="prism">
+      <path d={downArrow} transform="translate(0 8)" fill="#4a1d37" opacity=".88"/>
+      <path d={downArrow} fill="url(#meg-prism-exit-face)"/>
+      <path d="M113 57v83" stroke="#fff2ed" strokeWidth="10" strokeLinecap="round" opacity=".6"/>
+      <path d="M80 155 128 208" fill="none" stroke="#fff1e8" strokeWidth="7" strokeLinecap="round" opacity=".42"/>
       <rect x="36" y="229" width="184" height="17" rx="8.5" fill="#4b1b36" opacity=".86"/>
       <rect x="36" y="222" width="184" height="17" rx="8.5" fill="url(#meg-prism-exit-tray)"/>
     </g>

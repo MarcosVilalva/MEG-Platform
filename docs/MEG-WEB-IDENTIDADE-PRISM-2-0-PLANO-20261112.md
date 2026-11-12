@@ -2,7 +2,7 @@
 **Data:** 12/11/2026  
 **Pedido do usuário:** levar a qualidade do MEG Prism 3D ao sistema Web inteiro e abandonar a tipografia genérica e pequena.  
 **Etapa deste chat:** 08, Home + Lançamentos. Os demais módulos pertencem a suas etapas e não serão modificados antecipadamente.  
-**Status:** diretriz global solicitada e piloto tipográfico em QA isolada, não homologação visual global.
+**Status:** Sora + Plus Jakarta Sans e direção visual MEG Prism **aprovadas explicitamente pelo usuário em 12/11/2026**. Aplicação em outras telas depende de execução e testes próprios; não há homologação técnica global.
 
 ## I. Constatação técnica no código
 - `styles/tokens.css`: variável `--meg-font: Inter, ui-sans-serif, system-ui, ...`. Não se encontrou aqui uma definição local `@font-face`. O navegador pode cair em fonte do sistema.
@@ -17,7 +17,7 @@
 
 ### Ícones
 - SVG locais originais, sem font-icon e sem CDN, acabamento dimensional com volumes discretos, duas ou três camadas visuais, cantos arredondados e identidade cromática estável.
-- Entradas: seta para **baixo**, entrando; Saídas: para **cima**, saindo. Cor é apoio à leitura, não sua única fonte de significado.
+- Entradas: seta para **cima (↑)**, verde; Saídas: seta para **baixo (↓)**, coral. A correção expressa do usuário substitui o critério anterior da PR #679. Cor é apoio à leitura, não sua única fonte de significado.
 - Três pesos de leitura: **hero/KPI** 22–26px, **ações principais** 20–24px, **navegação e etiquetas** 18–22px, responsivos conforme espaço disponível. Valores de projeto, sujeitos à inspeção real da tela.
 - Tooltips, foco/teclado, nome acessível e alvo de toque 44×44px em mobile.
 - **Não converter categorias com ícones semânticos de modo automático.** Mapear significado real por categoria, benefício, conta e método, sem alterar classificação financeira.
@@ -36,7 +36,7 @@ Branch isolada `stage08/prism-typography-system-pilot-20261112` derivada da PR #
 - `stage08-qa/prism-type-pilot.css`: Sora + Plus Jakarta Sans em CSS escopado pelo atributo `data-meg-typography-pilot=true`, com escala inicial calibrada para Home e Lançamentos.
 - `stage08-qa/bootstrap.ts`: importa o tema **somente** com a flag.
 - `stage08-funcional-qa.html`: CSP permite somente Google Fonts CSS/font em QA, mantendo `connect-src 'self'` e o bloqueio de APIs reais.
-- `scripts/meg-stage08-prism-typography.browser.mjs`: testes em 390, 960 e 1366, fontes calculadas, quatro KPIs, fluxo down/up, sem rolagem horizontal global e sem requisições financeiras externas.
+- `scripts/meg-stage08-prism-typography.browser.mjs`: testes em 390, 960 e 1366, fontes calculadas, quatro KPIs, fluxo **up/down (Entradas ↑, Saídas ↓)**, sem rolagem horizontal global e sem requisições financeiras externas.
 - A visualização sem `?visual=prism` continua igual à PR #679. **Nenhum CSS base, Shell, Home, DataGrid ou API é alterado por este piloto.**
 
 ## IV. Rollout por domínio e gates
@@ -53,7 +53,7 @@ Branch isolada `stage08/prism-typography-system-pilot-20261112` derivada da PR #
 **Cada módulo tem checklist de identidade, acessibilidade e testes e só migra após aprovação explícita.** Usuário solicitou a evolução geral, não autorizou perder telas aprovadas.
 
 ## V. Critérios que proíbem declarar finalizado
-- Não houve ainda homologação visual do piloto por usuário.
+- **A tipografia do piloto foi visualmente aprovada** pelo usuário em 12/11/2026. Os ajustes posteriores da PR #684 e a aplicação em outros módulos ainda precisam de seus próprios testes e validação.
 - Nenhuma evidência autoriza migrar Shell, Home homologada, DataGrid inteiro e telas futuras silenciosamente.
 - Não modificar Android, banco, API, Supabase, escritores financeiros, produtos em produção ou serviços Render homologados.
 - Não realizar merge, deploy produtivo nem substituir o preview aprovado `760b7ad0e3217dbab70ea426df9cad67318f79ef`.

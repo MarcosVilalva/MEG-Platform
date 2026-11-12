@@ -103,3 +103,24 @@ html[data-meg-typography-pilot="true"] .meg-l09-modal-fields dd {
   html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat h2 {font-size:.75rem}
   html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat small {font-size:.7rem}
 }
+
+
+/* Acabamento dimensional de ícones e badges na QA Prism.
+ * A geometria das telas homologadas não é modificada sem revisão visual. */
+html[data-meg-prism-ui="true"] .meg-nav-item svg[data-meg-prism="micro-3d"],
+html[data-meg-prism-ui="true"] .pano-root svg[data-meg-prism="micro-3d"],
+html[data-meg-prism-ui="true"] .meg-topbar svg[data-meg-prism="micro-3d"]{
+  filter:drop-shadow(0 1px 2px rgba(0,16,24,.42));
+}
+html[data-meg-prism-ui="true"] .meg-l09-category-mark svg,
+html[data-meg-prism-ui="true"] .meg-l09-method-mark svg{
+  filter:drop-shadow(0 1px 2px rgba(0,13,20,.48));
+}
+html[data-meg-prism-ui="true"] .meg-l09-mini-card{
+  border-radius:.42rem;
+  background:linear-gradient(145deg,rgba(191,255,237,.36),rgba(12,111,119,.74) 48%,rgba(1,39,54,.98));
+  box-shadow:inset 0 1px rgba(241,255,249,.45),0 2px 5px rgba(0,9,22,.34);
+}
+html[data-meg-prism-ui="true"] .meg-l09-mini-chip{
+  box-shadow:inset 0 1px rgba(255,255,255,.45),0 1px 3px rgba(0,12,22,.35);
+}

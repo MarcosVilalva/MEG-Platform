@@ -5,6 +5,7 @@ on:
       - 'stage08/home-launches-closeout-20261112'
       - 'stage08/lancamentos-icons-refinement-20261112'
       - 'stage08/prism-typography-system-pilot-20261112'
+      - 'stage08/prism-ui-rollout-and-flow-fix-20261112'
   workflow_dispatch:
 permissions:
   contents: read
@@ -50,16 +51,17 @@ jobs:
             -o /tmp/meg-stage08-public-html
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-stage08-public-html
           node scripts/meg-stage08-static-qa.browser.mjs
-      - name: Validar revisão de ícones na URL pública independente PR679
+      - name: Verificar que a QA anterior da PR679 permanece independente
         env:
           MEG_STAGE08_QA_URL: https://meg-stage08-icones-pr679.onrender.com
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --max-time 35 \
-            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=c1133b6c246a1652d3f3e3712fe5c612f8689c88" \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?v=5d296e72922ea25d37aac9df57cac74a51b75374" \
             -o /tmp/stage08-icons-public-html
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/stage08-icons-public-html
-          node scripts/meg-stage08-lancamentos-icons.browser.mjs
+          # Não impor a nova direção visual à publicação histórica imutável.
+          node scripts/meg-stage08-static-qa.browser.mjs
       - name: Evidências visuais dos indicadores e botão de detalhes
         if: always()
         uses: actions/upload-artifact@v4
@@ -68,7 +70,7 @@ jobs:
           path: artifacts/meg-stage08-lancamentos-icons/
           if-no-files-found: warn
           retention-days: 14
-      - name: Verificar fontes reais e tipografia na URL pública do piloto Prism
+      - name: Preservar a QA tipográfica homologada da PR682 sem impor ícones novos
         env:
           MEG_STAGE08_QA_URL: https://meg-stage08-prism-tipografia-pilot.onrender.com
         run: |
@@ -77,7 +79,21 @@ jobs:
             "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?visual=prism&v=d2b45a72c6605467aa7f4377c8433282352b74fd" \
             -o /tmp/meg-prism-pilot-public
           grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-prism-pilot-public
+          # O run #43244463748 comprovou as fontes na publicação histórica.
+          # Novos ícones e novas direções pertencem apenas à QA da PR684.
+          node scripts/meg-stage08-static-qa.browser.mjs
+      - name: Validar ícones globais Prism e correção das setas na QA pública PR684
+        env:
+          MEG_STAGE08_QA_URL: https://meg-stage08-prism-rollout-pr684.onrender.com
+          MEG_STAGE08_QA_VERSION: d857fcffb2dd3e98a18c3d349f899b18e5b6f311
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 35 \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?visual=prism&v=d857fcffb2dd3e98a18c3d349f899b18e5b6f311" \
+            -o /tmp/meg-prism-rollout-public
+          grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-prism-rollout-public
           node scripts/meg-stage08-prism-typography.browser.mjs
+          node scripts/meg-stage08-lancamentos-icons.browser.mjs
       - name: Evidências da tipografia Prism em três larguras
         if: always()
         uses: actions/upload-artifact@v4

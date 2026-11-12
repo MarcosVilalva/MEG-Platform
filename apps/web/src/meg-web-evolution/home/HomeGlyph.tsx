@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import {PrismStrokeIcon} from '../components/PrismStrokeIcon';
 
 export type HomeIconName='wallet'|'eye'|'eyeOff'|'arrow'|'income'|'expense'|'receipt'|'card'|'clock'|'check'|'gift'|'transfer'|'plus'|'chart'|'settings'|'calendar'|'sparkle'|'shopping'|'layers'|'alert'|'reload'|'chevronLeft'|'chevronRight'|'chevronUp'|'chevronDown'|'trash'|'pencil'|'filter'|'activity'|'calendarClock'|'basket'|'medical'|'house'|'car'|'tag'|'x'|'siren'|'timer'|'checkCircle'|'list';
 const shapes:Record<HomeIconName,ReactNode>={
@@ -44,5 +45,10 @@ const shapes:Record<HomeIconName,ReactNode>={
  list:<><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></>
 };
 export function HomeGlyph({name,size=20,className=''}:{name:HomeIconName;size?:number;className?:string}){
+ const prism=typeof document!=='undefined'&&document.documentElement.dataset.megPrismUi==='true';
+ if(prism){
+  const tone=name==='income'?'income':name==='expense'?'expense':name==='wallet'||name==='card'?'gold':name==='alert'||name==='siren'?'expense':'aqua';
+  return <PrismStrokeIcon width={size} height={size} className={className} tone={tone} data-home-glyph={name}>{shapes[name]}</PrismStrokeIcon>;
+ }
  return <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={name==='siren'||name==='timer'||name==='checkCircle'?2:1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{shapes[name]}</svg>;
 }
