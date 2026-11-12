@@ -2157,3 +2157,11 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - Não modificar as regras canônicas do alerta da Home para esconder falha. Projetar e provar convivência de modais ou garantir sequência de abertura antes de considerar o seletor homologável.
 - **Não iniciado**: formulário de Despesa, Editar Lançamento, execução transacional real com PostgreSQL descartável, integração segura de writers e o preview remoto da Etapa 10. Não avançar para segunda tela antes de resolver a primeira e submeter a validação visual.
 - Preservados Android, API produtiva, banco de produção/restore, Render homologado, Home, Lançamentos, Shell e DataGrid. Proibidos merge e deploy de produção.
+
+## Etapa 10 — primeiro modal de escolha, gate browser verde (12/11/2026)
+
+- Em `stage10/novo-editar-lancamento-isolado-20261112` e PR [#678 Draft](https://github.com/MarcosVilalva/MEG-Platform/pull/678), modal escolha do tipo implementado em camada isolada, com quatro opções oficiais (Despesa, Receita, Transferência, Benefício), sem gravação e sem alterar Home/Shell.
+- Prévia técnica `meg-stage10-qa.html` só executa dados fictícios, ainda **sem publicação externa**; aviso da Home é fechado antes da abertura do modal para impedir dois diálogos ativos simultaneamente.
+- **Gate completo:** [Actions #43222823187](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43222823187) **SUCCESS** no código `b329df0132bb282eda645460b87884d18f7732bd`, incluindo 17 caracterizações financeiras, cinco autocomplete, cinco contratos do seletor, core, dados, build Web e Playwright em quatro resoluções.
+- Evidência screenshots: [artifact #13947205375](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43222823187/artifacts/13947205375). Não declarar homologação visual ou testes bancários transacionais.
+- **Pendente:** apresentar preview QA isolada com URL sem cache para aprovação humana; só depois avançar ao formulário Despesa. Testes reais de criação/edição/exclusão com PostgreSQL descartável e regra Alimentação permanecem necessários antes de conectar writers. Sem merge, produção, Android ou alterações da API.
