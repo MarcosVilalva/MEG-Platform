@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - 'stage08/unified-qa-stage05-08-10-20261112'
+  pull_request:
+    branches:
+      - 'stage08/prism-approved-baseline-20261112'
   workflow_dispatch:
 permissions:
   contents: read
