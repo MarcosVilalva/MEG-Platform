@@ -1,6 +1,7 @@
 import {useEffect,useId,useMemo,useRef,useState} from 'react';
 import './ExpenseForm.css';
 import {suggestionsFromCanonicalHistory,type HistorySnapshot} from './autocomplete-history';
+import {normalizeFinancialTextInput} from './text-entry-policy';
 
 /** Etapa 10: formulário visual de despesa, sem nenhuma operação financeira.
  * IDs e rótulos de catálogos sempre vêm da fonte autorizada do chamador.
@@ -35,7 +36,8 @@ function catalogName(items:readonly ExpenseCatalogOption[],id:string){return ite
 export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
  const [draft,setDraft]=useState<ExpenseDraft>(EMPTY_EXPENSE_DRAFT);
  const [summaryOpen,setSummaryOpen]=useState(true);
- const [accountKind,setAccountKind]=useState<'monetary'|'benefit'|'investment'>('monetary');
+ const [accountClassification,setAccountClassification]=useState<'general'|'investment'|'benefit'>('general');
+ const [accountKind,setAccountKind]=useState<'monetary'|'benefit'>('monetary');
  const dialogRef=useRef<HTMLElement>(null);
  const formId=useId();
  const categories=useMemo(()=>catalogs.categories.filter(x=>x.active),[catalogs.categories]);
@@ -57,9 +59,16 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
  const requiresDomainReview=isCredit||isBenefit||account?.kind==='investment';
  const canRequestSave=saveEnabled&&Boolean(onRequestSave)&&hasRequired&&amountValid&&!requiresDomainReview;
  function patch<K extends keyof ExpenseDraft>(key:K,value:ExpenseDraft[K]){setDraft(current=>({...current,[key]:value}));}
- function chooseAccountKind(kind:'monetary'|'benefit'|'investment'){
+ function chooseAccountClassification(classification:'general'|'investment'|'benefit'){
+  if(lockedBenefit)return;
+  setAccountClassification(classification);
+  setAccountKind(classification==='benefit'?'benefit':'monetary');
+  setDraft(current=>({...current,accountId:'',paymentMethodId:'',creditCardId:''}));
+ }
+ function chooseAccountKind(kind:'monetary'|'benefit'){
   if(lockedBenefit)return;
   setAccountKind(kind);
+  setAccountClassification(kind==='benefit'?'benefit':'general');
   setDraft(current=>({...current,accountId:'',paymentMethodId:'',creditCardId:''}));
  }
  function selectSuggestion(suggestion:(typeof suggestions)[number]){
@@ -67,20 +76,25 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
   const accountId=accounts.some(x=>x.id===suggestion.accountId)?suggestion.accountId??'':'';
   const paymentMethodId=methods.some(x=>x.id===suggestion.paymentMethodId)?suggestion.paymentMethodId??'':'';
   if(categoryId&&binding?.categoryIds.includes(categoryId)){
+   setAccountClassification('benefit');
    setAccountKind('benefit');
-   setDraft(current=>({...current,description:suggestion.description,categoryId,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
+   setDraft(current=>({...current,description:normalizeFinancialTextInput(suggestion.description),categoryId,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
   }else {
-   setAccountKind(accounts.find(x=>x.id===accountId)?.kind??'monetary');
-   setDraft(current=>({...current,description:suggestion.description,categoryId,accountId,paymentMethodId,creditCardId:''}));
+   const historicalKind=accounts.find(x=>x.id===accountId)?.kind;
+   setAccountClassification(historicalKind==='benefit'?'benefit':historicalKind==='investment'?'investment':'general');
+   setAccountKind(historicalKind==='benefit'?'benefit':'monetary');
+   setDraft(current=>({...current,description:normalizeFinancialTextInput(suggestion.description),categoryId,accountId,paymentMethodId,creditCardId:''}));
   }
   setSuggestionsOpen(false);
  }
  function chooseCategory(id:string){
   if(id&&binding?.categoryIds.includes(id)){
+   setAccountClassification('benefit');
    setAccountKind('benefit');
    // A prévia congela a seleção e exige vínculo resolvido pelo catálogo canônico.
    setDraft(current=>({...current,categoryId:id,accountId:binding.accountId,paymentMethodId:binding.paymentMethodId,requestedStatus:'paid',creditCardId:''}));
   }else if(lockedBenefit){
+   setAccountClassification('general');
    setAccountKind('monetary');
    setDraft(current=>({...current,categoryId:id,accountId:'',paymentMethodId:'',creditCardId:''}));
   }else setDraft(current=>({...current,categoryId:id}));
@@ -112,7 +126,7 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
    <div className="meg-t10-expense-grid">
     <div className="meg-t10-expense-panel">
      <label htmlFor={formId+'description'}>Descrição *</label>
-     <input id={formId+'description'} maxLength={160} value={draft.description} onChange={e=>{patch('description',e.target.value);setSuggestionsOpen(true);}} placeholder="Descreva a despesa" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'} autoFocus/>
+     <input id={formId+'description'} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(true);}} placeholder="Descreva a despesa" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'} autoFocus/>
      {suggestionsOpen&&suggestions.length>0&&<div id={formId+'suggestions'} className="meg-t10-expense-suggestions" role="listbox" aria-label="Descrições do histórico">{suggestions.map(s=><button type="button" role="option" aria-selected={false} key={s.sourceEventId} onClick={()=>selectSuggestion(s)}><strong>{s.description}</strong><small>{s.categoryName??'Categoria não disponível'} · {s.accountName??'Conta não disponível'}</small></button>)}</div>}
      <small className="meg-t10-expense-count">{draft.description.length}/160</small>
      <label htmlFor={formId+'category'}>Categoria *</label>
@@ -123,14 +137,17 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
      <div className="meg-t10-expense-chips" aria-label="Categorias disponíveis">
       {categories.slice(0,5).map(x=><button key={x.id} type="button" aria-pressed={draft.categoryId===x.id} onClick={()=>chooseCategory(x.id)}>{x.name}</button>)}
      </div>
-     <fieldset className="meg-t10-expense-account-kind"><legend>Tipo de conta</legend>
-      {([['monetary','Conta monetária'],['benefit','Conta benefício'],['investment','Investimentos']] as const).map(([kind,label])=><button type="button" key={kind} disabled={lockedBenefit} aria-pressed={accountKind===kind} onClick={()=>chooseAccountKind(kind)}>{label}</button>)}
-      <small>Filtro visual por tipo de conta. A classificação financeira permanece responsabilidade do domínio.</small>
+     <fieldset className="meg-t10-expense-account-kind"><legend>Classificação da conta *</legend>
+      {([['general','Contas gerais'],['investment','Investimentos'],['benefit','Benefício']] as const).map(([classification,label])=><button type="button" key={classification} disabled={lockedBenefit} aria-pressed={accountClassification===classification} onClick={()=>chooseAccountClassification(classification)}>{label}</button>)}
+      <small>A classificação organiza as contas visíveis e não cria atributo financeiro novo.</small>
+     </fieldset>
+     <fieldset className="meg-t10-expense-account-kind"><legend>Tipo de conta *</legend>
+      {([['monetary','Conta monetária'],['benefit','Conta benefício']] as const).map(([kind,label])=><button type="button" key={kind} disabled={lockedBenefit||accountClassification==='investment'} aria-pressed={accountKind===kind} onClick={()=>chooseAccountKind(kind)}>{label}</button>)}
      </fieldset>
      <label htmlFor={formId+'account'}>Conta *</label>
      <select id={formId+'account'} value={draft.accountId} disabled={lockedBenefit} onChange={e=>patch('accountId',e.target.value)}>
       <option value="">Selecione a conta</option>
-      {accounts.filter(x=>x.kind===accountKind).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
+      {accounts.filter(x=>accountKind==='benefit'?x.kind==='benefit':accountClassification==='investment'?x.kind==='investment':x.kind==='monetary').map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
      </select>
      <label htmlFor={formId+'method'}>Forma de pagamento *</label>
      <select id={formId+'method'} value={draft.paymentMethodId} disabled={lockedBenefit} onChange={e=>patch('paymentMethodId',e.target.value)}>
@@ -160,7 +177,7 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
       <small>Valores de parcelas, competência e vencimentos serão definidos exclusivamente pelo domínio de cartões. Nenhum valor é calculado neste formulário.</small>
      </fieldset>}
      <label htmlFor={formId+'notes'}>Observações (opcional)</label>
-     <textarea id={formId+'notes'} maxLength={1000} value={draft.notes} onChange={e=>patch('notes',e.target.value)} placeholder="Informações adicionais da despesa"/>
+     <textarea id={formId+'notes'} maxLength={1000} value={draft.notes} onChange={e=>patch('notes',normalizeFinancialTextInput(e.target.value))} placeholder="Informações adicionais da despesa"/>
      <small className="meg-t10-expense-count">{draft.notes.length}/1000</small>
     </div>
     <aside className="meg-t10-expense-panel meg-t10-expense-summary">
@@ -176,7 +193,7 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
        <div><dt>Status solicitado</dt><dd>{draft.requestedStatus==='paid'?'Paga':'Pendente'}</dd></div>
       </dl>
      </div>}
-     {categories.length>0&&<div className="meg-t10-expense-frequent"><h3>Categorias disponíveis</h3><div className="meg-t10-expense-chips">{categories.slice(0,6).map(x=><button key={x.id} type="button" aria-pressed={draft.categoryId===x.id} onClick={()=>patch('categoryId',x.id)}>{x.name}</button>)}</div></div>}
+     {categories.length>0&&<div className="meg-t10-expense-frequent"><h3>Categorias disponíveis</h3><div className="meg-t10-expense-chips">{categories.slice(0,6).map(x=><button key={x.id} type="button" aria-pressed={draft.categoryId===x.id} onClick={()=>chooseCategory(x.id)}>{x.name}</button>)}</div></div>}
     </aside>
    </div>
    <footer className="meg-t10-expense-footer">
