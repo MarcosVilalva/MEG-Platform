@@ -55,10 +55,10 @@ jobs:
           PREVIEW_PID=$!
           trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
           for n in $(seq 1 50); do
-            if curl --fail --silent http://127.0.0.1:4173/meg-stage10-qa.html >/dev/null; then break; fi
+            if curl --fail --silent http://127.0.0.1:4173/meg-stage10-expense-qa.html >/dev/null; then break; fi
             sleep 1
           done
-          if ! curl --fail --silent http://127.0.0.1:4173/meg-stage10-qa.html >/dev/null; then
+          if ! curl --fail --silent http://127.0.0.1:4173/meg-stage10-expense-qa.html >/dev/null; then
             cat /tmp/meg-stage10-preview.log
             exit 1
           fi
