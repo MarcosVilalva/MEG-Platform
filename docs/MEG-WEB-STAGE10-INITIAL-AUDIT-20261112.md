@@ -66,3 +66,12 @@
 - **Status:** `financial-policy.ts:103+` realiza receita e Fixo, mas crédito prevalece como `planned` mesmo em Fixo. UI não pode recalcular nem sobrescrever essas decisões.
 
 **Bloqueios restantes:** executar CI, testes transacionais em PostgreSQL isolado para criação/edição/cancelamento e saldo, caracterização de autocomplete e vínculo Alimentação, definição segura do caminho de edição monetária. Nenhum preview novo nem aprovação visual da Etapa 10.
+
+## Contrato de autocomplete read-only e PR (12/11/2026)
+
+- PR de isolamento **#678 Draft**, base `preview/09-lancamentos-home-p0-qa-20261111`, commit-base visual exato `760b7ad0e3217dbab70ea426df9cad67318f79ef`. **Não mesclar**.
+- Arquivo `apps/web/src/meg-web-evolution/stage10/autocomplete-history.ts`: adaptador de sugestões de descrição a partir do snapshot `financial-history-v1` completo. Só devolve descrição, categoria, conta e forma, incluindo IDs (sem valor, data, competência nem status). Distingue descrições iguais com vínculos diferentes; `limit-exceeded` não apresenta conteúdo enganoso.
+- Arquivo `scripts/meg-stage10-autocomplete-history.test.ts`: cinco casos de contrato de autocomplete, com dados fictícios. A suíte de política financeira anterior tem 17 casos, totalizando **22 casos escritos**. A execução dos testes e do build depende do gate, não pode ser presumida.
+- Workflow exclusivo `MEG Stage10 - Caracterizacao Financeira Isolada` foi reconhecido e entrou na fila do GitHub Actions: execução **#43215699989** no SHA `79005159d30842ae3d59df008d501b8247ef1619` (status inicialmente queued/in_progress).
+- Este adaptador ainda não foi integrado visualmente: exige confirmação dos catálogos ativos pelo formulário; a tela não pode usar identificação implícita do Verocard por nome em substituição aos vínculos obrigatórios.
+- Edição monetária, exclusão, saldo insuficiente comum e testes transacionais continuam **pendentes**. Sem alterações de API, banco, Android, telas homologadas ou deploy.
