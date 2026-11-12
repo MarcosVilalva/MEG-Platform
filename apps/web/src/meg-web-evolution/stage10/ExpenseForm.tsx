@@ -166,7 +166,7 @@ export function ExpenseForm({catalogs,historySnapshot,onBack,onRequestSave,saveE
     <aside className="meg-t10-expense-panel meg-t10-expense-summary">
      <button className="meg-t10-expense-summary-toggle" type="button" aria-expanded={summaryOpen} onClick={()=>setSummaryOpen(x=>!x)}>Resumo do lançamento <span aria-hidden="true">{summaryOpen?'⌃':'⌄'}</span></button>
      {summaryOpen&&<div><p>Confira os detalhes antes de salvar.</p>
-      <strong className="meg-t10-expense-amount">{draft.amountInput?'R$ '+draft.amountInput:'R$ 0,00'}</strong>
+      <strong className="meg-t10-expense-amount">{amountValid?new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(draft.amountInput.replace(',','.'))):'Valor não informado'}</strong>
       <dl>
        <div><dt>Tipo</dt><dd>Despesa</dd></div>
        <div><dt>Categoria</dt><dd>{catalogName(categories,draft.categoryId)}</dd></div>
