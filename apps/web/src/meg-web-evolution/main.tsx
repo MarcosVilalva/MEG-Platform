@@ -10,6 +10,7 @@ import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
 import { LoadingScreen } from './auth/LoadingScreen';
 import { HomeDashboard } from './home/HomeDashboard';
 import { OperationalLaunches } from './launches/OperationalLaunches';
+import './styles/meg-prism-typography.css';
 
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 

@@ -22,6 +22,8 @@ jobs:
           cache: npm
       - name: Instalar dependências imutáveis
         run: npm ci --audit=false
+      - name: Baixar fontes OFL verificadas para a QA
+        run: node scripts/meg-stage08-fetch-typefaces.mjs
       - name: Compilar QA isolada
         run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
       - name: Instalar Playwright de teste
