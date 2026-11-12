@@ -26,7 +26,7 @@ jobs:
       - name: Verify public Render entry and full synthetic navigation
         run: |
           set -euo pipefail
-          curl -fsS "$MEG_STAGE08_UNIFIED_QA_URL/meg-unificado-qa.html?visual=prism&v=2f71aae9661eddbaefe5fca00c88f809a3df264e" >/dev/null
+          curl -fsS "$MEG_STAGE08_UNIFIED_QA_URL/meg-unificado-qa.html?visual=prism&v=762555dc7c472ff520db14ce6fdf27a40ca29ec3" >/dev/null
           node scripts/meg-stage08-unified-qa.browser.mjs
       - name: Retain external screenshots
         if: always()
