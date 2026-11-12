@@ -2134,3 +2134,15 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - O bloqueio TypeScript do build está resolvido tecnicamente; aprovação visual por comparação/render humano **não foi executada**, portanto não presumir nova homologação. A versão visual já homologada permanece referência.
 - Persistem testes transacionais fictícios e bloqueios de writers de edição/exclusão, saldo comum e Alimentação. Nenhuma tela Etapa 10 finalizada, sem preview novo, merge ou deploy.
 - Próximo passo autorizado: caracterizar gravações em PostgreSQL descartável e construir modal de escolha do tipo conforme print oficial, sem alterar telas homologadas, preservando PR Draft.
+
+## Etapa 10 — primeiro modal isolado compilado, aguardando validação visual (12/11/2026)
+
+- Usuário autorizou prosseguir após desbloqueio do build, exclusivamente em Novo/Editar Lançamento.
+- **PR #678 Draft**, branch `stage10/novo-editar-lancamento-isolado-20261112`, base visual homologada `760b7ad0e3217dbab70ea426df9cad67318f79ef`.
+- Criado `apps/web/src/meg-web-evolution/stage10/LaunchTypeChooser.tsx` + CSS + `launch-type-options.ts`: modal de seleção do tipo com Despesa/Receita/Transferência/Benefício, conforme print oficial `Imagem do ChatGPT 3 de out. de 2026, 17_31_26.png`. Sem operações financeiras e sem reutilizar a UI histórica.
+- Criado `apps/web/meg-stage10-qa.html` e `stage10/preview.tsx`, com Home P0 homologada em fundo, usando somente fixture fictícia, nunca API de produção. Entrada adicional no Vite, aplicação principal inalterada.
+- **GATE CONFIRMADO:** GitHub Actions [#43218480259](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43218480259) **completed/success** no commit `d7d193194cc7a2e68a344b720d063b1acc34c969`; 17/17 testes financeiros, 5/5 autocomplete, 5/5 modal, core, dados e build Web.
+- **Sem validação visual humana**, sem captura de browser ou URL de preview publicada para Etapa 10. Não declarar a tela homologada. O print oficial continua soberano.
+- **Permanecem pendentes:** testes de caracterização transacionais (banco PostgreSQL descartável) de criação/edição/exclusão/saldo, vinculação automática de Alimentação (Conta Benefício + Verocard + Pago), autenticação e catálogo para autocomplete, editor de Despesa e Editar Lançamento. Rotas legadas de edição não foram promovidas a autoridade.
+- Android, API, Supabase produtivo, banco restaurado, Home, Lançamentos, Shell, DataGrid e serviço Web QA homologado anteriores não foram modificados. Merge e deploy produtivo permanecem proibidos.
+- **Próximo passo exato:** executar QA de geometria/visual nos viewports oficiais do primeiro modal, produzir preview isolada sem cache e pedir aprovação visual explícita; não avançar à segunda tela antes disso.
