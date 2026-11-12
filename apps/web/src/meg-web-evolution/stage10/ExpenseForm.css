@@ -158,13 +158,16 @@
 }
 
 
-/* Ajuste estrutural do resumo em notebooks baixos: evita corte do checklist. */
+/* Em desktops de altura reduzida, as informações do resumo ocupam duas
+   colunas reais. Mantém rótulos e valores completos, sem cortes ou rolagem. */
 @media (min-width:1025px) and (max-height:820px){
-.meg-t10-expense-summary{gap:3px;padding:8px 9px}
-.meg-t10-expense-summary>p{margin:0;font-size:.68rem}
-.meg-t10-expense-summary h3{font-size:.94rem;margin:0}
-.meg-t10-expense-summary dl>div{padding:3px 1px;font-size:.68rem;line-height:1.1}
-.meg-t10-expense-total{margin:2px 0;font-size:clamp(1.18rem,1.85vw,1.6rem);line-height:1.1}
-.meg-t10-expense-checklist{padding:5px 7px;gap:2px}
-.meg-t10-expense-summary-footer{padding:5px 7px;margin-top:1px}
+.meg-t10-expense-summary{gap:5px;padding:10px}
+.meg-t10-expense-summary>p{margin:0;font-size:.7rem}
+.meg-t10-expense-summary h3{font-size:.96rem;margin:0}
+.meg-t10-expense-summary dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:start}
+.meg-t10-expense-summary dl>div{display:flex;flex-direction:column;gap:3px;min-width:0;padding:6px 8px;font-size:.7rem;line-height:1.2;border:1px solid #136a72;border-radius:9px;background:#042d3570}
+.meg-t10-expense-summary dl>div dt,.meg-t10-expense-summary dl>div dd{min-width:0;overflow-wrap:anywhere}
+.meg-t10-expense-total{margin:3px 0;font-size:clamp(1.2rem,1.85vw,1.65rem);line-height:1.15}
+.meg-t10-expense-checklist{padding:7px 9px;gap:4px}
+.meg-t10-expense-summary-footer{padding:6px 8px;margin-top:auto}
 }
