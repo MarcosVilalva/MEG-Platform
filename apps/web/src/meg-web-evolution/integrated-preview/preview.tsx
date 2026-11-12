@@ -12,6 +12,7 @@ import {HomeDashboard} from '../home/HomeDashboard';
 import {homePreviewFixture} from '../home/preview.fixture';
 import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {LaunchTypePicker} from '../launches/LaunchTypePicker';
+import {LaunchEditorStage10} from '../launches/stage10/LaunchEditorStage10';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
 import '../launches/new-launch.css';
 
@@ -27,7 +28,7 @@ import './choice-refinement.css';
  * - Escolha de Novo Lançamento preservada, sem formulário financeiro.
  * Nunca envia credenciais, grava transacoes ou substitui o gateway real.
  */
-type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home-legacy' | 'home-p0' | 'launches' | 'launches-legacy' | 'new-launch';
+type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home-legacy' | 'home-p0' | 'launches' | 'launches-legacy' | 'new-launch' | 'new-launch-form' | 'edit-launch';
 const urlScreen = new URLSearchParams(window.location.search).get('tela');
 const initialScreen: Screen =
   urlScreen === 'login' ? 'login' :
@@ -36,6 +37,8 @@ const initialScreen: Screen =
   urlScreen === 'lancamentos' ? 'launches' :
   urlScreen === 'lancamentos-legado' ? 'launches-legacy' :
   urlScreen === 'novo' ? 'new-launch' :
+  urlScreen === 'novo-despesa' ? 'new-launch-form' :
+  urlScreen === 'editar-lancamento' ? 'edit-launch' :
   urlScreen === 'cadastro' ? 'register' :
   urlScreen === 'recuperar-senha' ? 'recover' :
   urlScreen === 'carregamento-inicial' ? 'loading-initial' : 'loading-entry';
@@ -44,11 +47,13 @@ function FlowPreview() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   // Home P0 da PR #669 e seu fixture original são o destino autorizado.
   // A Home legada só existe para regressões históricas internas.
-  const [returnScreen,setReturnScreen] = useState<'home-p0'|'home-legacy'|'launches'|'launches-legacy'>('home-p0');
-  const operationalLaunches=screen==='launches'||(screen==='new-launch'&&returnScreen==='launches');
-  const legacyLaunches=screen==='launches-legacy'||(screen==='new-launch'&&returnScreen==='launches-legacy');
+  const [returnScreen,setReturnScreen] = useState<'home-p0'|'home-legacy'|'launches'|'launches-legacy'>(initialScreen==='edit-launch'||initialScreen==='new-launch-form'?'launches':'home-p0');
+  const [launchKind,setLaunchKind] = useState<'expense'|'income'>('expense');
+  const overlayScreen=screen==='new-launch'||screen==='new-launch-form'||screen==='edit-launch';
+  const operationalLaunches=screen==='launches'||(overlayScreen&&returnScreen==='launches');
+  const legacyLaunches=screen==='launches-legacy'||(overlayScreen&&returnScreen==='launches-legacy');
   const launchesVisible=operationalLaunches||legacyLaunches;
-  const activeHome = screen === 'home-legacy' || (screen === 'new-launch' && returnScreen === 'home-legacy')
+  const activeHome = screen === 'home-legacy' || (overlayScreen && returnScreen === 'home-legacy')
     ? 'home-legacy' : 'home-p0';
   const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState('');
@@ -160,12 +165,18 @@ function FlowPreview() {
           <button className="meg-new-launch__close" aria-label="Fechar novo lançamento" type="button" onClick={closeNew}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 5 19 19M19 5 5 19"/></svg></button>
         </header>
         <LaunchTypePicker
-          onChoose={type => setNotice(type === 'expense'
-            ? 'Despesa escolhida. O formulário protegido da PR #648 não é executado nesta prévia sem API.'
-            : 'Receita escolhida. O formulário protegido da PR #648 não é executado nesta prévia sem API.')}
+          onChoose={type => {setLaunchKind(type);setNotice('');setScreen('new-launch-form');}}
           onBack={closeNew}/>
       </section>
     </div>}
+    {(screen==='new-launch-form'||screen==='edit-launch')&&
+      <LaunchEditorStage10 key={screen+'-'+launchKind}
+        kind={screen==='edit-launch'?'expense':launchKind}
+        mode={screen==='edit-launch'?'edit':'create'}
+        onBack={()=>setScreen(screen==='edit-launch'?'launches':'new-launch')}
+        onClose={closeNew}
+        onInspectEdit={screen==='new-launch-form'?()=>{setReturnScreen('launches');setScreen('edit-launch');}:undefined}
+      />}
     {notice && <output className="meg-integrated-preview__notice" role="status">{notice}
       <button type="button" aria-label="Fechar aviso" onClick={() => setNotice('')}>×</button>
     </output>}
