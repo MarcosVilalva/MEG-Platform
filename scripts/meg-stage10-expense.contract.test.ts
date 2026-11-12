@@ -37,3 +37,21 @@ test('modal tem título, campos principais, Escape e breakpoints oficiais',()=>{
  assert.match(css,/@media\(max-width:639px\)/);
  assert.match(html,/expense-preview\.tsx/);
 });
+
+test('Classificação da conta e Tipo de conta são controles distintos, somente visuais',()=>{
+ for(const label of ['Classificação da conta','Contas gerais','Investimentos','Benefício','Tipo de conta','Conta monetária','Conta benefício']){
+  assert.ok(code.includes(label),label);
+ }
+ assert.match(code,/setAccountClassification/);
+ assert.match(code,/setAccountKind/);
+ assert.doesNotMatch(code,/classificationId:/);
+});
+test('Texto financeiro livre usa normalização em maiúsculas; IDs e montantes não',async()=>{
+ const {normalizeFinancialTextInput}=await import('../apps/web/src/meg-web-evolution/stage10/text-entry-policy');
+ assert.equal(normalizeFinancialTextInput('pão de açúcar, almoço çá'),'PÃO DE AÇÚCAR, ALMOÇO ÇÁ');
+ assert.match(code,/patch\('description',normalizeFinancialTextInput\(e.target.value\)\)/);
+ assert.match(code,/patch\('notes',normalizeFinancialTextInput\(e.target.value\)\)/);
+ assert.match(code,/description:normalizeFinancialTextInput\(suggestion.description\)/);
+ assert.doesNotMatch(code,/patch\('amountInput',normalizeFinancialTextInput/);
+ assert.doesNotMatch(code,/patch\('date',normalizeFinancialTextInput/);
+});
