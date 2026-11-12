@@ -22,6 +22,8 @@ try{
    await page.locator('[data-meg-unified-screen="home"]').waitFor({state:'visible',timeout:12000});
    assert.ok(await page.locator('.pano-root').count()>0,'Home oficial indisponível');
    await page.screenshot({path:resolve(output,'home-'+width+'.png'),fullPage:false});
+   const dueDialog=page.locator('.meg-due-alert-dialog');
+   if(await dueDialog.isVisible())await dueDialog.getByRole('button',{name:'Entendi'}).click();
    if(width<640)await page.getByRole('button',{name:'Abrir menu'}).click();
    await page.getByRole('button',{name:'Lançamentos',exact:true}).first().click();
    await page.locator('[data-meg-unified-screen="launches"]').waitFor({state:'visible'});
