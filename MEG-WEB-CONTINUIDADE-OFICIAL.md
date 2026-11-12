@@ -2359,3 +2359,22 @@ https://meg-stage08-prism-rollout-pr684.onrender.com/stage08-funcional-qa.html?v
 **Preservação:** PRs #677, #679, #682 e #684 continuam Draft, sem merge; sites estáticos antigos e serviço produtivo inalterados. Nenhuma modificação na API financeira, Android, Supabase, banco, escritores financeiros ou dados reais. Fontes ainda são remotas APENAS nesta QA; auto-hospedagem, testes de zoom 200% e aplicação por telas estão pendentes para a liberação futura.
 
 **Próximo passo exato:** usuário inspecionar nova QA pública sem cache, conferir quatro KPIs, setas ↑/↓, ícones de Shell/Home, legibilidade e DataGrid; registrar aceite visual explícito da PR #684. Após aceite, orientar implementação dos módulos restantes por suas etapas, sem merge/deploy produtivo automático.
+
+## 12/11/2026 — Etapa 08 | Triângulo de alerta Prism para vencidos, PR #685
+
+**Origem e aceite exatos:** após inspecionar a prévia da PR #684, o usuário aprovou expressamente a **proposta** de substituir o símbolo vermelho de exclamação circular, pouco legível, por **triângulo vermelho/coral arredondado com exclamação maior**, mantendo o estilo dimensional Prism e preservando os estados amarelo/verde. Autorizou implementação; **não homologou ainda a nova execução visual**.
+
+**Branch isolada e PR:** `stage08/overdue-prism-warning-20261112`, PR [#685](https://github.com/MarcosVilalva/MEG-Platform/pull/685) Draft, base `stage08/prism-ui-rollout-and-flow-fix-20261112` (PR #684). Nenhum merge e nenhuma mudança nas demais branches/serviços.
+
+**Código:** novo `apps/web/src/meg-web-evolution/home/HomeOverdueWarningIcon.tsx`, SVG Prism de 32 unidades, triângulo arredondado em gradiente coral/vermelho, contraste elevado no ponto de exclamação, reflexo discreto e ID de gradiente exclusivo via React `useId`. Apenas `home/HomeDueAlerts.tsx` foi editado para usar o novo símbolo **quando `dueState='overdue'`**, nos itens do modal e do painel do sino. O emblema do modal usa o triângulo se houver vencidos; sem vencidos usa o relógio amarelo já existente. Ícones verdes e o relógio de `due_today` não foram modificados. Sem alteração de CSS global, layout, DataGrid, classes financeiras, valor, status, datas, seleção, horários ou remissão de alertas.
+
+**Teste novo:** `scripts/meg-stage08-overdue-prism.browser.mjs`, rodando Chrome em 390, 960 e 1366 px, valida triângulo em todos os vencidos (modal e sino), presença de gradiente e exclamação legível, IDs SVG únicos, preservação do relógio amarelo, etiquetas de status, zero overflow horizontal, zero erros JS e zero requisições financeiras reais. Workflows ampliados sem relaxar hashes dos componentes homologados.
+
+**QA isolada Render:** serviço `meg-stage08-alerta-prism-pr685`, ID `srv-dbr00b56e07s738n62n0`, [painel](https://dashboard.render.com/static/srv-dbr00b56e07s738n62n0), Auto Deploy OFF, branch exclusiva, nenhum segredo ou API real. Deploy `dep-dbr00bd6e07s738n63a0` **LIVE** no commit de código `0151bb45e5e805821cfafe3f53ed893a4008aa84`. Link sem cache para validação visual:
+https://meg-stage08-alerta-prism-pr685.onrender.com/stage08-funcional-qa.html?visual=prism&v=0151bb45e5e805821cfafe3f53ed893a4008aa84
+
+**Gates comprovados/pêndencias de verificação:** QA sintética local [#43276059943](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43276059943) **COMPLETED/SUCCESS** no mesmo SHA do deploy. CI integral [#43276059885](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43276059885) e execução de QA pública [#43276519337](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43276519337) ainda precisam de confirmação final antes de serem declaradas verdes. O commit posterior `6712c153049b347aa78ee49c7de20ded0007d1a4` altera somente o workflow de teste público, não o bundle do Render.
+
+**Status:** proposta visual do símbolo autorizada; código e QA local aprovados, deploy QA LIVE; **inspeção visual humana do triângulo ainda pendente**, bem como gates técnicos que ainda estiverem em andamento. Nenhum merge, alteração do Android, API, Supabase, produção, escritores financeiros, banco ou das prévias homologadas. O Render tinha 24 serviços antes da criação desta QA; novo serviço ocupou a vaga restante, não excluir ou substituir serviços sem decisão específica.
+
+**Próximo passo exato:** confirmar smoke externo e CI integral; usuário abrir link sem cache e aprovar/reprovar o novo triângulo, mantendo vermelho de vencidos e amarelo de hoje. Somente após autorização específica considerar incorporação na base #684, nunca em produção automaticamente.
