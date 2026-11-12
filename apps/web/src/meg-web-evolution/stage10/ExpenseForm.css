@@ -147,14 +147,13 @@
 /* Etapa 10: espaço útil contextual, sem duplicar regras de negócio. */
 .meg-t10-expense-suggestions-title{display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:.7rem;color:#85ffeb}
 .meg-t10-expense-suggestions-title svg{width:14px;height:14px}
-.meg-t10-expense-payment-context,.meg-t10-expense-checklist{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #107b83;border-radius:11px;background:linear-gradient(135deg,#06454b77,#002c3577)}
-.meg-t10-expense-payment-context strong,.meg-t10-expense-checklist strong{display:flex;align-items:center;gap:6px;color:#9bfff2;font-weight:800;font-size:.72rem}
-.meg-t10-expense-payment-context strong svg,.meg-t10-expense-checklist strong svg{width:15px;height:15px}
-.meg-t10-expense-payment-context p,.meg-t10-expense-checklist p{margin:0;color:#bddee0;font-size:.67rem;line-height:1.35}
-.meg-t10-expense-checklist p.is-complete{color:#79e7b3}
+.meg-t10-expense-payment-context{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #107b83;border-radius:11px;background:linear-gradient(135deg,#06454b77,#002c3577)}
+.meg-t10-expense-payment-context strong{display:flex;align-items:center;gap:6px;color:#9bfff2;font-weight:800;font-size:.72rem}
+.meg-t10-expense-payment-context strong svg{width:15px;height:15px}
+.meg-t10-expense-payment-context p{margin:0;color:#bddee0;font-size:.67rem;line-height:1.35}
 @media(max-height:760px) and (min-width:1025px){
-.meg-t10-expense-payment-context,.meg-t10-expense-checklist{padding:5px 7px;gap:2px}
-.meg-t10-expense-payment-context p,.meg-t10-expense-checklist p{font-size:.62rem;line-height:1.2}
+.meg-t10-expense-payment-context{padding:5px 7px;gap:2px}
+.meg-t10-expense-payment-context p{font-size:.62rem;line-height:1.2}
 }
 
 
@@ -168,6 +167,9 @@
 .meg-t10-expense-summary dl>div{display:flex;flex-direction:column;gap:3px;min-width:0;padding:6px 8px;font-size:.7rem;line-height:1.2;border:1px solid #136a72;border-radius:9px;background:#042d3570}
 .meg-t10-expense-summary dl>div dt,.meg-t10-expense-summary dl>div dd{min-width:0;overflow-wrap:anywhere}
 .meg-t10-expense-total{margin:3px 0;font-size:clamp(1.2rem,1.85vw,1.65rem);line-height:1.15}
-.meg-t10-expense-checklist{padding:7px 9px;gap:4px}
 .meg-t10-expense-summary-footer{padding:6px 8px;margin-top:auto}
 }
+
+/* Conferência funcional integrada ao subtítulo do resumo, sem painel de altura extra. */
+.meg-t10-expense-summary>.meg-t10-expense-checkline{margin:0;line-height:1.2;overflow-wrap:anywhere;color:#c7e8e3}
+.meg-t10-expense-checkline strong{color:#8fffee;font-weight:800}
