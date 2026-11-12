@@ -1,4 +1,5 @@
 import type { ReactNode, SVGProps } from 'react';
+import {PrismStrokeIcon} from './PrismStrokeIcon';
 
 type IconName =
   | 'home' | 'list' | 'card' | 'clock' | 'gift' | 'chart' | 'settings'
@@ -28,6 +29,12 @@ const paths: Record<IconName, ReactNode> = {
 };
 
 export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGElement>) {
+  // Laboratório de identidade, isolado na QA Prism até homologação por etapa.
+  const prism=typeof document!=='undefined'&&document.documentElement.dataset.megPrismUi==='true';
+  if(prism){
+    const tone=name==='card'?'gold':name==='logOut'?'expense':'aqua';
+    return <PrismStrokeIcon tone={tone} {...props} data-icon-name={name}>{paths[name]}</PrismStrokeIcon>;
+  }
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
       {paths[name]}
