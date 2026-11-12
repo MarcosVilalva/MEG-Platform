@@ -61,5 +61,24 @@ try{
   reports.push({width,height,...state,mutations:mutationAttempts.length});
   await page.close();
  }
+ // Cenário crítico: modal de Novo aberto ao mesmo tempo em que a Home tenta apresentar seu alerta de entrada.
+ // Não mascarar esse conflito com sessionStorage; o modal superior deve reter o foco.
+ const competing=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+ await competing.route('**/*',route=>{
+  const url=route.request().url();
+  if(url.startsWith(base)||url.startsWith('data:'))return route.continue();
+  return route.abort();
+ });
+ await competing.goto(base+'/meg-stage10-qa.html',{waitUntil:'domcontentloaded'});
+ await competing.locator('[data-stage10-chooser]').waitFor();
+ await competing.waitForTimeout(300);
+ const competition=await competing.evaluate(()=>({
+  focus:document.activeElement?.getAttribute('aria-label'),
+  modal:document.querySelector('[data-stage10-chooser]')!==null,
+ }));
+ assert.equal(competition.modal,true,'Modal deve coexistir com alerta canônico da Home');
+ assert.equal(competition.focus,'Fechar','Modal superior deve manter foco mesmo com alerta ativo na Home');
+ reports.push({scenario:'home-alert-focus-competition',...competition});
+ await competing.close();
  writeFileSync(`${dir}/report.json`,JSON.stringify(reports,null,2));
 }finally{await browser.close();}
