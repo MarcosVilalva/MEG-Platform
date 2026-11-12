@@ -99,3 +99,14 @@ test('Layout sem footer fixo, com navegação alternativa mobile, ícones e moda
  assert.match(css,/@media\(max-width:639px\)/);
  assert.match(code,/aria-modal="true"/);
 });
+
+test('Contexto por modalidade e conferência visual não criam regras financeiras',()=>{
+ assert.match(code,/meg-t10-expense-payment-context/);
+ assert.match(code,/meg-t10-expense-checklist/);
+ assert.match(code,/missingRequired/);
+ assert.match(code,/missingRequired\.join/);
+ assert.match(code,/Saldo não consultado nesta prévia/);
+ assert.match(code,/Fechamento e vencimento conforme cadastro do cartão/);
+ assert.match(code,/suggestions\.slice\(0,3\)/);
+ assert.doesNotMatch(code,/calculateInvoice|calculateBalance|createCardPurchaseProtected\(/);
+});
