@@ -11,6 +11,7 @@ import { LoadingScreen } from './auth/LoadingScreen';
 import { HomeDashboard } from './home/HomeDashboard';
 import { OperationalLaunches } from './launches/OperationalLaunches';
 import './styles/meg-prism-typography.css';
+import './styles/meg-prism-icons.css';
 
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
