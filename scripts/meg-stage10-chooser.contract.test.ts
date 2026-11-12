@@ -18,7 +18,7 @@ test('modal escolhe tipo sem executar mutação de dados',()=>{
  assert.doesNotMatch(modal,/fetch\(|authenticatedRequest|createFinancialEventProtected|createCardPurchaseProtected|createBenefitEventProtected|\.post\(|\.patch\(|\.delete\(/);
 });
 test('semântica modal, foco, Escape e retorno ao elemento anterior',()=>{
- for(const marker of ['role="dialog"','aria-modal="true"','aria-labelledby','aria-describedby','event.key===\'Escape\'','event.key===\'Tab\'','previous?.focus()'])assert.ok(modal.includes(marker),marker);
+ for(const marker of ['role="dialog"','aria-modal="true"','aria-labelledby','aria-describedby','event.key===\'Escape\'','event.key!==\'Tab\'','previous?.focus()'])assert.ok(modal.includes(marker),marker);
 });
 test('preview separado reutiliza Home e Shell aprovados sem writers ou rotas de produção',()=>{
  assert.match(qa,/import \{AppShell\}/);
