@@ -168,7 +168,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      </select>
      <div className="meg-t10-expense-frequent" aria-label="Categorias usadas com maior frequência">
       {frequent.map(c=><button key={c.id} type="button" className="meg-t10-expense-category" aria-pressed={draft.categoryId===c.id} onClick={()=>chooseCategory(c.id)}><CategoryGlyph name={c.name}/><span>{c.name}</span></button>)}
-      {categories.length>5&&<button type="button" className="meg-t10-expense-category" onClick={()=>setCategoryPicker(true)}><Icon name="menu"/><span>Mais categorias</span></button>}
+      {categories.length>5&&<button type="button" className="meg-t10-expense-category" aria-label="Mais categorias" onClick={()=>setCategoryPicker(true)}><Icon name="menu"/><span>Mais</span></button>}
      </div>
      <fieldset className="meg-t10-expense-choice"><legend>Classificação da conta *</legend>
       {([['general','Contas gerais','home'],['investment','Investimentos','chart'],['benefit','Benefício','gift']] as const).map(([value,label,icon])=><button key={value} type="button" aria-pressed={classification===value} disabled={lockedBenefit} onClick={()=>chooseClassification(value)}><Icon name={icon}/>{label}</button>)}
