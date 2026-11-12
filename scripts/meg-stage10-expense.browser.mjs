@@ -34,6 +34,11 @@ try{
   assert.ok(overflow.modal?.x>=-1&&overflow.modal.x+overflow.modal.width<=width+1,'Modal dentro da largura do viewport');
   assert.equal(await page.getByRole('button',{name:/Salvar lançamento/}).isDisabled(),true,'Salvar fica desabilitado');
   await page.getByLabel('Descrição *').fill('Mercado fictício para teste');
+  assert.equal(await page.getByLabel('Descrição *').inputValue(),'MERCADO FICTÍCIO PARA TESTE','Entrada em caixa alta');
+  await page.getByLabel('Observações (opcional)').fill('pão e maçã');
+  assert.equal(await page.getByLabel('Observações (opcional)').inputValue(),'PÃO E MAÇÃ','Acentos preservados na caixa alta');
+  assert.equal(await page.getByRole('group',{name:'Classificação da conta *'}).count(),1,'Classificação própria, distinta do tipo');
+  assert.equal(await page.getByRole('group',{name:'Tipo de conta *'}).count(),1,'Tipo próprio, distinto da classificação');
   await page.getByLabel('Categoria *').selectOption('qa-category-food');
   assert.equal(await page.getByLabel('Conta *').inputValue(),'qa-account-benefit','Conta Benefício automática');
   assert.equal(await page.getByLabel('Forma de pagamento *').inputValue(),'qa-method-benefit','Verocard automático');
