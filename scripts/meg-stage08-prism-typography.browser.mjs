@@ -22,6 +22,9 @@ try{
    await page.goto(origin+'/stage08-funcional-qa.html?visual=prism',{waitUntil:'domcontentloaded'});
    await page.locator('.pano-root').waitFor({timeout:30000});
    assert.equal(await page.locator('html').getAttribute('data-meg-typography-pilot'),'true');
+   assert.equal(await page.locator('html').getAttribute('data-meg-prism-ui'),'true');
+   assert.ok(await page.locator('.meg-nav-item [data-meg-prism="micro-3d"]').count()>=5,'Shell não utiliza os ícones Prism');
+   assert.ok(await page.locator('.pano-root [data-meg-prism="micro-3d"]').count()>=7,'Home não utiliza os ícones Prism');
    let font=await page.locator('.pano-root').evaluate(el=>getComputedStyle(el).fontFamily);
    assert.match(font,/Plus Jakarta Sans/);
    let heading=await page.locator('.pano-root h1').first().evaluate(el=>getComputedStyle(el).fontFamily);
@@ -50,7 +53,8 @@ try{
    const stats=launches.locator('.meg-l09-stat');
    assert.equal(await stats.count(),4);
    const flow=await stats.evaluateAll(items=>items.map(item=>item.querySelector('[data-financial-flow]')?.getAttribute('data-financial-flow')||null));
-   assert.deepEqual(flow,[null,'down','up',null]);
+   assert.deepEqual(flow,[null,'up','down',null]);
+   assert.ok(await launches.locator('[data-launch-pack="meg-prism-enhanced"]').count()>0,'Categorias e controles de Lançamentos não receberam o acabamento Prism');
    const titleFont=await launches.locator('.meg-l09-hero h1').evaluate(el=>getComputedStyle(el).fontFamily);
    assert.match(titleFont,/Sora/);
    const kpiFont=await stats.first().locator('strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
