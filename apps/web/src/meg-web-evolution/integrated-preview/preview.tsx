@@ -10,6 +10,7 @@ import {AppShell} from '../shell/AppShell';
 import {Icon} from '../components/Icon';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homePreviewFixture} from '../home/preview.fixture';
+import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {LaunchTypePicker} from '../launches/LaunchTypePicker';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
 import '../launches/new-launch.css';
@@ -24,11 +25,12 @@ import './choice-refinement.css';
  * - Escolha do Novo Lancamento da PR #648, com os arquivos e WebPs originais.
  * Nunca envia credenciais, grava transacoes ou substitui o gateway real.
  */
-type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home' | 'launches' | 'new-launch';
+type Screen = 'loading-entry' | 'login' | 'register' | 'recover' | 'loading-initial' | 'home-legacy' | 'home-p0' | 'launches' | 'new-launch';
 const urlScreen = new URLSearchParams(window.location.search).get('tela');
 const initialScreen: Screen =
   urlScreen === 'login' ? 'login' :
-  urlScreen === 'home' ? 'home' :
+  urlScreen === 'home' || urlScreen === 'home-p0' ? 'home-p0' :
+  urlScreen === 'home-legado' ? 'home-legacy' :
   urlScreen === 'lancamentos' ? 'launches' :
   urlScreen === 'novo' ? 'new-launch' :
   urlScreen === 'cadastro' ? 'register' :
@@ -37,7 +39,11 @@ const initialScreen: Screen =
 
 function FlowPreview() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
-  const [returnScreen,setReturnScreen] = useState<'home'|'launches'>('home');
+  // Home P0 da PR #669 e seu fixture original são o destino autorizado.
+  // A Home legada só existe para regressões históricas internas.
+  const [returnScreen,setReturnScreen] = useState<'home-p0'|'home-legacy'|'launches'>('home-p0');
+  const activeHome = screen === 'home-legacy' || (screen === 'new-launch' && returnScreen === 'home-legacy')
+    ? 'home-legacy' : 'home-p0';
   const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState('');
   const isLoading = screen === 'loading-entry' || screen === 'loading-initial';
@@ -53,7 +59,7 @@ function FlowPreview() {
       if (percentage === 100) {
         window.clearInterval(interval);
         nextScreenTimer = window.setTimeout(() => {
-          setScreen(screen === 'loading-entry' ? 'login' : 'home');
+          setScreen(screen === 'loading-entry' ? 'login' : 'home-p0');
         }, 450);
       }
     }, 45);
@@ -69,14 +75,14 @@ function FlowPreview() {
     const button = element.closest('button');
     if (!button) return;
     if (button.getAttribute('aria-label') === 'Lançamentos') {
-      event.stopPropagation();setNotice('');setScreen('launches');
+      event.stopPropagation(); setNotice(''); setScreen('launches');
     }
     if (button.getAttribute('aria-label') === 'Início') {
-      event.stopPropagation();setNotice('');setScreen('home');
+      event.stopPropagation(); setNotice(''); setScreen('home-p0');
     }
     if (button.getAttribute('aria-label') === 'Novo lançamento') {
-      event.stopPropagation();setNotice('');
-      setReturnScreen(screen==='launches'?'launches':'home');
+      event.stopPropagation(); setNotice('');
+      setReturnScreen(screen === 'launches' ? 'launches' : activeHome);
       setScreen('new-launch');
     }
     if (button.classList.contains('meg-logout-button')) {
@@ -85,8 +91,8 @@ function FlowPreview() {
     }
   };
 
-  const goHome = () => {setNotice('');setScreen('home');};
-  const closeNew = () => {setNotice('');setScreen(returnScreen);};
+  const goHome = () => { setNotice(''); setScreen('home-p0'); };
+  const closeNew = () => { setNotice(''); setScreen(returnScreen); };
 
   if (isLoading) {
     return <div className="meg-integrated-preview" data-preview-view={screen}>
@@ -116,18 +122,20 @@ function FlowPreview() {
 
   return <div className="meg-integrated-preview" data-preview-view={screen}
     onClickCapture={handleShellCapture}>
-    <AppShell>
-      {screen==='launches'||(screen==='new-launch'&&returnScreen==='launches')
+    <AppShell periodLabel={activeHome === 'home-p0' ? 'Novembro de 2026' : undefined}>
+      {screen === 'launches' || (screen === 'new-launch' && returnScreen === 'launches')
         ? <LaunchesStage09 data={homePreviewFixture}
-            onNew={() => {setNotice('');setReturnScreen('launches');setScreen('new-launch');}}
+            onNew={() => { setNotice(''); setReturnScreen('launches'); setScreen('new-launch'); }}
             onHome={goHome}/>
-        : <HomeDashboard previewData={homePreviewFixture} month="2026-10"
-          onNavigate={target => {
-            if(target==='novo'){setNotice('');setReturnScreen('home');setScreen('new-launch');}
-            else if(target==='lancamentos'){setNotice('');setScreen('launches');}
-            else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
-          }}/>}
-
+        : <HomeDashboard previewData={activeHome === 'home-p0' ? homeP0QaPreviewFixture : homePreviewFixture}
+            month={activeHome === 'home-p0' ? '2026-11' : '2026-10'}
+            onNavigate={target => {
+              if (target === 'novo') {
+                setNotice(''); setReturnScreen(activeHome); setScreen('new-launch');
+              } else if (target === 'lancamentos') {
+                setNotice(''); setScreen('launches');
+              } else setNotice('Demonstração visual: esta ação não consulta nem grava dados financeiros.');
+            }}/>}
     </AppShell>
     {screen === 'new-launch' && <div className="meg-new-launch__overlay is-choice-overlay meg-integrated-preview__choice-overlay">
       <section className="meg-new-launch is-choose" role="dialog" aria-modal="true" aria-labelledby="meg-integrated-new-title">
@@ -151,7 +159,11 @@ function FlowPreview() {
     {notice && <output className="meg-integrated-preview__notice" role="status">{notice}
       <button type="button" aria-label="Fechar aviso" onClick={() => setNotice('')}>×</button>
     </output>}
-    {screen === 'home' && <button type="button" className="meg-integrated-preview__restart"
+    {screen === 'home-p0' && <output className="meg-p0-qa-label" role="status"
+      style={{position:'fixed',bottom:14,left:14,zIndex:80,background:'#082a29',border:'1px solid #28cbb6',color:'#e6fffb',fontSize:11,padding:'7px 10px',borderRadius:8,maxWidth:'calc(100vw - 28px)'}}>
+      QA visual P0 · Dados fictícios · Sem conexão com API
+    </output>}
+    {screen === 'home-legacy' && <button type="button" className="meg-integrated-preview__restart"
       onClick={() => setScreen('loading-entry')}>Rever sequência</button>}
   </div>;
 }

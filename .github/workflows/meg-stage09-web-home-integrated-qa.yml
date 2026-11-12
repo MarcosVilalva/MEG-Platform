@@ -66,6 +66,7 @@ jobs:
           node scripts/meg-08-home-quick-actions.browser.mjs
           node scripts/meg-stage09-lancamentos.browser.mjs
           node scripts/meg-stage09-operational.browser.mjs
+          node scripts/meg-stage09-home-p0-preservation.browser.mjs
       - name: Bloquear alteracoes fora da Web Stage09 isolada
         run: |
           set -euo pipefail

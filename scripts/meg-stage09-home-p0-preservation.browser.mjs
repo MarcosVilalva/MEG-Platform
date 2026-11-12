@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {chromium} from '@playwright/test';
+const base=process.env.MEG_PREVIEW_URL||'http://127.0.0.1:4173';
+const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
+try {
+  for(const [width,height] of [[390,844],[1366,768]]) {
+    const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
+    const apiCalls=[];const errors=[];
+    page.on('request',r=>{if(/^\/(finance|auth|cards|payables)(\/|$)/.test(new URL(r.url()).pathname))apiCalls.push(r.url())});
+    page.on('pageerror',e=>errors.push(String(e)));
+    await page.goto(base+'/fluxo-integrado-08.html?tela=home&stage09p0=1',{waitUntil:'networkidle'});
+    await page.locator('[data-preview-view="home-p0"]').waitFor();
+    await page.locator('.meg-p0-qa-label').waitFor();
+    assert.match(await page.locator('.meg-period').innerText(),/Novembro de 2026/);
+    assert.ok(await page.getByText('Obrigação fictícia vencida',{exact:false}).count()>0,'Fixture P0 canônica visual não foi restaurada');
+    assert.equal(await page.locator('.pano-grid').count(),2,'Home P0 não preservou os dois grids');
+    await page.getByRole('button',{name:'Lançamentos',exact:true}).click();
+    await page.locator('.meg-l09').waitFor();
+    await page.getByRole('button',{name:'Início',exact:true}).click();
+    await page.locator('[data-preview-view="home-p0"]').waitFor();
+    assert.match(await page.locator('.meg-period').innerText(),/Novembro de 2026/);
+    assert.ok(await page.getByText('Obrigação fictícia vencida',{exact:false}).count()>0,'Volta de Lançamentos perdeu fixture P0');
+    await page.getByRole('button',{name:'Novo lançamento',exact:true}).first().click();
+    await page.locator('.meg-integrated-preview__choice-overlay').waitFor();
+    await page.getByRole('button',{name:'Fechar novo lançamento'}).click();
+    await page.locator('[data-preview-view="home-p0"]').waitFor();
+    assert.match(await page.locator('.meg-period').innerText(),/Novembro de 2026/);
+    assert.equal(apiCalls.length,0,'Preview visual P0 jamais pode chamar a API');
+    assert.deepEqual(errors,[],'Erros JS na preview P0');
+    await page.close();
+  }
+  console.log('Home P0 da PR #669 preservada: fixture Novembro, navegação, overlay, zero API em desktop/mobile.');
+}finally{await browser.close()}
