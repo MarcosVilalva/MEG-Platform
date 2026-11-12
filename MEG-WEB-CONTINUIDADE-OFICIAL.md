@@ -2239,3 +2239,17 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 **Status:** teste funcional sintético comprovado e pacote estático entregue; URL pública LIVE e homologação humana ainda PENDENTES. Sem merge, API produtiva, banco, Android, Render homologado ou writer financeiro. Ver docs/MEG-STAGE08-HOME-LAUNCHES-CLOSEOUT-20261112.md para matriz, instruções e evidências.
 
 **Próximo passo:** hospedar a QA por serviço adicional previamente autorizado ou validar localmente o ZIP; registrar aceitação humana de navegação e comportamento; só então preparar eventual incorporação sob gates externos e autorização separada.
+
+## 12/11/2026 — Etapa 08 | Publicação isolada da QA funcional da PR #677
+
+**Retomada autorizada:** o usuário informou ter excluído cinco serviços do Render e autorizou continuar o projeto. A auditoria de serviços confirmou **20 serviços restantes**, sem remoções adicionais pela intervenção. A API principal e a prévia Home + Lançamentos homologada continuam preservadas.
+
+**Static Site criado (sem tocar nos existentes):**
+- `meg-stage08-funcional-pr677`, ID `srv-dbqrgtu7bikc73aufrvg`, [Render Dashboard](https://dashboard.render.com/static/srv-dbqrgtu7bikc73aufrvg), branch `stage08/home-launches-closeout-20261112`, **Auto Deploy NO**, sem segredos, sem API externa.
+- Build: `npm ci --audit=false && cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts`. Saída exclusiva `apps/web/dist-stage08-funcional-qa`. Dados são 100% fictícios. O bootstrap intercepta e bloqueia chamadas a API externa.
+- Deploy `dep-dbqrgu67bikc73aufsv0` confirmado **LIVE** em 12/11/2026, às 13:02:02 UTC, SHA `571cc7aabecf96a44ecb44dee5043823e6f6ac29`; os quatro commits entre o SHA já aprovado tecnicamente `9dbe0b12aee39a209243e5f12958032b7e7ed883` e o SHA implantado alteraram somente documentação, comprovado pelo comparador do GitHub.
+- **URL sem cache:** https://meg-stage08-funcional-pr677.onrender.com/stage08-funcional-qa.html?v=571cc7aabecf96a44ecb44dee5043823e6f6ac29
+- CI de código anterior [#43219345431](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43219345431): SUCCESS. Novo teste de navegador contra o **domínio público real** incluído no workflow isolado, [run #43223667175](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43223667175). **Status final ainda a conferir.** O workflow de integração geral também foi iniciado na mesma branch.
+- **PENDENTE:** inspeção humana e validação funcional explícita pelo usuário, antes de merge. Testes verdes, deploy LIVE e link sem cache não substituem homologação.
+- **Restrições permanentes:** não tocar Android, API, Supabase, banco restaurado, Render produtivo, serviço de prévia visual já homologada ou demais PRs; nenhuma autorização para merge/deploy produtivo. Outro chat continua com recuperação/backup Etapa 09 e terceiro chat com Novo/Editar Etapa 10.
+- Matriz, provas e instruções detalhadas em `docs/MEG-STAGE08-HOME-LAUNCHES-CLOSEOUT-20261112.md`. Próximo passo: confirmar teste público e obter aceite explícito do usuário na nova URL.
