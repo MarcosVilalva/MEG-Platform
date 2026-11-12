@@ -19,10 +19,16 @@ try {
     assert.match(await page.locator('.meg-period').innerText(),/Novembro de 2026/);
     assert.ok(await page.getByText('Obrigação fictícia vencida',{exact:false}).count()>0,'Fixture P0 canônica visual não foi restaurada');
     assert.equal(await page.locator('.pano-grid').count(),2,'Home P0 não preservou os dois grids');
+    // Mobile: sidebar é um drawer, e não deve ser clicada fora do viewport.
+    if(width<1024)await page.getByRole('button',{name:'Abrir menu'}).click();
     await page.getByRole('button',{name:'Lançamentos',exact:true}).click();
     await page.locator('.meg-l09').waitFor();
     await page.getByRole('button',{name:'Início',exact:true}).click();
     await page.locator('[data-preview-view="home-p0"]').waitFor();
+    if(width<1024){
+      await page.getByRole('button',{name:'Fechar menu'}).click();
+      assert.equal(await page.locator('.meg-sidebar.is-open').count(),0,'Drawer mobile deve fechar');
+    }
     assert.match(await page.locator('.meg-period').innerText(),/Novembro de 2026/);
     assert.ok(await page.getByText('Obrigação fictícia vencida',{exact:false}).count()>0,'Volta de Lançamentos perdeu fixture P0');
     await page.getByRole('button',{name:'Novo lançamento',exact:true}).first().click();
