@@ -75,3 +75,15 @@ Critério em cada falha: **retorno não zero, nenhum arquivo novo publicado no d
 - **Validação alcançada neste ambiente:** código Bash `bash -n` PASS; quatro cenários com `curl`/`age` simulados em PTY Linux, sucesso de criptograma/manifesto e falha segura para HTTP, JSON inválido e root_key curta, sem credencial/chave no stdout. **NÃO TESTADO:** execução PowerShell 5.1 no computador do operador, GET real, token real, age real, resposta real da API. A suíte anterior em CI cobre contratos adicionais; não confundir simulações com GET/backup real.
 - **Destino da futura execução:** `/home/m_vil/.meg-stage09-vault-encrypted` no WSL, dentro do SSD local e separado em pasta privada da identidade age. **Ainda NÃO é cópia externa/offsite nem custódia independente; a custódia do criptograma fica PENDENTE mesmo se o GET for OK.** Nenhum conteúdo da chave-raiz ou PAT deve ir para chat/Git/CI; somente marcadores.
 - **Próximo passo:** operador cria PAT temporário exclusivo para o projeto, baixa e verifica hash do pacote, executa no Windows PowerShell e fornece relatório sanitizado; depois revoga token. Se `GET=OK`, verificar uma cópia cifrada em custódia externa separada, sem incluir a identidade privada na mesma mídia, em etapa posterior.
+
+
+### 8. GET Vault real concluído localmente, prova de custódia offsite pendente (12/11/2026)
+
+**Esta seção atualiza o plano anterior, originalmente redigido antes da autorização e execução.** O status histórico do item 4 já foi ultrapassado quanto ao GET, mas não quanto à custódia independente ou restauração.
+
+- Operador autorizou expressamente a operação GET e executou no Windows/Ubuntu WSL o procedimento privado, com token criado especificamente para o projeto `meg-financas`.
+- Relatório automático, sem dados sensíveis: `GET=OK`, `ARQUIVO_CIFRADO=OK`, `ABERTURA_LOCAL=OK`, `HASH_CIFRADO=OK`, `MANIFESTO=OK`, `CODIGO_WSL=0`, `RESULTADO=EXPORTACAO_LOCAL_CIFRADA_OK`, `ROOT_KEY_NO_RELATORIO=NAO`, `TOKEN_NO_RELATORIO=NAO`, `OPERACAO_SUPABASE=SOMENTE_GET`, `LIMPEZA_SCRIPT_WSL=OK`.
+- **Aceite restrito:** consulta da chave-raiz Vault e salvaguarda cifrada **local** validadas pelo relatório do operador. Não houve PUT, banco SQL, restore ou modificação de segredo. Destino WSL local não é evidência de custódia offsite nem prova de restauração do Vault.
+- **URGENTE, ainda não atestado:** revogar o PAT temporário gerado para o GET no Supabase, sem compartilhar token, e registrar apenas `PAT_REVOGADO=SIM` após confirmação real no painel.
+- **PENDENTE:** guardar offsite **somente o criptograma `.rootkey.age` e seu manifesto**, sem incluir identidade age privada, e validar hash SHA-256 após transferência, preferencialmente em destino distinto do backup SQL. Manter o pendrive `age` offline e senha de desbloqueio separados; não retornar a exportar a chave ou reconectar pendrive para esta etapa.
+- **PENDENTE / NO-GO:** recuperação de Vault em projeto Supabase novo isolado, Auth, Storage, Realtime, Functions, configurações gerenciadas, backup recorrente e controles #674/#676. Exige autorizações próprias de custo/infraestrutura e não integra a conclusão do GET.
