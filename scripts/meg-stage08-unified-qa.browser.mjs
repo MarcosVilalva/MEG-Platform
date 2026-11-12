@@ -7,7 +7,7 @@ const output=resolve('artifacts/meg-unified-prism');
 mkdirSync(output,{recursive:true});
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 try{
- for(const [width,height] of [[390,844],[960,900],[1366,768]]){
+ for(const [width,height] of [[390,844],[640,900],[960,900],[1024,768],[1366,768]]){
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
   const realApi=[],errors=[];
   page.on('pageerror',e=>errors.push(String(e)));
@@ -30,8 +30,27 @@ try{
    assert.ok(await page.locator('.meg-l09').count()>0,'Lançamentos indisponíveis');
    await page.screenshot({path:resolve(output,'lancamentos-'+width+'.png'),fullPage:false});
    await page.getByRole('button',{name:'Novo lançamento'}).first().click();
-   await page.getByTestId('new-launch-types').waitFor({state:'visible'});
-   await page.getByRole('button',{name:'Escolher Despesa'}).click();
+   const picker=page.getByTestId('new-launch-types');
+   await picker.waitFor({state:'visible'});
+   assert.equal(await picker.locator('.meg-prism-choice__card').count(),4,'Quatro tipos de lançamento preservados');
+   assert.equal(await picker.locator('svg[data-launch-icon="exit3d"]').count(),1,'Saídas com seta Prism coral');
+   assert.equal(await picker.locator('svg[data-launch-icon="entry3d"]').count(),1,'Entradas com seta Prism verde');
+   assert.equal(await picker.getByRole('button',{name:'Transferência indisponível'}).isDisabled(),true);
+   assert.equal(await picker.getByRole('button',{name:'Benefício indisponível'}).isDisabled(),true);
+   assert.equal(await picker.getByRole('button',{name:'Escolher Despesa'}).isEnabled(),true);
+   assert.equal(await picker.getByRole('button',{name:'Escolher Receita'}).isEnabled(),true);
+   const choiceBounds=await picker.evaluate(el=>{
+    const cards=Array.from(el.querySelectorAll('.meg-prism-choice__card')).map(c=>c.getBoundingClientRect());
+    const rect=el.getBoundingClientRect();
+    return {horizontal:el.scrollWidth>el.clientWidth+2,vertical:el.scrollHeight>el.clientHeight+2,
+     rect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right},
+     cards:cards.map(r=>({top:r.top,bottom:r.bottom,left:r.left,right:r.right}))};
+   });
+   assert.equal(choiceBounds.horizontal,false,'Seletor Prism sem corte horizontal '+width);
+   assert.equal(choiceBounds.vertical,false,'Seletor Prism sem corte vertical '+width);
+   assert.ok(choiceBounds.cards.every(c=>c.left>=choiceBounds.rect.left-2&&c.right<=choiceBounds.rect.right+2&&c.top>=choiceBounds.rect.top-2&&c.bottom<=choiceBounds.rect.bottom+2),'Cards inteiros visíveis '+width+': '+JSON.stringify(choiceBounds));
+   await page.screenshot({path:resolve(output,'seletor-prism-'+width+'.png'),fullPage:false});
+   await picker.getByRole('button',{name:'Escolher Despesa'}).click();
    await page.locator('.meg-t10-expense[role="dialog"]').waitFor({state:'visible'});
    assert.equal(await page.getByRole('button',{name:'Salvar lançamento'}).first().isDisabled(),true,'Gravação habilitada na QA');
    // Contrato visual homologado da PR #678 deve chegar integralmente à QA unificada.
