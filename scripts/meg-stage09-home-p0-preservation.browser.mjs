@@ -22,7 +22,10 @@ try {
     // Mobile: sidebar é um drawer, e não deve ser clicada fora do viewport.
     if(width<1024)await page.getByRole('button',{name:'Abrir menu'}).click();
     await page.getByRole('button',{name:'Lançamentos',exact:true}).click();
-    await page.locator('.meg-l09').waitFor();
+    await page.locator('.meg-l09.is-operational').waitFor();
+    // O Shell operacional fecha o drawer após navegar, como aprovado.
+    // Em mobile é preciso abrir novamente para tocar em Início.
+    if(width<1024)await page.getByRole('button',{name:'Abrir menu'}).click();
     await page.getByRole('button',{name:'Início',exact:true}).click();
     await page.locator('[data-preview-view="home-p0"]').waitFor();
     if(width<1024){
