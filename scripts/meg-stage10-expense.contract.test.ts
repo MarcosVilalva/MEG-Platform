@@ -15,7 +15,7 @@ test('Nenhum writer nem comunicação com API no modal QA',()=>{
  assert.match(preview,/data-no-real-writers="true"/);
 });
 test('Categorias e contas são provenientes dos catálogos ativos, sem IDs fixos',()=>{
- for(const mark of ['categories.filter(x=>x.active)','accounts.filter(x=>x.active)','paymentMethods.filter(x=>x.active)'])assert.ok(code.includes(mark),mark);
+ for(const mark of ['categories.filter(x=>x.active)',"accounts.filter(x=>x.active&&x.kind==='monetary')","paymentMethods.filter(x=>x.active&&x.kind!=='benefit')"])assert.ok(code.includes(mark),mark);
  assert.doesNotMatch(code,/qa-category-food|qa-account-benefit|qa-method-benefit/);
  assert.match(code,/frequencyRank/);
  assert.match(code,/CategoryGlyph/);
