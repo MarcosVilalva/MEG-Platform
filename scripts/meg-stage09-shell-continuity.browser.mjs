@@ -14,13 +14,7 @@ assert.doesNotMatch(bellCss,/:has\(\.pano-root\)\s+\.meg-due-bell-button/,'Sino 
 
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 const base=process.env.MEG_PREVIEW_URL||'http://127.0.0.1:4173';
-const viewports=[[390,844],[768,1024],[1024,768],[1366,768],[1366,600],[1920,1080]];
-const pick=(el)=>{const style=getComputedStyle(el),r=el.getBoundingClientRect();return{
- display:style.display,visibility:style.visibility,width:Math.round(r.width),height:Math.round(r.height),
- borderStyle:style.borderStyle,borderWidth:style.borderWidth,borderRadius:style.borderRadius,
- borderColor:style.borderColor,background:style.backgroundColor,backgroundImage:style.backgroundImage,
- boxShadow:style.boxShadow,opacity:style.opacity
-}};
+const viewports=[[390,844],[768,1024],[960,900],[1024,768],[1366,768],[1366,600],[1920,1080]];
 async function snapshot(page){
  return page.evaluate(()=>{
   const el=(selector)=>{const value=document.querySelector(selector);if(!value)throw Error('Missing Shell: '+selector);return value;};
