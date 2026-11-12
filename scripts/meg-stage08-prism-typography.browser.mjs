@@ -35,6 +35,7 @@ try{
    }
    assert.equal(await page.locator('html').getAttribute('data-meg-typography-pilot'),'true');
    assert.equal(await page.locator('html').getAttribute('data-meg-prism-ui'),'true');
+   assert.equal(await page.locator('style[data-meg-prism-style="inline-qa"]').count(),1,'CSS experimental Prism não está embutido no bundle');
    assert.ok(await page.locator('.meg-nav-item [data-meg-prism="micro-3d"]').count()>=5,'Shell não utiliza os ícones Prism');
    assert.ok(await page.locator('.pano-root [data-meg-prism="micro-3d"]').count()>=7,'Home não utiliza os ícones Prism');
    let font=await page.locator('.pano-root').evaluate(el=>getComputedStyle(el).fontFamily);
