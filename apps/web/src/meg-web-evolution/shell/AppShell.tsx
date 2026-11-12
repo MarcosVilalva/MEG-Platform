@@ -26,11 +26,11 @@ function readSidebarPreference() {
 }
 
 export type ShellSection = 'home'|'launches';
-type ShellProps={children:ReactNode;periodLabel?:string;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean;visualVariant?:ShellSection};
+type ShellProps={children:ReactNode;periodLabel?:string;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
 export function AppShell(props:ShellProps){
  return <HomeDueAlertsProvider><AppShellView {...props}/></HomeDueAlertsProvider>;
 }
-function AppShellView({children,periodLabel,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false,visualVariant}:ShellProps){
+function AppShellView({children,periodLabel,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
   const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
   const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -89,7 +89,7 @@ function AppShellView({children,periodLabel,activeSection='home',onNavigate,prof
   const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
 
   return (
-    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${onNavigate && activeSection==='launches'?'is-launches-operational':''} ${visualVariant==='launches'?'is-launches-visual-preview':''}`}>
+    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${onNavigate && activeSection==='launches'?'is-launches-operational':''}`}>
       <div className="meg-sidebar-wrap">
         <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand" aria-label="MEG Finanças">

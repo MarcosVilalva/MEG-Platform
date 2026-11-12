@@ -1,15 +1,7 @@
-/* Etapa 09: camada visual exclusivamente para a tela Lançamentos.
- * Home (#655), seletor Novo (#654), Shell e DataGrid compartilhados intactos.
+/* Etapa 09: somente CONTEÚDO de Lançamentos.
+ * Marca, menu, topbar e notificações pertencem exclusivamente ao AppShell.
+ * O visual desses elementos segue o padrão homologado da Home em qualquer tela.
  */
-.meg-integrated-preview[data-preview-view="launches"] .meg-nav-item.is-active:not([aria-label="Lançamentos"]){
- background:transparent;border-color:transparent;box-shadow:none;color:var(--meg-muted)
-}
-.meg-integrated-preview[data-preview-view="launches"] .meg-nav-item[aria-label="Lançamentos"]{
- background:linear-gradient(100deg,rgba(9,183,170,.28),rgba(15,85,91,.34));
- border-color:#14e3c8;color:#eafffa;box-shadow:0 0 1rem #00e5cf28,inset 0 0 1rem #14e3c826;
-}
-.meg-integrated-preview[data-preview-view="launches"] .meg-topbar-new{display:none}
-.meg-integrated-preview[data-preview-view="launches"] .meg-main{min-width:0}
 .meg-l09{--l09-line:rgba(23,215,202,.37);--l09-surface:linear-gradient(150deg,rgba(3,39,45,.92),rgba(2,19,28,.97));display:flex;flex-direction:column;gap:.78rem;min-width:0;width:100%;max-width:134rem;margin:0 auto;padding:.9rem 1.1rem 1.5rem;color:#edfdf9}
 .meg-l09 button,.meg-l09 input,.meg-l09 select{font:inherit}
 .meg-l09 button{cursor:pointer}
@@ -197,30 +189,6 @@
  .meg-l09-loading-row span:nth-child(n+3){display:none}
 }
 
-/* Refino solicitado na sidebar compacta SOMENTE da área operacional de
- * Lançamentos. Home e demais prévias homologadas não são afetadas. */
-@media(min-width:640px){
- .meg-shell.is-launches-operational.is-sidebar-collapsed .meg-nav{
-  flex:1 1 0;min-height:0;display:flex;flex-direction:column;
-  justify-content:space-evenly;gap:.3rem;overflow-y:auto;
- }
- .meg-shell.is-launches-operational.is-sidebar-collapsed .meg-nav>.meg-nav-item{
-  flex:0 0 auto;min-height:3rem;max-height:3.25rem;height:3.15rem;
-  padding-block:0;justify-content:center;
- }
- .meg-shell.is-launches-operational.is-sidebar-collapsed .sidebar__art{
-  display:none;
- }
- .meg-shell.is-launches-operational.is-sidebar-collapsed .meg-nav{
-  justify-content:space-evenly;
-  padding-block:.45rem;
- }
- /* Toda a altura entre a marca e Sair pertence aos atalhos. Ao aumentar
-    o número de ícones, o scroll da própria navegação evita recortes. */
-}
-@media(min-width:640px) and (max-height:699px){
- .meg-shell.is-launches-operational.is-sidebar-collapsed .sidebar__art{display:none}
-}
 @media(prefers-reduced-motion:reduce){.meg-l09-progress-track>span{transition:none}}
 
 /* Etapa 09: consulta operacional usa modal acessível em vez do painel
