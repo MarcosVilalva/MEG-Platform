@@ -63,7 +63,7 @@ jobs:
       - name: Build da preview e entrada autenticada sem publicar
         run: cd apps/web && npx vite build --config vite.fluxo-integrado-08.config.ts
       - name: Compilar entrada funcional QA isolada sem API externa
-        run: cd apps/web && npx vite build --config vite.stage08-funcional-qa.config.ts
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
       - name: Testar gateway somente leitura com artefatos locais do build
         run: |
           set -euo pipefail
