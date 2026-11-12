@@ -61,7 +61,6 @@ try{
   assert.equal(await modal.getByRole('dialog',{name:'Mostrar parcelamento'}).isVisible(),true);
   assert.equal(await modal.getByText('Nenhuma parcela ou data será estimada pela tela.',{exact:false}).count()>0,true);
   await modal.getByRole('button',{name:'Fechar parcelamento'}).click();
-  await modal.getByLabel('Categoria *').selectOption('qa-category-shopping').catch(()=>{});
   if(width<1024)await modal.getByRole('button',{name:'Dados'}).click();
   await modal.getByRole('button',{name:'Mais categorias'}).click();
   assert.equal(await modal.getByRole('dialog',{name:'Todas as categorias'}).isVisible(),true);
