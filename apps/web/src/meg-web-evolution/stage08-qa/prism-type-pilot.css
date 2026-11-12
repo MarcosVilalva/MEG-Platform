@@ -1,0 +1,105 @@
+/*
+ * MEG Prism Type Lab. Piloto SOMENTE em QA com ?visual=prism.
+ * Não integra o CSS de produção. Não mexe na UI base homologada.
+ * Fontes abertas: Plus Jakarta Sans (corpo) e Sora (títulos).
+ * Esta primeira QA usa Google Fonts; release exige auto-hospedagem e OFL.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;650;700;750;800&family=Sora:wght@500;600;700;800&display=swap');
+
+html[data-meg-typography-pilot="true"] {
+  --meg-prism-font-body: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  --meg-prism-font-display: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --meg-prism-body: .925rem;
+  --meg-prism-caption: .8125rem;
+  --meg-prism-label: .875rem;
+  --meg-prism-kpi: clamp(1.05rem, 1.35vw, 1.38rem);
+  --meg-prism-line: 1.48;
+  font-synthesis: none;
+}
+html[data-meg-typography-pilot="true"] body,
+html[data-meg-typography-pilot="true"] .meg-shell,
+html[data-meg-typography-pilot="true"] .pano-root,
+html[data-meg-typography-pilot="true"] .meg-l09 {
+  font-family: var(--meg-prism-font-body);
+  font-size: var(--meg-prism-body);
+  line-height: var(--meg-prism-line);
+  font-kerning: normal;
+  font-optical-sizing: auto;
+}
+html[data-meg-typography-pilot="true"] .pano-root h1,
+html[data-meg-typography-pilot="true"] .pano-root h2,
+html[data-meg-typography-pilot="true"] .pano-root h3,
+html[data-meg-typography-pilot="true"] .meg-l09-hero h1,
+html[data-meg-typography-pilot="true"] .meg-l09-modal-header h2,
+html[data-meg-typography-pilot="true"] .meg-nav-item.is-active span {
+  font-family: var(--meg-prism-font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -.028em;
+}
+html[data-meg-typography-pilot="true"] .pano-root .pano-panel-title h2 {
+  font-size: 1rem;
+  line-height: 1.42;
+}
+html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat h2 {
+  font-size: var(--meg-prism-caption);
+  font-weight: 650;
+  line-height: 1.28;
+}
+html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat strong {
+  font-family: var(--meg-prism-font-body);
+  font-size: var(--meg-prism-kpi);
+  font-weight: 800;
+  line-height: 1.27;
+  letter-spacing: -.035em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat small {
+  font-size: .75rem;
+  line-height: 1.38;
+}
+html[data-meg-typography-pilot="true"] .meg-l09-grid-summary,
+html[data-meg-typography-pilot="true"] .meg-l09-filters input,
+html[data-meg-typography-pilot="true"] .meg-l09-filters select,
+html[data-meg-typography-pilot="true"] .pano-stat-label,
+html[data-meg-typography-pilot="true"] .pano-flow-footnote,
+html[data-meg-typography-pilot="true"] .pano-panel-title>span,
+html[data-meg-typography-pilot="true"] .meg-l09-modal-fields dt {
+  font-size: var(--meg-prism-caption);
+  line-height: 1.42;
+}
+html[data-meg-typography-pilot="true"] .pano-grid .meg-datagrid-table,
+html[data-meg-typography-pilot="true"] .pano-grid .meg-datagrid-table td,
+html[data-meg-typography-pilot="true"] .pano-grid .meg-datagrid-table th,
+html[data-meg-typography-pilot="true"] .meg-l09 .meg-datagrid-table td,
+html[data-meg-typography-pilot="true"] .meg-l09 .meg-datagrid-table th,
+html[data-meg-typography-pilot="true"] .meg-l09 .meg-datagrid-card-row dd {
+  font-size: var(--meg-prism-label);
+  line-height: 1.42;
+}
+html[data-meg-typography-pilot="true"] .meg-nav-item span,
+html[data-meg-typography-pilot="true"] .meg-search input,
+html[data-meg-typography-pilot="true"] .meg-profile-name {
+  font-size: .9375rem;
+  line-height: 1.42;
+}
+html[data-meg-typography-pilot="true"] .pano-balance>strong,
+html[data-meg-typography-pilot="true"] .pano-stat strong,
+html[data-meg-typography-pilot="true"] .meg-l09-money {
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -.025em;
+}
+html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat>div {min-width:0}
+html[data-meg-typography-pilot="true"] .meg-l09-modal-fields dd {
+  font-size: .9375rem;
+  line-height: 1.5;
+}
+@media(max-width:639px) {
+  html[data-meg-typography-pilot="true"] {
+    --meg-prism-body:.875rem;
+    --meg-prism-caption:.75rem;
+    --meg-prism-label:.8125rem;
+    --meg-prism-kpi:1.0625rem;
+  }
+  html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat h2 {font-size:.75rem}
+  html[data-meg-typography-pilot="true"] .meg-l09.is-operational .meg-l09-hero .meg-l09-stat small {font-size:.7rem}
+}
