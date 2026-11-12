@@ -26,7 +26,8 @@ try {
     await page.getByRole('button',{name:'Início',exact:true}).click();
     await page.locator('[data-preview-view="home-p0"]').waitFor();
     if(width<1024){
-      await page.getByRole('button',{name:'Fechar menu'}).click();
+      // Toque real fora do drawer, longe dos itens que o sobrepõem.
+      await page.mouse.click(width-10,Math.floor(height/2));
       assert.equal(await page.locator('.meg-sidebar.is-open').count(),0,'Drawer mobile deve fechar');
     }
     assert.match(await page.locator('.meg-period').innerText(),/Novembro de 2026/);
