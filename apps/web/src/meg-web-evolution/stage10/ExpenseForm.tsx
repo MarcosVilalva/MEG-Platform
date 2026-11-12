@@ -115,6 +115,20 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  // mas qualquer writer real exigirá caracterização transacional antes de ser conectado.
  const currentSchedule=Boolean(schedule&&schedule.source==='canonical'&&schedule.cardId===draft.creditCardId&&schedule.purchaseDate===draft.date&&schedule.installments===Number(draft.installmentsInput)&&schedule.amountDecimal===requestedAmount&&schedule.rows.length===Number(draft.installmentsInput));
  const chosenCategory=categories.find(x=>x.id===draft.categoryId);
+ const missingRequired=[
+  ...(!draft.description.trim()?['Descrição']:[]),
+  ...(!draft.date?['Data']:[]),
+  ...(!requestedAmount||requestedAmount==='0.00'||requestedAmount==='-0.00'?['Valor']:[]),
+  ...(!chosenCategory?['Categoria']:[]),
+  ...(isCredit?[
+   ...(!selectedCard?['Cartão']:[]),
+   ...(!/^[1-9]\d*$/.test(draft.installmentsInput)?['Número de parcelas']:[])
+  ]:[
+   ...(!method?['Forma de pagamento']:[]),
+   ...(showSettlementAccount&&!selectedAccount?['Conta de saída']:[])
+  ])
+ ];
+
  function patch<K extends keyof ExpenseDraft>(key:K,value:ExpenseDraft[K]){setDraft(old=>({...old,[key]:value}));}
  function completeDate(){
   if(!dateText.trim()){patch('date','');setDateError(false);return;}
@@ -178,7 +192,10 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
     <section className={'meg-t10-expense-panel meg-t10-expense-primary'+(mobileStep==='data'?' is-step':'')} aria-label="Dados da despesa">
      <label htmlFor={formId+'description'}><Icon name="list"/> Descrição *</label>
      <input id={formId+'description'} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(true);}} placeholder="DESCREVA A DESPESA" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'}/>
-     {suggestionsOpen&&suggestions.length>0&&<div className="meg-t10-expense-suggestions" id={formId+'suggestions'} role="listbox" aria-label="Descrições do histórico">{suggestions.map(s=><button type="button" key={s.sourceEventId} role="option" aria-selected={false} onClick={()=>selectSuggestion(s)}>{s.description}<small>{s.categoryName??'Categoria indisponível'}</small></button>)}</div>}
+     {suggestionsOpen&&suggestions.length>0&&<div className="meg-t10-expense-suggestions" id={formId+'suggestions'} role="listbox" aria-label="Descrições do histórico">
+      <strong className="meg-t10-expense-suggestions-title"><Icon name="list"/> Histórico relacionado</strong>
+      {suggestions.slice(0,3).map(s=><button type="button" key={s.sourceEventId} role="option" aria-selected={false} onClick={()=>selectSuggestion(s)}>{s.description}<small>{s.categoryName??'Categoria indisponível'} · Sem copiar valor ou data</small></button>)}
+     </div>}
      <fieldset className="meg-t10-expense-choice meg-t10-expense-modality"><legend>Modalidade de pagamento *</legend>
       <button type="button" aria-pressed={!isCredit} onClick={()=>chooseModality('cash')}><Icon name="card"/> À vista</button>
       <button type="button" aria-pressed={isCredit} onClick={()=>chooseModality('credit')}><Icon name="card"/> Crédito</button>
@@ -235,6 +252,12 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       </div>}
       <button type="button" className="meg-t10-expense-schedule-button" onClick={()=>setParcelModal(true)}><Icon name="calendar"/> Mostrar parcelamento <Icon name="chevronRight"/></button>
      </div>}
+     <div className="meg-t10-expense-payment-context" aria-live="polite">
+      <strong><Icon name={isCredit?'card':'list'}/> {isCredit?'Informações do cartão':'Conta e baixa'}</strong>
+      {isCredit?
+       <p>{selectedCard?'Fechamento e vencimento conforme cadastro do cartão. Consulte Mostrar parcelamento para a programação canônica.':'Selecione um cartão para conferir identificação, fechamento e vencimento.'}</p>:
+       <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>}
+     </div>
      <div className="meg-t10-expense-notes">
       <button type="button" className="meg-t10-expense-expand" aria-expanded={notesOpen} onClick={()=>setNotesOpen(o=>!o)}><Icon name="list"/> Observações (opcional) <Icon name="chevronDown"/></button>
       {notesOpen&&<textarea id={formId+'notes'} aria-label="Observações (opcional)" value={draft.notes} maxLength={1000} onChange={e=>patch('notes',normalizeFinancialTextInput(e.target.value))} placeholder="OBSERVAÇÕES ADICIONAIS"/>}
@@ -257,6 +280,11 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       {isCredit&&<div><dt>Cartão / parcelas</dt><dd>{nameOf(cards,draft.creditCardId)} · {draft.installmentsInput||'1'}x</dd></div>}
       {isCredit&&selectedCard&&<div><dt>Fecha / vence</dt><dd>{selectedCard.closingDay||'?' } / {selectedCard.dueDay||'?'}</dd></div>}
      </dl>
+     <div className="meg-t10-expense-checklist" aria-live="polite">
+      <strong><Icon name="list"/> Conferência do preenchimento</strong>
+      {missingRequired.length===0?<p className="is-complete">Campos obrigatórios preenchidos. A gravação continua desativada no QA.</p>:
+       <p>Faltam: {missingRequired.join(', ')}.</p>}
+     </div>
      <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> Prévia fictícia, sem operações financeiras.</div>
     </aside>
    </div>
