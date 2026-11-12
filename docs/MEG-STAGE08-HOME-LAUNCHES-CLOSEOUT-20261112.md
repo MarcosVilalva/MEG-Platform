@@ -1,0 +1,81 @@
+# MEG Web Evolution | Etapa 08 | Fechamento da integração Home e Lançamentos
+
+**Checkpoint de trabalho:** 12/11/2026. **Escopo:** integração funcional e auditoria de UI já homologada, sem operação financeira.  
+**Origem imutável visual:** preview estático aprovado em `760b7ad0e3217dbab70ea426df9cad67318f79ef`.  
+**Branch isolada:** `stage08/home-launches-closeout-20261112`, derivada da PR #673. PRs #664, #656, #668, #669, #672 e #673 permanecem independentes.  
+**Aviso:** checklist aprovado pelo operador é autorização de trabalho, NÃO evidência automática de teste concluído, merge, deploy ou homologação funcional.
+
+## Regras e contratos que não podem mudar
+- Autoridade financeira: `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`; política monetária, saldo, benefício, pagamentos, parcelas e escrituração na API, não nos componentes.
+- Home P0 revisão #9, Lançamentos (cinco grupos), Shell universal e DataGrid conforme preview homologado. Nenhuma alteração em CSS, JSX do Shell, DataGrid, classes visuais, ícones, métricas e regras financeiras.
+- `HomeDashboard` é fonte visual homologada; a alteração permitida nesta PR é exclusivamente no contrato de retorno do callback e no tratamento de destino indisponível, sem mudar markup. Gate de blob da Home deve acompanhar a alteração e continuar bloqueando novas modificações não revisadas.
+- Sessão autenticada, `HomeDueAlertsProvider`, revogação do logout, `localStorage` dos atalhos por usuário e filtros favoritos devem continuar existentes. Preview público segue fictício e sem API.
+- Não alterar Android, writers, API produtiva, banco, Render, branches/PRs da Etapa 09 (backup e auditoria) ou da Etapa 10.
+
+## 1. Navegação autorizada: implementação proposta na branch isolada
+**Lacuna confirmada:** `main.tsx` montava `<HomeDashboard userId=... />` sem `onNavigate`, embora a Shell já permitisse `section='home'|'launches'`. O atalho 'Lançamentos' mostrava aviso e não navegava.
+
+**Correção restrita:**
+1. `main.tsx` passa `onNavigate` somente para o identificador `lancamentos`, ativando a seção autorizada `launches`. Não cria outra página.
+2. `HomeDashboard.tsx` mantém o aviso anterior quando o callback informa `false` (não atendido). Callbacks históricos que retornam `void` continuam compatíveis. O markup não é alterado.
+3. `QuickActions.tsx`, `AppShell.tsx`, DataGrid, estilos e fixture visual permanecem inalterados.
+
+**Verificação:** teste `scripts/meg-stage08-home-navigation.browser.mjs` em sessão fictícia nos viewports 1366×768 e 390×844, incluindo usuário identificado, preferência de atalhos persistida, rota autorizada, retorno à Home, ausência de novas telas para ação não autorizada, zero escrita financeira e sem overflow. Regressões existentes continuam obrigatórias.
+
+## 2. Inventário de controles por destino e etapa responsável
+
+| Controle | Situação na entrada autenticada antes desta intervenção | Responsável por integração futura |
+| --- | --- | --- |
+| Sidebar Início ↔ Lançamentos | Rotas internas `home`/`launches` efetivas, logout separado | Etapa 08 mantém contrato e navegação |
+| Ação rápida Lançamentos | Apresentada, mas sem `onNavigate` da Home | Etapa 08: corrigir pelo destino já existente |
+| Ações rápidas Transferência, Pagar conta, Cartões, Benefícios, Relatórios, Configurações | Catálogo personalizável, sem rotas correspondentes no `AuthGateway`; aviso de indisponibilidade era o comportamento aprovado | Telas/etapas próprias; não criar placeholder financeiro |
+| Topbar `+ Novo lançamento` | Botão presente, sem `onClick` autenticado | Etapa 10 e integração autorizada do formulário |
+| Sidebar Cartões/Pendentes/Benefícios/Relatórios/Configurações | Botões visuais; `AppShell` só encaminha índices 0 e 1 | Telas próprias futuras |
+| Busca global | Input visual sem busca orquestrada/autorizada | Funcionalidade transversal, exige escopo e contrato de consultas |
+| Período da topbar | Exibe mês civil; seletor visual sem `onClick` | Modal Selecionar Período na etapa própria; não recalcular competência |
+| Perfil da topbar | Exibe iniciais/nome; controle sem expansão | Configurações/perfil em etapa própria |
+| Sino de compromissos | Provider e painel canônico existem; consulta/aviso periódico na sessão autenticada | Manter na Home; publicação coordenada de API é gate externo |
+| Ver todos os compromissos | Modal e paginação canônica sob demanda no código da Home | Etapa 08: testar leitura em QA; operação depende da API autorizada |
+| Novo lançamento, Editar, Excluir, Baixa em Lançamentos | Writer ainda bloqueado; CTA desabilitado em modo `live` e detalhes somente leitura | Etapa 10 e etapas de pagamento correspondentes |
+
+**Não converter placeholder em botão financeiro ativo nem alterar identidade do Shell para dar a impressão de funcionalidade.**
+
+## 3. Ações rápidas e filtros favoritos
+- `QuickActions.tsx` mantém adicionar, remover, reordenar, restaurar, carrossel circular, a11y e versão `meg.web.home.quick-actions.v1.user.${encodeURIComponent(userId)}` no `localStorage`; preview utiliza chave `demo`.
+- O catálogo tem sete destinos autorizados como *identificadores*, não sete telas prontas. Somente `lancamentos` ganha rota autenticada nesta alteração.
+- Filtros favoritos de Lançamentos permanecem em `saved-filters.ts` e componentes homologados; testes existentes (`meg-stage09-saved-filters.contract.test.ts` e fluxo operacional) devem continuar verdes.
+- Sincronização entre dispositivos e personalização por ID de categoria não estão implementadas. São proposta transversal da issue #662, não homologação visual existente; dependem de contrato de preferências e autorização próprios.
+
+## 4. Lacunas técnicas caracterizadas, sem inventar regra
+1. **Saldos e projeções explicáveis:** a Home apresenta `summary`, `cashflow`, `home-available` e benefício provenientes de leituras canônicas; não foi verificado contrato próprio de detalhamento rastreável por item para explicar composição a partir da UI. Não fazer reconciliação de saldo no React. Exige desenho de contrato somente leitura na etapa apropriada.
+2. **Contagens globais de urgência:** `GET /finance/home-commitments` publica página, cursor, `asOf` e `dueState`. A janela inicial não fornece total global completo de vencidos/hoje. O botão `Ver todos` carrega páginas sob demanda e distingue quantidade carregada do total confirmado. Não inventar contagens a partir de oito itens.
+3. **Atualização entre telas:** Home carrega na montagem/atualização e Lançamentos possui consulta/revisão sob demanda. Falta contrato de invalidação após writers reais, atualmente deliberadamente não habilitados. Revisar após a Etapa 10, sem implementar polling financeiro paralelo.
+4. **Robustez de leitura:** Home evita falso vazio em falha de compromissos; Lançamentos evita apresentar snapshot parcial. Permanecem testes de falha, cursor, idempotência visual, reconexão, favoritos e isolamento de sessão, sem tocar writers.
+5. **Desempenho:** existem ensaios PostgreSQL 17 sintéticos; um `Seq Scan+Sort` para `FinancialEvent` é hipótese de otimização, não autorização de índice/migration. Medição representativa e orçamento de latência são pendentes da integração de leitura.
+
+## 5. Cadeia de PRs e arquivos com sobreposição
+- **Linha Home:** #664 (atalhos) → #668 (GET compromissos) → #669 (Home P0), com bases empilhadas e aprovadas visualmente apenas onde registrado.
+- **Linha de API/leitura:** #663 fornece snapshot e resumo; #672 compõe a leitura Home+Lançamentos na base da #669.
+- **Linha visual Lançamentos:** #656 (branch paralela). #673 compõe a UI da #656 com a base da #672.
+- **Esta branch:** criada a partir do HEAD da #673. NÃO altera #673 ou sua base; revisão em PR Draft própria direcionada à branch da #673, sem merge.
+- Sobreposições críticas já reconciliadas parcialmente na #672/#673, que requerem nova inspeção no candidato final: `apps/api/src/modules/finance/routes.ts` e `history-filter.ts` entre #663/#668/#656; `AppShell.tsx`, `main.tsx`, `DataGrid.tsx` entre Home e Lançamentos; checkpoint `MEG-WEB-CONTINUIDADE-OFICIAL.md` em todas as frentes.
+- Nenhuma estratégia de merge baseada apenas em `mergeable=true`; revalidar SHAs, diffs, flags Draft, CI e homologações antes da decisão. Não realizar merge nesta etapa.
+
+## 6. Gates de aceite técnico
+- [ ] Build API/Web, testes financeiros, CORS e segurança no commit de código.
+- [ ] Testes de contratos e filtros favoritos.
+- [ ] Novo navegador autenticado Home → Lançamentos (1366/390) e fallback para destinos sem rota.
+- [ ] Regressões visuais existentes Home, QuickActions, Shell, DataGrid e Lançamentos (8 viewports onde aplicável).
+- [ ] Gate de hashes dos componentes visuais e escopo restrito de arquivos.
+- [ ] Resultado CI verificável no SHA do código e revisão de evidências.
+- [ ] Revisão do novo PR Draft; nenhuma incorporação da Etapa 10 ou backend produtivo.
+
+## 7. Backlog atribuído sem sobreposição entre chats
+- **Etapa 08:** navegação autorizada, leitura/contratos, testes regressivos, matriz de controles, revisão da cadeia de PRs e checkpoint.
+- **Etapa 09, outro chat:** backup/recuperação, Supabase/Egress, segurança Build Render, auditoria dos writers e integridade financeira (#674). A Etapa 08 recebe apenas o status final dos gates como dependência, sem mexer nos respectivos arquivos.
+- **Etapa 10, outro chat:** Novo Lançamento e Editar Lançamento; formulário protegido, writer autorizado, parcelamento, autocomplete e Alimentação (Benefício + Verocard + Pago).
+- **Outras etapas:** Cartões, Pendentes, Benefícios, Transferência, Relatórios, Configurações e Selecionar Período. Não implementar antecipadamente.
+- **Transversal futuro:** preferências sincronizadas/ícones personalizados #662, auditoria visual por tela #671 e controles globais de busca/perfil. Exige autorização específica.
+
+## Status operacional
+Este documento registra o escopo e as evidências antes do resultado do novo CI. Não declarar gate verde sem conferir o run/commit correspondente. Nenhuma publicação, merge ou alteração em Render, Supabase, banco ou Android foi autorizada.
