@@ -11,6 +11,11 @@ try {
     await page.goto(base+'/fluxo-integrado-08.html?tela=home&stage09p0=1',{waitUntil:'networkidle'});
     await page.locator('[data-preview-view="home-p0"]').waitFor();
     await page.locator('.meg-p0-qa-label').waitFor();
+    // A Home P0 aprovou o diálogo inicial de vencimentos; fechá-lo é
+    // uma interação real do usuário, não uma supressão de funcionalidade.
+    const dueDialog=page.locator('.meg-due-alert-dialog');
+    if(await dueDialog.count())await page.getByRole('button',{name:'Entendi'}).click();
+
     assert.match(await page.locator('.meg-period').innerText(),/Novembro de 2026/);
     assert.ok(await page.getByText('Obrigação fictícia vencida',{exact:false}).count()>0,'Fixture P0 canônica visual não foi restaurada');
     assert.equal(await page.locator('.pano-grid').count(),2,'Home P0 não preservou os dois grids');
