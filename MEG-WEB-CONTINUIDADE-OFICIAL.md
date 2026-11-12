@@ -2125,3 +2125,12 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Bloqueador de build pré-existente e comprovado por blob idêntico com base visual aprovada:** `HomeDashboard.tsx:216` TS2550 (`replaceAll`); `home-commitments-read.ts:60,62` TS7022 (inferência `any`). Nenhum dos dois arquivos foi alterado nesta etapa. Não desabilitar o build nem alterar Home homologada silenciosamente. Corrigir de forma controlada/separada e comprovar não-regressão antes de considerar build verde.
 - **Outros bloqueios:** testes transacionais fictícios de gravação em PostgreSQL isolado, caminho seguro para edição/exclusão monetária, vínculo automático Alimentação (Conta Benefício + Verocard + Pago) e validação visual das telas novas. Sem UI final ou preview.
 - **Próximo passo exato:** tratar bloqueio técnico do build sem alterar visual homologado e continuar caracterização de writes em QA antes de integrar formulário de Novo/Editar. Etapa 10 NÃO validada.
+
+## Etapa 10 — desbloqueio técnico de build (12/11/2026)
+
+- Usuário autorizou explicitamente tratar erros TS da Home presentes na base visual, sem liberar redesign.
+- Na PR [#678 Draft](https://github.com/MarcosVilalva/MEG-Platform/pull/678), aplicadas somente duas modificações compilatórias: `HomeDashboard.tsx`, substituição global equivalente `replaceAll('_','-')` por `replace(/_/g,'-')`; `home-commitments-read.ts`, tipos explícitos `query:string` e `page:CommitmentPage`. O `tsconfig` Web permanece ES2020. Sem CSS, markup estrutural, dados, API, Android ou banco alterados.
+- **GATE VALIDADO:** [GitHub Actions #43216531856](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43216531856) concluiu `success` no commit de código `f49bdbfff236015fad1ebe990be8b9f4227635e4`. Passaram caracterização 17/17, autocomplete 5/5, `test:core`, `test:evolution-data`, **build Web**.
+- O bloqueio TypeScript do build está resolvido tecnicamente; aprovação visual por comparação/render humano **não foi executada**, portanto não presumir nova homologação. A versão visual já homologada permanece referência.
+- Persistem testes transacionais fictícios e bloqueios de writers de edição/exclusão, saldo comum e Alimentação. Nenhuma tela Etapa 10 finalizada, sem preview novo, merge ou deploy.
+- Próximo passo autorizado: caracterizar gravações em PostgreSQL descartável e construir modal de escolha do tipo conforme print oficial, sem alterar telas homologadas, preservando PR Draft.
