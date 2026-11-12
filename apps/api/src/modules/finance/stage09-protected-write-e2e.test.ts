@@ -200,15 +200,63 @@ async function main() {
     hasCode('OPERATION_ID_REUSED'),
   );
 
+  // Concorrência REAL no PostgreSQL17: duas transferências disputam um
+  // saldo de 175, mas cada uma precisa de 125. Não podem ambas confirmar.
+  // Diferentes operationIds e descrições evitam que a proteção de duplicidade
+  // semântica esconda falha na serialização/saldo disponível.
+  const competingIds = [
+    `stage09-race-a-${suffix}`,
+    `stage09-race-b-${suffix}`,
+  ];
+  const attempts = await Promise.allSettled(competingIds.map((id, index) =>
+    createFinancialTransfer(user.id, {
+      operationId: id,
+      sourceAccountId: source.id,
+      destinationAccountId: destination.id,
+      amount: 125,
+      date: day,
+      description: `Transferência concorrente fictícia ${index + 1}`,
+    })
+  ));
+  const winners = attempts.filter((result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof createFinancialTransfer>>> =>
+    result.status === 'fulfilled');
+  const failures = attempts.filter((result): result is PromiseRejectedResult =>
+    result.status === 'rejected');
+  assert.equal(winners.length, 1, 'Somente uma transferência pode consumir o saldo concorrente.');
+  assert.equal(failures.length, 1, 'A segunda transferência deve ser recusada.');
+  assert.ok(
+    (failures[0].reason instanceof FinancialTransferError
+      && failures[0].reason.code === 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE')
+      || (typeof failures[0].reason === 'object'
+        && failures[0].reason !== null
+        && 'code' in failures[0].reason
+        && failures[0].reason.code === 'P2034'),
+    'A disputa deve falhar por saldo insuficiente ou conflito serializável.'
+  );
+  assert.equal(await prisma.financialEvent.count({ where: { workspaceId: workspace.id, type: 'transfer' } }), 4);
+  const competingReceipts = await prisma.cloudMutationReceipt.count({
+    where: { workspaceId: workspace.id, operationId: { in: competingIds } },
+  });
+  assert.equal(competingReceipts, 1, 'O comando rejeitado não pode conservar recibo.');
+  const latestTransferEvents = await prisma.financialEvent.findMany({
+    where: { workspaceId: workspace.id, type: 'transfer' },
+    select: { accountId: true, signedAmount: true, ledgerEntries: { select: { id: true } } },
+  });
+  assert.equal(latestTransferEvents.reduce((sum, item) => sum + Number(item.signedAmount), 0), 0);
+  assert.equal(latestTransferEvents.reduce((sum, item) => sum + item.ledgerEntries.length, 0), 4);
+  const sourceTransferEffect = latestTransferEvents
+    .filter((item) => item.accountId === source.id)
+    .reduce((sum, item) => sum + Number(item.signedAmount), 0);
+  assert.equal(sourceTransferEffect, -175, 'Transferências não podem consumir mais que os 175 disponíveis.');
   assert.equal(await prisma.auditLog.count({
     where: { userId: user.id, action: 'FINANCIAL_TRANSFER_CREATED' },
-  }), 1);
+  }), 2);
   assert.equal(await prisma.auditLog.count({
     where: { userId: user.id, action: 'FINANCIAL_EVENT_CREATED' },
   }), 3);
 
   console.log('STAGE09_PG17_PROTECTED_WRITERS=PASS_SYNTHETIC_ONLY');
-  console.log('STAGE09_SCOPE=EVENT_WRITER_TRANSFER_IDEMPOTENCY_ATOMICITY_REFUND_COMPETENCE_CREDIT_BENEFIT_ROUTING');
+  console.log('STAGE09_SCOPE=EVENT_WRITER_TRANSFER_IDEMPOTENCY_ATOMICITY_CONCURRENT_BALANCE_REFUND_COMPETENCE_CREDIT_BENEFIT_ROUTING');
 }
 
 main()
