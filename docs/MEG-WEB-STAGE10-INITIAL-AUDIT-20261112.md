@@ -53,3 +53,16 @@
 - Criação, edição e exclusão no banco de QA devem ser testadas posteriormente com fixtures fictícias, rollback/retry/conflito real, papéis de autorização e domínio específico.
 - O caminho de autocomplete de descrição histórica ainda requer confirmação operacional da leitura/autorização. Não conectar dados históricos legados diretamente a formulário novo.
 - Alerta: a rota de edição monetária em `finance/service.ts` não foi promovida à autoridade da nova Web.
+
+## Auditoria complementar (12/11/2026)
+
+- **17 testes agora versionados**, sendo testes de política pura e asserções estruturais de contratos. Não afirmar que 17 testes foram executados: ainda não há comprovação do gate verde, e testes estruturais não substituem integração transacional.
+- **Autocompletar histórico:** rota GET `/events/history-snapshot` (finance/routes.ts:346+) retorna itens com `account`, `category` e `paymentMethod` (finance/service.ts:116-165), em leitura consistente com limite de 5.000 registros e resposta `limit-exceeded` quando ultrapassado. **Não é um endpoint dedicado de autocomplete** e ainda falta caracterizar seleção de sugestão sem copiar data/valor, paginação/fallback e isolação por usuário.
+- **Catálogos:** `catalog-scope.ts:5-25` só encontra conta/categoria/forma de pagamento ativas para o dono dos dados. A interface não deve adivinhar IDs.
+- **Permissões:** POST/PATCH de evento e benefício exigem ADMIN/MANAGER/OPERATOR; DELETE de evento e compra exige ADMIN/MANAGER. VIEWER não pode receber botão funcional de gravação.
+- **Divergência crítica em edição:** `finance/service.ts:229-283` executa edição de evento por `prisma.$transaction` e atualização genérica, sem resolução de status canônica, sem `expectedUpdatedAt` e sem guarda de benefício visível no writer de criação. A rota existe, mas **não fica liberada para a nova Web** antes dos testes e reconciliação.
+- **Proteção de saldo:** `event-mutation.ts:43-175` não demonstra uma consulta de saldo monetário prévia ao insert. Não declarar bloqueio de insuficiência do saldo em despesa monetária sem ensaio transacional ou decisão expressa da autoridade. Benefício exige saldo suficiente explicitamente.
+- **Alimentação:** política reconhece nome Verocard; writer benefício exige conta do tipo BENEFIT e método reconhecido, com status paid. A obrigatoriedade de escolher automaticamente Conta Benefício + Verocard + Pago ainda precisa de contrato de vínculo de catálogo, sem heurística ou nome hardcoded na camada visual.
+- **Status:** `financial-policy.ts:103+` realiza receita e Fixo, mas crédito prevalece como `planned` mesmo em Fixo. UI não pode recalcular nem sobrescrever essas decisões.
+
+**Bloqueios restantes:** executar CI, testes transacionais em PostgreSQL isolado para criação/edição/cancelamento e saldo, caracterização de autocomplete e vínculo Alimentação, definição segura do caminho de edição monetária. Nenhum preview novo nem aprovação visual da Etapa 10.
