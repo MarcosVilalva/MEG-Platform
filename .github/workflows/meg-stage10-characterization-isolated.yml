@@ -37,7 +37,7 @@ jobs:
           git diff --name-only "$BASE" HEAD | tee /tmp/stage10-changed.txt
           while IFS= read -r path; do
             case "$path" in
-              docs/MEG-WEB-STAGE10-*|scripts/meg-stage10-*.test.ts|.github/workflows/meg-stage10-*.yml|apps/web/src/meg-web-evolution/launches/stage10/*|apps/web/src/meg-web-evolution/integrated-preview/preview.tsx|MEG-WEB-CONTINUIDADE-OFICIAL.md)
+              docs/MEG-WEB-STAGE10-*|scripts/meg-stage10-*.test.ts|scripts/meg-stage10-*.browser.mjs|.github/workflows/meg-stage10-*.yml|apps/web/src/meg-web-evolution/launches/stage10/*|apps/web/src/meg-web-evolution/integrated-preview/preview.tsx|MEG-WEB-CONTINUIDADE-OFICIAL.md)
                 ;;
               *)
                 echo "FORA DO ESCOPO DA ETAPA 10: $path"
@@ -56,6 +56,33 @@ jobs:
               echo "ARQUIVO HOMOLOGADO MODIFICADO: $path"; exit 1;
             }
           done
+      - name: Build isolado da prévia (não executa TypeScript global da Home)
+        run: |
+          cd apps/web
+          npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Instalar Playwright local sem lockfile
+        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+      - name: QA do Novo/Editar em nove resoluções e nenhuma escrita
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory apps/web/dist-fluxo-integrado-08 >/tmp/meg-stage10-preview.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..25}; do
+            if curl -fsS http://127.0.0.1:4173/fluxo-integrado-08.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage10-preview.browser.mjs
+      - name: Evidências de responsividade Stage10
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage10-preview-visual
+          path: artifacts/meg-stage10-visual/
+          if-no-files-found: warn
+          retention-days: 10
       - name: Builds da Web e API sem banco remoto
         run: |
           npm run db:generate
