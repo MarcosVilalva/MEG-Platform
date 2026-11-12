@@ -107,7 +107,8 @@ test('Contexto por modalidade e conferência visual não criam regras financeira
  assert.match(code,/missingRequired/);
  assert.match(code,/missingRequired\.join/);
  assert.match(code,/Saldo não consultado nesta prévia/);
- assert.match(code,/Fechamento e vencimento conforme cadastro do cartão/);
+ assert.match(code,/!isCredit&&<div className="meg-t10-expense-payment-context"/);
+ assert.doesNotMatch(code,/Fechamento e vencimento conforme cadastro do cartão/);
  assert.match(code,/suggestions\.slice\(0,3\)/);
  assert.doesNotMatch(code,/calculateInvoice|calculateBalance|createCardPurchaseProtected\(/);
 });
