@@ -9,7 +9,7 @@ import {LaunchTypeChooser,type NewLaunchType} from './LaunchTypeChooser';
 
 /** Prévia sem API, com a própria Home P0 homologada como plano de fundo. */
 function Stage10Qa(){
- const [open,setOpen]=useState(true);
+ const [open,setOpen]=useState(false);
  const [choice,setChoice]=useState<NewLaunchType|null>(null);
  return <div data-stage10-qa="isolated" data-no-real-writers="true">
    <AppShell periodLabel="Novembro de 2026" activeSection="home">
