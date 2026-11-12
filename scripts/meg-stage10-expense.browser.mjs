@@ -35,6 +35,18 @@ try{
   assert.ok(main.bounds.x>=-1&&main.bounds.x+main.bounds.width<=width+1,'Janela cabe na largura');
   assert.equal(await modal.getByRole('button',{name:'Salvar lançamento'}).isDisabled(),true);
   if(width<1024)await modal.getByRole('button',{name:'Dados'}).click();
+  async function captureStep(step){
+   const geometry=await page.evaluate(()=>{
+    const sections=Array.from(document.querySelectorAll('.meg-t10-expense-panel')).filter(e=>getComputedStyle(e).display!=='none');
+    return sections.map(e=>({scrollHeight:e.scrollHeight,clientHeight:e.clientHeight,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}));
+   });
+   for(const panel of geometry){
+    assert.ok(panel.scrollHeight<=panel.clientHeight+2,step+' sem conteúdo cortado na vertical: '+JSON.stringify(panel));
+    assert.ok(panel.scrollWidth<=panel.clientWidth+2,step+' sem conteúdo cortado na horizontal: '+JSON.stringify(panel));
+   }
+   await page.screenshot({path:root+'/expense-'+step+'-'+width+'x'+height+'.png'});
+  }
+  await captureStep('dados');
   await modal.getByLabel('Descrição *').fill('compra de pão e maçã');
   assert.equal(await modal.getByLabel('Descrição *').inputValue(),'COMPRA DE PÃO E MAÇÃ');
   await modal.getByLabel('Categoria *').selectOption('qa-category-food');
@@ -45,6 +57,7 @@ try{
   await modal.getByLabel('Categoria *').selectOption('qa-category-house');
   await modal.getByLabel('Forma de pagamento *').selectOption('qa-method-credit');
   if(width<1024)await modal.getByRole('button',{name:'Pagamento'}).click();
+  await captureStep('pagamento');
   await modal.getByLabel('Observações (opcional)',{exact:true}).count().then(async count=>{if(count===0)await modal.getByRole('button',{name:/Observações/}).click();});
   await modal.getByLabel('Observações (opcional)').fill('estorno cartão');
   assert.equal(await modal.getByLabel('Observações (opcional)').inputValue(),'ESTORNO CARTÃO');
@@ -66,7 +79,7 @@ try{
   assert.equal(await modal.getByRole('dialog',{name:'Todas as categorias'}).isVisible(),true);
   await modal.getByRole('button',{name:'Fechar categorias'}).click();
   if(width<1024)await modal.getByRole('button',{name:'Resumo'}).click();
-  await page.screenshot({path:root+'/expense-refactor-'+width+'x'+height+'.png'});
+  await captureStep('resumo');
   assert.deepEqual(writes,[],'Nenhuma requisição de mutação');
   results.push({width,height,zeroScroll:!main.overflowX&&!main.overflowY&&!main.innerScrolling,amountNegative:true,scheduleModal:true,writes:writes.length});
   await modal.getByRole('button',{name:'Fechar formulário'}).click();
