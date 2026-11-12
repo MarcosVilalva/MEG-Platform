@@ -40,9 +40,9 @@ try {
    await page.getByRole('button',{name:'Filtros gerais'}).click();
    assert.ok(await page.getByPlaceholder('Buscar lançamentos...').isVisible(),'Filtros gerais não expandiram');
    await page.getByRole('button',{name:'Ocultar filtros gerais'}).click();
-   await page.getByRole('button',{name:'Distribuição'}).click();
+   await page.getByRole('button',{name:'Distribuição',exact:true}).click();
    assert.ok(await page.locator('#meg-l09-distribution-content').isVisible(),'Distribuição não expandiu');
-   await page.getByRole('button',{name:'Distribuição'}).click();
+   await page.getByRole('button',{name:'Distribuição',exact:true}).click();
    await page.getByRole('button',{name:'Maximizar tabela na área útil do sistema'}).click();
    assert.ok(await launch.evaluate(e=>e.classList.contains('is-grid-focus')),'Foco não ativou');
    await page.keyboard.press('Escape');
