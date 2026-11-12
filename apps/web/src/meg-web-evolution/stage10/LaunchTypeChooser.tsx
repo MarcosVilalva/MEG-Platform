@@ -3,20 +3,8 @@ import {createPortal} from 'react-dom';
 import './LaunchTypeChooser.css';
 
 /** Exclusivamente seleção de tipo. Nenhum writer financeiro é invocado aqui. */
-export type NewLaunchType = 'expense' | 'income' | 'transfer' | 'benefit';
-
-type Option = {
- type: NewLaunchType;
- title: string;
- description: string;
- tags: readonly string[];
-};
-export const NEW_LAUNCH_TYPES: readonly Option[] = [
- {type:'expense',title:'Despesa',description:'Saídas, compras e gastos',tags:['Conta','Cartão','Parcelas']},
- {type:'income',title:'Receita',description:'Entradas e recebimentos',tags:['Conta','Recorrência']},
- {type:'transfer',title:'Transferência',description:'Mover entre contas',tags:['Origem e destino','Entre contas']},
- {type:'benefit',title:'Benefício',description:'Usar ou recarregar Verocard',tags:['Saldo','Consumo']},
-];
+import {NEW_LAUNCH_TYPES, type NewLaunchType} from './launch-type-options';
+export type {NewLaunchType} from './launch-type-options';
 
 type Props = {
  open:boolean;
