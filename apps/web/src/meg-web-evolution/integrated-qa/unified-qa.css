@@ -69,3 +69,31 @@ html[data-meg-typography-pilot="true"] .meg-new-launch h2{
 .meg-unified-choice-overlay .meg-choice__feature-copy strong{
   font-variant-numeric:tabular-nums;
 }
+
+
+/* MEG PRISM 2.0: quarteto cinematográfico validado em proposta 13/11/2026. */
+/* Somente seletor da QA unificada Stage10.
+ * Arte sem marcas, rótulos, bordas internas ou conteúdo financeiro.
+ * A nova coleção tem composição horizontal com o assunto à esquerda
+ * e espaço escuro para os textos originais; preservar hero, cartões,
+ * faixas, estados de disabled, ícones e demais telas homologadas.
+ */
+.meg-unified-choice-overlay .meg-choice__option-photo{
+  inset:0;
+  background-size:100% 100%;
+  background-position:center;
+  background-repeat:no-repeat;
+  transform:none;
+}
+.meg-unified-choice-overlay .meg-choice__option.is-expense .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/expense.webp');
+}
+.meg-unified-choice-overlay .meg-choice__option.is-income .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/income.webp');
+}
+.meg-unified-choice-overlay .meg-choice__option.is-transfer .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/transfer.webp');
+}
+.meg-unified-choice-overlay .meg-choice__option.is-benefit .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/benefit.webp');
+}
