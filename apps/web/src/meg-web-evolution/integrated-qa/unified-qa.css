@@ -97,3 +97,48 @@ html[data-meg-typography-pilot="true"] .meg-new-launch h2{
 .meg-unified-choice-overlay .meg-choice__option.is-benefit .meg-choice__option-photo{
   background-image:url('/meg-assets/prism-cinematic-20261113/benefit.webp');
 }
+
+
+/* ETAPA 10, QA: correção de altura curta no celular em paisagem (POCO C75). */
+/* O problema era grid-template-rows:repeat(4,minmax(0,1fr)) dentro de uma
+ * janela com altura rígida: cada card podia cair para ~25px, cortando texto.
+ * Somente viewports BAIXOS em paisagem, sem alterar o layout homologado em
+ * retrato, notebook ou desktop. A rolagem é interna ao diálogo, nunca lateral.
+ * 560px: condição técnica de altura, não breakpoint estrutural de largura.
+ */
+@media (max-height: 560px) and (orientation: landscape) and (min-width: 640px) {
+  .meg-unified-choice-overlay .meg-new-launch.is-choose {
+    height: calc(100dvh - .65rem);
+    max-height: calc(100dvh - .65rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-padding-top: 5rem;
+    scrollbar-width: thin;
+    scrollbar-color: #15b3aa #052a30;
+    -webkit-overflow-scrolling: touch;
+  }
+  .meg-unified-choice-overlay .meg-new-launch.is-choose > .meg-new-launch__header {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    background: linear-gradient(105deg, rgba(1,45,50,.98), rgba(1,24,31,.98));
+  }
+  .meg-unified-choice-overlay .meg-choice--photo {
+    flex: 0 0 auto;
+    grid-template-rows: auto auto;
+  }
+  .meg-unified-choice-overlay .meg-choice__body {
+    min-height: 0;
+    height: auto;
+  }
+  .meg-unified-choice-overlay .meg-choice__options {
+    grid-template-rows: repeat(4, minmax(108px, auto));
+  }
+  .meg-unified-choice-overlay .meg-choice__option {
+    min-height: 108px;
+  }
+  .meg-unified-choice-overlay .meg-choice__footer {
+    min-height: 4.5rem;
+  }
+}
