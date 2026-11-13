@@ -99,33 +99,39 @@ html[data-meg-typography-pilot="true"] .meg-new-launch h2{
 }
 
 
-/* ETAPA 10, QA: correção de altura curta no celular em paisagem (POCO C75). */
-/* O problema era grid-template-rows:repeat(4,minmax(0,1fr)) dentro de uma
- * janela com altura rígida: cada card podia cair para ~25px, cortando texto.
- * Somente viewports BAIXOS em paisagem, sem alterar o layout homologado em
- * retrato, notebook ou desktop. A rolagem é interna ao diálogo, nunca lateral.
- * 560px: condição técnica de altura, não breakpoint estrutural de largura.
+/* ETAPA 10, QA: paisagem baixa com header e scroll em regiões separadas.
+ * O cabeçalho permanece fora do scrollport. Cards são recortados
+ * na borda superior do corpo, sem passar por trás dos títulos.
+ * Somente celular horizontal de baixa altura; desktop preservado.
  */
 @media (max-height: 560px) and (orientation: landscape) and (min-width: 640px) {
   .meg-unified-choice-overlay .meg-new-launch.is-choose {
+    display: flex;
+    flex-direction: column;
     height: calc(100dvh - .65rem);
     max-height: calc(100dvh - .65rem);
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+  .meg-unified-choice-overlay .meg-new-launch.is-choose > .meg-new-launch__header {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+    z-index: 12;
+    background: #031b20;
+    border-radius: 0;
+  }
+  .meg-unified-choice-overlay .meg-choice--photo {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    scroll-padding-top: 5rem;
+    scroll-padding-top: .35rem;
     scrollbar-width: thin;
     scrollbar-color: #15b3aa #052a30;
     -webkit-overflow-scrolling: touch;
-  }
-  .meg-unified-choice-overlay .meg-new-launch.is-choose > .meg-new-launch__header {
-    position: sticky;
-    top: 0;
-    z-index: 12;
-    background: linear-gradient(105deg, rgba(1,45,50,.98), rgba(1,24,31,.98));
-  }
-  .meg-unified-choice-overlay .meg-choice--photo {
-    flex: 0 0 auto;
     grid-template-rows: auto auto;
   }
   .meg-unified-choice-overlay .meg-choice__body {
