@@ -132,10 +132,11 @@ html[data-meg-typography-pilot="true"] .meg-new-launch h2{
     scrollbar-width: thin;
     scrollbar-color: #15b3aa #052a30;
     -webkit-overflow-scrolling: touch;
-    grid-template-rows: auto auto;
+    grid-template-rows: max-content max-content;
+    align-content: start;
   }
   .meg-unified-choice-overlay .meg-choice__body {
-    min-height: 0;
+    min-height: max-content;
     height: auto;
   }
   .meg-unified-choice-overlay .meg-choice__options {
