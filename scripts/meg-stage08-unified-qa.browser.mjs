@@ -112,6 +112,36 @@ try{
    await page.goto(base+'/meg-unificado-qa.html?visual=prism&tela=lancamentos&modal=novo',{waitUntil:'domcontentloaded'});
    await page.getByTestId('new-launch-types').waitFor({state:'visible'});
    assert.equal(await page.getByRole('dialog',{name:'Novo lançamento'}).count(),1,'Acesso direto ao modal Prism');
+
+   // Etapa 10, Editar Despesa: rota isolada, dados fictícios e nenhum writer.
+   await page.goto(base+'/meg-unificado-qa.html?visual=prism&tela=lancamentos&modal=editar',{waitUntil:'domcontentloaded'});
+   const edit=page.getByTestId('stage10-edit-preview');
+   await edit.waitFor({state:'visible'});
+   assert.equal(await edit.getByRole('heading',{name:'Editar lançamento'}).count(),1);
+   assert.equal(await edit.getByRole('button',{name:'Salvar alterações'}).isDisabled(),true,'Editar QA nunca grava');
+   assert.equal(await edit.getByLabel('Valor original').isDisabled(),true,'Valor bloqueado até writer seguro');
+   assert.equal(await edit.getByLabel('Categoria original').isDisabled(),true,'Categoria bloqueada até contrato');
+   assert.equal(await edit.getByLabel('Data original').isDisabled(),true,'Data bloqueada até contrato');
+   assert.equal(await edit.getByLabel('Conta original').isDisabled(),true,'Conta de origem bloqueada');
+   assert.equal(await edit.getByLabel('Forma de pagamento original').isDisabled(),true,'Método bloqueado');
+   assert.equal(await edit.getByLabel('Descrição da edição').inputValue(),'COMPRA DE MATERIAL PARA CASA');
+   await edit.getByLabel('Descrição da edição').fill('observação de teste');
+   assert.equal(await edit.getByLabel('Descrição da edição').inputValue(),'OBSERVAÇÃO DE TESTE','Descrição em maiúsculas');
+   const editNotes=edit.getByRole('button',{name:/Observações/});
+   assert.equal(await editNotes.getAttribute('aria-expanded'),expectedExpanded?'true':'false','Observações iniciam segundo tamanho da tela');
+   if(!expectedExpanded)await editNotes.click();
+   await edit.getByLabel('Observações da edição').fill('ajuste fictício');
+   assert.equal(await edit.getByLabel('Observações da edição').inputValue(),'AJUSTE FICTÍCIO');
+   if(width<=1024)await edit.getByRole('button',{name:'Resumo',exact:true}).click();
+   assert.match(await edit.getByLabel('Resumo da edição').innerText(),/OBSERVAÇÃO DE TESTE/);
+   const visibleOverflow=await edit.evaluate(el=>Array.from(el.querySelectorAll('.meg-t10-expense-panel'))
+    .filter(p=>getComputedStyle(p).display!=='none')
+    .map(p=>({label:p.getAttribute('aria-label'),excess:p.scrollHeight-p.clientHeight})));
+   assert.ok(visibleOverflow.every(x=>x.excess<=2),'Editar sem conteúdo cortado '+width+': '+JSON.stringify(visibleOverflow));
+   await page.screenshot({path:resolve(output,'editar-despesa-qa-'+width+'.png'),fullPage:false});
+   await edit.getByRole('button',{name:'Fechar edição'}).click();
+   assert.equal(await page.getByTestId('stage10-edit-preview').count(),0);
+
    assert.deepEqual(realApi,[],'QA atingiu API real');
    assert.deepEqual(errors,[],'Erro de JavaScript na QA');
    console.log('MEG_UNIFIED_PRISM '+width+'x'+height+' PASS');
