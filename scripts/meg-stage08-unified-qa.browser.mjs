@@ -198,10 +198,20 @@ try{
     const footer=element.querySelector('.meg-choice__footer').getBoundingClientRect();
     const host=element.getBoundingClientRect();
     const computed=getComputedStyle(element);
+    const header=element.querySelector('.meg-new-launch__header');
+    const headerBox=header.getBoundingClientRect();
+    const scrollBody=element.querySelector('.meg-choice--photo');
+    const scrollBox=scrollBody.getBoundingClientRect();
     return {hostTop:host.top,hostBottom:host.bottom,hostWidth:host.width,
      clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,
      clientWidth:element.clientWidth,scrollWidth:element.scrollWidth,
      overflowY:computed.overflowY,photoCards,footerTop:footer.top,footerBottom:footer.bottom,
+     headerTop:headerBox.top,headerBottom:headerBox.bottom,
+     headerPosition:getComputedStyle(header).position,
+     headerBackground:getComputedStyle(header).backgroundColor,
+     scrollBodyTop:scrollBox.top,scrollBodyClientHeight:scrollBody.clientHeight,
+     scrollBodyScrollHeight:scrollBody.scrollHeight,
+     scrollBodyOverflowY:getComputedStyle(scrollBody).overflowY,
      documentWidth:document.documentElement.scrollWidth,
      documentViewportWidth:document.documentElement.clientWidth};
    });
@@ -211,16 +221,34 @@ try{
    assert.ok(facts.photoCards.every((card,index,arr)=>index===0||card.top>=arr[index-1].bottom-2),
     'Cards não podem se sobrepor '+width+'x'+height+JSON.stringify(facts.photoCards));
    if(compact){
-    assert.equal(facts.overflowY,'auto','Paisagem de pouca altura deve permitir rolagem interna '+width+'x'+height);
-    assert.ok(facts.scrollHeight>facts.clientHeight+100,'Deve rolar em vez de achatar cards '+width+'x'+height);
+    assert.equal(facts.overflowY,'hidden','Diálogo deve recortar conteúdo atrás do título '+width+'x'+height);
+    assert.equal(facts.headerPosition,'relative','Cabeçalho fixo deve ficar fora do scrollport '+width+'x'+height);
+    assert.equal(facts.headerBackground,'rgb(3, 27, 32)','Cabeçalho deve ser opaco '+width+'x'+height);
+    assert.equal(facts.scrollBodyOverflowY,'auto','Somente corpo de cards deve rolar '+width+'x'+height);
+    assert.ok(facts.scrollBodyTop>=facts.headerBottom-2,'Corpo deve começar após título '+width+'x'+height);
+    assert.ok(facts.scrollBodyScrollHeight>facts.scrollBodyClientHeight+100,'Deve rolar sem achatar cards '+width+'x'+height);
     assert.ok(facts.photoCards.every(card=>card.height>=105),'Cards legíveis sem achatamento '+width+'x'+height+JSON.stringify(facts.photoCards));
     assert.ok(facts.photoCards.every(card=>card.textTop>=card.top-2 && card.textBottom<=card.bottom+2),
      'Texto dentro dos cards '+width+'x'+height+JSON.stringify(facts.photoCards));
     assert.ok(facts.footerTop>=facts.photoCards[3].bottom-3,'Rodapé não pode cobrir os cards');
     await page.screenshot({path:resolve(output,'prism-poco-landscape-top-'+width+'x'+height+'.png'),fullPage:false});
-    await dialog.evaluate(el=>{el.scrollTop=el.scrollHeight;});
-    const bottomScroll=await dialog.evaluate(el=>el.scrollTop);
-    assert.ok(bottomScroll>50,'Rolagem interna precisa funcionar por toque '+width+'x'+height);
+    const scroller=dialog.locator('.meg-choice--photo');
+    await scroller.evaluate(el=>{el.scrollTop=el.scrollHeight;});
+    const afterScroll=await dialog.evaluate(el=>{
+     const header=el.querySelector('.meg-new-launch__header');
+     const hb=header.getBoundingClientRect();
+     const scrollRegion=el.querySelector('.meg-choice--photo');
+     const sb=scrollRegion.getBoundingClientRect();
+     const first=el.querySelector('.meg-choice__option').getBoundingClientRect();
+     const hit=document.elementFromPoint((hb.left+hb.right)/2,hb.bottom-3);
+     return {scrollTop:scrollRegion.scrollTop,headerTop:hb.top,headerBottom:hb.bottom,
+      scrollBodyTop:sb.top,firstCardTop:first.top,headerReceivesHit:header.contains(hit)};
+    });
+    assert.ok(afterScroll.scrollTop>50,'Rolagem interna precisa funcionar por toque '+width+'x'+height);
+    assert.ok(Math.abs(afterScroll.headerTop-facts.headerTop)<=2&&Math.abs(afterScroll.headerBottom-facts.headerBottom)<=2,
+     'Título não deve se mover na rolagem '+width+'x'+height);
+    assert.ok(afterScroll.firstCardTop<afterScroll.scrollBodyTop-20,'Card deve sumir pela borda do corpo '+width+'x'+height);
+    assert.ok(afterScroll.headerReceivesHit,'Card jamais pode interceptar clique sobre cabeçalho '+width+'x'+height);
     await page.screenshot({path:resolve(output,'prism-poco-landscape-bottom-'+width+'x'+height+'.png'),fullPage:false});
    }else{
     assert.ok(facts.photoCards.every(card=>card.height>=85),
