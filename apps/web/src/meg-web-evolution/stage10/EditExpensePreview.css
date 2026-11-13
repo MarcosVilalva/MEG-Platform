@@ -1,0 +1,40 @@
+/* Editar, Etapa 10: somente ajustes locais ao formulário aprovado de Nova Despesa.
+ * Compartilha a mesma malha Prism de três colunas e os mesmos breakpoints.
+ * Não afeta a versão homologada de criação.
+ */
+.meg-t10-edit .meg-t10-edit-hint{
+ display:block;color:#9bd9d0;font-size:.68rem;line-height:1.35;
+ margin:0 0 2px;
+}
+.meg-t10-edit .meg-t10-expense-panel :is(input,select):disabled{
+ opacity:1;color:#c5e4e0;border-color:#156c76;background:rgba(0,32,41,.76);
+ cursor:default;
+}
+.meg-t10-edit .meg-t10-expense-category:disabled{
+ opacity:.75;
+}
+.meg-t10-edit .meg-t10-expense-category[aria-pressed=true]{
+ opacity:1;
+}
+.meg-t10-edit .meg-t10-edit-protection{
+ margin-top:4px;padding:10px;border-radius:12px;
+ border:1px solid #188889;background:linear-gradient(130deg,#06454a,#012930);
+}
+.meg-t10-edit .meg-t10-edit-protection strong{
+ display:flex;gap:7px;align-items:center;color:#98fff0;font-size:.76rem;
+}
+.meg-t10-edit .meg-t10-edit-protection p{
+ margin:6px 0 0;color:#c2e0dd;font-size:.7rem;line-height:1.45;
+}
+.meg-t10-edit .meg-t10-expense-summary dd{
+ overflow-wrap:anywhere;
+}
+@media(max-height:820px) and (min-width:1025px){
+ .meg-t10-edit .meg-t10-edit-protection{padding:6px 8px;margin-top:2px}
+ .meg-t10-edit .meg-t10-edit-protection p{font-size:.65rem;line-height:1.2;margin-top:3px}
+ .meg-t10-edit .meg-t10-edit-hint{font-size:.61rem}
+}
+@media(max-width:1024px){
+ .meg-t10-edit .meg-t10-edit-protection{padding:8px}
+ .meg-t10-edit .meg-t10-edit-hint{font-size:.63rem}
+}
