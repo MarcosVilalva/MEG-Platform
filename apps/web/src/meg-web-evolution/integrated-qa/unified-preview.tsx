@@ -12,6 +12,7 @@ import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
 import {PrismLaunchChoice,PrismCloseGlyph} from './PrismLaunchChoice';
 import {ExpenseForm,type ExpenseCatalogs} from '../stage10/ExpenseForm';
+import {EditExpensePreview,QA_EDIT_EXPENSE_SNAPSHOT} from '../stage10/EditExpensePreview';
 import type {HistorySnapshot} from '../stage10/autocomplete-history';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
 import '../launches/new-launch.css';
@@ -20,7 +21,7 @@ import './unified-qa.css';
 
 /** Integração EXCLUSIVAMENTE visual. A sessão, os catálogos e os eventos são fictícios. */
 type Screen='loading-entry'|'login'|'register'|'recover'|'loading-after'|'home'|'launches';
-type Overlay='choice'|'expense'|null;
+type Overlay='choice'|'expense'|'edit'|null;
 const known:Record<string,Screen>={
  'carregamento':'loading-entry','login':'login','cadastro':'register',
  'recuperar-senha':'recover','carregamento-apos-login':'loading-after',
@@ -66,7 +67,7 @@ const history:HistorySnapshot={protocol:'financial-history-v1',kind:'complete',i
 ]};
 function UnifiedQA(){
  const [screen,setScreen]=useState<Screen>(initial);
- const [overlay,setOverlay]=useState<Overlay>(()=>initial==='launches'&&params.get('modal')==='novo'?'choice':null);
+ const [overlay,setOverlay]=useState<Overlay>(()=>initial==='launches'?(params.get('modal')==='novo'?'choice':params.get('modal')==='editar'?'edit':null):null);
  const [progress,setProgress]=useState(0);
  const [notice,setNotice]=useState('');
  const loading=screen==='loading-entry'||screen==='loading-after';
@@ -127,6 +128,7 @@ function UnifiedQA(){
    </div>}
   {overlay==='expense'&&<ExpenseForm catalogs={catalogs} historySnapshot={history}
     saveEnabled={false} onBack={()=>setOverlay('choice')}/>}
+  {overlay==='edit'&&<EditExpensePreview snapshot={QA_EDIT_EXPENSE_SNAPSHOT} onBack={()=>setOverlay(null)}/>}
   {notice&&<output className="meg-unified-notice" role="status">{notice}
     <button type="button" aria-label="Fechar aviso" onClick={()=>setNotice('')}>×</button>
    </output>}
