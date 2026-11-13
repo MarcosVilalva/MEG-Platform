@@ -45,19 +45,41 @@ try{
    assert.equal(await picker.locator('.meg-choice__feature-icon svg[data-meg-prism="icon-2"]').count(),3,'Rodapé com SVG Prism');
    assert.ok(await picker.locator('.meg-choice__tag-icon[data-meg-prism="icon-2"]').count()>=8,'Ícones semânticos nos chips');
    assert.equal(await page.locator('.meg-new-launch__close svg[data-meg-prism="icon-2"]').count(),1,'Fechar com SVG Prism');
-   const photoBackground=await picker.locator('.meg-choice__option.is-expense .meg-choice__option-photo').evaluate(el=>getComputedStyle(el).backgroundImage);
-   assert.match(photoBackground,/expense\.webp/,'Imagem HD de Despesa preservada');
-   const photoClip=await picker.locator('.meg-choice__option.is-expense').evaluate(card=>{
-    const photo=card.querySelector('.meg-choice__option-photo');
-    if(!photo)return null;
-    const outer=card.getBoundingClientRect(),inner=photo.getBoundingClientRect(),computed=getComputedStyle(card);
-    return {clipped:computed.overflowX==='hidden'&&computed.overflowY==='hidden',
-      borderRadius:computed.borderRadius,leftBleed:outer.left-inner.left,rightBleed:inner.right-outer.right,
-      topBleed:outer.top-inner.top,bottomBleed:inner.bottom-outer.bottom};
-   });
-   assert.ok(photoClip?.clipped&&photoClip.leftBleed>=20&&photoClip.rightBleed>=20&&photoClip.topBleed>=10&&photoClip.bottomBleed>=10,
-    'Arte deve sangrar sob o contorno e ser recortada pelo card '+width+': '+JSON.stringify(photoClip));
-
+   // Conjunto fotográfico original MEG Prism: quatro WebP reais, sem marcas
+   // e sem a borda duplicada da arte antiga. Nenhum CSS homologado é editado.
+   const cardAssets=[
+    {kind:'expense',filename:'expense.webp',width:1672,height:230,bytes:38188},
+    {kind:'income',filename:'income.webp',width:1672,height:227,bytes:29938},
+    {kind:'transfer',filename:'transfer.webp',width:1672,height:230,bytes:35584},
+    {kind:'benefit',filename:'benefit.webp',width:1672,height:244,bytes:41882},
+   ];
+   for(const art of cardAssets){
+    const card=picker.locator('.meg-choice__option.is-'+art.kind);
+    const img=card.locator('.meg-choice__option-photo');
+    const cssUrl=await img.evaluate(el=>getComputedStyle(el).backgroundImage);
+    const assetPath='/meg-assets/prism-cinematic-20261113/'+art.filename;
+    assert.ok(cssUrl.includes(assetPath),'Imagem MEG Prism ausente em '+art.kind+': '+cssUrl);
+    const box=await card.evaluate(el=>{
+     const child=el.querySelector('.meg-choice__option-photo');
+     const outer=el.getBoundingClientRect(),inner=child.getBoundingClientRect();
+     const clip=getComputedStyle(el);
+     return {cut:clip.overflowX==='hidden'&&clip.overflowY==='hidden',
+      delta:[inner.left-outer.left,outer.right-inner.right,inner.top-outer.top,outer.bottom-inner.bottom],
+      radius:clip.borderRadius};
+    });
+    assert.ok(box.cut&&box.delta.every(n=>n>=-2&&n<=3),
+     'Arte deve estar DENTRO do contorno original: '+art.kind+' '+width+' '+JSON.stringify(box));
+    if(width===390){
+     const response=await page.request.get(base+assetPath);
+     assert.equal(response.status(),200,'Imagem publicada acessível: '+art.kind);
+     const buffer=await response.body();
+     assert.equal(buffer.length,art.bytes,'Imagem aprovada deve manter bytes originais: '+art.kind);
+     assert.equal(buffer.subarray(0,4).toString('ascii'),'RIFF','Header RIFF: '+art.kind);
+     assert.equal(buffer.subarray(8,12).toString('ascii'),'WEBP','WebP válido: '+art.kind);
+     assert.equal(buffer.readUInt16LE(26)&0x3fff,art.width,'Largura alta definição: '+art.kind);
+     assert.equal(buffer.readUInt16LE(28)&0x3fff,art.height,'Altura esperada: '+art.kind);
+    }
+   }
 
    assert.equal(await picker.getByRole('button',{name:'Transferência indisponível'}).isDisabled(),true);
    assert.equal(await picker.getByRole('button',{name:'Benefício indisponível'}).isDisabled(),true);
