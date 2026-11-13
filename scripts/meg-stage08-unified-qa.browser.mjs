@@ -169,4 +169,70 @@ try{
    console.log('MEG_UNIFIED_PRISM '+width+'x'+height+' PASS');
   }finally{await page.close();}
  }
+
+ // QA focada na correção de paisagem do Poco C75 e preservação do layout amplo.
+ // O conjunto completo das cinco resoluções acima permanece intocado.
+ for(const [width,height,compact] of [
+  [820,360,true],      // Poco C75: 1640 x 720 pixels físicos, viewport CSS ~820 x 360
+  [1024,450,true],     // captura horizontal enviada pelo usuário, perfil aproximado
+  [1366,768,false],    // notebooks 15,6 polegadas
+  [1920,1080,false],   // monitor wide 23 polegadas
+  [1920,1200,false],   // notebook 16 polegadas 16:10
+ ]){
+  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
+  const pageErrors=[];
+  page.on('pageerror',err=>pageErrors.push(String(err)));
+  try{
+   await page.goto(base+'/meg-unificado-qa.html?visual=prism&tela=lancamentos&modal=novo',
+    {waitUntil:'domcontentloaded'});
+   const dialog=page.getByRole('dialog',{name:'Novo lançamento'});
+   const picker=page.getByTestId('new-launch-types');
+   await picker.waitFor({state:'visible'});
+   const facts=await dialog.evaluate(element=>{
+    const photoCards=Array.from(element.querySelectorAll('.meg-choice__option')).map(card=>{
+      const rect=card.getBoundingClientRect();
+      const text=card.querySelector('.meg-choice__option-text')?.getBoundingClientRect();
+      return {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,height:rect.height,
+       textBottom:text?.bottom??0, textTop:text?.top??0};
+    });
+    const footer=element.querySelector('.meg-choice__footer').getBoundingClientRect();
+    const host=element.getBoundingClientRect();
+    const computed=getComputedStyle(element);
+    return {hostTop:host.top,hostBottom:host.bottom,hostWidth:host.width,
+     clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,
+     clientWidth:element.clientWidth,scrollWidth:element.scrollWidth,
+     overflowY:computed.overflowY,photoCards,footerTop:footer.top,footerBottom:footer.bottom,
+     documentWidth:document.documentElement.scrollWidth,
+     documentViewportWidth:document.documentElement.clientWidth};
+   });
+   assert.equal(facts.photoCards.length,4,'Quatro cards preservados '+width+'x'+height);
+   assert.ok(facts.scrollWidth<=facts.clientWidth+2,'Sem rolagem lateral da janela '+width+'x'+height);
+   assert.ok(facts.documentWidth<=facts.documentViewportWidth+2,'Página sem rolagem horizontal '+width+'x'+height);
+   assert.ok(facts.photoCards.every((card,index,arr)=>index===0||card.top>=arr[index-1].bottom-2),
+    'Cards não podem se sobrepor '+width+'x'+height+JSON.stringify(facts.photoCards));
+   if(compact){
+    assert.equal(facts.overflowY,'auto','Paisagem de pouca altura deve permitir rolagem interna '+width+'x'+height);
+    assert.ok(facts.scrollHeight>facts.clientHeight+100,'Deve rolar em vez de achatar cards '+width+'x'+height);
+    assert.ok(facts.photoCards.every(card=>card.height>=105),'Cards legíveis sem achatamento '+width+'x'+height+JSON.stringify(facts.photoCards));
+    assert.ok(facts.photoCards.every(card=>card.textTop>=card.top-2 && card.textBottom<=card.bottom+2),
+     'Texto dentro dos cards '+width+'x'+height+JSON.stringify(facts.photoCards));
+    assert.ok(facts.footerTop>=facts.photoCards[3].bottom-3,'Rodapé não pode cobrir os cards');
+    await page.screenshot({path:resolve(output,'prism-poco-landscape-top-'+width+'x'+height+'.png'),fullPage:false});
+    await dialog.evaluate(el=>{el.scrollTop=el.scrollHeight;});
+    const bottomScroll=await dialog.evaluate(el=>el.scrollTop);
+    assert.ok(bottomScroll>50,'Rolagem interna precisa funcionar por toque '+width+'x'+height);
+    await page.screenshot({path:resolve(output,'prism-poco-landscape-bottom-'+width+'x'+height+'.png'),fullPage:false});
+   }else{
+    assert.ok(facts.photoCards.every(card=>card.height>=85),
+     'Card de notebook/monitor não pode ser comprimido '+width+'x'+height+JSON.stringify(facts.photoCards));
+    await page.screenshot({path:resolve(output,'prism-desktop-protegido-'+width+'x'+height+'.png'),fullPage:false});
+   }
+   assert.equal(await picker.getByRole('button',{name:'Transferência indisponível'}).isDisabled(),true);
+   assert.equal(await picker.getByRole('button',{name:'Benefício indisponível'}).isDisabled(),true);
+   assert.equal(await picker.getByRole('button',{name:'Escolher Despesa'}).isEnabled(),true);
+   assert.deepEqual(pageErrors,[],'Sem erros JS '+width+'x'+height);
+   console.log('MEG_PRISM_COMPACT_LANDSCAPE '+width+'x'+height+' PASS');
+  }finally{await page.close();}
+ }
+
 }finally{await browser.close();}
