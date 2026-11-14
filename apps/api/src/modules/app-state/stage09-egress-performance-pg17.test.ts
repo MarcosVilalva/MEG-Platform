@@ -44,6 +44,23 @@ const streamedDigestQuery = (workspaceId: string) => Prisma.sql`
     ), ''), 'UTF8')), 'hex') AS "eventDigest"
 `;
 
+// Forma materializada: primeiro transforma cada linha completa em 64 hex,
+// depois agrega APENAS id + hash, impedindo sort das linhas JSONB pesadas.
+// Alternativa de benchmark, ainda nao aplicada ao timer.
+const materializedDigestQuery = (workspaceId: string) => Prisma.sql`
+  WITH event_row_digests AS MATERIALIZED (
+    SELECT e."id" AS id,
+           encode(sha256(convert_to(to_jsonb(e)::text, 'UTF8')), 'hex') AS digest
+    FROM "FinancialEvent" AS e WHERE e."workspaceId" = ${workspaceId}
+  )
+  SELECT
+    (SELECT encode(sha256(convert_to(to_jsonb(a)::text, 'UTF8')), 'hex')
+     FROM "AppState" AS a WHERE a."workspaceId" = ${workspaceId}) AS "stateDigest",
+    encode(sha256(convert_to(COALESCE((
+      SELECT string_agg(digest, '' ORDER BY id) FROM event_row_digests
+    ), ''), 'UTF8')), 'hex') AS "eventDigest"
+`;
+
 type DbDigest = { stateDigest: string | null; eventDigest: string };
 type Plan = { 'QUERY PLAN': Array<{ Plan: Record<string, unknown>; 'Execution Time': number; 'Planning Time': number }> };
 function obj(v: unknown): Record<string, unknown> {
@@ -183,9 +200,13 @@ async function main() {
     await extendFixture(workspace.id, workspace.ownerId, target);
     const originalSql = originalDigestQuery(workspace.id);
     const streamedSql = streamedDigestQuery(workspace.id);
+    const materializedSql = materializedDigestQuery(workspace.id);
 
     const originalWire = await digestWire(originalSql);
     const streamedWire = await digestWire(streamedSql);
+    const materializedWire = await digestWire(materializedSql);
+    assert.equal(streamedWire.digest.eventDigest, materializedWire.digest.eventDigest,
+      'Materializar hashes por linha nao pode alterar a assinatura criptografica.');
     assert.equal(originalWire.digest.stateDigest, streamedWire.digest.stateDigest,
       'Ambas representam a mesma linha AppState.');
     const actual = await completeDatabaseSignature(workspace.id);
@@ -195,11 +216,14 @@ async function main() {
     // Warmup para não comparar tempo de inicialização do Node/Prisma.
     await explainSample(originalSql);
     await explainSample(streamedSql);
+    await explainSample(materializedSql);
     const originalPlans = [];
     const streamPlans = [];
+    const materializedPlans = [];
     for (let i = 0; i < 3; i += 1) {
       originalPlans.push(await explainSample(originalSql));
       streamPlans.push(await explainSample(streamedSql));
+      materializedPlans.push(await explainSample(materializedSql));
     }
     await wireReset();
     const t0 = performance.now();
@@ -225,6 +249,12 @@ async function main() {
         maxTempWrittenBlocks: Math.max(...streamPlans.map(x=>x.tempWritten)),
         maxTempReadBlocks: Math.max(...streamPlans.map(x=>x.tempRead)),
         bytesServerToClient: streamedWire.bytes,
+      },
+      materializedRowHashCandidate: {
+        medianServerExecutionMs: median(materializedPlans.map(x => x.ms)),
+        maxTempWrittenBlocks: Math.max(...materializedPlans.map(x => x.tempWritten)),
+        maxTempReadBlocks: Math.max(...materializedPlans.map(x => x.tempRead)),
+        bytesServerToClient: materializedWire.bytes,
       },
       fullPreview: { totalClientWallMs: fullPreviewMs, bytesServerToClient: fullPreviewBytes },
       fourParallelCurrentDigestsWallMs: concurrentFourWallMs,
