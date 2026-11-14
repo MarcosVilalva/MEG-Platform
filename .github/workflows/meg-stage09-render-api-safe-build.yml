@@ -1,0 +1,44 @@
+name: MEG Stage09 Render API build without database access (synthetic CI)
+
+on:
+  push:
+    branches:
+      - 'fix/stage09-render-safe-build-qa-20261114'
+
+permissions:
+  contents: read
+
+jobs:
+  compile-without-database:
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.ref == 'refs/heads/fix/stage09-render-safe-build-qa-20261114'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      # Inexistente e não vinculado a nenhum ambiente real.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:65431/stage09_no_database?schema=public
+    steps:
+      - name: Checkout isolated build recipe
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate fail-closed contract before executing build
+        run: node scripts/meg-stage09-render-api-build.contract.test.mjs
+      - name: Execute proposed build with no database service or database connection
+        run: bash scripts/meg-stage09-render-api-build.sh
+      - name: Verify no database service was provisioned in CI
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node - <<'NODE'
+          const assert = require('node:assert/strict');
+          assert.equal(process.env.CI, 'true');
+          assert.equal(process.env.DATABASE_URL, 'postgresql://ci:ci@127.0.0.1:65431/stage09_no_database?schema=public');
+          console.log('STAGE09_API_BUILD=COMPLETED_WITHOUT_DATABASE');
+          NODE
