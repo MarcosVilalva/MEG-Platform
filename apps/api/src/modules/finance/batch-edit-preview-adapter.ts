@@ -53,6 +53,8 @@ export async function previewBatchCardCycleForActor(
   throw new BatchPreviewAccessError('BATCH_PREVIEW_ACCESS_DENIED');
  assertSelection(request);
  return prisma.$transaction(async tx=>{
+  // Defesa em profundidade: o banco recusa INSERT/UPDATE/DELETE dentro da prévia.
+  await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY');
   const actor=await tx.user.findUnique({
    where:{id:actorId},select:{id:true,isActive:true,status:true},
   });
