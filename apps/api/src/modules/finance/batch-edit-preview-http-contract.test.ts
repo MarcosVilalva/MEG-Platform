@@ -38,7 +38,7 @@ const body={
  items:[{source:'card-purchase',id:'purchase-qa-1',expectedUpdatedAt:stamp}],
  changes:{cardId:'card-qa-b',purchaseDateMode:'common',commonPurchaseDate:'2026-11-25'},
 };
-const token=(sub:string,role:string)=>app.jwt.sign({sub,role:role as import('@meg/database').UserRole});
+const token=(sub:string,role:string)=>app.jwt.sign({sub,role:role as import('@meg/database').UserRole,email:'qa-only@meg.test'});
 const request=async(payload:unknown,sub='viewer',role='VIEWER')=>await app.inject({
  method:'POST',url,
  headers:{authorization:'Bearer '+token(sub,role),'content-type':'application/json'},
