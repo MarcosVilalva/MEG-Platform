@@ -140,53 +140,67 @@ try{
    const edit=page.getByTestId('stage10-edit-preview');
    await edit.waitFor({state:'visible'});
    assert.equal(await edit.getByRole('heading',{name:'Editar lançamento'}).count(),1);
-   assert.equal(await edit.getByRole('button',{name:'Salvar alterações'}).isDisabled(),true,'Editar QA nunca grava');
-   assert.equal(await edit.getByLabel('Valor original').isDisabled(),true,'Valor bloqueado até writer seguro');
-   assert.equal(await edit.getByLabel('Categoria original').isDisabled(),true,'Categoria bloqueada até contrato');
-   assert.equal(await edit.getByLabel('Data original').isDisabled(),true,'Data bloqueada até contrato');
-   assert.equal(await edit.getByLabel('Conta original').isDisabled(),true,'Conta de origem bloqueada');
-   assert.equal(await edit.getByLabel('Forma de pagamento original').isDisabled(),true,'Método bloqueado');
-   assert.equal(await edit.getByLabel('Status original').textContent(),'Paga','Status registrado é informativo');
-   assert.equal(await edit.locator('.meg-t10-expense-category').count(),0,
-    'Editor não deve apresentar opções de categoria indisponíveis como botões');
-   assert.equal(await edit.getByRole('button',{name:'Paga',exact:true}).count(),0,
-    'Status não deve aparentar ser botão editável');
-   assert.equal(await edit.getByRole('button',{name:'Pendente',exact:true}).count(),0);
-   assert.equal(await edit.locator('button[aria-label="Fechar edição"] svg[data-meg-prism="icon-2"]').count(),1,
-    'Fechar edição deve usar SVG Prism padronizado');
+   // Editar reutiliza o formulário completo da Nova Despesa, mas não escreve na API.
+   const editSave=edit.getByRole('button',{name:'Salvar alterações'});
+   assert.equal(await editSave.isDisabled(),true,'Salvar alterações inicia bloqueado se nada mudou');
    assert.equal(await edit.getByLabel('Descrição da edição').inputValue(),'COMPRA DE MATERIAL PARA CASA');
-   await edit.getByLabel('Descrição da edição').fill('observação de teste');
-   assert.equal(await edit.getByLabel('Descrição da edição').inputValue(),'OBSERVAÇÃO DE TESTE','Descrição em maiúsculas');
+   assert.equal(await edit.getByLabel('Data do lançamento *').inputValue(),'10/11/2026');
+   assert.equal(await edit.getByLabel('Valor *').inputValue(),'125,49');
+   assert.equal(await edit.getByLabel('Categoria *').inputValue(),'qa-category-house');
+   assert.equal(await edit.getByLabel('Forma de pagamento *').inputValue(),'qa-method-pix');
+   assert.equal(await edit.getByLabel('Conta de saída do recurso *').inputValue(),'qa-account-money');
+   assert.equal(await edit.locator('.meg-t10-expense-category').count(),6,
+    'Editar usa os mesmos atalhos de categorias da Nova Despesa');
+   assert.equal(await edit.locator('button[aria-label="Fechar edição"] svg[data-meg-prism="icon-2"]').count(),1,
+    'X no editor deve usar SVG Prism');
+   assert.equal(await edit.getByRole('button',{name:'Voltar à escolha do tipo'}).count(),0,
+    'Editar possui somente X para desistir');
+   const editDescription=edit.getByLabel('Descrição da edição');
+   await editDescription.fill('compra de material alterada');
+   assert.equal(await editDescription.inputValue(),'COMPRA DE MATERIAL ALTERADA');
+   assert.equal(await editSave.isEnabled(),true,'Alteração válida habilita Salvar');
+   await editDescription.fill('COMPRA DE MATERIAL PARA CASA');
+   assert.equal(await editSave.isDisabled(),true,'Desfazer mudança desabilita Salvar');
+   await editDescription.fill('');
+   assert.equal(await editSave.isDisabled(),true,'Campo obrigatório inválido não permite Salvar');
+   await editDescription.fill('COMPRA DE MATERIAL PARA CASA');
    const editNotes=edit.getByRole('button',{name:/Observações/});
-   assert.equal(await editNotes.getAttribute('aria-expanded'),expectedExpanded?'true':'false','Observações iniciam segundo tamanho da tela');
+   assert.equal(await editNotes.getAttribute('aria-expanded'),expectedExpanded?'true':'false',
+    'Observações mantêm responsividade do formulário homologado');
    if(!expectedExpanded)await editNotes.click();
-   await edit.getByLabel('Observações da edição').fill('ajuste fictício');
-   assert.equal(await edit.getByLabel('Observações da edição').inputValue(),'AJUSTE FICTÍCIO');
-   if(width<=1024)await edit.getByRole('button',{name:'Resumo',exact:true}).click();
-   assert.match(await edit.getByLabel('Resumo da edição').innerText(),/OBSERVAÇÃO DE TESTE/);
+   const editNotesField=edit.getByLabel('Observações (opcional)');
+   assert.equal(await editNotesField.inputValue(),'LANÇAMENTO FICTÍCIO PARA REVISÃO VISUAL');
+   await editNotesField.fill('ajuste fictício');
+   assert.equal(await editSave.isEnabled(),true,'Observações alteradas habilitam Salvar');
+   await editNotesField.fill('LANÇAMENTO FICTÍCIO PARA REVISÃO VISUAL');
+   assert.equal(await editSave.isDisabled(),true,'Observações restauradas removem dirty state');
    const editLayout=await edit.evaluate(el=>{
-    const modal=el.getBoundingClientRect();
-    const grid=el.querySelector('.meg-t10-expense-grid').getBoundingClientRect();
-    const panels=Array.from(el.querySelectorAll('.meg-t10-expense-panel')).map(node=>node.getBoundingClientRect());
-    return {height:modal.height,emptyBottom:modal.bottom-grid.bottom,
-      widths:panels.map(p=>p.width),bottoms:panels.map(p=>p.bottom),
-      gridBottom:grid.bottom,gridTop:grid.top};
+    const rect=el.getBoundingClientRect();
+    const panels=Array.from(el.querySelectorAll('.meg-t10-expense-panel'));
+    return {height:rect.height,panels:panels.length,
+     horizontal:document.documentElement.scrollWidth>document.documentElement.clientWidth+2};
    });
-   if(width>1024){
-    assert.ok(editLayout.emptyBottom>=-2&&editLayout.emptyBottom<=6,
-     'Editor desktop não deve reservar espaço vazio abaixo do grid '+width+': '+JSON.stringify(editLayout));
-    assert.ok(editLayout.height<=height-10,'Editor deve caber na janela '+width);
-    assert.ok(editLayout.widths.every(w=>w>200),'Três colunas desktop preservadas '+width);
-    assert.ok(editLayout.bottoms.every(b=>Math.abs(b-editLayout.bottoms[0])<=2),
-     'Colunas da edição devem terminar alinhadas '+width);
-   }
-   const visibleOverflow=await edit.evaluate(el=>Array.from(el.querySelectorAll('.meg-t10-expense-panel'))
-    .filter(p=>getComputedStyle(p).display!=='none')
-    .map(p=>({label:p.getAttribute('aria-label'),excess:p.scrollHeight-p.clientHeight})));
-   assert.ok(visibleOverflow.every(x=>x.excess<=2),'Editar sem conteúdo cortado '+width+': '+JSON.stringify(visibleOverflow));
+   assert.equal(editLayout.panels,3,'Editar preserva as três colunas do mesmo formulário');
+   assert.equal(editLayout.horizontal,false,'Editar não cria rolagem horizontal '+width);
+   assert.ok(editLayout.height<=height-10,'Editar contido na janela '+width);
    await page.screenshot({path:resolve(output,'editar-despesa-qa-'+width+'.png'),fullPage:false});
+   await editDescription.fill('ALTERAÇÃO LOCAL EM QA');
+   assert.equal(await editSave.isEnabled(),true);
+   await editSave.click();
+   assert.match(await page.getByRole('status').last().innerText(),/nenhuma alteração foi gravada/,
+    'QA deve informar que o clique não persiste dados');
+   assert.equal(await edit.count(),1,'Simulação de salvamento não altera banco nem fecha a edição');
    await edit.getByRole('button',{name:'Fechar edição'}).click();
-   assert.equal(await page.getByTestId('stage10-edit-preview').count(),0);
+   assert.equal(await page.getByTestId('stage10-edit-preview').count(),0,
+    'Fechar pelo X descarta o rascunho');
+   await page.goto(base+'/meg-unificado-qa.html?visual=prism&tela=lancamentos&modal=editar',
+    {waitUntil:'domcontentloaded'});
+   const editReopened=page.getByTestId('stage10-edit-preview');
+   await editReopened.waitFor({state:'visible'});
+   assert.equal(await editReopened.getByLabel('Descrição da edição').inputValue(),
+    'COMPRA DE MATERIAL PARA CASA','Reabrir após X recupera o original');
+   assert.equal(await editReopened.getByRole('button',{name:'Salvar alterações'}).isDisabled(),true);
+   await editReopened.getByRole('button',{name:'Fechar edição'}).click();
 
    assert.deepEqual(realApi,[],'QA atingiu API real');
    assert.deepEqual(errors,[],'Erro de JavaScript na QA');
