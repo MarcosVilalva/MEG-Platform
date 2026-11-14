@@ -53,6 +53,14 @@ try{
    'content-type':'application/json','cache-control':'private, no-store',
   };
   if(req.method()==='OPTIONS')return route.fulfill({status:204,headers,body:''});
+  if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot'&&expireReadonlyTokenOnce){
+   expireReadonlyTokenOnce=false;
+   return route.fulfill({status:401,headers,body:JSON.stringify({error:'UNAUTHORIZED'})});
+  }
+  if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot')
+   return route.fulfill({status:200,headers,body:JSON.stringify(exceedHistoryLimit
+    ? {kind:'stage10-financial-history-limit-v1',canWrite:false,limit:5000,total:5001}
+    : snapshot)});
   return route.fulfill({status:503,headers,body:JSON.stringify({error:'READONLY_API_REJECTED_REQUEST'})});
  });
  await page.route(api+'/**',async route=>{
@@ -79,14 +87,6 @@ try{
     user,accessToken:'synthetic-refreshed-access',refreshToken:'synthetic-refreshed-token-valid',
     refreshExpiresAt:'2099-01-01T00:00:00.000Z',
    })});
-  if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot'&&expireReadonlyTokenOnce){
-   expireReadonlyTokenOnce=false;
-   return route.fulfill({status:401,headers,body:JSON.stringify({error:'UNAUTHORIZED'})});
-  }
-  if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot')
-   return route.fulfill({status:200,headers,body:JSON.stringify(exceedHistoryLimit
-    ? {kind:'stage10-financial-history-limit-v1',canWrite:false,limit:5000,total:5001}
-    : snapshot)});
   return route.fulfill({status:503,headers,body:JSON.stringify({error:'UNEXPECTED_SYNTHETIC_API_REQUEST'})});
  });
  await page.goto(base+'/meg-unificado-qa.html?visual=prism&dados=reais&tela=lancamentos',{waitUntil:'domcontentloaded'});
