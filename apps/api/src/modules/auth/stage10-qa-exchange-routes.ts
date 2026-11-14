@@ -69,7 +69,7 @@ export async function registerStage10QaExchangeRoutes(
   const claims=request.user as typeof request.user&{iat?:number;exp?:number};
   const hash=createHash('sha256').update(body.data.refreshToken).digest('hex');
   try{
-   const approved=await prisma.$transaction(async tx=>{
+   const proof=await prisma.$transaction(async tx=>{
     await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY');
     const user=await tx.user.findUnique({where:{id:claims.sub},
      select:{id:true,role:true,status:true,isActive:true}});
@@ -88,7 +88,8 @@ export async function registerStage10QaExchangeRoutes(
      orderBy:{createdAt:'asc'},include:{workspace:true},
     });
     if(!member)throw new Error('STAGE10_QA_EXCHANGE_DENIED');
-    return authorizeStage10QaTokenExchange({
+    const validatedAtSeconds=Math.floor(Date.now()/1000);
+    const approved=authorizeStage10QaTokenExchange({
      enabled:runtime.enabled,
      transport:{method:request.method,path:'/auth/stage10-qa/exchange',
       origin,expectedOrigin:runtime.origin,
@@ -103,20 +104,28 @@ export async function registerStage10QaExchangeRoutes(
      workspace:{id:member.workspace.id,isActive:member.workspace.isActive},
      membership:{workspaceId:member.workspaceId,userId:member.userId,
       status:member.status,isActive:member.isActive},
-     nowSeconds:Math.floor(Date.now()/1000),
+     nowSeconds:validatedAtSeconds,
     });
+    return {approved,validatedAtSeconds};
    },{isolationLevel:Prisma.TransactionIsolationLevel.RepeatableRead,
        maxWait:5000,timeout:10000});
    const nowSeconds=Math.floor(Date.now()/1000);
+   const {approved,validatedAtSeconds}=proof;
+   const elapsed=nowSeconds-validatedAtSeconds;
+   // Nao prolongar a validade do token canônico ou da AuthSession
+   // enquanto a transacao termina. Recusar drift retrogrado e expiracao.
+   if(elapsed<0||elapsed>=approved.ttlSeconds)
+    throw new Error('STAGE10_QA_EXCHANGE_DENIED');
+   const ttlSeconds=Math.min(120,approved.ttlSeconds-elapsed);
    // A prova se refere a um snapshot recente. Backend QA revalida a sessao
    // na transacao SQL de cada GET, incluindo revogacoes apos emissao.
    const token=issueStage10QaReadToken({
     sub:approved.sub,role:approved.role,
     sessionId:approved.sessionId,workspaceId:approved.workspaceId,
    },{privateKeyPem:runtime.privateKeyPem,issuer:runtime.issuer,
-    audience:runtime.audience,nowSeconds,ttlSeconds:Math.max(1,Math.min(approved.ttlSeconds,120))});
+    audience:runtime.audience,nowSeconds,ttlSeconds});
    return reply.send({kind:'stage10-qa-read-token-v1',canWrite:false,
-    actorId:approved.sub,accessToken:token,expiresAt:nowSeconds+Math.max(1,Math.min(approved.ttlSeconds,120))});
+    actorId:approved.sub,accessToken:token,expiresAt:nowSeconds+ttlSeconds});
   }catch(error){
    if(error instanceof Error&&
      (error.message==='STAGE10_QA_EXCHANGE_DENIED'||error.message==='STAGE10_QA_ISSUER_INVALID'))
