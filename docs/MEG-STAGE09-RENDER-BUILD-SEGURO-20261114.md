@@ -364,3 +364,81 @@ adicionalmente avaliar o comportamento dos timers e do cold start concorrente
 em ambiente efemero com seguranca equivalente. O Gate 1 gerenciado de
 Supabase permanece parcial por HTTP 402 e falta de evidencias Auth/Storage
 autenticadas. Nao liberar merge, deploy, restore remoto ou upgrade.
+
+
+## Concorrencia multi-instancia e timers reais, PG17 efemero (14/11/2026)
+
+**Status: caracterizacao sintetica aprovada, NAO libera producao.** PR #692 Draft,
+exclusivamente alteracoes de teste/workflow/documentacao. Novos arquivos:
+
+- `scripts/meg-stage09-startup-timer-probe.mjs` (preload isolado com guardas
+  GitHub Actions, `NODE_ENV=test`, PG17 local, admin ficticio, portas
+  loopback 65432/65433 e IPC; captura callbacks de `setInterval` de 15 min e
+  6 h sem modificar `apps/api/src/server.ts` nem reduzir seus intervalos).
+- `scripts/meg-stage09-render-startup-concurrent-pg17-synthetic.test.ts`
+  (inicia **duas instancias HTTP reais** de `server.ts` em portas loopback
+  diferentes, sobre o mesmo banco PG17 descartavel; aciona callbacks via IPC,
+  consulta apenas `/ready` e `/health` e verifica registros Prisma no
+  fixture).
+- Workflow `.github/workflows/meg-stage09-render-startup-pg17.yml` executa
+  ensaios anteriores em sequencia e o novo ensaio concorrente no mesmo runner
+  GitHub Actions; sem segredo de Supabase, Render, dados reais ou deploy.
+
+**Provas funcionais exatas no commit
+`898fca08f22ac675393ad282eab92b7267e85fb1`:**
+
+- [PG17 #43645480208](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43645480208)
+  **SUCCESS**, log `PG17_REAL_HTTP_CONCURRENT_AND_TIMERS_PASS`;
+  [build isolado #43645480241](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43645480241)
+  **SUCCESS** no mesmo SHA. Provas anteriores dos testes de writers e HTTP
+  foram reexecutadas no mesmo job e apresentaram respectivos marcadores PASS.
+- As duas instancias inicializaram `normalized-primary` usando os mesmos
+  registros ficticios, sem alterar `AppState.state/revision`,
+  `FinancialEvent`, `Budget`, `Payable`, `CreditCard` e faturas
+  do snapshot inicial.
+- Alteracao intencional **somente** na linha de evento sintético produziu
+  divergencia; disparar o callback real de auditoria (15min) fez uma
+  instancia registrar divergencia e `financialReady=false`, sem
+  reconstruir/apagar automaticamente a origem normalizada. Outra instancia
+  permaneceu `financialReady=true` ate sua propria auditoria, comprovando
+  que o status de runtime e **local ao processo** e /health nao mede
+  necessariamente a integridade compartilhada atual em todas as instancias.
+  Depois da restauracao EXCLUSIVA DA FIXTURE, novo disparo de auditoria
+  retornou `financialReady=true` e o snapshot foi preservado.
+- Template recorrente novo e ficticio de R$ 43,27 criado apos o startup.
+  Dois callbacks de 6h disparados em paralelo nos dois processos geraram
+  **uma unica** conta a pagar no caso caracterizado; sem duplicacao,
+  sem log de falha de manutencao e sem alteracao indevida de saldos/estado.
+  Uma repeticao subsequente permaneceu idempotente.
+- Primeira tentativa [PG17 #43645378346](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43645378346)
+  **FAIL** por assercao textual do teste (`'30.4' !== '30.40'` na
+  representacao Decimal do Prisma), **nao por perda de centavos** nem
+  regravacao financeira. A assercao foi ajustada para `toFixed(2)`,
+  apenas no teste, antes da rodada aprovada; preservar a falha no historico.
+
+**Limites e riscos pendentes:** callbacks foram disparados por IPC test-only
+sem esperar o tempo de relogio, usando codigo real registrado pelo processo;
+isso NAO valida agendamento de longo prazo sob suspensao do Free, cron,
+reinicializacao do container, falha de rede, tempos de duracao de tarefas
+ou corridas de alta escala. Foram duas instancias e duas chamadas
+concorrentes sobre uma fixture especifica, nao uma prova de linearizabilidade
+universal. Status `/health` por processo deve ser revisado para clusters
+ANTES de usar como garantia de prontidao global, sem corrigir automaticamente
+nenhuma regra. Normalizacao inicial LEGADA ainda cai em fallback antes de
+ativar; em ROLLBACK o estado persistido permanece protegido, mas o
+`catch` registra fallback em startup.
+
+**Gates:** PR #692 segue Draft. Issue #691 P0 nao resolvida; build
+produtivo Render ainda perigoso. PR #666 Draft, Gate 0 do DR concluido,
+Gate 1 Supabase PARCIAL, 2-4 NO-GO. Sem alteracao em codigo financeiro,
+API real, dados reais, vault/age, WSL, Android, Web homologada, Supabase
+produtivo, sandbox gerenciado, Render, Blueprint ou custos. Nenhuma
+publicacao, restauracao remota, merge ou upgrade. Nao declarar Gate 1
+concluido com `ACTIVE_HEALTHY`: isso nao comprova Auth, Storage,
+egress ou isolamento.
+
+**Proximo ato dependente de autorizacao funcional:** escolher a semantica
+do startup legado (`fallback` conservador vs. ativacao automatica
+garantida), e a representacao de rollback/prontidao em multiplas
+instancias, antes de modificar `server.ts`. Gate gerenciado Supabase
+continua necessitando evidencias autenticadas sanitizadas.
