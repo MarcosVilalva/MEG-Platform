@@ -1,20 +1,21 @@
 /**
  * Stage09 / issue #690: efetivamente exercita o GET /app-state do Fastify
  * com validação de autorização por workspace via banco sintético.
- * O preHandler de autenticação AQUI é simulado. Não é teste do JWT real.
+ * JWT real do plugin MEG com chave fictícia e sem login remoto.
  * PostgreSQL 17 descartável de CI; nenhum usuário, segredo ou dado produtivo.
  */
 import assert from 'node:assert/strict';
 import Fastify from 'fastify';
-import type { FastifyRequest, FastifyReply } from 'fastify';
 import { UserRole, UserStatus, prisma } from '@meg/database';
 import { appStateRoutes } from './routes';
+import { registerAuth } from '../../plugins/auth';
 
 const DB = 'postgresql://ci:ci@127.0.0.1:5433/meg_stage09_egress_synthetic?schema=public';
 assert.equal(process.env.CI, 'true');
 assert.equal(process.env.MEG_STAGE09_SYNTHETIC_ONLY, 'YES');
 assert.equal(process.env.MEG_STAGE09_PG17_WIRE_PROXY, 'YES');
 assert.equal(process.env.DATABASE_URL, DB);
+assert.equal(process.env.JWT_SECRET, 'stage09-synthetic-jwt-secret-never-for-production');
 
 async function main() {
   const suffix = Date.now().toString();
@@ -46,28 +47,21 @@ async function main() {
     data: { workspaceId: a.id, userId: viewer.id, role: UserRole.VIEWER,
       status: UserStatus.ACTIVE, isActive: true },
   });
-  const users = new Set([ownerA.id, ownerB.id, viewer.id]);
-
   const server = Fastify({ logger: false });
-  // Simula SOMENTE a camada de autenticação para exercitar a rota real.
-  server.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
-    const id = req.headers.authorization?.replace(/^Bearer /, '') || '';
-    if (!users.has(id)) {
-      reply.code(401).send({ error: 'TEST_UNAUTHORIZED' });
-      return;
-    }
-    req.user = { sub: id, email: 'fixture@example.invalid',
-      role: id === viewer.id ? UserRole.VIEWER : UserRole.ADMIN };
-  });
-  server.decorate('authorize', (_roles: UserRole[]) => async (req: FastifyRequest, reply: FastifyReply) => {
-    await server.authenticate(req, reply);
-  });
+  // Usa o plugin JWT verdadeiro do MEG com segredo artificial declarado no CI.
+  // A sessão é assinada localmente, sem falar com o serviço de produção.
+  await registerAuth(server);
   await server.register(appStateRoutes, { prefix: '/app-state' });
   await server.ready();
-
-  const get = async (id: string | null) => server.inject({
+  const sign = (user: typeof ownerA) => server.jwt.sign({
+    sub: user.id, role: user.role, email: user.email,
+  }, { expiresIn: '1h' });
+  const tokenA = sign(ownerA);
+  const tokenB = sign(ownerB);
+  const tokenViewer = sign(viewer);
+  const get = async (token: string | null) => server.inject({
     method: 'GET', url: '/app-state/',
-    headers: id ? { authorization: 'Bearer ' + id } : {},
+    headers: token ? { authorization: 'Bearer ' + token } : {},
   });
   const beforeFlag = process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
   try {
@@ -79,7 +73,7 @@ async function main() {
     const fake = await get('usuario-nao-cadastrado');
     assert.equal(fake.statusCode, 401);
 
-    const firstA = await get(ownerA.id);
+    const firstA = await get(tokenA);
     assert.equal(firstA.statusCode, 200);
     const jsonA = firstA.json();
     assert.equal(jsonA.workspace.id, a.id);
@@ -87,18 +81,18 @@ async function main() {
     assert.equal(jsonA.shared, true);
     assert.equal(jsonA.integrity.reconciled, true);
 
-    const secondA = await get(ownerA.id);
+    const secondA = await get(tokenA);
     assert.equal(secondA.statusCode, 200);
     assert.deepEqual(secondA.json(), jsonA,
       'GET com cache não muda contrato HTTP do proprietário.');
 
-    const viewerA = await get(viewer.id);
+    const viewerA = await get(tokenViewer);
     assert.equal(viewerA.statusCode, 200,
       'Membro VIEWER ativo pode ler dados do próprio workspace.');
     assert.deepEqual(viewerA.json(), jsonA,
       'Mesmo workspace deve produzir contrato idêntico ao proprietário.');
 
-    const firstB = await get(ownerB.id);
+    const firstB = await get(tokenB);
     assert.equal(firstB.statusCode, 200);
     const jsonB = firstB.json();
     assert.equal(jsonB.workspace.id, b.id);
@@ -106,18 +100,18 @@ async function main() {
     assert.notDeepEqual(jsonA.state, jsonB.state,
       'Um workspace não pode receber estado de outro.');
 
-    const afterSwitchA = await get(ownerA.id);
+    const afterSwitchA = await get(tokenA);
     assert.equal(afterSwitchA.statusCode, 200);
     assert.deepEqual(afterSwitchA.json(), jsonA,
       'Troca de workspace não pode vazar cache ou estado do outro.');
 
     delete process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
-    const disabled = await get(ownerA.id);
+    const disabled = await get(tokenA);
     assert.equal(disabled.statusCode, 200);
     assert.deepEqual(disabled.json(), jsonA,
       'Flag ausente deve preservar resposta original integral.');
     console.log('STAGE09_AUTH_GET_ROUTE_SYNTHETIC=' + JSON.stringify({
-      synthetic: true, actualFastifyGet: true, jwtAuthentication: 'mocked-only',
+      synthetic: true, actualFastifyGet: true, jwtAuthentication: 'real-fastify-jwt-synthetic-secret',
       realDatabaseWorkspaceResolution: true, statusAnonymous: 401,
       statusUnknownToken: 401, sameWorkspaceViewerAccess: true,
       differentWorkspaceIsolation: true, cacheEvictionSafe: true,
