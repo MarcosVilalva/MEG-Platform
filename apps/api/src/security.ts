@@ -161,6 +161,18 @@ export const authRateLimiters = {
     windowMs: 60 * 60 * 1000,
     key: (request) => normalizeEmail(request.body),
   }),
+  stage10QaExchangeIp: createRateLimitPreHandler({
+    scope: 'stage10-qa-exchange-ip',
+    max: 30,
+    windowMs: 15 * 60 * 1000,
+    key: requestIp,
+  }),
+  stage10QaExchangeToken: createRateLimitPreHandler({
+    scope: 'stage10-qa-exchange-token',
+    max: 15,
+    windowMs: 15 * 60 * 1000,
+    key: (request) => refreshFingerprint(request.body),
+  }),
   refresh: createRateLimitPreHandler({
     scope: 'auth-refresh-token',
     max: 30,

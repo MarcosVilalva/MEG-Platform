@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { registerStage10QaExchangeRoutes } from './stage10-qa-exchange-routes';
 import { z } from 'zod';
 import { UserRole } from '@meg/database';
 import { authRateLimiters } from '../../security';
@@ -63,6 +64,7 @@ function requestContext(request: { ip: string; headers: Record<string, unknown> 
 }
 
 export async function authRoutes(app: FastifyInstance) {
+  await registerStage10QaExchangeRoutes(app);
   app.post('/register', { preHandler: authRateLimiters.register }, async (request, reply) => {
     const parsed = registerSchema.safeParse(request.body);
     if (!parsed.success) {
