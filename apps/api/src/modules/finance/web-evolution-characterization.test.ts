@@ -11,7 +11,7 @@ import {
   paymentBalanceDecision,
 } from './monetary-protection';
 import { buildTransferLegs } from './transfer-core';
-import {cardPurchaseInstallmentRows} from '../cards/purchase-cycle-canonical';
+import {cardPurchaseInstallmentRows,cardPurchaseStatementMonth} from '../cards/purchase-cycle-canonical';
 import { addMonthsClamped, moveWeekendToMonday } from '../payables/core';
 
 const cardsRoutes = readFileSync(new URL('../cards/routes.ts', import.meta.url), 'utf8');
@@ -81,8 +81,14 @@ assert.equal(moveWeekendToMonday('2026-10-03'), '2026-10-05');
 assert.equal(moveWeekendToMonday('2026-10-04'), '2026-10-05');
 
 // 9) Fechamento: compra após o closingDay migra para a próxima competência.
-assert.match(cardsService, /purchaseDate\.getUTCDate\(\) > card\.closingDay \? 1 : 0/);
-assert.match(cardsRoutes, /purchaseDate\.getUTCDate\(\) > input\.closingDay \? 1 : 0/);
+assert.match(cardsService, /cardPurchaseInstallmentRows/);
+assert.match(cardsRoutes, /cardPurchaseStatementMonth/);
+assert.equal(cardPurchaseStatementMonth('2026-09-08',8), '2026-09',
+ 'Compra no fechamento permanece na competencia atual');
+assert.equal(cardPurchaseStatementMonth('2026-09-09',8), '2026-10',
+ 'Compra apos fechamento entra na proxima competencia');
+assert.equal(cardPurchaseStatementMonth('2026-09-09',8,2), '2026-11',
+ 'Segunda parcela respeita a competencia canônica');
 
 // 10) Saldo credor de fatura não gera valor pagável negativo.
 const credit = canonicalCardStatementTotals([
