@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import {isAllowedOrigin} from '../../cors';
 import {prisma,UserRole,UserStatus} from '@meg/database';
 import {registerAuth} from '../../plugins/auth';
 import {registerStage10ReadOnlyRoutes} from './stage10-readonly-routes';
@@ -21,6 +23,14 @@ const accountId='acct-'+suffix;
 const secondAccountId='acct-b-'+suffix;
 let ownerId='',otherId='',workspaceId='',otherWorkspaceId='';
 try{
+ const previewOrigin='https://meg-stage08-alerta-prism-pr685.onrender.com';
+ await server.register(cors,{
+  origin(origin,callback){
+   callback(isAllowedOrigin(origin,[previewOrigin])?null:new Error('Origin not allowed by CORS'),
+    isAllowedOrigin(origin,[previewOrigin]));
+  },
+  credentials:true,
+ });
  await registerAuth(server);
  await server.register(registerStage10ReadOnlyRoutes,{prefix:'/finance'});
  await server.ready();
@@ -72,6 +82,21 @@ try{
   method:'GET',url,headers:token?{authorization:'Bearer '+token}:{},
  });
 
+ const allowedPreflight=await server.inject({
+  method:'OPTIONS',url:endpoint,
+  headers:{origin:previewOrigin,'access-control-request-method':'GET',
+   'access-control-request-headers':'authorization'},
+ });
+ assert.equal(allowedPreflight.statusCode,204,'origem unica deve aceitar preflight');
+ assert.equal(allowedPreflight.headers['access-control-allow-origin'],previewOrigin);
+ const deniedPreflight=await server.inject({
+  method:'OPTIONS',url:endpoint,
+  headers:{origin:'https://other-origin.example.invalid',
+   'access-control-request-method':'GET',
+   'access-control-request-headers':'authorization'},
+ });
+ assert.notEqual(deniedPreflight.headers['access-control-allow-origin'],
+  'https://other-origin.example.invalid','CORS nao pode autorizar origem divergente');
  const unauthenticated=await get();
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
  const invalidMonth=await get(tokenA,'/finance/stage10-readonly/snapshot?month=2026-13');
