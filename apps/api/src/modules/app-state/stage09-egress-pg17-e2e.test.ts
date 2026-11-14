@@ -545,6 +545,62 @@ async function main() {
     responseUnchanged: true,
   }));
 
+  // Isolamento multiworkspace: o cache guarda apenas um workspace, com
+  // chave também pelo proprietário. O segundo não pode ver o estado do primeiro.
+  const secondUser = await prisma.user.create({
+    data: {
+      name: 'MEG OUTRO USUARIO FICTICIO',
+      email: `stage09-cache-other-${suffix}@example.invalid`,
+      passwordHash: 'SYNTHETIC-NO-CREDENTIALS',
+      role: UserRole.ADMIN, status: UserStatus.ACTIVE,
+      isActive: true, approvedAt: new Date(),
+    },
+  });
+  const secondary = await prisma.workspace.create({
+    data: {
+      name: 'Stage09 Isolated Read Cache Fixture',
+      slug: `isolation-read-cache-${suffix}`,
+      ownerId: secondUser.id,
+      members: {
+        create: { userId: secondUser.id, role: UserRole.ADMIN,
+          status: UserStatus.ACTIVE, isActive: true },
+      },
+      appState: {
+        create: {
+          userId: secondUser.id, revision: 1,
+          state: { transactions: [], budgets: {},
+            __megNormalization: { mode: 'normalized-primary' } },
+        },
+      },
+    },
+  });
+  const isolatedReadFirst = await cachedNormalizedStateForRead(secondary.id, secondUser.id);
+  const isolatedReadSecond = await cachedNormalizedStateForRead(secondary.id, secondUser.id);
+  assert.deepEqual(isolatedReadSecond, isolatedReadFirst);
+  assert.equal(isolatedReadFirst?.normalizedPrimary, true,
+    'Workspace vazio primario deve ser conciliado de forma independente.');
+  assert.equal(record(isolatedReadFirst.state).transactions instanceof Array, true);
+  assert.equal((record(isolatedReadFirst.state).transactions as unknown[]).length, 0);
+  assert.equal(await prisma.financialEvent.count({ where: { workspaceId: secondary.id } }), 0);
+  assert.notDeepEqual(isolatedReadFirst?.state, liveReadA?.state,
+    'Nunca reutilizar resultado financeiro de outro workspace.');
+  await resetWire();
+  const restoredMainWorkspace = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const afterWorkspaceSwitchWire = await wireStats();
+  assert.equal(restoredMainWorkspace?.dataSource, 'normalized');
+  assert.equal((record(restoredMainWorkspace?.state).transactions as unknown[]).length, EVENT_COUNT);
+  assert.ok(afterWorkspaceSwitchWire.serverToClientBytes > 1_000_000,
+    'Trocar workspace deve desalojar o snapshot do anterior e recalcular com SQL.');
+  console.log('STAGE09_GET_APPSTATE_WORKSPACE_ISOLATION=' + JSON.stringify({
+    syntheticOnly: true,
+    workspaces: 2,
+    firstWorkspaceEvents: EVENT_COUNT,
+    secondWorkspaceEvents: 0,
+    cacheCapacity: 1,
+    afterSwitchPgBytes: afterWorkspaceSwitchWire.serverToClientBytes,
+    noCrossWorkspaceLeak: true,
+  }));
+
   // Caracterização da rotina anterior continua após os ensaios de cache.
   // Idempotencia: estado original e rows ja conciliados nao devem mudar.
   const unchanged = await reconcilePrimaryAppStateFromNormalized(workspace.id, { expectedRevision: 20 });
