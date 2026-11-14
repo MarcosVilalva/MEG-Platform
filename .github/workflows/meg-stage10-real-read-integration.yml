@@ -33,7 +33,9 @@ jobs:
       - name: Install immutable dependencies
         run: npm ci --audit=false
       - name: Fail closed / no fallback / no writers
-        run: node scripts/meg-stage10-real-data-read.contract.test.mjs
+        run: |
+          node --check scripts/meg-stage10-real-read-browser.synthetic.mjs
+          node scripts/meg-stage10-real-data-read.contract.test.mjs
       - name: Generate Prisma client without database access
         run: npm run db:generate
       - name: Typecheck API read-only route
