@@ -64,6 +64,16 @@ jobs:
           CORS_ORIGINS: https://qa-auth.example.invalid
           NODE_ENV: test
         run: npx tsx apps/api/src/modules/auth/stage10-qa-exchange-http.pg.test.ts
+      - name: Canonical auth, security and finance characterization regression
+        env:
+          DATABASE_URL: postgresql://meg_test:meg_test@127.0.0.1:5439/meg_stage10_test?schema=public
+          MEG_STAGE10_SYNTHETIC_DB: 'true'
+          JWT_SECRET: stage10-synthetic-ci-only-jwt-secret-value-not-production
+          NODE_ENV: test
+        run: |
+          npm --workspace apps/api run test:auth
+          npm --workspace apps/api run test:security
+          npm --workspace apps/api run test:finance
       - name: Opt-in real expense commands fail-closed and typed to canonical writers
         run: npx tsx apps/web/src/meg-web-evolution/stage10/real-expense-mutation.contract.test.ts
       - name: Typecheck Web integration
