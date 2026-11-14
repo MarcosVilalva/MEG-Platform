@@ -99,6 +99,17 @@ try{
   'https://other-origin.example.invalid','CORS nao pode autorizar origem divergente');
  const unauthenticated=await get();
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
+ const invalidSignature=await get(server.jwt.sign({
+  sub:'not-the-real-owner',role:'ADMIN',email:'evil@example.invalid',
+ },{expiresIn:'10m'}).replace(/.$/,last=>last==='a'?'b':'a'));
+ assert.equal(invalidSignature.statusCode,401,'assinatura invalida deve ser recusada');
+ const expiredToken=server.jwt.sign({sub:'expired',role:'ADMIN',email:'expired@example.invalid'},
+  {expiresIn:'-10s'});
+ const expiredResponse=await get(expiredToken);
+ assert.equal(expiredResponse.statusCode,401,'token expirado deve ser recusado');
+ const invalidRole=await get(server.jwt.sign({sub:'not-authorized-role',role:'UNKNOWN',email:'unknown@example.invalid'}));
+ assert.equal(invalidRole.statusCode,403,'role desconhecida deve ser recusada');
+
  const invalidMonth=await get(tokenA,'/finance/stage10-readonly/snapshot?month=2026-13');
  assert.equal(invalidMonth.statusCode,400,'periodo invalido deve ser recusado');
  const me=await server.inject({method:'GET',url:'/auth/me',headers:{authorization:'Bearer '+tokenA}});
