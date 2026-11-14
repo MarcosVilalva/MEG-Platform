@@ -20,6 +20,7 @@ const snapshot={
   amount:'12.50',signedAmount:'-12.50',enteredAmount:12.5,accountId:'synthetic-account',
   categoryId:'synthetic-category',paymentMethodId:'synthetic-method',
   notes:'Dado ficticio, nunca exportado da base real',
+  updatedAt:'2026-11-14T12:00:00.000Z',
  }],
  accounts:[{id:'synthetic-account',name:'Conta ficticia',type:'checking',isActive:true,openingBalance:'0'}],
  categories:[{id:'synthetic-category',name:'Categoria ficticia',type:'expense',isActive:true}],
@@ -102,6 +103,29 @@ try{
     user,accessToken:'synthetic-refreshed-access',refreshToken:'synthetic-refreshed-token-valid',
     refreshExpiresAt:'2099-01-01T00:00:00.000Z',
    })});
+  if(req.method()==='POST'&&url.pathname==='/finance/events/bulk/update'){
+   const body=JSON.parse(req.postData()||'{}');
+   writerCalls.push({path:url.pathname,body});
+   assert.deepEqual(body.ids,['stage10-synthetic-event']);
+   assert.equal(body.changes.description,'DESPESA EDITADA PARA QA');
+   assert.equal(body.changes.type,'expense');
+   assert.equal(body.changes.amount,12.5);
+   assert.equal(body.expectedUpdatedAtById['stage10-synthetic-event'],'2026-11-14T12:00:00.000Z');
+   assert.match(body.operationId,/^[0-9a-f-]{36}$/);
+   return route.fulfill({status:200,headers,body:JSON.stringify({
+    ids:body.ids,updated:1,events:[{...snapshot.events[0],...body.changes}],idempotentReplay:false,
+   })});
+  }
+  if(req.method()==='POST'&&url.pathname==='/finance/events/bulk/archive'){
+   const body=JSON.parse(req.postData()||'{}');
+   writerCalls.push({path:url.pathname,body});
+   assert.deepEqual(body.ids,['stage10-synthetic-event']);
+   assert.equal(body.expectedUpdatedAtById['stage10-synthetic-event'],'2026-11-14T12:00:00.000Z');
+   assert.match(body.operationId,/^[0-9a-f-]{36}$/);
+   return route.fulfill({status:200,headers,body:JSON.stringify({
+    ids:body.ids,archived:1,idempotentReplay:false,
+   })});
+  }
   if(req.method()==='POST'&&url.pathname==='/finance/events'){
    const body=JSON.parse(req.postData()||'{}');
    writerCalls.push({path:url.pathname,body});
@@ -174,6 +198,36 @@ try{
  await page.waitForFunction(()=>document.body.textContent?.includes('Lancamento criado pela API financeira.'),null,{timeout:20000});
  assert.equal(writerCalls.length,1,'Somente 1 POST idempotente de criacao');
  assert.ok(apiCalls.includes(api+' POST /finance/events'));
+ await page.locator('[data-meg-unified-screen="launches"]').waitFor({state:'visible',timeout:20000});
+ await page.getByTestId('qa-actions-stage10-synthetic-event').getByRole('button',{name:/Ações de/}).click();
+ await page.getByRole('menuitem',{name:/Editar lançamento/}).click();
+ const editor=page.getByTestId('stage10-edit-preview');
+ await editor.waitFor({state:'visible',timeout:20000});
+ assert.equal(await editor.getByRole('button',{name:'Excluir lançamento'}).isVisible(),true,
+  'ADMIN pode arquivar somente com confirmação no editor real');
+ await editor.getByRole('textbox',{name:'Descrição da edição'}).fill('DESPESA EDITADA PARA QA');
+ const editSave=editor.getByRole('button',{name:'Salvar alterações'});
+ assert.equal(await editSave.isEnabled(),true,'Edicao com mudanca e referencias validas');
+ await editSave.click();
+ await page.getByText('Alteracoes registradas pela API financeira.').waitFor({state:'visible',timeout:20000});
+ assert.equal(writerCalls.length,2,'uma edicao protegida');
+ await page.locator('[data-meg-unified-screen="launches"]').waitFor({state:'visible',timeout:20000});
+ await page.getByTestId('qa-actions-stage10-synthetic-event').getByRole('button',{name:/Ações de/}).click();
+ await page.getByRole('menuitem',{name:/Editar lançamento/}).click();
+ const archiveEditor=page.getByTestId('stage10-edit-preview');
+ await archiveEditor.waitFor({state:'visible'});
+ await archiveEditor.getByRole('button',{name:'Excluir lançamento'}).click();
+ const confirm=page.getByRole('alertdialog',{name:'Excluir lançamento?'});
+ await confirm.waitFor({state:'visible'});
+ assert.equal(writerCalls.length,2,'abrir confirmacao nao chama writer');
+ await confirm.getByRole('button',{name:'Cancelar'}).click();
+ assert.equal(writerCalls.length,2,'cancelamento nao escreve');
+ await archiveEditor.getByRole('button',{name:'Excluir lançamento'}).click();
+ await confirm.getByRole('button',{name:'Confirmar exclusão'}).click();
+ await page.getByText('Lancamento arquivado pela API financeira, com auditoria.').waitFor({state:'visible',timeout:20000});
+ assert.equal(writerCalls.length,3,'um arquivamento idempotente');
+ assert.ok(apiCalls.includes(api+' POST /finance/events/bulk/update'));
+ assert.ok(apiCalls.includes(api+' POST /finance/events/bulk/archive'));
  assert.ok(!apiCalls.some(call=>call.startsWith(readonlyApi+' POST')),
   'backend QA deve continuar somente leitura');
  assert.deepEqual(errors,[],'Navegador sem excecoes');

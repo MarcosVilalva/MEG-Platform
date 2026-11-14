@@ -67,6 +67,9 @@ assert.match(editor,/saveEnabled=\{!readOnly&&Boolean\(onRequestSave\|\|onSimula
 assert.match(live,/<EditExpensePreview snapshot=\{edit\} catalogs=\{data\.catalogs\}/);
 assert.match(live,/readOnly=\{!writeEnabled\|\|saving\}/);
 assert.match(operational,/type:accounts\.find\(account=>account\.id===id\)\?\.type/);
+const liveLaunches=read('apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx');
+assert.match(liveLaunches,/row\.status==='planned'&&!row\.accountId/);
+
 // Transacao sem qualquer reparo de usuario/workspace e sem writer.
 assert.match(workspace,/SET TRANSACTION READ ONLY/);
 assert.match(workspace,/TransactionIsolationLevel.RepeatableRead/);

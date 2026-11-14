@@ -337,7 +337,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  return [
   ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:qaActions?78:82,minWidth:qaActions?72:72,sortable:false,filterable:false,
     render:(_value:unknown,row:Row)=>qaActions
-     ? <LaunchRowQaActions row={toQaTarget(row)} canEdit={row.type==='expense'&&row.accountKind==='monetary'&&Boolean(onQaEdit)}
+     ? <LaunchRowQaActions row={toQaTarget(row)} canEdit={row.type==='expense'&&(row.accountKind==='monetary'||(row.status==='planned'&&!row.accountId))&&Boolean(onQaEdit)}
         onView={()=>openDetails(row.id)} onEdit={()=>onQaEdit?.(toQaTarget(row))}
         onDuplicate={()=>onQaDuplicate?.(toQaTarget(row))} onNotice={message=>onQaNotice?.(message)}/>
      : <button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Ver detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} data-tooltip="Ver detalhes" onClick={()=>openDetails(row.id)}><LaunchIcon name="details3d" width={22} height={22}/></button>} as DataGridColumn<Row>]:[]),
