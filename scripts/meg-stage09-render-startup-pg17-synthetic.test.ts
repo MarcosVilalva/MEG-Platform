@@ -213,6 +213,12 @@ async function main() {
   // Sob corrida, uma execucao pode perder o CAS e ser rejeitada. Exigimos
   // convergencia, nao a ausencia artificial de conflitos.
   assert.ok(concurrent.some((item) => item.status === 'fulfilled'), 'Nenhuma reconciliacao concluiu');
+  for (const result of concurrent) {
+    if (result.status !== 'rejected') continue;
+    const reason = result.reason instanceof Error ? result.reason.message : '';
+    // Erro inesperado de SQL/conexao nao equivale a protecao financeira.
+    assert.match(reason, /^(NORMALIZED_PRIMARY_MIRROR_CONFLICT|NORMALIZATION_REVISION_CONFLICT)$/, 'Falha concorrente inesperada');
+  }
   const firstStable = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
   const mirroredTransactions = (firstStable.state as { transactions?: Array<Record<string, unknown>> }).transactions || [];
   assert.equal(mirroredTransactions.length, 1);
