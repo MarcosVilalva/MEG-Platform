@@ -24,6 +24,8 @@ const ANSWERS = new Set(['SIM', 'NAO', 'NAO_VERIFICADO']);
 const AREAS = Object.freeze(['auth', 'storage', 'other']);
 const HTTP_STATUSES = Object.freeze(['200', '402']);
 const MAX_BYTES = 12_288;
+const MAX_EVIDENCE_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -40,12 +42,14 @@ function invalid() {
   throw new Error('EVIDENCIA_INVALIDA_OU_NAO_SANITIZADA');
 }
 
-export function evaluateEvidence(input) {
+export function evaluateEvidence(input, now = Date.now()) {
   if (!exactKeys(input, ['schema_version', 'project_ref', 'evidence_source', 'observed_at', 'http', 'controls'])) invalid();
   if (input.schema_version !== 1 || input.project_ref !== SANDBOX_REF) invalid();
   if (!EVIDENCE_SOURCES.has(input.evidence_source)) invalid();
-  if (typeof input.observed_at !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(input.observed_at)
-      || !Number.isFinite(Date.parse(input.observed_at))) invalid();
+  if (!Number.isSafeInteger(now) || now < 0) invalid();
+  if (typeof input.observed_at !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(input.observed_at)) invalid();
+  const observedMs = Date.parse(input.observed_at);
+  if (!Number.isFinite(observedMs) || new Date(observedMs).toISOString().slice(0, 19) !== input.observed_at.slice(0, 19)) invalid();
   if (!exactKeys(input.http, AREAS) || !exactKeys(input.controls, CHECKS)) invalid();
 
   let total200 = 0;
@@ -65,9 +69,16 @@ export function evaluateEvidence(input) {
   const contradicted = CHECKS.filter((key) => input.controls[key] === 'NAO');
   if (CHECKS.some((key) => !ANSWERS.has(input.controls[key]))) invalid();
   const reasons = [];
+  if (observedMs < now - MAX_EVIDENCE_AGE_MS) reasons.push('EVIDENCIA_DESATUALIZADA');
+  if (observedMs > now + MAX_CLOCK_SKEW_MS) reasons.push('EVIDENCIA_NO_FUTURO');
   if (total402 > 0) reasons.push('HTTP_402_OBSERVADO');
+  if (input.http.auth['200'] === 0) reasons.push('AUTH_SEM_HTTP_200_OBSERVADO');
+  if (input.http.storage['200'] === 0) reasons.push('STORAGE_SEM_HTTP_200_OBSERVADO');
   if (pending.length > 0) reasons.push('CONTROLES_NAO_VERIFICADOS');
   if (contradicted.length > 0) reasons.push('ISOLAMENTO_NAO_COMPROVADO');
+  if (input.evidence_source === 'aggregated-logs' && CHECKS.some((key) => input.controls[key] === 'SIM')) {
+    reasons.push('LOGS_NAO_COMPROVAM_CONFIGURACOES_GERENCIADAS');
+  }
   if (input.evidence_source === 'synthetic-fixture') reasons.push('EVIDENCIA_SINTETICA');
   if (total200 === 0) reasons.push('NENHUM_HTTP_200_OBSERVADO');
   const status = reasons.length > 0 ? 'NO_GO' : 'REVISAO_MANUAL_OBRIGATORIA';
