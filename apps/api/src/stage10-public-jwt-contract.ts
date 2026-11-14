@@ -27,7 +27,8 @@ export function verifyStage10PublicJwt(
  expected:{issuer:string;audience:string;nowSeconds?:number},
 ):Stage10PublicClaims{
  const fail=()=>{throw new Error('STAGE10_JWT_INVALID');};
- if(typeof token!=='string'||token.length>12000||typeof publicKeyPem!=='string')fail();
+ if(typeof token!=='string'||token.length>12000||typeof publicKeyPem!=='string'||
+  !/^-----BEGIN PUBLIC KEY-----\n[\s\S]+\n-----END PUBLIC KEY-----\n?$/.test(publicKeyPem))fail();
  if(!claimString(expected.issuer,256)||!claimString(expected.audience,256))fail();
  const parts=token.split('.');
  if(parts.length!==3||parts.some(p=>!p))fail();
@@ -55,5 +56,5 @@ export function verifyStage10PublicJwt(
   valid=verifySignature('RSA-SHA256',Buffer.from(head+'.'+payload),key,bytes);
  }catch{fail();}
  if(!valid)fail();
- return body as Stage10PublicClaims;
+ return body as unknown as Stage10PublicClaims;
 }
