@@ -1,43 +1,49 @@
-/**
- * Etapa 09: contrato fail-closed do build seguro Render, sem banco e sem rede.
- * Testa os comandos exatos e sua expansão conhecida no repositorio.
- * Não altera o serviço ativo, não executa migração/DDL e não lê segredos.
- */
+/** Build seguro: nao executa banco, rede ou script shell durante este contrato. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const root = JSON.parse(read('package.json'));
 const api = JSON.parse(read('apps/api/package.json'));
 const database = JSON.parse(read('packages/database/package.json'));
-const script = read('scripts/meg-stage09-render-api-build.sh');
-const shellStatements = script.split('\n').map((line) => line.trim()).filter((line) =>
-  line !== '' && !line.startsWith('#') && !line.startsWith('echo '),
-);
-
-assert.deepEqual(shellStatements, [
+const expected = [
   'set -Eeuo pipefail',
   'cd "$(dirname "$0")/.."',
-  'npm ci --include=dev --audit=false --fund=false',
-  'npm run db:generate',
-  'npm run build:api',
-], 'Build não pode conter alteração de banco nem comandos extras.');
+  'node scripts/meg-stage09-render-api-build.contract.test.mjs',
+  "export DATABASE_URL='postgresql://build:build@127.0.0.1:65431/meg_stage09_build_only?schema=public'",
+  'export npm_config_ignore_scripts=true',
+  'npm ci --include=dev --ignore-scripts --audit=false --fund=false',
+  'npm run --ignore-scripts db:generate',
+  'npm run --ignore-scripts build:api',
+  "echo 'MEG_STAGE09_SAFE_BUILD=BUILT_WITHOUT_DATABASE_SCHEMA_ACTIONS'",
+];
 
-assert.equal(root.scripts['db:generate'], 'npm --workspace packages/database run db:generate');
-assert.equal(root.scripts['build:api'], 'npm --workspace apps/api run build');
-assert.equal(database.scripts['db:generate'], 'prisma generate');
-assert.equal(api.scripts.build, 'tsc -p tsconfig.json');
-assert.equal(root.scripts.preinstall, undefined);
-assert.equal(root.scripts.postinstall, undefined);
+export function validateBuildScript(script) {
+  // Echo tambem e comparado: substituicoes de comando nao podem escapar.
+  const statements = script.split('\n').map(line => line.trim())
+    .filter(line => line && !line.startsWith('#'));
+  assert.deepEqual(statements, expected, 'Comando inesperado no build seguro.');
+}
 
-// Não existe implicação tácita de que a configuração ativa no Render mudou.
-// As dependências perigosas continuam segregadas até uma migração controlada.
-assert.match(database.scripts['db:push:production'], /--accept-data-loss/);
-assert.match(database.scripts['db:prepare:production'], /prepare-production\.ts/);
+export function validatePackages(root, api, database) {
+  assert.equal(root.scripts['db:generate'], 'npm --workspace packages/database run db:generate');
+  assert.equal(root.scripts['build:api'], 'npm --workspace apps/api run build');
+  assert.equal(database.scripts['db:generate'], 'prisma generate');
+  assert.equal(api.scripts.build, 'tsc -p tsconfig.json');
+  for (const pkg of [root, api, database]) {
+    for (const hook of ['preinstall', 'install', 'postinstall', 'prepare', 'prepublish',
+      'predb:generate', 'postdb:generate', 'prebuild:api', 'postbuild:api', 'prebuild', 'postbuild']) {
+      assert.equal(pkg.scripts[hook], undefined, 'Lifecycle nao autorizado: ' + hook);
+    }
+  }
+}
 
-console.log('STAGE09_RENDER_SAFE_BUILD_CONTRACT=' + JSON.stringify({
-  safeBuildContainsOnlyCompileSteps: true,
-  rootAndWorkspaceScriptsValidated: true,
-  existingProductionDatabaseTasksNotInvoked: true,
-  isolatedProposalOnly: true,
-}));
+export function verify() {
+  validateBuildScript(read('scripts/meg-stage09-render-api-build.sh'));
+  validatePackages(root, api, database);
+  console.log('STAGE09_RENDER_SAFE_BUILD_CONTRACT=PASS');
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) verify();

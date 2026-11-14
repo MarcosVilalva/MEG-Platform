@@ -30,9 +30,19 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Validate fail-closed contract before executing build
-        run: node scripts/meg-stage09-render-api-build.contract.test.mjs
+        run: node scripts/meg-stage09-render-api-build.regression.test.mjs
       - name: Execute proposed build with no database service or database connection
         run: bash scripts/meg-stage09-render-api-build.sh
+      - name: Verify tsx remains usable without install hooks
+        run: npm --workspace apps/api exec -- tsx --version
+      - name: Instantiate generated Prisma client without connecting
+        run: |
+          node --input-type=module <<'NODE'
+          import { PrismaClient } from '@prisma/client';
+          const client = new PrismaClient();
+          await client.$disconnect();
+          console.log('PRISMA_CLIENT_WITHOUT_INSTALL_HOOKS=PASS');
+          NODE
       - name: Verify no database service was provisioned in CI
         shell: bash
         run: |
