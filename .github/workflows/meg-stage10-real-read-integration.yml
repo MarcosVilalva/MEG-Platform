@@ -35,6 +35,7 @@ jobs:
       - name: Fail closed / no fallback / no writers
         run: |
           node --check scripts/meg-stage10-real-read-browser.synthetic.mjs
+          node --check scripts/meg-stage10-real-writes-browser.synthetic.mjs
           node scripts/meg-stage10-real-data-read.contract.test.mjs
       - name: Generate Prisma client without database access
         run: npm run db:generate
@@ -115,3 +116,26 @@ jobs:
           done
           node scripts/meg-stage10-real-read-gate.browser.mjs
           node scripts/meg-stage08-unified-qa.browser.mjs
+
+      - name: Build isolated opt-in writer preview (synthetic endpoints only, never deploy)
+        env:
+          VITE_MEG_STAGE10_REAL_READ_ENABLED: 'true'
+          VITE_MEG_STAGE10_REAL_WRITE_ENABLED: 'true'
+          VITE_API_URL: https://qa-auth.example.invalid
+          VITE_MEG_STAGE10_WRITE_CANONICAL_API_ORIGIN: https://qa-auth.example.invalid/
+          VITE_MEG_STAGE10_READONLY_API_URL: https://qa-read.example.invalid
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
+      - name: Synthetic browser proves writer target remains canonical and gated
+        run: |
+          set -euo pipefail
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -keyout /tmp/meg-stage10-browser.key \
+            -out /tmp/meg-stage10-browser.crt -subj "/CN=127.0.0.1" >/dev/null 2>&1
+          python3 scripts/meg-stage10-synthetic-https.py >/tmp/meg-stage10-write-browser.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -kfsS https://127.0.0.1:4175/meg-unificado-qa.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage10-real-writes-browser.synthetic.mjs
