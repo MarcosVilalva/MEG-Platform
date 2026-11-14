@@ -147,3 +147,32 @@ historico #674 permanecem rastreados.
 **Conclusao:** testes tecnicos isolados satisfatorios nao fecham a
 Etapa 09. O encerramento so pode ocorrer com gates operacionais,
 aceites e provas de recuperacao/seguranca que ainda nao existem.
+
+
+## 7. Medicao adicional de trafego no Render (issue #690)
+
+- `Render.get_metrics` de `meg-platform-api` no workspace previamente
+  confirmado `My Workspace`, com acesso estritamente somente leitura,
+  consultou o intervalo UTC **13/11/2026 00:00 a 14/11/2026 22:00** e
+  resolucao 3600 segundos. `bandwidth_usage` retornou 38 pontos,
+  unidade declarada `mb`, somando **20,850874 mb** nos pontos
+  publicados (13/11: 11,0845; 14/11: 9,7664). Horas ausentes nao
+  comprovam ausencia de trafego.
+- `http_request_count` retornou `data=[]` no total, com filtros
+  `/app-state` e `/health`. **Nao existe nessa amostra contagem por
+  rota**; nao extrapolar de banda total para consultas SQL.
+- `bandwidth_usage` do Render representa metrica de servico/HTTP,
+  **nao** o Egress faturado do Supabase. Nao ha metodo valido para
+  deduzir os **13,057 GB** reportados no outro provedor a partir
+  dos 20,85 pontos `mb` do Render. O valor e a unidade foram
+  registrados sem conversao implicita entre provedores.
+- Evidencia comentada na
+  [issue #690](https://github.com/MarcosVilalva/MEG-Platform/issues/690),
+  que permanece OPEN/P0. Atribuicao quantitativa a
+  `GET /app-state`, startup e auditoria, no mesmo intervalo e
+  metrica de origem, permanece pendente. Nenhum cache/otimizacao ou
+  nova leitura intensiva foi implantada.
+
+**Veredito segue NO-GO** ate provas gerenciadas, correcoes autorizadas,
+RTO/RPO e aprovacao especifica da implantacao. Nao usar esta medicao
+para declarar economia de egress, reducao de custo ou resolucao #690.
