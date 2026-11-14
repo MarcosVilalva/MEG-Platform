@@ -78,11 +78,14 @@ jobs:
       - name: Synthetic authenticated browser, without real credentials or external API
         run: |
           set -euo pipefail
-          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/meg-stage10-browser-synthetic.log 2>&1 &
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -keyout /tmp/meg-stage10-browser.key \
+            -out /tmp/meg-stage10-browser.crt -subj "/CN=127.0.0.1" >/dev/null 2>&1
+          python3 scripts/meg-stage10-synthetic-https.py >/tmp/meg-stage10-browser-synthetic.log 2>&1 &
           PID=$!
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4175/meg-unificado-qa.html >/dev/null; then break; fi
+            if curl -kfsS https://127.0.0.1:4175/meg-unificado-qa.html >/dev/null; then break; fi
             sleep 1
           done
           node scripts/meg-stage10-real-read-browser.synthetic.mjs
