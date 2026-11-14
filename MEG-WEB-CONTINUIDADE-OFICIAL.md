@@ -2354,3 +2354,40 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   #676 e #690 conforme evidencias e atualizar checkpoints. Sem
   tais provas, o veredito formal permanece **NO-GO**, nao concluir
   Etapa 09 com base apenas em CI de ambiente sintetico.
+
+
+## 14/11/2026 | Etapa 09: medicao Render de trafego e atribuicao Egress pendente
+
+- No workspace Render `My Workspace` confirmado anteriormente,
+  consulta exclusivamente somente leitura a `get_metrics` do servico
+  `srv-d98k61daeets7384hvb0` em janela UTC
+  `2026-11-13T00:00:00Z` a `2026-11-14T22:00:00Z`, resolucao
+  3600 s. Metrica `bandwidth_usage` retornou 38 pontos de unidade
+  explicitamente `mb` e soma **20,850874 mb**, sendo dia 13/11
+  **11,0845 mb** e 14/11 **9,7664 mb** nos pontos disponiveis.
+  Lacunas entre pontos nao comprovam horario sem consumo.
+- `http_request_count` retornou `data=[]` para total e filtros
+  `/app-state` e `/health`, portanto **nenhuma contagem por rota
+  pode ser extraida dessa consulta**. Nao igualar banda HTTP Render
+  a trafego de banco/egress faturado Supabase, nem atribuir os
+  **13,057 GB** alertados a uma rota especifica sem medidas
+  compativeis no mesmo intervalo. Issue #690 permanece OPEN/P0.
+  Comentario de evidencia incluido na issue.
+- Relatorio de fechamento `docs/MEG-STAGE09-RELATORIO-FECHAMENTO-GATES-20261114.md`
+  agora ampliado no commit
+  `608517671eb08b9203b7ff7f0193b71ad399d151`.
+  A issue #695 registra que o health HTTP 200 usado no Render nao
+  atesta prontidao financeira em todas as instancias, sem mudanca
+  operacional. #691 e #694 seguem OPEN/P0.
+- **Status inalterado:** PR #666 Draft e PR #692 Draft, sem merge
+  ou deploy. Gate 0 PASS anterior, Gate 1 parcial, Gates 2-4
+  NO-GO. Requisitos de prod, backup gerenciado, Auth/Storage,
+  RTO/RPO, Egress e autorizacoes permanecem. Nenhum dado real ou
+  configuracao de producao foi alterado e nao houve custo, upgrade
+  ou restauracao remota.
+- **Proximo passo preciso:** conferir terminalmente CI do SHA
+  deste checkpoint e so então propor aceite de governanca e janela
+  autorizada para mudanca Render; manter #690 aberta ate medicao
+  quantitativa com dados comparaveis do Supabase ou evidencia
+  operacional suficiente, sem otimizar writer financeiro por
+  suposicao.
