@@ -771,6 +771,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   footerAggregates = false,
   filterButtonLabel = 'Filtros',
   onFilterChange,
+  onSelectionChange,
   onClearAllFilters,
   applySavedFilters,
   persistenceKey,
@@ -1123,6 +1124,9 @@ export function DataGrid<T extends Record<string, unknown>>({
   };
 
   const filteredKeys = useMemo(() => filteredRows.map(getRowKey), [filteredRows, getRowKey]);
+  useEffect(() => {
+    if(onSelectionChange)onSelectionChange({selectedKeys:Array.from(selected),filteredKeys});
+  },[selected,filteredKeys,onSelectionChange]);
   const allFilteredSelected = selectable && filteredKeys.length > 0 && filteredKeys.every((key) => selected.has(key));
   const someFilteredSelected = selectable && filteredKeys.some((key) => selected.has(key)) && !allFilteredSelected;
 
