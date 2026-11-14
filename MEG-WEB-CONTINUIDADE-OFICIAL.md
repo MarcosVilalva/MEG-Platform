@@ -2209,3 +2209,70 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
 - **Runbook da PR #692** `docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md` ampliado no commit `3d1c33905fa8ac899d1ca84ec36a67f759f8e304`; CI desse novo SHA documental deve ser consultada de modo independente antes de afirmar `SUCCESS`.
 - **Gates e preservacoes:** Gate 0 do DR PASS anterior; Gate 1 Supabase PARCIAL por autenticacao gerenciada, Storage, integracoes/egress e limitacao HTTP 402; Gates 2-4 NO-GO. Startup legado, rollback/health multi-instancia e semantica do reparo ainda necessitam decisao. PRs #666 e #692 Draft, sem merge/deploy/Blueprint sync. Nenhuma alteracao em API produtiva, Android, Web homologada, bancos reais, Supabase origem/sandbox, Render, Vault/age, WSL, backups ou secrets; sem custo, upgrade e restore remoto.
 - **Proximo passo exato:** confirmar CI terminal da PR #692 no commit documental `3d1c33905fa8ac899d1ca84ec36a67f759f8e304` e deste novo checkpoint #666. Preparar decisao funcional sobre desativacao segura da rotina legada e comportamento normalizado de startup/health, sem corrigir codigo financeiro antes de autorizacao; manter os bloqueios #691/#694. Para Gate 1, somente evidencias autenticadas e sanitizadas de Auth/Storage/egress no sandbox quando acessiveis, sem novos testes remotos que possam faturar, comunicar ou alterar dados.
+
+
+## 14/11/2026 | Etapa 09: correcao candidata fail-closed para RUN_LEGACY_REPAIR, PR #692
+
+- **Escopo:** lidos o checkpoint oficial e `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`
+  na branch `stage09/backup-recovery-kit-20261110`, confrontando-se a
+  issue [#694](https://github.com/MarcosVilalva/MEG-Platform/issues/694),
+  `apps/api/src/config.ts`, `server.ts` e `imports/repair.ts` na
+  branch candidata #692. Sem repetir auditorias PG17/DR anteriores.
+- **Decisao tecnica proposta (NAO ACEITE PRODUTIVO):** o reparador de
+  importacao legado deve permanecer desligado por default/variavel ausente
+  ou pelos valores de env `false`, `0`, `off`. Somente a palavra
+  `true` textual (case-insensitive) pode habilitar explicitamente
+  `repairLegacyImportedEvents`. Qualquer string diferente e invalida,
+  recusando a inicializacao em vez de converter falsos positivos em
+  autorizacao para escrita. Trata-se de regra de seguranca candidata para
+  evitar writes acidentais, nao de homologacao de uso produtivo.
+- **Implementacao isolada na PR #692 Draft:** `apps/api/src/config.ts`
+  passou de `z.coerce.boolean().default(false)` a
+  `z.stringbool({ truthy: ['true'], falsy: ['false', '0', 'off'] }).default(false)`.
+  `scripts/meg-stage09-legacy-repair-flag-pg17.test.ts` atualizado com
+  teste de cinco inicializacoes reais Fastify em loopback PG17 com fixture:
+  ausente, `false`, `0`, `off` nao executam o writer, e evento de R$ 9,99
+  permanece `planned`; `true` opt-in executa reparador apenas na fixture,
+  resultando em R$ 19,75/`paid`; valores desconhecidos sao rejeitados.
+  Codigo financeiro `server.ts`, `imports/repair.ts`, schema de banco,
+  regras canonicas, dados reais e API em producao **nao foram alterados**.
+- O contrato
+  `scripts/meg-stage09-render-startup-writers.contract.test.mjs` inicialmente
+  reprovou o parser seguro porque exigia uma string literal do parser
+  vulneravel. A assercao foi corrigida de forma **mais restritiva**,
+  exigindo `z.stringbool()` com allowlist e bloqueando `z.coerce.boolean()`,
+  sem excluir o teste. Adicionado trigger para `config.ts` e o contrato
+  em `.github/workflows/meg-stage09-render-startup-pg17.yml`.
+  Falha de CI preliminar preservada no historico, sem supor perda financeira.
+- **Provas do SHA tecnico da PR #692
+  `f74f94c36d0a578d45eab62f68ce6034ac9ef91b`:**
+  [PG17 #43647441893](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647441893)
+  **SUCCESS**, log
+  `PG17_LEGACY_REPAIR_FAIL_CLOSED_REAL_SERVER_PASS` e testes
+  existentes de startup/concorrencia/timers PASS;
+  [build isolado #43647441898](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647441898)
+  **SUCCESS** com contrato de writers aprovado.
+  Uma falha do build por contrato antigo foi observada em
+  `968bf14adf29a204db3f0b36a3dbb3a91b479a2f`,
+  corrigida no contrato, nao em codigo financeiro.
+- **Documentacao e issue:** [#694](https://github.com/MarcosVilalva/MEG-Platform/issues/694)
+  permanece OPEN/P0; comentario no issue registra status candidato e
+  resultados. Runbook `docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md`
+  atualizado na #692 commit
+  `50acb96c6cdb6411f990d0d5993708fa82de0ea6`; confirmar checks
+  especificos deste SHA documental antes de encerrar a rodada.
+  [#691](https://github.com/MarcosVilalva/MEG-Platform/issues/691)
+  permanece P0 pelo build efetivo Render ainda inseguro, independente da
+  correcao #694. #674, #676 e #690 mantidas sem edicao.
+- **Gates:** #666 e #692 Draft, sem merge/deploy/Blueprint sync, alteracao
+  de configuracao produtiva ou segredo. DR Supabase Gate 0 PASS previo,
+  Gate 1 PARCIAL por Auth/Storage/egress e HTTP 402, Gates 2-4 NO-GO.
+  Android, Web homologada, SQL financeiro, dados reais, bases prod/WSL,
+  Supabase origem/sandbox, Render, Vault/age e backups intocados.
+  Nenhum custo, upgrade ou restore remoto.
+- **Proximo passo operacional restrito:** verificar checks dos novos SHAs
+  de PR #692 e #666, registrar a semantica candidata como pendente de aceite
+  de integracao, obter autorizacao pontual para qualquer revisao de
+  configuracao efetiva Render ou mudanca prod. Sem gate #691/#694
+  formalmente satisfeito e sem prova de gerenciados Supabase Gate 1,
+  nao publicar nem declarar Etapa 09 concluida.
