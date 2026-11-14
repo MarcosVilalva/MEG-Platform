@@ -37,6 +37,7 @@ try{
   };
  });
  const apiCalls=[];const errors=[];const requests=[];const failures=[];
+ let exceedHistoryLimit=false;
  page.on('pageerror',error=>errors.push(String(error)));
  page.on('request',r=>{const pathname=new URL(r.url()).pathname;if(pathname.startsWith('/auth/')||pathname.startsWith('/finance/'))requests.push(r.method()+' '+r.url());});
  page.on('requestfailed',r=>failures.push(r.url()+' '+(r.failure()?.errorText||'')));
@@ -60,7 +61,9 @@ try{
   if(req.method()==='GET'&&url.pathname==='/auth/me')
    return route.fulfill({status:200,headers,body:JSON.stringify({user})});
   if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot')
-   return route.fulfill({status:200,headers,body:JSON.stringify(snapshot)});
+   return route.fulfill({status:200,headers,body:JSON.stringify(exceedHistoryLimit
+    ? {kind:'stage10-financial-history-limit-v1',canWrite:false,limit:5000,total:5001}
+    : snapshot)});
   return route.fulfill({status:503,headers,body:JSON.stringify({error:'UNEXPECTED_SYNTHETIC_API_REQUEST'})});
  });
  await page.goto(base+'/meg-unificado-qa.html?visual=prism&dados=reais&tela=lancamentos',{waitUntil:'domcontentloaded'});
@@ -87,5 +90,16 @@ try{
  assert.ok(apiCalls.filter(call=>call.includes('/finance/')).every(call=>call==='GET /finance/stage10-readonly/snapshot'));
  assert.equal(await page.locator('.meg-unified-stamp').innerText().then(s=>s.includes('Somente leitura')),true);
  assert.deepEqual(errors,[],'Sem excecao no navegador');
- console.log('STAGE10_SYNTHETIC_BROWSER_AUTHENTICATED_READ_PASS');
+ // Um historico maior que o limite nao pode renderizar o cache anterior.
+ exceedHistoryLimit=true;
+ await page.goto(base+'/meg-unificado-qa.html?visual=prism&dados=reais&tela=lancamentos',{waitUntil:'domcontentloaded'});
+ await page.locator('input[type=email]').fill('stage10@example.invalid');
+ await page.locator('input[type=password]').fill('synthetic-passphrase-for-test');
+ await page.getByRole('button',{name:'Entrar no MEG'}).click();
+ await page.locator('[data-meg-unified-screen="real-loading"][role="alert"]').waitFor({state:'visible',timeout:20000});
+ assert.match(await page.locator('[data-meg-unified-screen="real-loading"]').innerText(),/limite seguro de 5\\.000 lancamentos/);
+ assert.equal(await page.getByText('DESPESA SINTETICA PARA NAVEGADOR').count(),0);
+ assert.equal(await page.locator('.meg-unified-stamp').count(),0);
+ assert.deepEqual(errors,[],'Sem excecao JS nem no caso de limite');
+ console.log('STAGE10_SYNTHETIC_BROWSER_AUTHENTICATED_READ_AND_LIMIT_PASS');
 }finally{await browser.close();}
