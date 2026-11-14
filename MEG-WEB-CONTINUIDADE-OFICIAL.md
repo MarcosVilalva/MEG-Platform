@@ -3098,3 +3098,11 @@ Sem merge, deploy produtivo, real writer, credencial real, SQL, migrations, alte
 
 - Revisão final constatou que o editor do modo `UnifiedRealReadQa` ainda permitia clicar em "Salvar alterações" para simular uma operação. Para não apresentar gravação fictícia como funcionalidade real, `EditExpensePreview` recebeu prop `readOnly` que desabilita gravação sem callback. O modo de dados reais ativa o bloqueio; QA demonstrativa homologada mantém comportamento e aparência anteriores. Criar e duplicar lançamento em leitura real já estavam com gravação desabilitada.
 - Teste estático adicionado para impedir regressão desse limite. O novo CI ainda requer verificação. Preservados produção, main, Android, Render e dados. Nenhum writer habilitado nem merge/deploy. A Etapa 10 não pode ser fechada sem teste real e aprovação visual/funcional explícita.
+
+
+### Etapa 10 — resultados CI do bloqueio correto de Salvar real (14/11/2026)
+
+- Commit de código `b44cad13407a737e8ed39912f5a207a968acef57`, GitHub Actions [run #43649880486](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43649880486), **SUCCESS**. Foram aprovadas proteção estática contra falsa escrita, build API/Web, contratos RSA/RS256, integração HTTP/PostgreSQL17 sintética, navegador QA autenticado sintético, CSP e regressão da preview original.
+- Run documental anterior [#43649689523](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43649689523) também concluiu SUCCESS. Nenhum deploy/merge, writer financeiro, dado real, custo, nova API ou alteração Android.
+- **Situação objetiva:** os gates isolados de segurança e regressão caracterizados estão verdes. A Etapa 10 **NÃO está encerrada**: backend QA real, endpoint de troca no serviço canônico, role read-only efetiva, CORS e chaves, E2E com a base real, persistência de Novo/Editar/Excluir/Benefício/cartões quando cabíveis, responsividade/visual com dados reais e aprovação explícita permanecem pendentes. Não converter CI em validação visual.
+- **Próxima autorização pontual necessária para continuar sem violar restrições:** implementar, ainda exclusivamente na branch isolada e com opt-in desativado, a rota de troca de token na API canônica sob regras e testes de autorização, sem deploy ou configuração produtiva. Publicação backend e mudanças de produção requerem aprovação própria, conferência de custo e rollback.
