@@ -36,16 +36,16 @@ export function verifyStage10PublicJwt(
  const header=decodeSegment(head),body=decodeSegment(payload);
  if(!record(header)||header.alg!=='RS256'||header.typ!=='JWT'||Object.keys(header).some(
   k=>!['alg','typ'].includes(k)))fail();
- if(!record(body))fail();
- if(body.iss!==expected.issuer||body.aud!==expected.audience||
-  body.scope!=='stage10:finance:read'||!claimString(body.sub,256)||
-  !['ADMIN','MANAGER','OPERATOR','VIEWER'].includes(String(body.role)))fail();
+ const claims:Record<string,unknown>=record(body)?body:fail();
+ if(claims.iss!==expected.issuer||claims.aud!==expected.audience||
+  claims.scope!=='stage10:finance:read'||!claimString(claims.sub,256)||
+  !['ADMIN','MANAGER','OPERATOR','VIEWER'].includes(String(claims.role)))fail();
  const now=expected.nowSeconds??Math.floor(Date.now()/1000);
- if(!Number.isSafeInteger(now)||!Number.isSafeInteger(body.exp)||
-  !Number.isSafeInteger(body.iat)||Number(body.exp)<=now||
-  Number(body.iat)>now||Number(body.exp)<=Number(body.iat)||
-  Number(body.exp)-Number(body.iat)>900)fail();
- if(body.nbf!==undefined&&(!Number.isSafeInteger(body.nbf)||Number(body.nbf)>now))fail();
+ if(!Number.isSafeInteger(now)||!Number.isSafeInteger(claims.exp)||
+  !Number.isSafeInteger(claims.iat)||Number(claims.exp)<=now||
+  Number(claims.iat)>now||Number(claims.exp)<=Number(claims.iat)||
+  Number(claims.exp)-Number(claims.iat)>900)fail();
+ if(claims.nbf!==undefined&&(!Number.isSafeInteger(claims.nbf)||Number(claims.nbf)>now))fail();
  if(!base64Url.test(signature)||signature.length>8192)fail();
  const bytes=Buffer.from(signature,'base64url');
  if(bytes.toString('base64url')!==signature)fail();
@@ -56,5 +56,5 @@ export function verifyStage10PublicJwt(
   valid=verifySignature('RSA-SHA256',Buffer.from(head+'.'+payload),key,bytes);
  }catch{fail();}
  if(!valid)fail();
- return body as unknown as Stage10PublicClaims;
+ return claims as unknown as Stage10PublicClaims;
 }
