@@ -1880,3 +1880,36 @@ Backlog mantido e pendente, **fora da Etapa 04 mergeada**:
 - **Governança da PR #693:** o HEAD posterior `29b4dfe101300df323875defa877092be6047043` alterou **somente documentação** para refletir o novo ensaio. Para qualquer edição adicional de código ou workflow, verificar novamente os gates no SHA respectivo. PRs #666/#689/#692/#693 permanecem Draft, sem merge/deploy.
 - **Build seguro:** a PR [#692](https://github.com/MarcosVilalva/MEG-Platform/pull/692) passou [CI compilatória sem banco #43587484354](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587484354) e [Platform CI #43587484386](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587484386) **SUCCESS** no commit `abcc3ee8ff511f0e3ae610b1b3b6155cfcb08e9d`, inclusive `NODE_ENV=production` com dependências de build explícitas. **Nenhuma alteração no Build Command real do Render**, que ainda pode deletar `Budget` e aceitar `--accept-data-loss`.
 - **Bloqueio operacional inalterado:** Gate 1 de recuperação Supabase PARCIAL; Gates 2 a 4 NO-GO. Ausência de medição de economia **faturada** e de recuperação gerenciada integral. O usuário autorizou avanço das tarefas, mas não foi executado nenhum ato destrutivo, de cobrança, de merge ou de deploy. Android, UI homologada, Supabase e Render produtivos, Vault e WSL preservados. Próximo passo exato: resolver isolamento/restore gerenciado e a mudança segura de Build Command, em QA, com rollback antes de liberar qualquer publicação.
+
+
+## 14/11/2026 | Etapa 09: HEADs conferidos e bloqueio efetivo do isolamento gerenciado
+
+Continuidade exclusiva da Etapa 09, sem repetir auditorias ou testes encerrados. Consulta direta dos check-runs por SHA, pois combined status estava vazio e fetch_commit_workflow_runs retornava somente runs de evento pull_request, omitindo checks de push. Ausência nesses dois retornos não significa ausência de CI.
+
+| PR Draft aberta | HEAD consultado | Checks executados no SHA |
+|---|---|---|
+| #666 | `5c6b02a994220d3ae6ee01543bfd07bc0a11c7da` | cors-stage09: success; postgres17-synthetic-restore: success; pg17-disposable-financial-writers: success; financial-invariants-postgres17: success; validate: success; offline-contract: success |
+| #689 | `4bda62fa4091302412681a33331c865848147fde` | validate: success; pg17-egress-wire-synthetic: success |
+| #692 | `5bdefdb8c2b40090964d15fc3cf76b54f3162c7f` | validate: success; compile-without-database: success |
+| #693 | `5d75ede1c18aabe56a221cf6bd669e584ff59e3c` | validate: success; pg17-egress-wire-synthetic: success |
+
+Checks SKIPPED foram preservados como omitidos, nunca como aprovação. Resultados sintéticos anteriores, JWT real com segredo fictício, restore local public e custódias permanecem válidos no respectivo escopo. As bases reportadas em #689/#692 ainda indicam 6328bdf8a3448c1220cea88531926e13a2a057ae; #666 está no SHA acima. Não foi feita sincronização de branches nem alegada paridade.
+
+### Avanço read-only no Dashboard do sandbox
+Destino exclusivo: oxwmqbzeuiibdlkcbjzv. O painel foi acessível nesta rodada:
+- Provedores padrão Email/Phone/SAML/Web3/OAuth listados como Disabled; anonymous sign-ins e manual linking desmarcados. Allow new users to sign up e Confirm email marcados. Nenhum switch alterado.
+- URL Configuration: Site URL http://localhost:3000, No Redirect URLs. Nenhum destino alterado.
+- Banner real: Services restricted, organização excedeu quota. A consulta de Custom Auth Providers falhou explicitamente com exceed_egress_quota. Não é bloqueio de login ou evidência de bot.
+- Conclusão limitada: as telas fornecem configuração parcial; não demonstram egress bloqueado por política nem ausência integral de callbacks. Restrição de cota não serve como controle de isolamento e pode desaparecer. SMTP/SMS/hooks/Storage/Realtime/runtime e provedores customizados continuam não homologados nesta rodada.
+- list_projects ainda reporta ACTIVE_HEALTHY para origem e sandbox. Isso não significa serviços liberados: o Dashboard reporta restrição organizacional. Não remover spend cap, fazer upgrade ou gerar custo.
+
+### Preparação segura Render preservada
+get_service confirmou meg-platform-api Free, branch main, autoDeploy=yes, trigger commit. Build Command continua npm install && npm run db:generate && npm run build:api && npm run db:prepare:production && npm run db:push:production.
+Candidata #692 mantém bash scripts/meg-stage09-render-api-build.sh, compilação sem banco comprovada no HEAD acima. Não foi aplicada ao serviço. Antes de executar configuração: gates de DR/rollback positivos, revisão do comportamento de auto-deploy e autorização específica. Não restaurar o comando inseguro como rollback e não usar pre-deploy pago para contornar limite R$0.
+
+### Rastreabilidade e limites
+Issues #674, #676, #690 e #691 consultadas e OPEN. Nenhum comentário externo enviado ou issue encerrada. #674 tem correção apenas em branch; #676 depende de watchdog/pg_net; #690 não prova economia faturada; #691 continua bloqueador produtivo.
+
+Gate 1 PARCIAL e BLOQUEADO para conclusão funcional pela restrição de serviço e evidências faltantes. Gates 2 a 4 NO-GO. Nenhuma fixture, restore remoto, GET/PUT de root key, SQL produtivo, mudança Render, merge, deploy, alteração de plano ou custo nesta rodada. Android, Web homologada, WSL e dados reais preservados. Apenas checkpoint alterado na branch #666.
+
+Próximo passo exato: concluir inspeção sanitizada de SMTP/SMS/hooks/Storage/Realtime e provedores customizados quando o serviço permitir, sem upgrade nem remoção de limite; então comprovar isolamento funcional antes de qualquer fixture/restore. Preparação #692 permanece revisável e bloqueada para aplicação. Novo SHA documental exige consulta de checks próprios; não transferir aprovação do SHA anterior.
