@@ -231,5 +231,22 @@ try{
  assert.ok(!apiCalls.some(call=>call.startsWith(readonlyApi+' POST')),
   'backend QA deve continuar somente leitura');
  assert.deepEqual(errors,[],'Navegador sem excecoes');
+ // Responsividade no modo real opt-in, sem qualquer origem de dados reais.
+ // O viewport nao pode produzir rolamento horizontal na pagina.
+ for(const [width,height] of [[390,844],[640,900],[1024,768],[1366,768],[1920,1080]]){
+  await page.setViewportSize({width,height});
+  await page.evaluate(()=>document.fonts.ready);
+  await page.waitForTimeout(120);
+  const geometry=await page.evaluate(()=>({
+   viewport:document.documentElement.clientWidth,
+   documentWidth:document.documentElement.scrollWidth,
+   bodyWidth:document.body.scrollWidth,
+  }));
+  assert.ok(geometry.documentWidth<=geometry.viewport+1,
+   'Rolagem horizontal indevida no modo real opt-in '+width+': '+JSON.stringify(geometry));
+  assert.ok(geometry.bodyWidth<=geometry.viewport+1,
+   'Body ultrapassa viewport no modo real opt-in '+width+': '+JSON.stringify(geometry));
+ }
+ console.log('STAGE10_SYNTHETIC_BROWSER_RESPONSIVE_390_640_1024_1366_1920_PASS');
  console.log('STAGE10_SYNTHETIC_BROWSER_OPTIN_CANONICAL_WRITE_ONLY_PASS');
 }finally{await browser.close();}
