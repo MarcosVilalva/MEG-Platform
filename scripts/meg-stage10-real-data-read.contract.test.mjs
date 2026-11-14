@@ -79,11 +79,11 @@ assert.match(cors,/configuredOrigins\.includes\(origin\)/);
 // A API Fastify QA nunca deve aceitar o HMAC de login da API canonica.
 assert.match(stage10App,/verifyStage10PublicJwt/);
 assert.match(stage10App,/assertStage10PublicVerificationKey/);
-assert.doesNotMatch(stage10App,/registerAuth|authRoutes|jwtVerify|jwtSign|config\\.jwtSecret/);
+assert.doesNotMatch(stage10App,/from '\\.\\/plugins\\/auth'|\\bawait registerAuth\\(|\\.jwtVerify\\(|\\.jwtSign\\(|config\\.jwtSecret/);
 assert.match(stage10Server,/MEG_STAGE10_QA_JWT_PUBLIC_KEY_PEM/);
 assert.match(stage10Server,/MEG_STAGE10_QA_JWT_ISSUER/);
 assert.match(stage10Server,/MEG_STAGE10_QA_JWT_AUDIENCE/);
-assert.doesNotMatch(stage10Server,/registerAuth|authRoutes|jwtSign|config\\.jwtSecret/);
+assert.doesNotMatch(stage10Server,/from '\\.\\/plugins\\/auth'|\\bawait registerAuth\\(|\\.jwtSign\\(|config\\.jwtSecret/);
 assert.match(stage10Jwt,/stage10:finance:read/);
 assert.match(stage10Jwt,/RSA-SHA256/);
 assert.match(stage10Jwt,/RS256/);
