@@ -45,7 +45,7 @@ Writer futuro somente após testes de serialização, idempotência, rollback in
 
 - CI integrado `43587853904`: **SUCCESS**, inclui caracterização canônica e Chrome com 390, 640, 960, 1024 e 1366 px; testes de regressão de Prism, Poco C75 paisagem e Editar Despesa.
 - Render QA reutilizado: `meg-stage08-alerta-prism-pr685`, serviço `srv-dbr00b56e07s738n62n0`, workspace `tea-d98k1qhkh4rs73f4sfj0`, Auto Deploy OFF; deploy `dep-dbs3vijbc2fs73aggcn0` em `01e55459aa6fba813984dc047470383c80eb54ec`, LIVE.
-- Teste público pós-deploy `43587853875`: reexecução iniciada após LIVE, conclusão deve ser registrada somente depois de confirmada.
+- Teste público pós-deploy `43587853875`: **SUCCESS**, reexecução (attempt 2, job `132427119393`) após Render LIVE; logs `MEG_STAGE10_QA_ACTIONS` PASS em 390, 640, 960, 1024 e 1366px, além de `MEG_PRISM_COMPACT_LANDSCAPE` e `MEG_EDIT_PRISM_WIDE`. A falha inicial ocorreu contra Render antigo antes do deploy.
 - Gate legado Stage09 `43588097006` continua **FAILURE** em comparação fixa do hash antigo de `HomeDashboard.tsx`. Falha já verificada antes deste incremento; não alterar hashes/guard para forçar resultado verde.
 - Nenhum PATCH/DELETE, banco real, API de produção, Android, merge, deploy produtivo, criação de novo serviço Render ou Etapa 11.
 - Não homologado visualmente: novo posicionamento do botão e modal ampliado. Não considerar verde técnico como aceite visual.
