@@ -2455,3 +2455,88 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   Nenhuma dessas autorizacoes deve ser presumida
   de "siga" ou de SUCCESS em testes sinteticos.
   **Nao declarar Etapa 09 encerrada** ate os gates cumpridos.
+
+
+## 14/11/2026 | Etapa 09: PR #692 integrada apenas na branch de seguranca, regressao PG17 no merge
+
+- **Autorizacao recebida:** operador escreveu explicitamente
+  "autorizado siga ate encerrar a etapa 9". Foi adotado
+  prosseguimento tecnico com preservacao dos limites financeiros,
+  da politica de R$ 0,00 e dos gates de producao/restore.
+  A autorizacao de continuidade nao comprova atendimento de
+  precondicoes tecnicas, aceita riscos financeiros indefinidos,
+  autoriza perder dados ou substitui o exame Auth/Storage.
+- **Integracao isolada realizada:** PR
+  [#692](https://github.com/MarcosVilalva/MEG-Platform/pull/692)
+  alterada de Draft para Ready e mergeada somente em
+  `stage09/backup-recovery-kit-20261110`, PR #666 ainda
+  Draft para `main`. Merge commit
+  [`51b45adb2c13e1cd77ee28d23f50cd5dd83f52b3`](https://github.com/MarcosVilalva/MEG-Platform/commit/51b45adb2c13e1cd77ee28d23f50cd5dd83f52b3).
+  NENHUM merge ou push em `main`, deploy produtivo
+  ou Blueprint sync. Sem modificacao de Android, Web
+  homologada, banco, vault, dados reais ou credenciais.
+- **Lacuna de CI eliminada:** apos o merge, workflows de startup
+  real PG17 e build sem banco inicialmente nao eram acionados
+  pela PR #666. Foram ampliados os filtros/guards apenas para
+  PR do mesmo repo, head `stage09/backup-recovery-kit-20261110`,
+  base `main`, preservando o antigo escopo #692.
+  Arquivos: `.github/workflows/meg-stage09-render-startup-pg17.yml`
+  e `.github/workflows/meg-stage09-render-api-safe-build.yml`,
+  commits `f2115f94c04d87808c3fea5f06cccfa3586827e7`
+  e `5b3787275cc50e127644d74a681dc8d910f0d364`.
+- **CI integrada no HEAD tecnico `5b3787275cc50e127644d74a681dc8d910f0d364`:**
+  [MEG Platform CI #43651508331](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508331)
+  SUCCESS;
+  [financeiro PG17 #43651508281](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508281)
+  SUCCESS;
+  [backup offline #43651508320](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508320)
+  SUCCESS;
+  [Gate1 offline #43651508334](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508334)
+  SUCCESS;
+  [CORS #43651508301](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508301)
+  SUCCESS;
+  [build seguro sem banco #43651508323](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508323)
+  SUCCESS;
+  [startup real PG17 #43651508310](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508310)
+  SUCCESS;
+  [Foundation #43651508466](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508466)
+  **SKIPPED**. No log PG17 foram comprovados
+  `STAGE09_POSTGRES_TARGET=LOCAL_EPHEMERAL_ONLY`,
+  `PG17_REAL_HTTP_CONCURRENT_AND_TIMERS_PASS` e
+  `PG17_LEGACY_REPAIR_FAIL_CLOSED_REAL_SERVER_PASS`.
+  Nao equivale a experiencia de seis horas, multi-instancia em prod
+  ou reparo de dados reais.
+- **P0 atuais ainda OPEN em producao:** #691 build efetivo
+  Render com risco de DDL/DELETE no startup/deploy,
+  #694 parser de reparo legado ainda nao aplicado em `main`;
+  #690 Egress sem causa quantitativa comprovada.
+  #674 Ledger Payable corrigido em stage mas sem aceite/backfill
+  historico; #676 dependencia do watchdog em pg_net e Vault
+  confirmada, sem schema move; #695 semantica do health financeira
+  multi-instancia ainda nao aprovada.
+  Confirmado por Render.read: `meg-platform-api` ainda ligado
+  a `main`, Auto Deploy ativo, health `/health`; nenhuma
+  operacao de update de Build Command/Auto Deploy foi
+  disponibilizada pelas ferramentas conectadas neste chat.
+- **DR Supabase sem atalhos:** organizacao segue Free; sandbox
+  `oxwmqbzeuiibdlkcbjzv` `ACTIVE_HEALTHY`, mas
+  Auth/Storage gerenciados e egress ainda nao atestados.
+  HTTP 402 previamente comprovado; sem novos cadastros,
+  uploads, restore real, PUT Vault, upgrade ou custo.
+  Gate 0 PASS previo, Gate 1 PARCIAL, Gates 2-4 NO-GO.
+- **Relatorio formal de fechamento atualizado:** 
+  `docs/MEG-STAGE09-RELATORIO-FECHAMENTO-GATES-20261114.md`,
+  commit `4684cc305b6a952504afe13f1108aa829982ca35`.
+  Preservar fonte de verdade e comprovantes; verificar checks
+  do SHA documental deste checkpoint separadamente antes
+  de afirmar que tudo esta verde.
+- **Conclusao verificavel:** integracao de codigo e
+  caracterizacao tecnica isolada concluidas; **Etapa 09
+  integral nao homologada**. Nao fazer merge #666 na `main`,
+  deploy, Blueprint sync ou restore remoto sem
+  controlar Auto Deploy e Build Command efetivos,
+  obter evidencias autenticadas do Gate1/HTTP 402,
+  resolver contratualmente #674/#694/#695,
+  depois executar Gates2-4 e medir RPO/RTO.
+  A simples autorizacao generica nao fornece os
+  acessos/recursos gerenciados que faltam.
