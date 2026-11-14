@@ -241,7 +241,14 @@ try{
  // A credencial de teste e descartada junto com o container PostgreSQL do CI.
  await assert.rejects(assertStage10ReadOnlyDatabaseRole(prisma),
   /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/);
+ // A guarda deve falhar quando o schema ativo parece seguro mas ha
+ // grants efetivos de escrita em outro schema, testados no DB descartavel.
+ await prisma.$executeRawUnsafe('CREATE SCHEMA meg_stage10_foreign_fixture');
+ await prisma.$executeRawUnsafe('CREATE TABLE meg_stage10_foreign_fixture.prohibited_table (id INTEGER)');
+
  await prisma.$executeRawUnsafe("CREATE ROLE meg_stage10_ci_reader LOGIN PASSWORD 'meg_stage10_ci_reader'");
+ await prisma.$executeRawUnsafe('REVOKE TEMPORARY ON DATABASE meg_stage10_test FROM PUBLIC');
+ await prisma.$executeRawUnsafe('ALTER ROLE meg_stage10_ci_reader SET default_transaction_read_only = on');
  await prisma.$executeRawUnsafe('GRANT CONNECT ON DATABASE meg_stage10_test TO meg_stage10_ci_reader');
  await prisma.$executeRawUnsafe('GRANT USAGE ON SCHEMA public TO meg_stage10_ci_reader');
  await prisma.$executeRawUnsafe('GRANT SELECT ON ALL TABLES IN SCHEMA public TO meg_stage10_ci_reader');
