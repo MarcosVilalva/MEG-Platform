@@ -13,7 +13,7 @@ export type CardSnapshot={
  id:string;userId:string;isActive:boolean;closingDay:number;dueDay:number;
 };
 export type CardPurchaseSnapshot={
- id:string;userId:string;cardId:string;purchaseDate:string;status:string;updatedAt:string;
+ id:string;userId:string;cardId:string;purchaseDate:string;status:string;updatedAt:string;installments:number;
  entries:readonly {id:string;number:number;amount:string;statementMonth:string;status:string;partialPaidAmount:string}[];
 };
 export type BatchPreviewItem={source:BatchSource;id:string;expectedUpdatedAt:string};
@@ -84,8 +84,9 @@ export function previewBatchCardCycle(input:BatchPreviewInput):BatchPreviewRespo
   if(!validCard(oldCard,input.dataOwnerId)||!validCard(newCard,input.dataOwnerId))
    return blocked(item,'CARD_NOT_ACTIVE_OR_NOT_OWNED');
   if(purchase.status!=='active')return blocked(item,'PURCHASE_NOT_ACTIVE');
-  if(purchase.entries.length===0||purchase.entries.length!==new Set(purchase.entries.map(e=>e.number)).size
-   ||purchase.entries.some(e=>!Number.isInteger(e.number)||e.number<1||!monthValid(e.statementMonth)))
+  if(purchase.entries.length===0||purchase.entries.length!==purchase.installments
+   ||purchase.entries.length!==new Set(purchase.entries.map(e=>e.number)).size
+   ||purchase.entries.some(e=>!Number.isInteger(e.number)||e.number<1||e.number>purchase.installments||!monthValid(e.statementMonth)))
    return blocked(item,'INCOMPLETE_INSTALLMENT_SNAPSHOT');
   if(purchase.entries.some(e=>e.status!=='open'||!Number.isFinite(Number(e.partialPaidAmount))||Number(e.partialPaidAmount)!==0))
    return blocked(item,'CARD_PURCHASE_PAYMENT_EXISTS');

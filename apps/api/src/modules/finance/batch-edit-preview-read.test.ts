@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {cardPurchaseInstallmentRows,cardPurchaseStatementMonth,cardPurchaseCyclePreview} from '../cards/purchase-cycle-canonical';
 import {previewBatchCardCycle,type BatchPreviewInput} from './batch-edit-preview-read';
 
-const receipt={id:'purchase-01',userId:'owner-1',cardId:'card-a',purchaseDate:'2026-11-14',status:'active',
+const receipt={id:'purchase-01',userId:'owner-1',cardId:'card-a',purchaseDate:'2026-11-14',status:'active',installments:3,
  updatedAt:'2026-11-14T12:00:00.000Z',
  entries:[
   {id:'entry-1',number:1,amount:'33.34',statementMonth:'2026-11',status:'open',partialPaidAmount:'0'},

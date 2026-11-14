@@ -343,7 +343,7 @@ export async function createCardPurchaseProtected(userId: string, input: {
         operationId: input.operationId ?? null,
         ownerId: shared.ownerId,
         workspaceId: shared.workspaceId,
-        firstStatementMonth: firstMonth,
+        firstStatementMonth: projectedInstallments[0]?.statementMonth,
         duplicateOverride: Boolean(input.allowDuplicate),
       },
     });

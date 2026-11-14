@@ -41,7 +41,7 @@ async function main(){
  const expectedUpdatedAtById={[a.id]:a.updatedAt.toISOString(),[b.id]:b.updatedAt.toISOString()};
  const operationId='stage10-bulk-success-'+stamp;
  const command={ids:[a.id,b.id],changes:{notes:'LOTE QA ISOLADO'},expectedUpdatedAtById,operationId};
- const first=await updateFinancialEventsBulkProtected(user.id,command);
+ const first=await updateFinancialEventsBulkProtected(user.id,command) as {updated:number;idempotentReplay:boolean};
  assert.equal(first.updated,2);
  assert.equal(first.idempotentReplay,false);
  const rows=await prisma.financialEvent.findMany({where:{id:{in:[a.id,b.id]}}});
@@ -51,7 +51,7 @@ async function main(){
  assert.equal(audits,2,'auditoria por registro após commit');
  let receipts=await prisma.cloudMutationReceipt.count({where:{workspaceId:workspace.id,operationId}});
  assert.equal(receipts,1,'um recibo idempotente para o lote');
- const replay=await updateFinancialEventsBulkProtected(user.id,command);
+ const replay=await updateFinancialEventsBulkProtected(user.id,command) as {idempotentReplay:boolean};
  assert.equal(replay.idempotentReplay,true);
  assert.equal(await prisma.auditLog.count({where:{userId:user.id,action:'FINANCIAL_EVENT_UPDATED',entityId:{in:[a.id,b.id]}}}),audits);
  assert.equal(await prisma.cloudMutationReceipt.count({where:{workspaceId:workspace.id,operationId}}),1);
