@@ -57,7 +57,17 @@ try{
    const actionControls=await farmaciaActions.evaluateAll(els=>els.map(el=>el.querySelectorAll('button').length));
    assert.ok(actionControls.length>0&&actionControls.every(count=>count===1),'Cada representação responsiva deve conter um só botão '+width);
    const menuTrigger=page.getByRole('button',{name:'Ações de Farmácia'}).first();
-   assert.equal(await menuTrigger.locator('svg').count(),1,'Ícone único de lista e seta '+width);
+   assert.equal(await menuTrigger.locator('svg').count(),2,'Botão único com lista e seta separados '+width);
+   const iconLayout=await menuTrigger.evaluate(button=>{
+    const list=button.querySelector('.meg-t10-qa-dropdown-list')?.getBoundingClientRect();
+    const caret=button.querySelector('.meg-t10-qa-dropdown-caret')?.getBoundingClientRect();
+    const bounds=button.getBoundingClientRect();
+    return {gap:list&&caret?caret.left-list.right:0,centerDelta:list&&caret?Math.abs((list.top+list.bottom-caret.top-caret.bottom)/2):100,
+     contained:Boolean(list&&caret&&list.left>=bounds.left+2&&caret.right<=bounds.right-2),
+     touchHeight:bounds.height};
+   });
+   assert.ok(iconLayout.gap>=6 && iconLayout.centerDelta<=2 && iconLayout.contained && iconLayout.touchHeight>=42,
+    'Ícones Prism separados, centrados e dentro do botão '+width+': '+JSON.stringify(iconLayout));
    await menuTrigger.click();
    const rowMenu=page.getByRole('menu',{name:'Ações de Farmácia'});
    await rowMenu.waitFor({state:'visible'});

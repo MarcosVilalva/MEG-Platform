@@ -9,11 +9,10 @@ export type QaLaunchTarget={
  accountKind:'monetary'|'benefit'|'unknown';paymentMethod:string;signedAmount:number;
 };
 type Action='edit'|'view'|'duplicate'|'history'|'settle'|'archive';
-function ActionGlyph({kind}:{kind:'edit'|'view'|'dropdown'|'duplicate'|'history'|'settle'|'archive'|'batch'}){
+function ActionGlyph({kind}:{kind:'edit'|'view'|'duplicate'|'history'|'settle'|'archive'|'batch'}){
  const paths={
   edit:<><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/></>,
   view:<><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></>,
-  dropdown:<><path d="M3.5 6.5h10M3.5 11.5h10M3.5 16.5h10"/><path d="m16 9.7 3.3 4.4 3.2-4.4Z" fill="currentColor" stroke="none"/></>,
   duplicate:<><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></>,
   history:<><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></>,
   settle:<><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></>,
@@ -80,7 +79,16 @@ export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNoti
  return <span className="meg-t10-qa-row-actions" data-testid={'qa-actions-'+row.id}>
   <button ref={trigger} type="button" className="meg-t10-qa-action meg-t10-qa-dropdown"
    aria-label={'Ações de '+row.description} title={'Ações de '+row.description}
-   aria-haspopup="menu" aria-expanded={Boolean(position)} onClick={open}><ActionGlyph kind="dropdown"/></button>
+   aria-haspopup="menu" aria-expanded={Boolean(position)} onClick={open}>
+    <span className="meg-t10-qa-dropdown-symbol" aria-hidden="true">
+     <svg className="meg-t10-qa-dropdown-list" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+      <path d="M2 4.5h13M2 9h13M2 13.5h13"/>
+     </svg>
+     <svg className="meg-t10-qa-dropdown-caret" viewBox="0 0 12 12" fill="none">
+      <path d="M1.8 4.1 6 8.2l4.2-4.1Z" fill="currentColor"/>
+     </svg>
+    </span>
+   </button>
   {position&&createPortal(<div ref={menuNode} className="meg-t10-qa-menu" role="menu"
    aria-label={'Ações de '+row.description} style={{top:position.top,left:position.left}}>
    <p>{row.description}</p>
