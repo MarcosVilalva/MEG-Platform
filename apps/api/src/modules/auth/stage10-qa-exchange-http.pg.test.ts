@@ -64,8 +64,7 @@ try{
  sessionId=session.id;
  const bearer=app.jwt.sign({sub:ownerId,role:'ADMIN',email:owner.email},{expiresIn:'5m'});
  const anotherBearer=app.jwt.sign({sub:otherId,role:'VIEWER',email:other.email},{expiresIn:'5m'});
- const wrongRole=app.jwt.sign({sub:ownerId,role:'VIEWER',email:owner.email,
-  iat:now-15,exp:now+300});
+ const wrongRole=app.jwt.sign({sub:ownerId,role:'VIEWER',email:owner.email},{expiresIn:'5m'});
  const post=async(token:string,proof:string=refreshToken,requestOrigin:string|null=origin)=>
    app.inject({method:'POST',url:'/auth/stage10-qa/exchange',
     headers:{...(requestOrigin?{origin:requestOrigin}:{}),
