@@ -85,6 +85,8 @@ jobs:
           fi
       - name: Compare PostgreSQL wire bytes and financial reconciliation in synthetic database
         run: npm exec --workspace apps/api -- tsx src/modules/app-state/stage09-egress-pg17-e2e.test.ts
+      - name: Check Fastify GET authentication and workspace isolation in synthetic PostgreSQL 17
+        run: npm exec --workspace apps/api -- tsx src/modules/app-state/stage09-get-auth-route-pg17.test.ts
       - name: Verify 3630 synthetic events under a real 512 MiB container limit
         shell: bash
         run: |
