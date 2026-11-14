@@ -10,6 +10,20 @@ jobs:
   real-read-isolation:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: meg_test
+          POSTGRES_PASSWORD: meg_test
+          POSTGRES_DB: meg_stage10_test
+        ports:
+          - 5439:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_test -d meg_stage10_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,6 +38,15 @@ jobs:
         run: npm run db:generate
       - name: Typecheck API read-only route
         run: npm --workspace apps/api run build
+      - name: HTTP JWT and READ ONLY PostgreSQL 17 synthetic integration
+        env:
+          DATABASE_URL: postgresql://meg_test:meg_test@127.0.0.1:5439/meg_stage10_test?schema=public
+          MEG_STAGE10_SYNTHETIC_DB: 'true'
+          JWT_SECRET: stage10-synthetic-ci-only-jwt-secret-value-not-production
+          NODE_ENV: test
+        run: |
+          npm --workspace packages/database run db:push
+          npx tsx apps/api/src/modules/finance/stage10-readonly-http.pg.test.ts
       - name: Typecheck Web integration
         run: npx tsc -p apps/web/tsconfig.json --noEmit
       - name: Build existing unified QA, live gate disabled
