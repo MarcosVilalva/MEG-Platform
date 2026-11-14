@@ -11,16 +11,21 @@ const output=resolve(root,'dist-stage08-funcional-qa');
 
 // A QA visual padrao permanece sem rede. Em build opt-in isolada,
 // conectar apenas a origem HTTPS autenticada declarada explicitamente.
-function stage10CspApiOrigin():string|null{
- if(process.env.VITE_MEG_STAGE10_REAL_READ_ENABLED!=='true')return null;
- const input=process.env.VITE_API_URL;
- if(!input)throw new Error('STAGE10_CSP_API_ORIGIN_REQUIRED');
- const api=new URL(input);
- if(api.protocol!=='https:'||api.username||api.password||api.search||api.hash||api.pathname!=='/')
-  throw new Error('STAGE10_CSP_API_ORIGIN_INVALID');
- return api.origin;
+function stage10CspOrigins():string[]{
+ if(process.env.VITE_MEG_STAGE10_REAL_READ_ENABLED!=='true')return [];
+ const values=[process.env.VITE_API_URL,process.env.VITE_MEG_STAGE10_READONLY_API_URL];
+ if(values.some(v=>!v))throw new Error('STAGE10_CSP_DUAL_API_ORIGINS_REQUIRED');
+ const origins=values.map(input=>{
+  const api=new URL(input!);
+  if(api.protocol!=='https:'||api.username||api.password||api.search||api.hash||
+     api.pathname!=='/'||api.href!==api.origin+'/')
+   throw new Error('STAGE10_CSP_API_ORIGIN_INVALID');
+  return api.origin;
+ });
+ if(origins[0]===origins[1])throw new Error('STAGE10_CSP_DISTINCT_ORIGINS_REQUIRED');
+ return origins;
 }
-const stage10ApiOrigin=stage10CspApiOrigin();
+const stage10ApiOrigins=stage10CspOrigins();
 
 // Somente um HTML publico; gate real isolada por build e desativada por padrao.
 export default defineConfig({
@@ -28,10 +33,10 @@ export default defineConfig({
   plugins:[react(),{
     name:'stage10-opt-in-csp-origin',
     transformIndexHtml(html,context){
-      if(!stage10ApiOrigin||!context.path.endsWith('/meg-unificado-qa.html'))return html;
+      if(!stage10ApiOrigins.length||!context.path.endsWith('/meg-unificado-qa.html'))return html;
       const original="connect-src 'self';";
       if(!html.includes(original))throw new Error('STAGE10_CSP_CONNECT_SRC_MISSING');
-      return html.replace(original,`connect-src 'self' ${stage10ApiOrigin};`);
+      return html.replace(original,`connect-src 'self' ${stage10ApiOrigins.join(' ')};`);
     },
   },{
     name:'stage08-qa-root',
