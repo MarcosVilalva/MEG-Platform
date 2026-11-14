@@ -85,6 +85,6 @@ test('o build legado contém DELETE financeiro e db push com data loss', () => {
 
 test('inventario nao libera deploy nem substitui o gate do Render', () => {
   assert.ok(read('docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md').includes('Issue #691 permanece aberta'));
+  console.log('STAGE09_RENDER_STARTUP_WRITER_INVENTORY=KNOWN_MUTATIONS_PRESENT;DEPLOY_NOT_AUTHORIZED');
 });
 
-console.log('STAGE09_RENDER_STARTUP_WRITER_INVENTORY=KNOWN_MUTATIONS_PRESENT;DEPLOY_NOT_AUTHORIZED');
