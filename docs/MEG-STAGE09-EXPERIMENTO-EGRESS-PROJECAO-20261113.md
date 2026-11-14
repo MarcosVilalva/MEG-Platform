@@ -37,9 +37,28 @@ Harness local independente: `MEG-STAGE09-EXPERIMENTO-PROJECAO-20261113.mjs`; fix
 
 - Teste offline Node: PASS.
 - Teste de caracterização no repositório: ampliado em `normalized-primary-writeback.test.ts` para validar projeção e equivalência da reconstrução, atualização de sourcePayload e fingerprint.
-- CI da branch experimental: ainda requer execução e verificação. Um build verde não equivale a homologação funcional.
-- Teste com PostgreSQL 17 local isolado e métricas do protocolo: pendente.
+- CI da branch experimental: **SUCCESS** no commit `baa5f77cfdfeb743e73ca4fbbbb6dd5a1f93dc7a`, via branch de QA que apontou ao mesmo commit. [MEG Platform CI #43548438092](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43548438092), incluindo testes e build; [PG17 Wire #43548437998](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43548437998), com PostgreSQL 17 descartável. Não houve homologação em produção.
+- Teste com PostgreSQL 17 **descartável de CI** e medição local de bytes do protocolo PostgreSQL: **SUCCESS**. O ensaio não usou o banco de restauração WSL ou Supabase.
 - Prova da causa quantitativa dos 13 GB, verificação operacional da quota e gates de recuperação: pendentes.
+
+## Medição do protocolo PostgreSQL 17 no job descartável (13/11/2026)
+
+Evidência: [workflow pg17-egress-wire #43548437998](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43548437998), SHA `baa5f77cfdfeb743e73ca4fbbbb6dd5a1f93dc7a`. O job utiliza container PostgreSQL 17 efêmero, Prisma Client e proxy TCP exclusivo do `127.0.0.1`, que conta bytes enviados pelo servidor PostgreSQL ao cliente. A base usa 3.630 eventos fictícios e `AppState` fictício **reconciliado**.
+
+| Consulta ou rotina | Bytes servidor → cliente | Escopo |
+|---|---:|---|
+| Startup, `findMany` com `include` original | 4.375.109 | Leitura integral da linha |
+| Startup, `findMany` com `select` experimental | 3.772.587 | Apenas campos necessários |
+| Diferença direta | **602.522** | **13,772% nessa consulta** |
+| `normalizationPreview` periódica, intacta | **6.740.840** | Leitura do `AppState` e eventos completos |
+
+`normalizationPreview` obteve `reconciled=true` nos dados sintéticos. Se essa auditoria ocorresse 96 vezes em 24h sem interrupção, representaria **647.120.640 bytes por dia** nesse cenário, hipótese de atividade contínua que não se aplica necessariamente ao Render Free.
+
+**Validações confirmadas no job**: mesmo espelho anterior/projetado para 3.630 eventos, detecção de divergência de payload, arquivados e órfãos removidos, ledger inalterado, idempotência inicial, rollback, recusa de revisão desatualizada e apenas um vencedor em duas reconciliações concorrentes.
+
+**Limitações**: o proxy registra bytes do protocolo PostgreSQL sem TLS local, não despesas ou volume cobrado pelo Supabase. O resultado por consulta não prova causalidade dos 13,057 GB organizacionais. O primeiro ensaio falhou por fixture que serializava dinheiro como string; corrigido apenas no teste, sem mudança financeira. O ensaio de base compatível foi concluído com SUCCESS.
+
+A auditoria periódica ainda transfere uma representação completa e **não foi otimizada**. Não desativar nem espaçar o timer nem aceitar checksum abreviado sem caracterização formal de equivalência de `normalizationFingerprint`, cobertura de deletados, writes concorrentes, rollback e fallback, incluindo alterações fora da API.
 
 ## Critérios antes de cogitar integração
 
