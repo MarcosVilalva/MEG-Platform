@@ -9,6 +9,7 @@ on:
       - 'scripts/meg-stage09-render-startup-http-pg17-synthetic.test.ts'
       - 'scripts/meg-stage09-render-startup-concurrent-pg17-synthetic.test.ts'
       - 'scripts/meg-stage09-startup-timer-probe.mjs'
+      - 'scripts/meg-stage09-legacy-repair-flag-pg17.test.ts'
       - '.github/workflows/meg-stage09-render-startup-pg17.yml'
       - 'docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md'
 
@@ -76,3 +77,6 @@ jobs:
         # IPC callbacks fire real registered maintenance closures without altering server.ts.
         # Only PG17 localhost fixture, no 6h wait and no external services.
         run: ./node_modules/.bin/tsx scripts/meg-stage09-render-startup-concurrent-pg17-synthetic.test.ts
+      - name: Characterize legacy repair flag with actual HTTP server on synthetic PG17
+        # Never connects externally and does not patch financial code.
+        run: ./node_modules/.bin/tsx scripts/meg-stage09-legacy-repair-flag-pg17.test.ts
