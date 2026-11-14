@@ -54,7 +54,8 @@ try{
    assert.equal(await batchButton.isDisabled(),true,'Limpar seleção desabilita lote '+width);
    // Um único botão de lista+seta abre todas as ações, sem writer financeiro.
    const farmaciaActions=page.getByTestId('qa-actions-e3');
-   assert.equal(await farmaciaActions.locator('button').count(),1,'Ações devem usar só um controle '+width);
+   const actionControls=await farmaciaActions.evaluateAll(els=>els.map(el=>el.querySelectorAll('button').length));
+   assert.ok(actionControls.length>0&&actionControls.every(count=>count===1),'Cada representação responsiva deve conter um só botão '+width);
    const menuTrigger=page.getByRole('button',{name:'Ações de Farmácia'}).first();
    assert.equal(await menuTrigger.locator('svg').count(),1,'Ícone único de lista e seta '+width);
    await menuTrigger.click();
