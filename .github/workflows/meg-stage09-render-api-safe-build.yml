@@ -1,0 +1,68 @@
+name: MEG Stage09 Render API build without database access (synthetic CI)
+
+on:
+  pull_request:
+    branches:
+      - 'stage09/backup-recovery-kit-20261110'
+    paths:
+      - 'scripts/meg-stage09-render-startup-writers.contract.test.mjs'
+      - 'scripts/meg-stage09-render-api-build.sh'
+      - 'scripts/meg-stage09-render-api-build.contract.test.mjs'
+      - 'scripts/meg-stage09-render-api-build.regression.test.mjs'
+      - 'docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md'
+      - 'render.yaml'
+      - '.github/workflows/meg-stage09-render-api-safe-build.yml'
+  push:
+    branches:
+      - 'fix/stage09-render-safe-build-qa-20261114'
+      - 'safety/stage09-render-build-non-destructive-20261114'
+
+permissions:
+  contents: read
+
+jobs:
+  compile-without-database:
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && (github.ref == 'refs/heads/fix/stage09-render-safe-build-qa-20261114' || github.ref == 'refs/heads/safety/stage09-render-build-non-destructive-20261114' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'MarcosVilalva/MEG-Platform' && github.event.pull_request.head.ref == 'safety/stage09-render-build-non-destructive-20261114'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NODE_ENV: production
+      # Inexistente e não vinculado a nenhum ambiente real.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:65431/stage09_no_database?schema=public
+    steps:
+      - name: Checkout isolated build recipe
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate fail-closed contract before executing build
+        run: node scripts/meg-stage09-render-api-build.regression.test.mjs
+      - name: Characterize startup database writers, no connections
+        run: node --test scripts/meg-stage09-render-startup-writers.contract.test.mjs
+      - name: Execute proposed build with no database service or database connection
+        run: bash scripts/meg-stage09-render-api-build.sh
+      - name: Verify tsx remains usable without install hooks
+        run: npm --workspace apps/api exec -- tsx --version
+      - name: Instantiate generated Prisma client without connecting
+        run: |
+          node --input-type=module <<'NODE'
+          import { PrismaClient } from '@prisma/client';
+          const client = new PrismaClient();
+          await client.$disconnect();
+          console.log('PRISMA_CLIENT_WITHOUT_INSTALL_HOOKS=PASS');
+          NODE
+      - name: Verify no database service was provisioned in CI
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node - <<'NODE'
+          const assert = require('node:assert/strict');
+          assert.equal(process.env.CI, 'true');
+          assert.equal(process.env.DATABASE_URL, 'postgresql://ci:ci@127.0.0.1:65431/stage09_no_database?schema=public');
+          console.log('STAGE09_API_BUILD=COMPLETED_WITHOUT_DATABASE');
+          NODE
