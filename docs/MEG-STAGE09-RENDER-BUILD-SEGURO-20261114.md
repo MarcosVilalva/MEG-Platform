@@ -45,6 +45,62 @@ propoe `autoDeployTrigger: 'off'`. Plano, nome, runtime, regiao, envVars, start,
 health e buildFilter permanecem iguais. Nao cria banco, disco ou recurso novo.
 O comentario antigo que confundia migracao com deploy automatico foi corrigido.
 
+## Auditoria de codigo do startup e scripts antigos (14/11/2026)
+
+A remocao de `db:prepare:production` e `db:push:production` do **build** foi
+verificada em codigo, mas o `startCommand` segue `npm run start:api`.
+O arquivo `apps/api/src/server.ts` inicia manutencoes apos abrir a porta HTTP.
+Portanto **nenhum deploy deve ser descrito como read-only**. Inventario do caminho
+atual, com fontes em `apps/api/src/modules`:
+
+| Caminho invocado no startup | Escrita possivel identificada no codigo | Observacao de gate |
+| --- | --- | --- |
+| `ensureCommercialFoundation` | `plan.upsert`, administrador e `workspaceSubscription.createMany` | Pode alterar contratos e permissao de plataforma |
+| `refreshCommercialBillingStatuses` | faturas automaticas e `workspaceInvoice.updateMany`, `workspaceSubscription.update` | Pode transicionar para PAST_DUE/SUSPENDED |
+| `materializeRecurringExpenses` | `prisma.$transaction` com `materializeTemplate` | Pode criar compromissos financeiros recorrentes |
+| `migrateLegacyCardsForAllWorkspaces` | caminho `migrateLegacyCards` com criacao de cartoes | Migra relacoes legadas em startup |
+| `ensurePrimaryWorkspace` | `workspace.create`, `workspaceMember.upsert/createMany`, `appState.update/create` | Pode vincular estado e titularidade |
+| `reconcilePrimaryAppStateFromNormalized` | transacao e `writeBackNormalizedEventsToAppState` | Pode reescrever espelho AppState e remover referencias legadas obsoletas; requer autoridade canonica |
+| `activateNormalizationPrimary` | `appState.updateMany`, aplicacao eventual de shadow | Pode ativar fonte normalizada, condicionada a conciliacao |
+| `repairLegacyImportedEvents` | `financialEvent.updateMany` e catalogos, se `config.runLegacyRepair` | Opcional, padrao de configuracao falso; revisar ambiente antes de liberar |
+
+`runFinancialMaintenance` executa no startup **e a cada 6h**. O timer de
+auditoria da normalizacao roda **a cada 15min** e utiliza
+`ensurePrimaryWorkspace`; o fluxo de ativacao normalizada tambem pode persistir
+alteracoes. O resultado de um `/health` HTTP 200 apenas indica que o
+servidor respondeu, enquanto `/ready` testa conexao DB. Nenhum dos dois atesta
+conclusao de manutencao ou integridade financeira completa.
+
+**Scripts antigos nao executados nesta auditoria**:
+
+- `packages/database/prisma/prepare-production.ts` tem `DELETE FROM "Budget"`
+  para eliminar duplicados por `userId/month/group`, selecionando o registro
+  com `updatedAt` mais recente. **Nao compara `amount` antes de apagar**.
+  Sem leitura de linhas reais, nao e possivel afirmar se ha duplicatas ou perdas
+  atuais, mas executar em deploy seria uma alteracao financeira destrutiva.
+- `packages/database/prisma/ensure-performance-indexes.ts` executa
+  `CREATE INDEX IF NOT EXISTS` para sete indices e consulta seus nomes. Esse
+  teste nao prova se definicoes preexistentes estao compativeis.
+- `db:push:production` permanece como script legado acessivel por comando,
+  com `--accept-data-loss`. E retirado **somente** do novo build candidato.
+  Nao apagar, renomear ou refatorar essas rotinas sem caracterizacao, decisao de
+  negocio e autorizacao separadas.
+
+A CI candidata executa
+`scripts/meg-stage09-render-startup-writers.contract.test.mjs` antes de compilar.
+O teste e **estatico, sintetico e sem rede/DB**: conserva um inventario de oito
+paths conhecidos e exige nova revisao se seus marcadores mudarem. Nao garante que
+nenhum novo caminho de escrita exista; nao testa atomicidade, idempotencia,
+seguranca de dados ou execucao real de startup. `SUCCESS` nao libera deploy.
+
+**Gate operacional adicional de #691:** antes de qualquer janela de publicacao,
+caracterizar em PG17 descartavel e com fixtures ficticias os efeitos de startup,
+especialmente recorrencia, cartoes, normalizacao e billing; conferir que toda
+escrita no cold start e permitida pela autoridade financeira e preserva dados;
+revalidar flags/runtime sem expor segredos. Caso isso nao seja demonstrado,
+`NO-GO`. Nao "resolver" o risco desativando automaticamente rotinas que ja sao
+regras de negocio.
+
 ## Gates especificos, sem confundir preparacao e operacao
 
 | Gate | Estado |
