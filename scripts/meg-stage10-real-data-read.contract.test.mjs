@@ -18,10 +18,10 @@ assert.match(bridge,/env\.enabled!=='true'/);
 assert.match(bridge,/api\.protocol!=='https:'/);
 assert.match(bridge,/api\.origin===page\.origin/);
 assert.match(bridge,/validateSession\(session\)/);
-assert.match(bridge,/getSyncStatus\\(\\)/);
+assert.match(bridge,/getSyncStatus\(\)/);
 assert.match(bridge,/stage10-readonly-capability/);
-assert.match(bridge,/guarantee\\.canWrite!==false/);
-assert.match(bridge,/guarantee\\.sideEffects!=='none'/);
+assert.match(bridge,/guarantee\.canWrite!==false/);
+assert.match(bridge,/guarantee\.sideEffects!=='none'/);
 assert.ok(bridge.indexOf('stage10-readonly-capability')<bridge.indexOf('financeClient.getSyncStatus()'),
  'Atestado read-only deve anteceder qualquer GET financeiro');
 assert.match(bridge,/before\.token!==after\.token/);
