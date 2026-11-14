@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildNormalizationPreview, legacyTransactionToFinancialEvent, normalizationFingerprint } from './normalization-migration-core';
-import { mirrorFinancialEventToLegacyTransaction, normalizedMirrorNeedsSourceRefresh } from './normalized-primary-writeback';
+import { mirrorFinancialEventToLegacyTransaction, normalizedMirrorNeedsSourceRefresh, NORMALIZED_LEGACY_MIRROR_SELECT } from './normalized-primary-writeback';
 
 const context = { workspaceId: 'workspace-1', userId: 'user-1', revision: 10 };
 const original = {
@@ -104,5 +104,56 @@ assert.match(source, /removedLegacyIds[\s\S]*writeBackNormalizedEventsToAppState
   'IDs legados arquivados devem ser removidos do espelho para evitar divergência permanente.');
 assert.doesNotMatch(source, /if \(!events\.length\) return \{ active: true, changed: false/,
   'Reconciliação não pode ignorar exclusões só porque não restaram eventos ativos.');
+
+
+/* Caracterização Etapa 09: reduzir Egress sem alterar o conteúdo do espelho. */
+const mandatoryMirrorFields = [
+  'id', 'legacyTransactionId', 'date', 'description', 'type', 'status',
+  'amount', 'signedAmount', 'notes', 'sourcePayload', 'accountId', 'paymentMethod',
+];
+assert.deepEqual(
+  Object.keys(NORMALIZED_LEGACY_MIRROR_SELECT).sort(),
+  mandatoryMirrorFields.sort(),
+  'A projeção deve conter todos e somente os campos usados pelo espelho canônico.',
+);
+assert.deepEqual(
+  NORMALIZED_LEGACY_MIRROR_SELECT.paymentMethod,
+  { select: { name: true } },
+  'O nome do meio de pagamento deve continuar disponível para a reconciliação.',
+);
+assert.match(source, /select:\s*NORMALIZED_LEGACY_MIRROR_SELECT/,
+  'A reconciliação de startup precisa selecionar a projeção mínima em vez da linha completa.');
+assert.doesNotMatch(source, /include:\s*\{\s*paymentMethod:/,
+  'Não buscar colunas financeiras que não são consumidas pelo espelho.');
+
+const verboseEvent = {
+  ...settledEvent,
+  userId: 'user-sintetico',
+  workspaceId: 'workspace-sintetico',
+  competence: '2026-09',
+  categoryId: 'category-sintetica',
+  createdAt: new Date('2026-09-10T00:00:00.000Z'),
+  updatedAt: new Date('2026-09-13T00:00:00.000Z'),
+  sourceRevision: 10,
+  amountBehavior: 'NORMAL',
+  classificationConfidence: 0.95,
+};
+const projectionEvent = Object.fromEntries(
+  Object.keys(NORMALIZED_LEGACY_MIRROR_SELECT).map(
+    (key) => [key, verboseEvent[key as keyof typeof verboseEvent]],
+  ),
+) as typeof settledEvent;
+const fullMirror = mirrorFinancialEventToLegacyTransaction(verboseEvent);
+const projectedMirror = mirrorFinancialEventToLegacyTransaction(projectionEvent);
+assert.deepEqual(projectedMirror, fullMirror,
+  'Excluir colunas não consumidas não pode alterar a representação legada.');
+assert.equal(normalizedMirrorNeedsSourceRefresh(verboseEvent, fullMirror),
+  normalizedMirrorNeedsSourceRefresh(projectionEvent, projectedMirror),
+  'A necessidade de atualizar sourcePayload deve permanecer equivalente.');
+assert.equal(
+  normalizationFingerprint([{ ...preview.events[0]!, sourcePayload: fullMirror }]),
+  normalizationFingerprint([{ ...preview.events[0]!, sourcePayload: projectedMirror }]),
+  'A redução de seleção não pode alterar o fingerprint financeiro.',
+);
 
 console.log('normalized primary writeback tests passed');
