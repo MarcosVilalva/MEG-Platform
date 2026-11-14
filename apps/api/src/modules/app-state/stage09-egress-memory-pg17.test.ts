@@ -3,6 +3,7 @@
  * em PostgreSQL 17 efemero da CI. Apenas SELECT sobre fixtures ficticias.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 import { prisma } from '@meg/database';
 import { completeDatabaseSignature } from './normalization-periodic-audit';
@@ -43,6 +44,19 @@ async function main() {
     'Eventos arquivados pela caracterizacao precedente nao integram a auditoria ativa.');
   if (expected === 3630) assert.equal(result.reconciled, true);
   const rss = process.memoryUsage().rss;
+  function cgroupValue(file: string): number | null {
+    try {
+      const raw = readFileSync(file, 'utf8').trim();
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : null;
+    } catch { return null; }
+  }
+  const cgroupLimit = cgroupValue('/sys/fs/cgroup/memory.max')
+    ?? cgroupValue('/sys/fs/cgroup/memory/memory.limit_in_bytes');
+  const cgroupPeak = cgroupValue('/sys/fs/cgroup/memory.peak')
+    ?? cgroupValue('/sys/fs/cgroup/memory/memory.max_usage_in_bytes');
+  assert.equal(cgroupLimit, 512 * 1024 * 1024,
+    'Docker precisa impor o limite efetivo de memoria no cgroup.');
   console.log('STAGE09_MEMORY_CGROUP_512_RESULT=' + JSON.stringify({
     syntheticOnly: true,
     expected,
@@ -53,6 +67,8 @@ async function main() {
     afterHashRssMiB: Number((afterHashRss/1048576).toFixed(2)),
     afterPreviewRssMiB: Number((rss/1048576).toFixed(2)),
     maxRssMiB: Number((process.resourceUsage().maxRSS / 1024).toFixed(2)),
+    cgroupLimitMiB: Number((cgroupLimit!/1048576).toFixed(2)),
+    cgroupPeakMiB: cgroupPeak == null ? null : Number((cgroupPeak/1048576).toFixed(2)),
     externalDatabase: false,
   }));
 }
