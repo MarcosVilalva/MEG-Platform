@@ -58,5 +58,7 @@ jobs:
           NODE_ENV: test
           MEG_STAGE10_QA_HTTP_ENABLED: '1'
         run: npx tsx apps/api/src/modules/finance/stage10-qa-readonly-loopback.isolated.test.ts
+      - name: Gate de infraestrutura QA persistente sem autorizacao de deploy
+        run: node scripts/meg-stage10-qa-persistent-infra-preflight.mjs
       - name: Check TypeScript da API na branch isolada
         run: npx tsc -p apps/api/tsconfig.json --noEmit
