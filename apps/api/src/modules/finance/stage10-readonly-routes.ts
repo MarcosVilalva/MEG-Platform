@@ -75,6 +75,13 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
     })),
     accounts,categories,paymentMethods,cards,summary,cashflow,
    };
+  }).catch(error=>{
+   const code=error instanceof Error?error.message:'';
+   if(code==='STAGE10_READ_ACCESS_DENIED')
+    return reply.code(403).send({error:code});
+   if(code==='STAGE10_WORKSPACE_FINANCIAL_SCOPE_NOT_EXCLUSIVE')
+    return reply.code(409).send({error:code});
+   throw error;
   });
  });
 }
