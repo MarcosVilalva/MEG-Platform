@@ -21,6 +21,8 @@ assert.match(bridge,/getSyncStatus\(\)/);
 assert.match(bridge,/before\.token!==after\.token/);
 assert.match(bridge,/current\.user\.id!==session\.user\.id/);
 assert.match(bridge,/readSmartAuthorizedHistory/);
+assert.match(bridge,/before\.capabilities\?\.historySnapshotV1===true/);
+assert.match(bridge,/readAuthorizedHistory\(page,signal\)/);
 assert.match(bridge,/history:\{protocol:'financial-history-v1',kind:'complete',items:events\}/);
 assert.match(bridge,/creditCards:\[\]/);
 assert.match(bridge,/verocard/i);
