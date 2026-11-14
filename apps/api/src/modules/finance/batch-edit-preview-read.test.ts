@@ -68,7 +68,7 @@ reason({changes:{cardId:'benefit-prepaid',purchaseDateMode:'preserve'}},'CARD_NO
 reason({changes:{cardId:'foreign',purchaseDateMode:'preserve'}},'CARD_NOT_ACTIVE_OR_NOT_OWNED');
 reason({changes:{cardId:'card-b',purchaseDateMode:'common',commonPurchaseDate:'2026-02-30'}},'INVALID_PURCHASE_DATE');
 reason({changes:{purchaseDateMode:'preserve',installments:2}},'INSTALLMENT_COUNT_EDIT_NOT_SUPPORTED');
-reason({snapshots:{...base.snapshots,purchases:[{...receipt,entries:[{...receipt.entries[0],partialPaidAmount:'1.00'}]}]}},'CARD_PURCHASE_PAYMENT_EXISTS');
+reason({snapshots:{...base.snapshots,purchases:[{...receipt,entries:receipt.entries.map((entry,index)=>index===0?{...entry,partialPaidAmount:'1.00'}:entry)}]}},'CARD_PURCHASE_PAYMENT_EXISTS');
 reason({snapshots:{...base.snapshots,purchases:[{...receipt,status:'cancelled'}]}},'PURCHASE_NOT_ACTIVE');
 reason({snapshots:{...base.snapshots,purchases:[{...receipt,userId:'other'}]}},'PURCHASE_NOT_IN_WORKSPACE');
 reason({snapshots:{...base.snapshots,purchases:[{...receipt,entries:[]}]}},'INCOMPLETE_INSTALLMENT_SNAPSHOT');
