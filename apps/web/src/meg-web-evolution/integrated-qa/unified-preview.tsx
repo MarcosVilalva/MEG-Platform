@@ -36,6 +36,7 @@ const realRequested=params.get('dados')==='reais';
 const realGate=stage10RealReadGate({
  enabled:import.meta.env.VITE_MEG_STAGE10_REAL_READ_ENABLED,
  apiUrl:import.meta.env.VITE_API_URL,
+ readonlyApiUrl:import.meta.env.VITE_MEG_STAGE10_READONLY_API_URL,
 },location.origin);
 const realEnabled=realRequested&&realGate.allowed;
 const rootElement=document.documentElement;
