@@ -12,6 +12,8 @@ const isolatedWorkspace=read('apps/api/src/modules/finance/stage10-readonly-work
 const stage10Routes=read('apps/api/src/modules/finance/stage10-readonly-routes.ts');
 const financeRoutes=read('apps/api/src/modules/finance/routes.ts');
 const cors=read('apps/api/src/cors.ts');
+const readonlyRoutes=read('apps/api/src/modules/finance/stage10-readonly-routes.ts');
+const legacyFinanceRoutes=read('apps/api/src/modules/finance/routes.ts');
 assert.match(qa,/realRequested=params\.get\('dados'\)==='reais'/);
 assert.match(qa,/if\(!realEnabled\)window\.fetch=/);
 assert.match(qa,/<UnifiedQA\/>/);
@@ -58,6 +60,11 @@ assert.match(isolatedWorkspace,/workspace:\{isActive:true,ownerId:actorId\}/);
 assert.doesNotMatch(isolatedWorkspace,/\b(?:ensurePrimaryWorkspace|resolveWorkspaceContext)\s*\(/);
 assert.doesNotMatch(isolatedWorkspace,/\b(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(/);
 assert.match(cors,/configuredOrigins\.includes\(origin\)/);
+assert.match(readonlyRoutes,/workspaceId:scope\.workspaceId/);
+assert.match(readonlyRoutes,/withStage10ReadOnlyWorkspace/);
+assert.match(readonlyRoutes,/new Map\(accounts\.map/);
+assert.doesNotMatch(readonlyRoutes,/rawData:true/);
+assert.match(legacyFinanceRoutes,/MEG_STAGE10_REAL_READ_API_ENABLED/);
 // O codigo de integracao tem somente chamadas a leitores; o componente
 // de edicao simula salvamento e nao chama nenhum writer financeiro.
 for(const s of [bridge,live]){
