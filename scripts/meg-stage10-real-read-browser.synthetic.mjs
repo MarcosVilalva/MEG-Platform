@@ -108,7 +108,7 @@ try{
  }
  await page.getByText('DESPESA SINTETICA PARA NAVEGADOR').first().waitFor({state:'visible',timeout:20000});
  assert.ok(apiCalls.includes(api+' POST /auth/login'));
- assert.ok(apiCalls.includes(api+' GET /auth/me'));
+ assert.ok(!apiCalls.includes(api+' GET /auth/me'), 'QA nao chama /auth/me canonico potencialmente mutante');
  assert.ok(apiCalls.includes(api+' POST /auth/refresh'));
  assert.equal(apiCalls.filter(call=>call===readonlyApi+' GET /finance/stage10-readonly/snapshot').length,2,
   'Somente duas tentativas no backend QA: token expirado e token renovado');
