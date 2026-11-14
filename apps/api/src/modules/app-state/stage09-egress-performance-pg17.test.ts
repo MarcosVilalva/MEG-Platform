@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
 import { Prisma, prisma } from '@meg/database';
-import { completeDatabaseSignature } from './normalization-periodic-audit';
+import { completeDatabaseSignature, periodicNormalizationPreview } from './normalization-periodic-audit';
 import { normalizationPreview } from './normalization-migration';
 
 const LOCAL = 'postgresql://ci:ci@127.0.0.1:5433/meg_stage09_egress_synthetic?schema=public';
@@ -138,6 +138,46 @@ async function main() {
     orderBy: { createdAt: 'desc' },
   });
   assert.ok(workspace.name.includes('Stage09 Disposable'));
+  // Avaliar frequência de mudanças que afeta a taxa de acertos do atalho.
+  // Todas as mutações são exclusivamente em AppState fictício deste job.
+  const baselinePreview = await normalizationPreview(workspace.id, workspace.ownerId);
+  assert.equal(baselinePreview.reconciled, true,
+    'O ensaio de frequência exige estado financeiro reconciliado.');
+  const hitRateScenarios: Array<{mutationFraction: number; hitCount: number; totalBytes: number; savedPercent: number}> = [];
+  let probe = 0;
+  for (const fraction of [0, 0.25, 0.5, 1]) {
+    let hitCount = 0;
+    let totalBytes = 0;
+    const mutations = Math.round(fraction * 12);
+    for (let i = 0; i < 12; i += 1) {
+      if (i === 0 || i < mutations) {
+        const stored = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+        const state = obj(stored.state);
+        probe += 1;
+        await prisma.appState.update({
+          where: { workspaceId: workspace.id },
+          data: { state: {
+            ...state, budgets: { ...(obj(state.budgets || {})), stage09Probe: probe },
+          } as Prisma.InputJsonValue },
+        });
+      }
+      await wireReset();
+      const p = await periodicNormalizationPreview(workspace.id, workspace.ownerId, normalizationPreview);
+      assert.equal(p.reconciled, true, 'Mudança de metadado sintético não pode alterar finanças.');
+      const bytes = await wireBytes();
+      totalBytes += bytes;
+      if (bytes < 1000) hitCount += 1;
+    }
+    const standard = 6740840 * 12;
+    hitRateScenarios.push({
+      mutationFraction: fraction,
+      hitCount,
+      totalBytes,
+      savedPercent: Number(((1 - totalBytes / standard) * 100).toFixed(3)),
+    });
+  }
+  console.log('STAGE09_PERFORMANCE_HIT_RATES=' + JSON.stringify(hitRateScenarios));
+
   const results = [];
   for (const target of [3630, 12000, 24000]) {
     await extendFixture(workspace.id, workspace.ownerId, target);
@@ -206,6 +246,7 @@ async function main() {
     mutatedFieldDetected: true,
     pg17Ephemeral: true,
     noProductionAccess: true,
+    hitRateScenarios,
   }));
 }
 main().catch(e => {
