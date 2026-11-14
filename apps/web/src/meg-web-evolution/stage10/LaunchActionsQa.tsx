@@ -9,11 +9,11 @@ export type QaLaunchTarget={
  accountKind:'monetary'|'benefit'|'unknown';paymentMethod:string;signedAmount:number;
 };
 type Action='edit'|'view'|'duplicate'|'history'|'settle'|'archive';
-function ActionGlyph({kind}:{kind:'edit'|'view'|'dots'|'duplicate'|'history'|'settle'|'archive'|'batch'}){
+function ActionGlyph({kind}:{kind:'edit'|'view'|'dropdown'|'duplicate'|'history'|'settle'|'archive'|'batch'}){
  const paths={
   edit:<><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/></>,
   view:<><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></>,
-  dots:<><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>,
+  dropdown:<><path d="M3.5 6.5h10M3.5 11.5h10M3.5 16.5h10"/><path d="m16 9.7 3.3 4.4 3.2-4.4Z" fill="currentColor" stroke="none"/></>,
   duplicate:<><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></>,
   history:<><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></>,
   settle:<><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></>,
@@ -38,12 +38,23 @@ export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNoti
    const target=event.target;
    if(target instanceof Node&&!menuNode.current?.contains(target)&&!trigger.current?.contains(target))close();
   };
-  const keys=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();close();trigger.current?.focus();}};
+  const keys=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'){event.preventDefault();close();trigger.current?.focus();return;}
+   if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
+   const items=Array.from(menuNode.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]')??[]);
+   if(!items.length)return;
+   event.preventDefault();
+   const current=items.findIndex(item=>item===document.activeElement);
+   const next=event.key==='Home'?0:event.key==='End'?items.length-1:
+    event.key==='ArrowDown'?(current+1)%items.length:(current-1+items.length)%items.length;
+   items[next].focus();
+  };
   const scroll=()=>close();
   document.addEventListener('pointerdown',dismiss);
   document.addEventListener('keydown',keys);
   window.addEventListener('scroll',scroll,true);
-  return ()=>{document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',keys);window.removeEventListener('scroll',scroll,true);};
+  const focusFrame=window.requestAnimationFrame(()=>menuNode.current?.querySelector<HTMLButtonElement>('button[role="menuitem"]')?.focus());
+  return ()=>{window.cancelAnimationFrame(focusFrame);document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',keys);window.removeEventListener('scroll',scroll,true);};
  },[position]);
  const open=()=>{
   if(position){close();return;}
@@ -64,22 +75,19 @@ export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNoti
   }
  };
  const options:readonly [Action,'edit'|'view'|'duplicate'|'history'|'settle'|'archive',string][]=[
-  ['view','view','Ver detalhes'],['edit','edit','Editar lançamento'],['duplicate','duplicate','Duplicar como rascunho'],
+  ['edit','edit','Editar lançamento'],['view','view','Ver detalhes'],['duplicate','duplicate','Duplicar como rascunho'],
   ['history','history','Histórico de alterações'],['settle','settle','Confirmar pagamento'],['archive','archive','Arquivar lançamento']
  ];
  return <span className="meg-t10-qa-row-actions" data-testid={'qa-actions-'+row.id}>
-  <button type="button" className="meg-t10-qa-action primary" aria-label={(canEdit?'Editar ':'Ver detalhes de ')+row.description}
-   title={canEdit?'Editar lançamento (QA, sem gravação)':'Ver detalhes'} onClick={canEdit?onEdit:onView}>
-   <ActionGlyph kind={canEdit?'edit':'view'}/>
-  </button>
-  <button ref={trigger} type="button" className="meg-t10-qa-action" aria-label={'Mais ações de '+row.description}
-   aria-haspopup="menu" aria-expanded={Boolean(position)} onClick={open}><ActionGlyph kind="dots"/></button>
+  <button ref={trigger} type="button" className="meg-t10-qa-action meg-t10-qa-dropdown"
+   aria-label={'Ações de '+row.description} title={'Ações de '+row.description}
+   aria-haspopup="menu" aria-expanded={Boolean(position)} onClick={open}><ActionGlyph kind="dropdown"/></button>
   {position&&createPortal(<div ref={menuNode} className="meg-t10-qa-menu" role="menu"
    aria-label={'Ações de '+row.description} style={{top:position.top,left:position.left}}>
    <p>{row.description}</p>
    {options.map(([action,glyph,label])=><button key={action} type="button" role="menuitem" onClick={()=>perform(action)}>
     <ActionGlyph kind={glyph}/><span>{label}</span>
-    {(action==='settle'||action==='archive'||action==='history')&&<small>Protegido</small>}
+    {(action==='settle'||action==='archive'||action==='history'||(!canEdit&&(action==='edit'||action==='duplicate')))&&<small>Protegido</small>}
    </button>)}
    <small className="meg-t10-qa-menu-foot">Simulação QA, nenhuma gravação financeira.</small>
   </div>,document.body)}

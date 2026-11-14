@@ -332,7 +332,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    render:(value)=>/^\d{4}-\d{2}$/.test(String(value))?String(value).slice(5,7)+'/'+String(value).slice(0,4):readable(value)},
  ];
  return [
-  ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:qaActions?110:82,minWidth:qaActions?105:72,sortable:false,filterable:false,
+  ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:qaActions?78:82,minWidth:qaActions?72:72,sortable:false,filterable:false,
     render:(_value:unknown,row:Row)=>qaActions
      ? <LaunchRowQaActions row={toQaTarget(row)} canEdit={row.type==='expense'&&row.accountKind==='monetary'&&Boolean(onQaEdit)}
         onView={()=>openDetails(row.id)} onEdit={()=>onQaEdit?.(toQaTarget(row))}
