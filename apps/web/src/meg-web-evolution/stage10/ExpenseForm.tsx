@@ -28,6 +28,7 @@ export type ExpenseFormProps={
  catalogs:ExpenseCatalogs;historySnapshot?:HistorySnapshot;
  schedule?:InstallmentSchedule;
  onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;saveEnabled?:boolean;
+ mode?:'create'|'edit';initialDraft?:ExpenseDraft;
 };
 export const EMPTY_EXPENSE_DRAFT:ExpenseDraft={
  description:'',categoryId:'',accountId:'',paymentMethodId:'',
@@ -91,10 +92,20 @@ function OverlayKeys({root,onClose}:{root:RefObject<HTMLElement|null>;onClose:()
  },[root]);
  return null;
 }
-export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false}:ExpenseFormProps){
- const [draft,setDraft]=useState<ExpenseDraft>(EMPTY_EXPENSE_DRAFT);
- const [money,setMoney]=useState<BRLInput>(EMPTY_BRL_INPUT);
- const [dateText,setDateText]=useState('');
+/** Mesmo SVG Prism usado no botão de fechar da prévia isolada de edição. */
+function EditCloseGlyph(){
+ const id=useId().replace(/:/g,'');
+ const gradient='meg-t10-edit-close-'+id;
+ return <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke={'url(#'+gradient+')'} strokeWidth="2.55" strokeLinecap="round" aria-hidden="true" focusable="false" data-meg-prism="icon-2">
+  <defs><linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff"/><stop offset=".48" stopColor="#a3fff4"/><stop offset="1" stopColor="#1ccbc6"/></linearGradient></defs>
+  <path d="M5 5 19 19M19 5 5 19"/>
+ </svg>;
+}
+export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft}:ExpenseFormProps){
+ const isEdit=mode==='edit';
+ const [draft,setDraft]=useState<ExpenseDraft>(()=>initialDraft??EMPTY_EXPENSE_DRAFT);
+ const [money,setMoney]=useState<BRLInput>(()=>initialDraft?.amountInput?brlFromPasted(initialDraft.amountInput):EMPTY_BRL_INPUT);
+ const [dateText,setDateText]=useState(()=>initialDraft?.date?dateBR(initialDraft.date):'');
  const [dateError,setDateError]=useState(false);
 
  const [categoryPicker,setCategoryPicker]=useState(false);
@@ -120,7 +131,9 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const selectedCard=cards.find(x=>x.id===draft.creditCardId);
  const requestedAmount=brlSignedDecimal(money);
  const isRefund=money.negative&&requestedAmount!==null;
- const canSave=Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&method&&draft.date&&requestedAmount&&!isCredit&&(!showSettlementAccount||Boolean(selectedAccount)));
+ const isDirty=isEdit&&Boolean(initialDraft)&&(Object.keys(EMPTY_EXPENSE_DRAFT) as (keyof ExpenseDraft)[]).some(key=>draft[key]!==initialDraft![key]);
+ const validPayment=isCredit?Boolean(selectedCard)&&/^[1-9]\d*$/.test(draft.installmentsInput):Boolean(method)&&(!showSettlementAccount||Boolean(selectedAccount));
+ const canSave=Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&draft.date&&requestedAmount&&validPayment&&(!isCredit||isEdit)&&(!isEdit||isDirty));
  // A gravação continua desabilitada no QA. Para pendências, a API aceita accountId ausente,
  // mas qualquer writer real exigirá caracterização transacional antes de ser conectado.
  const currentSchedule=Boolean(schedule&&schedule.source==='canonical'&&schedule.cardId===draft.creditCardId&&schedule.purchaseDate===draft.date&&schedule.installments===Number(draft.installmentsInput)&&schedule.amountDecimal===requestedAmount&&schedule.rows.length===Number(draft.installmentsInput));
@@ -185,14 +198,14 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  }
  function moneyPaste(event:ClipboardEvent<HTMLInputElement>){event.preventDefault();changeMoney(brlFromPasted(event.clipboardData.getData('text')));}
  return <div className="meg-t10-expense-backdrop">
-  <section ref={root} className="meg-t10-expense" role="dialog" aria-modal="true" aria-labelledby={formId+'title'}>
+  <section ref={root} className={'meg-t10-expense'+(isEdit?' meg-t10-edit':'')} role="dialog" aria-modal="true" aria-labelledby={formId+'title'} data-testid={isEdit?'stage10-edit-preview':undefined}>
    <OverlayKeys root={root} onClose={parcelModal?()=>setParcelModal(false):categoryPicker?()=>setCategoryPicker(false):onBack}/>
    <header className="meg-t10-expense-header">
-    <button type="button" className="meg-t10-expense-head-icon" aria-label="Voltar à escolha do tipo" onClick={onBack}><Icon name="chevronLeft"/></button>
-    <span className="meg-t10-expense-title"><h2 id={formId+'title'}>Novo lançamento</h2><small><span className="meg-t10-expense-type"><Icon name="chevronDown"/> DESPESA</span> Registre sua movimentação com segurança.</small></span>
+    {!isEdit&&<button type="button" className="meg-t10-expense-head-icon" aria-label="Voltar à escolha do tipo" onClick={onBack}><Icon name="chevronLeft"/></button>}
+    <span className="meg-t10-expense-title"><h2 id={formId+'title'}>{isEdit?'Editar lançamento':'Novo lançamento'}</h2><small><span className="meg-t10-expense-type"><Icon name="chevronDown"/> DESPESA</span> {isEdit?'Revise os dados do lançamento.':'Registre sua movimentação com segurança.'}</small></span>
     <span className="meg-t10-expense-head-actions">
-     <button type="button" className="meg-t10-expense-head-save" aria-label="Salvar lançamento" title="Salvar lançamento" disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>Salvar</span></button>
-     <button type="button" className="meg-t10-expense-head-icon" aria-label="Fechar formulário" onClick={onBack}>×</button>
+     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={isEdit?'Simulação QA: não grava dados financeiros':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
+     <button type="button" className="meg-t10-expense-head-icon" aria-label={isEdit?'Fechar edição':'Fechar formulário'} title={isEdit?'Descartar alterações e fechar':undefined} onClick={onBack}>{isEdit?<EditCloseGlyph/>:'×'}</button>
     </span>
    </header>
    <nav className="meg-t10-expense-mobile-nav" aria-label="Etapas do formulário">
@@ -201,7 +214,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
    <div className="meg-t10-expense-grid">
     <section className={'meg-t10-expense-panel meg-t10-expense-primary'+(mobileStep==='data'?' is-step':'')} aria-label="Dados da despesa">
      <label htmlFor={formId+'description'}><Icon name="list"/> Descrição *</label>
-     <input id={formId+'description'} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(true);}} placeholder="DESCREVA A DESPESA" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'}/>
+     <input id={formId+'description'} aria-label={isEdit?'Descrição da edição':undefined} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(true);}} placeholder="DESCREVA A DESPESA" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'}/>
      {suggestionsOpen&&suggestions.length>0&&<div className="meg-t10-expense-suggestions" id={formId+'suggestions'} role="listbox" aria-label="Descrições do histórico">
       <strong className="meg-t10-expense-suggestions-title"><Icon name="list"/> Histórico relacionado</strong>
       {suggestions.slice(0,3).map(s=><button type="button" key={s.sourceEventId} role="option" aria-selected={false} onClick={()=>selectSuggestion(s)}>{s.description}<small>{s.categoryName??'Categoria indisponível'} · Sem copiar valor ou data</small></button>)}
