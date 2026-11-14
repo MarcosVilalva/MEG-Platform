@@ -18,7 +18,7 @@ const shellStatements = script.split('\n').map((line) => line.trim()).filter((li
 assert.deepEqual(shellStatements, [
   'set -Eeuo pipefail',
   'cd "$(dirname "$0")/.."',
-  'npm ci --audit=false --fund=false',
+  'npm ci --include=dev --audit=false --fund=false',
   'npm run db:generate',
   'npm run build:api',
 ], 'Build não pode conter alteração de banco nem comandos extras.');
