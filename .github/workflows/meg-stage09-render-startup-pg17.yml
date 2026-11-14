@@ -3,6 +3,7 @@ name: MEG Stage09 Render startup PG17 synthetic characterization
 on:
   pull_request:
     branches:
+      - main
       - 'stage09/backup-recovery-kit-20261110'
     paths:
       - 'scripts/meg-stage09-render-startup-pg17-synthetic.test.ts'
@@ -20,7 +21,7 @@ permissions:
 
 jobs:
   pg17-synthetic-startup:
-    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.event.pull_request.head.repo.full_name == 'MarcosVilalva/MEG-Platform' && github.event.pull_request.head.ref == 'safety/stage09-render-build-non-destructive-20261114'
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'MarcosVilalva/MEG-Platform' && ((github.event.pull_request.base.ref == 'stage09/backup-recovery-kit-20261110' && github.event.pull_request.head.ref == 'safety/stage09-render-build-non-destructive-20261114') || (github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'stage09/backup-recovery-kit-20261110'))
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
