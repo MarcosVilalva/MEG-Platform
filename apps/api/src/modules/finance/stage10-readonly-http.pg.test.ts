@@ -69,6 +69,9 @@ try{
   type:'expense',status:'paid',date:new Date('2026-11-10T12:00:00Z'),
   competence:'2026-11',amount:'10.50',signedAmount:'-10.50',
   accountId:account.id,categoryId:category.id,paymentMethodId:method.id,
+  sourcePayload:{'GRUPO':'Grupo historico','FORMA DE PAGAMENTO':'PIX historico',
+   'CATEGORY':'Categoria antiga','secretaChaveTecnica':'DO_NOT_EXPOSE_SYNTHETIC_SECRET',
+   'nested':{'token':'NESTED_DO_NOT_EXPOSE'}},
  }});
  const foreign=await prisma.financialEvent.create({data:{
   userId:otherId,workspaceId:otherWorkspaceId,description:'Despesa sintetica B',
@@ -113,6 +116,13 @@ try{
  assert.equal(payload.total,1);
  assert.deepEqual(payload.events.map((e:{id:string})=>e.id),[original.id]);
  assert.equal(payload.events[0].paymentMethod.name,'Fixture PIX A');
+ assert.equal(payload.events[0].sourceDetails.group,'Grupo historico');
+ assert.equal(payload.events[0].sourceDetails.paymentMethod,'PIX historico');
+ assert.deepEqual(payload.events[0].sourcePayload,{category:'Categoria antiga',paymentMethod:'PIX historico'});
+ assert.ok(!response.body.includes('DO_NOT_EXPOSE_SYNTHETIC_SECRET'));
+ assert.ok(!response.body.includes('NESTED_DO_NOT_EXPOSE'));
+ assert.ok(!response.body.includes('secretaChaveTecnica'));
+
  assert.equal(payload.summary.month,'2026-11');
  assert.equal(payload.cashflow.month,'2026-11');
  assert.equal(response.headers['cache-control'],'private, no-store');
