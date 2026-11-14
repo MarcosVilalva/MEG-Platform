@@ -2641,3 +2641,50 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   de Render Auto Deploy Off e Build Command seguro
   permanecem registrados; #691 não foi encerrada,
   nenhuma publicação em `main` ocorreu.
+
+
+## 14/11/2026 | Egress: origem historica recuperada e data do ciclo confirmada no Usage
+
+- **O usuario lembrou corretamente da auditoria anterior** e forneceu print
+  autenticado de Supabase Organization Usage, filtro `Todos os projetos`,
+  ciclo **27/10/2026–27/11/2026**, plano **Free**, mostrando
+  `Egress 14,596 / 5 GB (292%)`. Outros indicadores no print:
+  banco `0,048 / 0,5 GB (10%)`; consultas de registros
+  `7,128 / 100 GB (7%)`; logs `0,016 / 1 GB (2%)`.
+  Banner `Serviços restritos`. A data exibida para renovacao do
+  ciclo e **27/11/2026**, nao inferir desbloqueio instantaneo.
+- **Nao refazer as auditorias ja realizadas:** quando o consumo
+  organizacional estava em `13,057 GB`, os dados historicos
+  autenticados apontaram `13,002 GB` ao projeto principal
+  `meg-financas`, `0,054 GB` ao inativo
+  `meg-evolution` e participacao praticamente nula do
+  sandbox. Nos dias examinados, os tooltips da producao
+  mostraram **100% Shared Pooler Egress**. Isso localiza
+  projeto e canal, **nao a rotina SQL/HTTP exata**.
+- Issue [#690](https://github.com/MarcosVilalva/MEG-Platform/issues/690)
+  ja documenta identificador SQL de `normalizedItems` com
+  **6.820 chamadas/24.753.440 linhas** acumuladas desde reset de
+  `pg_stat_statements` em **10/07/2026**, outras consultas
+  recorrentes de `AppState.state` e benchmark isolado
+  `GET /app-state` com ~**6,74 MB** por leitura sem
+  mudanca de estado. Isso confirma custo potencial de leituras
+  redundantes; **nao atribui os 14,596 GB faturados a
+  GET/app-state, startup ou auditoria em proporcao mensurada**.
+  Nao eliminar fingerprints, normalizacao, rollback ou
+  seguranca por workspace para economizar Egress por suposicao.
+- Pelo [Billing FAQ oficial](https://supabase.com/docs/guides/platform/billing-faq#fair-use-policy),
+  restricoes de cota Free sao normalmente levantadas quando a
+  cota renova no proximo ciclo, com atraso possivel. O prazo
+  do ciclo e **27/11/2026** conforme print. **Gate 1 gerenciado
+  continua NO-GO operacional**, Auth/Storage com HTTP 402
+  anteriormente confirmado. Gates 2–4 nao iniciados.
+- **Custo maximo R$ 0,00 preservado**; nao fazer upgrade,
+  migracao paga, remover limite, criar outro projeto,
+  conectar sandbox a prod, alterar banco principal ou
+  executar restauracao remota. O fechamento da Etapa 09
+  segue pendente de liberacao operacional, ensaios DR
+  autorizados, RTO/RPO e gates de release, ainda que
+  Auto Deploy Off + Build Command seguro ja tenham
+  sido configurados no Render.
+- Evidencia adicional documentada na issue #690, sem nova
+  consulta SQL, logs massivos ou novas leituras produtivas.
