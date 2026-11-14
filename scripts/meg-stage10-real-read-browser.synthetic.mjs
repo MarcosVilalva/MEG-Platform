@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from '@playwright/test';
 
-const base='http://127.0.0.1:4175';
+const base='https://127.0.0.1:4175';
 const api='https://qa-api.example.invalid';
 const owner='stage10-synthetic-owner';
 const workspace='stage10-synthetic-workspace';
@@ -27,7 +27,7 @@ const snapshot={
 };
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 try{
- const page=await browser.newPage({viewport:{width:1366,height:768}});
+ const page=await browser.newPage({viewport:{width:1366,height:768},ignoreHTTPSErrors:true});
  const apiCalls=[];const errors=[];
  page.on('pageerror',error=>errors.push(String(error)));
  await page.route(api+'/**',async route=>{
