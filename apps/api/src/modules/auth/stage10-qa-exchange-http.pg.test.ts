@@ -5,6 +5,7 @@ import fastifyJwt from '@fastify/jwt';
 import {prisma,UserRole,UserStatus} from '@meg/database';
 import {registerStage10QaExchangeRoutes} from './stage10-qa-exchange-routes';
 import {verifyStage10PublicJwt} from '../../stage10-public-jwt-contract';
+import {createStage10ReadOnlyApp} from '../../stage10-readonly-app';
 import {resetSecurityRateLimitersForTests} from '../../security';
 
 /** PostgreSQL17 descartavel. Recusa execucao em qualquer outro banco. */
@@ -39,6 +40,7 @@ try{
 
 const app=Fastify({logger:false,bodyLimit:2048});
 let ownerId='',otherId='',workspaceId='',sessionId='';
+let readonlyApp:Awaited<ReturnType<typeof createStage10ReadOnlyApp>>|null=null;
 try{
  await app.register(fastifyJwt,{secret:'stage10-synthetic-jwt-key-not-production-32-characters'});
  app.decorate('authenticate',async(request,reply)=>{
@@ -62,6 +64,11 @@ try{
  const session=await prisma.authSession.create({data:{
   userId:ownerId,tokenHash,expiresAt:new Date(Date.now()+3600000)}});
  sessionId=session.id;
+ const financial=await prisma.financialEvent.create({data:{
+  userId:ownerId,workspaceId,description:'Teste conjunto autenticado e somente leitura',
+  type:'expense',status:'paid',date:new Date('2026-11-12T12:00:00.000Z'),
+  competence:'2026-11',amount:'12.50',signedAmount:'-12.50',
+ }});
  const bearer=app.jwt.sign({sub:ownerId,role:'ADMIN',email:owner.email},{expiresIn:'5m'});
  const anotherBearer=app.jwt.sign({sub:otherId,role:'VIEWER',email:other.email},{expiresIn:'5m'});
  const wrongRole=app.jwt.sign({sub:ownerId,role:'VIEWER',email:owner.email},{expiresIn:'5m'});
@@ -84,6 +91,19 @@ try{
  assert.equal(claims.sid,sessionId);
  assert.equal(claims.wid,workspaceId);
  assert.equal(body.expiresAt,claims.exp);
+ // Fluxo completo, sem servidor externo: emissor HMAC existente -> exchange RS256
+ // -> backend de leitura Fastify -> snapshot financeiro PG17 read-only.
+ readonlyApp=await createStage10ReadOnlyApp(origin,{publicKeyPem:pair.publicKey,issuer,audience});
+ await readonlyApp.ready();
+ const read=await readonlyApp.inject({method:'GET',
+  url:'/finance/stage10-readonly/snapshot?month=2026-11',
+  headers:{authorization:'Bearer '+body.accessToken,origin}});
+ assert.equal(read.statusCode,200,read.body.slice(0,400));
+ const snapshot=read.json();
+ assert.equal(snapshot.actorId,ownerId);
+ assert.equal(snapshot.workspaceId,workspaceId);
+ assert.equal(snapshot.canWrite,false);
+ assert.deepEqual(snapshot.events.map((item:{id:string})=>item.id),[financial.id]);
  const originalAccess=app.jwt.verify<{exp:number}>(bearer);
  assert.ok(claims.exp<=originalAccess.exp,'QA nunca expira depois do access HMAC');
  assert.ok(claims.exp<=Math.floor(session.expiresAt.getTime()/1000),
@@ -104,6 +124,12 @@ try{
  // Em todos os casos, a rota nao deve modificar valores de fundos nem sessions.
  await prisma.authSession.update({where:{id:sessionId},data:{revokedAt:new Date()}});
  assert.equal((await post(bearer)).statusCode,403,'Logout revoga novas trocas');
+ const afterRevoke=await readonlyApp.inject({method:'GET',
+  url:'/finance/stage10-readonly/snapshot?month=2026-11',
+  headers:{authorization:'Bearer '+body.accessToken,origin}});
+ assert.equal(afterRevoke.statusCode,403,'revogacao barra token QA emitido antes do logout');
+ assert.ok(!afterRevoke.body.includes('Teste conjunto autenticado'),
+  'revogacao nao pode devolver lancamento');
  await prisma.authSession.update({where:{id:sessionId},
   data:{revokedAt:null,expiresAt:new Date(Date.now()-1000)}});
  assert.equal((await post(bearer)).statusCode,403,'Expiracao da sessao');
@@ -119,6 +145,7 @@ try{
  assert.equal(await prisma.authSession.count({where:{userId:ownerId}}),countBefore);
  console.log('STAGE10_CANONICAL_QA_EXCHANGE_POSTGRES17_NO_WRITES PASS');
 }finally{
+ if(readonlyApp)await readonlyApp.close();
  await app.close();
  // Fixtures descartadas com container PG17. Nada se conecta a producao.
  await prisma.$disconnect();
