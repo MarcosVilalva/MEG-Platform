@@ -4,7 +4,7 @@
  * ATENCAO: NAO habilitar no Render ate auditar efeitos colaterais dos GETs
  * e autorizar a origem no backend sem modificar producao silenciosamente.
  */
-import {readSession,validateSession,authenticatedRequest} from '../../app/auth-client';
+import {readSession,validateSession,refreshAuthSession} from '../../app/auth-client';
 import type {Account,Category,PaymentMethod,FinancialEvent,FinanceSummary} from '../../app/finance-client';
 import {buildReadOnlyData} from '../launches/OperationalLaunches';
 import type {HomeFinancialData} from '../home/HomeDashboard';
@@ -22,23 +22,63 @@ export type Stage10RealRead={
   supportsFilteredSummary:boolean;
 };
 
+function strictHttpsOrigin(input:string):string|null{
+ try{
+  const api=new URL(input);
+  if(api.protocol!=='https:'||api.username||api.password||api.search||api.hash||
+     api.pathname!=='/'||api.href!==api.origin+'/')return null;
+  return api.origin;
+ }catch{return null;}
+}
+
 export function stage10RealReadGate(env:{
-  enabled?:string;
-  apiUrl?:string;
+ enabled?:string;
+ apiUrl?:string;
+ readonlyApiUrl?:string;
 },pageOrigin:string):{allowed:boolean;reason:string}{
-  if(env.enabled!=='true')return {allowed:false,reason:'A leitura real ainda nao foi liberada nesta build da QA.'};
-  if(!env.apiUrl)return {allowed:false,reason:'Origem da API autenticada nao configurada.'};
-  try{
-    const api=new URL(env.apiUrl);
-    const page=new URL(pageOrigin);
-    if(api.protocol!=='https:'||page.protocol!=='https:'||api.username||api.password||
-       api.search||api.hash||api.pathname!=='/'||api.origin===page.origin){
-      return {allowed:false,reason:'Origem da API nao atende ao isolamento HTTPS exigido.'};
-    }
-  }catch{
-    return {allowed:false,reason:'Origem da API invalida.'};
-  }
-  return {allowed:true,reason:''};
+ if(env.enabled!=='true')return {allowed:false,reason:'A leitura real ainda nao foi liberada nesta build da QA.'};
+ const authOrigin=env.apiUrl?strictHttpsOrigin(env.apiUrl):null;
+ const dataOrigin=env.readonlyApiUrl?strictHttpsOrigin(env.readonlyApiUrl):null;
+ const page= strictHttpsOrigin(pageOrigin+'/');
+ if(!authOrigin||!dataOrigin||!page||authOrigin===page||dataOrigin===page||
+    authOrigin===dataOrigin){
+  return {allowed:false,reason:'Origens HTTPS distintas de autenticacao e leitura nao configuradas.'};
+ }
+ return {allowed:true,reason:''};
+}
+
+/** A API QA so recebe GET e um JWT ja emitido na API canonica. */
+async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>{
+ const origin=strictHttpsOrigin(import.meta.env.VITE_MEG_STAGE10_READONLY_API_URL||'');
+ const auth=strictHttpsOrigin(import.meta.env.VITE_API_URL||'');
+ if(!origin||!auth||origin===auth||origin===window.location.origin)
+  throw new Error('Origem QA somente leitura nao autorizada.');
+ if(!path.startsWith('/finance/stage10-readonly/snapshot?month='))
+  throw new Error('Rota de consulta QA nao autorizada.');
+ const send=(token:string)=>fetch(origin+path,{
+  method:'GET',mode:'cors',credentials:'omit',cache:'no-store',signal,
+  headers:{Authorization:'Bearer '+token},
+ });
+ const initial=readSession();
+ if(!initial?.accessToken)throw new Error('Sessao autenticada obrigatoria.');
+ let response=await send(initial.accessToken);
+ if(response.status===401){
+  // Refresh acontece exclusivamente na API canonica, nunca no backend QA.
+  const refreshed=await refreshAuthSession();
+  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+  if(!refreshed||refreshed.user.id!==initial.user.id)
+   throw new Error('Sessao nao autorizada para leitura financeira.');
+  response=await send(refreshed.accessToken);
+ }
+ if(!response.ok){
+  // Nenhum HTML, redirecionamento ou mensagem de origem nao confiavel e exibido.
+  throw new Error('Consulta financeira QA indisponivel (HTTP '+response.status+').');
+ }
+ const current=readSession();
+ if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(!current||current.user.id!==initial.user.id)
+  throw new Error('A identidade da sessao mudou durante a consulta.');
+ return await response.json() as T;
 }
 
 function catalogsFromReal(
@@ -85,9 +125,8 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
  if(identity.user.id!==session.user.id||!identity.user.isActive||identity.user.status!=='ACTIVE')
   throw new Error('Sessao nao autorizada para leitura financeira.');
  // Uma unica rota isolada: nunca chamar GET financeiro legado.
- const data=await authenticatedRequest<Stage10Snapshot|Stage10HistoryLimit>(
-  '/finance/stage10-readonly/snapshot?month='+encodeURIComponent(month),
-  {cache:'no-store',signal});
+ const data=await readStage10Snapshot<Stage10Snapshot|Stage10HistoryLimit>(
+  '/finance/stage10-readonly/snapshot?month='+encodeURIComponent(month),signal);
  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
  if(data?.kind==='stage10-financial-history-limit-v1'){
   if(data.canWrite!==false||!Number.isSafeInteger(data.total)||
