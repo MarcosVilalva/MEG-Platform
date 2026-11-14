@@ -27,6 +27,7 @@ const { ensureCommercialFoundation } = await import('../apps/api/src/modules/pla
 const { refreshCommercialBillingStatuses } = await import('../apps/api/src/modules/billing/service.ts');
 const { materializeRecurringExpenses } = await import('../apps/api/src/modules/payables/service.ts');
 const { migrateLegacyCardsForAllWorkspaces } = await import('../apps/api/src/modules/cards/service.ts');
+const { reconcilePrimaryAppStateFromNormalized } = await import('../apps/api/src/modules/app-state/normalized-primary-writeback.ts');
 
 const date = (s: string) => new Date(s + 'T00:00:00.000Z');
 const fixedDate = new Date('2026-11-14T12:00:00.000Z');
@@ -88,6 +89,18 @@ async function main() {
   });
   const baselineState = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
 
+  // O server.ts chama reconcile ANTES da ativacao automatica da normalizacao.
+  // Um AppState legado ainda nao e fonte normalizada: registrar recusas, sem
+  // converter isso em defeito de dados ou "corrigir" a regra por conta propria.
+  await assert.rejects(
+    reconcilePrimaryAppStateFromNormalized(workspace.id),
+    /NORMALIZATION_PRIMARY_REQUIRED/,
+  );
+  const afterRejectedReconcile = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  assert.equal(afterRejectedReconcile.revision, baselineState.revision);
+  assert.deepEqual(afterRejectedReconcile.state, baselineState.state);
+
+
   await prisma.recurringExpense.create({
     data: {
       userId: admin.id, description: 'SYNTHETIC RECURRING', amount: '89.17',
@@ -140,7 +153,7 @@ async function main() {
     workspace_runs: 2, foundation_runs: 2, billing_runs: 2,
     recurrence_runs: 2, card_migration_runs: 2,
     payables: 1, cards: 1, invoices: 1, financial_events_preserved: 1,
-    budget_preserved: 1, isolated: true,
+    budget_preserved: 1, pre_normalization_reconcile_rejected: true, isolated: true,
   }));
 }
 
