@@ -1,0 +1,51 @@
+/* Stage10 QA opt-in only. Maintains approved modal shell and touch targets. */
+.meg-datagrid-stage10-batch .meg-datagrid-stage10-toolbar-action{display:flex;align-items:center;flex:none;min-width:0}
+.meg-datagrid-stage10-batch .meg-datagrid-stage10-toolbar-action .meg-l09-batch-action{min-height:2.65rem;padding:.38rem .8rem;white-space:nowrap}
+.meg-t10-qa-batch-v2{width:min(70rem,100%)}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-content{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-fields{overflow:auto}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-input{margin:.25rem 0 .8rem;padding:.5rem .7rem;border-left:2px solid #16baa8}
+.meg-t10-qa-batch-v2 label:not(.meg-t10-qa-batch-toggle){display:flex;flex-direction:column;gap:.4rem;font-size:.81rem;margin:.4rem 0;color:#d4f9f2}
+.meg-t10-qa-batch-v2 input:not([type=checkbox]){width:100%;box-sizing:border-box;min-height:2.7rem;border-radius:.55rem;padding:.55rem;border:1px solid #398c87;color:#ebfffa;background:#021a24;color-scheme:dark;font:inherit}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-toggle{min-height:3rem}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-toggle span{flex:1}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-toggle small{font-size:.65rem;color:#eac48d}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-input small{font-size:.7rem;color:#a6c8c2}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-warning{color:#f4ce91;font-size:.77rem}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-card{border:1px solid #2d887d;border-radius:.65rem;padding:.8rem;margin:.7rem 0;background:#07353b}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-review{border-top:1px solid #32817a;margin-top:1rem;padding-top:1rem}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-review ol{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.5rem}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-review li{padding:.65rem;border:1px solid #36786f;border-radius:.55rem;background:#05313a}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-review li.is-protected{border-color:#926f49}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-review li>small{display:block;color:#89e4d6;font-size:.7rem}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-review li.is-protected>small{color:#eac48d}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-review li>p{overflow-wrap:anywhere;font-size:.73rem}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-selection ul{max-height:11rem}
+.meg-t10-qa-batch-v2 .meg-t10-qa-batch-selection{overflow:auto}
+.meg-t10-qa-batch-v2 footer{flex:none}
+@media(min-width:640px){
+ .meg-datagrid-stage10-batch .meg-datagrid-mobile-sort{display:none!important}
+}
+@media(600px <= width < 761px){
+ .meg-datagrid-stage10-batch .meg-datagrid-stage10-toolbar-action{grid-area:sort;justify-self:start}
+}
+@media(min-width:640px) and (width < 1024px){
+ .meg-datagrid-stage10-batch .meg-datagrid-toolbar__primary{grid-template-columns:auto minmax(0,1fr)}
+ .meg-datagrid-stage10-batch .meg-datagrid-stage10-toolbar-action{min-width:0;max-width:100%}
+}
+@media(max-width:639px){
+ .meg-datagrid-stage10-batch .meg-datagrid-toolbar__primary{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;align-items:center}
+ .meg-datagrid-stage10-batch .meg-datagrid-mobile-filter{grid-column:1;grid-row:1;min-width:0}
+ .meg-datagrid-stage10-batch .meg-datagrid-stage10-toolbar-action{grid-column:2;grid-row:1}
+ .meg-datagrid-stage10-batch .meg-datagrid-mobile-select-all{grid-column:1;grid-row:2}
+ .meg-datagrid-stage10-batch .meg-datagrid-mobile-sort{grid-column:2;grid-row:2;display:flex;align-items:center;gap:.2rem;width:100%;overflow:hidden}
+ .meg-datagrid-stage10-batch .meg-datagrid-mobile-sort>span{display:none}
+ .meg-datagrid-stage10-batch .meg-datagrid-mobile-sort select{min-height:2.65rem;max-width:100%;height:2.65rem;font-size:.69rem;padding:.2rem}
+ .meg-datagrid-stage10-batch .meg-datagrid-stage10-toolbar-action .meg-l09-batch-action{width:100%;min-width:0;padding:.25rem;font-size:.7rem;white-space:normal}
+ .meg-t10-qa-batch-v2 .meg-t10-qa-batch-content{grid-template-columns:minmax(0,1fr)}
+ .meg-t10-qa-batch-v2 .meg-t10-qa-batch-selection{border-left:0;border-top:1px solid #286d6b}
+ .meg-t10-qa-batch-v2 .meg-t10-qa-batch-fields,.meg-t10-qa-batch-v2 .meg-t10-qa-batch-selection{overflow:visible}
+ .meg-t10-qa-batch-v2 footer{align-items:stretch}
+ .meg-t10-qa-batch-v2 footer>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);width:100%}
+ .meg-t10-qa-batch-v2 footer .primary{grid-column:1/-1}
+}

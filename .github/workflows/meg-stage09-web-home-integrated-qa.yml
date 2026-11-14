@@ -7,6 +7,7 @@ on:
       - 'stage08/lancamentos-icons-refinement-20261112'
       - 'stage08/prism-typography-system-pilot-20261112'
       - 'stage08/prism-ui-rollout-and-flow-fix-20261112'
+      - 'stage08/overdue-prism-warning-20261112'
   workflow_dispatch:
 permissions:
   contents: read
@@ -88,6 +89,7 @@ jobs:
           node scripts/meg-stage08-static-qa.browser.mjs
           node scripts/meg-stage08-lancamentos-icons.browser.mjs
           node scripts/meg-stage08-prism-typography.browser.mjs
+          node scripts/meg-stage08-overdue-prism.browser.mjs
       - name: QA de Home, atalhos, Lancamentos e sessao em Chrome
         run: |
           set -euo pipefail
@@ -117,7 +119,7 @@ jobs:
           cat /tmp/stage09-web-files.txt
           while IFS= read -r path; do
             case "$path" in
-              apps/web/src/meg-web-evolution/launches/*|apps/web/src/meg-web-evolution/main.tsx|apps/web/src/meg-web-evolution/home/HomeDashboard.tsx|apps/web/src/meg-web-evolution/stage08-qa/*|apps/web/src/meg-web-evolution/home/HomeGlyph.tsx|apps/web/src/meg-web-evolution/components/Icon.tsx|apps/web/src/meg-web-evolution/components/PrismStrokeIcon.tsx|apps/web/stage08-funcional-qa.html|apps/web/vite.stage08-funcional-qa.config.ts|apps/web/src/meg-web-evolution/shell/AppShell.tsx|apps/web/src/meg-web-evolution/shell/shell.css|apps/web/src/meg-web-evolution/datagrid/DataGrid.tsx|apps/web/src/meg-web-evolution/datagrid/types.ts|apps/web/src/app/finance-client.ts|apps/web/src/meg-web-evolution/integrated-preview/preview.tsx|apps/web/src/meg-web-evolution/home/home-p0-qa.preview.fixture.ts|apps/web/src/meg-web-evolution/home/home-due-alerts.css|apps/web/src/meg-web-evolution/auth/login.css|scripts/meg-06-home-refino.browser.mjs|scripts/meg-08-home-quick-actions.browser.mjs|scripts/meg-stage09-*.browser.mjs|scripts/meg-stage08-home-navigation.browser.mjs|scripts/meg-stage08-lancamentos-icons.browser.mjs|scripts/meg-stage08-prism-typography.browser.mjs|scripts/meg-stage08-static-qa.browser.mjs|scripts/meg-stage09-readonly-gateway.mjs|scripts/meg-stage09-readonly-gateway.test.mjs|scripts/meg-stage09-*contract.test.ts|scripts/meg-stage09-card-nextstage-characterization.test.ts|.github/workflows/meg-stage08-static-functional-qa.yml|.github/workflows/meg-stage09-web-home-integrated-qa.yml|docs/MEG-WEB-ICONOGRAFIA-PRISM-20261112.md|docs/MEG-WEB-IDENTIDADE-PRISM-2-0-PLANO-20261112.md|docs/MEG-STAGE08-HOME-LAUNCHES-CLOSEOUT-20261112.md|docs/MEG-STAGE09-WEB-HOME-INTEGRATION-QA-20261111.md|MEG-WEB-CONTINUIDADE-OFICIAL.md)
+              apps/web/src/meg-web-evolution/launches/*|apps/web/src/meg-web-evolution/main.tsx|apps/web/src/meg-web-evolution/home/HomeDashboard.tsx|apps/web/src/meg-web-evolution/stage08-qa/*|apps/web/src/meg-web-evolution/home/HomeGlyph.tsx|apps/web/src/meg-web-evolution/home/HomeDueAlerts.tsx|apps/web/src/meg-web-evolution/home/HomeOverdueWarningIcon.tsx|apps/web/src/meg-web-evolution/components/Icon.tsx|apps/web/src/meg-web-evolution/components/PrismStrokeIcon.tsx|apps/web/stage08-funcional-qa.html|apps/web/vite.stage08-funcional-qa.config.ts|apps/web/src/meg-web-evolution/shell/AppShell.tsx|apps/web/src/meg-web-evolution/shell/shell.css|apps/web/src/meg-web-evolution/datagrid/DataGrid.tsx|apps/web/src/meg-web-evolution/datagrid/types.ts|apps/web/src/app/finance-client.ts|apps/web/src/meg-web-evolution/integrated-preview/preview.tsx|apps/web/src/meg-web-evolution/home/home-p0-qa.preview.fixture.ts|apps/web/src/meg-web-evolution/home/home-due-alerts.css|apps/web/src/meg-web-evolution/auth/login.css|scripts/meg-06-home-refino.browser.mjs|scripts/meg-08-home-quick-actions.browser.mjs|scripts/meg-stage09-*.browser.mjs|scripts/meg-stage08-home-navigation.browser.mjs|scripts/meg-stage08-lancamentos-icons.browser.mjs|scripts/meg-stage08-prism-typography.browser.mjs|scripts/meg-stage08-overdue-prism.browser.mjs|scripts/meg-stage08-static-qa.browser.mjs|scripts/meg-stage09-readonly-gateway.mjs|scripts/meg-stage09-readonly-gateway.test.mjs|scripts/meg-stage09-*contract.test.ts|scripts/meg-stage09-card-nextstage-characterization.test.ts|.github/workflows/meg-stage08-static-functional-qa.yml|.github/workflows/meg-stage09-web-home-integrated-qa.yml|docs/MEG-WEB-ICONOGRAFIA-PRISM-20261112.md|docs/MEG-WEB-IDENTIDADE-PRISM-2-0-PLANO-20261112.md|docs/MEG-STAGE08-HOME-LAUNCHES-CLOSEOUT-20261112.md|docs/MEG-STAGE09-WEB-HOME-INTEGRATION-QA-20261111.md|MEG-WEB-CONTINUIDADE-OFICIAL.md)
                 ;;
               *) echo "MUDANCA NAO AUTORIZADA: $path"; exit 1;;
             esac

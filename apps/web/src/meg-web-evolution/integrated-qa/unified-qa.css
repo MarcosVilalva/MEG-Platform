@@ -1,0 +1,151 @@
+/* Somente QA integrada, sem alterar CSS aprovado das telas. */
+.meg-unified-auth{min-height:100dvh}
+.meg-unified-demo-enter{position:fixed;right:1rem;bottom:1rem;z-index:200;border:1px solid #14e3c8;background:#043e3d;color:#eafff8;border-radius:.75rem;padding:.8rem 1rem;font:600 .85rem 'Plus Jakarta Sans',system-ui,sans-serif;cursor:pointer}
+.meg-unified-choice-overlay{z-index:180}
+.meg-unified-stamp{position:fixed;bottom:.65rem;left:.65rem;z-index:160;background:#062b2a;color:#eafff8;border:1px solid #18a995;border-radius:.55rem;padding:.38rem .65rem;font:600 .68rem 'Plus Jakarta Sans',system-ui,sans-serif;pointer-events:none;max-width:calc(100vw - 2rem)}
+.meg-unified-notice{position:fixed;right:1rem;bottom:4rem;z-index:180;background:#072b30;color:#eafff8;border:1px solid #19d8ba;padding:.75rem 1rem;border-radius:.65rem;max-width:min(28rem,calc(100vw - 2rem))}
+.meg-unified-notice button{margin-left:1rem;background:transparent;color:inherit;border:0;cursor:pointer}
+html[data-meg-typography-pilot="true"] .meg-login,
+html[data-meg-typography-pilot="true"] .meg-auth-layout,
+html[data-meg-typography-pilot="true"] .meg-t10-expense,
+html[data-meg-typography-pilot="true"] .meg-new-launch{
+ font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif
+}
+html[data-meg-typography-pilot="true"] .meg-login h1,
+html[data-meg-typography-pilot="true"] .meg-auth-layout h1,
+html[data-meg-typography-pilot="true"] .meg-t10-expense h2,
+html[data-meg-typography-pilot="true"] .meg-new-launch h2{
+ font-family:'Sora','Plus Jakarta Sans',system-ui,sans-serif
+}
+@media(max-width:639px){.meg-unified-demo-enter{bottom:1rem;left:1rem;right:1rem}.meg-unified-stamp{font-size:.59rem}}
+
+
+/* Etapa 10: somente acabamento de SVG Prism dentro do seletor fotográfico original.
+ * Sem redefinir grid, dimensão, tipografia, cards, imagens nem espaçamentos aprovados.
+ */
+.meg-unified-choice-overlay .meg-choice__tag-icon{
+ width:12px;height:12px;flex:none;display:inline-block;vertical-align:middle;
+ margin-right:3px;filter:drop-shadow(0 1px 1px rgba(0,12,22,.5))
+}
+.meg-unified-choice-overlay .meg-choice__action-glyph{
+ width:clamp(20px,2.2vw,27px);height:clamp(20px,2.2vw,27px);
+ filter:drop-shadow(0 2px 2px rgba(0,10,18,.48))
+}
+.meg-unified-choice-overlay .meg-choice__feature-icon svg{
+ width:clamp(20px,2vw,25px);height:clamp(20px,2vw,25px);
+ filter:drop-shadow(0 2px 2px rgba(0,12,20,.44))
+}
+.meg-unified-choice-overlay .meg-choice__back-arrow svg,
+.meg-unified-choice-overlay .meg-prism-close-glyph{
+ display:block;filter:drop-shadow(0 2px 2px rgba(0,12,21,.4))
+}
+.meg-unified-choice-overlay .meg-new-launch__close:focus-visible{
+ outline:2px solid #c2fff4;outline-offset:2px
+}
+
+
+/* A arte WebP possui uma moldura interna desenhada na própria imagem.
+ * Dar sangria apenas à foto elimina a segunda borda visual, enquanto
+ * o card preserva seu contorno, raio, dimensões, textos e clipping.
+ */
+.meg-unified-choice-overlay .meg-choice__option{
+  overflow:hidden;
+  isolation:isolate;
+}
+.meg-unified-choice-overlay .meg-choice__option-photo{
+  inset:-13px -27px;
+  background-size:100% 100%;
+  background-position:center;
+  transform:none;
+}
+/* O rodapé continua com a geometria oficial de 3 células + Voltar,
+ * agora orienta o usuário em vez de anunciar recursos de CSS.
+ */
+.meg-unified-choice-overlay .meg-choice__feature:first-child .meg-choice__feature-icon{
+  border-color:#5bfff0;
+  background:linear-gradient(145deg,rgba(10,120,122,.74),rgba(1,58,68,.88));
+  box-shadow:inset 0 1px rgba(207,255,249,.25),0 0 10px rgba(27,255,229,.12);
+}
+.meg-unified-choice-overlay .meg-choice__feature-copy strong{
+  font-variant-numeric:tabular-nums;
+}
+
+
+/* MEG PRISM 2.0: quarteto cinematográfico validado em proposta 13/11/2026. */
+/* Somente seletor da QA unificada Stage10.
+ * Arte sem marcas, rótulos, bordas internas ou conteúdo financeiro.
+ * A nova coleção tem composição horizontal com o assunto à esquerda
+ * e espaço escuro para os textos originais; preservar hero, cartões,
+ * faixas, estados de disabled, ícones e demais telas homologadas.
+ */
+.meg-unified-choice-overlay .meg-choice__option-photo{
+  inset:0;
+  background-size:100% 100%;
+  background-position:center;
+  background-repeat:no-repeat;
+  transform:none;
+}
+.meg-unified-choice-overlay .meg-choice__option.is-expense .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/expense.webp');
+}
+.meg-unified-choice-overlay .meg-choice__option.is-income .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/income.webp');
+}
+.meg-unified-choice-overlay .meg-choice__option.is-transfer .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/transfer.webp');
+}
+.meg-unified-choice-overlay .meg-choice__option.is-benefit .meg-choice__option-photo{
+  background-image:url('/meg-assets/prism-cinematic-20261113/benefit.webp');
+}
+
+
+/* ETAPA 10, QA: paisagem baixa com header e scroll em regiões separadas.
+ * O cabeçalho permanece fora do scrollport. Cards são recortados
+ * na borda superior do corpo, sem passar por trás dos títulos.
+ * Somente celular horizontal de baixa altura; desktop preservado.
+ */
+@media (max-height: 560px) and (orientation: landscape) and (min-width: 640px) {
+  .meg-unified-choice-overlay .meg-new-launch.is-choose {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - .65rem);
+    max-height: calc(100dvh - .65rem);
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+  .meg-unified-choice-overlay .meg-new-launch.is-choose > .meg-new-launch__header {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+    z-index: 12;
+    background: #031b20;
+    border-radius: 0;
+  }
+  .meg-unified-choice-overlay .meg-choice--photo {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-padding-top: .35rem;
+    scrollbar-width: thin;
+    scrollbar-color: #15b3aa #052a30;
+    -webkit-overflow-scrolling: touch;
+    grid-template-rows: max-content max-content;
+    align-content: start;
+  }
+  .meg-unified-choice-overlay .meg-choice__body {
+    min-height: max-content;
+    height: auto;
+  }
+  .meg-unified-choice-overlay .meg-choice__options {
+    grid-template-rows: repeat(4, minmax(108px, auto));
+  }
+  .meg-unified-choice-overlay .meg-choice__option {
+    min-height: 108px;
+  }
+  .meg-unified-choice-overlay .meg-choice__footer {
+    min-height: 4.5rem;
+  }
+}

@@ -6,6 +6,7 @@ on:
       - 'stage08/lancamentos-icons-refinement-20261112'
       - 'stage08/prism-typography-system-pilot-20261112'
       - 'stage08/prism-ui-rollout-and-flow-fix-20261112'
+      - 'stage08/overdue-prism-warning-20261112'
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,6 +42,7 @@ jobs:
           node scripts/meg-stage08-static-qa.browser.mjs
           node scripts/meg-stage08-lancamentos-icons.browser.mjs
           node scripts/meg-stage08-prism-typography.browser.mjs
+          node scripts/meg-stage08-overdue-prism.browser.mjs
       - name: Validar URL pública Render com navegador e sem acesso à API real
         env:
           MEG_STAGE08_QA_URL: https://meg-stage08-funcional-pr677.onrender.com
@@ -100,6 +102,25 @@ jobs:
         with:
           name: meg-stage08-prism-typography-pilot
           path: artifacts/meg-stage08-prism-typography/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Verificar triângulos de vencimento na QA pública PR685
+        env:
+          MEG_STAGE08_QA_URL: https://meg-stage08-alerta-prism-pr685.onrender.com
+          MEG_STAGE08_QA_VERSION: 0151bb45e5e805821cfafe3f53ed893a4008aa84
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 35 \
+            "$MEG_STAGE08_QA_URL/stage08-funcional-qa.html?visual=prism&v=$MEG_STAGE08_QA_VERSION" \
+            -o /tmp/meg-overdue-prism-public
+          grep -q 'data-meg-stage08-qa="isolated"' /tmp/meg-overdue-prism-public
+          node scripts/meg-stage08-overdue-prism.browser.mjs
+      - name: Evidências visuais dos ícones de vencimento
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage08-overdue-prism
+          path: artifacts/meg-stage08-overdue-warning/
           if-no-files-found: warn
           retention-days: 14
       - name: Disponibilizar artefato estático validado da QA

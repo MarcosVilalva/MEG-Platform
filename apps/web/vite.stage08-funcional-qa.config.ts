@@ -6,6 +6,7 @@ import {copyFileSync,cpSync,readdirSync} from 'node:fs';
 
 const root=dirname(fileURLToPath(import.meta.url));
 const page=resolve(root,'stage08-funcional-qa.html');
+const unifiedPage=resolve(root,'meg-unificado-qa.html');
 const output=resolve(root,'dist-stage08-funcional-qa');
 
 // Somente um HTML público. Nada de proxy, login real, banco ou endpoint remoto.
@@ -25,6 +26,6 @@ export default defineConfig({
   }],
   build:{
     outDir:output,emptyOutDir:true,
-    rollupOptions:{input:{qa:page}},
+    rollupOptions:{input:{qa:page,unified:unifiedPage}},
   },
 });

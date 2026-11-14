@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {authenticatedRequest} from '../../app/auth-client';
 import {Icon} from '../components/Icon';
 import {HomeGlyph} from './HomeGlyph';
+import {HomeOverdueWarningIcon} from './HomeOverdueWarningIcon';
 import {readCanonicalHomeCommitments,type CanonicalHomeCommitment} from './home-commitments-read';
 import './home-due-alerts.css';
 
@@ -48,7 +49,7 @@ function AlertItem({item,hidden}:{item:CanonicalHomeCommitment;hidden:boolean}){
  const stateLabel=overdue?'Vencido':'Vence hoje';
  return <li className={'meg-due-alert-item is-'+item.dueState.replace('_','-')}>
   <span className="meg-due-alert-item__symbol" aria-hidden="true">
-   <HomeGlyph name={overdue?'siren':'timer'} size={23}/>
+   {overdue?<HomeOverdueWarningIcon size={26}/>:<HomeGlyph name="timer" size={23}/>}
   </span>
   <span className="meg-due-alert-item__detail">
    <strong title={item.description}>{item.description}</strong>
@@ -176,7 +177,9 @@ export function HomeDueAlertsProvider({children}:{children:ReactNode}){
    <dialog className="meg-due-alert-dialog" ref={dialog}
     aria-labelledby="meg-due-alert-title" onCancel={dismiss} onClose={dismiss}>
     <div className="meg-due-alert-dialog__top">
-     <span className="meg-due-alert-dialog__emblem" aria-hidden="true"><HomeGlyph name="siren" size={27}/></span>
+     <span className="meg-due-alert-dialog__emblem" aria-hidden="true">
+      {overdue.length>0?<HomeOverdueWarningIcon size={31}/>:<HomeGlyph name="timer" size={27}/>}
+     </span>
      <button type="button" className="meg-due-alert-dialog__close"
       aria-label="Fechar alerta de vencimentos" title="Fechar alerta" onClick={dismiss}><HomeGlyph name="x" size={21}/></button>
     </div>
