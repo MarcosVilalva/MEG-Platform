@@ -55,7 +55,7 @@ try{
    await editFarmacia.click();
    const rowEdit=page.getByTestId('stage10-edit-preview');
    await rowEdit.waitFor({state:'visible'});
-   assert.equal(await rowEdit.getByLabel('Descrição da edição').inputValue(),'FARMÁCIA');
+   assert.equal(await rowEdit.getByLabel('Descrição da edição').inputValue(),'Farmácia');
    assert.equal(await rowEdit.getByRole('button',{name:'Salvar alterações'}).isDisabled(),true);
    await rowEdit.getByRole('button',{name:'Fechar edição'}).click();
    const menu=page.getByRole('button',{name:'Mais ações de Farmácia'}).first();
@@ -67,7 +67,7 @@ try{
    await page.getByRole('menuitem',{name:'Duplicar como rascunho'}).click();
    const duplicated=page.locator('.meg-t10-expense').first();
    await duplicated.waitFor({state:'visible'});
-   assert.equal(await duplicated.getByLabel('Descrição do lançamento').inputValue(),'FARMÁCIA');
+   assert.equal(await duplicated.locator('input[id$="description"]').inputValue(),'FARMÁCIA');
    assert.equal(await duplicated.getByRole('button',{name:'Salvar lançamento'}).first().isDisabled(),true,'Duplicação QA não grava');
    await duplicated.getByRole('button',{name:'Fechar formulário'}).click();
    assert.equal(await page.getByTestId('qa-batch-dialog').count(),0);
