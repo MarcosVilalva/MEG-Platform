@@ -2860,3 +2860,18 @@ Sem merge, deploy produtivo, real writer, credencial real, SQL, migrations, alte
 - Documento docs/MEG-STAGE10-REAL-DATA-READ-AUDIT-20261114.md registra escopo, consultas e contratos, sem exportar registros privados.
 - Integração NÃO implementada: unified-preview.tsx ainda usa fixtures, login demonstrativo e bloqueio total de fetch. Prévia canônica de ciclo atual cobre CardPurchase, sem converter FinancialEvent. Não declarar dados reais exibidos na QA.
 - Próximo passo: ponte autenticada de leitura reutilizando clientes/snapshots existentes, sem efeitos colaterais, mesma QA, sem segredos frontend ou dados reais em assets. Auditar fallback ensurePrimaryWorkspace nos GETs; não presumir read-only apenas pelo verbo HTTP. Sem alterações de banco, CORS produtivo, writers, Android, merge ou Etapa 11.
+
+
+---
+
+## Atualização Etapa 10 — leitura real isolada (14/11/2026)
+
+- Escopo autorizado: Etapa 10 apenas, PR #688 Draft e preview única Prism. Não iniciar Etapa 11, não alterar Android, não habilitar writers, não migrar dados, não contratar banco, não alterar produção/CORS nem efetuar merge/deploy sem gates e aprovações.
+- Base de referência: commit `3757303c94fe4fe68c03c515a9dd7d0273086884` na branch `stage08/unified-qa-stage05-08-10-20261112`.
+- Branch de trabalho: `stage10/real-data-read-integration-20261114`. A ponte `stage10/real-data-read.ts` e o componente `stage10/UnifiedRealReadQa.tsx` são opt-in, desabilitados por padrão na preview publicada; ainda não constituem integração funcional homologada.
+- Correção aplicada: seleção de histórico respeita `historySnapshotV1`; quando o servidor não anuncia a capacidade, usa `readAuthorizedHistory`, com paginação e dupla leitura integralmente verificadas.
+- Resolução estritamente consultiva de workspace criada em `apps/api/src/modules/finance/stage10-readonly-workspace.ts`; tem transação SQL READ ONLY e não chama `ensurePrimaryWorkspace`. Não foi conectada às rotas existentes nem implantada.
+- Testes estáticos de contrato estendidos em `scripts/meg-stage10-real-data-read.contract.test.mjs`; a compilação, CI e teste real no navegador ainda requerem comprovação de execução e resultado.
+- Bloqueio remanescente: rotas GET usadas na leitura financeira ainda transitam por `resolveWorkspaceContext`, cujo fallback pode escrever. Não liberar origem real/CORS ou ativar flag na preview enquanto não houver caminho autenticado comprovadamente sem escrita, seguido de testes de isolamento, sessão, versão, falha segura e CORS.
+- Estado da preview pública: visual anterior preservado, dados demonstrativos no caminho padrão, sem nova publicação nesta atualização. Nenhuma gravação financeira ou banco de produção alterado nesta rodada.
+- Próximo passo: conectar a resolução consultiva a contratos de leitura próprios, sem alterar os GETs legados; executar gates de tipos, integração e navegador, verificar CORS/sessão e só então avaliar deploy na preview única para validação funcional explícita.
