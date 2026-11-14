@@ -2839,3 +2839,14 @@ Sem merge, deploy produtivo, real writer, credencial real, SQL, migrations, alte
 - Isolamento proposto reforçado: papel runtime SELECT sem DDL/writes, preparação de schema/fixtures separada, banco sem acesso externo, JWT próprio, Auto Deploy OFF, serviço novo sem importar server.ts ou writers. Nenhuma implementação/deploy nesta revisão documental.
 - Homologações visuais preservadas; nenhum novo preview. Gates financeiros/visuais anteriores não repetidos por não haver alteração de código. Preflight estático `MEG_STAGE10_QA_PERSISTENT_INFRA_PREFLIGHT` PASS e `git diff --check` sem erros nesta revisão. Pendência Stage09 histórica mantida.
 - Próximo passo exato: aprovação específica do orçamento/recursos e confirmação autenticada do plano e capacidade antes de criação; depois preparar rede restrita em branch isolada. Produção, Android, merge, escritores financeiros, UI homologada e Etapa 11 proibidos.
+
+
+## Etapa 10 | Limpeza Render autorizada e verificada (14/11/2026)
+
+- Responsável autorizou auditoria/limpeza Render e confirmou especificamente "sim" para exclusão definitiva de `meg-pr648-visual-preview`, ID `srv-dbgh9dui0phs73aloha0`.
+- Serviço estático histórico da PR #648 excluído pelo Dashboard. Painel retornou Active (24), All (24); inventário independente via plugin confirmou 24 serviços e ausência do ID eliminado. Uma vaga liberada, sem criação de recursos.
+- Auditoria anterior: checkpoint já indicava esse preview como primeiro candidato; sem referências encontradas na busca por nome/ID em .github, apps, scripts e docs, exceto o registro de limpeza; sem custom domain no painel. Código/branch GitHub não excluídos.
+- Plano confirmado no Billing autenticado: Hobby, limite 25 serviços, sem cartão cadastrado, cobranças acumuladas US$ 0; uso observado 203,22/750 horas Free, 2,65/5 GB de banda e 299/500 minutos de pipeline. Valores são fotografia da consulta, não garantia futura.
+- `meg-platform-api`, `meg-evolution-api` e QA homologada `srv-dbr00b56e07s738n62n0` permanecem no inventário. Nenhum outro serviço alterado. Não se afirma teste funcional de produção, que não foi acessada.
+- Demais candidatos históricos preservados: alguns ainda são alvos de workflows; Home PR #655 possui registro de homologação histórica. Exigem conferência própria antes de exclusão. Não presumir que todos são descartáveis.
+- Próximo passo da infraestrutura: verificar capacidade necessária para API e DB e obter aprovação específica de criação/custos; limpeza não autoriza contratação, banco pago, deploy ou integração de UI. Orçamento sugerido anteriormente continua sem aprovação. Produção, Android, merge, escritores financeiros e Etapa 11 continuam proibidos.
