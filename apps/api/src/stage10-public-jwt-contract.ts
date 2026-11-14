@@ -27,7 +27,7 @@ function claimString(value:unknown,max:number):value is string{
  * Nada da chave privada ou de JWT_SECRET deve chegar ao backend QA.
  */
 export function assertStage10PublicVerificationKey(publicKeyPem:string):void{
- if(typeof publicKeyPem!=='string'||!/^-----BEGIN PUBLIC KEY-----\\n[\\s\\S]+\\n-----END PUBLIC KEY-----\\n?$/.test(publicKeyPem))
+ if(typeof publicKeyPem!=='string'||!/^-----BEGIN PUBLIC KEY-----\n[\s\S]+\n-----END PUBLIC KEY-----\n?$/.test(publicKeyPem))
   throw new Error('STAGE10_PUBLIC_JWT_KEY_INVALID');
  try{
   const key=createPublicKey(publicKeyPem);
