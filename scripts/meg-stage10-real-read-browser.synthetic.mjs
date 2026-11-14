@@ -30,7 +30,7 @@ try{
  const page=await browser.newPage({viewport:{width:1366,height:768},ignoreHTTPSErrors:true});
  const apiCalls=[];const errors=[];const requests=[];const failures=[];
  page.on('pageerror',error=>errors.push(String(error)));
- page.on('request',r=>{if(/\\/(auth|finance)\\//.test(new URL(r.url()).pathname))requests.push(r.method()+' '+r.url());});
+ page.on('request',r=>{const pathname=new URL(r.url()).pathname;if(pathname.startsWith('/auth/')||pathname.startsWith('/finance/'))requests.push(r.method()+' '+r.url());});
  page.on('requestfailed',r=>failures.push(r.url()+' '+(r.failure()?.errorText||'')));
  await page.route(api+'/**',async route=>{
   const req=route.request();
