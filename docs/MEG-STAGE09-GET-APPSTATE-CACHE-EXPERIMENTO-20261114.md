@@ -73,7 +73,7 @@ Depois acrescentamos testes de **alteração direta de sourcePayload** e contrat
 
 ## 8. Teste adicional de rota Fastify e resolução real de workspace (14/11/2026)
 
-Adicionado `apps/api/src/modules/app-state/stage09-get-auth-route-pg17.test.ts` e etapa ao workflow isolado, usando PostgreSQL 17 efêmero. É teste da **rota real Fastify `GET /app-state`**, com preHandler de autenticação **simulado e declarado como simulado**, mas resolução/autorização de membership pelo serviço e banco **reais** do MEG.
+Adicionado `apps/api/src/modules/app-state/stage09-get-auth-route-pg17.test.ts` e etapa ao workflow isolado, usando PostgreSQL 17 efêmero. É teste da **rota real Fastify `GET /app-state`**, com **plugin JWT verdadeiro do MEG** (`registerAuth`), usando chaves e tokens **inteiramente fictícios**, e resolução/autorização de membership pelo serviço e banco **reais** do MEG.
 
 **Evidência:** [PG17 #43587267945](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587267945): **SUCCESS**, commit de código `c9d4bab92d7c09e8559aa1830a7308ad0b421b4e`. [Platform CI #43587267975](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587267975): **SUCCESS** no mesmo SHA.
 
@@ -85,6 +85,15 @@ Adicionado `apps/api/src/modules/app-state/stage09-get-auth-route-pg17.test.ts` 
 - Troca B → A: resultado A idêntico, com despejo de cache respeitado.
 - Feature flag ausente: rota original devolveu contrato JSON idêntico.
 
-**Limite do teste:** não usa JWT produtivo nem cobre falhas reais de credenciais, expirados ou middleware global; a autenticação é simulada apenas para comprovar a sequência de preHandlers e a resolução do workspace em rota real. Não equivale a homologação de acesso real em staging. Nenhuma transação financeira ou segredo real.
+**Limite do teste:** usa JWT real do plugin, mas credenciais assinadas com segredo fictício. Não cobre expiração/revogação de tokens ou configuração de identidade de produção. Não equivale a homologação de acesso real em staging. Nenhuma transação financeira ou segredo real.
 
 **Estado:** a melhoria permanece Draft e desligada por padrão, sem merge/deploy. Continuam bloqueadores de build produtivo (#691), backup/DR e comprovação de Egress faturado.
+
+
+### Revalidação da autenticação JWT real em CI
+
+O harness de autenticação inicialmente simulado foi substituído pelo plugin `apps/api/src/plugins/auth.ts` **real**, registrado no Fastify, com `JWT_SECRET` de teste fixada explicitamente no job e tokens assinados localmente. Não existe ligação a credenciais, tokens ou usuários produtivos. Foram repetidos os testes da rota com token ausente, token inválido, proprietários A/B, usuário VIEWER com membership ativa, cache hit, alternância entre workspaces e feature flag inativa.
+
+**Evidências no SHA de código `6dc16b0c22d1525667ed3f268d902cc85de5b5e4`:** [PostgreSQL17 sintético #43587685877](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587685877) **SUCCESS**, inclusive a etapa "Check genuine Fastify JWT guard and workspace isolation in synthetic PostgreSQL 17"; [Platform CI #43587685885](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587685885) **SUCCESS**. O plugin real comprova a autenticação JWT em teste isolado, mas não homologa configuração real de segredo, refresh tokens, revogação, disponibilidade operacional ou segurança em staging; essas dependências permanecem fora do escopo da fixture.
+
+**Nenhum merge/deploy/ativação produtiva.**
