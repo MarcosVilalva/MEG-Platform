@@ -43,6 +43,13 @@ export function validatePackages(root, api, database) {
 export function verify() {
   validateBuildScript(read('scripts/meg-stage09-render-api-build.sh'));
   validatePackages(root, api, database);
+  const blueprint = read('render.yaml');
+  assert.deepEqual([...blueprint.matchAll(/^\s*name:\s*(.+)$/gm)].map(m => m[1]), ['meg-platform-api']);
+  assert.deepEqual([...blueprint.matchAll(/^\s*buildCommand:\s*(.+)$/gm)].map(m => m[1]), ['bash scripts/meg-stage09-render-api-build.sh']);
+  assert.match(blueprint, /^\s*autoDeployTrigger: 'off'$/m);
+  assert.match(blueprint, /^\s*plan: free$/m);
+  assert.match(blueprint, /^\s*startCommand: npm run start:api$/m);
+  assert.doesNotMatch(blueprint, /^\s*(preDeployCommand|initialDeployHook|databases|disk):/m);
   console.log('STAGE09_RENDER_SAFE_BUILD_CONTRACT=PASS');
 }
 

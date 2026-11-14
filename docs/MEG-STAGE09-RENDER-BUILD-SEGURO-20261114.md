@@ -1,45 +1,134 @@
-# MEG Etapa 09 | Proposta de Build Render da API sem mutação automática de dados
+# Etapa 09: build seguro Render, aplicacao e rollback
 
-**Estado:** pronta para avaliação técnica em PR Draft isolada. **NÃO aplicada no Render**. Referências: checkpoint oficial PR #666; autoridade financeira `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`; issue [#691](https://github.com/MarcosVilalva/MEG-Platform/issues/691).
+Estado: candidata na PR #692 Draft. Preparacao tecnica, sem aplicar infraestrutura,
+sincronizar Blueprint, fazer merge ou deploy. Issue #691 permanece aberta.
 
-## Diagnóstico confirmado em 14/11/2026
+## Problema e alteracao preparada
 
-Serviço real: `meg-platform-api`, Render Free, branch `main`, deploy ativo `28703a95310c9b9b5f193ef4f3a0cbe80e121f07`. A configuração atual possui:
+O build efetivo do servico `meg-platform-api` ainda chama `db:prepare:production`
+(inclui DELETE de Budget) e `db:push:production` (`--accept-data-loss`). A proposta
+substitui esse caminho por `bash scripts/meg-stage09-render-api-build.sh`.
 
-```bash
-npm install && npm run db:generate && npm run build:api && npm run db:prepare:production && npm run db:push:production
-```
+O script verifica o contrato antes de instalar dependencias, substitui DATABASE_URL
+por um destino ficticio localhost somente no processo de build, desativa lifecycle
+hooks npm e executa apenas instalacao congelada pelo lockfile, Prisma generate e
+compilacao TypeScript. `npm run` continua executando o script explicitamente pedido,
+mas sem seus pre/post hooks. A variavel exportada no build nao altera o valor de
+DATABASE_URL configurado no servico nem deve ser salva como variavel de runtime.
 
-As duas últimas chamadas não são build: `prepare-production.ts` pode executar `DELETE FROM "Budget"` para deduplicar por usuário, mês e grupo. `db:push:production` executa `prisma db push --accept-data-loss` e `ensure-performance-indexes.ts` cria índices. Qualquer novo deploy do serviço pode executar essas alterações automaticamente, independentemente da finalidade do deploy.
+O contrato compara todas as instrucoes, inclusive echo, e bloqueia alteracoes de
+scripts e hooks dos pacotes raiz/API/database. Regressoes recusam DDL extra,
+substituicao de comando em echo, URL externa, falta de ignore-scripts e hooks
+introduzidos em manifests. Nao se trata de sandbox contra dependencia maliciosa:
+as dependencias executadas explicitamente continuam exigindo lockfile e revisao.
 
-Inspeção somente leitura do Supabase produtivo em 14/11:
+O workflow constroi sem PostgreSQL disponivel, testa tsx e instancia o PrismaClient
+gerado sem conexao. Sem banco produtivo, segredo ou credencial real no CI.
 
-- A tabela `Budget` apresentava **0 linhas e 0 grupos duplicados**. Isso elimina a necessidade imediata de deduplicação no instante observado, mas não justifica deixar um DELETE automático no pipeline.
-- Os sete índices financeiros exigidos por `ensure-performance-indexes.ts` já existiam no schema `public`. É fotografia do instante da verificação, não garantia de paridade futura.
-- Nenhuma alteração foi executada no banco; sem exfiltrar registros ou consultar valores financeiros individuais.
+## Fonte declarativa encontrada no painel em 14/11/2026
 
-## Proposta de Build Command (após gates e autorização de implantação)
+| Item | Estado observado, somente leitura |
+|---|---|
+| Servico | meg-platform-api, srv-d98k61daeets7384hvb0 |
+| Runtime/plano/regiao | Node, Free, ohio |
+| Branch e live | main, 28703a95310c9b9b5f193ef4f3a0cbe80e121f07 |
+| Deploy live | dep-dbm92b17lnhs738s0jr0 |
+| Auto-deploy do servico | On Commit |
+| Blueprint | meg-platform-production, exs-d98k30uq1p3s738jj240 |
+| Origem Blueprint | main, render.yaml |
+| Auto Sync Blueprint | Yes |
+| Start/health | npm run start:api, /health |
 
-```bash
-bash scripts/meg-stage09-render-api-build.sh
-```
+Corrigir apenas o painel seria incompleto: um novo sync poderia reaplicar o YAML
+inseguro. Por isso `render.yaml` na PR candidata aponta para o script seguro e
+propoe `autoDeployTrigger: 'off'`. Plano, nome, runtime, regiao, envVars, start,
+health e buildFilter permanecem iguais. Nao cria banco, disco ou recurso novo.
+O comentario antigo que confundia migracao com deploy automatico foi corrigido.
 
-O `--include=dev` garante TypeScript e Prisma CLI no build mesmo quando `NODE_ENV=production`, sem afetar o processo `start:api`. O script versionado executa exclusivamente `npm ci --include=dev --audit=false --fund=false`, `npm run db:generate` e `npm run build:api`. A expansão desses comandos corresponde a `prisma generate` e `tsc -p tsconfig.json`, não a migração, deduplicação ou DDL. O contrato fail-closed em `scripts/meg-stage09-render-api-build.contract.test.mjs` compara **a sequência inteira** a uma lista fechada e confirma os scripts npm chamados.
+## Gates especificos, sem confundir preparacao e operacao
 
-A workflow `.github/workflows/meg-stage09-render-api-safe-build.yml` constrói realmente a API com `DATABASE_URL=postgresql://ci:ci@127.0.0.1:65431/stage09_no_database?schema=public`, **sem qualquer serviço PostgreSQL provisionado**. Passar demonstra que o script compila sem necessidade de conexão ao banco e sem executar mutação SQL, mas não certifica nenhuma migração funcional futura.
+| Gate | Estado |
+|---|---|
+| Build anterior sem banco | PASS, preservado |
+| Hardening de hooks e URL ficticia | PASS no codigo ed90f7b, run 43599543691 |
+| Contratos de injecao e comandos extras locais | PASS |
+| YAML candidato no schema JSON oficial Render | PASS local |
+| Novo HEAD que inclui YAML e runbook | Exige checks proprios apos commit |
+| Backup real de 14/11 cifrado + OneDrive Web/download/hash | PASS pelo operador |
+| Tarefa Windows, disparo codigo 0 e NOT_DUE | PASS pelo operador |
+| Restore funcional do novo archive / Supabase gerenciado | PENDENTE, sem nova execucao |
+| Mudanca de configuracao Render e Blueprint | NAO EXECUTADA |
+| Ensaio real de rollback do servico produtivo | NAO EXECUTADO |
+| Liberacao de merge/deploy | NO-GO |
 
-## Sequência obrigatória antes de mexer na produção
+Backup e agenda estao registrados no checkpoint oficial da branch #666. A evidencia
+nao autoriza marcar recuperacao integral Supabase ou disponibilidade futura como
+concluidas. #674, #676, #690 e #691 mantem seus gates separados.
 
-1. Validar a branch e PR Draft, todos os testes e o build da API. Preservar o Android e a Web aprovados.
-2. Confirmar backup cifrado recuperável de `public`, custódia externa de chaves e plano de restauração integral dos recursos Supabase, com gates formais da Etapa 09. **Atualmente Gate 1 PARCIAL; Gates 2 a 4 NO-GO.**
-3. Revisar o schema desejado, migrations Prisma em versão e índices; jamais rodar `db push --accept-data-loss` em build nem deduplicação destrutiva automática. As eventuais correções de dados devem ser operações auditadas, transacionais e aprovadas separadamente.
-4. Preparar janela operacional e procedimento de rollback que não dependa de executar o Build Command inseguro. Avaliar desativação do autodeploy ANTES de mudança do comando, pois atualização de configuração pode disparar publicação. Essa sequência exige checagem do comportamento atual do Render e autorização de execução específica.
-5. Apenas após liberação, atualizar o Build Command no serviço de produção, validar que nenhuma operação de dados seja acionada, publicar pela branch aprovada e medir saúde operacional, erro, CPU/memória, revisão implantada e Egress. O merge em PR #666 e deploy são atos distintos que requerem seus respectivos gates.
+## Aplicacao preparada, somente apos gates e autorizacao especifica
 
-## Estado e limitações
+1. Congelar o escopo em um SHA exato. Confirmar CI nesse SHA e todo o diff para
+   main: #692 tem base #666 e NAO e patch independente aplicavel integralmente a
+   main sem revisar as alteracoes herdadas. Nao integrar #689/#693 ou ligar flags
+   de cache junto com a mudanca de build.
+2. Confirmar backup recuperavel e rollback compativel com o schema. Manter as
+   operacoes de migracao/indices em procedimento separado, sem executar neste
+   build. Nao repetir auditorias encerradas: usar a evidencia anterior e revalidar
+   apenas divergencias relevantes antes da janela autorizada.
+3. ANTES de colocar o YAML aprovado na main, desativar Auto Sync do Blueprint e
+   auto-deploy do servico por operacao especificamente autorizada. Confirmar ambos
+   por releitura e verificar que nao houve deploy disparado. Se a interface/API
+   obrigar publicacao para salvar, interromper: nao existe autorizacao implicita.
+4. Verificar que a revisao proposta contem script, contratos e render.yaml seguros
+   juntos. Integra-la so apos autorizacao de merge separada. Nao alterar branch do
+   Blueprint para uma branch experimental e nao criar segundo Blueprint.
+5. Revisar o plano de sync: deve atingir somente meg-platform-api existente,
+   alterando buildCommand e autoDeployTrigger; rejeitar exclusoes, novos recursos,
+   plano pago, segredos gerados novamente, mudanca de envVars ou schema. Nunca
+   clicar Manual Sync como simples validacao: sync pode disparar deploy.
+6. Aplicar o sync apenas na janela autorizada para publicacao. Nao somar um manual
+   deploy se o sync ja iniciou um. Registrar ID e acompanhar ate estado terminal.
+   Nao basta o trigger ser aceito. Confirmar SHA live e comandos efetivos.
+7. Conferir /health, /ready, leitura autenticada e isolamento no escopo aprovado,
+   sem lancamentos financeiros de teste em producao. Observar erros e conexoes.
+   Cold start Free nao tem SLA de resposta imediata. UI requer aprovacao visual
+   propria; esta PR nao altera telas.
+8. Manter Auto Sync e auto-deploy controlados depois da publicacao. Reativacao e
+   outra decisao, nao etapa automatica. O YAML proposto mantem deploy automatico off.
 
-A PR adiciona proposta versionada, teste de contrato e CI. **Não modifica** `package.json`, Prisma/schema, writer financeiro, serviços externos, configuração Render, banco real ou qualquer tela.
+## Rollback preparado e seus limites
 
-**Critério P0:** zero comando de mutação DDL/DML automática no caminho de build. Não declarar produção preparada sem atualização explícita e prova operacional da configuração do serviço.
+- Live observado: dep-dbm92b17lnhs738s0jr0, SHA 28703a9. Esse e o candidato para
+  retorno apos uma futura publicacao; disponibilidade do artefato deve ser
+  reconfirmada naquele momento, nao e garantida por sua presenca live hoje.
+- O painel mostrou links Rollback ativos para dep-dbm7cprncjis738tl350 (222cee8)
+  e dep-dbm7are8bjmc739li41g (db32195); versoes antigas exibiram botao desabilitado.
+  Isso prova que ha opcao do provedor, NAO compatibilidade financeira desses
+  commits com o estado atual nem aprovacao para usá-los. Nenhum link foi acionado.
+- Se o novo build falhar, nao corrigir conectando o build ao banco. Confirmar que
+  o deploy live anterior continua servindo. Se houve troca e regressao, rollback
+  deve reutilizar artefato aprovado e compativel, com autorizacao e ID registrados.
+- Rollback nao desfaz dados, migracoes, mensagens, tarefas de startup nem efeitos
+  externos. A aplicacao possui rotinas normais de manutencao no startup; build
+  sem DDL/DML nao significa que iniciar a API seja totalmente sem efeitos.
+- Pelo Dashboard, rollback desativa auto-deploy; pela API isso nao ocorre
+  automaticamente. Auto Sync do Blueprint e controle distinto, e deve permanecer
+  desativado. Reler ambos depois de qualquer rollback.
+- Nao restaurar Build Command inseguro, nao reverter o YAML para DDL/DML, nao
+  executar db push e nao restaurar backup sobre producao como rollback de codigo.
+- Se nao houver artefato compativel disponivel, abortar a publicacao ANTES de
+  afetar o live. Nao improvisar rebuild de commit antigo com build inseguro.
 
-**Próxima ação:** obter todos os jobs verdes; manter PR Draft até que a recuperação de dados esteja concluída e a mudança controlada do Render esteja autorizada e sem risco de disparar deploy involuntário.
+## Fontes oficiais verificadas em 14/11/2026
+
+- https://render.com/docs/deploys.md
+- https://render.com/docs/health-checks.md
+- https://render.com/docs/rollbacks.md
+- https://render.com/docs/infrastructure-as-code.md
+- https://render.com/docs/blueprint-spec.md
+- https://render.com/schema/render.yaml.json
+- https://docs.npmjs.com/cli/v11/commands/npm-ci/
+
+Preparacao concluida nos limites descritos, sem liberar producao. O proximo ato
+operacional depende dos gates pendentes e de autorizacao especifica. Esta rodada
+nao deve voltar a pedir instalacao de backup, chave ou teste de transporte ja aprovado.
