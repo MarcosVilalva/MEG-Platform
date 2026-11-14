@@ -28,6 +28,11 @@ const { refreshCommercialBillingStatuses } = await import('../apps/api/src/modul
 const { materializeRecurringExpenses } = await import('../apps/api/src/modules/payables/service.ts');
 const { migrateLegacyCardsForAllWorkspaces } = await import('../apps/api/src/modules/cards/service.ts');
 const { reconcilePrimaryAppStateFromNormalized } = await import('../apps/api/src/modules/app-state/normalized-primary-writeback.ts');
+const {
+  activateNormalizationPrimary,
+  normalizationPreview,
+  normalizedStateForRead,
+} = await import('../apps/api/src/modules/app-state/normalization-migration.ts');
 
 const date = (s: string) => new Date(s + 'T00:00:00.000Z');
 const fixedDate = new Date('2026-11-14T12:00:00.000Z');
@@ -148,12 +153,92 @@ async function main() {
   assert.equal(finalState.revision, baselineState.revision);
   assert.deepEqual(finalState.state, stateWithCard);
 
+
+  // Caso NORMALIZACAO LEGADA, usando a camada financeira realmente existente:
+  // primeiro o servidor tentaria reconciliar (recusa); depois a ativacao e
+  // um passo explicitamente separado, testado AQUI, sem alterar server.ts.
+  const legacyTransaction = {
+    id: 'stage09-legacy-only-001',
+    date: '2026-11-12',
+    description: 'SYNTHETIC LEGACY EXPENSE',
+    type: 'expense',
+    status: 'pending',
+    expenseAmount: 27.35,
+    amount: 27.35,
+  };
+  const legacyState = { ...stateWithCard, transactions: [legacyTransaction] };
+  await prisma.appState.update({ where: { workspaceId: workspace.id }, data: { state: legacyState } });
+  const beforeNormalization = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  const beforePreview = await normalizationPreview(workspace.id, admin.id);
+  assert.equal(beforePreview.primary, false);
+  assert.equal(beforePreview.source.validCount, 1);
+  assert.equal(beforePreview.normalized.count, 0);
+  const legacyRead = await normalizedStateForRead(workspace.id, admin.id);
+  assert.equal(legacyRead?.dataSource, 'app-state');
+  await assert.rejects(reconcilePrimaryAppStateFromNormalized(workspace.id), /NORMALIZATION_PRIMARY_REQUIRED/);
+  const afterRefusal = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  assert.equal(afterRefusal.revision, beforeNormalization.revision);
+  assert.deepEqual(afterRefusal.state, beforeNormalization.state);
+
+  // Ativacao isolada: aplica sombra reconciliada, depois marca normalized-primary.
+  const activated = await activateNormalizationPrimary(workspace.id, admin.id, { automatic: true });
+  assert.equal(activated.activated, true);
+  assert.equal(activated.primary, true);
+  assert.equal(activated.reconciled, true);
+  const normalizedRow = await prisma.financialEvent.findFirstOrThrow({
+    where: { workspaceId: workspace.id, legacyTransactionId: legacyTransaction.id },
+  });
+  assert.equal(normalizedRow.amount.toFixed(2), '27.35');
+  assert.equal(normalizedRow.signedAmount.toFixed(2), '-27.35');
+  assert.equal(await prisma.financialEvent.count(), 2);
+  const normalizedRead = await normalizedStateForRead(workspace.id, admin.id);
+  assert.equal(normalizedRead?.normalizedPrimary, true);
+  assert.equal(normalizedRead?.dataSource, 'normalized');
+  const secondActivation = await activateNormalizationPrimary(workspace.id, admin.id, { automatic: true });
+  assert.equal(secondActivation.activated, false);
+  const afterActivation = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  assert.equal(afterActivation.revision, beforeNormalization.revision + 1);
+
+  // O evento normalizado passa a ser fonte autoritativa. A reconciliacao
+  // restaura o espelho legado sem criar outra transacao.
+  await prisma.financialEvent.update({
+    where: { id: normalizedRow.id },
+    data: { description: 'SYNTHETIC UPDATED EXPENSE', amount: '29.40', signedAmount: '-29.40' },
+  });
+  const concurrent = await Promise.allSettled([
+    reconcilePrimaryAppStateFromNormalized(workspace.id),
+    reconcilePrimaryAppStateFromNormalized(workspace.id),
+  ]);
+  // Sob corrida, uma execucao pode perder o CAS e ser rejeitada. Exigimos
+  // convergencia, nao a ausencia artificial de conflitos.
+  assert.ok(concurrent.some((item) => item.status === 'fulfilled'), 'Nenhuma reconciliacao concluiu');
+  const firstStable = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  const mirroredTransactions = (firstStable.state as { transactions?: Array<Record<string, unknown>> }).transactions || [];
+  assert.equal(mirroredTransactions.length, 1);
+  assert.equal(mirroredTransactions[0].id, legacyTransaction.id);
+  assert.equal(mirroredTransactions[0].description, 'SYNTHETIC UPDATED EXPENSE');
+  assert.equal(Number(mirroredTransactions[0].amount), 29.40);
+  assert.ok(firstStable.revision >= afterActivation.revision + 1);
+  const afterConverged = await reconcilePrimaryAppStateFromNormalized(workspace.id);
+  assert.equal(afterConverged.changed, false);
+  assert.equal((await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } })).revision, firstStable.revision);
+  assert.equal(await prisma.financialEvent.count(), 2);
+  assert.equal(await prisma.payable.count(), 1);
+  assert.equal(await prisma.creditCard.count(), 1);
+  const finalOriginalEvent = await prisma.financialEvent.findUniqueOrThrow({ where: { id: originalEvent.id } });
+  assert.equal(finalOriginalEvent.amount.toFixed(2), '12.34');
+  assert.equal(finalOriginalEvent.signedAmount.toFixed(2), '-12.34');
+  assert.equal((await prisma.budget.findUniqueOrThrow({ where: { id: budget.id } })).amount.toFixed(2), '100.42');
+
   console.log(JSON.stringify({
     result: 'PG17_SYNTHETIC_STARTUP_CHARACTERIZATION_PASS',
     workspace_runs: 2, foundation_runs: 2, billing_runs: 2,
     recurrence_runs: 2, card_migration_runs: 2,
     payables: 1, cards: 1, invoices: 1, financial_events_preserved: 1,
-    budget_preserved: 1, pre_normalization_reconcile_rejected: true, isolated: true,
+    budget_preserved: 1, pre_normalization_reconcile_rejected: true,
+    normalized_activated: true, concurrent_reconcile_executions: 2,
+    concurrent_fulfilled: concurrent.filter((item) => item.status === 'fulfilled').length,
+    normalized_legacy_event_preserved: 1, isolated: true,
   }));
 }
 
