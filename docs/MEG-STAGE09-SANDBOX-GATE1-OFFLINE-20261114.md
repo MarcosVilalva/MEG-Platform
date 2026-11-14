@@ -55,6 +55,14 @@ A aplicação retorna somente campos permitidos: contagens HTTP 200/402, control
 4. Após cumprir os controles, realizar revisão humana de segurança e aceite expresso do Gate 1. Esse aceite não autoriza automaticamente Gate 2.
 5. Recuperação integral de Auth/Storage/Vault/Realtime e importação remota continuam fora de execução. Build seguro #692 continua Draft, sem aplicação no Render.
 
+## Regras conservadoras de interpretação (14/11/2026)
+
+- A data `observed_at` deve ser UTC válida. Como política **local de precaução** deste avaliador, observações com mais de **24 horas** ou mais de **5 minutos no futuro** são classificadas `NO_GO`. Esses limites não são RPO/RTO nem garantias oficiais Supabase; impedem apenas promover evidência potencialmente desatualizada.
+- HTTP 200 nas rotas `other` não substitui HTTP 200 observado separadamente em `auth` e `storage`. A ausência de HTTP 200 significa **insuficiência de evidência nessa amostra**, não prova de indisponibilidade absoluta. Mesmo HTTP 200 observado em ambos não comprova operação funcional de Auth/Storage.
+- A fonte `aggregated-logs` **não comprova configurações gerenciadas**: qualquer controle `SIM` baseado nessa fonte permanece `NO_GO`. O operador deve usar evidências independentes e sanitizadas do Dashboard quando autorizadas.
+- A fonte `synthetic-fixture` permanece `NO_GO`, inclusive com todos os indicadores favoráveis. A fonte `sanitized-dashboard` com indicadores positivos e atualizados permite somente `REVISAO_MANUAL_OBRIGATORIA`, nunca um `PASS` ou restore.
+- O relógio dos testes unitários fica fixo para assegurar reproduções futuras; a CLI sempre usa o relógio real da execução.
+
 ## CI
 
 `.github/workflows/meg-stage09-sandbox-gate1-offline.yml` usa somente Node.js, fixtures sintéticas e teste local. Não recebe segredos, API keys, DB, Supabase ou Render. `SUCCESS` significa apenas que a lógica conservadora do avaliador passou, não que o sandbox esteja isolado.
