@@ -1,6 +1,17 @@
 name: MEG Stage09 Render API build without database access (synthetic CI)
 
 on:
+  pull_request:
+    branches:
+      - 'stage09/backup-recovery-kit-20261110'
+    paths:
+      - 'scripts/meg-stage09-render-startup-writers.contract.test.mjs'
+      - 'scripts/meg-stage09-render-api-build.sh'
+      - 'scripts/meg-stage09-render-api-build.contract.test.mjs'
+      - 'scripts/meg-stage09-render-api-build.regression.test.mjs'
+      - 'docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md'
+      - 'render.yaml'
+      - '.github/workflows/meg-stage09-render-api-safe-build.yml'
   push:
     branches:
       - 'fix/stage09-render-safe-build-qa-20261114'
@@ -11,7 +22,7 @@ permissions:
 
 jobs:
   compile-without-database:
-    if: github.repository == 'MarcosVilalva/MEG-Platform' && (github.ref == 'refs/heads/fix/stage09-render-safe-build-qa-20261114' || github.ref == 'refs/heads/safety/stage09-render-build-non-destructive-20261114')
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && (github.ref == 'refs/heads/fix/stage09-render-safe-build-qa-20261114' || github.ref == 'refs/heads/safety/stage09-render-build-non-destructive-20261114' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'MarcosVilalva/MEG-Platform' && github.event.pull_request.head.ref == 'safety/stage09-render-build-non-destructive-20261114'))
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
