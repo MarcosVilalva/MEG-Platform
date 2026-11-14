@@ -47,7 +47,7 @@ function historicLabels(event:FinancialEvent){
  };
 }
 
-function buildReadOnlyData(
+export function buildReadOnlyData(
  events:FinancialEvent[], summary:FinanceSummary, accounts:Account[],
  categories:Category[], methods:PaymentMethod[],
 ):HomeFinancialData {
@@ -81,7 +81,7 @@ function buildReadOnlyData(
    pendingCount:summary.pendingCount,pendingAmount:summary.pendingAmount
   },
   cashflow:null,benefit:null,available:null,transactions,payables:[],cards:[],
-  accounts:[...nameAccounts].map(([id,name])=>({id,name})),
+  accounts:[...nameAccounts].map(([id,name])=>({id,name,type:accounts.find(account=>account.id===id)?.type})),
   categories:[...nameCategories].map(([id,name])=>({id,name}))
  };
 }
