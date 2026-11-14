@@ -301,8 +301,8 @@ try{
   }finally{await page.close();}
  }
 
- // Editar Despesa também deve ocupar somente a altura necessária nos monitores
- // largos e notebooks 16:10. Dados continuam fictícios e Salvar desabilitado.
+ // Editar Despesa tem exatamente a mesma malha/altura do Novo Lançamento homologado.
+ // Dados são fictícios; Salvar depende de mudança válida, nunca de conexão real.
  for(const [width,height] of [[1440,900],[1920,1080],[1920,1200]]){
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
   try{
@@ -320,7 +320,8 @@ try{
      panelVerticalExcess:Array.from(modal.querySelectorAll('.meg-t10-expense-panel'))
       .map(el=>el.scrollHeight-el.clientHeight)};
    });
-   assert.ok(data.height<height*.82,'Editor não deve preencher tela grande sem conteúdo '+width+'x'+height+JSON.stringify(data));
+   assert.ok(Math.abs(data.height-Math.min(820,height-16))<=3,
+    'Editor tem a mesma altura da Nova Despesa homologada '+width+'x'+height+JSON.stringify(data));
    assert.ok(data.emptyBottom>=-2&&data.emptyBottom<=6,'Sem vazio abaixo das colunas '+width+'x'+height);
    assert.ok(data.panelWidths.every(n=>n>260),'Três colunas reais '+width+'x'+height);
    assert.ok(data.panelBottoms.every(n=>Math.abs(n-data.panelBottoms[0])<=2),'Colunas niveladas '+width+'x'+height);
