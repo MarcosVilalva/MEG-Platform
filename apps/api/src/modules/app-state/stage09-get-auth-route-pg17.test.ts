@@ -6,6 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import Fastify from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { UserRole, UserStatus, prisma } from '@meg/database';
 import { appStateRoutes } from './routes';
 
@@ -49,7 +50,7 @@ async function main() {
 
   const server = Fastify({ logger: false });
   // Simula SOMENTE a camada de autenticação para exercitar a rota real.
-  server.decorate('authenticate', async (req, reply) => {
+  server.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
     const id = req.headers.authorization?.replace(/^Bearer /, '') || '';
     if (!users.has(id)) {
       reply.code(401).send({ error: 'TEST_UNAUTHORIZED' });
@@ -58,7 +59,7 @@ async function main() {
     req.user = { sub: id, email: 'fixture@example.invalid',
       role: id === viewer.id ? UserRole.VIEWER : UserRole.ADMIN };
   });
-  server.decorate('authorize', () => async (req, reply) => {
+  server.decorate('authorize', (_roles: UserRole[]) => async (req: FastifyRequest, reply: FastifyReply) => {
     await server.authenticate(req, reply);
   });
   await server.register(appStateRoutes, { prefix: '/app-state' });
