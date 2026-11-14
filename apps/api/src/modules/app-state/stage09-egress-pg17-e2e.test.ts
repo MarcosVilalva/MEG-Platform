@@ -243,6 +243,38 @@ async function main() {
   const recoveredPeriodic = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
   assert.equal(recoveredPeriodic.reconciled, true, 'Restauracao sintetica exige nova conciliacao.');
 
+
+  // sourcePayload contém a representação histórica sem perdas. Uma escrita
+  // externa APENAS nesse JSON precisa invalidar a assinatura também.
+  const originalPayload = projected[3].sourcePayload as Prisma.InputJsonValue;
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[3] },
+    data: {
+      sourcePayload: { ...record(originalPayload), injectedExternalField: 'SINTETICO' } as Prisma.InputJsonValue,
+    },
+  });
+  const payloadDrift = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  assert.equal(payloadDrift.reconciled, false, 'Alteração direta em sourcePayload exige auditoria integral.');
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[3] },
+    data: { sourcePayload: originalPayload },
+  });
+  assert.equal((await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview)).reconciled, true);
+
+  // Valor monetário e status estão cobertos mesmo sem mudança de revisão.
+  const originalSigned = Number(batch[4].signedAmount);
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[4] },
+    data: { signedAmount: originalSigned + 1 },
+  });
+  const amountDrift = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  assert.equal(amountDrift.reconciled, false, 'Valor financeiro externo deve disparar divergência.');
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[4] },
+    data: { signedAmount: originalSigned },
+  });
+  assert.equal((await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview)).reconciled, true);
+
   // Modificar campo que nao entra no fingerprint tambem invalida o cache.
   const extraState = { ...state, budgets: { alteredOutsideApi: true } };
   await prisma.appState.update({
@@ -295,6 +327,53 @@ async function main() {
     projectedWire.serverToClientBytes < fullWire.serverToClientBytes,
     'Select deve reduzir os bytes reais retornados pelo PostgreSQL nesta leitura.',
   );
+
+
+  // Rollback administrativo altera o modo, portanto não é permitido
+  // reutilizar um preview anteriormente marcado como normalized-primary.
+  const rollbackMode = { ...state, __megNormalization: { mode: 'app-state-rollback' } };
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: rollbackMode as Prisma.InputJsonValue },
+  });
+  const rollbackPreview = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  assert.equal(rollbackPreview.primary, false);
+  assert.equal(rollbackPreview.mode, 'app-state-rollback');
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: state as Prisma.InputJsonValue },
+  });
+  assert.equal((await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview)).primary, true);
+
+  // Concorrência durante o cálculo completo: sem cache se os snapshots
+  // antes/depois não forem idênticos, mesmo com preview intermediário válido.
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: { ...state, budgets: { beforeRace: true } } as Prisma.InputJsonValue },
+  });
+  let fullAuditsInRace = 0;
+  const withInterleavedChange = async (wid: string, uid: string) => {
+    fullAuditsInRace += 1;
+    const result = await normalizationPreview(wid, uid);
+    await prisma.appState.update({
+      where: { workspaceId: wid },
+      data: { state: { ...state, budgets: { afterRace: true } } as Prisma.InputJsonValue },
+    });
+    return result;
+  };
+  await periodicNormalizationPreview(workspace.id, user.id, withInterleavedChange);
+  assert.equal(fullAuditsInRace, 1, 'Alteração anterior deve obrigar a leitura completa.');
+  await periodicNormalizationPreview(workspace.id, user.id, async (wid, uid) => {
+    fullAuditsInRace += 1;
+    return normalizationPreview(wid, uid);
+  });
+  assert.equal(fullAuditsInRace, 2,
+    'Escrita ocorrida durante a primeira auditoria não pode ser escondida por cache.');
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: state as Prisma.InputJsonValue },
+  });
+  assert.equal((await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview)).reconciled, true);
 
   // Caracterização da rotina anterior continua após os ensaios de cache.
   // Idempotencia: estado original e rows ja conciliados nao devem mudar.
@@ -408,6 +487,10 @@ async function main() {
     externalDriftDetected: true,
     archiveDriftDetected: true,
     nonFinancialMutationInvalidates: true,
+    sourcePayloadDriftDetected: true,
+    monetaryDriftDetected: true,
+    rollbackModeDetected: true,
+    interleavedWriteInvalidatesCache: true,
     periodicAudit96CallsProjectedBytes: periodicWire.serverToClientBytes * 96,
     reductionPercent: Number(reductionPercent.toFixed(3)),
     periodicReconciled: true,
