@@ -448,7 +448,9 @@ async function main() {
   await prisma.appState.update({
     where: { workspaceId: workspace.id }, data: { state: state as Prisma.InputJsonValue },
   });
-  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id), liveReadA);
+  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id),
+    await normalizedStateForRead(workspace.id, user.id),
+    'Depois de atualizar AppState, a resposta deve incluir updatedAt vigente.');
 
   // Rollback administrativo é barreira absoluta ao cache normalizado.
   await prisma.appState.update({
@@ -461,7 +463,9 @@ async function main() {
   await prisma.appState.update({
     where: { workspaceId: workspace.id }, data: { state: state as Prisma.InputJsonValue },
   });
-  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id), liveReadA);
+  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id),
+    await normalizedStateForRead(workspace.id, user.id),
+    'Depois de atualizar AppState, a resposta deve incluir updatedAt vigente.');
   console.log('STAGE09_GET_APPSTATE_CACHE_DIAG=' + JSON.stringify({
     syntheticOnly: true,
     records: EVENT_COUNT,
