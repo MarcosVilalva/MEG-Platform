@@ -71,3 +71,39 @@ A auditoria periódica ainda transfere uma representação completa e **não foi
 ## Restrições
 
 Nenhuma alteração em `main`, serviço Render, Supabase produtivo, ambiente WSL, Android ou Web homologada. Nenhuma operação destrutiva, testes de carga em produção, mudança de plano, restore/backup ou atualização de segredo.
+
+
+## 14/11/2026 | Auditoria periódica com SHA-256 integral no banco (experimental)
+
+**Código novo:** `apps/api/src/modules/app-state/normalization-periodic-audit.ts`. Único ponto de uso novo: timer de 15 minutos em `apps/api/src/server.ts`. Nenhum endpoint, writer, regra financeira ou assinatura de `normalizationPreview` foi alterado.
+
+### Desenho e integridade
+
+- Cada verificação executa uma instrução SQL parametrizada, somente de leitura, em PostgreSQL 17. Obtém SHA-256 calculado no banco sobre **toda a linha `AppState`** e sobre **todas as linhas `FinancialEvent` do workspace** (inclui registros normais e arquivados; a agregação é ordenada por ID). O payload completo não atravessa o protocolo nesta etapa.
+- O resumo completo do último `normalizationPreview` só é reutilizado se os dois SHA-256 forem idênticos aos de uma auditoria anterior efetivamente reconciliada. Uma mudança de `sourcePayload`, saldo/valor, status, remoção, inserção, arquivamento, metadados, mesmo fora da API, invalida o atalho e exige a **auditoria financeira original**, com `normalizationFingerprint` original.
+- Na primeira leitura ou após alteração, o código executa a auditoria completa. Só armazena resultado se o estado for `normalized-primary`, `reconciled=true` e os SHA-256 medidos **antes e depois** da auditoria forem idênticos. Em modo rollback, divergência ou falha na consulta SHA, não há decisão otimista: executa o caminho completo e não guarda o resultado inválido.
+- Cache somente em memória do processo, limitado a 16 workspaces e particionado também por usuário. Reinício perde o cache e executa a auditoria completa; não há nova tabela, migração, plano, atualização de segredos ou alteração de dados.
+- O SHA-256 é um *detector de mudança da representação completa no banco*, não substitui o fingerprint canônico. A avaliação continua sujeita aos limites usuais de observação instantânea e à hipótese criptográfica de resistência a colisões, sem promessa de verificação continuamente em tempo real.
+- A consulta SQL agregada também consome CPU, I/O e memória do PostgreSQL. **Não foram medidos p95, CPU/IO/latência real do Supabase nem Egress cobrado.** Não está aprovado para produção e não permite estimar economia total faturável.
+
+### Medição PostgreSQL 17 descartável, somente fixture sintética
+
+- **3.630 eventos fictícios** e mesmo fixture e proxy TCP local da primeira rodada. [Job PG17 #43550388540](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43550388540): **SUCCESS**, commit testado `51950af7e40731bd7650dc00020b596d94e566e1`.
+- `normalizationPreview` original: **6.740.840 bytes** do servidor para o cliente.
+- Primeira auditoria com SHA (cache vazio): **6.740.656 bytes**, valor próximo ao baseline, **sem economia significativa**; variações pequenas na instrumentação não têm significado financeiro.
+- Repetição da auditoria sem mudança: **168 bytes** do servidor para o cliente, ou **99,998% menos bytes que a execução original** nesse cenário e nessa condição. Não se deve projetar esse percentual para períodos com mutações frequentes.
+- Seleção do startup, inalterada nesta rodada: **4.375.109 → 3.772.587 bytes**, queda de **13,772%** exclusivamente na leitura do startup.
+
+### Testes executados e preservação
+
+**PASS no PostgreSQL 17:** espelho e fingerprints financeiros idênticos na situação normal; drift por campo `notes` alterado fora da API; adulteração exclusiva de `sourcePayload`; variação direta de `signedAmount`; mudança de campo não financeiro em `AppState`; arquivamento externo de evento; modo `app-state-rollback`; escrita intercalada entre os dois hashes e a leitura completa, impedindo cache indevido; remoção de arquivados e órfãos; `LedgerEntry` intacta; rollback transacional; revisão obsoleta rejeitada; dois reconciliadores concorrentes com um vencedor; idempotência e auditoria sem duplicação.
+
+**CI geral:** [MEG Platform CI #43550388576](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43550388576), **SUCCESS** no SHA acima. Não representa aprovação financeira de produção nem prova visual. A primeira tentativa do teste de digest falhou devido à asserção artificial `initial >= baseline` sobre bytes observados; a asserção foi substituída por verificação de tráfego positivo, sem mexer na regra financeira, e a rodada estendida final fechou SUCCESS.
+
+### Conclusão e limites da investigação
+
+**Confirmado:** o atalho criptográfico preservou os cenários sintéticos caracterizados e reduziu para 168 bytes a resposta do PostgreSQL em uma auditoria periódica sem alterações. **Não confirmado:** se a rotina explica os 13,057 GB do Supabase, se a economia ocorre com frequência suficiente na produção, seu custo real de CPU e o impacto no consumo faturável. O timer continua em 15 minutos e os gates de recuperação permanecem Gate 1 PARCIAL, Gates 2–4 NO-GO.
+
+**Governança:** PR #689 e PR #666 Draft, sem merge/deploy. A PR #689 está 2 commits atrás da branch-base #666, ambos apenas no arquivo de checkpoint (comparação feita em 14/11); revalidar antes de eventual integração. Android, Web homologada, Supabase, Render, WSL, Vault, dados reais e configuração de cobrança não foram alterados.
+
+Próximas evidências necessárias para uma conclusão operacional: correlação read-only por query/endpoint na origem real do Shared Pooler, medição de custo de CPU/IO/latência, frequência efetiva de cache hits e série de Egress após autorização expressa de implantação segura. Até lá, **sem recomendação de merge ou deploy**.
