@@ -172,3 +172,56 @@ Este complemento não altera o inventário histórico nem executa testes; regist
 **Preparação preservada, mas não aplicada:** o Build Command sem comandos de banco está na PR [#692](https://github.com/MarcosVilalva/MEG-Platform/pull/692) Draft e documentado em `docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md` nessa branch; o Build Command/Blueprint produtivo continua pendente. Não incluir o experimento #689/#693, nem fazer merge/deploy, pausa de Auto Sync, remoção de Egress cap ou upgrade por este registro. O backup criptografado semanal no notebook e suas provas de transporte/custódia já estão concluídos nos limites do checkpoint e não serão reinstalados ou reexecutados.
 
 **Próximo passo com resultado verificável:** completar somente a matriz de configurações gerenciadas que ainda está `NÃO VERIFICADO` usando o Dashboard autenticado do destino e evidências sanitizadas, quando acessível, seguido de prova operacional sem efeitos externos. Se o serviço permanecer restrito ou o painel inacessível, manter Gate 1 PARCIAL e Gates 2–4 NO-GO. A simples passagem do ciclo de consumo de 27/11/2026 não constitui aceite; reavaliar somente quando houver resposta funcional observável.
+
+### 11. Auditoria complementar de watchdog e revalidacao dos limites do Gate 1 (14/11/2026)
+
+Consulta nova, **somente leitura**, efetuada no projeto **origem**
+`ugbiqzaqnrhulhetevby` e limitada a `pg_catalog` e agregados
+de `cron.job`, sem `SELECT` em tabelas financeiras ou dados de pessoas.
+Nao houve execucao de funcao, cron, HTTP externo ou comandos de fila.
+
+- Em `public.meg_run_notification_watchdog`, `pg_proc` confirma
+  `SECURITY DEFINER`, `VOLATILE`, sem privilegio `EXECUTE` para
+  `anon` ou `authenticated`. Inspecao booleana da definicao,
+  sem retornar codigo ou enderecos, confirmou chamada direta
+  `net.http_*`, referencia a `vault.` e literal HTTPS. Essa e uma
+  dependencia funcional real de `pg_net` e Vault.
+- `cron.job`: **dois jobs, ambos ativos**, referenciam o watchdog.
+  As duas expressoes sao `17,27,37,47,57 0 * * *` e
+  `17,27,37,47,57 9-23 * * *`, um job por faixa, sem sobreposicao
+  das horas declaradas. Nao inferir fuso, finalidade das pausas nem
+  disparos bem-sucedidos sem prova especifica. Texto dos comandos
+  nao foi exposto.
+- `pg_extension` da origem: `pg_net 0.20.3` no schema `public`,
+  `extrelocatable=false`; `pg_cron 1.6.4` em `pg_catalog`;
+  `supabase_vault 0.3.1` em `vault`. Pelo
+  [guia oficial pg_net](https://supabase.com/docs/guides/database/extensions/pg_net),
+  reposicionar a extensao nao relocavel exigiria
+  **DROP/CREATE**, com risco de exclusao de fila de pedidos HTTP,
+  respostas e interrupcao do watchdog. **Nao foi feito e NAO esta
+  autorizado em producao.** Evidencias registradas na
+  [issue #676](https://github.com/MarcosVilalva/MEG-Platform/issues/676).
+- No **sandbox somente**, `get_advisors(type=health)` retornou
+  `lints=[]`. Uma consulta agregada dos logs das ultimas 24 horas
+  identificou 14 entradas em `edge_logs`: Auth com 1 HTTP 200 e
+  6 HTTP 402; Storage com **zero 200** e 2 HTTP 402; outras
+  rotas com 3 HTTP 200 e 2 HTTP 402. Os grupos foram
+  derivados so de prefixos de caminho, sem retornar URL,
+  emails, IPs, cabecalhos, IDs de usuario ou segredos.
+  Esta amostra e equivalente a observacoes anteriores, mas e
+  uma verificacao adicional de que os HTTP 402 **persistem no
+  intervalo amostrado**, sem permitir inferir causa de cobranca,
+  indisponibilidade permanente ou estado de todos os servicos.
+- **Gate 0 PASS anterior; Gate 1 PARCIAL** pela falta de configuracoes
+  autenticadas Auth/SMTP/SMS/hooks/Storage/Realtime/egress,
+  e pelas respostas HTTP 402 observadas. **Gates 2-4 NO-GO.**
+  Nao usar `ACTIVE_HEALTHY`, `lints=[]` ou sucesso da
+  CI offline como liberacao para restaurar dados no projeto.
+  Nao ativar/desativar cron, `pg_net`, Vault, endpoints,
+  tokens, planos ou uploads ate autorizacoes especificas.
+
+**Passo seguro:** inspecao autenticada e saneada de configuracoes
+gerenciadas no sandbox, seguida de demonstracao real de disponibilidade
+sem envios externos e sem custo. Se o provedor continuar respondendo
+402 ou nao oferecer os controles exigidos, manter o NO-GO sem
+tentar contornar via origem ou credenciais produtivas.
