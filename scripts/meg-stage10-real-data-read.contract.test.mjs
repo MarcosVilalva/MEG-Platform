@@ -31,6 +31,11 @@ assert.match(bridge,/readStage10Snapshot/);
 assert.doesNotMatch(bridge,/validateSession\(session\)/);
 assert.match(bridge,/Nao chamar \/auth\/me canonico/);
 assert.match(bridge,/refreshAuthSession\(\)/);
+assert.match(bridge,/auth\/stage10-qa\/exchange/);
+assert.match(bridge,/exchangeStage10QaToken/);
+assert.match(bridge,/body:JSON\.stringify\(\{refreshToken:session\.refreshToken\}\)/);
+assert.doesNotMatch(bridge,/send\((?:initial|refreshed)\.accessToken\)/);
+
 assert.match(bridge,/stage10-readonly\/snapshot\?month=/);
 assert.match(bridge,/data\.consistency!=='repeatable-read'/);
 assert.match(bridge,/data\.actorId!==session\.user\.id/);

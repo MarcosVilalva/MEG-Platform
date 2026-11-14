@@ -40,6 +40,7 @@ try{
  const apiCalls=[];const errors=[];const requests=[];const failures=[];
  let exceedHistoryLimit=false;
  let expireReadonlyTokenOnce=true;
+ let exchangeCount=0;
  page.on('pageerror',error=>errors.push(String(error)));
  page.on('request',r=>{const pathname=new URL(r.url()).pathname;if(pathname.startsWith('/auth/')||pathname.startsWith('/finance/'))requests.push(r.method()+' '+r.url());});
  page.on('requestfailed',r=>failures.push(r.url()+' '+(r.failure()?.errorText||'')));
@@ -53,6 +54,9 @@ try{
    'content-type':'application/json','cache-control':'private, no-store',
   };
   if(req.method()==='OPTIONS')return route.fulfill({status:204,headers,body:''});
+  if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot')
+   assert.match(req.headers().authorization||'',/^Bearer synthetic\.qa\.\d+$/,
+    'QA nao recebe JWT HMAC nem refresh token');
   if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot'&&expireReadonlyTokenOnce){
    expireReadonlyTokenOnce=false;
    return route.fulfill({status:401,headers,body:JSON.stringify({error:'UNAUTHORIZED'})});
@@ -80,6 +84,16 @@ try{
     user,accessToken:'synthetic-access',refreshToken:'synthetic-refresh-token-valid',
     refreshExpiresAt:'2099-01-01T00:00:00.000Z',
    })});
+  if(req.method()==='POST'&&url.pathname==='/auth/stage10-qa/exchange'){
+   const body=JSON.parse(req.postData()||'{}');
+   assert.ok(['synthetic-refresh-token-valid','synthetic-refreshed-token-valid'].includes(body.refreshToken));
+   assert.ok((req.headers().authorization||'').startsWith('Bearer synthetic-'));
+   exchangeCount++;
+   return route.fulfill({status:200,headers,body:JSON.stringify({
+    kind:'stage10-qa-read-token-v1',canWrite:false,actorId:owner,
+    accessToken:'synthetic.qa.'+exchangeCount,expiresAt:Math.floor(Date.now()/1000)+120,
+   })});
+  }
   if(req.method()==='GET'&&url.pathname==='/auth/me')
    return route.fulfill({status:200,headers,body:JSON.stringify({user})});
   if(req.method()==='POST'&&url.pathname==='/auth/refresh')
@@ -110,6 +124,8 @@ try{
  assert.ok(apiCalls.includes(api+' POST /auth/login'));
  assert.ok(!apiCalls.includes(api+' GET /auth/me'), 'QA nao chama /auth/me canonico potencialmente mutante');
  assert.ok(apiCalls.includes(api+' POST /auth/refresh'));
+ assert.equal(apiCalls.filter(call=>call===api+' POST /auth/stage10-qa/exchange').length,2,
+  'token QA deve ser solicitado apos login e apos refresh');
  assert.equal(apiCalls.filter(call=>call===readonlyApi+' GET /finance/stage10-readonly/snapshot').length,2,
   'Somente duas tentativas no backend QA: token expirado e token renovado');
  assert.ok(apiCalls.includes(readonlyApi+' GET /finance/stage10-readonly/snapshot'));
@@ -117,6 +133,8 @@ try{
   call===readonlyApi+' GET /finance/stage10-readonly/snapshot'));
  assert.ok(apiCalls.filter(call=>call.includes('/auth/')).every(call=>call.startsWith(api+' ')));
  assert.ok(!apiCalls.some(call=>call.includes('/auth/refresh')&&call.startsWith(readonlyApi)));
+ assert.ok(!apiCalls.some(call=>call.includes('/exchange')&&call.startsWith(readonlyApi)));
+ assert.ok(exchangeCount===2,'duas trocas de token no caso expirado');
  const traces=await page.evaluate(()=>window.__MEG_SYNTHETIC_FETCH_TRACES__||[]);
  assert.ok(!traces.some(t=>t.url.includes('accessToken=')||t.url.includes('refreshToken=')));
  assert.equal(await page.locator('.meg-unified-stamp').innerText().then(s=>s.includes('Somente leitura')),true);

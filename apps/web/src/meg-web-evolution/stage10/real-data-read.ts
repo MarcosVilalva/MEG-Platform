@@ -47,7 +47,50 @@ export function stage10RealReadGate(env:{
  return {allowed:true,reason:''};
 }
 
-/** A API QA so recebe GET e um JWT ja emitido na API canonica. */
+/** O JWT HMAC de login nunca e enviado a API QA RS256.
+ * Uma troca no emissor canonico (AINDA NAO PUBLICADO) deve fornecer token
+ * dedicado e curto. O refresh opaco permanece SOMENTE na origem canonica.
+ */
+type QaTokenResponse={
+ kind:'stage10-qa-read-token-v1';canWrite:false;actorId:string;
+ accessToken:string;expiresAt:number;
+};
+async function exchangeStage10QaToken(session:NonNullable<ReturnType<typeof readSession>>,
+ signal:AbortSignal):Promise<string>{
+ const origin=strictHttpsOrigin(import.meta.env.VITE_API_URL||'');
+ if(!origin||origin===window.location.origin)
+  throw new Error('Origem canonica de autenticacao indisponivel.');
+ if(!session.accessToken||!session.refreshToken)
+  throw new Error('Sessao canonica incompleta.');
+ const response=await fetch(origin+'/auth/stage10-qa/exchange',{
+  method:'POST',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',
+  referrerPolicy:'no-referrer',signal,
+  headers:{Authorization:'Bearer '+session.accessToken,'Content-Type':'application/json'},
+  body:JSON.stringify({refreshToken:session.refreshToken}),
+ });
+ if(!response.ok){
+  const error=new Error('Troca segura de token QA indisponivel (HTTP '+response.status+').');
+  throw Object.assign(error,{status:response.status});
+ }
+ if(!/^application\/json(?:\s*;|\s*$)/i.test(response.headers.get('content-type')||''))
+  throw new Error('Emissor QA nao retornou JSON autorizado.');
+ if(!/\bno-store\b/i.test(response.headers.get('cache-control')||''))
+  throw new Error('Emissor QA nao garantiu resposta sem cache.');
+ const data=await response.json() as QaTokenResponse;
+ const now=Math.floor(Date.now()/1000);
+ if(!data||data.kind!=='stage10-qa-read-token-v1'||data.canWrite!==false||
+  data.actorId!==session.user.id||typeof data.accessToken!=='string'||
+  data.accessToken.length>12000||data.accessToken.split('.').length!==3||
+  !/^[A-Za-z0-9._-]+$/.test(data.accessToken)||
+  !Number.isSafeInteger(data.expiresAt)||data.expiresAt<=now||
+  data.expiresAt>now+300)
+  throw new Error('Contrato de emissao QA invalido.');
+ if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(readSession()?.user.id!==session.user.id)
+  throw new Error('Identidade alterada durante a troca de token QA.');
+ return data.accessToken;
+}
+/** Somente GET autenticado com o JWT QA de chave publica. */
 async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>{
  const origin=strictHttpsOrigin(import.meta.env.VITE_MEG_STAGE10_READONLY_API_URL||'');
  const auth=strictHttpsOrigin(import.meta.env.VITE_API_URL||'');
@@ -56,26 +99,37 @@ async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>
  if(!path.startsWith('/finance/stage10-readonly/snapshot?month='))
   throw new Error('Rota de consulta QA nao autorizada.');
  const send=(token:string)=>fetch(origin+path,{
-  method:'GET',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',signal,
-  headers:{Authorization:'Bearer '+token},
+  method:'GET',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',
+  referrerPolicy:'no-referrer',signal,headers:{Authorization:'Bearer '+token},
  });
  const initial=readSession();
  if(!initial?.accessToken)throw new Error('Sessao autenticada obrigatoria.');
- let response=await send(initial.accessToken);
- if(response.status===401){
-  // Refresh acontece exclusivamente na API canonica, nunca no backend QA.
-  const refreshed=await refreshAuthSession();
-  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
-  if(!refreshed||refreshed.user.id!==initial.user.id)
+ let session=initial;
+ let qaToken:string;
+ try{
+  qaToken=await exchangeStage10QaToken(session,signal);
+ }catch(error){
+  if((error as {status?:number})?.status!==401)throw error;
+  const renewed=await refreshAuthSession();
+  if(!renewed||renewed.user.id!==initial.user.id)
    throw new Error('Sessao nao autorizada para leitura financeira.');
-  response=await send(refreshed.accessToken);
+  session=renewed;
+  qaToken=await exchangeStage10QaToken(session,signal);
  }
- if(!response.ok){
-  // Nenhum HTML, redirecionamento ou mensagem de origem nao confiavel e exibido.
+ let response=await send(qaToken);
+ if(response.status===401){
+  // Revogacao/expiracao: rotacionar sessao SOMENTE na API canonica
+  // e obter novo QA token; nunca mandar HMAC/refresh ao backend QA.
+  const renewed=await refreshAuthSession();
+  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+  if(!renewed||renewed.user.id!==initial.user.id)
+   throw new Error('Sessao nao autorizada para leitura financeira.');
+  qaToken=await exchangeStage10QaToken(renewed,signal);
+  response=await send(qaToken);
+ }
+ if(!response.ok)
   throw new Error('Consulta financeira QA indisponivel (HTTP '+response.status+').');
- }
- const contentType=response.headers.get('content-type')||'';
- if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))
+ if(!/^application\/json(?:\s*;|\s*$)/i.test(response.headers.get('content-type')||''))
   throw new Error('Resposta da API financeira QA nao possui formato JSON autorizado.');
  const current=readSession();
  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
