@@ -408,16 +408,16 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   <div className={'meg-l09-hero-frame'+(mode==='live'?' is-sticky':'')}>
   <header className="meg-l09-hero">
    <div className="meg-l09-hero-intro"><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
-   <div className="meg-l09-hero-actions">
-     {qaActions&&<button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
-      disabled={qaSelectedRows.length===0} onClick={()=>setQaBatchOpen(true)}>
-      <ActionGlyph kind="batch"/><span className="meg-l09-batch-full">Editar em lote</span><span className="meg-l09-batch-short">Lote</span> ({qaSelectedRows.length})
-     </button>}
-     <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'&&!qaActions}
-      title={mode==='live'&&!qaActions?'Formulário de criação protegido será integrado na etapa própria':undefined}>
-      <LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
-    </div>
-   {mode==='live'&&statisticsView}
+   {qaActions?<div className="meg-l09-hero-actions">
+      <button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
+       disabled={qaSelectedRows.length===0} onClick={()=>setQaBatchOpen(true)}>
+       <ActionGlyph kind="batch"/><span className="meg-l09-batch-full">Editar em lote</span><span className="meg-l09-batch-short">Lote</span> ({qaSelectedRows.length})
+      </button>
+      <button type="button" className="meg-l09-add" onClick={onNew}>
+       <LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
+     </div>:<button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'}
+      title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>}
+    {mode==='live'&&statisticsView}
   </header>
   </div>
   {mode==='preview'&&statisticsView}
