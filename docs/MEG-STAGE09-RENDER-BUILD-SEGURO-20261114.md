@@ -457,3 +457,61 @@ continua necessitando evidencias autenticadas sanitizadas.
 - **Bloqueios para deploy:** issues #691 e #694 P0/OPEN. A build candidata segura continua nao implantada. Ordem `reconcile -> activate`, status rollback e health multi-instancia nao decididos funcionalmente. Supabase Gate 0 PASS anterior, Gate 1 PARCIAL e Gates 2-4 NO-GO. Sem gastos, upgrades, conexoes externas, restore remoto, merge/deploy ou sync.
 
 **Proximo passo especifico:** depois do aceite da semantica funcional e autorizacao pontual, corrigir a leitura da env e adicionar teste fail-closed que exige `'false' -> false` sem escrita no fixture; reexecutar os tests anteriores de startup/recorrencia, validar o SHA final e preparar procedimento de aplicacao separado para Render. A mera mudanca da string em producao NAO substitui revisao e autorizacao.
+
+
+## Correcao candidata fail-closed da flag RUN_LEGACY_REPAIR, PR #692 (14/11/2026)
+
+**Status: candidata corrigida e ensaiada, NAO aplicada em producao.** A observacao
+anterior nesta pagina, de que a string `'false'` ativava o reparo, documenta
+o comportamento do codigo **antes da correção** e permanece como
+caracterizacao historica da issue [#694](https://github.com/MarcosVilalva/MEG-Platform/issues/694).
+
+- A alteracao pontual foi aplicada em `apps/api/src/config.ts` somente na
+  branch `safety/stage09-render-build-non-destructive-20261114` (PR #692
+  Draft): `z.coerce.boolean().default(false)` foi substituido por
+  `z.stringbool({ truthy: ['true'], falsy: ['false', '0', 'off'] }).default(false)`.
+  Somente `true` textual, sem distincao de caixa, habilita o writer;
+  `false`, `0` e `off` desabilitam; valores desconhecidos nao podem
+  ligar a rotina, pois a inicializacao falha com configuracao invalida.
+  Nao foi alterada nenhuma linha de `server.ts` ou
+  `modules/imports/repair.ts`, nem o contrato financeiro canonico.
+- No mesmo banco PG17 descartavel, `scripts/meg-stage09-legacy-repair-flag-pg17.test.ts`
+  foi atualizado para quatro inicializacoes reais da API com a rotina
+  desligada (ausente, `false`, `0`, `off`) e uma explicitamente ligada
+  (`true`). O evento ficticio de R$ 9,99/`planned` permaneceu intacto
+  nos casos desligados. Com opt-in explicito, o reparador real atualizou
+  somente essa fixture ficticia para R$ 19,75/`paid`. Valores nao reconhecidos
+  (`1`, `on`, `yes`, `enabled`, vazio, `maybe`) falharam na validacao.
+- O contrato estatito `scripts/meg-stage09-render-startup-writers.contract.test.mjs`
+  exigia literalmente o parser antigo e causou uma falha de CI na rodada
+  tecnica preliminar. O teste foi **atualizado, nao removido**, para exigir
+  parser fail-closed e recusar a sintaxe vulneravel. A workflow PG17 ganhou
+  trigger de alteracoes em `config.ts` e neste contrato.
+- **Prova terminal do commit tecnico
+  `f74f94c36d0a578d45eab62f68ce6034ac9ef91b`:**
+  [PG17 #43647441893](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647441893)
+  **SUCCESS**, com marcadores `PG17_LEGACY_REPAIR_FAIL_CLOSED_REAL_SERVER_PASS`,
+  `PG17_REAL_HTTP_CONCURRENT_AND_TIMERS_PASS` e
+  `PG17_SYNTHETIC_REAL_HTTP_STARTUP_PASS`;
+  [build sem DB #43647441898](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647441898)
+  **SUCCESS**, incluido o contrato atualizado. Houve tentativa anterior
+  com build FAIL por contrato desatualizado no SHA
+  `968bf14adf29a204db3f0b36a3dbb3a91b479a2f`; manter o historico
+  sem confundir com falha financeira.
+- A [issue #694](https://github.com/MarcosVilalva/MEG-Platform/issues/694)
+  recebeu comentario com codigo, provas e restricoes; **permanece OPEN/P0**
+  ate integracao e decisao funcional autorizadas, revisao das configuracoes
+  reais em janela autorizada e evidencias depois do deploy. A issue #691
+  segue P0 independente porque o build efetivo do Render ainda executa
+  comandos perigosos de banco, apesar da candidata de build segura.
+- **Nao atendido:** nenhum levantamento da flag atual do Render, nenhum
+  teste de alteracao no banco produtivo, nenhum deploy, PR merge ou
+  alteracao da origem Supabase/DR. A configuracao deve ser aplicada apenas
+  mediante gate proprio, sem extrapolar sucesso PG17 ficticio. Supabase
+  DR Gate 0 PASS anterior, Gate 1 PARCIAL, Gates 2-4 NO-GO.
+
+**Proximo gate exato:** confirmar CI do novo SHA documental desta PR, atualizar
+checkpoint oficial #666; preservar #691/#694 abertas, formalizar aceite da
+semantica de ativacao e plano de rollout/rollback nao destrutivo antes de
+qualquer merge/deploy. Nao mudar config produtiva com base apenas no
+teste de ambiente descartavel.
