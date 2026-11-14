@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - 'fix/stage09-egress-projection-qa-20261113'
+      - 'fix/stage09-appstate-read-qa-20261114'
 
 permissions:
   contents: read
 
 jobs:
   pg17-egress-wire-synthetic:
-    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.ref == 'refs/heads/fix/stage09-egress-projection-qa-20261113'
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && (github.ref == 'refs/heads/fix/stage09-egress-projection-qa-20261113' || github.ref == 'refs/heads/fix/stage09-appstate-read-qa-20261114')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
