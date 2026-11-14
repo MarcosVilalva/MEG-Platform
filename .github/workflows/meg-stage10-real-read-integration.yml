@@ -40,6 +40,8 @@ jobs:
         run: npm run db:generate
       - name: Typecheck API read-only route
         run: npm --workspace apps/api run build
+      - name: Public-key JWT RS256 synthetic characterisation (no secrets)
+        run: npx tsx apps/api/src/stage10-public-jwt-contract.test.ts
       - name: HTTP JWT and READ ONLY PostgreSQL 17 synthetic integration
         env:
           DATABASE_URL: postgresql://meg_test:meg_test@127.0.0.1:5439/meg_stage10_test?schema=public
