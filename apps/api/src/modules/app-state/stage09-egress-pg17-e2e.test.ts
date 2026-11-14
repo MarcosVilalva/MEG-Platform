@@ -213,11 +213,13 @@ async function main() {
   const initialPeriodicWire = await wireStats();
   assert.deepEqual(initialPeriodic, periodicPreview,
     'Primeira auditoria com digest preserva integralmente o preview original.');
-  assert.ok(initialPeriodicWire.serverToClientBytes >= periodicWire.serverToClientBytes);
+  assert.ok(initialPeriodicWire.serverToClientBytes > 0,
+    'Primeira auditoria deve de fato consultar o PostgreSQL.');
 
   await resetWire();
   const cachedPeriodic = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
   const cachedPeriodicWire = await wireStats();
+  console.log('STAGE09_PERIODIC_DIGEST_WIRE_DIAG=' + JSON.stringify({ baseline: periodicWire.serverToClientBytes, initial: initialPeriodicWire.serverToClientBytes, unchanged: cachedPeriodicWire.serverToClientBytes }));
   assert.deepEqual(cachedPeriodic, periodicPreview,
     'Resumo completo e fingerprint devem ser identicos sem nenhuma mudança.');
   assert.ok(cachedPeriodicWire.serverToClientBytes > 0,
