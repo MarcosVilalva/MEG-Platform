@@ -78,6 +78,8 @@ export type DataGridProps<T extends Record<string, unknown>> = {
   footerAggregates?: boolean | Record<string, DataGridAggregate>;
   filterButtonLabel?: string;
   onFilterChange?: (state: DataGridFilterChange) => void;
+  /** Read-only observer, optional. No change to DataGrid selection semantics. */
+  onSelectionChange?: (state: {selectedKeys:string[];filteredKeys:string[]}) => void;
   onClearAllFilters?: () => void;
   applySavedFilters?: {revision:number;filters:DataGridFilterState};
   persistenceKey?: string;
