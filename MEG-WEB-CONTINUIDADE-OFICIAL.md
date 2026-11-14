@@ -2575,3 +2575,12 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   Build Command corrigido efetivamente e testado.
   Gates Supabase DR 1 PARCIAL, 2-4 NO-GO, sem
   aceite final da Etapa 09.
+
+
+## 14/11/2026 | Etapa 09: Render Build Command seguro configurado no painel, sem deploy
+
+- O operador apresentou print do painel Settings > Build do serviço Render `meg-platform-api`, exibindo Build Command completo `bash scripts/meg-stage09-render-api-build.sh` já salvo. A consulta independente `Render.get_service` ao serviço `srv-d98k61daeets7384hvb0` retornou `branch=main`, `autoDeploy=no`, `autoDeployTrigger=off`, `updatedAt=2026-11-14T23:35:06.093474Z` (20h35 horário de Brasília). O conector Render não expõe no retorno desse método o texto do Build Command, portanto a evidência deste campo é o **print do painel fornecido pelo operador**, não uma leitura direta por API.
+- O Build Command antigo foi informado integralmente pelo operador e cruzado com os manifests vigentes na main: `npm install && npm run db:generate && npm run build:api && npm run db:prepare:production && npm run db:push:production`; `db:push:production` delega para `prisma db push --accept-data-loss && tsx prisma/ensure-performance-indexes.ts`. O risco era concreto no pipeline configurado, sem prova de perda de dados histórica.
+- **Subgates de configuração Render concluídos:** Auto Deploy `off` confirmado por API; novo Build Command exibido no painel. **Não houve deploy manual, alteração na main ou execução do novo script em produção neste atendimento**. O script seguro já está na branch stage09, mas continua ausente da main até integração posterior e autorizada.
+- **Não considerar resolvida a issue #691** nem a Etapa 09 apenas porque o comando foi salvo. Ainda faltam verificação pós-implantação sem DDL, gates funcionais/DR e aprovação operacional final. Não iniciar deploy antes de conferir a presença do script no SHA de main e a política de integridade financeira.
+- PR #666 permanece Draft, sem merge em main. Gate 0 Supabase PASS anterior, Gate 1 PARCIAL por Auth/Storage/HTTP 402; Gates 2-4 NO-GO. Seguem pendentes #674, #676, #690, #691, #694, #695 conforme matriz oficial.
