@@ -79,7 +79,7 @@ try{
  assert.equal(body.canWrite,false);
  assert.equal(body.actorId,ownerId);
  const claims=verifyStage10PublicJwt(body.accessToken,pair.publicKey,{
-  issuer,audience,nowSeconds:now});
+  issuer,audience,nowSeconds:Math.floor(Date.now()/1000)});
  assert.equal(claims.sub,ownerId);
  assert.equal(claims.sid,sessionId);
  assert.equal(claims.wid,workspaceId);
