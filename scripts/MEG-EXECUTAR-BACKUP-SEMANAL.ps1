@@ -24,6 +24,10 @@ try {
     Write-Host 'UPLOAD_REMOTO=NAO_COMPROVADO_PELA_COPIA_LOCAL'
 } catch {
     $exitCode = 1
+    if ($state -and (Test-Path -LiteralPath $state -PathType Container)) {
+        @{status='FAILED_REQUIRES_LOCAL_REVIEW';checked_at_utc=[DateTime]::UtcNow.ToString('o');remote_upload_verified=$false} |
+            ConvertTo-Json | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $state 'last-report.json')
+    }
     Write-Host 'RESULTADO=FALHA_REVISAR_LOCALMENTE_SEM_REPETICAO_AUTOMATICA'
 } finally {
     $request = $null; $json = $null; $encoded = $null; $credential = $null
