@@ -36,7 +36,11 @@ async function main() {
   const t2 = performance.now();
   const result = await normalizationPreview(workspace.id, workspace.ownerId);
   const previewMs = Number((performance.now() - t2).toFixed(2));
-  assert.equal(result.normalized.count, expected);
+  const activeCount = await prisma.financialEvent.count({
+    where: { workspaceId: workspace.id, archivedAt: null, legacyTransactionId: { not: null } },
+  });
+  assert.equal(result.normalized.count, activeCount,
+    'Eventos arquivados pela caracterizacao precedente nao integram a auditoria ativa.');
   if (expected === 3630) assert.equal(result.reconciled, true);
   const rss = process.memoryUsage().rss;
   console.log('STAGE09_MEMORY_CGROUP_512_RESULT=' + JSON.stringify({
