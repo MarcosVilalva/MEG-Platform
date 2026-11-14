@@ -2540,3 +2540,38 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   depois executar Gates2-4 e medir RPO/RTO.
   A simples autorizacao generica nao fornece os
   acessos/recursos gerenciados que faltam.
+
+
+## 14/11/2026 | Etapa 09: Render Auto Deploy desligado pelo operador e confirmado via API
+
+- **Acao executada pelo operador no Dashboard Render**, apos orientacao
+  explicita de desabilitar somente Auto Deploy e nao iniciar deploy:
+  servico `meg-platform-api` (id `srv-d98k61daeets7384hvb0`),
+  branch `main`. A verificacao independente pela API conectada
+  `Render.get_service` retornou `autoDeploy=no`,
+  `autoDeployTrigger=off` e
+  `updatedAt=2026-11-14T23:20:03.766568Z`
+  (14/11/2026 20:20:03 Brasilia).
+- **Gate de controle automatico do Render: PASS apenas para
+  desligamento de Auto Deploy**. A desativacao impede deploy
+  automatico por novo commit, mas nao desabilita deploy
+  manual/hook, nao comprova o Build Command vigente,
+  nao demonstra startup seguro em producao, e nao autoriza
+  merge na `main`.
+- **Proxima verificacao precisa:** inspecionar o campo
+  Build Command **efetivo** no painel Render, sem expor
+  segredos e sem executar Edit/Save ate confrontar com
+  script seguro integrado na branch stage09:
+  `bash scripts/meg-stage09-render-api-build.sh`. O
+  script ainda nao existe na `main`, portanto configura-lo
+  e disparar deploy **antes** da promocao segura pode
+  falhar. O roteiro de migracao deve considerar a ordem
+  correta entre preparar código na `main` e alterar
+  configuração efetiva, sem uma janela com build perigoso.
+- **Proibicoes ainda vigentes:** nenhum deploy automatico/
+  manual, hook, Blueprint sync, merge `main`, gasto,
+  mudanca de dados reais, Schema/Vault/cron, producao
+  ou Android/Web homologada. #691 permanece OPEN ate
+  Build Command corrigido efetivamente e testado.
+  Gates Supabase DR 1 PARCIAL, 2-4 NO-GO, sem
+  aceite final da Etapa 09.
