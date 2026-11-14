@@ -32,6 +32,7 @@ const {
   activateNormalizationPrimary,
   normalizationPreview,
   normalizedStateForRead,
+  rollbackNormalizationPrimary,
 } = await import('../apps/api/src/modules/app-state/normalization-migration.ts');
 
 const date = (s: string) => new Date(s + 'T00:00:00.000Z');
@@ -230,6 +231,29 @@ async function main() {
   assert.equal(finalOriginalEvent.signedAmount.toFixed(2), '-12.34');
   assert.equal((await prisma.budget.findUniqueOrThrow({ where: { id: budget.id } })).amount.toFixed(2), '100.42');
 
+  // Revisao obsoleta deve ser recusada sem atualizar espelho, eventos ou saldo.
+  await assert.rejects(
+    reconcilePrimaryAppStateFromNormalized(workspace.id, { expectedRevision: beforeNormalization.revision }),
+    /NORMALIZATION_REVISION_CONFLICT/,
+  );
+  assert.equal((await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } })).revision, firstStable.revision);
+  assert.equal(await prisma.financialEvent.count(), 2);
+
+  // Regra de protecao do rollback: ativacao automatica nao pode sobrescrever
+  // a escolha explicita de retornar ao AppState. Teste APENAS no PG17 efemero.
+  const rollback = await rollbackNormalizationPrimary(workspace.id);
+  assert.equal(rollback.active, false);
+  assert.equal(rollback.mode, 'app-state-rollback');
+  const rolledBackState = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  const afterRollbackAuto = await activateNormalizationPrimary(workspace.id, admin.id, { automatic: true });
+  assert.equal(afterRollbackAuto.blockedByRollback, true);
+  const rollbackStillIntact = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  assert.equal(rollbackStillIntact.revision, rolledBackState.revision);
+  assert.deepEqual(rollbackStillIntact.state, rolledBackState.state);
+  await assert.rejects(reconcilePrimaryAppStateFromNormalized(workspace.id), /NORMALIZATION_PRIMARY_REQUIRED/);
+  assert.equal(await prisma.financialEvent.count(), 2);
+  assert.equal((await prisma.budget.findUniqueOrThrow({ where: { id: budget.id } })).amount.toFixed(2), '100.42');
+
   console.log(JSON.stringify({
     result: 'PG17_SYNTHETIC_STARTUP_CHARACTERIZATION_PASS',
     workspace_runs: 2, foundation_runs: 2, billing_runs: 2,
@@ -238,7 +262,8 @@ async function main() {
     budget_preserved: 1, pre_normalization_reconcile_rejected: true,
     normalized_activated: true, concurrent_reconcile_executions: 2,
     concurrent_fulfilled: concurrent.filter((item) => item.status === 'fulfilled').length,
-    normalized_legacy_event_preserved: 1, isolated: true,
+    normalized_legacy_event_preserved: 1, stale_revision_rejected: true,
+    rollback_automatic_reactivation_blocked: true, isolated: true,
   }));
 }
 
