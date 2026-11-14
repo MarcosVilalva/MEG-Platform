@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import type {UserRole} from '@meg/database';
 import type {FastifyReply,FastifyRequest} from 'fastify';
-import {verifyStage10PublicJwt} from './stage10-public-jwt-contract';
+import {assertStage10PublicVerificationKey,verifyStage10PublicJwt} from './stage10-public-jwt-contract';
 import {registerStage10ReadOnlyRoutes} from './modules/finance/stage10-readonly-routes';
 import {withStage10ReadOnlyWorkspace} from './modules/finance/stage10-readonly-workspace';
 
@@ -28,6 +28,7 @@ export async function createStage10ReadOnlyApp(
     typeof auth.issuer!=='string'||!auth.issuer.trim()||
     typeof auth.audience!=='string'||!auth.audience.trim())
   throw new Error('STAGE10_PUBLIC_JWT_CONFIGURATION_REQUIRED');
+ assertStage10PublicVerificationKey(auth.publicKeyPem);
  const app=Fastify({logger:false,bodyLimit:1024});
  await app.register(cors,{
   origin(origin,callback){callback(null,!origin||origin===allowedOrigin);},
