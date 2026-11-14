@@ -309,3 +309,58 @@ nao deve voltar a pedir instalacao de backup, chave ou teste de transporte ja ap
   Nao mudar ordem, `catch`, fonte canonica, rollback ou regras
   financeiras sem decisao expressa. Issue #691 continua bloqueando
   merge, deploy, Blueprint sync e alteracao do Render produtivo.
+
+
+## Startup HTTP real do server.ts com PostgreSQL17 descartavel (14/11/2026)
+
+**Teste funcional concluido, sem modificar a API.** A candidata #692 recebeu
+`scripts/meg-stage09-render-startup-http-pg17-synthetic.test.ts`,
+executado apos o teste de writers ja consolidado, no mesmo job com
+PostgreSQL17 novo em `127.0.0.1:65431/meg_stage09_ephemeral`.
+
+- Guarda fail-closed de `GITHUB_ACTIONS=true`, `CI=true`, `NODE_ENV=test`,
+  `DATABASE_URL` local fixa, administrador `@example.invalid`, unica conta
+  sintetica e unico workspace. Variaveis de integracoes externas, Supabase,
+  SMTP/WhatsApp, webhooks e tokens devem estar ausentes. O servidor filho herda
+  apenas ambiente explicitamente permitido e ouve em `127.0.0.1:65432`,
+  sem publicar porta fora do runner. `RUN_LEGACY_REPAIR=false`. Ao finalizar
+  cada caso o processo recebe SIGTERM, com SIGKILL apenas como fail-safe.
+- O teste inicia **o arquivo real** `apps/api/src/server.ts` via
+  `node --import tsx`, em tres processos sequenciais: estado
+  `app-state-rollback`, estado legado sem metadados de normalizacao e estado
+  `normalized-primary` previamente ativado **somente na fixture**.
+  O teste nao invoca endpoints financeiros de escrita e confere o snapshot
+  de `AppState.state/revision`, `FinancialEvent`, `Budget`, cardinalidade
+  de `Payable` e `CreditCard` antes e depois de cada partida.
+- `/ready` retorna `ready` apos conexao DB mesmo quando `/health` informa
+  `financialReady=false`: nao confundir disponibilidade com normalizacao
+  concluida. `/auth/me` sem JWT retorna 401. O `/health` usa no-store.
+- **Rollback administrativo:** o processo real observa a recusa do
+  reconciliador e registra fallback; nao altera o rollback gravado no banco.
+  **Legado:** fallback sem ativacao automatica, reproduzido em HTTP real.
+  **Ja normalizado:** o fluxo conclui com `financialReady=true` e nao
+  duplica eventos nem modifica o snapshot financeiro.
+- O teste de contrato confere a ordem do `reconcile -> activate`,
+  existencia dos timers de 15min e 6h e chave `runLegacyRepair`,
+  mas **nao adianta o relogio nem dispara os timers**. Nao verifica
+  comportamento periodico em execucao, corrida entre multiplas instancias,
+  todas as rotas, integracoes gerenciadas, dados reais ou integridade de
+  todos os estados do dominio.
+- **Prova exata:** commit `d41f3ea9cc9ab3612ebb1c9faab1c33d28b329e3`,
+  [GitHub Actions PG17 #43644042686](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43644042686)
+  `SUCCESS`, log `PG17_SYNTHETIC_REAL_HTTP_STARTUP_PASS`.
+  [Build seguro sem DB #43644042692](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43644042692)
+  `SUCCESS`, mesmo SHA.
+- **Decisao:** risco da ordem de startup confirmado pelo processo HTTP em
+  fixture, nao verificado em producao. Nao inverter ordem, alterar writer,
+  status, rollback ou fonte financeira sem aprovacao de autoridade. Issue #691
+  permanece bloqueadora. O build real do Render continua inseguro e nao foi
+  atualizado; nenhuma mudanca no Blueprint, envVars, banco, Auth, Storage,
+  Vault, Android, Web aprovada ou infraestrutura. PR #692 permanece Draft.
+
+**Proximo gate tecnico:** definir e caracterizar, antes de qualquer alteracao
+funcional, a semantica aprovada para inicializacao LEGADA e estado rollback;
+adicionalmente avaliar o comportamento dos timers e do cold start concorrente
+em ambiente efemero com seguranca equivalente. O Gate 1 gerenciado de
+Supabase permanece parcial por HTTP 402 e falta de evidencias Auth/Storage
+autenticadas. Nao liberar merge, deploy, restore remoto ou upgrade.
