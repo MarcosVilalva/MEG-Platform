@@ -772,6 +772,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   filterButtonLabel = 'Filtros',
   onFilterChange,
   onSelectionChange,
+  toolbarAction,
   onClearAllFilters,
   applySavedFilters,
   persistenceKey,
@@ -1433,7 +1434,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   return (
     <section
-      className="meg-datagrid"
+      className={'meg-datagrid'+(toolbarAction?' meg-datagrid-stage10-batch':'')}
       aria-label={ariaLabel}
       data-datagrid
       data-virtualized={virtualized ? 'true' : 'false'}
@@ -1477,6 +1478,7 @@ export function DataGrid<T extends Record<string, unknown>>({
             </label>
           )}
 
+          {toolbarAction&&<div className="meg-datagrid-stage10-toolbar-action">{toolbarAction}</div>}
           <label className="meg-datagrid-mobile-sort">
             <span>Ordenar por</span>
             <select

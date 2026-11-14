@@ -9,7 +9,9 @@ import {LaunchIcon, type LaunchIconName} from './LaunchIcon';
 import {launchCategoryIcon} from './category-icon';
 import {LaunchCategoryBadge} from './LaunchCategoryBadge';
 import {LaunchPaymentBadge} from './LaunchPaymentBadge';
-import {ActionGlyph,LaunchRowQaActions,QaBatchEditor,type QaLaunchTarget} from '../stage10/LaunchActionsQa';
+import {ActionGlyph,LaunchRowQaActions,type QaLaunchTarget} from '../stage10/LaunchActionsQa';
+import {QaBatchEditor} from '../stage10/BatchEditQa';
+import type {ExpenseCatalogs} from '../stage10/ExpenseForm';
 import {applySavedFilter,readSavedFilters,saveNamedFilter,savedFiltersKey,serializeSavedFilters,MAX_SAVED_FILTERS,
  type SavedLaunchesFilter,type LaunchesFilterPreset} from './saved-filters';
 export type {LaunchesFilterPreset} from './saved-filters';
@@ -34,6 +36,7 @@ type Props={
  onQaEdit?:(row:QaLaunchTarget)=>void;
  onQaDuplicate?:(row:QaLaunchTarget)=>void;
  onQaNotice?:(message:string)=>void;
+ qaBatchCatalogs?:ExpenseCatalogs;
 };
 type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
@@ -174,7 +177,7 @@ function toQaTarget(row:Row):QaLaunchTarget{return {id:row.id,description:row.de
  accountId:row.accountId,account:row.account,accountKind:row.accountKind,
  paymentMethod:row.paymentMethod,signedAmount:row.signedAmount};}
 export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters,onFilteredSummary,
- qaActions=false,onQaEdit,onQaDuplicate,onQaNotice}:Props){
+ qaActions=false,onQaEdit,onQaDuplicate,onQaNotice,qaBatchCatalogs}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
  const [search,setSearch]=useState(rememberedFilters?.search??'');
@@ -409,12 +412,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   <header className="meg-l09-hero">
    <div className="meg-l09-hero-intro"><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
    {qaActions?<div className="meg-l09-hero-actions">
-      <button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
-       disabled={qaSelectedRows.length===0} onClick={()=>setQaBatchOpen(true)}>
-       <ActionGlyph kind="batch"/><span className="meg-l09-batch-full">Editar em lote</span><span className="meg-l09-batch-short">Lote</span> ({qaSelectedRows.length})
-      </button>
-      <button type="button" className="meg-l09-add" onClick={onNew}>
-       <LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
+      <button type="button" className="meg-l09-add" onClick={onNew}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
      </div>:<button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'}
       title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>}
     {mode==='live'&&statisticsView}
@@ -522,6 +520,10 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       {favoriteMessage&&<p className="meg-l09-favorites-message" role="status">{favoriteMessage}</p>}
      </>}
      <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable onSelectionChange={qaActions?onQaSelection:undefined}
+      toolbarAction={qaActions?<button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
+       disabled={qaSelectedRows.length===0} onClick={()=>setQaBatchOpen(true)}>
+       <ActionGlyph kind="batch"/> Editar em lote ({qaSelectedRows.length})
+      </button>:undefined}
       rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-v2-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
       footerAggregates={false} filterButtonLabel={mode==='live'?'Filtros da grade':undefined} onFilterChange={onGridFilter} onClearAllFilters={mode==='live'?clearAllLaunchFilters:undefined}
       applySavedFilters={mode==='live'?applyGridPreset:undefined} exportUserName={mode==='live'?exportUserName:undefined}
@@ -532,7 +534,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><LaunchIcon name="chevronLeft" width={18} height={18}/>Voltar à Home</button>
   {modalRow&&<LaunchDetailModal row={modalRow} onClose={closeModal}/>}
-   {qaActions&&qaBatchOpen&&<QaBatchEditor items={qaSelectedRows} categories={qaCategories}
+   {qaActions&&qaBatchOpen&&<QaBatchEditor items={qaSelectedRows} catalogs={qaBatchCatalogs}
     onClose={()=>setQaBatchOpen(false)} onSimulate={count=>{setQaBatchOpen(false);onQaNotice?.('QA: '+count+' lançamento(s) avaliados para edição em lote. Nenhuma alteração foi gravada.');}}/>}
  </section>;
 }

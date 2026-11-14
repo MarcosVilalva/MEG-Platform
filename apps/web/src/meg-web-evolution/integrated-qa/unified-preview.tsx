@@ -126,7 +126,7 @@ function UnifiedQA(){
    periodLabel="Novembro de 2026" onNavigate={next=>go(next==='launches'?'launches':'home')} onLogout={()=>go('login')}>
    {screen==='launches'
     ? <LaunchesStage09 data={homeP0QaPreviewFixture} mode="live" periodMonth="2026-11"
-      userId="qa-unified-prism" exportUserName="Usuário fictício QA" qaActions
+      userId="qa-unified-prism" exportUserName="Usuário fictício QA" qaActions qaBatchCatalogs={qaCatalogs}
       onQaEdit={row=>{setNotice('');setEditTarget(row);setOverlay('edit');}}
       onQaDuplicate={row=>{setNotice('');setDuplicateTarget(row);setOverlay('duplicate');}}
       onQaNotice={setNotice}
