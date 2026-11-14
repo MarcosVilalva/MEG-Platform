@@ -50,7 +50,7 @@ assert.doesNotMatch(live,/homeP0QaPreviewFixture|QA_EDIT_EXPENSE_SNAPSHOT/);
 assert.match(live,/VITE_MEG_STAGE10_REAL_WRITE_ENABLED/);
 assert.match(live,/stage10RealMutationGate/);
 assert.match(live,/Number\.isFinite\(event\.enteredAmount\)/);
-assert.match(live,/amountDisplay:money\.format\(event\.enteredAmount\)/);
+assert.match(live,/amountDisplay:money\.format\(event\.enteredAmount\?\?Number\.NaN\)/);
 assert.doesNotMatch(live,/Math\.abs\(row\.signedAmount\)/);
 
 assert.match(live,/saveEnabled=\{writeEnabled&&!saving\}/);
