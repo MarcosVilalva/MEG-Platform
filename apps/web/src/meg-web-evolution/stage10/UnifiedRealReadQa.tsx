@@ -104,16 +104,18 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
   }
   savingRef.current=true;setSaving(true);setNotice('');
   try{
-   const command=kind==='create'
-    ?prepareStage10ExpenseCreate(draft,data.catalogs)
-    :prepareStage10ExpenseUpdate(draft,data.catalogs,
-      data.events.find(item=>item.id===edit?.id)!);
-   const fingerprint=JSON.stringify({kind,editId:edit?.id??null,command});
+   const fingerprint=JSON.stringify({kind,editId:edit?.id??null,draft});
    if(operationRef.current?.fingerprint!==fingerprint)
     operationRef.current={fingerprint,operationId:crypto.randomUUID()};
    const operationId=operationRef.current.operationId;
-   if(kind==='create')await financeClient.createEvent({...command,operationId});
-   else await financeClient.bulkUpdateEvents({...command,operationId});
+   if(kind==='create'){
+    const command=prepareStage10ExpenseCreate(draft,data.catalogs);
+    await financeClient.createEvent({...command,operationId});
+   }else{
+    const event=data.events.find(item=>item.id===edit?.id);
+    const command=prepareStage10ExpenseUpdate(draft,data.catalogs,event!);
+    await financeClient.bulkUpdateEvents({...command,operationId});
+   }
    operationRef.current=null;
    setOverlay(null);setEdit(null);setDuplicate(null);
    setNotice(kind==='create'?'Lancamento criado pela API financeira.':'Alteracoes registradas pela API financeira.');
