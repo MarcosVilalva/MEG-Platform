@@ -107,7 +107,7 @@ try{
   {expiresIn:'-10s'});
  const expiredResponse=await get(expiredToken);
  assert.equal(expiredResponse.statusCode,401,'token expirado deve ser recusado');
- const invalidRole=await get(server.jwt.sign({sub:'not-authorized-role',role:'UNKNOWN',email:'unknown@example.invalid'}));
+ const invalidRole=await get(server.jwt.sign({sub:'not-authorized-role',role:'UNKNOWN' as UserRole,email:'unknown@example.invalid'}));
  assert.equal(invalidRole.statusCode,403,'role desconhecida deve ser recusada');
 
  const invalidMonth=await get(tokenA,'/finance/stage10-readonly/snapshot?month=2026-13');
