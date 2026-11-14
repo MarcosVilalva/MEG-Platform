@@ -69,3 +69,22 @@ Depois acrescentamos testes de **alteração direta de sourcePayload** e contrat
 ## 7. Decisão técnica específica desta PR
 
 **GO técnico sintético para o candidato e seus limites; NO-GO para ativação produtiva.** Flag opt-in ausente por padrão, testes de isolamento multiworkspace e drift PASS, memória Free simulada por contêiner real PASS no volume homologado de 3.630. Sem merge nem deploy, sem atualização de `main`, Android, Web ou banco real. A PR deve permanecer Draft até gates de DR, #691, autorização de deployment e análise de custo CPU/IO/hit rate reais.
+
+
+## 8. Teste adicional de rota Fastify e resolução real de workspace (14/11/2026)
+
+Adicionado `apps/api/src/modules/app-state/stage09-get-auth-route-pg17.test.ts` e etapa ao workflow isolado, usando PostgreSQL 17 efêmero. É teste da **rota real Fastify `GET /app-state`**, com preHandler de autenticação **simulado e declarado como simulado**, mas resolução/autorização de membership pelo serviço e banco **reais** do MEG.
+
+**Evidência:** [PG17 #43587267945](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587267945): **SUCCESS**, commit de código `c9d4bab92d7c09e8559aa1830a7308ad0b421b4e`. [Platform CI #43587267975](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587267975): **SUCCESS** no mesmo SHA.
+
+- Sem credencial e com token fictício desconhecido: HTTP 401, sem chamada de resolver workspace.
+- Proprietário do workspace A: HTTP 200, revisão/estado/metadata e `integrity.reconciled=true`.
+- Segundo GET do proprietário A com cache: contrato JSON idêntico.
+- Usuário VIEWER com membership ativa de A: HTTP 200 para o mesmo workspace, JSON idêntico.
+- Proprietário B com workspace B distinto: HTTP 200, sem exposição do estado privado de A.
+- Troca B → A: resultado A idêntico, com despejo de cache respeitado.
+- Feature flag ausente: rota original devolveu contrato JSON idêntico.
+
+**Limite do teste:** não usa JWT produtivo nem cobre falhas reais de credenciais, expirados ou middleware global; a autenticação é simulada apenas para comprovar a sequência de preHandlers e a resolução do workspace em rota real. Não equivale a homologação de acesso real em staging. Nenhuma transação financeira ou segredo real.
+
+**Estado:** a melhoria permanece Draft e desligada por padrão, sem merge/deploy. Continuam bloqueadores de build produtivo (#691), backup/DR e comprovação de Egress faturado.
