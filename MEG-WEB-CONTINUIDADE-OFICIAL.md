@@ -2128,3 +2128,72 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
 - **Limites:** foram observados tres cold starts sequenciais, nao concorrencia multi-instancia, timers de 6h/15min (apenas registrados), todas as rotas/mutacoes, estado comercial em todos os cenarios, falhas transitorias HTTP, provedores gerenciados, dados reais ou rollback produtivo. Nao reproduzir alta concorrencia ou ambiente externo sem plano de isolamento. O teste nao substitui a aprovacao de semantica da autoridade financeira.
 - **Estado operacional:** #666 Draft, #692 Draft, #691 P0 OPEN; #674, #676 e #690 preservadas OPEN. Build produtivo Render com rotinas DB antigas continua pendente, sem Blueprint sync, merge, deploy ou troca de configuracao. DR Supabase Gate 0 PASS previo, Gate 1 PARCIAL por HTTP 402 e Auth/Storage/egress nao comprovados, Gates 2-4 NO-GO. Android, Web homologada, bases produtivas e WSL, Supabase, Render, Vault/age, backup e valores reais inalterados. Nenhum custo, upgrade, restauracao remota ou acao destrutiva.
 - **Proximo passo preciso:** antes de mudar a cadeia de startup, explicitar a decisao funcional para LEGADO (ativacao automatica intencional vs fallback conservador) e o tratamento de ROLLBACK no status do runtime; entao executar caracterizacao mais profunda de cold start concorrente e timers em PG17 efemero, sem modificar regras financeiras antecipadamente. Exigir verificacao terminal dos checks dos SHAs documentais e manter bloqueio produtivo #691, Gate 1 parcial e Gates 2-4 NO-GO.
+
+
+## 14/11/2026 | Etapa 09: concorrencia HTTP real e callbacks de 15min/6h no PG17 efemero
+
+- **Escopo exclusivo da Etapa 09:** continuidade do checkpoint anterior, com
+  `docs/MEG-WEB-FINANCIAL-AUTHORITY.md` lido na branch #666. PR #666
+  `stage09/backup-recovery-kit-20261110` Draft; PR #692
+  `safety/stage09-render-build-non-destructive-20261114` Draft.
+  Nenhuma mudança na autoridade financeira nem em `server.ts`.
+- **Nova caracterizacao:** criados, somente na PR #692,
+  `scripts/meg-stage09-startup-timer-probe.mjs` (instrumentacao IPC
+  fail-closed de callbacks reais de 15min e 6h, sem alterar os intervalos
+  produtivos) e
+  `scripts/meg-stage09-render-startup-concurrent-pg17-synthetic.test.ts`;
+  workflow `.github/workflows/meg-stage09-render-startup-pg17.yml` ajustado.
+  Dois processos Fastify reais de `server.ts` compartilham um
+  PostgreSQL17 Docker efemero com usuario, workspace, conta a pagar,
+  fatura, cartao, Budget e eventos exclusivamente ficticios.
+- **Resultados:** duas instancias inicializaram `normalized-primary`
+  conciliado, preservando snapshot financeiro. Uma divergencia de
+  `FinancialEvent` criada intencionalmente na fixture foi detectada pelo
+  callback real de 15min: instancia auditora passou a
+  `financialReady=false`; outra instancia permaneceu `true` ate sua
+  propria auditoria, porque o status de normalizacao e **por processo**.
+  Restaurado o valor ficticio e repetida a auditoria, o status recuperou
+  `true`, sem recalculo ou reparo silencioso de FinancialEvent/AppState.
+  Dois callbacks de manutencao de 6h executados simultaneamente geraram
+  somente **um** Payable ficticio recorrente de R$ 43,27 e repeticao
+  idempotente. Nenhuma duplicacao ou falha de writer nesse cenario.
+- **Evidencia e falha preservada:** primeiro teste
+  [PG17 #43645378346](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43645378346)
+  falhou por comparacao de string Decimal `30.4` vs `30.40` no proprio
+  teste, sem divergencia monetaria; corrigido `toFixed(2)` somente na
+  assercao. SHA tecnico aprovado
+  `898fca08f22ac675393ad282eab92b7267e85fb1`;
+  [PG17 #43645480208](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43645480208)
+  `SUCCESS`, log `PG17_REAL_HTTP_CONCURRENT_AND_TIMERS_PASS`;
+  [build seguro #43645480241](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43645480241)
+  `SUCCESS`.
+- **Runbook da #692** atualizado no commit
+  `664a25a2f3545a699d091592bc9657619f2d8fb5`;
+  verificar separadamente a CI desse SHA documental.
+  **Nao confundir** disparo instrumentado do callback real com
+  teste por seis horas, agendamento de longo prazo, resistencia a perda
+  de conexao ou corrida com muitas instancias.
+- **Supabase read-only:** `get_project` do sandbox
+  `oxwmqbzeuiibdlkcbjzv` repetiu `ACTIVE_HEALTHY`, PG17.11;
+  isto nao revela providers Auth, SMTP/SMS, politica Storage ou isolamento
+  de egress. Gate 0 PASS anterior, Gate 1 **PARCIAL**, Gates 2-4
+  **NO-GO**. Nao houve teste de sessao/upload/restore, nenhum SQL
+  remoto, custos ou mudanca de configuracao.
+- **Bloqueios reais:** issue #691 permanece P0/OPEN, buildCommand
+  produtivo Render ainda usa comandos de banco potencialmente
+  destrutivos; plano seguro permanece candidato Draft, nao implantado.
+  Autoridade financeira nao aprovou ainda nova semantica de
+  `reconcile -> activate` para LEGADO e de status/runtime sob
+  rollback e multi-instancia. #674, #676 e #690 preservadas.
+  Nenhum merge/deploy/Blueprint, Supabase produtivo/sandbox alterado,
+  Android, Web homologada, WSL, Vault/age, backups e dados reais intocados.
+- **Proximo passo exato:** confirmar checks do SHA documental #692
+  e deste checkpoint #666 e registrar status sem converter
+  `SKIPPED` em `SUCCESS`. Para fechar os gates ainda exigem:
+  (1) decisao expressa sobre semantica de startup e health por processo;
+  (2) evidencias autenticadas e saneadas do Gate 1 Supabase
+  Auth/Storage/integrações/egress; (3) liberacao **separada** de
+  ensaios de Gate 2/3/4 e eventual janela de Render, apos isolar
+  comunicacoes, sem custo adicional e sem acesso a dados reais.
+  Nao declarar Etapa 09 concluida ou producao segura enquanto houver
+  bloqueios materiais.
