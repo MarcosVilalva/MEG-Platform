@@ -84,6 +84,11 @@ try{
  assert.equal(claims.sid,sessionId);
  assert.equal(claims.wid,workspaceId);
  assert.equal(body.expiresAt,claims.exp);
+ const originalAccess=app.jwt.verify<{exp:number}>(bearer);
+ assert.ok(claims.exp<=originalAccess.exp,'QA nunca expira depois do access HMAC');
+ assert.ok(claims.exp<=Math.floor(session.expiresAt.getTime()/1000),
+  'QA nunca expira depois da AuthSession');
+ assert.ok(claims.exp-claims.iat<=120,'QA tem TTL curto');
  assert.equal(await prisma.authSession.count({where:{userId:ownerId}}),countBefore,
   'Troca nao pode consumir ou recriar sessao');
  assert.equal((await post('invalid.jwt.token')).statusCode,401,'HMAC sem assinatura');
