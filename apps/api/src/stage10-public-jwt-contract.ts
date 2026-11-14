@@ -6,7 +6,7 @@ import {createPublicKey,verify as verifySignature} from 'node:crypto';
  * Sem acesso a JWT_SECRET, banco, API real, filesystem ou rede.
  */
 export type Stage10PublicClaims={
- sub:string;aud:string;iss:string;scope:'stage10:finance:read';
+ sub:string;sid:string;aud:string;iss:string;scope:'stage10:finance:read';
  role:'ADMIN'|'MANAGER'|'OPERATOR'|'VIEWER';iat:number;exp:number;nbf?:number;
 };
 const base64Url=/^[A-Za-z0-9_-]+$/;
@@ -54,6 +54,7 @@ export function verifyStage10PublicJwt(
  const claims:Record<string,unknown>=record(body)?body:fail();
  if(claims.iss!==expected.issuer||claims.aud!==expected.audience||
   claims.scope!=='stage10:finance:read'||!claimString(claims.sub,256)||
+  !claimString(claims.sid,256)||
   !['ADMIN','MANAGER','OPERATOR','VIEWER'].includes(String(claims.role)))fail();
  const now=expected.nowSeconds??Math.floor(Date.now()/1000);
  if(!Number.isSafeInteger(now)||!Number.isSafeInteger(claims.exp)||

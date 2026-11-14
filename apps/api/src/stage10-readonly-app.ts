@@ -4,7 +4,7 @@ import type {UserRole} from '@meg/database';
 import type {FastifyReply,FastifyRequest} from 'fastify';
 import {assertStage10PublicVerificationKey,verifyStage10PublicJwt} from './stage10-public-jwt-contract';
 import {registerStage10ReadOnlyRoutes} from './modules/finance/stage10-readonly-routes';
-import {withStage10ReadOnlyWorkspace} from './modules/finance/stage10-readonly-workspace';
+import {withStage10ReadOnlySessionWorkspace} from './modules/finance/stage10-readonly-workspace';
 
 /**
  * Etapa 10: API de leitura isolada. NAO importa server.ts, authRoutes ou
@@ -45,6 +45,7 @@ export async function createStage10ReadOnlyApp(
     issuer:auth.issuer,audience:auth.audience,
    });
    request.user={sub:claims.sub,role:claims.role,email:''};
+   (request as FastifyRequest & {stage10SessionId?:string}).stage10SessionId=claims.sid;
   }catch{
    return reply.status(401).send({error:'UNAUTHORIZED'});
   }
@@ -65,7 +66,8 @@ export async function createStage10ReadOnlyApp(
  app.get('/auth/me',{preHandler:app.authenticate},async(request,reply)=>{
   reply.header('Cache-Control','private, no-store');
   try{
-   return await withStage10ReadOnlyWorkspace(request.user.sub,async(tx,scope)=>{
+   return await withStage10ReadOnlySessionWorkspace(request.user.sub,
+    (request as FastifyRequest & {stage10SessionId?:string}).stage10SessionId??'',async(tx,scope)=>{
     const user=await tx.user.findUnique({
      where:{id:scope.actorId},
      select:{id:true,name:true,email:true,phone:true,role:true,status:true,isActive:true},

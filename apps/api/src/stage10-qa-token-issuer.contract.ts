@@ -7,6 +7,7 @@ import {createPrivateKey,sign as rsaSign} from 'node:crypto';
  */
 export type Stage10IssueInput={
  sub:string;
+ sessionId:string;
  role:'ADMIN'|'MANAGER'|'OPERATOR'|'VIEWER';
 };
 export type Stage10IssuerConfig={
@@ -24,6 +25,7 @@ export function issueStage10QaReadToken(
 ):string{
  const fail=():never=>{throw new Error('STAGE10_QA_ISSUER_INVALID');};
  if(!identity||!requiredString(identity.sub,256)||
+  !requiredString(identity.sessionId,256)||
   !['ADMIN','MANAGER','OPERATOR','VIEWER'].includes(identity.role)||
   !settings||!requiredString(settings.issuer,256)||
   !requiredString(settings.audience,256)||
@@ -40,7 +42,7 @@ export function issueStage10QaReadToken(
    (privateKey.asymmetricKeyDetails?.modulusLength??0)<2048)fail();
  }catch{return fail();}
  const claims={
-  sub:identity.sub,role:identity.role,iss:settings.issuer,
+  sub:identity.sub,sid:identity.sessionId,role:identity.role,iss:settings.issuer,
   aud:settings.audience,scope:'stage10:finance:read' as const,
   iat:settings.nowSeconds,nbf:settings.nowSeconds,
   exp:settings.nowSeconds+settings.ttlSeconds,

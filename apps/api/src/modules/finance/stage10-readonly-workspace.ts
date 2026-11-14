@@ -40,3 +40,24 @@ export async function withStage10ReadOnlyWorkspace<T>(
 export function resolveStage10ReadOnlyWorkspace(actorId:string){
  return withStage10ReadOnlyWorkspace(actorId,async(_tx,scope)=>scope);
 }
+
+/** Verifica sessao e workspace no MESMO snapshot PostgreSQL READ ONLY.
+ * Uma nova leitura recusa token QA com sessao revogada, expirada ou de outro usuario.
+ * Nao consome token nem modifica refresh sessions.
+ */
+export async function withStage10ReadOnlySessionWorkspace<T>(
+ actorId:string,sessionId:string,
+ read:(tx:Prisma.TransactionClient,scope:Stage10ReadOnlyScope)=>Promise<T>,
+):Promise<T>{
+ if(typeof sessionId!=='string'||!sessionId.trim()||sessionId.length>256)
+  throw new Error('STAGE10_READ_ACCESS_DENIED');
+ return withStage10ReadOnlyWorkspace(actorId,async(tx,scope)=>{
+  const session=await tx.authSession.findUnique({
+   where:{id:sessionId},select:{userId:true,expiresAt:true,revokedAt:true},
+  });
+  if(!session||session.userId!==actorId||session.revokedAt!==null||
+    session.expiresAt.getTime()<=Date.now())
+    throw new Error('STAGE10_READ_ACCESS_DENIED');
+  return read(tx,scope);
+ });
+}

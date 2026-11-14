@@ -1,7 +1,7 @@
 import type {FastifyInstance} from 'fastify';
 import {z} from 'zod';
 import {getCanonicalFinancialSummary,getCanonicalFinancialCashflow} from './read-model';
-import {withStage10ReadOnlyWorkspace} from './stage10-readonly-workspace';
+import {withStage10ReadOnlySessionWorkspace} from './stage10-readonly-workspace';
 import {stage10HistoricLabels} from './stage10-source-details';
 
 /**
@@ -21,7 +21,8 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
   const parsed=monthSchema.safeParse(request.query);
   if(!parsed.success)return reply.code(400).send({error:'INVALID_STAGE10_READ_MONTH'});
   reply.header('Cache-Control','private, no-store');
-  return withStage10ReadOnlyWorkspace(request.user.sub,async(tx,scope)=>{
+  return withStage10ReadOnlySessionWorkspace(request.user.sub,
+   (request as typeof request & {stage10SessionId?:string}).stage10SessionId??'',async(tx,scope)=>{
    const where={userId:scope.ownerId,workspaceId:scope.workspaceId,archivedAt:null};
    const total=await tx.financialEvent.count({where});
    // Os read models canonicos ainda agregam por userId. So podem ser

@@ -25,11 +25,12 @@ const otherRsa=generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{
 const jwtConfig={publicKeyPem:rsa.publicKey,issuer,audience};
 const now=Math.floor(Date.now()/1000);
 function signToken(sub:string,role:string='VIEWER',options:{
- exp?:number;iat?:number;scope?:string;aud?:string;iss?:string;
+ exp?:number;iat?:number;scope?:string;aud?:string;iss?:string;sid?:string;
  privateKey?:string;alg?:string;
 }={}){
  const header={alg:options.alg||'RS256',typ:'JWT'};
- const payload={sub,role,iss:options.iss||issuer,aud:options.aud||audience,
+ const payload={sub,sid:options.sid??sessions.get(sub),role,
+  iss:options.iss||issuer,aud:options.aud||audience,
   scope:options.scope||'stage10:finance:read',iat:options.iat??now,
   exp:options.exp??now+300};
  const a=Buffer.from(JSON.stringify(header)).toString('base64url');
@@ -51,6 +52,15 @@ const suffix='stage10-'+process.pid;
 const accountId='acct-'+suffix;
 const secondAccountId='acct-b-'+suffix;
 let ownerId='',otherId='',workspaceId='',otherWorkspaceId='';
+const sessions=new Map<string,string>();
+async function makeSession(userId:string){
+ const session=await prisma.authSession.create({data:{
+  userId,tokenHash:'stage10-synthetic-'+suffix+'-'+userId,
+  expiresAt:new Date(Date.now()+3600000),
+ }});
+ sessions.set(userId,session.id);
+ return session;
+}
 try{
  await server.ready();
  const health=await server.inject({method:'GET',url:'/health'});
@@ -79,6 +89,8 @@ try{
   name:'Fixture Workspace B',slug:suffix+'-b',ownerId:otherId,
  }});
  workspaceId=workspace.id;otherWorkspaceId=otherWorkspace.id;
+ const ownerSession=await makeSession(ownerId);
+ const otherSession=await makeSession(otherId);
  await prisma.workspaceMember.createMany({data:[
   {workspaceId,userId:ownerId,role:UserRole.ADMIN,status:UserStatus.ACTIVE,isActive:true},
   {workspaceId:otherWorkspaceId,userId:otherId,role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:true},
@@ -129,6 +141,10 @@ try{
  assert.notEqual(deniedPreflight.headers['access-control-allow-origin'],
   'https://other-origin.example.invalid','CORS nao pode autorizar origem divergente');
  const unauthenticated=await get();
+ assert.equal((await get(signToken(ownerId,'ADMIN',{sid:''}))).statusCode,401,
+  'token QA sem sid deve ser recusado');
+ assert.equal((await get(signToken(ownerId,'ADMIN',{sid:otherSession.id}))).statusCode,403,
+  'sessao pertence a outro usuario');
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
 
  const invalidSignature=await get(signToken(ownerId,'ADMIN',{privateKey:otherRsa.privateKey}));
@@ -175,6 +191,16 @@ try{
  assert.equal(payload.cashflow.month,'2026-11');
  assert.equal(response.headers['cache-control'],'private, no-store');
  assert.ok(!response.body.includes('Despesa sintetica B'));
+ // Um token QA ja emitido nao deve passar na proxima transacao apos logout.
+ await prisma.authSession.update({where:{id:ownerSession.id},
+  data:{revokedAt:new Date()}});
+ assert.equal((await get(tokenA)).statusCode,403,'sessao revogada bloqueia token QA');
+ await prisma.authSession.update({where:{id:ownerSession.id},
+  data:{revokedAt:null,expiresAt:new Date(Date.now()-1000)}});
+ assert.equal((await get(tokenA)).statusCode,403,'sessao expirada bloqueia QA');
+ await prisma.authSession.update({where:{id:ownerSession.id},
+  data:{expiresAt:new Date(Date.now()+3600000)}});
+ assert.equal((await get(tokenA)).statusCode,200,'sessao revalidada no banco');
 
  const foreignResponse=await get(tokenB);
  assert.equal(foreignResponse.statusCode,200,foreignResponse.body.slice(0,500));
@@ -194,6 +220,7 @@ try{
   workspaceId,userId:shared.id,role:UserRole.VIEWER,
   status:UserStatus.ACTIVE,isActive:true,
  }});
+ await makeSession(shared.id);
  const sharedToken=signToken(shared.id);
  const sharedMe=await server.inject({method:'GET',url:'/auth/me',headers:{authorization:'Bearer '+sharedToken}});
  assert.equal(sharedMe.statusCode,200);
@@ -213,6 +240,7 @@ try{
   name:'Fixture Without Membership',email:suffix+'-outsider@example.invalid',
   role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:true,
  }});
+ await makeSession(outsider.id);
  const outsiderResponse=await get(signToken(outsider.id));
  assert.equal(outsiderResponse.statusCode,403,'sem membership deve falhar fechado');
  assert.ok(!outsiderResponse.body.includes('Despesa sintetica A'));
@@ -232,6 +260,7 @@ try{
   name:'Fixture Inactive',email:suffix+'-inactive@example.invalid',
   role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:false,
  }});
+ await makeSession(inactive.id);
  const denied=await get(signToken(inactive.id));
  assert.equal(denied.statusCode,403,'ator inativo nao pode acessar dados');
  assert.ok(!denied.body.includes('Despesa sintetica A'));
