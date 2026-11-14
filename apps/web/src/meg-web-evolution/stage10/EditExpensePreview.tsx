@@ -26,11 +26,13 @@ export const QA_EDIT_EXPENSE_SNAPSHOT:EditExpenseSnapshot={
 /** Adaptador de LEITURA da prévia. Reaproveita exatamente o formulário homologado.
  * Não calcula saldo, parcelas, faturas ou permissões de edição do backend.
  */
-export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave,readOnly=false}:{
+export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave,onRequestSave,onRequestArchive,readOnly=false}:{
  snapshot:EditExpenseSnapshot;
  catalogs:ExpenseCatalogs;
  onBack:()=>void;
  onSimulatedSave?:()=>void;
+ onRequestSave?:(draft:ExpenseDraft)=>void;
+ onRequestArchive?:()=>void;
  readOnly?:boolean;
 }){
  const initialDraft=useMemo<ExpenseDraft>(()=>{
@@ -55,6 +57,8 @@ export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave,rea
  },[snapshot,catalogs]);
  if(snapshot.source!=='financial-event'||snapshot.financialScope!=='monetary'||snapshot.type!=='expense')return null;
  return <ExpenseForm mode="edit" initialDraft={initialDraft} catalogs={catalogs}
-  saveEnabled={!readOnly&&Boolean(onSimulatedSave)}
-  onRequestSave={readOnly?undefined:onSimulatedSave} onBack={onBack}/>;
+  dataMode={readOnly?'real-read':onRequestSave?'real-write':'demo'}
+  saveEnabled={!readOnly&&Boolean(onRequestSave||onSimulatedSave)}
+  onRequestSave={readOnly?undefined:onRequestSave??(onSimulatedSave?()=>onSimulatedSave():undefined)}
+  onRequestArchive={readOnly?undefined:onRequestArchive} onBack={onBack}/>;
 }

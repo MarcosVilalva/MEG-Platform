@@ -1,5 +1,6 @@
-import {useEffect,useState,type MouseEvent} from 'react';
-import {clearSession} from '../../app/auth-client';
+import {useEffect,useRef,useState,type MouseEvent} from 'react';
+import {clearSession,readSession} from '../../app/auth-client';
+import {financeClient} from '../../app/finance-client';
 import {LoginScreen} from '../auth/LoginScreen';
 import {CreateAccountScreen} from '../auth/CreateAccountScreen';
 import {RecoverPasswordScreen} from '../auth/RecoverPasswordScreen';
@@ -10,6 +11,7 @@ import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseDraft} from './ExpenseForm';
 import {EditExpensePreview,type EditExpenseSnapshot} from './EditExpensePreview';
 import type {QaLaunchTarget} from './LaunchActionsQa';
 import {loadStage10RealRead,type Stage10RealRead} from './real-data-read';
+import {prepareStage10ExpenseCreate,prepareStage10ExpenseUpdate,prepareStage10ExpenseArchive,stage10RealMutationGate} from './real-expense-mutation';
 
 type Screen='login'|'register'|'recover'|'home'|'launches';
 type Overlay='choice'|'expense'|'edit'|'duplicate'|null;
@@ -71,6 +73,17 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
  const [edit,setEdit]=useState<EditExpenseSnapshot|null>(null);
  const [duplicate,setDuplicate]=useState<ExpenseDraft|null>(null);
  const [notice,setNotice]=useState('');
+ const [saving,setSaving]=useState(false);
+ const savingRef=useRef(false);
+ const operationRef=useRef<{fingerprint:string;operationId:string}|null>(null);
+ const userRole=readSession()?.user.role;
+ // A flag so existe na build opt-in. Em QA normal e em producao fica off.
+ const writeEnabled=Boolean(enabled&&stage10RealMutationGate({
+  enabled:import.meta.env.VITE_MEG_STAGE10_REAL_WRITE_ENABLED,
+  apiOrigin:import.meta.env.VITE_API_URL,
+  expectedApiOrigin:import.meta.env.VITE_MEG_STAGE10_WRITE_CANONICAL_API_ORIGIN,
+  readOrigin:import.meta.env.VITE_MEG_STAGE10_READONLY_API_URL,
+ },typeof window==='undefined'?'':window.location.origin,userRole));
  const month=brazilMonth();
  useEffect(()=>{
   if(!enabled||!authenticated)return;
@@ -83,6 +96,55 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    .finally(()=>{if(!controller.signal.aborted)setLoading(false);});
   return()=>controller.abort();
  },[enabled,authenticated,revision,month]);
+ async function saveExpense(draft:ExpenseDraft,kind:'create'|'edit'){
+  if(savingRef.current)return;
+  const session=readSession();
+  if(!writeEnabled||!data||!session||session.user.id!==data.userId){
+   setNotice('Gravacao indisponivel nesta build. Nenhum dado foi alterado.');return;
+  }
+  savingRef.current=true;setSaving(true);setNotice('');
+  try{
+   const command=kind==='create'
+    ?prepareStage10ExpenseCreate(draft,data.catalogs)
+    :prepareStage10ExpenseUpdate(draft,data.catalogs,
+      data.events.find(item=>item.id===edit?.id)!);
+   const fingerprint=JSON.stringify({kind,editId:edit?.id??null,command});
+   if(operationRef.current?.fingerprint!==fingerprint)
+    operationRef.current={fingerprint,operationId:crypto.randomUUID()};
+   const operationId=operationRef.current.operationId;
+   if(kind==='create')await financeClient.createEvent({...command,operationId});
+   else await financeClient.bulkUpdateEvents({...command,operationId});
+   operationRef.current=null;
+   setOverlay(null);setEdit(null);setDuplicate(null);
+   setNotice(kind==='create'?'Lancamento criado pela API financeira.':'Alteracoes registradas pela API financeira.');
+   setRevision(n=>n+1);
+  }catch(cause){
+   setNotice('Nao foi possivel concluir a gravacao: '+(cause instanceof Error?cause.message:'erro desconhecido')+'. O historico nao foi alterado nesta tela.');
+  }finally{savingRef.current=false;setSaving(false);}
+ }
+ async function archiveExpense(){
+  if(savingRef.current)return;
+  const session=readSession();
+  if(!writeEnabled||!data||!edit||!session||session.user.id!==data.userId||
+    !['ADMIN','MANAGER'].includes(session.user.role)){
+   setNotice('Exclusao nao autorizada. Nenhum dado foi alterado.');return;
+  }
+  savingRef.current=true;setSaving(true);setNotice('');
+  try{
+   const event=data.events.find(item=>item.id===edit.id);
+   const command=prepareStage10ExpenseArchive(event!);
+   const fingerprint=JSON.stringify({kind:'archive',command});
+   if(operationRef.current?.fingerprint!==fingerprint)
+    operationRef.current={fingerprint,operationId:crypto.randomUUID()};
+   await financeClient.bulkArchiveEvents({...command,operationId:operationRef.current.operationId});
+   operationRef.current=null;
+   setOverlay(null);setEdit(null);
+   setNotice('Lancamento arquivado pela API financeira, com auditoria.');
+   setRevision(n=>n+1);
+  }catch(cause){
+   setNotice('Exclusao nao concluida: '+(cause instanceof Error?cause.message:'erro desconhecido')+'.');
+  }finally{savingRef.current=false;setSaving(false);}
+ }
  function navigate(next:Screen){setOverlay(null);setNotice('');setScreen(next);}
  function signOut(){clearSession();setAuthenticated(false);setData(null);setOverlay(null);navigate('login');}
  function openNew(){setOverlay('choice');setNotice('');}
@@ -153,14 +215,22 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    </section>
   </div>}
   {overlay==='expense'&&<ExpenseForm catalogs={data.catalogs} historySnapshot={data.history}
-   saveEnabled={false} onBack={()=>setOverlay('choice')}/>}
+   dataMode={writeEnabled?'real-write':'real-read'}
+   saveEnabled={writeEnabled&&!saving} onRequestSave={draft=>void saveExpense(draft,'create')}
+   onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&edit&&<EditExpensePreview snapshot={edit} catalogs={data.catalogs}
-   readOnly onBack={()=>{setOverlay(null);setEdit(null);}}/>}
+   readOnly={!writeEnabled||saving} onRequestSave={draft=>void saveExpense(draft,'edit')}
+   onRequestArchive={writeEnabled&&!saving&&['ADMIN','MANAGER'].includes(userRole||'')?
+    ()=>void archiveExpense():undefined}
+   onBack={()=>{setOverlay(null);setEdit(null);}}/>}
   {overlay==='duplicate'&&duplicate&&<ExpenseForm catalogs={data.catalogs} historySnapshot={data.history}
-   initialDraft={duplicate} saveEnabled={false} onBack={()=>{setOverlay(null);setDuplicate(null);}}/>}
+   dataMode={writeEnabled?'real-write':'real-read'}
+   initialDraft={duplicate} saveEnabled={writeEnabled&&!saving}
+   onRequestSave={draft=>void saveExpense(draft,'create')}
+   onBack={()=>{setOverlay(null);setDuplicate(null);}}/>}
   {notice&&<output className="meg-unified-notice" role="status">{notice}
    <button type="button" aria-label="Fechar aviso" onClick={()=>setNotice('')}>×</button>
   </output>}
-  <aside className="meg-unified-stamp" role="note">QA UNIFICADA · Dados reais autenticados · Somente leitura</aside>
+  <aside className="meg-unified-stamp" role="note">{writeEnabled?'QA UNIFICADA · Dados reais autenticados · Gravacao canonica':'QA UNIFICADA · Dados reais autenticados · Somente leitura'}</aside>
  </div>;
 }

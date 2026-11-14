@@ -43,6 +43,8 @@ export type FinancialEvent = {
   competence: string;
   amount: string | number;
   signedAmount: string | number;
+  /** Entrada original calculada exclusivamente pela autoridade financeira da API. */
+  enteredAmount?: number;
   notes?: string | null;
   accountId?: string | null;
   categoryId?: string | null;

@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {getCanonicalFinancialSummary,getCanonicalFinancialCashflow} from './read-model';
 import {withStage10ReadOnlySessionWorkspace} from './stage10-readonly-workspace';
 import {stage10HistoricLabels} from './stage10-source-details';
+import {enteredAmountFromStored} from './amount-sign';
 
 /**
  * Endpoint isolado da Etapa 10. SOMENTE GET e consulta em transação SQL
@@ -71,6 +72,7 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
     total,
     events:events.map(({importedRow,sourcePayload,...item})=>({
      ...item,
+     enteredAmount:enteredAmountFromStored(item.type,Number(item.signedAmount)),
      account:item.accountId?ownedAccounts.get(item.accountId)??null:null,
      category:item.categoryId?ownedCategories.get(item.categoryId)??null:null,
      paymentMethod:item.paymentMethodId?ownedMethods.get(item.paymentMethodId)??null:null,

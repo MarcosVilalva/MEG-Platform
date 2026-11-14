@@ -191,6 +191,7 @@ try{
  assert.equal(payload.total,1);
  assert.deepEqual(payload.events.map((e:{id:string})=>e.id),[original.id]);
  assert.equal(payload.events[0].paymentMethod.name,'Fixture PIX A');
+ assert.equal(payload.events[0].enteredAmount,10.5,'sinal da entrada vem da camada financeira');
  assert.equal(payload.events[0].sourceDetails.group,'Grupo historico');
  assert.equal(payload.events[0].sourceDetails.paymentMethod,'PIX historico');
  assert.deepEqual(payload.events[0].sourcePayload,{category:'Categoria antiga',paymentMethod:'PIX historico'});

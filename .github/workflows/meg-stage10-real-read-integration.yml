@@ -63,6 +63,8 @@ jobs:
           CORS_ORIGINS: https://qa-auth.example.invalid
           NODE_ENV: test
         run: npx tsx apps/api/src/modules/auth/stage10-qa-exchange-http.pg.test.ts
+      - name: Opt-in real expense commands fail-closed and typed to canonical writers
+        run: npx tsx apps/web/src/meg-web-evolution/stage10/real-expense-mutation.contract.test.ts
       - name: Typecheck Web integration
         run: npx tsc -p apps/web/tsconfig.json --noEmit
       - name: Install isolated Playwright

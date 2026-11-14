@@ -47,16 +47,21 @@ assert.match(bridge,/verocard/i);
 assert.doesNotMatch(bridge,/getSyncStatus|readHome|readSmartAuthorizedHistory|financeClient\.listEvents/);
 assert.doesNotMatch(bridge,/homeP0QaPreviewFixture|QA_EDIT_EXPENSE_SNAPSHOT/);
 assert.doesNotMatch(live,/homeP0QaPreviewFixture|QA_EDIT_EXPENSE_SNAPSHOT/);
-assert.match(live,/saveEnabled=\{false\}/);
+assert.match(live,/VITE_MEG_STAGE10_REAL_WRITE_ENABLED/);
+assert.match(live,/stage10RealMutationGate/);
+assert.match(live,/saveEnabled=\{writeEnabled&&!saving\}/);
+assert.match(live,/financeClient\.createEvent/);
+assert.match(live,/financeClient\.bulkUpdateEvents/);
+assert.match(live,/financeClient\.bulkArchiveEvents/);
 assert.match(live,/strictReferences:true/);
 assert.match(live,/setData\(null\)/);
 assert.match(live,/if\(!enabled\)return/);
 assert.match(editor,/snapshot\.strictReferences/);
 assert.match(editor,/a\.id===snapshot\.accountId/);
 assert.match(editor,/m\.id===snapshot\.paymentMethodId/);
-assert.match(editor,/saveEnabled=\{!readOnly&&Boolean\(onSimulatedSave\)\}/);
+assert.match(editor,/saveEnabled=\{!readOnly&&Boolean\(onRequestSave\|\|onSimulatedSave\)\}/);
 assert.match(live,/<EditExpensePreview snapshot=\{edit\} catalogs=\{data\.catalogs\}/);
-assert.match(live,/readOnly onBack=/);
+assert.match(live,/readOnly=\{!writeEnabled\|\|saving\}/);
 assert.match(operational,/type:accounts\.find\(account=>account\.id===id\)\?\.type/);
 // Transacao sem qualquer reparo de usuario/workspace e sem writer.
 assert.match(workspace,/SET TRANSACTION READ ONLY/);
@@ -109,7 +114,7 @@ assert.match(stage10Jwt,/claimString\(claims\.wid,256\)/);
 assert.match(stage10App,/stage10SessionId=claims\.sid/);
 assert.match(stage10App,/stage10WorkspaceId=claims\.wid/);
 // Proibir qualquer escritor financeiro no bridge, na tela e na rota.
-for(const source of [bridge,live,routes]){
+for(const source of [bridge,routes]){
  for(const writer of ['financeClient.createEvent','financeClient.updateEvent',
   'financeClient.bulkUpdateEvents','financeClient.archiveEvent',
   'financeClient.settleEvent','financeClient.createTransfer',
@@ -120,3 +125,7 @@ for(const source of [bridge,live,routes]){
 console.log('MEG_STAGE10_REAL_READ_AUTH_SNAPSHOT_READ_ONLY PASS');
 console.log('MEG_STAGE10_WORKSPACE_EXCLUSIVITY_AND_NO_MOCK_FALLBACK PASS');
 console.log('MEG_STAGE10_DEFAULT_QA_NO_NETWORK PASS');
+
+// Writers reais somente na origem canonica e com opt-in de build, nao no snapshot QA.
+assert.match(live,/writeEnabled\|\|!data/);
+assert.doesNotMatch(live,/financeClient\.createTransfer|financeClient\.createCardPurchase|financeClient\.createBenefitEvent/);

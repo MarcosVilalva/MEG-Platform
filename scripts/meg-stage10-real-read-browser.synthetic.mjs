@@ -17,7 +17,7 @@ const snapshot={
   id:'stage10-synthetic-event',userId:owner,workspaceId:workspace,
   description:'DESPESA SINTETICA PARA NAVEGADOR',type:'expense',status:'paid',
   date:month+'-10T12:00:00.000Z',competence:month,
-  amount:'12.50',signedAmount:'-12.50',accountId:'synthetic-account',
+  amount:'12.50',signedAmount:'-12.50',enteredAmount:12.5,accountId:'synthetic-account',
   categoryId:'synthetic-category',paymentMethodId:'synthetic-method',
   notes:'Dado ficticio, nunca exportado da base real',
  }],

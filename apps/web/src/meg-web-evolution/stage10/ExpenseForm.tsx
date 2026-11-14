@@ -27,8 +27,9 @@ export type InstallmentSchedule={
 export type ExpenseFormProps={
  catalogs:ExpenseCatalogs;historySnapshot?:HistorySnapshot;
  schedule?:InstallmentSchedule;
- onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;saveEnabled?:boolean;
+ onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;onRequestArchive?:()=>void;saveEnabled?:boolean;
  mode?:'create'|'edit';initialDraft?:ExpenseDraft;
+ dataMode?:'demo'|'real-read'|'real-write';
 };
 export const EMPTY_EXPENSE_DRAFT:ExpenseDraft={
  description:'',categoryId:'',accountId:'',paymentMethodId:'',
@@ -101,7 +102,7 @@ function EditCloseGlyph(){
   <path d="M5 5 19 19M19 5 5 19"/>
  </svg>;
 }
-export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft}:ExpenseFormProps){
+export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,onRequestArchive,saveEnabled=false,mode='create',initialDraft,dataMode='demo'}:ExpenseFormProps){
  const isEdit=mode==='edit';
  const [draft,setDraft]=useState<ExpenseDraft>(()=>initialDraft??EMPTY_EXPENSE_DRAFT);
  const [money,setMoney]=useState<BRLInput>(()=>initialDraft?.amountInput?brlFromPasted(initialDraft.amountInput):EMPTY_BRL_INPUT);
@@ -111,6 +112,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const [categoryPicker,setCategoryPicker]=useState(false);
  const [categoryPage,setCategoryPage]=useState(0);
  const [parcelModal,setParcelModal]=useState(false);
+ const [archiveConfirm,setArchiveConfirm]=useState(false);
  const [mobileStep,setMobileStep]=useState<'data'|'payment'|'summary'>('data');
  const [suggestionsOpen,setSuggestionsOpen]=useState(false);
  const [notesOpen,setNotesOpen]=useState(false);
@@ -199,12 +201,13 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  function moneyPaste(event:ClipboardEvent<HTMLInputElement>){event.preventDefault();changeMoney(brlFromPasted(event.clipboardData.getData('text')));}
  return <div className="meg-t10-expense-backdrop">
   <section ref={root} className={'meg-t10-expense'+(isEdit?' meg-t10-edit':'')} role="dialog" aria-modal="true" aria-labelledby={formId+'title'} data-testid={isEdit?'stage10-edit-preview':undefined}>
-   <OverlayKeys root={root} onClose={parcelModal?()=>setParcelModal(false):categoryPicker?()=>setCategoryPicker(false):onBack}/>
+   <OverlayKeys root={root} onClose={archiveConfirm?()=>setArchiveConfirm(false):parcelModal?()=>setParcelModal(false):categoryPicker?()=>setCategoryPicker(false):onBack}/>
    <header className="meg-t10-expense-header">
     {!isEdit&&<button type="button" className="meg-t10-expense-head-icon" aria-label="Voltar à escolha do tipo" onClick={onBack}><Icon name="chevronLeft"/></button>}
     <span className="meg-t10-expense-title"><h2 id={formId+'title'}>{isEdit?'Editar lançamento':'Novo lançamento'}</h2><small><span className="meg-t10-expense-type"><Icon name="chevronDown"/> DESPESA</span> {isEdit?'Revise os dados do lançamento.':'Registre sua movimentação com segurança.'}</small></span>
     <span className="meg-t10-expense-head-actions">
-     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={isEdit?'Simulação QA: não grava dados financeiros':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
+     {isEdit&&onRequestArchive&&<button type="button" className="meg-t10-expense-head-delete" aria-label="Excluir lançamento" onClick={()=>setArchiveConfirm(true)}>Excluir lançamento</button>}
+     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={dataMode==='demo'&&isEdit?'Simulação QA: não grava dados financeiros':isEdit?'Salvar alterações':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
      <button type="button" className="meg-t10-expense-head-icon" aria-label={isEdit?'Fechar edição':'Fechar formulário'} title={isEdit?'Descartar alterações e fechar':undefined} onClick={onBack}>{isEdit?<EditCloseGlyph/>:'×'}</button>
     </span>
    </header>
@@ -305,9 +308,23 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       {isCredit&&<div><dt>Cartão / parcelas</dt><dd>{nameOf(cards,draft.creditCardId)} · {draft.installmentsInput||'1'}x</dd></div>}
       {isCredit&&selectedCard&&<div><dt>Fecha / vence</dt><dd>{selectedCard.closingDay||'?' } / {selectedCard.dueDay||'?'}</dd></div>}
      </dl>
-     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> Prévia fictícia, sem operações financeiras.</div>
+     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> {dataMode==='demo'?'Prévia fictícia, sem operações financeiras.':dataMode==='real-read'?'Dados reais em consulta. Gravação desabilitada.':'A gravação será validada pela API financeira canônica.'}</div>
     </aside>
    </div>
+   {archiveConfirm&&<div className="meg-t10-expense-suboverlay">
+    <section className="meg-t10-expense-subdialog" role="alertdialog" aria-modal="true"
+     aria-labelledby={formId+'archive-title'} aria-describedby={formId+'archive-desc'}>
+     <header><h3 id={formId+'archive-title'}>Excluir lançamento?</h3></header>
+     <p id={formId+'archive-desc'}>Esta ação arquivará o registro financeiro pela API canônica. Confira a descrição e o valor antes de confirmar.</p>
+     <p><strong>{draft.description}</strong> · {requestedAmount?fmt.format(Number(requestedAmount)):'Valor não informado'}</p>
+     <footer>
+      <button type="button" onClick={()=>setArchiveConfirm(false)}>Cancelar</button>
+      <button type="button" className="meg-t10-expense-head-delete" onClick={()=>{
+       setArchiveConfirm(false);onRequestArchive?.();
+      }}>Confirmar exclusão</button>
+     </footer>
+    </section>
+   </div>}
    {categoryPicker&&<div className="meg-t10-expense-suboverlay"><section className="meg-t10-expense-subdialog" role="dialog" aria-modal="true" aria-label="Todas as categorias">
     <header><h3>Selecionar categoria</h3><button type="button" aria-label="Fechar categorias" onClick={()=>setCategoryPicker(false)}>×</button></header>
     <div className="meg-t10-expense-category-grid">{categories.slice(categoryPage*12,(categoryPage+1)*12).map(c=><button key={c.id} type="button" aria-pressed={draft.categoryId===c.id} onClick={()=>chooseCategory(c.id)}><CategoryGlyph name={c.name}/>{c.name}</button>)}</div>

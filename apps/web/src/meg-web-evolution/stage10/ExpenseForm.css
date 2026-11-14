@@ -191,3 +191,16 @@
 .meg-t10-expense-primary>.meg-t10-expense-notes{margin-top:2px}
 .meg-t10-expense-primary>.meg-t10-expense-notes textarea{height:76px;min-height:55px}
 }
+
+/* Exclusao financeira real, visivel apenas com writer e permissao.
+   Usa o mesmo modal de confirmacao da Etapa 10. */
+.meg-t10-expense-head-delete{
+ min-height:44px;padding:0 13px;border:1px solid #ff7786;
+ border-radius:11px;background:#451a2766;color:#ffd8df;
+ font:inherit;font-size:.76rem;font-weight:750;cursor:pointer;
+}
+.meg-t10-expense-head-delete:focus-visible{outline:2px solid #ffb1bd;outline-offset:3px}
+@media(max-width:639px){
+ .meg-t10-edit .meg-t10-expense-header{flex-wrap:wrap}
+ .meg-t10-edit .meg-t10-expense-head-actions{width:100%;justify-content:flex-end;flex-wrap:wrap;margin-left:0}
+}
