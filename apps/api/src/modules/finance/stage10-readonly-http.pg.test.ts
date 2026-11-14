@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import {isAllowedOrigin} from '../../cors';
-import {prisma,UserRole,UserStatus} from '@meg/database';
-import {registerAuth} from '../../plugins/auth';
-import {registerStage10ReadOnlyRoutes} from './stage10-readonly-routes';
+import {prisma,PrismaClient,UserRole,UserStatus} from '@meg/database';
+import {createStage10ReadOnlyApp} from '../../stage10-readonly-app';
+import {assertStage10ReadOnlyDatabaseRole} from '../../stage10-readonly-db-guard';
 import {withStage10ReadOnlyWorkspace} from './stage10-readonly-workspace';
 
 /**
@@ -17,23 +14,23 @@ if(process.env.MEG_STAGE10_SYNTHETIC_DB!=='true'
  || !/^postgresql:\/\/meg_test:meg_test@127\.0\.0\.1:5439\/meg_stage10_test(?:\?|$)/.test(dbUrl))
  throw new Error('STAGE10_SYNTHETIC_DATABASE_REQUIRED');
 
-const server=Fastify({logger:false});
+const previewOrigin='https://meg-stage08-alerta-prism-pr685.onrender.com';
+const server=await createStage10ReadOnlyApp(previewOrigin);
 const suffix='stage10-'+process.pid;
 const accountId='acct-'+suffix;
 const secondAccountId='acct-b-'+suffix;
 let ownerId='',otherId='',workspaceId='',otherWorkspaceId='';
 try{
- const previewOrigin='https://meg-stage08-alerta-prism-pr685.onrender.com';
- await server.register(cors,{
-  origin(origin,callback){
-   callback(isAllowedOrigin(origin,[previewOrigin])?null:new Error('Origin not allowed by CORS'),
-    isAllowedOrigin(origin,[previewOrigin]));
-  },
-  credentials:true,
- });
- await registerAuth(server);
- await server.register(registerStage10ReadOnlyRoutes,{prefix:'/finance'});
  await server.ready();
+ const health=await server.inject({method:'GET',url:'/health'});
+ assert.equal(health.statusCode,200);
+ assert.equal(health.json().mode,'stage10-readonly');
+ for(const url of ['/auth/login','/auth/refresh','/auth/register','/finance/events','/finance/transfers']){
+  const forbidden=await server.inject({method:'POST',url,
+   payload:{email:'test@example.invalid',password:'synthetic-password'}});
+  assert.equal(forbidden.statusCode,404,'Rota de escrita nao registrada: '+url);
+ }
+
 
  const owner=await prisma.user.create({data:{
   name:'Fixture Owner A',email:suffix+'-a@example.invalid',
@@ -104,6 +101,10 @@ try{
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
  const invalidMonth=await get(tokenA,'/finance/stage10-readonly/snapshot?month=2026-13');
  assert.equal(invalidMonth.statusCode,400,'periodo invalido deve ser recusado');
+ const me=await server.inject({method:'GET',url:'/auth/me',headers:{authorization:'Bearer '+tokenA}});
+ assert.equal(me.statusCode,200);
+ assert.equal(me.json().user.id,ownerId);
+ assert.ok(!me.body.includes('passwordHash'));
  const response=await get(tokenA);
  assert.equal(response.statusCode,200,response.body.slice(0,500));
  const payload=response.json();
@@ -147,6 +148,9 @@ try{
   status:UserStatus.ACTIVE,isActive:true,
  }});
  const sharedToken=server.jwt.sign({sub:shared.id,role:'VIEWER',email:shared.email});
+ const sharedMe=await server.inject({method:'GET',url:'/auth/me',headers:{authorization:'Bearer '+sharedToken}});
+ assert.equal(sharedMe.statusCode,200);
+ assert.equal(sharedMe.json().user.id,shared.id);
  const sharedResponse=await get(sharedToken);
  assert.equal(sharedResponse.statusCode,200,sharedResponse.body.slice(0,500));
  assert.equal(sharedResponse.json().actorId,shared.id);
@@ -217,6 +221,26 @@ try{
  assert.ok(!capped.body.includes('Fixture volume'));
  assert.ok(!capped.body.includes('summary'));
 
+ // Provar a barreira de permissao do banco sem qualquer conexao real.
+ // A credencial de teste e descartada junto com o container PostgreSQL do CI.
+ await assert.rejects(assertStage10ReadOnlyDatabaseRole(prisma),
+  /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/);
+ await prisma.$executeRawUnsafe("CREATE ROLE meg_stage10_ci_reader LOGIN PASSWORD 'meg_stage10_ci_reader'");
+ await prisma.$executeRawUnsafe('GRANT CONNECT ON DATABASE meg_stage10_test TO meg_stage10_ci_reader');
+ await prisma.$executeRawUnsafe('GRANT USAGE ON SCHEMA public TO meg_stage10_ci_reader');
+ await prisma.$executeRawUnsafe('GRANT SELECT ON ALL TABLES IN SCHEMA public TO meg_stage10_ci_reader');
+ const reader=new PrismaClient({datasources:{db:{
+  url:'postgresql://meg_stage10_ci_reader:meg_stage10_ci_reader@127.0.0.1:5439/meg_stage10_test?schema=public',
+ }}});
+ try{
+  await assertStage10ReadOnlyDatabaseRole(reader);
+  assert.equal(await reader.financialEvent.count({where:{workspaceId}}),5001);
+  await assert.rejects(reader.account.create({data:{
+   userId:ownerId,name:'Role cannot insert',type:'checking',
+  }}),'Role sem INSERT deve impedir escrita mesmo fora da transacao');
+ }finally{
+  await reader.$disconnect();
+ }
  console.log('STAGE10_POSTGRES_JWT_HTTP_READ_ONLY_ISOLATION PASS');
 }finally{
  await server.close();
