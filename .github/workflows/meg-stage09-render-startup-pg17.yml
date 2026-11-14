@@ -10,6 +10,8 @@ on:
       - 'scripts/meg-stage09-render-startup-concurrent-pg17-synthetic.test.ts'
       - 'scripts/meg-stage09-startup-timer-probe.mjs'
       - 'scripts/meg-stage09-legacy-repair-flag-pg17.test.ts'
+      - 'apps/api/src/config.ts'
+      - 'scripts/meg-stage09-render-startup-writers.contract.test.mjs'
       - '.github/workflows/meg-stage09-render-startup-pg17.yml'
       - 'docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md'
 
