@@ -146,6 +146,14 @@ try{
    assert.equal(await edit.getByLabel('Data original').isDisabled(),true,'Data bloqueada até contrato');
    assert.equal(await edit.getByLabel('Conta original').isDisabled(),true,'Conta de origem bloqueada');
    assert.equal(await edit.getByLabel('Forma de pagamento original').isDisabled(),true,'Método bloqueado');
+   assert.equal(await edit.getByLabel('Status original').textContent(),'Paga','Status registrado é informativo');
+   assert.equal(await edit.locator('.meg-t10-expense-category').count(),0,
+    'Editor não deve apresentar opções de categoria indisponíveis como botões');
+   assert.equal(await edit.getByRole('button',{name:'Paga',exact:true}).count(),0,
+    'Status não deve aparentar ser botão editável');
+   assert.equal(await edit.getByRole('button',{name:'Pendente',exact:true}).count(),0);
+   assert.equal(await edit.locator('button[aria-label="Fechar edição"] svg[data-meg-prism="icon-2"]').count(),1,
+    'Fechar edição deve usar SVG Prism padronizado');
    assert.equal(await edit.getByLabel('Descrição da edição').inputValue(),'COMPRA DE MATERIAL PARA CASA');
    await edit.getByLabel('Descrição da edição').fill('observação de teste');
    assert.equal(await edit.getByLabel('Descrição da edição').inputValue(),'OBSERVAÇÃO DE TESTE','Descrição em maiúsculas');
@@ -156,6 +164,22 @@ try{
    assert.equal(await edit.getByLabel('Observações da edição').inputValue(),'AJUSTE FICTÍCIO');
    if(width<=1024)await edit.getByRole('button',{name:'Resumo',exact:true}).click();
    assert.match(await edit.getByLabel('Resumo da edição').innerText(),/OBSERVAÇÃO DE TESTE/);
+   const editLayout=await edit.evaluate(el=>{
+    const modal=el.getBoundingClientRect();
+    const grid=el.querySelector('.meg-t10-expense-grid').getBoundingClientRect();
+    const panels=Array.from(el.querySelectorAll('.meg-t10-expense-panel')).map(node=>node.getBoundingClientRect());
+    return {height:modal.height,emptyBottom:modal.bottom-grid.bottom,
+      widths:panels.map(p=>p.width),bottoms:panels.map(p=>p.bottom),
+      gridBottom:grid.bottom,gridTop:grid.top};
+   });
+   if(width>1024){
+    assert.ok(editLayout.emptyBottom>=-2&&editLayout.emptyBottom<=6,
+     'Editor desktop não deve reservar espaço vazio abaixo do grid '+width+': '+JSON.stringify(editLayout));
+    assert.ok(editLayout.height<=height-10,'Editor deve caber na janela '+width);
+    assert.ok(editLayout.widths.every(w=>w>200),'Três colunas desktop preservadas '+width);
+    assert.ok(editLayout.bottoms.every(b=>Math.abs(b-editLayout.bottoms[0])<=2),
+     'Colunas da edição devem terminar alinhadas '+width);
+   }
    const visibleOverflow=await edit.evaluate(el=>Array.from(el.querySelectorAll('.meg-t10-expense-panel'))
     .filter(p=>getComputedStyle(p).display!=='none')
     .map(p=>({label:p.getAttribute('aria-label'),excess:p.scrollHeight-p.clientHeight})));
