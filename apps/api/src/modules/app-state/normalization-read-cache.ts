@@ -22,6 +22,7 @@ const cache = new Map<string, CacheEntry>();
 // na memória. São limites técnicos, sem efeito sobre dados ou regras de negócio.
 const MAX_CACHED_WORKSPACES = 1;
 const MAX_CACHED_RESPONSE_BYTES = 10 * 1024 * 1024;
+const MAX_CACHED_TRANSACTIONS = 5000;
 
 /** Desativado por padrão. O rollout exige decisão operacional específica. */
 export function isStage09ReadCacheEnabled(): boolean {
@@ -77,6 +78,13 @@ export async function cachedNormalizedStateForRead(
   try {
     const after = await completeDatabaseSignature(workspaceId);
     if (after !== before) return result;
+
+    // Evitar serializar gigantescas respostas só para decidir não guardar
+    // o cache. A resposta funcional permanece sem limitação.
+    const state = result.state;
+    const transactions = state && typeof state === 'object' && !Array.isArray(state)
+      ? (state as { transactions?: unknown }).transactions : null;
+    if (Array.isArray(transactions) && transactions.length > MAX_CACHED_TRANSACTIONS) return result;
 
     // Limite conservador de memória em vez de multiplicar snapshots por
     // usuário/workspace. Nenhum limite é imposto à resposta funcional.
