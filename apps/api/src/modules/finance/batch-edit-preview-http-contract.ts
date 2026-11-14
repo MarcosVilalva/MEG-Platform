@@ -63,7 +63,9 @@ function noCache(reply:FastifyReply){
 async function readOnlyAccess(request:FastifyRequest,reply:FastifyReply){
  // POST transporta até 200 itens. app.authorize exigiria permissão de WRITE
  // para qualquer POST; aqui verificamos JWT e papel READ, sem habilitar writer.
- await request.jwtVerify().catch(()=>undefined);
+ try{await request.jwtVerify();}catch{
+  return reply.code(401).send({error:'UNAUTHORIZED'});
+ }
  if(!request.user?.sub){
   return reply.code(401).send({error:'UNAUTHORIZED'});
  }
@@ -82,7 +84,7 @@ export function registerStage10BatchPreviewReadContract(
 ){
  app.post('/batch-edit/card-cycle/preview',{
   bodyLimit:64*1024,
-  preHandler:[readOnlyAccess,throttle],
+  preHandler:[throttle,readOnlyAccess],
  },async(request,reply)=>{
   noCache(reply);
   const parsed=stage10BatchPreviewBodySchema.safeParse(request.body);

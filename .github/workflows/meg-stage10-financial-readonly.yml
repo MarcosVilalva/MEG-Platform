@@ -51,5 +51,7 @@ jobs:
         run: npx tsx apps/api/src/modules/finance/stage10-batch-isolated.e2e.test.ts
       - name: Adaptador autenticado de prévia em PostgreSQL isolado, sem writes
         run: npx tsx apps/api/src/modules/finance/batch-edit-preview-adapter.isolated.test.ts
+      - name: Contrato HTTP autenticado da prévia em lote (Fastify.inject, não registrado)
+        run: npx tsx apps/api/src/modules/finance/batch-edit-preview-http-contract.test.ts
       - name: Check TypeScript da API na branch isolada
         run: npx tsc -p apps/api/tsconfig.json --noEmit
