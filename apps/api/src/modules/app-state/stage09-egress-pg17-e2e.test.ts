@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
 import { normalizationPreview, normalizedStateForRead } from './normalization-migration';
 import { periodicNormalizationPreview } from './normalization-periodic-audit';
-import { cachedNormalizedStateForRead } from './normalization-read-cache';
+import { cachedNormalizedStateForRead, isStage09ReadCacheEnabled } from './normalization-read-cache';
 import { buildNormalizationPreview } from './normalization-migration-core';
 import {
   NORMALIZED_LEGACY_MIRROR_SELECT,
@@ -51,6 +51,17 @@ async function wireStats(): Promise<Traffic> {
 
 async function main() {
   guardDisposable();
+  // Só usar cache quando o operador habilitar explicitamente a flag.
+  const oldCacheFlag = process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
+  delete process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
+  assert.equal(isStage09ReadCacheEnabled(), false);
+  process.env.MEG_STAGE09_GET_APPSTATE_CACHE = 'true';
+  assert.equal(isStage09ReadCacheEnabled(), false);
+  process.env.MEG_STAGE09_GET_APPSTATE_CACHE = 'enabled';
+  assert.equal(isStage09ReadCacheEnabled(), true);
+  if (oldCacheFlag === undefined) delete process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
+  else process.env.MEG_STAGE09_GET_APPSTATE_CACHE = oldCacheFlag;
+
 
   const suffix = `${Date.now()}-synthetic`;
   const user = await prisma.user.create({
@@ -436,6 +447,26 @@ async function main() {
   const restoredRead = await cachedNormalizedStateForRead(workspace.id, user.id);
   assert.deepEqual(restoredRead, liveReadA,
     'Depois de restaurar dados fictícios, GET deve recalcular estado completo.');
+
+  // sourcePayload pode mudar sem revisão AppState e sem alterar montante.
+  // Um cache por revisão ou ETag simples entregaria transação obsoleta.
+  const sourcePayloadId = insertedIds[2];
+  const oldPayload = batch[2].sourcePayload as Prisma.InputJsonValue;
+  await prisma.financialEvent.update({
+    where: { id: sourcePayloadId },
+    data: { sourcePayload: {
+      ...(oldPayload as Record<string, unknown>),
+      description: 'ALTERADO EXTERNAMENTE SOMENTE NO TESTE',
+    } as Prisma.InputJsonValue },
+  });
+  const payloadRead = await cachedNormalizedStateForRead(workspace.id, user.id);
+  assert.equal(payloadRead?.dataSource, 'app-state-fallback',
+    'Alteração externa no JSON financeiro invalida o resultado em memória.');
+  await prisma.financialEvent.update({
+    where: { id: sourcePayloadId }, data: { sourcePayload: oldPayload },
+  });
+  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id), liveReadA,
+    'Restaurado JSON fictício, a mesma resposta financeira deve ser devolvida.');
 
   // Modificação de metadado não financeiro também altera a resposta HTTP.
   await prisma.appState.update({
