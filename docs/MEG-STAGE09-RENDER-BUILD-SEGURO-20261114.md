@@ -123,6 +123,58 @@ Provas adicionais no SHA `1be3e178b903b89bc2abef91aa7e7e4a11807efd`:
 
 **O que esta caracterização NÃO comprovou:** comportamento completo do processo `server.ts` iniciado com todas as rotas/timers, idempotência sob concorrência, transações de cartão com faturas reais, normalização já ativa e backfill, todos os estados de billing (incluindo suspensão), integração externa, RTO/RPO ou rollback de produção. O ensaio só prova os casos sintéticos e sequenciais descritos. Resultado verde não autoriza deploy nem encerra issue #691.
 
+### Normalizacao legado, primaria, concorrencia e rollback no PG17 sintetico (14/11/2026)
+
+Nova caracterizacao usando as **funcoes reais** `normalizationPreview`,
+`normalizedStateForRead`, `activateNormalizationPrimary`,
+`reconcilePrimaryAppStateFromNormalized` e `rollbackNormalizationPrimary`,
+sem alterar os modulos financeiros nem chamar `server.ts`:
+
+1. **Legado:** um AppState com despesa sintetica valida de R$ 27,35 nao
+   possui linha normalizada; leitura cai em `app-state`; reconciliar antes da
+   ativacao recusa com `NORMALIZATION_PRIMARY_REQUIRED`, sem modificar
+   `state` nem `revision`.
+2. **Ativacao** isolada explicita: `activateNormalizationPrimary(..., { automatic: true })`
+   executa a projecao em PostgreSQL17 e ativa `normalized-primary` apos
+   conciliacao de fingerprint. Evento criado preserva valor de R$ 27,35 e
+   sinal de despesa de -R$ 27,35. Repetir ativacao nao aumenta revisao nem
+   duplica linhas. A leitura posterior usa `dataSource=normalized`.
+3. **Reconciliacao concorrente:** alterando apenas a fixture normalizada para
+   R$ 29,40, duas chamadas simultaneas tentam atualizar o espelho legado.
+   Prova de convergencia: uma transacao legada permanece, sem duplicacoes,
+   com descricao/valor atualizados; uma reconciliacao subsequente nao muda
+   a revisao. Rejeicoes sao aceitas **somente** com
+   `NORMALIZED_PRIMARY_MIRROR_CONFLICT` ou `NORMALIZATION_REVISION_CONFLICT`.
+   Erros inesperados de infraestrutura **reprovam** o teste.
+4. **Revision guard e rollback:** chamada com `expectedRevision` antiga
+   recusa `NORMALIZATION_REVISION_CONFLICT` sem mutacao. O rollback
+   explicito produz `app-state-rollback`; a tentativa subsequente de
+   reativacao automatica retorna `blockedByRollback=true`, preservando
+   `state/revision` e dados. O espelho normalizado nao pode ser
+   reconciliado enquanto o rollback continuar ativo.
+5. Em todas as etapas, um `FinancialEvent` ficticio independente de R$ 12,34
+   e `Budget` de R$ 100,42 permaneceram sem mudanca; Payable, Cartao e
+   Fatura anteriormente caracterizados mantiveram cardinalidade.
+
+**Provas exatas da PR #692:**
+
+- Commit `874c44f29e638e3c5a0c4f0dc65454b6ae7069e3`, [PG17 run #43640091740](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43640091740) SUCCESS e [build run #43640091795](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43640091795) SUCCESS: duas reconciliações solicitadas, ambas concluídas.
+- Commit `5788d69e2b04c92cd17fae92017f9365aa1c7d44`, [PG17 run #43640235940](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43640235940) SUCCESS e [build run #43640235941](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43640235941) SUCCESS: apenas uma reconciliação concorrente concluiu; integridade, proteção de revisão obsoleta e rollback verificados.
+- Commit `013ccd53915cb63d2a355675a3993c98117e348d`, [PG17 run #43640354963](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43640354963) SUCCESS e [build run #43640355004](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43640355004) SUCCESS: a exigência adicional de rejeição apenas por conflito conhecido passou. Neste run, as duas chamadas concluíram.
+
+**Limites de prova:** isso comprova sequências e interleavings sintéticos
+observados, **não** prova linearizabilidade sob todas as disputas, alta
+concorrência, ausência de risco de deadlock em outros fluxos, startup integral
+HTTP, compatibilidade com os dados produtivos, nem que a API realmente
+conclua a normalização durante sua inicialização atual. A chamada antecipada
+de `reconcilePrimaryAppStateFromNormalized` em `server.ts` ainda pode
+impedir a ativação automática de um workspace legado. Nao inverter a
+ordem, desativar tarefas ou reinterpretar a autoridade financeira sem
+decisao funcional documentada.
+
+O build produtivo Render permanece inseguro, a issue #691 segue OPEN,
+e nenhum merge/deploy/Blueprint sync está liberado por esses testes.
+
 ## Gates especificos, sem confundir preparacao e operacao
 
 | Gate | Estado |
