@@ -1,11 +1,9 @@
 import {useEffect,useState,type MouseEvent} from 'react';
 import {clearSession} from '../../app/auth-client';
-import {financeClient} from '../../app/finance-client';
 import {LoginScreen} from '../auth/LoginScreen';
 import {CreateAccountScreen} from '../auth/CreateAccountScreen';
 import {RecoverPasswordScreen} from '../auth/RecoverPasswordScreen';
 import {AppShell} from '../shell/AppShell';
-import {HomeDashboard} from '../home/HomeDashboard';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
 import {PrismLaunchChoice,PrismCloseGlyph} from '../integrated-qa/PrismLaunchChoice';
 import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseDraft} from './ExpenseForm';
@@ -117,7 +115,7 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
   if(screen==='register')return <div data-meg-unified-screen="register"><CreateAccountScreen previewOnly onNavigateLogin={()=>navigate('login')} onAuthenticated={()=>navigate('login')}/></div>;
   if(screen==='recover')return <div data-meg-unified-screen="recover"><RecoverPasswordScreen previewOnly onNavigateLogin={()=>navigate('login')}/></div>;
   return <div data-meg-unified-screen="login" className="meg-unified-auth">
-   <LoginScreen onAuthenticated={()=>{setAuthenticated(true);navigate('home');}}
+   <LoginScreen onAuthenticated={()=>{setAuthenticated(true);navigate('launches');}}
     onNavigate={target=>navigate(target==='create-account'?'register':'recover')}/>
   </div>;
  }
@@ -136,21 +134,11 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
     data={data.launches} mode="live" periodMonth={month} userId={data.userId}
     exportUserName={data.userName} qaActions qaBatchCatalogs={data.catalogs}
     onQaEdit={openEdit} onQaDuplicate={openDuplicate} onQaNotice={setNotice}
-    onFilteredSummary={data.supportsFilteredSummary?async(criteria,grid,signal)=>{
-     const before=await financeClient.getSyncStatus();
-     if(before.token!==data.revision)throw new Error('O historico foi atualizado. Recarregue os dados.');
-     const result=await financeClient.getFilteredHistorySummary({criteria,grid},signal);
-     const after=await financeClient.getSyncStatus();
-     if(after.token!==data.revision)throw new Error('A versao mudou durante os filtros.');
-     return result;
-    }:undefined}
     onRefresh={()=>setRevision(n=>n+1)} onNew={openNew} onHome={()=>navigate('home')}/>
-    :<HomeDashboard previewData={data.home} month={month} userId={data.userId}
-      onNavigate={target=>{
-       if(target==='novo'){openNew();return true;}
-       if(target==='lancamentos'){navigate('launches');return true;}
-       setNotice('Recurso fora da Etapa 10.');return false;
-      }}/>}
+    :<section className="meg-l09" role="status" aria-label="Home real indisponivel">
+      <div className="meg-l09-preview-warning">A Home real permanece bloqueada: beneficios, faturas e compromissos ainda exigem contratos canônicos de leitura sem efeitos colaterais. Nenhum indicador incompleto foi publicado.</div>
+      <button type="button" className="meg-l09-add" onClick={()=>navigate('launches')}>Voltar aos lançamentos reais</button>
+     </section>}
   </AppShell>
   {overlay==='choice'&&<div className="meg-new-launch__overlay is-choice-overlay meg-unified-choice-overlay">
    <section className="meg-new-launch is-choose" role="dialog" aria-modal="true" aria-labelledby="meg-unified-real-title">
