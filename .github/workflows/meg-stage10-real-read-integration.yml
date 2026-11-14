@@ -61,10 +61,11 @@ jobs:
       - name: Build isolated synthetic authenticated preview (never deploy)
         env:
           VITE_MEG_STAGE10_REAL_READ_ENABLED: 'true'
-          VITE_API_URL: https://qa-api.example.invalid
+          VITE_API_URL: https://qa-auth.example.invalid
+          VITE_MEG_STAGE10_READONLY_API_URL: https://qa-read.example.invalid
         run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
       - name: Verify synthetic API origin explicitly present in opt-in CSP
-        run: grep -Fq "connect-src 'self' https://qa-api.example.invalid;" apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
+        run: grep -Fq "connect-src 'self' https://qa-auth.example.invalid https://qa-read.example.invalid;" apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
       - name: Synthetic authenticated browser, without real credentials or external API
         run: |
           set -euo pipefail
@@ -84,7 +85,8 @@ jobs:
       - name: Confirm default QA CSP remains self-only
         run: |
           grep -Fq "connect-src 'self';" apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
-          ! grep -Fq 'qa-api.example.invalid' apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
+          ! grep -Fq 'qa-auth.example.invalid' apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
+          ! grep -Fq 'qa-read.example.invalid' apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
       - name: Browser gate and no credentials
         run: |
           set -euo pipefail
