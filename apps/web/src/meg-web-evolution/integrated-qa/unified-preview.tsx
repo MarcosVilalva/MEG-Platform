@@ -10,9 +10,10 @@ import {AppShell} from '../shell/AppShell';
 import {HomeDashboard} from '../home/HomeDashboard';
 import {homeP0QaPreviewFixture} from '../home/home-p0-qa.preview.fixture';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
+import type {QaLaunchTarget} from '../stage10/LaunchActionsQa';
 import {PrismLaunchChoice,PrismCloseGlyph} from './PrismLaunchChoice';
-import {ExpenseForm,type ExpenseCatalogs} from '../stage10/ExpenseForm';
-import {EditExpensePreview,QA_EDIT_EXPENSE_SNAPSHOT} from '../stage10/EditExpensePreview';
+import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseCatalogs,type ExpenseDraft} from '../stage10/ExpenseForm';
+import {EditExpensePreview,QA_EDIT_EXPENSE_SNAPSHOT,type EditExpenseSnapshot} from '../stage10/EditExpensePreview';
 import type {HistorySnapshot} from '../stage10/autocomplete-history';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
 import '../launches/new-launch.css';
@@ -21,7 +22,7 @@ import './unified-qa.css';
 
 /** Integração EXCLUSIVAMENTE visual. A sessão, os catálogos e os eventos são fictícios. */
 type Screen='loading-entry'|'login'|'register'|'recover'|'loading-after'|'home'|'launches';
-type Overlay='choice'|'expense'|'edit'|null;
+type Overlay='choice'|'expense'|'edit'|'duplicate'|null;
 const known:Record<string,Screen>={
  'carregamento':'loading-entry','login':'login','cadastro':'register',
  'recuperar-senha':'recover','carregamento-apos-login':'loading-after',
@@ -62,6 +63,25 @@ const catalogs:ExpenseCatalogs={
   {id:'qa-method-debit',name:'Débito',active:true,kind:'ordinary'},
  ],
 };
+/** QA catálogo deriva da mesma fixture da Home; IDs reais não são inferidos. */
+const qaCatalogs:ExpenseCatalogs={
+ ...catalogs,
+ categories:[...catalogs.categories,...homeP0QaPreviewFixture.categories.map(c=>({id:c.id,name:c.name,active:true}))],
+ accounts:[...catalogs.accounts,...homeP0QaPreviewFixture.accounts.filter(a=>a.type==='checking').map(a=>({id:a.id,name:a.name,active:true,kind:'monetary' as const}))],
+};
+const qaCurrency=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+function fromQaTarget(row:QaLaunchTarget):EditExpenseSnapshot{
+ return {...QA_EDIT_EXPENSE_SNAPSHOT,id:row.id,description:row.description,notes:row.notes,
+  categoryId:row.categoryId,categoryName:row.category,dateDisplay:row.date.slice(8)+'/'+row.date.slice(5,7)+'/'+row.date.slice(0,4),
+  amountDisplay:qaCurrency.format(Math.abs(row.signedAmount)),paymentMethodName:row.paymentMethod,
+  accountName:row.account,statusLabel:row.status==='paid'?'Paga':'Pendente'};
+}
+function duplicateQaDraft(row:QaLaunchTarget):ExpenseDraft{
+ return {...EMPTY_EXPENSE_DRAFT,description:row.description.toLocaleUpperCase('pt-BR'),
+  notes:row.notes.toLocaleUpperCase('pt-BR'),categoryId:row.categoryId,accountId:row.accountId,
+  paymentMethodId:catalogs.paymentMethods.find(p=>p.name===row.paymentMethod)?.id??'',
+  amountInput:'',date:''};
+}
 const history:HistorySnapshot={protocol:'financial-history-v1',kind:'complete',items:[
  {id:'qa-history-1',description:'Mercado fictício',date:'2026-09-01',amount:125.49,categoryId:'qa-category-food',accountId:'qa-account-money',paymentMethodId:'qa-method-instant',category:{id:'qa-category-food',name:'Alimentação'},account:{id:'qa-account-money',name:'Conta corrente fictícia'},paymentMethod:{id:'qa-method-instant',name:'À vista'}},
 ]};
@@ -70,6 +90,8 @@ function UnifiedQA(){
  const [overlay,setOverlay]=useState<Overlay>(()=>initial==='launches'?(params.get('modal')==='novo'?'choice':params.get('modal')==='editar'?'edit':null):null);
  const [progress,setProgress]=useState(0);
  const [notice,setNotice]=useState('');
+  const [editTarget,setEditTarget]=useState<QaLaunchTarget|null>(null);
+  const [duplicateTarget,setDuplicateTarget]=useState<QaLaunchTarget|null>(null);
  const loading=screen==='loading-entry'||screen==='loading-after';
  useEffect(()=>{
   if(!loading)return;
@@ -83,7 +105,7 @@ function UnifiedQA(){
   return()=>clearInterval(tick);
  },[loading,screen]);
  const go=(next:Screen)=>{setOverlay(null);setNotice('');setScreen(next);};
- const openNew=()=>{setNotice('');setOverlay('choice');};
+ const openNew=()=>{setNotice('');setEditTarget(null);setDuplicateTarget(null);setOverlay('choice');};
  const capture=(event:MouseEvent<HTMLDivElement>)=>{
   const target=event.target;
   if(!(target instanceof Element))return;
@@ -104,7 +126,10 @@ function UnifiedQA(){
    periodLabel="Novembro de 2026" onNavigate={next=>go(next==='launches'?'launches':'home')} onLogout={()=>go('login')}>
    {screen==='launches'
     ? <LaunchesStage09 data={homeP0QaPreviewFixture} mode="live" periodMonth="2026-11"
-      userId="qa-unified-prism" exportUserName="Usuário fictício QA"
+      userId="qa-unified-prism" exportUserName="Usuário fictício QA" qaActions
+      onQaEdit={row=>{setNotice('');setEditTarget(row);setOverlay('edit');}}
+      onQaDuplicate={row=>{setNotice('');setDuplicateTarget(row);setOverlay('duplicate');}}
+      onQaNotice={setNotice}
       onRefresh={()=>setNotice('Dados fictícios: nenhuma consulta foi realizada.')} onNew={openNew} onHome={()=>go('home')}/>
     : <HomeDashboard previewData={homeP0QaPreviewFixture} month="2026-11" userId="qa-unified-prism"
       onNavigate={target=>{
@@ -128,8 +153,11 @@ function UnifiedQA(){
    </div>}
   {overlay==='expense'&&<ExpenseForm catalogs={catalogs} historySnapshot={history}
     saveEnabled={false} onBack={()=>setOverlay('choice')}/>}
-  {overlay==='edit'&&<EditExpensePreview snapshot={QA_EDIT_EXPENSE_SNAPSHOT} catalogs={catalogs}
-   onBack={()=>setOverlay(null)} onSimulatedSave={()=>setNotice('QA: edição detectada, mas nenhuma alteração foi gravada. O escritor financeiro permanece bloqueado.')}/>}
+  {overlay==='edit'&&<EditExpensePreview snapshot={editTarget?fromQaTarget(editTarget):QA_EDIT_EXPENSE_SNAPSHOT} catalogs={qaCatalogs}
+   onBack={()=>{setOverlay(null);setEditTarget(null);}} onSimulatedSave={()=>setNotice('QA: edição detectada, mas nenhuma alteração foi gravada. O escritor financeiro permanece bloqueado.')}/>}
+  {overlay==='duplicate'&&duplicateTarget&&<ExpenseForm key={'qa-duplicate-'+duplicateTarget.id} catalogs={qaCatalogs}
+   initialDraft={duplicateQaDraft(duplicateTarget)} saveEnabled={false}
+   onBack={()=>{setOverlay(null);setDuplicateTarget(null);}}/>}
   {notice&&<output className="meg-unified-notice" role="status">{notice}
     <button type="button" aria-label="Fechar aviso" onClick={()=>setNotice('')}>×</button>
    </output>}
