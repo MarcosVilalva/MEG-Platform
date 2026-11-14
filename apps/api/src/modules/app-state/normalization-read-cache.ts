@@ -15,7 +15,7 @@ import {
 type ReadResult = Awaited<ReturnType<typeof normalizedStateForRead>>;
 type CacheEntry = {
   signature: string;
-  value: NonNullable<ReadResult>;
+  value: NonNullable<ReadResult> & { integrity: { reconciled: true; count: number } };
 };
 const cache = new Map<string, CacheEntry>();
 // Free Render: manter somente o último workspace e não fixar snapshots gigantes
@@ -57,8 +57,7 @@ export async function cachedNormalizedStateForRead(
     // Preserva a observabilidade do caminho de leitura original.
     recordNormalizationRuntimeStatus({
       status: 'completed', primary: true, reconciled: true,
-      count: previous.value.integrity && 'count' in previous.value.integrity
-        ? Number(previous.value.integrity.count) : 0,
+      count: previous.value.integrity.count,
       reason: null,
     });
     return previous.value;
