@@ -44,6 +44,37 @@ export const stage10BatchPreviewBodySchema=z.object({
  }),
 }).strict();
 
+const entrySchema=z.object({
+ id:z.string(),number:z.number().int().positive(),amount:z.string(),
+ statementMonth:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+ dueDate:isoDaySchema,
+}).strict();
+const projectionSchema=z.object({
+ cardId:z.string(),purchaseDate:isoDaySchema,
+ entries:z.array(entrySchema).max(48),
+}).strict();
+const rowSchema=z.object({
+ id:z.string(),source:z.enum(['card-purchase','financial-event','payable','benefit']),
+ status:z.enum(['candidate','blocked']),reason:z.string().max(128),canWrite:z.literal(false),
+ before:projectionSchema.optional(),after:projectionSchema.optional(),
+}).strict().superRefine((row,ctx)=>{
+ if(row.status==='candidate'&&(!row.before||!row.after))
+  ctx.addIssue({code:z.ZodIssueCode.custom,message:'CANDIDATE_PREVIEW_INCOMPLETE'});
+ if(row.status==='blocked'&&(row.before||row.after))
+  ctx.addIssue({code:z.ZodIssueCode.custom,message:'BLOCKED_PREVIEW_MUST_BE_EMPTY'});
+});
+export const stage10BatchPreviewResponseSchema=z.object({
+ kind:z.literal('stage10-card-purchase-cycle-readonly-v1'),
+ canWrite:z.literal(false),total:z.number().int().min(1).max(200),
+ candidates:z.number().int().min(0).max(200),
+ blocked:z.number().int().min(0).max(200),
+ rows:z.array(rowSchema).min(1).max(200),
+}).strict().superRefine((result,ctx)=>{
+ if(result.total!==result.rows.length||result.candidates+result.blocked!==result.total
+   ||result.candidates!==result.rows.filter(row=>row.status==='candidate').length)
+  ctx.addIssue({code:z.ZodIssueCode.custom,message:'PREVIEW_COUNT_MISMATCH'});
+});
+
 type PreviewReader=(actorId:string,input:AuthenticatedBatchPreviewRequest)=>Promise<BatchPreviewResponse>;
 type RouteDependencies={preview?:PreviewReader};
 
@@ -91,7 +122,8 @@ export function registerStage10BatchPreviewReadContract(
   if(!parsed.success)return reply.code(400).send({error:'BATCH_PREVIEW_INVALID_SELECTION'});
   try{
    const result=await preview(request.user.sub,parsed.data);
-   return reply.code(200).send(result);
+   const safeResult=stage10BatchPreviewResponseSchema.parse(result);
+   return reply.code(200).send(safeResult);
   }catch(error){
    if(error instanceof BatchPreviewAccessError){
     return reply.code(error.code==='BATCH_PREVIEW_ACCESS_DENIED'?403:400)

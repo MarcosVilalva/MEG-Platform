@@ -19,7 +19,14 @@ const fakeResult:BatchPreviewResponse={
  kind:'stage10-card-purchase-cycle-readonly-v1',canWrite:false,
  total:1,candidates:1,blocked:0,
  rows:[{source:'card-purchase',id:'purchase-qa-1',status:'candidate',
-  reason:'READ_ONLY_PREVIEW_NOT_WRITE_AUTHORIZATION',canWrite:false}],
+  reason:'READ_ONLY_PREVIEW_NOT_WRITE_AUTHORIZATION',canWrite:false,
+  before:{cardId:'card-a',purchaseDate:'2026-11-14',entries:[{
+   id:'e-1',number:1,amount:'10.00',statementMonth:'2026-11',dueDate:'2026-12-07',
+  }]},
+  after:{cardId:'card-b',purchaseDate:'2026-11-25',entries:[{
+   id:'e-1',number:1,amount:'10.00',statementMonth:'2026-12',dueDate:'2027-01-11',
+  }]},
+ }],
 };
 await app.register(async scope=>{
  registerStage10BatchPreviewReadContract(scope,{
@@ -27,6 +34,7 @@ await app.register(async scope=>{
    calls.push({actor,body});
    if(actor==='revoked')throw new BatchPreviewAccessError('BATCH_PREVIEW_ACCESS_DENIED');
    if(actor==='broken')throw new Error('DATABASE_PRIVATE_DETAIL');
+   if(actor==='leaky')return {...fakeResult,internalDebug:'NEVER_EXPOSE_THIS'} as BatchPreviewResponse;
    return fakeResult;
   },
  });
@@ -79,6 +87,10 @@ const unavailable=await request(body,'broken','OPERATOR');
 assert.equal(unavailable.statusCode,503);
 assert.deepEqual(unavailable.json(),{error:'BATCH_PREVIEW_UNAVAILABLE'});
 assert.doesNotMatch(unavailable.body,/DATABASE_PRIVATE_DETAIL/);
+const leaky=await request(body,'leaky','VIEWER');
+assert.equal(leaky.statusCode,503);
+assert.deepEqual(leaky.json(),{error:'BATCH_PREVIEW_UNAVAILABLE'});
+assert.doesNotMatch(leaky.body,/NEVER_EXPOSE_THIS/);
 
 const invalids=[
  {...body,userId:'forged'},
@@ -98,14 +110,14 @@ for(const bad of invalids){
  assert.equal(answer.statusCode,400,JSON.stringify(bad).slice(0,300));
  assert.deepEqual(answer.json(),{error:'BATCH_PREVIEW_INVALID_SELECTION'});
 }
-assert.equal(calls.length,3,'Schema must reject invalid inputs before adapter call');
+assert.equal(calls.length,4,'Schema must reject invalid inputs before adapter call');
 // O shape que inclui fonte não suportada continua na seleção mas bloqueado no serviço.
 const mixed=await request({...body,items:[
  ...body.items,{source:'benefit',id:'meal-demo',expectedUpdatedAt:'no-version'},
 ]});
 assert.equal(mixed.statusCode,200);
-assert.equal(calls.length,4);
-assert.equal((calls[3].body as {items:unknown[]}).items.length,2);
+assert.equal(calls.length,5);
+assert.equal((calls[4].body as {items:unknown[]}).items.length,2);
 const veryLarge=await request({items:[{source:'card-purchase',id:'a'.repeat(70_000),expectedUpdatedAt:stamp}],changes:body.changes});
 assert.equal(veryLarge.statusCode,413,'Limite por requisição deve ser aplicado antes do parse');
 
