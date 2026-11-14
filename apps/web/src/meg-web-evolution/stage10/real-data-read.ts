@@ -60,6 +60,12 @@ function catalogsFromReal(
   };
 }
 
+type Stage10HistoryLimit={
+ kind:'stage10-financial-history-limit-v1';
+ canWrite:false;
+ limit:number;
+ total:number;
+};
 type Stage10Snapshot={
  kind:'stage10-financial-readonly-snapshot-v1';
  canWrite:false;consistency:'repeatable-read';
@@ -79,10 +85,16 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
  if(identity.user.id!==session.user.id||!identity.user.isActive||identity.user.status!=='ACTIVE')
   throw new Error('Sessao nao autorizada para leitura financeira.');
  // Uma unica rota isolada: nunca chamar GET financeiro legado.
- const data=await authenticatedRequest<Stage10Snapshot>(
+ const data=await authenticatedRequest<Stage10Snapshot|Stage10HistoryLimit>(
   '/finance/stage10-readonly/snapshot?month='+encodeURIComponent(month),
   {cache:'no-store',signal});
  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(data?.kind==='stage10-financial-history-limit-v1'){
+  if(data.canWrite!==false||!Number.isSafeInteger(data.total)||
+     !Number.isSafeInteger(data.limit)||data.limit!==5000||data.total<=data.limit)
+   throw new Error('Resposta de limite do historico invalida.');
+  throw new Error('O historico completo supera o limite seguro de 5.000 lancamentos. A consulta real foi bloqueada sem apresentar dados parciais.');
+ }
  if(!data||data.kind!=='stage10-financial-readonly-snapshot-v1'||data.canWrite!==false
    ||data.consistency!=='repeatable-read'||data.actorId!==session.user.id
    ||!data.workspaceId||!data.dataOwnerId
