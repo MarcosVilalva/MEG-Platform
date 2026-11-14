@@ -1,0 +1,37 @@
+name: MEG Stage09 Sandbox Gate1 (offline, synthetic only)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/meg-stage09-sandbox-gate1-evaluator.mjs'
+      - 'tests/meg-stage09-sandbox-gate1-evaluator.test.mjs'
+      - 'docs/MEG-STAGE09-SANDBOX-GATE1-OFFLINE-20261114.md'
+      - '.github/workflows/meg-stage09-sandbox-gate1-offline.yml'
+  push:
+    branches:
+      - 'stage09/backup-recovery-kit-20261110'
+    paths:
+      - 'scripts/meg-stage09-sandbox-gate1-evaluator.mjs'
+      - 'tests/meg-stage09-sandbox-gate1-evaluator.test.mjs'
+      - 'docs/MEG-STAGE09-SANDBOX-GATE1-OFFLINE-20261114.md'
+      - '.github/workflows/meg-stage09-sandbox-gate1-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate1-offline-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout without credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run offline safety tests (synthetic data only)
+        run: node --test tests/meg-stage09-sandbox-gate1-evaluator.test.mjs
