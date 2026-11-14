@@ -1,0 +1,168 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, chmodSync, existsSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+
+const sourceDir = resolve(fileURLToPath(new URL('.', import.meta.url)));
+const testDir = mkdtempSync(join(tmpdir(), 'meg-backup-contract-'));
+const bin = join(testDir, 'bin');
+const target = join(testDir, 'external-offsite-placeholder');
+const vaultTarget = join(testDir, 'separate-vault-offsite-placeholder');
+mkdirSync(bin);
+mkdirSync(target, { mode: 0o700 });
+mkdirSync(vaultTarget, { mode: 0o700 });
+chmodSync(target, 0o700);
+chmodSync(vaultTarget, 0o700);
+const ageKey = join(testDir, 'recovery-key-only-for-tests.txt');
+writeFileSync(ageKey, 'AGE-SECRET-KEY-FAKE-FOR-TESTS\n');
+const restoredFlag = join(testDir, 'is-restored');
+const mock = (name, source) => {
+  const f = join(bin, name);
+  writeFileSync(f, `#!/usr/bin/env node\n${source}`);
+  chmodSync(f, 0o755);
+};
+mock('psql', `
+if (process.argv.includes('--version')) { console.log('psql (PostgreSQL) 17.6'); process.exit(0); }
+const args=process.argv.slice(2); const q=args[args.indexOf('-Atc')+1]||'';
+if (q.includes('current_database')) console.log('postgres');
+else if (q.includes('server_version_num')) console.log('170006');
+else if (q.includes('count(*)')) console.log(process.env.PGDATABASE==='meg_restore_drill' ? (require('node:fs').existsSync(process.env.MEG_MOCK_RESTORED_FLAG)?'32':'0'):'32');
+else process.exit(44);
+`);
+mock('pg_dump', `if (process.argv.includes('--version')) {console.log('pg_dump (PostgreSQL) 17.6');process.exit(0);} process.stdout.write('MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA' + 'Z'.repeat(8 * 1024 * 1024));`);
+mock('curl', `
+process.stdin.resume();
+process.stdin.on('end',()=>{
+  const mode=process.env.MEG_MOCK_VAULT_RESPONSE || 'valid';
+  if(mode==='http_error') {process.stderr.write('synthetic HTTP error\\n');process.exitCode=22;return;}
+  if(mode==='malformed') {process.stdout.write('{not valid json');return;}
+  if(mode==='missing') {process.stdout.write(JSON.stringify({message:'synthetic no key'}));return;}
+  if(mode==='short') {process.stdout.write(JSON.stringify({root_key:'abcd'}));return;}
+  if(mode==='too_large') {process.stdout.write(JSON.stringify({root_key:'a'.repeat(17000)}));return;}
+  process.stdout.write(JSON.stringify({root_key:'a'.repeat(64)}));
+});
+`);
+mock('age', `
+const fs=require('node:fs'); const args=process.argv.slice(2);
+if (args.includes('-d')) {
+  const file=args[args.length-1],v=fs.readFileSync(file,'utf8');
+  if(!v.startsWith('MOCK-AGE-ENCRYPTED:')) process.exit(40);
+  process.stdout.write(v.replace(/^MOCK-AGE-ENCRYPTED:/,''));
+  if(process.env.MEG_MOCK_AGE_AUTH_FAIL==='1') process.exitCode=59;
+} else {
+  const dest=args[args.indexOf('-o')+1];
+  let data='';process.stdin.setEncoding('utf8');
+  process.stdin.on('data',c=>data+=c);
+  process.stdin.on('end',()=>fs.writeFileSync(dest,'MOCK-AGE-ENCRYPTED:'+data));
+}
+`);
+mock('pg_restore', `
+if (process.argv.includes('--version')) { console.log('pg_restore (PostgreSQL) 17.6'); process.exit(0); }
+const fs=require('node:fs');
+const expected='MOCK-PGDUMP-ARCHIVE-ONLY-TEST-DATA';
+const header=Buffer.alloc(256);
+const n=fs.readSync(0,header,0,header.length,null);
+if(n < expected.length || !header.subarray(0,n).toString().startsWith(expected)) process.exit(55);
+// Deliberately reads only the beginning: real pg_restore --list may leave
+// the large table-data payload unread, so the verifier must drain stdin.
+if(process.argv.includes('--list')) {
+  console.log('1; 0 1 TABLE DATA public Transaction postgres');
+  console.log('2; 0 1 TABLE DATA vault secrets postgres');
+} else fs.writeFileSync(process.env.MEG_MOCK_RESTORED_FLAG,'YES');
+`);
+const env = {
+  ...process.env,
+  PATH: `${bin}:${process.env.PATH}`,
+  PGHOST: 'db.ugbiqzaqnrhulhetevby.supabase.co', PGUSER: 'postgres',
+  PGPASSWORD: 'DUMMY-ONLY-FOR-FAKE-TEST', PGSSLMODE: 'verify-full', PGSSLROOTCERT: join(testDir,'supabase-test-ca.crt'), PGPORT:'5432', PGDATABASE:'postgres',
+  MEG_AGE_RECIPIENT:'age1fakesafeoutputonly', MEG_AGE_IDENTITY:ageKey,
+  MEG_BACKUP_DIR:target, MEG_MOCK_RESTORED_FLAG: restoredFlag,
+};
+writeFileSync(join(testDir,'supabase-test-ca.crt'), 'TEST-CA-CERT-NOT-REAL');
+const run = (file, options = {}) => spawnSync('bash', [join(sourceDir,file)], {
+  cwd: testDir, env: {...env,...options}, encoding:'utf8', timeout:10000,
+});
+try {
+  let r=run('meg-stage09-safe-backup.sh');
+  assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
+  const files=readdirSync(target);
+  const backup=join(target,files.find(x=>x.endsWith('.pgdump.age')));
+  const manifest=join(target,files.find(x=>x.endsWith('.manifest.txt')));
+  assert.ok(existsSync(backup) && existsSync(manifest));
+  assert.match(readFileSync(backup,'utf8'),/^MOCK-AGE-ENCRYPTED:/);
+  assert.match(readFileSync(manifest,'utf8'),/vault_root_key_included=NO/);
+  assert.match(readFileSync(manifest,'utf8'),/vault_secrets_table_found=yes/);
+  assert.equal(readFileSync(manifest,'utf8').includes(env.PGPASSWORD),false);
+  // Age must finish the entire decrypted stream even when the catalog reader
+  // stops early. The mock archive has 8 MiB of trailing synthetic data.
+  const rejectedTarget = join(testDir, 'rejected-age-authentication');
+  mkdirSync(rejectedTarget, { mode: 0o700 });
+  chmodSync(rejectedTarget, 0o700);
+  r=run('meg-stage09-safe-backup.sh',{
+    MEG_BACKUP_DIR:rejectedTarget, MEG_MOCK_AGE_AUTH_FAIL:'1',
+  });
+  assert.notEqual(r.status,0,'failed age authentication must reject the archive');
+  assert.match(r.stderr,/AGE_RC=[1-9][0-9]*/);
+  assert.deepEqual(readdirSync(rejectedTarget),[],'invalid backup files must be discarded');
+  // Os stubs nao sao PostgreSQL real e nao possuem socket Unix postgres.
+  // A restauracao DEVE recusar o destino, em vez de confiar em localhost.
+  r=run('meg-stage09-safe-restore-drill.sh',{
+    MEG_BACKUP_FILE:backup,MEG_RESTORE_ISOLATED_OK:'YES',
+  });
+  assert.notEqual(r.status,0,'restore must reject missing authenticated Unix socket');
+  assert.equal(existsSync(restoredFlag),false,'restore cannot write via mocked TCP');
+  r=run('meg-stage09-safe-restore-drill.sh',{
+    MEG_BACKUP_FILE:backup, MEG_RESTORE_ISOLATED_OK:'YES',
+    MEG_RESTORE_HOST:'db.ugbiqzaqnrhulhetevby.supabase.co',
+  });
+  assert.notEqual(r.status,0,'restore must never be able to target remote Postgres');
+  r=run('meg-stage09-safe-backup.sh',{PGSSLMODE:'require'});
+  assert.notEqual(r.status,0,'TLS without CA/hostname validation must fail');
+  r=run('meg-stage09-safe-backup.sh',{PGHOST:'db.other-project.supabase.co'});
+  assert.notEqual(r.status,0,'backup must be restricted to MEG project');
+  r=run('meg-stage09-safe-vault-rootkey.sh',{
+    SUPABASE_ACCESS_TOKEN:'TEST-PRIVATE-TOKEN-NOT-REAL',
+    MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+  });
+  assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
+  assert.equal(r.stdout.includes('aaaaaaaaaaaaaaaa'),false,'Vault root key must never be printed');
+  assert.equal(r.stdout.includes('TEST-PRIVATE-TOKEN'),false,'PAT must never be printed');
+  const vaultFiles=readdirSync(vaultTarget);
+  const encryptedVault=join(vaultTarget,vaultFiles.find(x=>x.endsWith('.rootkey.age')));
+  assert.ok(existsSync(encryptedVault));
+  assert.match(readFileSync(encryptedVault,'utf8'),/^MOCK-AGE-ENCRYPTED:/);
+  r=run('meg-stage09-safe-vault-rootkey.sh',{
+    SUPABASE_ACCESS_TOKEN:'BAD\nINJECT', MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+  });
+  assert.notEqual(r.status,0,'token injection must be rejected');
+  // Every negative case must fail closed without publishing a partial key file.
+  // All values and credentials in this block are synthetic test fixtures.
+  const baselineVaultFiles = readdirSync(vaultTarget).sort();
+  for (const scenario of ['malformed','missing','short','too_large','http_error']) {
+    r=run('meg-stage09-safe-vault-rootkey.sh',{
+      SUPABASE_ACCESS_TOKEN:'TEST-PRIVATE-TOKEN-NOT-REAL',
+      MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+      MEG_MOCK_VAULT_RESPONSE:scenario,
+    });
+    assert.notEqual(r.status,0,`Vault scenario ${scenario} should fail closed`);
+    assert.deepEqual(readdirSync(vaultTarget).sort(),baselineVaultFiles,`Vault scenario ${scenario} must not publish any artifact`);
+    assert.equal((r.stdout+r.stderr).includes('TEST-PRIVATE-TOKEN-NOT-REAL'),false,`No PAT in ${scenario} diagnostics`);
+    assert.equal((r.stdout+r.stderr).includes('aaaaaaaaaaaaaaaa'),false,`No root key in ${scenario} diagnostics`);
+  }
+  r=run('meg-stage09-safe-vault-rootkey.sh',{
+    SUPABASE_ACCESS_TOKEN:'TEST-PRIVATE-TOKEN-NOT-REAL',
+    MEG_VAULT_KEY_BACKUP_DIR:vaultTarget,
+    MEG_MOCK_AGE_AUTH_FAIL:'1',
+  });
+  assert.notEqual(r.status,0,'failed age authentication must reject the Vault key archive');
+  assert.deepEqual(readdirSync(vaultTarget).sort(),baselineVaultFiles,'Vault age failure must not publish an artifact');
+  assert.equal((r.stdout+r.stderr).includes('TEST-PRIVATE-TOKEN-NOT-REAL'),false,'No PAT on age failure');
+  assert.equal((r.stdout+r.stderr).includes('aaaaaaaaaaaaaaaa'),false,'No raw root key on age failure');
+  console.log('MEG Stage09 Vault negative contracts: invalid JSON, missing/short key, oversized/HTTP errors and age authentication rejection OK (mock only)');
+
+  console.log('MEG backup contract: full age stream drain, authentication rejection, encrypted dump, Unix socket guard, TLS and Vault JSON OK (mock tools only)');
+} finally {
+  rmSync(testDir,{force:true,recursive:true});
+}

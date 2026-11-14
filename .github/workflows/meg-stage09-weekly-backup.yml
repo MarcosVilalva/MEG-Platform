@@ -1,0 +1,47 @@
+name: MEG Stage09 weekly backup kit (offline only)
+on:
+  push:
+    branches: ['stage09/backup-recovery-kit-20261110']
+    paths:
+      - 'scripts/meg-stage09-weekly-backup.py'
+      - 'scripts/MEG-*-BACKUP-SEMANAL.ps1'
+      - 'scripts/kit-sha256.json'
+      - 'tests/test_weekly_backup.py'
+      - '.github/workflows/meg-stage09-weekly-backup.yml'
+permissions:
+  contents: read
+jobs:
+  offline-copy-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s tests -p test_weekly_backup.py -v
+      - run: bash -n scripts/meg-stage09-safe-backup.sh
+  powershell-syntax-only:
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Parse only, never install or connect
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($name in @('MEG-INSTALAR-BACKUP-SEMANAL.ps1','MEG-EXECUTAR-BACKUP-SEMANAL.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) ('scripts/' + $name)), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count) { throw ($errors | Out-String) }
+          }
+          $manifest = Get-Content scripts/kit-sha256.json -Raw | ConvertFrom-Json
+          foreach ($property in $manifest.PSObject.Properties) {
+            $raw = [IO.File]::ReadAllText((Join-Path (Get-Location) ('scripts/' + $property.Name))).Replace("`r`n", "`n")
+            $sha = [Security.Cryptography.SHA256]::Create()
+            $actual = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($raw)))).Replace('-','').ToLowerInvariant()
+            if ($actual -ne $property.Value) { throw 'PACKAGE_HASH_INVALID' }
+          }
+          Write-Output 'POWERSHELL51_SYNTAX=PASS_NOT_EXECUTED'
