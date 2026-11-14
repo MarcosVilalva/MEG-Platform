@@ -66,3 +66,21 @@ A partir desta auditoria, `stage10-readonly-db-guard.ts` exige também que a ses
 - O backend QA usa hoje `@fastify/jwt` (`apps/api/src/plugins/auth.ts`), validado pelo segredo privado `config.jwtSecret`. A API canônica emite JWTs com `sub`, `role`, `email` e expiração. É uma compatibilidade apenas técnica e sintética: não há mecanismo comprovado de distribuição/rotação do segredo, audience/issuer, revogação imediata de sessões ou validação segura entre os serviços. **Não distribuir o segredo JWT da API canônica para um novo serviço por simples conveniência**.
 - O fluxo Web de leitura isolada rejeita redirecionamento HTTP (`redirect:'error'`), usa `referrerPolicy:'no-referrer'` e exige `content-type: application/json` antes de aceitar a resposta. O navegador nunca deve encaminhar refresh token ao backend QA, nem tokens em query strings. Testes HTTP sintéticos incluem tokens expirados, assinaturas inválidas e roles não reconhecidas.
 - Bloqueios para publicação continuam explícitos: autorização do ambiente backend isolado; autenticação e revogação seguras entre serviços, preferencialmente com verificação sem disseminação da chave de assinatura; conferência da origem exata no CORS da API canônica; credencial PostgreSQL somente leitura autorizada; E2E real com dados privados sob controle; aprovação funcional e visual do usuário. Build/CI não substituem essas etapas.
+
+
+## 9. Auditoria do GET canônico e decisão de confiança JWT (14/11/2026)
+
+A auditoria exata do código existente revela um detalhe que invalida a hipótese de introspecção ingênua:
+
+- `apps/api/src/modules/auth/routes.ts`, rota `GET /auth/me`, chama `getUserById`.
+- `apps/api/src/modules/auth/service.ts`, `getUserById`, chama `currentWorkspaceForUser`.
+- `apps/api/src/modules/workspaces/service.ts`, `currentWorkspaceForUser`, chama `resolveWorkspaceContext`; **na ausência de membership ativo, esta função executa `ensurePrimaryWorkspace()`**, que pode alterar dados. Portanto, `GET /auth/me` **NÃO pode ser classificado como invariavelmente livre de escrita**. Esse efeito não acontece necessariamente em cada chamada, mas é inaceitável como premissa para a QA de leitura estrita.
+- A Web da Etapa 10 deixa de chamar `validateSession` / `GET /auth/me` antes do snapshot. O backend QA já valida ator ativo e membership no PostgreSQL dentro da sua própria transação `READ ONLY`. O login continua na API canônica, onde a criação de sessões é regra existente.
+- O backend QA atual usa `registerAuth` com verificação JWT HMAC por `JWT_SECRET`. Isso **não prova compatibilidade operacional** com a API canônica sem distribuição do segredo. Não copiar o segredo de assinatura para Render QA, não codificar segredo no browser e não ativar uma verificação remota contra o `/auth/me` atual como atalho.
+
+**Alternativas de arquitetura (ainda NÃO implementadas/autorizadas):**
+
+1. **Preferida para isolamento criptográfico:** contrato dedicado de token de acesso QA com assinatura assimétrica (chave privada fica exclusivamente no emissor canônico, chave pública no verificador QA), claims `aud`/`iss`/`sub` e expiração curta; sem refresh token no backend financeiro. Exige alteração planejada e testes da emissão na API canônica, sem quebrar tokens do Android ou Web atual, rotação/revogação, CORS, rate limit e gates financeiros. Nenhuma mudança de algoritmo foi feita.
+2. **Alternativa possível, não existente:** endpoint de introspecção dedicado e comprovadamente somente leitura na API canônica, com autenticação e autorização entre serviços, sem uso de `currentWorkspaceForUser`, sem efeitos colaterais e sem transmitir segredos nas URLs. Requer código e infraestrutura próprios, mais verificação de tráfego/timeout e revogação. Não utilizar `GET /auth/me` existente para isso.
+
+**Conclusão:** login/refresh continuam canônicos; a leitura de lançamentos é somente GET e agora não chama `/auth/me` previamente. Contudo, a autenticação real cross-service e publicação permanecem bloqueadas até aprovação de um contrato concreto de confiança e infraestrutura. CI sintético não prova JWT real.
