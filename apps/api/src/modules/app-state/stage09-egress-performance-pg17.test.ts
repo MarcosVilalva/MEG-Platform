@@ -28,10 +28,9 @@ const originalDigestQuery = (workspaceId: string) => Prisma.sql`
     ), '[]'), 'UTF8')), 'hex') AS "eventDigest"
 `;
 
-// Candidata apenas para comparação de custo de memória:
-// faz hash POR LINHA antes de agregar. A concatenação intermediária tem
-// tamanho fixo de 64 caracteres por evento, não JSONB completo.
-// NÃO é implantada nem substitui a assinatura atual.
+// Variante adotada na branch experimental após a medição inicial.
+// Agrega hashes de tamanho fixo em vez de formar JSONB grande.
+// A execução é restrita ao mesmo PostgreSQL 17 descartável.
 const streamedDigestQuery = (workspaceId: string) => Prisma.sql`
   SELECT
     (SELECT encode(sha256(convert_to(to_jsonb(a)::text, 'UTF8')), 'hex')
@@ -150,8 +149,8 @@ async function main() {
     assert.equal(originalWire.digest.stateDigest, streamedWire.digest.stateDigest,
       'Ambas representam a mesma linha AppState.');
     const actual = await completeDatabaseSignature(workspace.id);
-    assert.equal(actual, originalWire.digest.stateDigest + ':' + originalWire.digest.eventDigest,
-      'Consulta instrumentada deve corresponder à função de produção.');
+    assert.equal(actual, streamedWire.digest.stateDigest + ':' + streamedWire.digest.eventDigest,
+      'A consulta SHA por linha medida deve corresponder à função adotada no código experimental.');
 
     // Warmup para não comparar tempo de inicialização do Node/Prisma.
     await explainSample(originalSql);
