@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {generateKeyPairSync,sign as signBytes,createHmac} from 'node:crypto';
 import {prisma,PrismaClient,UserRole,UserStatus} from '@meg/database';
 import {createStage10ReadOnlyApp} from '../../stage10-readonly-app';
 import {assertStage10ReadOnlyDatabaseRole} from '../../stage10-readonly-db-guard';
@@ -15,7 +16,34 @@ if(process.env.MEG_STAGE10_SYNTHETIC_DB!=='true'
  throw new Error('STAGE10_SYNTHETIC_DATABASE_REQUIRED');
 
 const previewOrigin='https://meg-stage08-alerta-prism-pr685.onrender.com';
-const server=await createStage10ReadOnlyApp(previewOrigin);
+const issuer='https://stage10-issuer.example.invalid';
+const audience='stage10-finance-reader';
+const rsa=generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{
+ type:'spki',format:'pem'},privateKeyEncoding:{type:'pkcs8',format:'pem'}});
+const otherRsa=generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{
+ type:'spki',format:'pem'},privateKeyEncoding:{type:'pkcs8',format:'pem'}});
+const jwtConfig={publicKeyPem:rsa.publicKey,issuer,audience};
+const now=Math.floor(Date.now()/1000);
+function signToken(sub:string,role:string='VIEWER',options:{
+ exp?:number;iat?:number;scope?:string;aud?:string;iss?:string;
+ privateKey?:string;alg?:string;
+}={}){
+ const header={alg:options.alg||'RS256',typ:'JWT'};
+ const payload={sub,role,iss:options.iss||issuer,aud:options.aud||audience,
+  scope:options.scope||'stage10:finance:read',iat:options.iat??now,
+  exp:options.exp??now+300};
+ const a=Buffer.from(JSON.stringify(header)).toString('base64url');
+ const b=Buffer.from(JSON.stringify(payload)).toString('base64url');
+ const input=a+'.'+b;
+ const signature=header.alg==='HS256'
+  ?createHmac('sha256','synthetic-legacy-hmac').update(input).digest('base64url')
+  :signBytes('RSA-SHA256',Buffer.from(input),options.privateKey||rsa.privateKey).toString('base64url');
+ return input+'.'+signature;
+}
+await assert.rejects(createStage10ReadOnlyApp(previewOrigin,{
+ publicKeyPem:'',issuer,audience,
+}),/STAGE10_PUBLIC_JWT_CONFIGURATION_REQUIRED/);
+const server=await createStage10ReadOnlyApp(previewOrigin,jwtConfig);
 const suffix='stage10-'+process.pid;
 const accountId='acct-'+suffix;
 const secondAccountId='acct-b-'+suffix;
@@ -75,8 +103,8 @@ try{
   type:'expense',status:'planned',date:new Date('2026-11-11T12:00:00Z'),
   competence:'2026-11',amount:'20',signedAmount:'-20',
  }});
- const tokenA=server.jwt.sign({sub:ownerId,role:'ADMIN',email:owner.email});
- const tokenB=server.jwt.sign({sub:otherId,role:'VIEWER',email:other.email});
+ const tokenA=signToken(ownerId,'ADMIN');
+ const tokenB=signToken(otherId);
  const endpoint='/finance/stage10-readonly/snapshot?month=2026-11';
  const get=(token?:string,url=endpoint)=>server.inject({
   method:'GET',url,headers:token?{authorization:'Bearer '+token}:{},
@@ -99,16 +127,21 @@ try{
   'https://other-origin.example.invalid','CORS nao pode autorizar origem divergente');
  const unauthenticated=await get();
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
- const invalidSignature=await get(server.jwt.sign({
-  sub:'not-the-real-owner',role:'ADMIN',email:'evil@example.invalid',
- },{expiresIn:'10m'}).replace(/\.[^.]+$/,'.bad-signature'));
- assert.equal(invalidSignature.statusCode,401,'assinatura invalida deve ser recusada');
- const expiredToken=server.jwt.sign({sub:'expired',role:'ADMIN',email:'expired@example.invalid'},
-  {expiresIn:'-10s'});
- const expiredResponse=await get(expiredToken);
- assert.equal(expiredResponse.statusCode,401,'token expirado deve ser recusado');
- const invalidRole=await get(server.jwt.sign({sub:'not-authorized-role',role:'UNKNOWN' as UserRole,email:'unknown@example.invalid'}));
- assert.equal(invalidRole.statusCode,403,'role desconhecida deve ser recusada');
+
+ const invalidSignature=await get(signToken(ownerId,'ADMIN',{privateKey:otherRsa.privateKey}));
+ assert.equal(invalidSignature.statusCode,401,'assinatura de outro emissor');
+ assert.equal((await get(signToken(ownerId,'ADMIN',{alg:'HS256'}))).statusCode,401,
+  'JWT HMAC legado nao pode acessar a API QA');
+ assert.equal((await get(signToken(ownerId,'ADMIN',{scope:'finance:write'}))).statusCode,401,
+  'scope de escrita deve ser recusado');
+ assert.equal((await get(signToken(ownerId,'ADMIN',{aud:'another-app'}))).statusCode,401,
+  'audience de outro servico');
+ assert.equal((await get(signToken(ownerId,'ADMIN',{iss:'https://unknown.invalid'}))).statusCode,401,
+  'emissor nao autorizado');
+ assert.equal((await get(signToken(ownerId,'ADMIN',{exp:now-10,iat:now-300}))).statusCode,401,
+  'JWT expirado');
+ assert.equal((await get(signToken(ownerId,'UNKNOWN'))).statusCode,401,
+  'perfil desconhecido deve ser recusado');
 
  const invalidMonth=await get(tokenA,'/finance/stage10-readonly/snapshot?month=2026-13');
  assert.equal(invalidMonth.statusCode,400,'periodo invalido deve ser recusado');
@@ -158,7 +191,7 @@ try{
   workspaceId,userId:shared.id,role:UserRole.VIEWER,
   status:UserStatus.ACTIVE,isActive:true,
  }});
- const sharedToken=server.jwt.sign({sub:shared.id,role:'VIEWER',email:shared.email});
+ const sharedToken=signToken(shared.id);
  const sharedMe=await server.inject({method:'GET',url:'/auth/me',headers:{authorization:'Bearer '+sharedToken}});
  assert.equal(sharedMe.statusCode,200);
  assert.equal(sharedMe.json().user.id,shared.id);
@@ -177,7 +210,7 @@ try{
   name:'Fixture Without Membership',email:suffix+'-outsider@example.invalid',
   role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:true,
  }});
- const outsiderResponse=await get(server.jwt.sign({sub:outsider.id,role:'VIEWER',email:outsider.email}));
+ const outsiderResponse=await get(signToken(outsider.id));
  assert.equal(outsiderResponse.statusCode,403,'sem membership deve falhar fechado');
  assert.ok(!outsiderResponse.body.includes('Despesa sintetica A'));
 
@@ -196,7 +229,7 @@ try{
   name:'Fixture Inactive',email:suffix+'-inactive@example.invalid',
   role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:false,
  }});
- const denied=await get(server.jwt.sign({sub:inactive.id,role:'VIEWER',email:inactive.email}));
+ const denied=await get(signToken(inactive.id));
  assert.equal(denied.statusCode,403,'ator inativo nao pode acessar dados');
  assert.ok(!denied.body.includes('Despesa sintetica A'));
 
