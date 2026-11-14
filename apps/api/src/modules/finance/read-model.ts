@@ -1,4 +1,4 @@
-import { prisma } from '@meg/database';
+import {prisma,type Prisma} from '@meg/database';
 import {
   countsTowardMonetaryBalance,
   isMonetaryFinancialEvent,
@@ -18,11 +18,11 @@ function round(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-export async function getCanonicalFinancialSummary(userId: string, month: string) {
+export async function getCanonicalFinancialSummary(userId: string, month: string, db: Prisma.TransactionClient | typeof prisma = prisma) {
   const { start, end } = monthRange(month);
   const now = new Date();
   const [monthEvents, historicalEvents, futureCandidates, openingBalance] = await Promise.all([
-    prisma.financialEvent.findMany({
+    db.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { gte: start, lt: end } },
       select: {
         id: true,
@@ -37,7 +37,7 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
         paymentMethod: { select: { name: true } },
       },
     }),
-    prisma.financialEvent.findMany({
+    db.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { lt: start } },
       select: {
         description: true,
@@ -48,7 +48,7 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
         paymentMethod: { select: { name: true } },
       },
     }),
-    prisma.financialEvent.findMany({
+    db.financialEvent.findMany({
       where: { userId, archivedAt: null, status: 'planned', date: { gte: now } },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       take: 100,
@@ -64,7 +64,7 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
         paymentMethod: { select: { name: true } },
       },
     }),
-    monetaryOpeningBalance(prisma, userId),
+    monetaryOpeningBalance(db, userId),
   ]);
 
   const summary = summarizeMonetaryEvents(monthEvents);
@@ -115,10 +115,10 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
   };
 }
 
-export async function getCanonicalFinancialCashflow(userId: string, month: string) {
+export async function getCanonicalFinancialCashflow(userId: string, month: string, db: Prisma.TransactionClient | typeof prisma = prisma) {
   const { start, end } = monthRange(month);
   const [openingEvents, rawEvents, accountOpeningBalance] = await Promise.all([
-    prisma.financialEvent.findMany({
+    db.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { lt: start } },
       select: {
         description: true,
@@ -129,7 +129,7 @@ export async function getCanonicalFinancialCashflow(userId: string, month: strin
         paymentMethod: { select: { name: true } },
       },
     }),
-    prisma.financialEvent.findMany({
+    db.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { gte: start, lt: end } },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       select: {
@@ -145,7 +145,7 @@ export async function getCanonicalFinancialCashflow(userId: string, month: strin
         paymentMethod: { select: { name: true } },
       },
     }),
-    monetaryOpeningBalance(prisma, userId),
+    monetaryOpeningBalance(db, userId),
   ]);
 
   const events = rawEvents.filter(isMonetaryFinancialEvent);
