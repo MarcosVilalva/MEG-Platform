@@ -43,3 +43,31 @@ O serviço atual é estático e não pode executar Fastify. A API existente tem 
 ## Próximo passo exato
 
 Preparar, na branch isolada da Etapa 10, conexão autenticada de leitura ao contrato existente, sem fallback para fixtures quando a API falhar, sem habilitar writers e sem alteração visual arbitrária. Testar origem CORS, sessão, isolamento por workspace, versão e propriedade real de registros; não publicar dados em bundle nem em URL pública sem autenticação. Utilizar a mesma preview consolidada. Confirmar caminhos sem efeitos colaterais antes de acessá-los. Nenhum banco novo necessário para decidir a fonte dos dados. Integração no navegador e sua homologação funcional continuam pendentes.
+
+## Implementação isolada de leitura na mesma entrada da QA (14/11/2026)
+
+**Branch isolada:** `stage10/real-data-read-integration-20261114`, criada a partir de `3757303c94fe4fe68c03c515a9dd7d0273086884`. PR #688 continua Draft e sua branch oficial não foi alterada por esta integração. Não houve merge, alteração da `main`, CORS produtivo, dados, escritores, Android, Render ou deploy.
+
+### Código preparado, sem liberação da leitura real
+
+- `unified-preview.tsx` mantém a mesma entrada HTML homologada, com fluxo demonstrativo intacto por padrão e `window.fetch` bloqueado. O parâmetro opt-in `?dados=reais` seleciona o módulo `UnifiedRealReadQa`, mas exibe **Leitura real bloqueada nesta QA** enquanto a flag explícita e a origem HTTPS da API não forem fornecidas.
+- `stage10/real-data-read.ts` reaproveita `auth-client`, `finance-client`, `authorized-history`, `OperationalLaunches` e o `readHome` exportado. Antes de qualquer leitura financeira, valida identidade da sessão e exige contrato autenticado `GET /finance/stage10-readonly-capability` com `kind=stage10-financial-readonly-v1`, `actorId` equivalente ao usuário, `workspaceId` e `dataOwnerId` presentes, `canRead=true`, `canWrite=false` e `sideEffects=none`. **Essa rota de atestado não existe na API ativa**; portanto, mesmo uma habilitação acidental da flag não autoriza GET financeiro da ponte. Não existe fallback de dados fictícios.
+- Após atestado válido, o cliente requer sync-token antes/depois, histórico completo com snapshot quando a API anunciar suporte, ou paginação de dupla leitura quando não anunciar. Erro, mudança de sessão ou revisão invalidam a consulta. Os resumos/valores financeiros continuam exclusivamente no servidor.
+- Os catálogos da tela real só podem conter cadastros devolvidos pela API; o editor recebe conta e forma de pagamento somente por ID. Rótulos históricos não inventam IDs. `CreditCard` não é inferido a partir de `FinancialEvent` ou Verocard; na ponte opt-in, a lista de cartões de crédito permanece vazia até haver contrato tipado autorizado. `OperationalLaunches` passa adiante o tipo real das contas, preservando distinção monetária/benefício. Escritas permanecem bloqueadas; a edição é somente simulação.
+- Adaptador `stage10-readonly-workspace.ts` foi preparado no backend da branch, com `SET TRANSACTION READ ONLY` e `RepeatableRead`, autenticação e seleção de membership sem chamar `ensurePrimaryWorkspace`. Não está registrado nas rotas nem habilitado na API produtiva.
+
+### Testes
+
+- `scripts/meg-stage10-real-data-read.contract.test.mjs`: guarda opt-in, ausência de fixtures no fluxo real, dados não parciais, writer bloqueado, proteção contra vínculos de nome, atestado do backend antes de GET, workspace com transação read-only.
+- `scripts/meg-stage10-real-read-gate.browser.mjs`: ausência de credenciais e de chamadas à API quando a leitura está bloqueada, além da preservação do fluxo demo.
+- Workflow isolado `.github/workflows/meg-stage10-real-read-integration.yml`: dependências imutáveis, testes de contrato, TypeScript Web, build Vite QA, Playwright da trava e da QA visual sintética. Execução **#43602553746 SUCCESS** para a versão de código anterior ao novo atestado; o novo atestado exige nova execução antes de eventual liberação.
+- Correções de tipagem pré-existentes na Home e em Lançamentos foram limitadas a anotações, preservando comportamento. Nenhum gate anterior foi declarado retroativamente verde; divergência histórica Stage09 permanece.
+
+### Lacunas bloqueantes
+
+1. A API ativa roteia GETs financeiros por `resolveWorkspaceContext`, cuja ausência de membership pode executar `ensurePrimaryWorkspace` (operações de escrita). A garantia de leitura apenas não está comprovada nessas rotas. O novo resolvedor read-only **ainda não substitui** essas rotas. É necessário um contrato de backend auditado, ligado a endpoints sem efeitos colaterais, com testes e autorização de publicação.
+2. Render `srv-dbr00b56e07s738n62n0` é `static_site`. A allowlist CORS versionada da API não inclui sua origem. Não alterar CORS produtivo nem criar um proxy/banco/serviço de custo desconhecido. Uma implantação de API controlada, com origem explicitamente autorizada e perfil de leitura estrito, permanece decisão separada.
+3. Não há autenticação funcional ou dados reais homologados **no navegador público**; nenhum teste sintético comprova essa integração real. A QA estática homologada permanece no deploy `dep-dbs3vijbc2fs73aggcn0` e versão visual `01e55459aa6fba813984dc047470383c80eb54ec`.
+4. Prévia financeira de ciclo de cartão permanece limitada a `CardPurchase`; outros objetos exigem regras próprias. Escrita financeira, migração e Etapa 11 não estão autorizadas.
+
+**Próximo passo:** auditar e implementar rota(s) de leitura verdadeiramente livres de efeitos colaterais, com autenticação e isolamento por workspace, somente na branch Stage10. Validar CORS e rota antes de qualquer ativação; publicar no mesmo Render somente após gates aplicáveis e autorização de ambiente, para homologação funcional separada. Não avançar à `main`.
