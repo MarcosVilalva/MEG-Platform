@@ -49,8 +49,6 @@ jobs:
           npx tsx apps/api/src/modules/finance/stage10-readonly-http.pg.test.ts
       - name: Typecheck Web integration
         run: npx tsc -p apps/web/tsconfig.json --noEmit
-      - name: Build existing unified QA, live gate disabled
-        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
       - name: Install isolated Playwright
         run: |
           set -euo pipefail
@@ -58,18 +56,6 @@ jobs:
           mkdir -p "$PLAYWRIGHT_DIR" node_modules/@playwright
           npm install --prefix "$PLAYWRIGHT_DIR" --no-save --package-lock=false --audit=false @playwright/test@1.64.0
           ln -s "$PLAYWRIGHT_DIR/node_modules/@playwright/test" node_modules/@playwright/test
-      - name: Browser gate and no credentials
-        run: |
-          set -euo pipefail
-          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/meg-stage10-read-static.log 2>&1 &
-          PID=$!
-          trap 'kill "$PID" 2>/dev/null || true' EXIT
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4175/meg-unificado-qa.html >/dev/null; then break; fi
-            sleep 1
-          done
-          node scripts/meg-stage10-real-read-gate.browser.mjs
-          node scripts/meg-stage08-unified-qa.browser.mjs
       - name: Build isolated synthetic authenticated preview (never deploy)
         env:
           VITE_MEG_STAGE10_REAL_READ_ENABLED: 'true'
@@ -89,3 +75,17 @@ jobs:
             sleep 1
           done
           node scripts/meg-stage10-real-read-browser.synthetic.mjs
+      - name: Build existing unified QA, live gate disabled
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
+      - name: Browser gate and no credentials
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/meg-stage10-read-static.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4175/meg-unificado-qa.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage10-real-read-gate.browser.mjs
+          node scripts/meg-stage08-unified-qa.browser.mjs
