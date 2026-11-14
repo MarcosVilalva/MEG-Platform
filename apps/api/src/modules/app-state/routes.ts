@@ -17,6 +17,7 @@ import {
   synchronizeNormalizedRows,
 } from './normalization-migration';
 import { reconcilePrimaryAppStateFromNormalized } from './normalized-primary-writeback';
+import { cachedNormalizedStateForRead } from './normalization-read-cache';
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -194,7 +195,7 @@ export async function appStateRoutes(app: FastifyInstance) {
 
   app.get('/', { preHandler: app.authenticate }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
-    const saved = await normalizedStateForRead(context.workspaceId, context.workspace.ownerId);
+    const saved = await cachedNormalizedStateForRead(context.workspaceId, context.workspace.ownerId);
     return saved
       ? { ...saved, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } }
       : { state: null, revision: 0, updatedAt: null, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
