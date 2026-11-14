@@ -5,6 +5,8 @@
  */
 import assert from 'node:assert/strict';
 import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
+import { normalizationPreview } from './normalization-migration';
+import { buildNormalizationPreview } from './normalization-migration-core';
 import {
   NORMALIZED_LEGACY_MIRROR_SELECT,
   mirrorFinancialEventToLegacyTransaction,
@@ -136,6 +138,21 @@ async function main() {
       paymentMethodId: method.id,
     });
   }
+  const expectedPreview = buildNormalizationPreview(
+    { transactions: payloads },
+    { workspaceId: workspace.id, userId: user.id, revision: 20 },
+  );
+  assert.equal(expectedPreview.summary.validCount, EVENT_COUNT);
+  assert.equal(expectedPreview.summary.invalidCount, 0);
+  for (let i = 0; i < EVENT_COUNT; i += 1) {
+    const normalized = expectedPreview.events[i];
+    batch[i].amountBehavior = normalized.amountBehavior;
+    batch[i].necessity = normalized.necessity;
+    batch[i].frequency = normalized.frequency;
+    batch[i].classificationConfidence = normalized.classificationConfidence;
+    batch[i].classificationSource = normalized.classificationSource;
+  }
+
   for (let start = 0; start < batch.length; start += 250) {
     const created = await prisma.financialEvent.createMany({ data: batch.slice(start, start + 250) });
     assert.equal(created.count, Math.min(250, batch.length - start));
@@ -179,6 +196,15 @@ async function main() {
     select: NORMALIZED_LEGACY_MIRROR_SELECT,
   });
   const projectedWire = await wireStats();
+
+  await resetWire();
+  const periodicPreview = await normalizationPreview(workspace.id, user.id);
+  const periodicWire = await wireStats();
+  assert.equal(periodicPreview.reconciled, true, 'A auditoria periodica deve conciliar dados ficticios validos.');
+  assert.equal(periodicPreview.normalized.count, EVENT_COUNT);
+  assert.equal(periodicPreview.source.fingerprint, expectedPreview.summary.fingerprint);
+  assert.ok(periodicWire.serverToClientBytes > projectedWire.serverToClientBytes,
+    'Auditoria periodica busca AppState e todos os eventos com seu payload.');
 
   assert.equal(full.length, EVENT_COUNT);
   assert.equal(projected.length, EVENT_COUNT);
@@ -314,7 +340,10 @@ async function main() {
     eventCount: EVENT_COUNT,
     fullServerToClientBytes: fullWire.serverToClientBytes,
     projectedServerToClientBytes: projectedWire.serverToClientBytes,
+    periodicAuditServerToClientBytes: periodicWire.serverToClientBytes,
+    periodicAudit96CallsProjectedBytes: periodicWire.serverToClientBytes * 96,
     reductionPercent: Number(reductionPercent.toFixed(3)),
+    periodicReconciled: true,
     mirrorsEqual: true,
     refreshDetectionEqual: true,
     archivedAndOrphansRemoved: true,
