@@ -5,7 +5,7 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 
-npm ci --audit=false --fund=false
+npm ci --include=dev --audit=false --fund=false
 npm run db:generate
 npm run build:api
 
