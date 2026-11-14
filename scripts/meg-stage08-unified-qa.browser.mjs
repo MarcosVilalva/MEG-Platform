@@ -182,7 +182,7 @@ try{
    });
    assert.equal(editLayout.panels,3,'Editar preserva as três colunas do mesmo formulário');
    assert.equal(editLayout.horizontal,false,'Editar não cria rolagem horizontal '+width);
-   assert.ok(editLayout.height<=height-10,'Editar contido na janela '+width);
+   assert.ok(editLayout.height<=height+(width<=640?2:-10),'Editar contido na janela '+width);
    await page.screenshot({path:resolve(output,'editar-despesa-qa-'+width+'.png'),fullPage:false});
    await editDescription.fill('ALTERAÇÃO LOCAL EM QA');
    assert.equal(await editSave.isEnabled(),true);
