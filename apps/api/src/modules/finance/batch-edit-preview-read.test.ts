@@ -35,7 +35,7 @@ assert.equal(row.before?.entries[0].dueDate,'2026-12-07','vencimento do cartão 
 assert.deepEqual(row.after?.entries.map(e=>e.statementMonth),['2026-12','2027-01','2027-02']);
 assert.deepEqual(row.after?.entries.map(e=>e.amount),['33.34','33.33','33.33'],'valores e IDs de parcelas imutáveis na prévia');
 assert.deepEqual(row.after?.entries.map(e=>e.id),['entry-1','entry-2','entry-3']);
-assert.equal(row.after?.entries[0].dueDate,'2026-12-10');
+assert.equal(row.after?.entries[0].dueDate,'2027-01-11','fatura de dezembro vence em janeiro, com ajuste de domingo');
 
 const beforeOrOnClosing=['2026-11-24','2026-11-25'].map(d=>cardPurchaseStatementMonth(d,25,1));
 assert.deepEqual(beforeOrOnClosing,['2026-11','2026-11']);
