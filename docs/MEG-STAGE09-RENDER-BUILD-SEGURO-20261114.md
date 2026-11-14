@@ -101,6 +101,28 @@ revalidar flags/runtime sem expor segredos. Caso isso nao seja demonstrado,
 `NO-GO`. Nao "resolver" o risco desativando automaticamente rotinas que ja sao
 regras de negocio.
 
+## Caracterização funcional PG17 descartável (14/11/2026)
+
+**Execução comprovada, exclusivamente em dados fictícios e ambiente descartável.** A PR #692 adicionou:
+
+- `scripts/meg-stage09-render-startup-pg17-synthetic.test.ts`
+- `.github/workflows/meg-stage09-render-startup-pg17.yml`
+
+O workflow usa serviço Docker `postgres:17` em `127.0.0.1:65431`, banco `meg_stage09_ephemeral`, com credenciais descartáveis publicamente conhecidas **apenas na CI**. O teste rejeita outra `DATABASE_URL`, projeto fora do GitHub Actions, administrador não sintético ou variáveis de integrações externas. A CI instala dependências sem lifecycle hooks, gera Prisma Client e aplica **somente o schema via `prisma db push --skip-generate` sem `--accept-data-loss`** no banco novo e vazio. Essa operação não é incluída no build do Render. Ao final, o contêiner é descartado.
+
+Provas no SHA `47f390c385f7a70fed998f5d26c4140483871448`:
+- [PG17 run #43625663923](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43625663923): SUCCESS, com operações reais de `ensurePrimaryWorkspace`, `ensureCommercialFoundation`, `refreshCommercialBillingStatuses`, `materializeRecurringExpenses` e `migrateLegacyCardsForAllWorkspaces`.
+- Duas execuções sequenciais de cada rotina preservaram cardinalidade: 1 workspace, 3 planos, 1 assinatura, 1 fatura, 1 conta a pagar de R$ 89,17 e 1 cartão sintético com limite R$ 1.500,00. O FinancialEvent fictício de R$ 12,34 e Budget fictício de R$ 100,42 mantiveram valor/status e quantidade.
+- [Build seguro run #43625663860](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43625663860): SUCCESS, independentemente do PG17.
+
+Provas adicionais no SHA `1be3e178b903b89bc2abef91aa7e7e4a11807efd`:
+- [PG17 run #43625870082](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43625870082): SUCCESS, com os testes anteriores e caracterização de que `reconcilePrimaryAppStateFromNormalized` **recusa** um `AppState` ainda não normalizado lançando `NORMALIZATION_PRIMARY_REQUIRED`, **sem alteração de revision/state** no fixture. Não é permitido interpretar a recusa como perda ou corrupção de dados.
+- [Build sem DB run #43625869991](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43625869991): SUCCESS.
+
+**Divergência técnica ainda pendente:** em `apps/api/src/server.ts`, o startup chama `reconcilePrimaryAppStateFromNormalized` antes de `activateNormalizationPrimary`, dentro da mesma sequência `then`. Para workspaces ainda legados, a recusa acima pode fazer essa sequência ir direto ao `catch` de fallback **antes de tentar a ativação**. Isso não comprova falha em produção, onde o estado inicial pode já ser normalizado. Não inverter chamadas nem alterar a semântica da autoridade financeira sem ensaio separado e revisão do domínio.
+
+**O que esta caracterização NÃO comprovou:** comportamento completo do processo `server.ts` iniciado com todas as rotas/timers, idempotência sob concorrência, transações de cartão com faturas reais, normalização já ativa e backfill, todos os estados de billing (incluindo suspensão), integração externa, RTO/RPO ou rollback de produção. O ensaio só prova os casos sintéticos e sequenciais descritos. Resultado verde não autoriza deploy nem encerra issue #691.
+
 ## Gates especificos, sem confundir preparacao e operacao
 
 | Gate | Estado |
