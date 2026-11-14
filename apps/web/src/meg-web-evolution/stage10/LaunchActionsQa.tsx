@@ -49,12 +49,11 @@ export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNoti
     event.key==='ArrowDown'?(current+1)%items.length:(current-1+items.length)%items.length;
    items[next].focus({preventScroll:true});
   };
-  const scroll=(event:Event)=>{if(event.target instanceof Node&&menuNode.current?.contains(event.target))return;close();};
   document.addEventListener('pointerdown',dismiss);
   document.addEventListener('keydown',keys);
-  window.addEventListener('scroll',scroll,true);
+  // O DataGrid pode rolar ao dar foco ao menu; não confundir isso com fechamento voluntário.
   const focusFrame=window.requestAnimationFrame(()=>menuNode.current?.querySelector<HTMLButtonElement>('button[role="menuitem"]')?.focus({preventScroll:true}));
-  return ()=>{window.cancelAnimationFrame(focusFrame);document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',keys);window.removeEventListener('scroll',scroll,true);};
+  return ()=>{window.cancelAnimationFrame(focusFrame);document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',keys);};
  },[position]);
  const open=()=>{
   if(position){close();return;}
