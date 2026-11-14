@@ -1,5 +1,4 @@
 import type {FastifyInstance} from 'fastify';
-import {Prisma} from '@meg/database';
 import {withStage10ReadOnlyWorkspace} from './stage10-readonly-workspace';
 
 /**
@@ -47,8 +46,6 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
     total,
     events:events.map(({importedRow,...item})=>({
      ...item,sourceRowNumber:importedRow?.rowNumber??null,
-     // Legacy labels remain raw source data; the Web only displays them.
-     sourceRawData:importedRow?.rawData??null,
     })),
     accounts,categories,paymentMethods,cards,
    };
