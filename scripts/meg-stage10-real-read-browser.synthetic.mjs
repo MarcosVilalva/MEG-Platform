@@ -28,6 +28,14 @@ const snapshot={
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 try{
  const page=await browser.newPage({viewport:{width:1366,height:768},ignoreHTTPSErrors:true});
+ await page.addInitScript(()=>{
+  const original=window.fetch.bind(window);
+  window.__MEG_SYNTHETIC_FETCH_TRACES__=[];
+  window.fetch=(input,init)=>{
+   window.__MEG_SYNTHETIC_FETCH_TRACES__.push({url:typeof input==='string'?input:String(input?.url||input),method:init?.method||'GET'});
+   return original(input,init);
+  };
+ });
  const apiCalls=[];const errors=[];const requests=[];const failures=[];
  page.on('pageerror',error=>errors.push(String(error)));
  page.on('request',r=>{const pathname=new URL(r.url()).pathname;if(pathname.startsWith('/auth/')||pathname.startsWith('/finance/'))requests.push(r.method()+' '+r.url());});
@@ -68,6 +76,7 @@ try{
   console.error('SYNTHETIC_BROWSER_FAILURES',failures);
   console.error('SYNTHETIC_BROWSER_LOGIN_MODE',await page.locator('[data-meg-login]').getAttribute('data-meg-login').catch(()=>'<unknown>'));
   console.error('SYNTHETIC_BROWSER_BLOCKED',await page.evaluate(()=>window.__MEG_UNIFIED_QA_BLOCKED__||[]).catch(()=>[]));
+  console.error('SYNTHETIC_BROWSER_FETCH_TRACES',await page.evaluate(()=>window.__MEG_SYNTHETIC_FETCH_TRACES__||[]).catch(()=>[]));
   console.error('SYNTHETIC_BROWSER_JS_ERRORS',errors);
   throw error;
  }
