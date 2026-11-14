@@ -28,13 +28,21 @@ export const QA_EDIT_EXPENSE_SNAPSHOT:EditExpenseSnapshot={
  paymentMethodName:'PIX',accountName:'Conta corrente fictícia',
  statusLabel:'Paga',
 };
-const QA_EDIT_CATEGORIES=[
- {id:'qa-category-food',name:'Alimentação'},
- {id:'qa-category-house',name:'Casa'},
- {id:'qa-category-shopping',name:'Compras'},
- {id:'qa-category-health',name:'Saúde'},
- {id:'qa-category-leisure',name:'Lazer'},
-] as const;
+/** Mesmo acabamento vetorial Prism usado no seletor, isolado na prévia de edição. */
+function EditCloseGlyph(){
+ const id=useId().replace(/:/g,'');
+ const gradient='meg-t10-edit-close-'+id;
+ return <svg viewBox="0 0 24 24" width="25" height="25" fill="none"
+  stroke={'url(#'+gradient+')'} strokeWidth="2.55" strokeLinecap="round"
+  aria-hidden="true" focusable="false" data-meg-prism="icon-2">
+  <defs><linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
+   <stop offset="0" stopColor="#ffffff"/>
+   <stop offset=".48" stopColor="#a3fff4"/>
+   <stop offset="1" stopColor="#1ccbc6"/>
+  </linearGradient></defs>
+  <path d="M5 5 19 19M19 5 5 19"/>
+ </svg>;
+}
 export function EditExpensePreview({snapshot,onBack}:{
  snapshot:EditExpenseSnapshot;onBack:()=>void;
 }){
@@ -65,7 +73,7 @@ export function EditExpensePreview({snapshot,onBack}:{
     </span>
     <span className="meg-t10-expense-head-actions">
      <button type="button" className="meg-t10-expense-head-save" aria-label="Salvar alterações" title="Edição financeira desabilitada" disabled><Icon name="plus"/> <span>Salvar alterações</span></button>
-     <button type="button" className="meg-t10-expense-head-icon" aria-label="Fechar edição" onClick={onBack}>×</button>
+     <button type="button" className="meg-t10-expense-head-icon" aria-label="Fechar edição" title="Fechar edição" onClick={onBack}><EditCloseGlyph/></button>
     </span>
    </header>
    <nav className="meg-t10-expense-mobile-nav" aria-label="Etapas da edição">
@@ -82,10 +90,7 @@ export function EditExpensePreview({snapshot,onBack}:{
      <select id={formId+'category'} value={snapshot.categoryId} disabled aria-label="Categoria original">
       <option value={snapshot.categoryId}>{snapshot.categoryName}</option>
      </select>
-     <div className="meg-t10-expense-frequent" aria-label="Categorias de referência, não editáveis">
-      {QA_EDIT_CATEGORIES.map(cat=><button key={cat.id} type="button" disabled className="meg-t10-expense-category"
-        aria-pressed={snapshot.categoryId===cat.id}><Icon name={cat.id==='qa-category-house'?'home':'list'}/><span>{cat.name}</span></button>)}
-     </div>
+     <p className="meg-t10-edit-readonly-note"><Icon name="clock"/> Categoria registrada, somente consulta.</p>
      <label htmlFor={formId+'date'}><Icon name="calendar"/> Data registrada</label>
      <input id={formId+'date'} type="text" value={snapshot.dateDisplay} disabled aria-label="Data original"/>
      <div className="meg-t10-expense-notes">
@@ -99,11 +104,10 @@ export function EditExpensePreview({snapshot,onBack}:{
     <section className={'meg-t10-expense-panel meg-t10-expense-secondary'+(mobileStep==='payment'?' is-step':'')} aria-label="Dados financeiros originais">
      <label htmlFor={formId+'amount'}><Icon name="card"/> Valor original (R$)</label>
      <input id={formId+'amount'} value={snapshot.amountDisplay} disabled aria-label="Valor original"/>
-     <fieldset className="meg-t10-expense-choice meg-t10-expense-status">
-      <legend>Status registrado</legend>
-      <button type="button" disabled aria-pressed={snapshot.statusLabel==='Paga'}><Icon name="card"/> Paga</button>
-      <button type="button" disabled aria-pressed={snapshot.statusLabel==='Pendente'}><Icon name="clock"/> Pendente</button>
-     </fieldset>
+     <div className="meg-t10-edit-status">
+      <span className="meg-t10-edit-status-label"><Icon name="clock"/> Status registrado</span>
+      <output className="meg-t10-edit-status-value" aria-label="Status original">{snapshot.statusLabel}</output>
+     </div>
      <label htmlFor={formId+'account'}><Icon name="card"/> Conta registrada</label>
      <input id={formId+'account'} disabled value={snapshot.accountName} aria-label="Conta original"/>
      <label htmlFor={formId+'method'}><Icon name="card"/> Forma de pagamento registrada</label>
