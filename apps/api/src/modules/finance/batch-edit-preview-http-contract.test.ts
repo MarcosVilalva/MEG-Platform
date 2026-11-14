@@ -38,10 +38,11 @@ const body={
  items:[{source:'card-purchase',id:'purchase-qa-1',expectedUpdatedAt:stamp}],
  changes:{cardId:'card-qa-b',purchaseDateMode:'common',commonPurchaseDate:'2026-11-25'},
 };
-const token=(sub:string,role:string)=>app.jwt.sign({sub,role});
-const request=(payload:unknown,sub='viewer',role='VIEWER')=>app.inject({
- method:'POST',url,headers:{authorization:'Bearer '+token(sub,role)},
- payload,
+const token=(sub:string,role:string)=>app.jwt.sign({sub,role:role as import('@meg/database').UserRole});
+const request=async(payload:unknown,sub='viewer',role='VIEWER')=>await app.inject({
+ method:'POST',url,
+ headers:{authorization:'Bearer '+token(sub,role),'content-type':'application/json'},
+ payload:JSON.stringify(payload),
 });
 const unauthorized=await app.inject({method:'POST',url,payload:body});
 assert.equal(unauthorized.statusCode,401);
