@@ -9,6 +9,7 @@ on:
       - 'sprint-*'
       - 'feature/**'
       - 'fix/**'
+      - 'safety/stage09-render-build-non-destructive-20261114'
   pull_request:
     branches:
       - main
@@ -38,7 +39,7 @@ jobs:
           const fs = require('node:fs');
           const yaml = fs.readFileSync('render.yaml', 'utf8');
           const required = [
-            'autoDeployTrigger: commit',
+            "autoDeployTrigger: 'off'",
             'buildFilter:',
             '- apps/api/**',
             '- packages/database/**',
