@@ -510,6 +510,41 @@ async function main() {
     financialFallbackPreserved: true,
   }));
 
+  // Proteção de memória: resposta maior que 10 MiB não é armazenada
+  // no processo Node, mas continua integralmente disponível ao cliente.
+  const largeNonFinancialState = {
+    ...state, stage09LargeMetadata: 'L'.repeat(11 * 1024 * 1024),
+  };
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: largeNonFinancialState as Prisma.InputJsonValue },
+  });
+  await resetWire();
+  const largeReadFirst = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const largeReadFirstWire = await wireStats();
+  await resetWire();
+  const largeReadSecond = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const largeReadSecondWire = await wireStats();
+  assert.deepEqual(largeReadSecond?.state, largeReadFirst?.state,
+    'Recusar cache grande não pode truncar a resposta HTTP.');
+  assert.equal(record(largeReadSecond?.state).stage09LargeMetadata,
+    largeNonFinancialState.stage09LargeMetadata);
+  assert.ok(largeReadFirstWire.serverToClientBytes > 10 * 1024 * 1024);
+  assert.ok(largeReadSecondWire.serverToClientBytes > 10 * 1024 * 1024,
+    'Resposta grande deve seguir leitura integral, sem cache persistente.');
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: state as Prisma.InputJsonValue },
+  });
+  console.log('STAGE09_GET_APPSTATE_MEMORY_CAP=' + JSON.stringify({
+    syntheticOnly: true,
+    nonFinancialSyntheticPayloadMiB: 11,
+    firstReadPgBytes: largeReadFirstWire.serverToClientBytes,
+    repeatedReadPgBytes: largeReadSecondWire.serverToClientBytes,
+    noCachingAboveTenMiB: true,
+    responseUnchanged: true,
+  }));
+
   // Caracterização da rotina anterior continua após os ensaios de cache.
   // Idempotencia: estado original e rows ja conciliados nao devem mudar.
   const unchanged = await reconcilePrimaryAppStateFromNormalized(workspace.id, { expectedRevision: 20 });
