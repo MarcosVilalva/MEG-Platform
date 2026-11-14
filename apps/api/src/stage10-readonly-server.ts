@@ -9,6 +9,8 @@ import {assertStage10ReadOnlyDatabaseRole} from './stage10-readonly-db-guard';
  */
 if(process.env.MEG_STAGE10_READONLY_SERVER_ENABLED!=='true')
  throw new Error('STAGE10_READONLY_SERVER_NOT_ENABLED');
+if(process.env.NODE_ENV!=='production')
+ throw new Error('STAGE10_READONLY_SERVER_PRODUCTION_CONFIG_REQUIRED');
 const origin=process.env.MEG_STAGE10_QA_PREVIEW_ORIGIN;
 if(!origin)throw new Error('STAGE10_QA_PREVIEW_ORIGIN_REQUIRED');
 const port=Number(process.env.PORT||3333);
