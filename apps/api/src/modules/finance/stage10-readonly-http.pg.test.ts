@@ -136,6 +136,36 @@ try{
  assert.equal(foreignPayload.events[0].id,foreign.id);
  assert.ok(!foreignResponse.body.includes('Despesa sintetica A'));
 
+ // Um membro de workspace ativo enxerga a base do proprietario,
+ // mas nao a base de outro workspace. Role vem do JWT; membership, do banco.
+ const shared=await prisma.user.create({data:{
+  name:'Fixture Workspace Member',email:suffix+'-shared@example.invalid',
+  role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:true,
+ }});
+ const sharedMember=await prisma.workspaceMember.create({data:{
+  workspaceId,userId:shared.id,role:UserRole.VIEWER,
+  status:UserStatus.ACTIVE,isActive:true,
+ }});
+ const sharedToken=server.jwt.sign({sub:shared.id,role:'VIEWER',email:shared.email});
+ const sharedResponse=await get(sharedToken);
+ assert.equal(sharedResponse.statusCode,200,sharedResponse.body.slice(0,500));
+ assert.equal(sharedResponse.json().actorId,shared.id);
+ assert.equal(sharedResponse.json().dataOwnerId,ownerId);
+ assert.equal(sharedResponse.json().workspaceId,workspaceId);
+ assert.deepEqual(sharedResponse.json().events.map((e:{id:string})=>e.id),[original.id]);
+ assert.ok(!sharedResponse.body.includes('Despesa sintetica B'));
+ await prisma.workspaceMember.update({where:{id:sharedMember.id},data:{isActive:false}});
+ const sharedDenied=await get(sharedToken);
+ assert.equal(sharedDenied.statusCode,403,'membro com vinculo revogado recebe 403');
+ assert.ok(!sharedDenied.body.includes('Despesa sintetica A'));
+ const outsider=await prisma.user.create({data:{
+  name:'Fixture Without Membership',email:suffix+'-outsider@example.invalid',
+  role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:true,
+ }});
+ const outsiderResponse=await get(server.jwt.sign({sub:outsider.id,role:'VIEWER',email:outsider.email}));
+ assert.equal(outsiderResponse.statusCode,403,'sem membership deve falhar fechado');
+ assert.ok(!outsiderResponse.body.includes('Despesa sintetica A'));
+
  await assert.rejects(
   withStage10ReadOnlyWorkspace(ownerId,async tx=>{
    await tx.account.create({data:{
@@ -168,6 +198,24 @@ try{
  assert.equal(mixed.json().error,'STAGE10_WORKSPACE_FINANCIAL_SCOPE_NOT_EXCLUSIVE');
  assert.ok(!mixed.body.includes('Despesa sintetica A'));
  await prisma.financialEvent.delete({where:{id:misplaced.id}});
+
+ // A resposta nao deve truncar o historico: excedeu o limite,
+ // devolve somente um aviso seguro, sem eventos ou resumo parcial.
+ const extraEvents=Array.from({length:5000},(_,index)=>({
+  userId:ownerId,workspaceId,description:'Fixture volume '+index,
+  type:'expense',status:'planned',date:new Date('2026-11-13T12:00:00Z'),
+  competence:'2026-11',amount:'1',signedAmount:'-1',
+ }));
+ for(let index=0;index<extraEvents.length;index+=500){
+  await prisma.financialEvent.createMany({data:extraEvents.slice(index,index+500)});
+ }
+ const capped=await get(tokenA);
+ assert.equal(capped.statusCode,200,capped.body.slice(0,500));
+ assert.deepEqual(capped.json(),{
+  kind:'stage10-financial-history-limit-v1',canWrite:false,limit:5000,total:5001,
+ });
+ assert.ok(!capped.body.includes('Fixture volume'));
+ assert.ok(!capped.body.includes('summary'));
 
  console.log('STAGE10_POSTGRES_JWT_HTTP_READ_ONLY_ISOLATION PASS');
 }finally{
