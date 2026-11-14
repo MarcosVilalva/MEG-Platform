@@ -70,6 +70,20 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
   if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
   if(identity.user.id!==session.user.id||!identity.user.isActive||identity.user.status!=='ACTIVE')
     throw new Error('Sessao nao autorizada para leitura financeira.');
+  // A API atual nao anuncia este contrato. Sem uma rota dedicada auditada,
+  // nao executar sequer um GET financeiro que possa invocar o fallback de
+  // resolveWorkspaceContext/ensurePrimaryWorkspace com writes.
+  const guarantee=await authenticatedRequest<{
+    kind:string;actorId:string;workspaceId:string;dataOwnerId:string;
+    canRead:boolean;canWrite:boolean;sideEffects:string;
+  }>('/finance/stage10-readonly-capability',{cache:'no-store',signal});
+  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+  if(!guarantee||guarantee.kind!=='stage10-financial-readonly-v1'
+    ||guarantee.actorId!==identity.user.id||!guarantee.workspaceId
+    ||!guarantee.dataOwnerId||guarantee.canRead!==true
+    ||guarantee.canWrite!==false||guarantee.sideEffects!=='none'){
+    throw new Error('A API nao confirmou o isolamento de leitura financeira exigido.');
+  }
   const before=await financeClient.getSyncStatus();
   if(typeof before.token!=='string'||!before.token)
     throw new Error('A API nao confirmou a versao dos dados financeiros.');
