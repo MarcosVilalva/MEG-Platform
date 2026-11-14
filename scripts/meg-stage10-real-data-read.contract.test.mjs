@@ -58,7 +58,10 @@ assert.match(routes,/getCanonicalFinancialCashflow\(scope\.ownerId,parsed\.data\
 assert.match(routes,/new Map\(accounts\.map/);
 assert.match(routes,/canWrite:false/);
 assert.match(routes,/Cache-Control','private, no-store'/);
-assert.doesNotMatch(routes,/rawData:true|sourceRawData/);
+assert.match(routes,/rawData:true/);
+assert.match(routes,/stage10HistoricLabels/);
+assert.match(routes,/events:events\.map\(\(\{importedRow,sourcePayload,\.\.\.item\}\)/);
+assert.doesNotMatch(routes,/sourceRawData/);
 assert.match(canonical,/getCanonicalFinancialSummary\(userId: string, month: string, db: Prisma.TransactionClient/);
 assert.match(canonical,/getCanonicalFinancialCashflow\(userId: string, month: string, db: Prisma.TransactionClient/);
 assert.match(financeRoutes,/MEG_STAGE10_REAL_READ_API_ENABLED/);
