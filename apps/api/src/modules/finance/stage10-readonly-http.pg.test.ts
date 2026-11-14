@@ -101,7 +101,7 @@ try{
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
  const invalidSignature=await get(server.jwt.sign({
   sub:'not-the-real-owner',role:'ADMIN',email:'evil@example.invalid',
- },{expiresIn:'10m'}).replace(/.$/,last=>last==='a'?'b':'a'));
+ },{expiresIn:'10m'}).replace(/\.[^.]+$/,'.bad-signature'));
  assert.equal(invalidSignature.statusCode,401,'assinatura invalida deve ser recusada');
  const expiredToken=server.jwt.sign({sub:'expired',role:'ADMIN',email:'expired@example.invalid'},
   {expiresIn:'-10s'});
