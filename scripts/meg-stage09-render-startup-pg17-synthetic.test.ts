@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert/strict';
 import { env } from 'node:process';
+import { readFileSync } from 'node:fs';
 
 const LOCAL_URL = 'postgresql://stage09:stage09@127.0.0.1:65431/meg_stage09_ephemeral?schema=public';
 const TEST_ADMIN = 'stage09-synthetic-admin@example.invalid';
@@ -33,7 +34,51 @@ const {
   normalizationPreview,
   normalizedStateForRead,
   rollbackNormalizationPrimary,
+  recordNormalizationRuntimeStatus,
+  getNormalizationRuntimeStatus,
 } = await import('../apps/api/src/modules/app-state/normalization-migration.ts');
+
+// Este teste reproduz fielmente a cadeia declarada em server.ts no mesmo PG17
+// efemero. Nao inicia HTTP nem timers. Falha se o contrato da cadeia mudar.
+const serverCode = readFileSync(new URL('../apps/api/src/server.ts', import.meta.url), 'utf8');
+const chain = serverCode.match(/void ensurePrimaryWorkspace\(\)[\s\S]*?(?=\n  let normalizationAuditRunning = false;)/)?.[0];
+assert.ok(chain, 'Nao foi possivel conferir cadeia de startup');
+assert.match(chain, /await reconcilePrimaryAppStateFromNormalized\(workspace\.id\);[\s\S]*?await activateNormalizationPrimary\(workspace\.id, workspace\.ownerId, \{ automatic: true \}\)/);
+assert.match(chain, /retryable = error instanceof Error && error\.message === 'NORMALIZATION_REVISION_CONFLICT'/);
+assert.match(chain, /status: blockedByRollback \? 'rollback-protected' : result\.primary \? 'completed' : 'fallback'/);
+assert.match(chain, /\.catch\(\(error\) => \{[\s\S]*?recordNormalizationRuntimeStatus\(\{ status: 'fallback', primary: false, reconciled: false, count: 0/);
+
+async function reproduceStartupChain(workspaceId: string, ownerId: string) {
+  try {
+    await reconcilePrimaryAppStateFromNormalized(workspaceId);
+    let result: Awaited<ReturnType<typeof activateNormalizationPrimary>> | null = null;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        result = await activateNormalizationPrimary(workspaceId, ownerId, { automatic: true });
+        break;
+      } catch (error) {
+        const retryable = error instanceof Error && error.message === 'NORMALIZATION_REVISION_CONFLICT';
+        if (!retryable || attempt === 3) throw error;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      }
+    }
+    if (!result) throw new Error('NORMALIZATION_ACTIVATION_EMPTY_RESULT');
+    const blockedByRollback = Boolean('blockedByRollback' in result && result.blockedByRollback);
+    recordNormalizationRuntimeStatus({
+      status: blockedByRollback ? 'rollback-protected' : result.primary ? 'completed' : 'fallback',
+      primary: result.primary, reconciled: result.reconciled,
+      count: result.normalized.count,
+      reason: blockedByRollback ? 'ADMIN_ROLLBACK' : result.primary ? null : 'NORMALIZED_PRIMARY_INACTIVE',
+    });
+    return { result, error: null };
+  } catch (error) {
+    recordNormalizationRuntimeStatus({
+      status: 'fallback', primary: false, reconciled: false, count: 0,
+      reason: error instanceof Error ? error.message : 'NORMALIZATION_STARTUP_FAILED',
+    });
+    return { result: null, error };
+  }
+}
 
 const date = (s: string) => new Date(s + 'T00:00:00.000Z');
 const fixedDate = new Date('2026-11-14T12:00:00.000Z');
@@ -181,6 +226,17 @@ async function main() {
   assert.equal(afterRefusal.revision, beforeNormalization.revision);
   assert.deepEqual(afterRefusal.state, beforeNormalization.state);
 
+  const legacyEventsBeforeStartup = await prisma.financialEvent.count();
+  const startupLegacy = await reproduceStartupChain(workspace.id, admin.id);
+  assert.equal(startupLegacy.result, null);
+  assert.match(String(startupLegacy.error), /NORMALIZATION_PRIMARY_REQUIRED/);
+  assert.equal(getNormalizationRuntimeStatus().status, 'fallback');
+  assert.equal(getNormalizationRuntimeStatus().reason, 'NORMALIZATION_PRIMARY_REQUIRED');
+  const postLegacyStartup = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  assert.equal(postLegacyStartup.revision, beforeNormalization.revision);
+  assert.deepEqual(postLegacyStartup.state, beforeNormalization.state);
+  assert.equal(await prisma.financialEvent.count(), legacyEventsBeforeStartup);
+
   // Ativacao isolada: aplica sombra reconciliada, depois marca normalized-primary.
   const activated = await activateNormalizationPrimary(workspace.id, admin.id, { automatic: true });
   assert.equal(activated.activated, true);
@@ -230,6 +286,15 @@ async function main() {
   assert.equal(afterConverged.changed, false);
   assert.equal((await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } })).revision, firstStable.revision);
   assert.equal(await prisma.financialEvent.count(), 2);
+
+  const startupNormalized = await reproduceStartupChain(workspace.id, admin.id);
+  assert.equal(startupNormalized.error, null);
+  assert.equal(startupNormalized.result?.primary, true);
+  assert.equal(startupNormalized.result?.reconciled, true);
+  assert.equal(getNormalizationRuntimeStatus().status, 'completed');
+  assert.equal(getNormalizationRuntimeStatus().reason, null);
+  assert.equal((await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } })).revision, firstStable.revision);
+  assert.equal(await prisma.financialEvent.count(), 2);
   assert.equal(await prisma.payable.count(), 1);
   assert.equal(await prisma.creditCard.count(), 1);
   const finalOriginalEvent = await prisma.financialEvent.findUniqueOrThrow({ where: { id: originalEvent.id } });
@@ -257,6 +322,19 @@ async function main() {
   assert.equal(rollbackStillIntact.revision, rolledBackState.revision);
   assert.deepEqual(rollbackStillIntact.state, rolledBackState.state);
   await assert.rejects(reconcilePrimaryAppStateFromNormalized(workspace.id), /NORMALIZATION_PRIMARY_REQUIRED/);
+
+  const startupRollback = await reproduceStartupChain(workspace.id, admin.id);
+  assert.equal(startupRollback.result, null);
+  assert.match(String(startupRollback.error), /NORMALIZATION_PRIMARY_REQUIRED/);
+  // O catch de server.ts mascara o status de rollback no runtime do startup.
+  assert.equal(getNormalizationRuntimeStatus().status, 'fallback');
+  assert.equal(getNormalizationRuntimeStatus().reason, 'NORMALIZATION_PRIMARY_REQUIRED');
+  const postRollbackStartup = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
+  assert.equal(postRollbackStartup.revision, rolledBackState.revision);
+  assert.deepEqual(postRollbackStartup.state, rolledBackState.state);
+  const readAfterRollbackStartup = await normalizedStateForRead(workspace.id, admin.id);
+  assert.equal(readAfterRollbackStartup?.dataSource, 'app-state');
+  assert.equal(getNormalizationRuntimeStatus().status, 'rollback-protected');
   assert.equal(await prisma.financialEvent.count(), 2);
   assert.equal((await prisma.budget.findUniqueOrThrow({ where: { id: budget.id } })).amount.toFixed(2), '100.42');
 
@@ -269,7 +347,10 @@ async function main() {
     normalized_activated: true, concurrent_reconcile_executions: 2,
     concurrent_fulfilled: concurrent.filter((item) => item.status === 'fulfilled').length,
     normalized_legacy_event_preserved: 1, stale_revision_rejected: true,
-    rollback_automatic_reactivation_blocked: true, isolated: true,
+    rollback_automatic_reactivation_blocked: true,
+    startup_legacy_fallback: true, startup_normalized_completed: true,
+    startup_rollback_status_fallback: true, startup_http_not_executed: true,
+    isolated: true,
   }));
 }
 
