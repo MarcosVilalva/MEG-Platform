@@ -32,7 +32,7 @@ export function issueStage10QaReadToken(
   settings.ttlSeconds<1||settings.ttlSeconds>300||
   settings.nowSeconds<0||settings.nowSeconds+settings.ttlSeconds>Number.MAX_SAFE_INTEGER)fail();
  if(typeof settings.privateKeyPem!=='string'||
-  !settings.privateKeyPem.startsWith('-----BEGIN PRIVATE KEY-----\\n'))fail();
+  !settings.privateKeyPem.startsWith('-----BEGIN PRIVATE KEY-----\n'))fail();
  let privateKey;
  try{
   privateKey=createPrivateKey(settings.privateKeyPem);
