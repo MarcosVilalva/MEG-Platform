@@ -39,6 +39,22 @@ function reconciledPrimary(result: ReadResult): result is NonNullable<ReadResult
 }
 
 /**
+ * Avaliação puramente técnica do espaço de cache. Não altera a resposta ou
+ * as regras de negócio; usada somente após reconciliação integral positiva.
+ */
+export function readCacheFitsTechnicalLimits(result: NonNullable<ReadResult>): boolean {
+  const state = result.state;
+  const transactions = state && typeof state === 'object' && !Array.isArray(state)
+    ? (state as { transactions?: unknown }).transactions : null;
+  if (Array.isArray(transactions) && transactions.length > MAX_CACHED_TRANSACTIONS) return false;
+  try {
+    return Buffer.byteLength(JSON.stringify(result), 'utf8') <= MAX_CACHED_RESPONSE_BYTES;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Somente leitura. A autenticação e a autorização de workspace continuam
  * obrigatórias e são resolvidas PELO HANDLER antes desta função ser chamada.
  *
@@ -79,17 +95,9 @@ export async function cachedNormalizedStateForRead(
     const after = await completeDatabaseSignature(workspaceId);
     if (after !== before) return result;
 
-    // Evitar serializar gigantescas respostas só para decidir não guardar
-    // o cache. A resposta funcional permanece sem limitação.
-    const state = result.state;
-    const transactions = state && typeof state === 'object' && !Array.isArray(state)
-      ? (state as { transactions?: unknown }).transactions : null;
-    if (Array.isArray(transactions) && transactions.length > MAX_CACHED_TRANSACTIONS) return result;
-
-    // Limite conservador de memória em vez de multiplicar snapshots por
-    // usuário/workspace. Nenhum limite é imposto à resposta funcional.
-    const responseBytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
-    if (responseBytes > MAX_CACHED_RESPONSE_BYTES) return result;
+    // Rejeitar até mesmo serialização de resultados com mais de 5000
+    // transações; payloads grandes continuam sendo respondidos sem cache.
+    if (!readCacheFitsTechnicalLimits(result)) return result;
 
     cache.set(key, { signature: before, value: result });
     if (cache.size > MAX_CACHED_WORKSPACES) {
