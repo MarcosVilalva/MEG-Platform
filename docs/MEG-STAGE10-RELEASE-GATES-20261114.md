@@ -46,3 +46,15 @@ Não modificar `main`, Android, produção, Supabase real, ambiente Render produ
 
 ## Saúde e continuidade
 Conservar este documento e o `MEG-WEB-CONTINUIDADE-OFICIAL.md` como referência. Estado do chat: Atenção preventiva por volume de verificações. Não declarar a Etapa 10 encerrada antes de completar os gates.
+
+
+## Atualização verificável: integração sintética completa e regressão geral, 14/11/2026
+
+- Último commit técnico: `a941138c29d37427c90cf99de26a98b9fccabd1f`.
+- GitHub Actions [#43654584412](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43654584412): **SUCCESS**, 29 etapas aprovadas no job.
+- Teste E2E in-process combina autenticação HMAC canônica, troca RS256 com sessão real do PostgreSQL17 descartável, consulta GET do backend QA sobre lançamento fictício e recusa da mesma credencial após revogação. Somente fixture sintética.
+- Suítes completas `test:auth`, `test:security` e `test:finance` aprovadas, além de Web/API typecheck, builds, HTTP PG, JS estático e Playwright. Foi atualizado exclusivamente o teste de caracterização `web-evolution-characterization.test.ts` para executar `cardPurchaseInstallmentRows` e `cardPurchaseStatementMonth`, autoridades já existentes, em vez de buscar fórmulas em locais anteriores. **Nenhum serviço de cálculo financeiro foi modificado.**
+- Testes de viewport sintético do modo opt-in 390/640/1024/1366/1920 px e QA demonstrativa passaram. Não constitui comparação visual com os prints oficiais usando dados reais.
+- Compare contra a branch de cabeça do PR #688: 171 commits à frente, zero atrás, 45 arquivos diferentes, nenhum em `android/**` ou `apps/web/src/mobile/**`.
+- O PR #688 continua Draft, head antigo, sem merge; nenhuma preview publicada, nenhuma produção acessada ou modificada, nenhum serviço criado, nenhum segredo configurado.
+- **Classificação final permanece:** gates técnicos isolados e sintéticos PASS; homologação/encerramento da Etapa 10 NÃO AUTORIZÁVEL até infraestrutura QA de custo aceito, emissão/consulta com credenciais seguras reais, integridade de dados sob controle, modalidades de cartão/benefício conforme autoridade, E2E de writers sobre sandbox aprovado e aprovação visual/funcional explícita.
