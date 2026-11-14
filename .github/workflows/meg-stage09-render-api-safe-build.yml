@@ -31,6 +31,8 @@ jobs:
           cache: npm
       - name: Validate fail-closed contract before executing build
         run: node scripts/meg-stage09-render-api-build.regression.test.mjs
+      - name: Characterize startup database writers, no connections
+        run: node --test scripts/meg-stage09-render-startup-writers.contract.test.mjs
       - name: Execute proposed build with no database service or database connection
         run: bash scripts/meg-stage09-render-api-build.sh
       - name: Verify tsx remains usable without install hooks
