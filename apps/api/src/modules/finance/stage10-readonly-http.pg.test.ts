@@ -210,8 +210,24 @@ try{
   type:'expense',status:'planned',date:new Date('2026-11-13T12:00:00Z'),
   competence:'2026-11',amount:'1',signedAmount:'-1',
  }));
- for(let index=0;index<extraEvents.length;index+=500){
-  await prisma.financialEvent.createMany({data:extraEvents.slice(index,index+500)});
+ // Caracterizacao do volume ativo observado na base real (3.731),
+ // mas usando somente linhas sinteticas no container CI.
+ for(let index=0;index<3730;index+=500){
+  await prisma.financialEvent.createMany({data:extraEvents.slice(index,Math.min(index+500,3730))});
+ }
+ const fullVolume=await get(tokenA);
+ assert.equal(fullVolume.statusCode,200,fullVolume.body.slice(0,500));
+ const fullVolumePayload=fullVolume.json();
+ assert.equal(fullVolumePayload.kind,'stage10-financial-readonly-snapshot-v1');
+ assert.equal(fullVolumePayload.total,3731);
+ assert.equal(fullVolumePayload.events.length,3731);
+ assert.equal(new Set(fullVolumePayload.events.map((event:{id:string})=>event.id)).size,3731);
+ assert.equal(fullVolumePayload.summary.month,'2026-11');
+ assert.equal(fullVolumePayload.cashflow.month,'2026-11');
+ assert.ok(fullVolume.body.includes('Despesa sintetica A'));
+ assert.ok(!fullVolume.body.includes('Despesa sintetica B'));
+ for(let index=3730;index<extraEvents.length;index+=500){
+  await prisma.financialEvent.createMany({data:extraEvents.slice(index,Math.min(index+500,extraEvents.length))});
  }
  const capped=await get(tokenA);
  assert.equal(capped.statusCode,200,capped.body.slice(0,500));
