@@ -11,6 +11,7 @@ import {
   paymentBalanceDecision,
 } from './monetary-protection';
 import { buildTransferLegs } from './transfer-core';
+import {cardPurchaseInstallmentRows} from '../cards/purchase-cycle-canonical';
 import { addMonthsClamped, moveWeekendToMonday } from '../payables/core';
 
 const cardsRoutes = readFileSync(new URL('../cards/routes.ts', import.meta.url), 'utf8');
@@ -57,9 +58,14 @@ assert.match(benefitMutation, /INSUFFICIENT_BENEFIT_BALANCE/);
 assert.match(benefitMutation, /status:\s*'paid'/);
 
 // 7) Parcelamento não exato distribui o resto de centavos nas primeiras parcelas.
-assert.match(cardsService, /const totalCents = Math\.round\(input\.totalAmount \* 100\)/);
-assert.match(cardsService, /const baseCents = Math\.floor\(totalCents \/ input\.installments\)/);
-assert.match(cardsService, /index < remainder \? 1 : 0/);
+assert.match(cardsService, /cardPurchaseInstallmentRows\(/);
+const canonicalCardRows=cardPurchaseInstallmentRows({
+ purchaseDate:'2026-01-31',totalAmount:100,installments:3,closingDay:28,
+});
+assert.deepEqual(canonicalCardRows.map(row=>row.amount),[33.34,33.33,33.33],
+ 'A autoridade canônica de parcelas distribui centavos sem duplicação');
+assert.equal(canonicalCardRows.reduce((sum,row)=>sum+Math.round(row.amount*100),0),10000,
+ 'Somatório de 3 parcelas preserva o valor original em centavos');
 const totalCents = Math.round(100 * 100);
 const baseCents = Math.floor(totalCents / 3);
 const remainder = totalCents - baseCents * 3;
