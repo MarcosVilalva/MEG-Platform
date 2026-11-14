@@ -41,11 +41,11 @@ try{
    assert.ok(await selectable.count()>0,'Checkbox do DataGrid '+width);
    await selectable.check();
    await page.waitForFunction(()=>document.querySelector('[data-testid="qa-batch-action"]')?.textContent?.includes('(1)'),null,{timeout:8000});
-   assert.match(await batchButton.innerText(),/\\(1\\)/,'Contador usa seleção real '+width);
+   assert.ok((await batchButton.innerText()).includes('(1)'),'Contador usa seleção real '+width);
    await batchButton.click();
    const batchDialog=page.getByTestId('qa-batch-dialog');
    await batchDialog.waitFor({state:'visible'});
-   assert.match(await batchDialog.innerText(),/Editar em lote \\(1\\)/);
+   assert.ok((await batchDialog.innerText()).includes('Editar em lote (1)'));
    assert.equal(await batchDialog.getByRole('button',{name:'Simular alterações'}).isDisabled(),true);
    await batchDialog.getByLabel('Alterar observações').check();
    await batchDialog.getByLabel('Novas observações').fill('alteração fictícia de teste');
