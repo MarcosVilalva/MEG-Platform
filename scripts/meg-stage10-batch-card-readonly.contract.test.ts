@@ -9,9 +9,12 @@ assert.equal(cardStatementDueDate('2026-09',28,3),'2026-10-05','Vencimento de s�
 
 const cardRoutes=readFileSync('apps/api/src/modules/cards/routes.ts','utf8');
 const cardService=readFileSync('apps/api/src/modules/cards/service.ts','utf8');
+const purchaseCycle=readFileSync('apps/api/src/modules/cards/purchase-cycle-canonical.ts','utf8');
 const finance=readFileSync('apps/api/src/modules/finance/service.ts','utf8');
 const web=readFileSync('apps/web/src/meg-web-evolution/stage10/BatchEditQa.tsx','utf8');
-assert.match(cardService,/purchaseDate\.getUTCDate\(\) > card\.closingDay \? 1 : 0/,'Competência inicial vem do writer de cartões');
+assert.match(purchaseCycle,/day>closingDay\\?1:0/,'Competência inicial depende da regra canônica de fechamento');
+assert.match(cardService,/cardPurchaseInstallmentRows\\(/,'Criação de parcelas usa módulo central');
+assert.match(cardRoutes,/cardPurchaseStatementMonth\\(nextPurchaseDate/,'PATCH recalcula meses pelo mesmo módulo canônico');
 assert.match(cardRoutes,/CARD_PURCHASE_PAYMENT_EXISTS/,'Compras pagas ou parcialmente pagas protegidas');
 assert.match(cardRoutes,/shouldRecalculateStatementMonths/,'Troca de cartão/data reconcilia competência');
 assert.match(cardRoutes,/CARD_PURCHASE_UPDATED/,'Atualização de compra audita antes/depois');
