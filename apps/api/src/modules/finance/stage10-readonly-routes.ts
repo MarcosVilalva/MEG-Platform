@@ -1,4 +1,6 @@
 import type {FastifyInstance} from 'fastify';
+import {z} from 'zod';
+import {getCanonicalFinancialSummary,getCanonicalFinancialCashflow} from './read-model';
 import {withStage10ReadOnlyWorkspace} from './stage10-readonly-workspace';
 
 /**
@@ -10,10 +12,13 @@ import {withStage10ReadOnlyWorkspace} from './stage10-readonly-workspace';
  */
 const HISTORY_LIMIT=5000;
 const readRoles=['ADMIN','MANAGER','OPERATOR','VIEWER'] as const;
+const monthSchema=z.object({month:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)});
 export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
  app.get('/stage10-readonly/snapshot',{
   preHandler:app.authorize([...readRoles]),
  },async(request,reply)=>{
+  const parsed=monthSchema.safeParse(request.query);
+  if(!parsed.success)return reply.code(400).send({error:'INVALID_STAGE10_READ_MONTH'});
   reply.header('Cache-Control','private, no-store');
   return withStage10ReadOnlyWorkspace(request.user.sub,async(tx,scope)=>{
    const where={userId:scope.ownerId,workspaceId:scope.workspaceId,archivedAt:null};
@@ -22,7 +27,7 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
     kind:'stage10-financial-history-limit-v1' as const,
     canWrite:false as const,limit:HISTORY_LIMIT,total,
    };
-   const [events,accounts,categories,paymentMethods,cards]=await Promise.all([
+   const [events,accounts,categories,paymentMethods,cards,summary,cashflow]=await Promise.all([
     tx.financialEvent.findMany({
      where,orderBy:[{date:'desc'},{createdAt:'desc'},{id:'asc'}],
      include:{importedRow:{select:{rowNumber:true}}},
@@ -36,6 +41,8 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
     tx.creditCard.findMany({where:{userId:scope.ownerId},
       select:{id:true,name:true,isActive:true,closingDay:true,dueDay:true},
       orderBy:[{isActive:'desc'},{name:'asc'}]}),
+    getCanonicalFinancialSummary(scope.ownerId,parsed.data.month,tx),
+    getCanonicalFinancialCashflow(scope.ownerId,parsed.data.month,tx),
    ]);
    if(events.length!==total)throw new Error('STAGE10_HISTORY_INCONSISTENT');
    const ownedAccounts=new Map(accounts.map(item=>[item.id,item]));
@@ -53,7 +60,7 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
      paymentMethod:item.paymentMethodId?ownedMethods.get(item.paymentMethodId)??null:null,
      sourceRowNumber:importedRow?.rowNumber??null,
     })),
-    accounts,categories,paymentMethods,cards,
+    accounts,categories,paymentMethods,cards,summary,cashflow,
    };
   });
  });
