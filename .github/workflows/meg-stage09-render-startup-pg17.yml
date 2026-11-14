@@ -6,6 +6,7 @@ on:
       - 'stage09/backup-recovery-kit-20261110'
     paths:
       - 'scripts/meg-stage09-render-startup-pg17-synthetic.test.ts'
+      - 'scripts/meg-stage09-render-startup-http-pg17-synthetic.test.ts'
       - '.github/workflows/meg-stage09-render-startup-pg17.yml'
       - 'docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md'
 
@@ -66,3 +67,6 @@ jobs:
         run: ./node_modules/.bin/prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
       - name: Characterize actual startup functions with synthetic isolated fixtures
         run: ./node_modules/.bin/tsx scripts/meg-stage09-render-startup-pg17-synthetic.test.ts
+      - name: Run real HTTP server.ts with synthetic PG17 only
+        # Consecutive process starts in the same disposable runner. No remote deploy.
+        run: ./node_modules/.bin/tsx scripts/meg-stage09-render-startup-http-pg17-synthetic.test.ts
