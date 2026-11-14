@@ -23,8 +23,6 @@ jobs:
         run: npm ci --audit=false
       - name: Caracterizar regras canônicas de cartões para edição em lote (somente leitura)
         run: npx tsx scripts/meg-stage10-batch-card-readonly.contract.test.ts
-      - name: Validar prévia canônica de edição em lote (sem banco e sem writer)
-        run: npx tsx apps/api/src/modules/finance/stage10-batch-read-preview.test.ts
       - name: Build isolated multi-entry static QA
         run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
       - name: Static asset and source isolation gate

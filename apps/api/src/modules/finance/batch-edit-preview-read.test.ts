@@ -74,4 +74,24 @@ reason({snapshots:{...base.snapshots,purchases:[{...receipt,userId:'other'}]}},'
 reason({snapshots:{...base.snapshots,purchases:[{...receipt,entries:[]}]}},'INCOMPLETE_INSTALLMENT_SNAPSHOT');
 assert.throws(()=>previewBatchCardCycle({...base,items:[]}),/INVALID_BATCH_SIZE/);
 assert.throws(()=>previewBatchCardCycle({...base,items:[base.items[0],base.items[0]]}),/DUPLICATE_ITEMS/);
+// Regressões adicionais após homologação visual: nenhum cliente pode inferir
+// autorização financeira de uma prévia ou contornar propriedade/versão.
+const duplicateAcrossSelection=previewBatchCardCycle({...base,items:[
+ base.items[0],
+ {source:'benefit',id:'benefit-1',expectedUpdatedAt:'ignored'},
+ {source:'financial-event',id:'event-1',expectedUpdatedAt:'ignored'},
+]});
+assert.equal(duplicateAcrossSelection.total,3);
+assert.equal(duplicateAcrossSelection.candidates,1);
+assert.equal(duplicateAcrossSelection.blocked,2);
+assert.equal(duplicateAcrossSelection.canWrite,false);
+assert.ok(duplicateAcrossSelection.rows.every(item=>item.canWrite===false));
+assert.deepEqual(duplicateAcrossSelection.rows.filter(x=>x.status==='blocked').map(x=>x.after),[undefined,undefined]);
+reason({changes:{cardId:'card-b',purchaseDateMode:'common',commonPurchaseDate:'2026-02-29'}},'INVALID_PURCHASE_DATE');
+reason({snapshots:{...base.snapshots,cards:base.snapshots.cards.map(c=>
+ c.id==='card-b'?{...c,userId:'another-workspace'}:c)}},'CARD_NOT_ACTIVE_OR_NOT_OWNED');
+assert.throws(()=>previewBatchCardCycle({...base,dataOwnerId:''}),/OWNER_REQUIRED/);
+assert.throws(()=>previewBatchCardCycle({...base,items:Array.from({length:201},(_,index)=>({
+ source:'card-purchase' as const,id:'purchase-'+index,expectedUpdatedAt:receipt.updatedAt,
+}))}),/INVALID_BATCH_SIZE/);
 console.log('MEG_STAGE10_CARD_BATCH_READONLY_PREVIEW PASS');
