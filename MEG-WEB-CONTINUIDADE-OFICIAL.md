@@ -1942,3 +1942,33 @@ Referências oficiais lidas em 14/11/2026: https://render.com/docs/deploys.md ; 
 - Não usar pre-deploy pago nem upgrade para contornar limite de custo zero. Não presumir que editar Build Command é operação sem deploy.
 
 Issues #674/#676/#690/#691 permanecem rastreadas e abertas conforme última consulta. Nenhum backfill, segredo, SQL produtivo, restore, plano/cobrança, merge ou deploy. Android/Web homologada/WSL preservados. Próximo passo: verificar CI 29f6a6a e manter bloqueio de restore até leitura integral e isolamento funcional possíveis sem custos.
+
+
+## 14/11/2026 | Etapa 09: acesso PostgreSQL da API confirmado e kit semanal OneDrive preparado
+
+Pedido atual: concluir backup, torna-lo aplicavel pelo menos semanalmente no OneDrive e avaliar uso ate 15/11/2026, sem custo autorizado. Nenhum plano alterado, merge ou deploy executado.
+
+### Correcao da avaliacao de disponibilidade
+O bloqueio de servicos gerenciados nao foi tratado como prova de indisponibilidade da API:
+- GET https://meg-platform-api.onrender.com/ready retornou HTTP 200, {"status":"ready"}. Codigo main apps/api/src/server.ts confirma que essa rota executa prisma SELECT 1.
+- GET /health retornou HTTP 200, {"status":"ok","financialReady":true}.
+- GET /app-state sem token retornou HTTP 401, {"error":"UNAUTHORIZED"}. Nao houve captura de token, login ou mutacao financeira.
+- SELECT simples pela Management API confirmou database postgres e PG17; a sessao reportou transaction_read_only=off, mas a consulta executada foi exclusivamente SELECT de metadados, sem dados financeiros.
+Isso comprova acesso API -> PostgreSQL naquele instante, nao login autenticado de usuario, escrita financeira real, estabilidade futura, economia de Egress ou recuperacao completa. Os servicos Auth/Storage gerenciados permanecem restritos. O MEG tem autenticacao propria em public.User conforme runbook; nao confundir com Supabase Auth.
+Painel Usage consultado nesta conversa confirmou ciclo 27/10/2026 a 27/11/2026. Renovacao nao atende prazo 15/11. Pro anunciado a partir de US$25/mes, sem cotacao total aceita e sem contratacao. Nenhuma necessidade de upgrade foi demonstrada para o caminho /ready, portanto nao exigir plano pago sem evidencia adicional.
+
+### Kit semanal candidato e testes
+Commit inicial 5ce1ef10736b27a201d2edc0c9d0d43cf2ff5eac e correcao de recibo df478cec7c66b6d100ecc6bfd5fb93f90aee7da9, exclusivamente na PR #666 Draft:
+- scripts/MEG-INSTALAR-BACKUP-SEMANAL.ps1: instalacao local usuario Windows, ACL privada, credencial DPAPI, chamada WSL, primeiro backup antes de registrar tarefa.
+- scripts/MEG-EXECUTAR-BACKUP-SEMANAL.ps1: senha em stdin codificado, nunca argv/arquivo claro; recibo de falha atual substitui exibicao enganosa de recibo anterior.
+- scripts/meg-stage09-weekly-backup.py: reutiliza safe-backup.sh SEM ALTERACAO, TLS verify-full/PG17/projeto fixo; lock, guarda sete dias, uma tentativa automatica/dia, sem retry continuo, copia exclusiva criptograma+manifesto com hash, sem sobrescrita nem exclusao.
+- scripts/kit-sha256.json; tests/test_weekly_backup.py; .github/workflows/meg-stage09-weekly-backup.yml; docs/MEG-STAGE09-BACKUP-SEMANAL-ONEDRIVE-20261114.md.
+Agenda proposta pelo instalador: domingo 10h no Windows e login quando vencido. Usa conta interativa sem elevacao. Depende de notebook ligado, sessao, internet, WSL, OneDrive e credenciais validas. Nao oferece SLA semanal com computador desligado.
+7 testes offline locais PASS, bash -n PASS, hashes internos do ZIP PASS. CI especifica offline-copy-contracts e powershell-syntax-only PASS no commit df478cec; parser Windows PowerShell 5.1, sem executar instalador. CI original completa PASS no commit inicial 5ce1ef1. Conferir gates finais da correcao/documentacao no SHA proprio antes de citacao.
+Pacote MEG-Backup-Semanal-OneDrive.zip entregue sem segredos. Nao foi instalado no notebook, nao ha tarefa ativa comprovada, nenhum novo pg_dump ou upload OneDrive real executado nesta rodada. Somente o operador tem acesso local a identidade/CA e ao OneDrive. Instalador exige senha apenas no terminal privado e recusa substituir instalacao/tarefa existente.
+O recibo distingue ENCRYPTED_BACKUP_AND_LOCAL_ONEDRIVE_COPY_OK de remote_upload_verified=false. A primeira copia exige confirmacao OneDrive Web/download+hash. Cada copia nova tem integridade validada, nao restore funcional automatico. Nao apresentar kit pronto como automacao ja ativa.
+Custodia age/Vault e restore local anteriores preservados. Nao repetir Vault GET/PUT, restauracao existente ou auditorias encerradas. Sem alteracao de scripts financeiros, Android, UI, banco ou Render.
+
+### Viabilidade e gates
+Uso da API atual e tecnicamente possivel no estado observado, mas nova publicacao continua NO-GO: Build Command real inseguro (#691), backup semanal ainda nao executado/instalado, recuperacao gerenciada Gate 1 parcial/Gates 2-4 NO-GO e validacao autenticada/visual propria da Web nao comprovada nesta rodada. Nao prometer conclusao ate amanha antes das evidencias.
+Proximo passo exato: operador executar UMA VEZ o instalador do ZIP no Windows habitual, informar host e caminhos locais da identidade/CA existentes e senha apenas no terminal privado; fornecer somente marcadores saneados. Confirmar arquivo remoto no OneDrive e hash. Em paralelo, usar as evidencias de acesso API para continuar trabalho isolado sem exigir Pro; manter PRs #666/#689/#692/#693 Draft e issues #674/#676/#690/#691 abertas. Qualquer aplicacao do build, merge ou deploy depende de gate e autorizacao especifica.
