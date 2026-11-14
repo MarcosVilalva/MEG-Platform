@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {chromium} from '@playwright/test';
 
 const base='https://127.0.0.1:4175';
-const api='https://qa-api.example.invalid';
+const api='https://qa-auth.example.invalid';
+const readonlyApi='https://qa-read.example.invalid';
 const owner='stage10-synthetic-owner';
 const workspace='stage10-synthetic-workspace';
 const user={id:owner,name:'Usuario de teste sintetico',email:'stage10@example.invalid',role:'ADMIN',status:'ACTIVE',isActive:true};
@@ -41,10 +42,22 @@ try{
  page.on('pageerror',error=>errors.push(String(error)));
  page.on('request',r=>{const pathname=new URL(r.url()).pathname;if(pathname.startsWith('/auth/')||pathname.startsWith('/finance/'))requests.push(r.method()+' '+r.url());});
  page.on('requestfailed',r=>failures.push(r.url()+' '+(r.failure()?.errorText||'')));
+ await page.route(readonlyApi+'/**',async route=>{
+  const req=route.request();
+  const url=new URL(req.url());
+  apiCalls.push(url.origin+' '+req.method()+' '+url.pathname);
+  const headers={
+   'access-control-allow-origin':base,'access-control-allow-methods':'GET,OPTIONS',
+   'access-control-allow-headers':'authorization',
+   'content-type':'application/json','cache-control':'private, no-store',
+  };
+  if(req.method()==='OPTIONS')return route.fulfill({status:204,headers,body:''});
+  return route.fulfill({status:503,headers,body:JSON.stringify({error:'READONLY_API_REJECTED_REQUEST'})});
+ });
  await page.route(api+'/**',async route=>{
   const req=route.request();
   const url=new URL(req.url());
-  apiCalls.push(req.method()+' '+url.pathname);
+  apiCalls.push(url.origin+' '+req.method()+' '+url.pathname);
   const headers={
    'access-control-allow-origin':base,
    'access-control-allow-methods':'GET,POST,OPTIONS',
@@ -84,10 +97,15 @@ try{
   throw error;
  }
  await page.getByText('DESPESA SINTETICA PARA NAVEGADOR').first().waitFor({state:'visible',timeout:20000});
- assert.ok(apiCalls.includes('POST /auth/login'));
- assert.ok(apiCalls.includes('GET /auth/me'));
- assert.ok(apiCalls.includes('GET /finance/stage10-readonly/snapshot'));
- assert.ok(apiCalls.filter(call=>call.includes('/finance/')).every(call=>call==='GET /finance/stage10-readonly/snapshot'));
+ assert.ok(apiCalls.includes(api+' POST /auth/login'));
+ assert.ok(apiCalls.includes(api+' GET /auth/me'));
+ assert.ok(apiCalls.includes(readonlyApi+' GET /finance/stage10-readonly/snapshot'));
+ assert.ok(apiCalls.filter(call=>call.includes('/finance/')).every(call=>
+  call===readonlyApi+' GET /finance/stage10-readonly/snapshot'));
+ assert.ok(apiCalls.filter(call=>call.includes('/auth/')).every(call=>call.startsWith(api+' ')));
+ assert.ok(!apiCalls.some(call=>call.includes('/auth/refresh')&&call.startsWith(readonlyApi)));
+ const traces=await page.evaluate(()=>window.__MEG_SYNTHETIC_FETCH_TRACES__||[]);
+ assert.ok(!traces.some(t=>t.url.includes('accessToken=')||t.url.includes('refreshToken=')));
  assert.equal(await page.locator('.meg-unified-stamp').innerText().then(s=>s.includes('Somente leitura')),true);
  assert.deepEqual(errors,[],'Sem excecao no navegador');
  // Um historico maior que o limite nao pode renderizar o cache anterior.
