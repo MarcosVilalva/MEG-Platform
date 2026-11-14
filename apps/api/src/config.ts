@@ -24,7 +24,9 @@ const environmentSchema = z.object({
   ALEXA_ANNOUNCEMENT_WEBHOOK_URL: z.string().url().optional(),
   ALEXA_OWNER_EMAIL: z.string().email().optional(),
   ALEXA_SKILL_SECRET: z.string().min(24).optional(),
-  RUN_LEGACY_REPAIR: z.coerce.boolean().default(false),
+  // Guardrail da Etapa 09: somente "true" habilita writer legado, sem coercao truthy.
+  // "false", "0" e "off" desligam; outras strings falham fechadas na inicializacao.
+  RUN_LEGACY_REPAIR: z.stringbool({ truthy: ['true'], falsy: ['false', '0', 'off'] }).default(false),
   INTEGRATION_ENCRYPTION_KEY: z.string().min(32).optional()
 });
 

@@ -4,12 +4,11 @@ services:
     runtime: node
     plan: free
     region: ohio
-    buildCommand: npm install && npm run db:generate && npm run build:api && npm run db:prepare:production && npm run db:push:production
-    # Migrações pertencem ao deploy. Executá-las em cada cold start fazia o
-    # plano gratuito demorar muito mais para responder ao primeiro acesso.
+    buildCommand: bash scripts/meg-stage09-render-api-build.sh
+    # Build nao executa migracoes; qualquer operacao de banco exige gate separado.
     startCommand: npm run start:api
     healthCheckPath: /health
-    autoDeployTrigger: commit
+    autoDeployTrigger: 'off'
     buildFilter:
       paths:
         - apps/api/**
