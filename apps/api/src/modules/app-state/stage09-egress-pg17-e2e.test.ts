@@ -89,7 +89,7 @@ async function main() {
   for (let i = 0; i < EVENT_COUNT; i += 1) {
     const type = i % 7 === 0 ? 'income' : 'expense';
     const isRefund = type === 'expense' && i % 53 === 0;
-    const amount = Number(((i % 870) + 100) / 100).toFixed(2);
+    const amount = Number((((i % 870) + 100) / 100).toFixed(2));
     const signed = type === 'income' ? amount : isRefund ? amount : -amount;
     const entered = isRefund ? -amount : amount;
     const legacyTransactionId = `synthetic-legacy-${i.toString().padStart(4, '0')}`;
