@@ -47,13 +47,13 @@ export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNoti
    const current=items.findIndex(item=>item===document.activeElement);
    const next=event.key==='Home'?0:event.key==='End'?items.length-1:
     event.key==='ArrowDown'?(current+1)%items.length:(current-1+items.length)%items.length;
-   items[next].focus();
+   items[next].focus({preventScroll:true});
   };
-  const scroll=()=>close();
+  const scroll=(event:Event)=>{if(event.target instanceof Node&&menuNode.current?.contains(event.target))return;close();};
   document.addEventListener('pointerdown',dismiss);
   document.addEventListener('keydown',keys);
   window.addEventListener('scroll',scroll,true);
-  const focusFrame=window.requestAnimationFrame(()=>menuNode.current?.querySelector<HTMLButtonElement>('button[role="menuitem"]')?.focus());
+  const focusFrame=window.requestAnimationFrame(()=>menuNode.current?.querySelector<HTMLButtonElement>('button[role="menuitem"]')?.focus({preventScroll:true}));
   return ()=>{window.cancelAnimationFrame(focusFrame);document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',keys);window.removeEventListener('scroll',scroll,true);};
  },[position]);
  const open=()=>{
