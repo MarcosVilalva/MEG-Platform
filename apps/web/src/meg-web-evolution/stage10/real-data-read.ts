@@ -120,7 +120,16 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new Error('Periodo de leitura invalido.');
  const session=readSession();
  if(!session?.user?.id)throw new Error('Sessao autenticada obrigatoria.');
- const identity=await validateSession(session);
+ let identity:Awaited<ReturnType<typeof validateSession>>;
+ try{
+  identity=await validateSession(session);
+ }catch(error){
+  if((error as {status?:number})?.status!==401)throw error;
+  const refreshed=await refreshAuthSession();
+  if(!refreshed||refreshed.user.id!==session.user.id)
+   throw new Error('Sessao nao autorizada para leitura financeira.');
+  identity=await validateSession(refreshed);
+ }
  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
  if(identity.user.id!==session.user.id||!identity.user.isActive||identity.user.status!=='ACTIVE')
   throw new Error('Sessao nao autorizada para leitura financeira.');
@@ -152,7 +161,8 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
   ids.add(item.id);
  }
  const current=readSession();
- if(!current||current.user.id!==session.user.id||current.accessToken!==session.accessToken)
+ if(!current||current.user.id!==session.user.id||
+    !current.accessToken||!current.refreshToken)
   throw new Error('A identidade da sessao mudou durante a consulta.');
  return {
   userId:session.user.id,userName:identity.user.name,
