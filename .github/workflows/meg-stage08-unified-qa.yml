@@ -33,7 +33,13 @@ jobs:
           ! grep -q 'src/meg-web-evolution/integrated-qa/unified-preview.tsx' apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
           ! grep -R -E '(https?://[^ ]*/(auth/login|finance/))' apps/web/dist-stage08-funcional-qa/meg-unificado-qa.html
       - name: Install isolated browser runner
-        run: npm install --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+        run: |
+          set -euo pipefail
+          PLAYWRIGHT_DIR="${RUNNER_TEMP}/meg-stage10-playwright"
+          mkdir -p "$PLAYWRIGHT_DIR" node_modules/@playwright
+          npm install --prefix "$PLAYWRIGHT_DIR" --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+          ln -s "$PLAYWRIGHT_DIR/node_modules/@playwright/test" node_modules/@playwright/test
+          node -e "import('@playwright/test').then(() => console.log('Runner Playwright isolado: OK'))"
       - name: Test entire synthetic flow in Chrome
         run: |
           set -euo pipefail
