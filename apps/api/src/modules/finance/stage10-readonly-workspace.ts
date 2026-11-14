@@ -1,12 +1,19 @@
 import {Prisma,UserStatus,prisma} from '@meg/database';
 
 /**
- * Etapa 10: resolução estritamente consultiva de proprietário/workspace.
- * Não chama resolveWorkspaceContext/ensurePrimaryWorkspace, que podem escrever.
- * Não conecta este módulo automaticamente a endpoints ou produção.
+ * Etapa 10: autorização e leituras na MESMA transação estritamente consultiva.
+ * Não usa resolveWorkspaceContext/ensurePrimaryWorkspace, que podem escrever.
+ * A consulta sem membership ativo falha sem reparar ou criar dados.
  */
-export async function resolveStage10ReadOnlyWorkspace(actorId:string){
- if(!actorId.trim())throw new Error('STAGE10_READ_ACCESS_DENIED');
+export type Stage10ReadOnlyScope={
+ actorId:string;ownerId:string;workspaceId:string;membershipId:string;
+};
+export async function withStage10ReadOnlyWorkspace<T>(
+ actorId:string,
+ read:(tx:Prisma.TransactionClient,scope:Stage10ReadOnlyScope)=>Promise<T>,
+):Promise<T>{
+ if(typeof actorId!=='string'||!actorId.trim())
+  throw new Error('STAGE10_READ_ACCESS_DENIED');
  return prisma.$transaction(async tx=>{
   await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY');
   const actor=await tx.user.findUnique({
@@ -25,7 +32,11 @@ export async function resolveStage10ReadOnlyWorkspace(actorId:string){
   });
   if(!membership||!membership.workspace.isActive)
    throw new Error('STAGE10_READ_ACCESS_DENIED');
-  return {actorId,ownerId:membership.workspace.ownerId,
-   workspaceId:membership.workspaceId,membershipId:membership.id};
- },{isolationLevel:Prisma.TransactionIsolationLevel.RepeatableRead,timeout:10000});
+  return read(tx,{actorId,ownerId:membership.workspace.ownerId,
+   workspaceId:membership.workspaceId,membershipId:membership.id});
+ },{isolationLevel:Prisma.TransactionIsolationLevel.RepeatableRead,
+     maxWait:5000,timeout:20000});
+}
+export function resolveStage10ReadOnlyWorkspace(actorId:string){
+ return withStage10ReadOnlyWorkspace(actorId,async(_tx,scope)=>scope);
 }
