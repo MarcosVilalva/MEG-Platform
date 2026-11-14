@@ -1,7 +1,6 @@
 import {useEffect,useState,type MouseEvent} from 'react';
 import {clearSession} from '../../app/auth-client';
 import {financeClient} from '../../app/finance-client';
-import {LoadingScreen} from '../auth/LoadingScreen';
 import {LoginScreen} from '../auth/LoginScreen';
 import {CreateAccountScreen} from '../auth/CreateAccountScreen';
 import {RecoverPasswordScreen} from '../auth/RecoverPasswordScreen';
@@ -27,7 +26,7 @@ function selectedRealExpense(row:QaLaunchTarget,data:Stage10RealRead):{
 }|null{
  const event=data.events.find(item=>item.id===row.id);
  const account=data.catalogs.accounts.find(item=>item.id===event?.accountId&&item.active&&item.kind==='monetary');
- if(!event||event.type!=='expense'||!account)return null;
+ if(!event||event.type!=='expense'||!['paid','planned'].includes(event.status)||!account)return null;
  return {event,accountName:account.name};
 }
 function realEdit(row:QaLaunchTarget,data:Stage10RealRead):EditExpenseSnapshot|null{
