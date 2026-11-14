@@ -245,6 +245,7 @@ try{
  // grants efetivos de escrita em outro schema, testados no DB descartavel.
  await prisma.$executeRawUnsafe('CREATE SCHEMA meg_stage10_foreign_fixture');
  await prisma.$executeRawUnsafe('CREATE TABLE meg_stage10_foreign_fixture.prohibited_table (id INTEGER)');
+ await prisma.$executeRawUnsafe('CREATE SEQUENCE meg_stage10_foreign_fixture.prohibited_sequence');
 
  await prisma.$executeRawUnsafe("CREATE ROLE meg_stage10_ci_reader LOGIN PASSWORD 'meg_stage10_ci_reader'");
  await prisma.$executeRawUnsafe('REVOKE TEMPORARY ON DATABASE meg_stage10_test FROM PUBLIC');
@@ -256,6 +257,16 @@ try{
   url:'postgresql://meg_stage10_ci_reader:meg_stage10_ci_reader@127.0.0.1:5439/meg_stage10_test?schema=public',
  }}});
  try{
+  await assertStage10ReadOnlyDatabaseRole(reader);
+  await prisma.$executeRawUnsafe('GRANT USAGE ON SCHEMA meg_stage10_foreign_fixture TO meg_stage10_ci_reader');
+  await prisma.$executeRawUnsafe('GRANT INSERT ON TABLE meg_stage10_foreign_fixture.prohibited_table TO meg_stage10_ci_reader');
+  await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
+   /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,'write grant in another schema must block QA startup');
+  await prisma.$executeRawUnsafe('REVOKE INSERT ON TABLE meg_stage10_foreign_fixture.prohibited_table FROM meg_stage10_ci_reader');
+  await prisma.$executeRawUnsafe('GRANT UPDATE ON SEQUENCE meg_stage10_foreign_fixture.prohibited_sequence TO meg_stage10_ci_reader');
+  await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
+   /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,'sequence write grant must block QA startup');
+  await prisma.$executeRawUnsafe('REVOKE UPDATE ON SEQUENCE meg_stage10_foreign_fixture.prohibited_sequence FROM meg_stage10_ci_reader');
   await assertStage10ReadOnlyDatabaseRole(reader);
   assert.equal(await reader.financialEvent.count({where:{workspaceId}}),5001);
   await assert.rejects(reader.account.create({data:{
