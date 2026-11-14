@@ -35,3 +35,16 @@ A Web atual `UnifiedRealReadQa` inicia por login e exige autenticação funciona
 Build e browser sintético verdes **não equivalem** a dados reais na preview, nem a autenticação real homologada, nem a permissão de merge/deploy. Não alterar produção, Android ou a preview homologada automaticamente.
 
 **Próximo passo exato:** verificar testes do app mínimo com JWT e conta PostgreSQL somente leitura no CI isolado; registrar o resultado no checkpoint oficial. Após isso, levantar alternativa de autenticação real sem gravações no backend QA e aguardar autorização para qualquer mudança de serviço.
+
+
+## 6. Auditoria da autenticação e permissões (14/11/2026)
+
+- Verificado o código em `apps/web/src/app/auth-client.ts`: `VITE_API_URL` configura **uma única origem** para login, validação `/auth/me`, refresh e GET financeiro. A sessão é guardada no cliente e `authenticatedRequest` faz refresh POST quando o access token expira. Logo, apontar `VITE_API_URL` ao backend somente leitura tornaria login e refresh impossíveis.
+- `apps/api/src/modules/auth/routes.ts`: `POST /auth/login` e `POST /auth/refresh` geram/renovam sessões persistidas. Esses endpoints devem permanecer apenas na API canônica, não no backend de leitura.
+- `apps/api/src/plugins/auth.ts`: autenticação usa `@fastify/jwt` com segredo privado `config.jwtSecret`. Não há contrato de chave pública/audience dedicado verificado para consumo pelo servidor QA. Compartilhar segredo de assinatura com outro serviço eleva a superfície de risco; não efetuar sem projeto de segurança aprovado.
+- `render.yaml` declara CORS de produção somente para origens existentes da aplicação (`marcosvilalva.github.io`, localhost/Capacitor); **a presença da origem específica da preview na configuração efetiva do Render não foi comprovada**. Não modificar CORS de produção como efeito colateral.
+- **Conclusão:** autenticação completa e dados reais pelo navegador continuam bloqueados. Uma solução deverá separar corretamente a origem que faz login/refresh da origem que serve GET com token, considerar expiração e revogação sem alterar a segurança do serviço canônico, e validar configuração real de CORS. Não publicar token, segredo ou credenciais em documentação, URLs, respostas ou CI.
+
+### Privilegios SQL reforçados
+
+A partir desta auditoria, `stage10-readonly-db-guard.ts` exige também que a sessão PostgreSQL esteja **efetivamente em modo READ ONLY**, que a role não tenha privilégios administrativos nem TEMP no banco e que nenhuma tabela/sequence de schemas não sistêmicos tenha concessões efetivas de escrita. A verificação considera grants efetivos fora de `public`, além das transações READ ONLY do snapshot. Os testes criam roles, schemas e concessões apenas no PostgreSQL descartável do CI; **nenhuma operação desse tipo é autorizada na produção por esta documentação**.
