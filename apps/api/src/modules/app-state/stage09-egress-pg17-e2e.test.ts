@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
 import { normalizationPreview, normalizedStateForRead } from './normalization-migration';
 import { periodicNormalizationPreview } from './normalization-periodic-audit';
-import { cachedNormalizedStateForRead, isStage09ReadCacheEnabled } from './normalization-read-cache';
+import { cachedNormalizedStateForRead, isStage09ReadCacheEnabled, readCacheFitsTechnicalLimits } from './normalization-read-cache';
 import { buildNormalizationPreview } from './normalization-migration-core';
 import {
   NORMALIZED_LEGACY_MIRROR_SELECT,
@@ -510,6 +510,15 @@ async function main() {
     financialFallbackPreserved: true,
   }));
 
+  // Limite de contagem exercitado sem alocar payloads financeiros enormes.
+  assert.ok(liveReadA);
+  assert.equal(readCacheFitsTechnicalLimits(liveReadA), true);
+  const oversizedSyntheticResponse = {
+    ...liveReadA,
+    state: { transactions: Array.from({ length: 5001 }, (_, index) => ({ id: String(index) })) },
+  } as NonNullable<typeof liveReadA>;
+  assert.equal(readCacheFitsTechnicalLimits(oversizedSyntheticResponse), false,
+    'Mais de 5000 lançamentos devem impedir o cache antes da serialização.');
   // Proteção de memória: resposta maior que 10 MiB não é armazenada
   // no processo Node, mas continua integralmente disponível ao cliente.
   const largeNonFinancialState = {
