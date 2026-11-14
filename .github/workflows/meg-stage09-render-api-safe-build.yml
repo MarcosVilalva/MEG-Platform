@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - 'fix/stage09-render-safe-build-qa-20261114'
+      - 'safety/stage09-render-build-non-destructive-20261114'
 
 permissions:
   contents: read
 
 jobs:
   compile-without-database:
-    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.ref == 'refs/heads/fix/stage09-render-safe-build-qa-20261114'
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && (github.ref == 'refs/heads/fix/stage09-render-safe-build-qa-20261114' || github.ref == 'refs/heads/safety/stage09-render-build-non-destructive-20261114')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
