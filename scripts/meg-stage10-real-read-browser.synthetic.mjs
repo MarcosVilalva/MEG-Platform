@@ -97,7 +97,7 @@ try{
  await page.locator('input[type=password]').fill('synthetic-passphrase-for-test');
  await page.getByRole('button',{name:'Entrar no MEG'}).click();
  await page.locator('[data-meg-unified-screen="real-loading"][role="alert"]').waitFor({state:'visible',timeout:20000});
- assert.match(await page.locator('[data-meg-unified-screen="real-loading"]').innerText(),/limite seguro de 5\\.000 lancamentos/);
+ assert.ok((await page.locator('[data-meg-unified-screen="real-loading"]').innerText()).includes('limite seguro de 5.000 lancamentos'));
  assert.equal(await page.getByText('DESPESA SINTETICA PARA NAVEGADOR').count(),0);
  assert.equal(await page.locator('.meg-unified-stamp').count(),0);
  assert.deepEqual(errors,[],'Sem excecao JS nem no caso de limite');
