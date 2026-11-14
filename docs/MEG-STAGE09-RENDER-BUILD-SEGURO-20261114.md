@@ -262,3 +262,50 @@ concluidas. #674, #676, #690 e #691 mantem seus gates separados.
 Preparacao concluida nos limites descritos, sem liberar producao. O proximo ato
 operacional depende dos gates pendentes e de autorizacao especifica. Esta rodada
 nao deve voltar a pedir instalacao de backup, chave ou teste de transporte ja aprovado.
+
+
+### Cadeia reconcile -> activate do startup, PG17 efemero (14/11/2026)
+
+- Teste adicional em `scripts/meg-stage09-render-startup-pg17-synthetic.test.ts`,
+  commit de prova `72d3f02ad12937ad97425adfbc9472321172c661`.
+  O teste confere por leitura direta o trecho de `apps/api/src/server.ts` que
+  encadeia `ensurePrimaryWorkspace -> reconcilePrimaryAppStateFromNormalized ->
+  activateNormalizationPrimary`, os retries e o `catch`; reproduz essa
+  mesma sequencia com os **writers reais** e as fixtures PG17 efemeras.
+  **Nao executou o processo Fastify**, as rotas HTTP, timers nem integracoes
+  externas. Mudanca do bloco de startup deve exigir revisao do teste.
+- **Legado:** o `reconcile` anterior a ativacao gera
+  `NORMALIZATION_PRIMARY_REQUIRED`. O `catch` do startup registra
+  `status=fallback`, `reason=NORMALIZATION_PRIMARY_REQUIRED`;
+  a ativacao automatica nao e alcancada. O `AppState.state/revision`
+  e a contagem de `FinancialEvent` permanecem intactos no fixture.
+- **Ja normalizado e reconciliado:** a mesma sequencia conclui e registra
+  `status=completed` com `primary=true` e `reconciled=true`.
+  Uma chamada sem alteracoes de dados nao incrementa revision nem duplica
+  `FinancialEvent`.
+- **Rollback administrativo:** apos rollback explicito para
+  `app-state-rollback`, a cadeia passa pelo mesmo erro no reconcile
+  e registra **`status=fallback`** em vez de `rollback-protected`,
+  pois nao chega a chamar `activate(..., {automatic:true})`.
+  O modo gravado, os valores, a revisao e as contagens permanecem
+  preservados. Uma leitura posterior por `normalizedStateForRead`
+  reconhece o rollback e atualiza o status para `rollback-protected`.
+  Portanto o status de runtime pode variar conforme o caminho de leitura,
+  mesmo com o rollback persistido sem mutacao.
+- **Prova exata do commit:** workflow
+  [PG17 #43642900810](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43642900810)
+  `SUCCESS`; no log
+  `PG17_SYNTHETIC_STARTUP_CHARACTERIZATION_PASS` com
+  `startup_legacy_fallback=true`,
+  `startup_normalized_completed=true`,
+  `startup_rollback_status_fallback=true`,
+  `startup_http_not_executed=true`.
+  Workflow independente
+  [build sem DB #43642900797](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43642900797)
+  `SUCCESS`, ambos no SHA `72d3f02ad12937ad97425adfbc9472321172c661`.
+- **Interpretacao restrita:** foi comprovada a semantica desse fluxo em
+  fixtures, nao a incidencia real, perda de dados, o startup HTTP integral
+  ou o comportamento de todas as rotinas concorrentes/timers.
+  Nao mudar ordem, `catch`, fonte canonica, rollback ou regras
+  financeiras sem decisao expressa. Issue #691 continua bloqueando
+  merge, deploy, Blueprint sync e alteracao do Render produtivo.
