@@ -107,3 +107,56 @@ Nenhuma alteração em `main`, serviço Render, Supabase produtivo, ambiente WSL
 **Governança:** PR #689 e PR #666 Draft, sem merge/deploy. A PR #689 está 2 commits atrás da branch-base #666, ambos apenas no arquivo de checkpoint (comparação feita em 14/11); revalidar antes de eventual integração. Android, Web homologada, Supabase, Render, WSL, Vault, dados reais e configuração de cobrança não foram alterados.
 
 Próximas evidências necessárias para uma conclusão operacional: correlação read-only por query/endpoint na origem real do Shared Pooler, medição de custo de CPU/IO/latência, frequência efetiva de cache hits e série de Egress após autorização expressa de implantação segura. Até lá, **sem recomendação de merge ou deploy**.
+
+
+## 14/11/2026 | Escalabilidade PG17, taxas de alteração e verificação operacional adicional
+
+**Escopo mantido:** exclusivamente CI com PostgreSQL 17 efêmero. Nenhum dado, migração, produção, Vault, Render ou Supabase real foi modificado. Workflow `.github/workflows/meg-stage09-egress-pg17-synthetic.yml` ganhou a etapa isolada `apps/api/src/modules/app-state/stage09-egress-performance-pg17.test.ts` após os testes financeiros de integridade.
+
+### Comparativo de execução do servidor PostgreSQL (EXPLAIN ANALYZE)
+
+Benchmark de 3 repetições cronometradas após aquecimento por tamanho. O valor é a mediana de `Execution Time` no servidor PostgreSQL, **não porcentagem de CPU** nem latência do Supabase. As duas variantes têm assinatura de linha completa e toda a representação é comparada. Resultados do job [#43552019834](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43552019834) (SUCCESS):
+
+| Eventos fictícios | SHA-256 via `jsonb_agg` original | SHA-256 por linha + `string_agg` adotado | Redução da mediana |
+|---:|---:|---:|---:|
+| 3.630 | 84,306 ms | 52,137 ms | 38,2% |
+| 12.000 | 256,928 ms | 152,631 ms | 40,6% |
+| 24.000 | 516,758 ms | 290,242 ms | 43,8% |
+
+Uma segunda rodada [#43552309177](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43552309177) também terminou SUCCESS, com tempos 87,215 → 60,394 ms; 300,870 → 206,147 ms; 600,050 → 393,725 ms. A variabilidade entre execuções impede impor um ganho absoluto universal. Por reduzir o volume intermediário que chega ao agregador, a branch experimental passou a usar `string_agg` dos hashes de 64 caracteres das **linhas completas**, ordenados por ID, e SHA-256 final. O teste confere que `completeDatabaseSignature` corresponde exatamente à variante adotada.
+
+A terceira rodada [#43552538645](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43552538645) (SUCCESS) comparou também uma variante com CTE `MATERIALIZED`: em 3.630/12.000/24.000 eventos sua mediana foi 104,512/277,381/559,896 ms, acima da versão por linha sem CTE (78,416/243,306/483,180 ms). **CTE não adotada.** A assinatura criptográfica foi idêntica entre essas duas variantes em todos os tamanhos.
+
+`EXPLAIN (ANALYZE, BUFFERS)` também foi coletado. Houve execuções sem leitura/escrita de blocos temporários, mas uma rodada com estado sintético modificado registrou até 3.068 blocos temporários escritos em 24.000 eventos nas duas variantes. Portanto, o SHA por linha **não elimina garantidamente uso de arquivos temporários**, e nenhum limite de memória do PostgreSQL foi comprovado. A comparação foi feita com o mesmo tamanho de fixture dentro de cada rodada.
+
+### Ensaios de acerto do cache com frequência de alterações
+
+12 auditorias por cenário, todas fictícias e com confirmação de reconciliação; mutação controlada em propriedade do AppState apenas para invalidar a assinatura. Resultado [PG17 #43552309177](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43552309177), SUCCESS:
+
+| Cenário de mutações | Acertos (de 12) | Bytes totais transferidos | Economia frente a 12 auditorias integrais |
+|---:|---:|---:|---:|
+| 0% | 11 | 6.740.723 | 91,667% |
+| 25% | 9 | 20.217.858 | 75,006% |
+| 50% | 6 | 40.433.701 | 50,014% |
+| 100% | 0 | 80.865.396 | 0,031% |
+
+O cenário de 0% não mostra 99,998% agregado porque inclui a **primeira execução integral obrigatória**. Com mudança a cada ciclo, a economia efetiva desaparece. Esta simulação não mede a taxa real de alterações do MEG nem efeitos de reinicializações frequentes no Render.
+
+### Memória e concorrência
+
+Para as fases 3.630/12.000/24.000, o processo Node do runner registrou na rodada final RSS de **455/616/1.060 MiB**, respectivamente, **após** construir/avaliar o preview completo. Esse RSS não é memória do PostgreSQL e **não pode ser atribuído apenas ao novo SHA**. É sinal de risco de crescimento da auditoria integral e das fixtures no Node em tamanhos maiores, não previsão direta de consumo de produção. Quatro assinaturas concorrentes na rodada final concluíram em 174/452/884 ms de tempo total de parede, respectivamente. Não foi medida concorrência multi-instância real de Render.
+
+**Referência de capacidade:** [documentação oficial Render Compute Plans](https://render.com/docs/compute-plans) lista 512 MB RAM e 0,1 CPU para o plano `free`. **Não foi confirmado o plano da instância Render efetivamente utilizada**, por falta de seleção autorizada do workspace e de métricas privadas. Não assumir tolerância de 24.000 eventos em plano Free apenas com base no runner de CI.
+
+### Observação externa sem mutações
+
+Consultas agregadas de `supavisor_logs` e `postgres_logs` via serviço de Logs do Supabase, **somente leitura**, sem acesso aos lançamentos: 12/11 UTC, 1.315 e 412 entradas; 13/11 UTC, 1.201 e 413 entradas, respectivamente. No dia 13/11, 951 logs do Supavisor eram `session` (level info), 218 `proxy`, 32 sem modo. Esses registros não contêm volume de bytes por SQL e não provam origem causal. `get_project` retornou `ACTIVE_HEALTHY`, que não prova que as restrições organizacionais por Egress tenham sido removidas. [Supabase oficial](https://supabase.com/docs/guides/platform/manage-your-usage/egress) confirma que resultados de consultas via Supavisor compõem Shared Pooler Egress, mas **não fornece atribuição quantitativa por consulta** nesses logs.
+
+Comparação apenas hipotética do fixture: 94 auditorias completas (94 × 6.740.840) + 19 leituras de startup completas (19 × 4.375.109) totalizariam 716.766.031 bytes em um dia, próximos de 715,37 MB do tooltip de produção em 12/11. **Não foi comprovado que ocorreram exatamente 94 auditorias, que os payloads reais têm o mesmo tamanho ou que essas eram todas as consultas**, logo a proximidade aritmética não constitui identificação causal definitiva.
+
+### Situação de entrega e critérios
+
+- Todos os testes financeiros, hash e medição sintética avaliados até os jobs citados: **PASS**. Os jobs gerais correspondentes também concluíram SUCCESS.
+- A PR #689 permanece **Draft**, sem merge em PR #666 ou `main`, sem deploy. A branch experimental foi sincronizada com a base atual de #666 em commit de integração **interno à branch experimental**, preservando os mesmos nove arquivos de alteração e nenhum código de produção. Revalidar CI do HEAD após documentação.
+- **NO-GO operacional:** faltam métricas reais de CPU/IO/memória de Supabase e Render, taxa de cache hits/uptime, atribuição real de bytes e teste em staging de infraestrutura comparável. A CI efêmera é homologação técnica sintética, **não** homologação operacional de produção.
+- **Deploy e merge produtivo não executados nem autorizados.** Não contornar quotas com upgrade, alteração de plano, intervalo ou remoção de fingerprint. Gates de DR: Gate 1 PARCIAL; Gates 2–4 NO-GO. Issues #674/#676 permanecem abertas.
