@@ -117,8 +117,22 @@ try{
   role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:false,
  }});
  const denied=await get(server.jwt.sign({sub:inactive.id,role:'VIEWER',email:inactive.email}));
- assert.notEqual(denied.statusCode,200,'ator inativo nao pode acessar dados');
+ assert.equal(denied.statusCode,403,'ator inativo nao pode acessar dados');
  assert.ok(!denied.body.includes('Despesa sintetica A'));
+
+ // Um evento com ownership divergente jamais pode ser agregado ao
+ // resumo financeiro canonico que ainda opera pelo userId.
+ const misplaced=await prisma.financialEvent.create({data:{
+  userId:ownerId,workspaceId:otherWorkspaceId,
+  description:'Fixture de escopo divergente',type:'expense',status:'planned',
+  date:new Date('2026-11-12T12:00:00Z'),competence:'2026-11',
+  amount:'30',signedAmount:'-30',
+ }});
+ const mixed=await get(tokenA);
+ assert.equal(mixed.statusCode,409,'escopo misto deve falhar fechado');
+ assert.equal(mixed.json().error,'STAGE10_WORKSPACE_FINANCIAL_SCOPE_NOT_EXCLUSIVE');
+ assert.ok(!mixed.body.includes('Despesa sintetica A'));
+ await prisma.financialEvent.delete({where:{id:misplaced.id}});
 
  console.log('STAGE10_POSTGRES_JWT_HTTP_READ_ONLY_ISOLATION PASS');
 }finally{
