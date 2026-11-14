@@ -1,0 +1,111 @@
+/**
+ * Etapa 09, investigação isolada da issue #690.
+ *
+ * O GET /app-state conserva o mesmo contrato/objeto e todos os dados
+ * financeiros. Apenas deixa de trafegar o estado inteiro pelo pooler quando
+ * a assinatura integral do banco não mudou. NÃO usa TTL nem revision isolada:
+ * alterações externas, arquivamentos e modificações de payload também contam.
+ */
+import { completeDatabaseSignature } from './normalization-periodic-audit';
+import {
+  normalizedStateForRead,
+  recordNormalizationRuntimeStatus,
+} from './normalization-migration';
+
+type ReadResult = Awaited<ReturnType<typeof normalizedStateForRead>>;
+type CacheEntry = {
+  signature: string;
+  value: NonNullable<ReadResult> & { integrity: { reconciled: true; count: number } };
+};
+const cache = new Map<string, CacheEntry>();
+// Free Render: manter somente o último workspace e não fixar snapshots gigantes
+// na memória. São limites técnicos, sem efeito sobre dados ou regras de negócio.
+const MAX_CACHED_WORKSPACES = 1;
+const MAX_CACHED_RESPONSE_BYTES = 10 * 1024 * 1024;
+const MAX_CACHED_TRANSACTIONS = 5000;
+
+/** Desativado por padrão. O rollout exige decisão operacional específica. */
+export function isStage09ReadCacheEnabled(): boolean {
+  return process.env.MEG_STAGE09_GET_APPSTATE_CACHE === 'enabled';
+}
+
+function reconciledPrimary(result: ReadResult): result is NonNullable<ReadResult> & {
+  integrity: { reconciled: true; count: number };
+} {
+  return Boolean(
+    result && result.normalizedPrimary &&
+      'integrity' in result && result.integrity.reconciled === true,
+  );
+}
+
+/**
+ * Avaliação puramente técnica do espaço de cache. Não altera a resposta ou
+ * as regras de negócio; usada somente após reconciliação integral positiva.
+ */
+export function readCacheFitsTechnicalLimits(result: NonNullable<ReadResult>): boolean {
+  const state = result.state;
+  const transactions = state && typeof state === 'object' && !Array.isArray(state)
+    ? (state as { transactions?: unknown }).transactions : null;
+  if (Array.isArray(transactions) && transactions.length > MAX_CACHED_TRANSACTIONS) return false;
+  try {
+    return Buffer.byteLength(JSON.stringify(result), 'utf8') <= MAX_CACHED_RESPONSE_BYTES;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Somente leitura. A autenticação e a autorização de workspace continuam
+ * obrigatórias e são resolvidas PELO HANDLER antes desta função ser chamada.
+ *
+ * Sem assinatura, erro de SQL, divergência ou rollback, usa o read model
+ * integral sem reutilizar nenhum resultado antigo.
+ */
+export async function cachedNormalizedStateForRead(
+  workspaceId: string,
+  ownerId: string,
+): Promise<ReadResult> {
+  const key = `${workspaceId}:${ownerId}`;
+  let before: string | null = null;
+  try {
+    before = await completeDatabaseSignature(workspaceId);
+  } catch {
+    cache.delete(key);
+    return normalizedStateForRead(workspaceId, ownerId);
+  }
+
+  const previous = cache.get(key);
+  if (before !== null && previous?.signature === before) {
+    // Preserva a observabilidade do caminho de leitura original.
+    recordNormalizationRuntimeStatus({
+      status: 'completed', primary: true, reconciled: true,
+      count: previous.value.integrity.count,
+      reason: null,
+    });
+    return previous.value;
+  }
+  cache.delete(key);
+
+  const result = await normalizedStateForRead(workspaceId, ownerId);
+  if (!before || !reconciledPrimary(result)) return result;
+
+  // Não adicionar cache quando houver escrita intercalada entre as duas
+  // assinaturas e a reconstrução financeira original.
+  try {
+    const after = await completeDatabaseSignature(workspaceId);
+    if (after !== before) return result;
+
+    // Rejeitar até mesmo serialização de resultados com mais de 5000
+    // transações; payloads grandes continuam sendo respondidos sem cache.
+    if (!readCacheFitsTechnicalLimits(result)) return result;
+
+    cache.set(key, { signature: before, value: result });
+    if (cache.size > MAX_CACHED_WORKSPACES) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) cache.delete(oldest);
+    }
+  } catch {
+    cache.delete(key);
+  }
+  return result;
+}

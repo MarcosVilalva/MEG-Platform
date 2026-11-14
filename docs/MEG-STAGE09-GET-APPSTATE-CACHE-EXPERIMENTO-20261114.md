@@ -1,0 +1,99 @@
+# MEG Etapa 09 | Candidata isolada de leitura do GET /app-state com assinatura integral
+
+**Estado:** experimento Draft de redução de Shared Pooler Egress. **Base:** PR #689, exclusivamente experimental, sem merge ou deploy. **Issue:** [#690](https://github.com/MarcosVilalva/MEG-Platform/issues/690). **Autoridade:** `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`, checkpoint oficial PR #666.
+
+## 1. O problema confirmado
+
+Inspeção read-only em 14/11/2026:
+- `pg_stat_statements`, acumulado desde 10/07/2026: a consulta ampla de `FinancialEvent` com `sourcePayload`, usada em `normalization-migration.ts`, teve **6.820 chamadas e 24.753.440 linhas**. A consulta pode ser compartilhada por GET, auditoria e outras rotinas, portanto não representa contagem exclusiva do GET nem mede bytes de rede faturados.
+- Em PostgreSQL 17 sintético com 3.630 eventos, `normalizedStateForRead` retornou **6.740.517 e 6.740.297 bytes de protocolo** em duas chamadas idênticas. Ambas tinham mesmo estado, revisão, integridade financeira e fingerprint.
+
+## 2. Proposta
+
+A nova função `cachedNormalizedStateForRead` em `apps/api/src/modules/app-state/normalization-read-cache.ts` pode ser usada SOMENTE pelo `GET /app-state` autenticado, **quando a variável de ambiente `MEG_STAGE09_GET_APPSTATE_CACHE` tiver valor exato `enabled`**. Sem essa variável ou com qualquer outro valor, a rota usa a leitura original `normalizedStateForRead`. Nenhum writer, transformação de saldo, esquema do banco, outro endpoint ou frontend foi modificado.
+
+Na execução habilitada:
+1. A rota chama `resolveWorkspaceContext` e verifica o contexto do usuário em **todo GET**, como antes. O cache usa chave de workspace + proprietário, não é um cache global cross-workspace.
+2. Uma única instrução SQL somente leitura calcula SHA-256 sobre TODAS as colunas de `AppState` e TODAS as linhas de `FinancialEvent`, inclusive arquivadas, com ordem estável. Retorna hash pequeno e não valores ou textos financeiros.
+3. Somente um resultado anterior com `normalizedPrimary=true` e `integrity.reconciled=true` pode ser reutilizado se a assinatura inteira corresponder. Erro SQL, primeiro acesso, alteração, modo rollback ou divergência passam pelo read-model **original**.
+4. O primeiro miss faz leitura financeira completa e exige hash igual **antes e depois** para gravar cache. Se houver escrita intercalada, a resposta segue o caminho integral e não será guardada.
+5. Mantém no máximo UM workspace em memória e não armazena resposta superior a **10 MiB**. Em volumes maiores volta à leitura original, sem limitar o tamanho da resposta HTTP.
+6. Em cache hit a observabilidade de `recordNormalizationRuntimeStatus` é atualizada sem mudar os dados financeiros.
+
+A interface HTTP e a ordenação dos lançamentos devem ser exatamente iguais. Não se emprega simples TTL ou só revisão, pois isso deixaria passar mudanças externas no banco.
+
+## 3. Caracterização PostgreSQL 17 descartável
+
+No SHA inicial da candidata, [PG17 #43585471550](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43585471550), **SUCCESS**:
+
+- Primeira leitura guardada: **6.740.633 bytes** do PostgreSQL para Node.
+- Segunda leitura sem alteração: **168 bytes**, redução **99,998% nessa repetição específica**.
+- Resposta completa do GET guardado idêntica à leitura antiga, incluindo estado, revisão, integridade e timestamps.
+- Alteração externa direta em `signedAmount` levou à divergência e ao fallback. Modificação não financeira de `AppState` invalidou cache. Rollback forçou leitura legada. Arquivamento externo foi detectado e não criou lançamento.
+- Os testes anteriores de ledger, concorrência, rollback transacional, exclusão de órfãos, sourcePayload, status e fingerprint permaneceram preservados.
+
+Depois acrescentamos testes de **alteração direta de sourcePayload** e contrato da variável de ambiente: ausência/valor `true` desativam a otimização; somente `enabled` ativa. A suíte final deve ser verificada no HEAD após documentação, não presumir sucesso por uma rodada anterior.
+
+## 4. Segurança operacional
+
+**Limitações:**
+- Hash de todas as linhas consome CPU/IO no PostgreSQL. A redução de bytes por GET não significa economia de CPU, RSS ou Egress faturado. Falta medir o hit rate e a taxa de reinicializações reais.
+- Uma atualização no banco após o snapshot do SQL pode ocorrer entre a checagem e o envio da resposta, como na leitura original. A assinatura dupla no miss impede o cache de uma reconstrução com alterações intercaladas detectadas, mas não representa bloqueio de escrita ou serialização linearizável de respostas.
+- Apenas repetição sem mudança obtém a redução de 99,998% por consulta. Primeira leitura e alterações exigem a auditoria financeira completa. A taxa real de GET do MEG e o mix de requests não foram contabilizados por endpoint.
+- Não libera merge/deploy: [#691](https://github.com/MarcosVilalva/MEG-Platform/issues/691) exige remover DDL/DML do Build Command. Backup e recursos gerenciados Supabase mantêm Gates 1 PARCIAL e 2–4 NO-GO.
+
+**Critérios de rollout futuro**: backup íntegro e restaurável, Build Command seguro, isolamento de QA, acesso/identidade testados em múltiplos workspaces, testes de integrações financeiras, observabilidade de acertos/misses e capacidade PG, autorização separada para alteração de ambiente e deploy. Com flag ausente o comportamento produtivo permanece original.
+
+## 5. Arquivos
+
+- Criado `apps/api/src/modules/app-state/normalization-read-cache.ts`.
+- Alterado `apps/api/src/modules/app-state/routes.ts`: apenas seleção condicional da leitura no GET autenticado, opt-in e sem mudança de resposta.
+- Ampliado `apps/api/src/modules/app-state/stage09-egress-pg17-e2e.test.ts`: protocolo PG17, igualdade completa, alteração externa, rollback, arquivamento, sourcePayload e feature flag.
+- CI da branch de QA `fix/stage09-appstate-read-qa-20261114`: workflow PG17 descartável, Platform CI.
+- Nenhuma configuração, segredo, rota HTTP, tabela, dado real ou aplicação Android/Web de produção foi alterada.
+
+
+## 6. Caracterização adicional de limites e isolamento, rodada 14/11/2026
+
+[PG17 descartável #43586280652](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43586280652): **SUCCESS**, incluindo os cenários:
+
+- Consulta grande com metadado **100% fictício de 11 MiB** no `AppState`, resposta funcional preservada e leituras de **18.274.997 bytes** em ambas as chamadas, comprovando que o cache **não armazena objetos com mais de 10 MiB** e não trunca resposta.
+- Dois workspaces fictícios com proprietários diferentes: primeiro com 3.630 eventos, segundo com zero, ambos isolados; cache limitado a **um workspace**. Após acessar o segundo, voltar ao primeiro obrigou nova leitura SQL de **6.740.633 bytes** e nenhuma informação do outro workspace apareceu.
+- Sob cgroup Docker de **512 MiB comprovados**, fixture reconciliada de 3.630 eventos e GET guardado exercitado: RSS Node após preview/cache **212,77 MiB**, máximo do processo **219,54 MiB** e pico de cgroup reportado **163,49 MiB**. Valores do processo e do cgroup usam critérios diferentes de contagem de memória; não se deve compará-los diretamente como se fossem o mesmo indicador. O banco Postgres ficou em contêiner externo. Não é perfil real do Render.
+- No teste diagnóstico de 24.000 eventos **sem estado integralmente reconciliado**, cache não foi exercitado, e o pico cgroup atingiu **408,37 MiB**. Não homologar cache em volume financeiro reconciliado dessa ordem.
+- Novos testes da flag: ausência ou valor `true` desativam a otimização; somente valor exato `enabled` permite a rotina. Isso não ativa nenhuma flag na produção.
+- Inserida proteção adicional de **5.000 transações por resposta**: acima disso, o código evita até mesmo serializar um objeto grande para estimar a memória; usa a leitura financeira original. Este limite é técnico do cache, não limita lançamentos nem as respostas.
+
+**Não existe aprovação de deploy ou medição de economia faturada.** A versão de código final da rodada, commit `77d6961ebaafe3e75df55c38897d96d04c55f818`, concluiu [PG17 sintético #43586579113](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43586579113) e [Platform CI #43586579066](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43586579066) em **SUCCESS**. A função pura de elegibilidade foi testada com **5.001 registros fictícios**, confirmando recusa antecipada de cache antes de serialização; com 3.630 registros reconciliados, aceitou a resposta. O endpoint de produção permanece inalterado, e ainda falta teste de autenticação real em staging isolado e Egress faturado.
+
+## 7. Decisão técnica específica desta PR
+
+**GO técnico sintético para o candidato e seus limites; NO-GO para ativação produtiva.** Flag opt-in ausente por padrão, testes de isolamento multiworkspace e drift PASS, memória Free simulada por contêiner real PASS no volume homologado de 3.630. Sem merge nem deploy, sem atualização de `main`, Android, Web ou banco real. A PR deve permanecer Draft até gates de DR, #691, autorização de deployment e análise de custo CPU/IO/hit rate reais.
+
+
+## 8. Teste adicional de rota Fastify e resolução real de workspace (14/11/2026)
+
+Adicionado `apps/api/src/modules/app-state/stage09-get-auth-route-pg17.test.ts` e etapa ao workflow isolado, usando PostgreSQL 17 efêmero. É teste da **rota real Fastify `GET /app-state`**, com **plugin JWT verdadeiro do MEG** (`registerAuth`), usando chaves e tokens **inteiramente fictícios**, e resolução/autorização de membership pelo serviço e banco **reais** do MEG.
+
+**Evidência:** [PG17 #43587267945](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587267945): **SUCCESS**, commit de código `c9d4bab92d7c09e8559aa1830a7308ad0b421b4e`. [Platform CI #43587267975](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587267975): **SUCCESS** no mesmo SHA.
+
+- Sem credencial e com token fictício desconhecido: HTTP 401, sem chamada de resolver workspace.
+- Proprietário do workspace A: HTTP 200, revisão/estado/metadata e `integrity.reconciled=true`.
+- Segundo GET do proprietário A com cache: contrato JSON idêntico.
+- Usuário VIEWER com membership ativa de A: HTTP 200 para o mesmo workspace, JSON idêntico.
+- Proprietário B com workspace B distinto: HTTP 200, sem exposição do estado privado de A.
+- Troca B → A: resultado A idêntico, com despejo de cache respeitado.
+- Feature flag ausente: rota original devolveu contrato JSON idêntico.
+
+**Limite do teste:** usa JWT real do plugin, mas credenciais assinadas com segredo fictício. Não cobre expiração/revogação de tokens ou configuração de identidade de produção. Não equivale a homologação de acesso real em staging. Nenhuma transação financeira ou segredo real.
+
+**Estado:** a melhoria permanece Draft e desligada por padrão, sem merge/deploy. Continuam bloqueadores de build produtivo (#691), backup/DR e comprovação de Egress faturado.
+
+
+### Revalidação da autenticação JWT real em CI
+
+O harness de autenticação inicialmente simulado foi substituído pelo plugin `apps/api/src/plugins/auth.ts` **real**, registrado no Fastify, com `JWT_SECRET` de teste fixada explicitamente no job e tokens assinados localmente. Não existe ligação a credenciais, tokens ou usuários produtivos. Foram repetidos os testes da rota com token ausente, token inválido, proprietários A/B, usuário VIEWER com membership ativa, cache hit, alternância entre workspaces e feature flag inativa.
+
+**Evidências no SHA de código `6dc16b0c22d1525667ed3f268d902cc85de5b5e4`:** [PostgreSQL17 sintético #43587685877](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587685877) **SUCCESS**, inclusive a etapa "Check genuine Fastify JWT guard and workspace isolation in synthetic PostgreSQL 17"; [Platform CI #43587685885](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43587685885) **SUCCESS**. O plugin real comprova a autenticação JWT em teste isolado, mas não homologa configuração real de segredo, refresh tokens, revogação, disponibilidade operacional ou segurança em staging; essas dependências permanecem fora do escopo da fixture.
+
+**Nenhum merge/deploy/ativação produtiva.**

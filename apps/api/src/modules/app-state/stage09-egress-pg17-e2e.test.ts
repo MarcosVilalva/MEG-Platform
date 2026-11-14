@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
 import { normalizationPreview, normalizedStateForRead } from './normalization-migration';
 import { periodicNormalizationPreview } from './normalization-periodic-audit';
+import { cachedNormalizedStateForRead, isStage09ReadCacheEnabled, readCacheFitsTechnicalLimits } from './normalization-read-cache';
 import { buildNormalizationPreview } from './normalization-migration-core';
 import {
   NORMALIZED_LEGACY_MIRROR_SELECT,
@@ -50,6 +51,17 @@ async function wireStats(): Promise<Traffic> {
 
 async function main() {
   guardDisposable();
+  // Só usar cache quando o operador habilitar explicitamente a flag.
+  const oldCacheFlag = process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
+  delete process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
+  assert.equal(isStage09ReadCacheEnabled(), false);
+  process.env.MEG_STAGE09_GET_APPSTATE_CACHE = 'true';
+  assert.equal(isStage09ReadCacheEnabled(), false);
+  process.env.MEG_STAGE09_GET_APPSTATE_CACHE = 'enabled';
+  assert.equal(isStage09ReadCacheEnabled(), true);
+  if (oldCacheFlag === undefined) delete process.env.MEG_STAGE09_GET_APPSTATE_CACHE;
+  else process.env.MEG_STAGE09_GET_APPSTATE_CACHE = oldCacheFlag;
+
 
   const suffix = `${Date.now()}-synthetic`;
   const user = await prisma.user.create({
@@ -401,6 +413,203 @@ async function main() {
     sameReconciledFinancialState: true,
   }));
 
+  // Issue #690: cache de GET apenas após auditoria financeira integral e
+  // duas assinaturas DB iguais. A rota continua autorizando o workspace a
+  // cada request, e o payload HTTP preserva o contrato original.
+  await resetWire();
+  const cachedGetFirst = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const cachedGetFirstWire = await wireStats();
+  assert.deepEqual(cachedGetFirst, liveReadA,
+    'Primeiro GET guardado deve ser exatamente igual à leitura original.');
+  await resetWire();
+  const cachedGetSecond = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const cachedGetSecondWire = await wireStats();
+  assert.deepEqual(cachedGetSecond, liveReadA,
+    'GET sem mudança não pode alterar estado, revisão ou integridade.');
+  assert.ok(cachedGetSecondWire.serverToClientBytes < liveReadWireA.serverToClientBytes / 10,
+    'GET sem mudança deve transferir apenas digest, não FinancialEvent/AppState inteiro.');
+
+  // Alteração externa em campo financeiro deve exigir leitura integral,
+  // inclusive fallback, sem confiar numa revisão AppState que não mudou.
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[1] },
+    data: { signedAmount: -927.51 },
+  });
+  await resetWire();
+  const externalAmountRead = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const externalAmountWire = await wireStats();
+  assert.equal(externalAmountRead?.dataSource, 'app-state-fallback',
+    'Drift financeiro fora da API deve recusar snapshot previamente conciliado.');
+  assert.ok(externalAmountWire.serverToClientBytes > liveReadWireA.serverToClientBytes / 2);
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[1] }, data: { signedAmount: batch[1].signedAmount },
+  });
+  const restoredRead = await cachedNormalizedStateForRead(workspace.id, user.id);
+  assert.deepEqual(restoredRead, liveReadA,
+    'Depois de restaurar dados fictícios, GET deve recalcular estado completo.');
+
+  // sourcePayload pode mudar sem revisão AppState e sem alterar montante.
+  // Um cache por revisão ou ETag simples entregaria transação obsoleta.
+  const sourcePayloadId = insertedIds[2];
+  const oldPayload = batch[2].sourcePayload as Prisma.InputJsonValue;
+  await prisma.financialEvent.update({
+    where: { id: sourcePayloadId },
+    data: { sourcePayload: {
+      ...(oldPayload as Record<string, unknown>),
+      description: 'ALTERADO EXTERNAMENTE SOMENTE NO TESTE',
+    } as Prisma.InputJsonValue },
+  });
+  const payloadRead = await cachedNormalizedStateForRead(workspace.id, user.id);
+  assert.equal(payloadRead?.dataSource, 'app-state-fallback',
+    'Alteração externa no JSON financeiro invalida o resultado em memória.');
+  await prisma.financialEvent.update({
+    where: { id: sourcePayloadId }, data: { sourcePayload: oldPayload },
+  });
+  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id), liveReadA,
+    'Restaurado JSON fictício, a mesma resposta financeira deve ser devolvida.');
+
+  // Modificação de metadado não financeiro também altera a resposta HTTP.
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: { ...state, budgets: { updatedOutsideApi: 1 } } as Prisma.InputJsonValue },
+  });
+  const metadataRead = await cachedNormalizedStateForRead(workspace.id, user.id);
+  assert.equal(record(record(metadataRead?.state).budgets).updatedOutsideApi, 1);
+  assert.equal(metadataRead?.dataSource, 'normalized');
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id }, data: { state: state as Prisma.InputJsonValue },
+  });
+  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id),
+    await normalizedStateForRead(workspace.id, user.id),
+    'Depois de atualizar AppState, a resposta deve incluir updatedAt vigente.');
+
+  // Rollback administrativo é barreira absoluta ao cache normalizado.
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: { ...state, __megNormalization: { mode: 'app-state-rollback' } } as Prisma.InputJsonValue },
+  });
+  const rollbackGet = await cachedNormalizedStateForRead(workspace.id, user.id);
+  assert.equal(rollbackGet?.dataSource, 'app-state');
+  assert.equal(rollbackGet?.normalizedPrimary, false);
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id }, data: { state: state as Prisma.InputJsonValue },
+  });
+  assert.deepEqual(await cachedNormalizedStateForRead(workspace.id, user.id),
+    await normalizedStateForRead(workspace.id, user.id),
+    'Depois de atualizar AppState, a resposta deve incluir updatedAt vigente.');
+  console.log('STAGE09_GET_APPSTATE_CACHE_DIAG=' + JSON.stringify({
+    syntheticOnly: true,
+    records: EVENT_COUNT,
+    firstReadBytes: cachedGetFirstWire.serverToClientBytes,
+    repeatedReadBytes: cachedGetSecondWire.serverToClientBytes,
+    savedPercent: Number(
+      ((1 - cachedGetSecondWire.serverToClientBytes / liveReadWireA.serverToClientBytes) * 100).toFixed(3),
+    ),
+    exactResponse: true, detectsExternalMonetaryDrift: true,
+    detectsNonFinancialChange: true, respectsRollback: true,
+    financialFallbackPreserved: true,
+  }));
+
+  // Limite de contagem exercitado sem alocar payloads financeiros enormes.
+  assert.ok(liveReadA);
+  assert.equal(readCacheFitsTechnicalLimits(liveReadA), true);
+  const oversizedSyntheticResponse = {
+    ...liveReadA,
+    state: { transactions: Array.from({ length: 5001 }, (_, index) => ({ id: String(index) })) },
+  } as NonNullable<typeof liveReadA>;
+  assert.equal(readCacheFitsTechnicalLimits(oversizedSyntheticResponse), false,
+    'Mais de 5000 lançamentos devem impedir o cache antes da serialização.');
+  // Proteção de memória: resposta maior que 10 MiB não é armazenada
+  // no processo Node, mas continua integralmente disponível ao cliente.
+  const largeNonFinancialState = {
+    ...state, stage09LargeMetadata: 'L'.repeat(11 * 1024 * 1024),
+  };
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: largeNonFinancialState as Prisma.InputJsonValue },
+  });
+  await resetWire();
+  const largeReadFirst = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const largeReadFirstWire = await wireStats();
+  await resetWire();
+  const largeReadSecond = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const largeReadSecondWire = await wireStats();
+  assert.deepEqual(largeReadSecond?.state, largeReadFirst?.state,
+    'Recusar cache grande não pode truncar a resposta HTTP.');
+  assert.equal(record(largeReadSecond?.state).stage09LargeMetadata,
+    largeNonFinancialState.stage09LargeMetadata);
+  assert.ok(largeReadFirstWire.serverToClientBytes > 10 * 1024 * 1024);
+  assert.ok(largeReadSecondWire.serverToClientBytes > 10 * 1024 * 1024,
+    'Resposta grande deve seguir leitura integral, sem cache persistente.');
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: state as Prisma.InputJsonValue },
+  });
+  console.log('STAGE09_GET_APPSTATE_MEMORY_CAP=' + JSON.stringify({
+    syntheticOnly: true,
+    nonFinancialSyntheticPayloadMiB: 11,
+    firstReadPgBytes: largeReadFirstWire.serverToClientBytes,
+    repeatedReadPgBytes: largeReadSecondWire.serverToClientBytes,
+    noCachingAboveTenMiB: true,
+    responseUnchanged: true,
+  }));
+
+  // Isolamento multiworkspace: o cache guarda apenas um workspace, com
+  // chave também pelo proprietário. O segundo não pode ver o estado do primeiro.
+  const secondUser = await prisma.user.create({
+    data: {
+      name: 'MEG OUTRO USUARIO FICTICIO',
+      email: `stage09-cache-other-${suffix}@example.invalid`,
+      passwordHash: 'SYNTHETIC-NO-CREDENTIALS',
+      role: UserRole.ADMIN, status: UserStatus.ACTIVE,
+      isActive: true, approvedAt: new Date(),
+    },
+  });
+  const secondary = await prisma.workspace.create({
+    data: {
+      name: 'Stage09 Isolated Read Cache Fixture',
+      slug: `isolation-read-cache-${suffix}`,
+      ownerId: secondUser.id,
+      members: {
+        create: { userId: secondUser.id, role: UserRole.ADMIN,
+          status: UserStatus.ACTIVE, isActive: true },
+      },
+      appState: {
+        create: {
+          userId: secondUser.id, revision: 1,
+          state: { transactions: [], budgets: {},
+            __megNormalization: { mode: 'normalized-primary' } },
+        },
+      },
+    },
+  });
+  const isolatedReadFirst = await cachedNormalizedStateForRead(secondary.id, secondUser.id);
+  const isolatedReadSecond = await cachedNormalizedStateForRead(secondary.id, secondUser.id);
+  assert.deepEqual(isolatedReadSecond, isolatedReadFirst);
+  assert.equal(isolatedReadFirst?.normalizedPrimary, true,
+    'Workspace vazio primario deve ser conciliado de forma independente.');
+  assert.equal(record(isolatedReadFirst.state).transactions instanceof Array, true);
+  assert.equal((record(isolatedReadFirst.state).transactions as unknown[]).length, 0);
+  assert.equal(await prisma.financialEvent.count({ where: { workspaceId: secondary.id } }), 0);
+  assert.notDeepEqual(isolatedReadFirst?.state, liveReadA?.state,
+    'Nunca reutilizar resultado financeiro de outro workspace.');
+  await resetWire();
+  const restoredMainWorkspace = await cachedNormalizedStateForRead(workspace.id, user.id);
+  const afterWorkspaceSwitchWire = await wireStats();
+  assert.equal(restoredMainWorkspace?.dataSource, 'normalized');
+  assert.equal((record(restoredMainWorkspace?.state).transactions as unknown[]).length, EVENT_COUNT);
+  assert.ok(afterWorkspaceSwitchWire.serverToClientBytes > 1_000_000,
+    'Trocar workspace deve desalojar o snapshot do anterior e recalcular com SQL.');
+  console.log('STAGE09_GET_APPSTATE_WORKSPACE_ISOLATION=' + JSON.stringify({
+    syntheticOnly: true,
+    workspaces: 2,
+    firstWorkspaceEvents: EVENT_COUNT,
+    secondWorkspaceEvents: 0,
+    cacheCapacity: 1,
+    afterSwitchPgBytes: afterWorkspaceSwitchWire.serverToClientBytes,
+    noCrossWorkspaceLeak: true,
+  }));
+
   // Caracterização da rotina anterior continua após os ensaios de cache.
   // Idempotencia: estado original e rows ja conciliados nao devem mudar.
   const unchanged = await reconcilePrimaryAppStateFromNormalized(workspace.id, { expectedRevision: 20 });
@@ -419,6 +628,9 @@ async function main() {
     data: { state: { ...state, transactions: [...payloads, orphan] } as Prisma.InputJsonValue },
   });
 
+  const archivedRead = await cachedNormalizedStateForRead(workspace.id, user.id);
+  assert.equal(archivedRead?.dataSource, 'app-state-fallback',
+    'Arquivamento externo deve invalidar o GET sem recriar evento nem entregar estado antigo.');
   const archivedPeriodic = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
   assert.equal(archivedPeriodic.reconciled, false,
     'Evento arquivado externamente deve invalidar cache e exigir reconciliação completa.');

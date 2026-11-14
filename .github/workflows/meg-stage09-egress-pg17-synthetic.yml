@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - 'fix/stage09-egress-projection-qa-20261113'
+      - 'fix/stage09-appstate-read-qa-20261114'
 
 permissions:
   contents: read
 
 jobs:
   pg17-egress-wire-synthetic:
-    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.ref == 'refs/heads/fix/stage09-egress-projection-qa-20261113'
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && (github.ref == 'refs/heads/fix/stage09-egress-projection-qa-20261113' || github.ref == 'refs/heads/fix/stage09-appstate-read-qa-20261114')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -84,6 +85,10 @@ jobs:
           fi
       - name: Compare PostgreSQL wire bytes and financial reconciliation in synthetic database
         run: npm exec --workspace apps/api -- tsx src/modules/app-state/stage09-egress-pg17-e2e.test.ts
+      - name: Check genuine Fastify JWT guard and workspace isolation in synthetic PostgreSQL 17
+        env:
+          JWT_SECRET: stage09-synthetic-jwt-secret-never-for-production
+        run: npm exec --workspace apps/api -- tsx src/modules/app-state/stage09-get-auth-route-pg17.test.ts
       - name: Verify 3630 synthetic events under a real 512 MiB container limit
         shell: bash
         run: |

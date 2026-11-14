@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 import { prisma } from '@meg/database';
 import { completeDatabaseSignature } from './normalization-periodic-audit';
+import { cachedNormalizedStateForRead } from './normalization-read-cache';
 import { normalizationPreview } from './normalization-migration';
 
 const DB = 'postgresql://ci:ci@127.0.0.1:5433/meg_stage09_egress_synthetic?schema=public';
@@ -43,6 +44,19 @@ async function main() {
   assert.equal(result.normalized.count, activeCount,
     'Eventos arquivados pela caracterizacao precedente nao integram a auditoria ativa.');
   if (expected === 3630) assert.equal(result.reconciled, true);
+  // Somente fixture reconciliada valida o GET sob o limite real do cgroup.
+  // Este ensaio inclui a reconstrução integral e sua duplicação em cache,
+  // além dos objetos de preview ainda vivos, para testar o pico de memória.
+  let readCacheValidated = false;
+  let getReadRssMiB: number | null = null;
+  if (expected === 3630 && result.reconciled) {
+    const a = await cachedNormalizedStateForRead(workspace.id, workspace.ownerId);
+    const b = await cachedNormalizedStateForRead(workspace.id, workspace.ownerId);
+    assert.deepEqual(a, b, 'GET guardado não pode divergir sob limite de memória.');
+    assert.equal(a?.dataSource, 'normalized');
+    readCacheValidated = true;
+    getReadRssMiB = Number((process.memoryUsage().rss / 1048576).toFixed(2));
+  }
   const rss = process.memoryUsage().rss;
   function cgroupValue(file: string): number | null {
     try {
@@ -70,6 +84,8 @@ async function main() {
     cgroupLimitMiB: Number((cgroupLimit!/1048576).toFixed(2)),
     cgroupPeakMiB: cgroupPeak == null ? null : Number((cgroupPeak/1048576).toFixed(2)),
     externalDatabase: false,
+    readCacheValidated,
+    getReadRssMiB,
   }));
 }
 main().catch(e => {
