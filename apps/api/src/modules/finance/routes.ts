@@ -19,6 +19,7 @@ import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './
 import { listCanonicalHomeCommitments } from './home-commitments-read';
 import { decodeCommitmentCursor } from './home-commitments-core';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
+import {registerStage10ReadOnlyRoutes} from './stage10-readonly-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
@@ -160,6 +161,7 @@ async function financialDataOwnerId(userId: string) {
 
 export async function financeRoutes(app: FastifyInstance) {
   registerPhoenixPreviewReads(app);
+  registerStage10ReadOnlyRoutes(app);
 
   app.get('/sync-status', { preHandler: app.authorize([...readRoles]) }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
