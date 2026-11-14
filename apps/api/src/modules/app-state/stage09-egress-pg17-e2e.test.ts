@@ -382,7 +382,8 @@ async function main() {
   const liveReadA = await normalizedStateForRead(workspace.id, user.id);
   const liveReadWireA = await wireStats();
   assert.equal(liveReadA?.normalizedPrimary, true, 'Read-model deve preservar primary.');
-  assert.equal((liveReadA?.integrity as { reconciled?: boolean })?.reconciled, true);
+  assert.ok(liveReadA && 'integrity' in liveReadA);
+  assert.equal(liveReadA.integrity.reconciled, true);
   await resetWire();
   const liveReadB = await normalizedStateForRead(workspace.id, user.id);
   const liveReadWireB = await wireStats();
