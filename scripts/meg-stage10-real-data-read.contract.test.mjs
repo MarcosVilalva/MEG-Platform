@@ -13,19 +13,24 @@ const canonical=read('apps/api/src/modules/finance/read-model.ts');
 const cors=read('apps/api/src/cors.ts');
 // A entrada original de QA permanece visual, ficticia e sem acesso a API.
 assert.match(qa,/realRequested=params\.get\('dados'\)==='reais'/);
+assert.match(qa,/readonlyApiUrl:import\.meta\.env\.VITE_MEG_STAGE10_READONLY_API_URL/);
 assert.match(qa,/if\(!realEnabled\)window\.fetch=/);
 assert.match(qa,/<UnifiedQA\/>/);
 assert.match(qa,/<UnifiedRealReadQa enabled=\{realEnabled\}/);
 // Opt-in isolado. Somente GET autenticado do snapshot de transacao READ ONLY.
 assert.match(bridge,/env\.enabled!=='true'/);
 assert.match(bridge,/api\.protocol!=='https:'/);
-assert.match(bridge,/api\.origin===page\.origin/);
+assert.match(bridge,/authOrigin===page\|\|dataOrigin===page/);
+assert.match(bridge,/authOrigin===dataOrigin/);
+assert.match(bridge,/credentials:'omit'/);
+assert.match(bridge,/readStage10Snapshot/);
 assert.match(bridge,/validateSession\(session\)/);
+assert.match(bridge,/refreshAuthSession\(\)/);
 assert.match(bridge,/stage10-readonly\/snapshot\?month=/);
 assert.match(bridge,/data\.consistency!=='repeatable-read'/);
 assert.match(bridge,/data\.actorId!==session\.user\.id/);
 assert.match(bridge,/data\.total!==data\.events\.length/);
-assert.match(bridge,/current\.accessToken!==session\.accessToken/);
+assert.match(bridge,/current\.user\.id!==session\.user\.id/);
 assert.match(bridge,/history:\{protocol:'financial-history-v1',kind:'complete',items:data\.events\}/);
 assert.match(bridge,/creditCards:\[\]/);
 assert.match(bridge,/verocard/i);
