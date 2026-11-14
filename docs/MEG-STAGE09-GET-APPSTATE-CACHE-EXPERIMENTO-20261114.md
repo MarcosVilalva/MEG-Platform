@@ -64,4 +64,8 @@ Depois acrescentamos testes de **alteração direta de sourcePayload** e contrat
 - Novos testes da flag: ausência ou valor `true` desativam a otimização; somente valor exato `enabled` permite a rotina. Isso não ativa nenhuma flag na produção.
 - Inserida proteção adicional de **5.000 transações por resposta**: acima disso, o código evita até mesmo serializar um objeto grande para estimar a memória; usa a leitura financeira original. Este limite é técnico do cache, não limita lançamentos nem as respostas.
 
-**Não existe aprovação de deploy ou medição de economia faturada**. A versão final com a proteção de 5.000 transações deve passar novamente nos workflows de CI do HEAD antes de considerar fechamento do experimento.
+**Não existe aprovação de deploy ou medição de economia faturada.** A versão de código final da rodada, commit `77d6961ebaafe3e75df55c38897d96d04c55f818`, concluiu [PG17 sintético #43586579113](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43586579113) e [Platform CI #43586579066](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43586579066) em **SUCCESS**. A função pura de elegibilidade foi testada com **5.001 registros fictícios**, confirmando recusa antecipada de cache antes de serialização; com 3.630 registros reconciliados, aceitou a resposta. O endpoint de produção permanece inalterado, e ainda falta teste de autenticação real em staging isolado e Egress faturado.
+
+## 7. Decisão técnica específica desta PR
+
+**GO técnico sintético para o candidato e seus limites; NO-GO para ativação produtiva.** Flag opt-in ausente por padrão, testes de isolamento multiworkspace e drift PASS, memória Free simulada por contêiner real PASS no volume homologado de 3.630. Sem merge nem deploy, sem atualização de `main`, Android, Web ou banco real. A PR deve permanecer Draft até gates de DR, #691, autorização de deployment e análise de custo CPU/IO/hit rate reais.
