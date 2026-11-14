@@ -22,6 +22,21 @@ function record(value:unknown):value is Record<string,unknown>{
 function claimString(value:unknown,max:number):value is string{
  return typeof value==='string'&&value.length>0&&value.length<=max;
 }
+/**
+ * Falha na montagem do app quando a chave publica nao esta apta.
+ * Nada da chave privada ou de JWT_SECRET deve chegar ao backend QA.
+ */
+export function assertStage10PublicVerificationKey(publicKeyPem:string):void{
+ if(typeof publicKeyPem!=='string'||!/^-----BEGIN PUBLIC KEY-----\\n[\\s\\S]+\\n-----END PUBLIC KEY-----\\n?$/.test(publicKeyPem))
+  throw new Error('STAGE10_PUBLIC_JWT_KEY_INVALID');
+ try{
+  const key=createPublicKey(publicKeyPem);
+  if(key.asymmetricKeyType!=='rsa'||(key.asymmetricKeyDetails?.modulusLength??0)<2048)
+   throw new Error('STAGE10_PUBLIC_JWT_KEY_INVALID');
+ }catch{
+  throw new Error('STAGE10_PUBLIC_JWT_KEY_INVALID');
+ }
+}
 export function verifyStage10PublicJwt(
  token:string,publicKeyPem:string,
  expected:{issuer:string;audience:string;nowSeconds?:number},
