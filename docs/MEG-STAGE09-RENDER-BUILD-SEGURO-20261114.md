@@ -24,7 +24,7 @@ Inspeção somente leitura do Supabase produtivo em 14/11:
 bash scripts/meg-stage09-render-api-build.sh
 ```
 
-O script versionado executa exclusivamente `npm ci --audit=false --fund=false`, `npm run db:generate` e `npm run build:api`. A expansão desses comandos corresponde a `prisma generate` e `tsc -p tsconfig.json`, não a migração, deduplicação ou DDL. O contrato fail-closed em `scripts/meg-stage09-render-api-build.contract.test.mjs` compara **a sequência inteira** a uma lista fechada e confirma os scripts npm chamados.
+O `--include=dev` garante TypeScript e Prisma CLI no build mesmo quando `NODE_ENV=production`, sem afetar o processo `start:api`. O script versionado executa exclusivamente `npm ci --include=dev --audit=false --fund=false`, `npm run db:generate` e `npm run build:api`. A expansão desses comandos corresponde a `prisma generate` e `tsc -p tsconfig.json`, não a migração, deduplicação ou DDL. O contrato fail-closed em `scripts/meg-stage09-render-api-build.contract.test.mjs` compara **a sequência inteira** a uma lista fechada e confirma os scripts npm chamados.
 
 A workflow `.github/workflows/meg-stage09-render-api-safe-build.yml` constrói realmente a API com `DATABASE_URL=postgresql://ci:ci@127.0.0.1:65431/stage09_no_database?schema=public`, **sem qualquer serviço PostgreSQL provisionado**. Passar demonstra que o script compila sem necessidade de conexão ao banco e sem executar mutação SQL, mas não certifica nenhuma migração funcional futura.
 
