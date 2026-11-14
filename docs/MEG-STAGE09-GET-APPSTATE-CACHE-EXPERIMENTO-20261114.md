@@ -51,3 +51,17 @@ Depois acrescentamos testes de **alteração direta de sourcePayload** e contrat
 - Ampliado `apps/api/src/modules/app-state/stage09-egress-pg17-e2e.test.ts`: protocolo PG17, igualdade completa, alteração externa, rollback, arquivamento, sourcePayload e feature flag.
 - CI da branch de QA `fix/stage09-appstate-read-qa-20261114`: workflow PG17 descartável, Platform CI.
 - Nenhuma configuração, segredo, rota HTTP, tabela, dado real ou aplicação Android/Web de produção foi alterada.
+
+
+## 6. Caracterização adicional de limites e isolamento, rodada 14/11/2026
+
+[PG17 descartável #43586280652](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43586280652): **SUCCESS**, incluindo os cenários:
+
+- Consulta grande com metadado **100% fictício de 11 MiB** no `AppState`, resposta funcional preservada e leituras de **18.274.997 bytes** em ambas as chamadas, comprovando que o cache **não armazena objetos com mais de 10 MiB** e não trunca resposta.
+- Dois workspaces fictícios com proprietários diferentes: primeiro com 3.630 eventos, segundo com zero, ambos isolados; cache limitado a **um workspace**. Após acessar o segundo, voltar ao primeiro obrigou nova leitura SQL de **6.740.633 bytes** e nenhuma informação do outro workspace apareceu.
+- Sob cgroup Docker de **512 MiB comprovados**, fixture reconciliada de 3.630 eventos e GET guardado exercitado: RSS Node após preview/cache **212,77 MiB**, máximo do processo **219,54 MiB** e pico de cgroup reportado **163,49 MiB**. Valores do processo e do cgroup usam critérios diferentes de contagem de memória; não se deve compará-los diretamente como se fossem o mesmo indicador. O banco Postgres ficou em contêiner externo. Não é perfil real do Render.
+- No teste diagnóstico de 24.000 eventos **sem estado integralmente reconciliado**, cache não foi exercitado, e o pico cgroup atingiu **408,37 MiB**. Não homologar cache em volume financeiro reconciliado dessa ordem.
+- Novos testes da flag: ausência ou valor `true` desativam a otimização; somente valor exato `enabled` permite a rotina. Isso não ativa nenhuma flag na produção.
+- Inserida proteção adicional de **5.000 transações por resposta**: acima disso, o código evita até mesmo serializar um objeto grande para estimar a memória; usa a leitura financeira original. Este limite é técnico do cache, não limita lançamentos nem as respostas.
+
+**Não existe aprovação de deploy ou medição de economia faturada**. A versão final com a proteção de 5.000 transações deve passar novamente nos workflows de CI do HEAD antes de considerar fechamento do experimento.
