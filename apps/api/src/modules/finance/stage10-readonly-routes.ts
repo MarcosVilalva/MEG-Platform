@@ -16,7 +16,7 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
  },async(request,reply)=>{
   reply.header('Cache-Control','private, no-store');
   return withStage10ReadOnlyWorkspace(request.user.sub,async(tx,scope)=>{
-   const where={userId:scope.ownerId,archivedAt:null};
+   const where={userId:scope.ownerId,workspaceId:scope.workspaceId,archivedAt:null};
    const total=await tx.financialEvent.count({where});
    if(total>HISTORY_LIMIT) return {
     kind:'stage10-financial-history-limit-v1' as const,
@@ -25,8 +25,7 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
    const [events,accounts,categories,paymentMethods,cards]=await Promise.all([
     tx.financialEvent.findMany({
      where,orderBy:[{date:'desc'},{createdAt:'desc'},{id:'asc'}],
-     include:{account:true,category:true,paymentMethod:true,
-      importedRow:{select:{rowNumber:true,rawData:true}}},
+     include:{importedRow:{select:{rowNumber:true}}},
     }),
     tx.account.findMany({where:{userId:scope.ownerId},
       orderBy:[{isActive:'desc'},{name:'asc'}]}),
@@ -39,13 +38,20 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
       orderBy:[{isActive:'desc'},{name:'asc'}]}),
    ]);
    if(events.length!==total)throw new Error('STAGE10_HISTORY_INCONSISTENT');
+   const ownedAccounts=new Map(accounts.map(item=>[item.id,item]));
+   const ownedCategories=new Map(categories.map(item=>[item.id,item]));
+   const ownedMethods=new Map(paymentMethods.map(item=>[item.id,item]));
    return {
     kind:'stage10-financial-readonly-snapshot-v1' as const,
     canWrite:false as const,consistency:'repeatable-read' as const,
     actorId:scope.actorId,workspaceId:scope.workspaceId,dataOwnerId:scope.ownerId,
     total,
     events:events.map(({importedRow,...item})=>({
-     ...item,sourceRowNumber:importedRow?.rowNumber??null,
+     ...item,
+     account:item.accountId?ownedAccounts.get(item.accountId)??null:null,
+     category:item.categoryId?ownedCategories.get(item.categoryId)??null:null,
+     paymentMethod:item.paymentMethodId?ownedMethods.get(item.paymentMethodId)??null:null,
+     sourceRowNumber:importedRow?.rowNumber??null,
     })),
     accounts,categories,paymentMethods,cards,
    };
