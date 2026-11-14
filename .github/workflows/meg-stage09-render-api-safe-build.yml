@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 15
     env:
       CI: 'true'
-      NODE_ENV: test
+      NODE_ENV: production
       # Inexistente e não vinculado a nenhum ambiente real.
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:65431/stage09_no_database?schema=public
     steps:
