@@ -56,7 +56,7 @@ async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>
  if(!path.startsWith('/finance/stage10-readonly/snapshot?month='))
   throw new Error('Rota de consulta QA nao autorizada.');
  const send=(token:string)=>fetch(origin+path,{
-  method:'GET',mode:'cors',credentials:'omit',cache:'no-store',signal,
+  method:'GET',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',signal,
   headers:{Authorization:'Bearer '+token},
  });
  const initial=readSession();
@@ -74,6 +74,9 @@ async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>
   // Nenhum HTML, redirecionamento ou mensagem de origem nao confiavel e exibido.
   throw new Error('Consulta financeira QA indisponivel (HTTP '+response.status+').');
  }
+ const contentType=response.headers.get('content-type')||'';
+ if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))
+  throw new Error('Resposta da API financeira QA nao possui formato JSON autorizado.');
  const current=readSession();
  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
  if(!current||current.user.id!==initial.user.id)
