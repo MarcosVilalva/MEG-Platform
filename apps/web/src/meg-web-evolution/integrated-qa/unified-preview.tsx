@@ -153,7 +153,7 @@ function UnifiedQA(){
    </div>}
   {overlay==='expense'&&<ExpenseForm catalogs={catalogs} historySnapshot={history}
     saveEnabled={false} onBack={()=>setOverlay('choice')}/>}
-  {overlay==='edit'&&<EditExpensePreview snapshot={editTarget?fromQaTarget(editTarget):QA_EDIT_EXPENSE_SNAPSHOT} catalogs={qaCatalogs}
+  {overlay==='edit'&&<EditExpensePreview snapshot={editTarget?fromQaTarget(editTarget):QA_EDIT_EXPENSE_SNAPSHOT} catalogs={editTarget?qaCatalogs:catalogs}
    onBack={()=>{setOverlay(null);setEditTarget(null);}} onSimulatedSave={()=>setNotice('QA: edição detectada, mas nenhuma alteração foi gravada. O escritor financeiro permanece bloqueado.')}/>}
   {overlay==='duplicate'&&duplicateTarget&&<ExpenseForm key={'qa-duplicate-'+duplicateTarget.id} catalogs={qaCatalogs}
    initialDraft={duplicateQaDraft(duplicateTarget)} saveEnabled={false}
