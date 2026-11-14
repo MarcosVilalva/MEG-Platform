@@ -36,7 +36,7 @@ function dateNow(){const v=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sa
 const format=(n:number|null|undefined,hidden:boolean)=>hidden?'R$ •••••':n==null||!Number.isFinite(n)?'—':currency.format(n);
 const dateString=(s:string)=>/^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
 const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,available:null,transactions:[],payables:[],accounts:[],categories:[],cards:[]};
-async function readHome(month:string):Promise<HomeFinancialData>{
+export async function readHome(month:string):Promise<HomeFinancialData>{
  const [summary,cashflow,benefit,events,cards,accounts,categories,available,canonicalCommitments]=await Promise.all([
   authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
