@@ -128,7 +128,8 @@ function UnifiedQA(){
    </div>}
   {overlay==='expense'&&<ExpenseForm catalogs={catalogs} historySnapshot={history}
     saveEnabled={false} onBack={()=>setOverlay('choice')}/>}
-  {overlay==='edit'&&<EditExpensePreview snapshot={QA_EDIT_EXPENSE_SNAPSHOT} onBack={()=>setOverlay(null)}/>}
+  {overlay==='edit'&&<EditExpensePreview snapshot={QA_EDIT_EXPENSE_SNAPSHOT} catalogs={catalogs}
+   onBack={()=>setOverlay(null)} onSimulatedSave={()=>setNotice('QA: edição detectada, mas nenhuma alteração foi gravada. O escritor financeiro permanece bloqueado.')}/>}
   {notice&&<output className="meg-unified-notice" role="status">{notice}
     <button type="button" aria-label="Fechar aviso" onClick={()=>setNotice('')}>×</button>
    </output>}
