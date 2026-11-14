@@ -2391,3 +2391,67 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   quantitativa com dados comparaveis do Supabase ou evidencia
   operacional suficiente, sem otimizar writer financeiro por
   suposicao.
+
+
+## 14/11/2026 | Etapa 09: dependencia real watchdog/pg_net e Gate 1 Supabase ainda 402
+
+- **Trabalho desta rodada:** leitura do checkpoint e autoridade financeira
+  canonica, PR #666/#692 e matriz do relatorio oficial; mantida
+  exclusividade da Etapa 09, sem revisitar testes PG17 ja aprovados.
+  SQL somente `SELECT` executado na **origem**
+  `ugbiqzaqnrhulhetevby`, restrito a `pg_catalog` e
+  agregacoes `cron.job`, sem dados financeiros, escrita ou
+  execucao de rotinas. O objetivo foi caracterizar o alerta
+  [#676](https://github.com/MarcosVilalva/MEG-Platform/issues/676).
+- **Dependencia watchdog comprovada:** funcao
+  `public.meg_run_notification_watchdog` e `SECURITY DEFINER`,
+  `VOLATILE`; `anon` e `authenticated` sem privilegio EXECUTE.
+  Inspecao apenas booleana de sua definicao confirma chamada
+  direta a `net.http_*`, mencao a `vault.` e URL HTTPS
+  sem recuperar/expor codigo, URL ou segredo. `cron.job` possui
+  dois jobs ativos invocando a funcao, com horarios
+  `17,27,37,47,57 0 * * *` e
+  `17,27,37,47,57 9-23 * * *`, um por faixa.
+  Nao foi comprovado fuso ou sucesso dos disparos.
+  `pg_net` `0.20.3` instalado em `public` com
+  `extrelocatable=false`, `pg_cron` `1.6.4` e
+  Vault `0.3.1` na origem.
+- **Risco de correcao #676:** orientacao oficial
+  https://supabase.com/docs/guides/database/extensions/pg_net
+  confirma que realocar `pg_net` nao relocavel requer
+  remover/recriar extensao, com risco sobre fila/respostas e
+  dependencias do watchdog. **Nenhuma alteracao de schema ou
+  agendamento foi feita ou autorizada.** Issue #676
+  recebeu as evidencias e permanece OPEN.
+- **Supabase sandbox Gate 1, revalidacao somente leitura:**
+  `get_advisors(type=health)` retornou `lints=[]`.
+  `query_logs` (ultimas 24h, sem polling repetitivo) contou
+  `edge_logs` por grupo de caminho e status, sem revelar URLs,
+  IPs, headers ou credenciais: Auth 1 HTTP 200 / 6 HTTP 402;
+  Storage 0 HTTP 200 / 2 HTTP 402; outras rotas
+  3 HTTP 200 / 2 HTTP 402. A janela observada nao
+  demonstra funcionamento geral, nem disponibilidade de
+  Storage; zero alertas e `ACTIVE_HEALTHY` nao superam
+  o bloqueio HTTP 402. Portanto **Gate 1 PARCIAL**,
+  Gates 2-4 **NO-GO**, Gate 0 PASS anterior.
+- **Arquivo oficial DR atualizado:** 
+  `docs/MEG-STAGE09-SUPABASE-MANAGED-RESTORE-DRILL-20261112.md`
+  na branch #666, commit
+  `6ed9834a9037dcb994095a97ef5c19e3ea0ec0b9`,
+  detalha as consultas, limites e o protocolo de seguranca.
+  Verificar checks do SHA documental atual antes de afirmar CI verde.
+- **Imutabilidade:** PR #666 Draft, PR #692 Draft, issues
+  #691/#694 P0, #690 P0, #674, #676, #695 abertas; nenhum
+  merge, deploy, configuracao Render, Blueprint, mudanca
+  de Vault/age, extensoes, scripts, banco produtivo,
+  sandbox de destino, WSL, Android, Web homologada
+  ou backup. Sem geracao de custo ou restore remoto.
+- **Proximo passo exato:** confirmar CI terminal do SHA deste
+  checkpoint, obter evidencias autenticadas sanitizadas de
+  Auth/Storage/egress com disponibilidade operacional do
+  sandbox sem 402 impeditivo, e formalizar autorizacoes
+  separadas para mudanca efetiva Render, regras financeiras
+  de startup/health e, futuramente, gates de recuperacao.
+  Nenhuma dessas autorizacoes deve ser presumida
+  de "siga" ou de SUCCESS em testes sinteticos.
+  **Nao declarar Etapa 09 encerrada** ate os gates cumpridos.
