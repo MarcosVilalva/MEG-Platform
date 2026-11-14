@@ -2850,3 +2850,13 @@ Sem merge, deploy produtivo, real writer, credencial real, SQL, migrations, alte
 - `meg-platform-api`, `meg-evolution-api` e QA homologada `srv-dbr00b56e07s738n62n0` permanecem no inventário. Nenhum outro serviço alterado. Não se afirma teste funcional de produção, que não foi acessada.
 - Demais candidatos históricos preservados: alguns ainda são alvos de workflows; Home PR #655 possui registro de homologação histórica. Exigem conferência própria antes de exclusão. Não presumir que todos são descartáveis.
 - Próximo passo da infraestrutura: verificar capacidade necessária para API e DB e obter aprovação específica de criação/custos; limpeza não autoriza contratação, banco pago, deploy ou integração de UI. Orçamento sugerido anteriormente continua sem aprovação. Produção, Android, merge, escritores financeiros e Etapa 11 continuam proibidos.
+
+
+## Etapa 10 | Fonte real autorizada, integração ainda pendente (14/11/2026)
+
+- Responsável corrigiu a direção: uma única preview consolidada até futura main, sem contratação e sem banco temporário como solução definitiva. Determinou uso da base real para fundamentar toda implementação.
+- Consulta autorizada somente leitura à base meg-financas e workspace do responsável comprovou: 3738 FinancialEvent (3731 ativos), 3630 AppState.transactions, 2 contas, 4 cartões, 21 CardPurchase e 0 Payable. AppState em normalized-primary. Não somar representações nem confundir Payable vazio com ausência de compromissos.
+- 3512 eventos ativos preservam forma de pagamento/histórico em sourcePayload sem paymentMethodId. Não inventar vínculos ou migrar dados. Leitor operacional existente já trata rótulos históricos. Verocard permanece benefício.
+- Documento docs/MEG-STAGE10-REAL-DATA-READ-AUDIT-20261114.md registra escopo, consultas e contratos, sem exportar registros privados.
+- Integração NÃO implementada: unified-preview.tsx ainda usa fixtures, login demonstrativo e bloqueio total de fetch. Prévia canônica de ciclo atual cobre CardPurchase, sem converter FinancialEvent. Não declarar dados reais exibidos na QA.
+- Próximo passo: ponte autenticada de leitura reutilizando clientes/snapshots existentes, sem efeitos colaterais, mesma QA, sem segredos frontend ou dados reais em assets. Auditar fallback ensurePrimaryWorkspace nos GETs; não presumir read-only apenas pelo verbo HTTP. Sem alterações de banco, CORS produtivo, writers, Android, merge ou Etapa 11.
