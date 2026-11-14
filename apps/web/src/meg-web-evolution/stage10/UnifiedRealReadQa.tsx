@@ -44,7 +44,7 @@ function realEdit(row:QaLaunchTarget,data:Stage10RealRead):EditExpenseSnapshot|n
   accountId:event.accountId,paymentMethodId:event.paymentMethodId,
   strictReferences:true,
   dateDisplay:row.date.slice(8)+'/'+row.date.slice(5,7)+'/'+row.date.slice(0,4),
-  amountDisplay:money.format(event.enteredAmount),
+  amountDisplay:money.format(event.enteredAmount??Number.NaN),
   paymentMethodName:row.paymentMethod,accountName,
   statusLabel:event.status==='paid'?'Paga':'Pendente',
  };
