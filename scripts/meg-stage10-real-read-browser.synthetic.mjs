@@ -57,7 +57,14 @@ try{
  await page.locator('input[type=email]').fill('stage10@example.invalid');
  await page.locator('input[type=password]').fill('synthetic-passphrase-for-test');
  await page.getByRole('button',{name:'Entrar no MEG'}).click();
- await page.locator('[data-meg-unified-screen="launches"]').waitFor({state:'visible',timeout:20000});
+ try{
+  await page.locator('[data-meg-unified-screen="launches"]').waitFor({state:'visible',timeout:20000});
+ }catch(error){
+  console.error('SYNTHETIC_BROWSER_SCREEN',await page.locator('body').innerText().catch(()=>'<unavailable>'));
+  console.error('SYNTHETIC_BROWSER_API_CALLS',apiCalls);
+  console.error('SYNTHETIC_BROWSER_JS_ERRORS',errors);
+  throw error;
+ }
  await page.getByText('DESPESA SINTETICA PARA NAVEGADOR').first().waitFor({state:'visible',timeout:20000});
  assert.ok(apiCalls.includes('POST /auth/login'));
  assert.ok(apiCalls.includes('GET /auth/me'));
