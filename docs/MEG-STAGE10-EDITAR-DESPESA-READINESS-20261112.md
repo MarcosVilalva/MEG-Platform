@@ -60,3 +60,16 @@ Preservar Android congelado, API, banco real, produção, Home, Lançamentos, Sh
 - Hospedagem QA: branch `stage08/overdue-prism-warning-20261112` avançada com fast-forward e lease, de `108f499932cf284fa679605db29fe8b7e47d8c17` para `a60a68b8d4d6e14015b9257cc073aa771b4342f2`; nenhum merge em main.
 - **PENDÊNCIA BLOQUEANTE:** Render `meg-stage08-alerta-prism-pr685` (`srv-dbr00b56e07s738n62n0`) tem Auto Deploy OFF. O disparo manual exigiu confirmação do workspace; a lista retornou `My Workspace` (`tea-d98k1qhkh4rs73f4sfj0`). **Não disparar deploy até confirmação explícita desse workspace pelo responsável.** Depois, implantar no mesmo serviço, checar LIVE no commit correto e reexecutar smoke público.
 - A nova versão **ainda não está publicada nem visualmente homologada**. Os testes aprovados não são aprovação visual. Writer real, exclusão, cartões, parcelamento e atualização de saldo permanecem bloqueados por seus contratos transacionais.
+
+## Publicação da revisão com formulário compartilhado (14/11/2026)
+
+A pendência de workspace descrita na seção anterior **foi resolvida** por autorização explícita do responsável ("ok") para `My Workspace`, `tea-d98k1qhkh4rs73f4sfj0`.
+
+- Render QA rotativo existente: `srv-dbr00b56e07s738n62n0`, Auto Deploy OFF.
+- Deploy manual com limpeza de cache `dep-dbrsr03rjlhs73cfql1g` **LIVE** em `a60a68b8d4d6e14015b9257cc073aa771b4342f2`.
+- Gate integrado [#43548251683](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43548251683) **SUCCESS**.
+- Gate público [#43548251725](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43548251725), job reexecutado `132306637114`, **SUCCESS**, com 13 perfis de viewport comprovados nos logs.
+- URL sem cache: https://meg-stage08-alerta-prism-pr685.onrender.com/meg-unificado-qa.html?visual=prism&tela=lancamentos&modal=editar&v=a60a68b8d4d6e14015b9257cc073aa771b4342f2
+- **Aguardando aprovação visual específica da nova versão.** Nenhum clique da QA grava alterações. Writer real, PATCH, DELETE, merge, produção, API, banco, Android e novos serviços Render continuam não autorizados.
+
+O novo teste público passou somente após o novo deploy, em reexecução. A falha inicial do teste público refletia a publicação anterior, não aprovação financeira ou regressão da nova versão.
