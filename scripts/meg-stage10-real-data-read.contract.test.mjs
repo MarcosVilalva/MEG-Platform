@@ -54,6 +54,9 @@ assert.match(live,/if\(!enabled\)return/);
 assert.match(editor,/snapshot\.strictReferences/);
 assert.match(editor,/a\.id===snapshot\.accountId/);
 assert.match(editor,/m\.id===snapshot\.paymentMethodId/);
+assert.match(editor,/saveEnabled=\{!readOnly&&Boolean\(onSimulatedSave\)\}/);
+assert.match(live,/<EditExpensePreview snapshot=\{edit\} catalogs=\{data\.catalogs\}/);
+assert.match(live,/readOnly onBack=/);
 assert.match(operational,/type:accounts\.find\(account=>account\.id===id\)\?\.type/);
 // Transacao sem qualquer reparo de usuario/workspace e sem writer.
 assert.match(workspace,/SET TRANSACTION READ ONLY/);

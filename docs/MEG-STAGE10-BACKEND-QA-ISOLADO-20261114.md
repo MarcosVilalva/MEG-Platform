@@ -151,3 +151,10 @@ A auditoria exata do código existente revela um detalhe que invalida a hipótes
 - O JWT QA RS256 contém `sub`, `sid` (AuthSession) e `wid` (workspace) vinculados à assinatura. O verificador exige ambos; a API QA confere que `scope.workspaceId` corresponde ao `wid` assinado, além do usuário e da sessão ativa dentro do mesmo snapshot READ ONLY. Uma sessão válida não pode ser reaproveitada para abrir workspace diferente sem token específico.
 - O teste HTTP/PostgreSQL17 sintético combina a prova de refresh opaco pela função `authorizeStage10QaTokenExchange`, emissão RSA efêmera por `issueStage10QaReadToken`, consulta ao Fastify QA e revogação da AuthSession. Exercita também prova de refresh inválida, `wid` diferente e token já emitido após revogação. Não usa a chave real nem banco de produção.
 - **Limite da evidência:** assinatura HMAC canônica original é representada por `signatureVerified` no contrato puro, não há rota produtiva registrada, e o navegador usa interceptação. A execução sintética composta caracteriza a cadeia técnica, mas NÃO é autenticação real ponta a ponta. Requer novo gate e autorização para qualquer conexão real/preview.
+
+
+## 17. Editor QA de dados reais estritamente consultivo (14/11/2026)
+
+- Detectado em revisão que `UnifiedRealReadQa.tsx` passava uma callback de "salvar simulado" para `EditExpensePreview`, deixando habilitado o botão Salvar no editor com dados reais embora nenhuma mutação fosse executada. Isso confundia demonstração e execução.
+- Introduzida prop `readOnly` opt-in no `EditExpensePreview`. O modo com dados reais ativa `readOnly` e não oferece callback de gravação, logo `ExpenseForm` recebe `saveEnabled=false`. O editor continua mostrando dados sem inventar IDs e sem escrita. A QA demonstrativa preexistente conserva sua simulação e comportamento visual homologado.
+- O contrato estático protege essa separação; testes Web, browser e regressão devem validar o commit antes de promover a mudança. Esta correção NÃO implementa edição real, e publicação de writers continua proibida sem autorizações/gates.

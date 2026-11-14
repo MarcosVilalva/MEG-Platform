@@ -26,11 +26,12 @@ export const QA_EDIT_EXPENSE_SNAPSHOT:EditExpenseSnapshot={
 /** Adaptador de LEITURA da prévia. Reaproveita exatamente o formulário homologado.
  * Não calcula saldo, parcelas, faturas ou permissões de edição do backend.
  */
-export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave}:{
+export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave,readOnly=false}:{
  snapshot:EditExpenseSnapshot;
  catalogs:ExpenseCatalogs;
  onBack:()=>void;
- onSimulatedSave:()=>void;
+ onSimulatedSave?:()=>void;
+ readOnly?:boolean;
 }){
  const initialDraft=useMemo<ExpenseDraft>(()=>{
   // Na leitura real a identidade do cadastro prevalece sobre nomes historicos.
@@ -54,5 +55,6 @@ export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave}:{
  },[snapshot,catalogs]);
  if(snapshot.source!=='financial-event'||snapshot.financialScope!=='monetary'||snapshot.type!=='expense')return null;
  return <ExpenseForm mode="edit" initialDraft={initialDraft} catalogs={catalogs}
-  saveEnabled={true} onRequestSave={onSimulatedSave} onBack={onBack}/>;
+  saveEnabled={!readOnly&&Boolean(onSimulatedSave)}
+  onRequestSave={readOnly?undefined:onSimulatedSave} onBack={onBack}/>;
 }

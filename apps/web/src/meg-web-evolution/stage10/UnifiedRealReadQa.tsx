@@ -155,8 +155,7 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
   {overlay==='expense'&&<ExpenseForm catalogs={data.catalogs} historySnapshot={data.history}
    saveEnabled={false} onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&edit&&<EditExpensePreview snapshot={edit} catalogs={data.catalogs}
-   onBack={()=>{setOverlay(null);setEdit(null);}}
-   onSimulatedSave={()=>setNotice('Previa: alteracao simulada. Nenhuma escrita executada.')}/>}
+   readOnly onBack={()=>{setOverlay(null);setEdit(null);}}/>}
   {overlay==='duplicate'&&duplicate&&<ExpenseForm catalogs={data.catalogs} historySnapshot={data.history}
    initialDraft={duplicate} saveEnabled={false} onBack={()=>{setOverlay(null);setDuplicate(null);}}/>}
   {notice&&<output className="meg-unified-notice" role="status">{notice}
