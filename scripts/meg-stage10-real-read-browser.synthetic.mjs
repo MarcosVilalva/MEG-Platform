@@ -28,8 +28,10 @@ const snapshot={
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 try{
  const page=await browser.newPage({viewport:{width:1366,height:768},ignoreHTTPSErrors:true});
- const apiCalls=[];const errors=[];
+ const apiCalls=[];const errors=[];const requests=[];const failures=[];
  page.on('pageerror',error=>errors.push(String(error)));
+ page.on('request',r=>{if(/\\/(auth|finance)\\//.test(new URL(r.url()).pathname))requests.push(r.method()+' '+r.url());});
+ page.on('requestfailed',r=>failures.push(r.url()+' '+(r.failure()?.errorText||'')));
  await page.route(api+'/**',async route=>{
   const req=route.request();
   const url=new URL(req.url());
@@ -62,6 +64,10 @@ try{
  }catch(error){
   console.error('SYNTHETIC_BROWSER_SCREEN',await page.locator('body').innerText().catch(()=>'<unavailable>'));
   console.error('SYNTHETIC_BROWSER_API_CALLS',apiCalls);
+  console.error('SYNTHETIC_BROWSER_REQUESTS',requests);
+  console.error('SYNTHETIC_BROWSER_FAILURES',failures);
+  console.error('SYNTHETIC_BROWSER_LOGIN_MODE',await page.locator('[data-meg-login]').getAttribute('data-meg-login').catch(()=>'<unknown>'));
+  console.error('SYNTHETIC_BROWSER_BLOCKED',await page.evaluate(()=>window.__MEG_UNIFIED_QA_BLOCKED__||[]).catch(()=>[]));
   console.error('SYNTHETIC_BROWSER_JS_ERRORS',errors);
   throw error;
  }
