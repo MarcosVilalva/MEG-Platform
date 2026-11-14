@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
 import { normalizationPreview } from './normalization-migration';
+import { periodicNormalizationPreview } from './normalization-periodic-audit';
 import { buildNormalizationPreview } from './normalization-migration-core';
 import {
   NORMALIZED_LEGACY_MIRROR_SELECT,
@@ -205,6 +206,59 @@ async function main() {
   assert.equal(periodicPreview.source.fingerprint, expectedPreview.summary.fingerprint);
   assert.ok(periodicWire.serverToClientBytes > projectedWire.serverToClientBytes,
     'Auditoria periodica busca AppState e todos os eventos com seu payload.');
+  // Auditoria periódica experimental: 1ª leitura completa, 2ª sem
+  // mudanças transmite somente os SHA-256 calculados no PG17.
+  await resetWire();
+  const initialPeriodic = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  const initialPeriodicWire = await wireStats();
+  assert.deepEqual(initialPeriodic, periodicPreview,
+    'Primeira auditoria com digest preserva integralmente o preview original.');
+  assert.ok(initialPeriodicWire.serverToClientBytes >= periodicWire.serverToClientBytes);
+
+  await resetWire();
+  const cachedPeriodic = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  const cachedPeriodicWire = await wireStats();
+  assert.deepEqual(cachedPeriodic, periodicPreview,
+    'Resumo completo e fingerprint devem ser identicos sem nenhuma mudança.');
+  assert.ok(cachedPeriodicWire.serverToClientBytes > 0,
+    'Consulta de digest precisa chegar ao banco, nunca confiar apenas no processo.');
+  assert.ok(cachedPeriodicWire.serverToClientBytes < periodicWire.serverToClientBytes / 10,
+    'Assinatura completa no servidor deve economizar mais de 90% dos bytes neste caso ficticio.');
+
+  // Drift externo: editar diretamente coluna financeira, sem AppState/revision.
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[2] },
+    data: { notes: 'ALTERACAO EXTERNA SINTETICA' },
+  });
+  const externalDrift = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  assert.equal(externalDrift.reconciled, false,
+    'Alteracao externa em evento precisa invalidar cache e acionar auditoria completa.');
+  assert.notEqual(externalDrift.source.fingerprint, externalDrift.normalized.fingerprint);
+  await prisma.financialEvent.update({
+    where: { id: insertedIds[2] },
+    data: { notes: null },
+  });
+  const recoveredPeriodic = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  assert.equal(recoveredPeriodic.reconciled, true, 'Restauracao sintetica exige nova conciliacao.');
+
+  // Modificar campo que nao entra no fingerprint tambem invalida o cache.
+  const extraState = { ...state, budgets: { alteredOutsideApi: true } };
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: extraState as Prisma.InputJsonValue },
+  });
+  await resetWire();
+  const changedNonFinancialState = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  const changedNonFinancialWire = await wireStats();
+  assert.equal(changedNonFinancialState.reconciled, true);
+  assert.ok(changedNonFinancialWire.serverToClientBytes > cachedPeriodicWire.serverToClientBytes * 10,
+    'Alteracao de state nao pode reutilizar fingerprint cacheado.');
+  await prisma.appState.update({
+    where: { workspaceId: workspace.id },
+    data: { state: state as Prisma.InputJsonValue },
+  });
+  assert.equal((await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview)).reconciled, true);
+
 
   assert.equal(full.length, EVENT_COUNT);
   assert.equal(projected.length, EVENT_COUNT);
@@ -240,6 +294,7 @@ async function main() {
     'Select deve reduzir os bytes reais retornados pelo PostgreSQL nesta leitura.',
   );
 
+  // Caracterização da rotina anterior continua após os ensaios de cache.
   // Idempotencia: estado original e rows ja conciliados nao devem mudar.
   const unchanged = await reconcilePrimaryAppStateFromNormalized(workspace.id, { expectedRevision: 20 });
   assert.equal(unchanged.active, true);
@@ -256,6 +311,10 @@ async function main() {
     where: { workspaceId: workspace.id },
     data: { state: { ...state, transactions: [...payloads, orphan] } as Prisma.InputJsonValue },
   });
+
+  const archivedPeriodic = await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview);
+  assert.equal(archivedPeriodic.reconciled, false,
+    'Evento arquivado externamente deve invalidar cache e exigir reconciliação completa.');
 
   const reconciled = await reconcilePrimaryAppStateFromNormalized(workspace.id, {
     expectedRevision: 20,
@@ -341,6 +400,12 @@ async function main() {
     fullServerToClientBytes: fullWire.serverToClientBytes,
     projectedServerToClientBytes: projectedWire.serverToClientBytes,
     periodicAuditServerToClientBytes: periodicWire.serverToClientBytes,
+    cachedPeriodicAuditServerToClientBytes: cachedPeriodicWire.serverToClientBytes,
+    initialDigestAuditServerToClientBytes: initialPeriodicWire.serverToClientBytes,
+    unchangedPeriodicDigestBytesSavedPercent: Number(((1 - cachedPeriodicWire.serverToClientBytes / periodicWire.serverToClientBytes) * 100).toFixed(3)),
+    externalDriftDetected: true,
+    archiveDriftDetected: true,
+    nonFinancialMutationInvalidates: true,
     periodicAudit96CallsProjectedBytes: periodicWire.serverToClientBytes * 96,
     reductionPercent: Number(reductionPercent.toFixed(3)),
     periodicReconciled: true,
