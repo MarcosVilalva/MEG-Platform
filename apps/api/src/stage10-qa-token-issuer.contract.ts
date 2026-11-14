@@ -33,12 +33,12 @@ export function issueStage10QaReadToken(
   settings.nowSeconds<0||settings.nowSeconds+settings.ttlSeconds>Number.MAX_SAFE_INTEGER)fail();
  if(typeof settings.privateKeyPem!=='string'||
   !settings.privateKeyPem.startsWith('-----BEGIN PRIVATE KEY-----\n'))fail();
- let privateKey;
+ let privateKey:ReturnType<typeof createPrivateKey>;
  try{
   privateKey=createPrivateKey(settings.privateKeyPem);
   if(privateKey.asymmetricKeyType!=='rsa'||
    (privateKey.asymmetricKeyDetails?.modulusLength??0)<2048)fail();
- }catch{fail();}
+ }catch{return fail();}
  const claims={
   sub:identity.sub,role:identity.role,iss:settings.issuer,
   aud:settings.audience,scope:'stage10:finance:read' as const,
@@ -51,5 +51,5 @@ export function issueStage10QaReadToken(
  try{
   const signature=rsaSign('RSA-SHA256',Buffer.from(signed),privateKey).toString('base64url');
   return signed+'.'+signature;
- }catch{fail();}
+ }catch{return fail();}
 }
