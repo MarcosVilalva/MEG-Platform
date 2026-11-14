@@ -5,7 +5,7 @@
  * e autorizar a origem no backend sem modificar producao silenciosamente.
  */
 import {readSession,validateSession,authenticatedRequest} from '../../app/auth-client';
-import type {Account,Category,PaymentMethod,FinancialEvent} from '../../app/finance-client';
+import type {Account,Category,PaymentMethod,FinancialEvent,FinanceSummary} from '../../app/finance-client';
 import {buildReadOnlyData} from '../launches/OperationalLaunches';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import type {ExpenseCatalogs} from './ExpenseForm';
@@ -68,7 +68,7 @@ type Stage10Snapshot={
  events:FinancialEvent[];accounts:Account[];categories:Category[];
  paymentMethods:PaymentMethod[];
  cards:Array<{id:string;name:string;isActive:boolean;closingDay:number;dueDay:number}>;
- summary:NonNullable<HomeFinancialData['summary']>;
+ summary:FinanceSummary;
  cashflow:NonNullable<HomeFinancialData['cashflow']>;
 };
 export async function loadStage10RealRead(month:string,signal:AbortSignal):Promise<Stage10RealRead>{
