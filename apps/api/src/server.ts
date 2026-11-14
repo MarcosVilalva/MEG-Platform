@@ -37,6 +37,7 @@ import {
   recordNormalizationRuntimeStatus,
 } from './modules/app-state/normalization-migration';
 import { reconcilePrimaryAppStateFromNormalized } from './modules/app-state/normalized-primary-writeback';
+import { periodicNormalizationPreview } from './modules/app-state/normalization-periodic-audit';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -219,7 +220,7 @@ try {
     void ensurePrimaryWorkspace()
       .then(async (workspace) => {
         if (!workspace) throw new Error('NORMALIZATION_SOURCE_NOT_FOUND');
-        const preview = await normalizationPreview(workspace.id, workspace.ownerId);
+        const preview = await periodicNormalizationPreview(workspace.id, workspace.ownerId, normalizationPreview);
         if (preview.mode === 'app-state-rollback') {
           recordNormalizationRuntimeStatus({ status: 'rollback-protected', primary: false, reconciled: preview.reconciled, count: preview.normalized.count, reason: 'ADMIN_ROLLBACK' });
           return;
