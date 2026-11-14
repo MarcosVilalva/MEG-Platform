@@ -11,7 +11,7 @@ const second=generateKeyPairSync('rsa',{modulusLength:2048,
 const expected={issuer:'https://issuer.test.invalid',audience:'meg-stage10-readonly',
  nowSeconds:2000000000};
 const good={
- sub:'synthetic-user',sid:'synthetic-session',iss:expected.issuer,aud:expected.audience,
+ sub:'synthetic-user',sid:'synthetic-session',wid:'synthetic-workspace',iss:expected.issuer,aud:expected.audience,
  scope:'stage10:finance:read',role:'VIEWER',iat:expected.nowSeconds,
  exp:expected.nowSeconds+300,
 };
@@ -38,6 +38,7 @@ deny(token({...good,scope:'admin:write'}),'wrong scope');
 deny(token({...good,role:'OWNER'}),'unknown role');
 deny(token({...good,sub:''}),'missing actor');
 deny(token({...good,sid:''}),'missing session binding');
+deny(token({...good,wid:''}),'missing workspace binding');
 const withoutSid={...good} as Record<string,unknown>;delete withoutSid.sid;
 deny(token(withoutSid),'legacy JWT without session must fail');
 deny(token({...good,iat:expected.nowSeconds+5}),'issued in future');

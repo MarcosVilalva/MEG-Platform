@@ -10,7 +10,7 @@ const outsider=generateKeyPairSync('rsa',{modulusLength:2048,
  publicKeyEncoding:{type:'spki',format:'pem'},
  privateKeyEncoding:{type:'pkcs8',format:'pem'}});
 const now=2000000000;
-const identity={sub:'synthetic-approved-account',sessionId:'synthetic-active-session',role:'VIEWER' as const};
+const identity={sub:'synthetic-approved-account',sessionId:'synthetic-active-session',workspaceId:'synthetic-workspace',role:'VIEWER' as const};
 const config={privateKeyPem:key.privateKey,issuer:'https://qa-issuer.example.invalid',
  audience:'meg-stage10-only',nowSeconds:now,ttlSeconds:120};
 const expect={issuer:config.issuer,audience:config.audience,nowSeconds:now};
@@ -18,6 +18,7 @@ const token=issueStage10QaReadToken(identity,config);
 const verified=verifyStage10PublicJwt(token,key.publicKey,expect);
 assert.equal(verified.sub,identity.sub);
 assert.equal(verified.sid,identity.sessionId);
+assert.equal(verified.wid,identity.workspaceId);
 assert.equal(verified.role,identity.role);
 assert.equal(verified.scope,'stage10:finance:read');
 assert.equal(verified.exp-verified.iat,120);
@@ -28,6 +29,7 @@ assert.throws(()=>verifyStage10PublicJwt(token,key.publicKey,{...expect,nowSecon
 const invalid=[
  [{...identity,sub:''},config],
  [{...identity,sessionId:''},config],
+ [{...identity,workspaceId:''},config],
  [{...identity,role:'OWNER'},config],
  [identity,{...config,ttlSeconds:0}],
  [identity,{...config,ttlSeconds:301}],

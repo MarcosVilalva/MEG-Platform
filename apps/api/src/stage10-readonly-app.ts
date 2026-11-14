@@ -46,6 +46,7 @@ export async function createStage10ReadOnlyApp(
    });
    request.user={sub:claims.sub,role:claims.role,email:''};
    (request as FastifyRequest & {stage10SessionId?:string}).stage10SessionId=claims.sid;
+   (request as FastifyRequest & {stage10WorkspaceId?:string}).stage10WorkspaceId=claims.wid;
   }catch{
    return reply.status(401).send({error:'UNAUTHORIZED'});
   }
@@ -67,7 +68,8 @@ export async function createStage10ReadOnlyApp(
   reply.header('Cache-Control','private, no-store');
   try{
    return await withStage10ReadOnlySessionWorkspace(request.user.sub,
-    (request as FastifyRequest & {stage10SessionId?:string}).stage10SessionId??'',async(tx,scope)=>{
+    (request as FastifyRequest & {stage10SessionId?:string}).stage10SessionId??'',
+    (request as FastifyRequest & {stage10WorkspaceId?:string}).stage10WorkspaceId??'',async(tx,scope)=>{
     const user=await tx.user.findUnique({
      where:{id:scope.actorId},
      select:{id:true,name:true,email:true,phone:true,role:true,status:true,isActive:true},

@@ -46,12 +46,14 @@ export function resolveStage10ReadOnlyWorkspace(actorId:string){
  * Nao consome token nem modifica refresh sessions.
  */
 export async function withStage10ReadOnlySessionWorkspace<T>(
- actorId:string,sessionId:string,
+ actorId:string,sessionId:string,workspaceId:string,
  read:(tx:Prisma.TransactionClient,scope:Stage10ReadOnlyScope)=>Promise<T>,
 ):Promise<T>{
- if(typeof sessionId!=='string'||!sessionId.trim()||sessionId.length>256)
+ if(typeof sessionId!=='string'||!sessionId.trim()||sessionId.length>256||
+    typeof workspaceId!=='string'||!workspaceId.trim()||workspaceId.length>256)
   throw new Error('STAGE10_READ_ACCESS_DENIED');
  return withStage10ReadOnlyWorkspace(actorId,async(tx,scope)=>{
+  if(scope.workspaceId!==workspaceId)throw new Error('STAGE10_READ_ACCESS_DENIED');
   const session=await tx.authSession.findUnique({
    where:{id:sessionId},select:{userId:true,expiresAt:true,revokedAt:true},
   });

@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import {generateKeyPairSync,sign as signBytes,createHmac} from 'node:crypto';
+import {generateKeyPairSync,sign as signBytes,createHmac,createHash} from 'node:crypto';
 import {prisma,PrismaClient,UserRole,UserStatus} from '@meg/database';
 import {createStage10ReadOnlyApp} from '../../stage10-readonly-app';
 import {assertStage10ReadOnlyDatabaseRole} from '../../stage10-readonly-db-guard';
 import {withStage10ReadOnlyWorkspace} from './stage10-readonly-workspace';
+import {authorizeStage10QaTokenExchange} from '../../stage10-qa-token-exchange.contract';
+import {issueStage10QaReadToken} from '../../stage10-qa-token-issuer.contract';
 
 /**
  * HTTP/JWT/PostgreSQL 17 descartavel da Etapa 10.
@@ -25,11 +27,12 @@ const otherRsa=generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{
 const jwtConfig={publicKeyPem:rsa.publicKey,issuer,audience};
 const now=Math.floor(Date.now()/1000);
 function signToken(sub:string,role:string='VIEWER',options:{
- exp?:number;iat?:number;scope?:string;aud?:string;iss?:string;sid?:string;
+ exp?:number;iat?:number;scope?:string;aud?:string;iss?:string;sid?:string;wid?:string;
  privateKey?:string;alg?:string;
 }={}){
  const header={alg:options.alg||'RS256',typ:'JWT'};
- const payload={sub,sid:options.sid??sessions.get(sub),role,
+ const payload={sub,sid:options.sid??sessions.get(sub),
+  wid:options.wid??workspaceByUser.get(sub),role,
   iss:options.iss||issuer,aud:options.aud||audience,
   scope:options.scope||'stage10:finance:read',iat:options.iat??now,
   exp:options.exp??now+300};
@@ -53,9 +56,13 @@ const accountId='acct-'+suffix;
 const secondAccountId='acct-b-'+suffix;
 let ownerId='',otherId='',workspaceId='',otherWorkspaceId='';
 const sessions=new Map<string,string>();
+const workspaceByUser=new Map<string,string>();
+const refreshByUser=new Map<string,string>();
 async function makeSession(userId:string){
+ const refresh='stage10-synthetic-'+suffix+'-'+userId+'-refresh';
+ refreshByUser.set(userId,refresh);
  const session=await prisma.authSession.create({data:{
-  userId,tokenHash:'stage10-synthetic-'+suffix+'-'+userId,
+  userId,tokenHash:createHash('sha256').update(refresh).digest('hex'),
   expiresAt:new Date(Date.now()+3600000),
  }});
  sessions.set(userId,session.id);
@@ -89,6 +96,8 @@ try{
   name:'Fixture Workspace B',slug:suffix+'-b',ownerId:otherId,
  }});
  workspaceId=workspace.id;otherWorkspaceId=otherWorkspace.id;
+ workspaceByUser.set(ownerId,workspaceId);
+ workspaceByUser.set(otherId,otherWorkspaceId);
  const ownerSession=await makeSession(ownerId);
  const otherSession=await makeSession(otherId);
  await prisma.workspaceMember.createMany({data:[
@@ -145,6 +154,8 @@ try{
   'token QA sem sid deve ser recusado');
  assert.equal((await get(signToken(ownerId,'ADMIN',{sid:otherSession.id}))).statusCode,403,
   'sessao pertence a outro usuario');
+ assert.equal((await get(signToken(ownerId,'ADMIN',{wid:otherWorkspaceId}))).statusCode,403,
+  'workspace distinto do vinculo assinado deve falhar fechado');
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
 
  const invalidSignature=await get(signToken(ownerId,'ADMIN',{privateKey:otherRsa.privateKey}));
@@ -191,10 +202,40 @@ try{
  assert.equal(payload.cashflow.month,'2026-11');
  assert.equal(response.headers['cache-control'],'private, no-store');
  assert.ok(!response.body.includes('Despesa sintetica B'));
+ // Prova composta, ainda sem endpoint canonico ou chave real:
+ // JWT canônico ja autenticado + refresh opaco hashed + membro ativo ->
+ // RS256 efemero com sid/wid -> GET SQL READ ONLY no mesmo PostgreSQL.
+ const refreshProof=refreshByUser.get(ownerId)??'';
+ const candidate={
+  enabled:true,
+  transport:{method:'POST',path:'/auth/stage10-qa/exchange',
+   origin:previewOrigin,expectedOrigin:previewOrigin,contentType:'application/json'},
+  access:{signatureVerified:true,sub:ownerId,role:'ADMIN' as const,iat:now-60,exp:now+300},
+  refreshToken:refreshProof,
+  user:{id:ownerId,status:'ACTIVE',isActive:true,role:'ADMIN' as const},
+  session:{id:ownerSession.id,userId:ownerId,tokenHash:ownerSession.tokenHash,
+   expiresAt:Math.floor(ownerSession.expiresAt.getTime()/1000),revokedAt:null},
+  workspace:{id:workspaceId,isActive:true},
+  membership:{workspaceId,userId:ownerId,status:'ACTIVE',isActive:true},
+  nowSeconds:now,
+ };
+ const exchange=authorizeStage10QaTokenExchange(candidate);
+ const qaBoundToken=issueStage10QaReadToken({
+  sub:exchange.sub,role:exchange.role,sessionId:exchange.sessionId,
+  workspaceId:exchange.workspaceId,
+ },{privateKeyPem:rsa.privateKey,issuer,audience,nowSeconds:now,
+  ttlSeconds:exchange.ttlSeconds});
+ assert.equal((await get(qaBoundToken)).statusCode,200,
+  'troca sintética composta permite somente o workspace autorizado');
+ assert.throws(()=>authorizeStage10QaTokenExchange({
+  ...candidate,refreshToken:'wrong-proof-but-long-enough-1234567890'
+ }),/STAGE10_QA_EXCHANGE_DENIED/);
  // Um token QA ja emitido nao deve passar na proxima transacao apos logout.
  await prisma.authSession.update({where:{id:ownerSession.id},
   data:{revokedAt:new Date()}});
  assert.equal((await get(tokenA)).statusCode,403,'sessao revogada bloqueia token QA');
+ assert.equal((await get(qaBoundToken)).statusCode,403,
+  'token emitido via troca sintética deve respeitar a revogação');
  await prisma.authSession.update({where:{id:ownerSession.id},
   data:{revokedAt:null,expiresAt:new Date(Date.now()-1000)}});
  assert.equal((await get(tokenA)).statusCode,403,'sessao expirada bloqueia QA');
@@ -220,6 +261,7 @@ try{
   workspaceId,userId:shared.id,role:UserRole.VIEWER,
   status:UserStatus.ACTIVE,isActive:true,
  }});
+ workspaceByUser.set(shared.id,workspaceId);
  await makeSession(shared.id);
  const sharedToken=signToken(shared.id);
  const sharedMe=await server.inject({method:'GET',url:'/auth/me',headers:{authorization:'Bearer '+sharedToken}});
@@ -240,6 +282,7 @@ try{
   name:'Fixture Without Membership',email:suffix+'-outsider@example.invalid',
   role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:true,
  }});
+ workspaceByUser.set(outsider.id,workspaceId);
  await makeSession(outsider.id);
  const outsiderResponse=await get(signToken(outsider.id));
  assert.equal(outsiderResponse.statusCode,403,'sem membership deve falhar fechado');
@@ -260,6 +303,7 @@ try{
   name:'Fixture Inactive',email:suffix+'-inactive@example.invalid',
   role:UserRole.VIEWER,status:UserStatus.ACTIVE,isActive:false,
  }});
+ workspaceByUser.set(inactive.id,workspaceId);
  await makeSession(inactive.id);
  const denied=await get(signToken(inactive.id));
  assert.equal(denied.statusCode,403,'ator inativo nao pode acessar dados');

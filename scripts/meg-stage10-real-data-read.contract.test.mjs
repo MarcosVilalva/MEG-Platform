@@ -69,6 +69,7 @@ assert.match(routes,/withStage10ReadOnlySessionWorkspace\(request\.user\.sub/);
 assert.match(routes,/stage10SessionId/);
 assert.match(workspace,/tx\.authSession\.findUnique/);
 assert.match(workspace,/session\.revokedAt!==null/);
+assert.match(workspace,/scope\.workspaceId!==workspaceId/);
 assert.match(workspace,/session\.expiresAt\.getTime\(\)<=Date\.now\(\)/);
 assert.match(routes,/userId:scope\.ownerId,workspaceId:scope\.workspaceId,archivedAt:null/);
 assert.match(routes,/ownerWorkspaceCount!==1\|\|foreignOwnerEvents!==0\|\|workspaceEventCount!==total/);
@@ -101,7 +102,9 @@ assert.match(stage10Jwt,/stage10:finance:read/);
 assert.match(stage10Jwt,/RSA-SHA256/);
 assert.match(stage10Jwt,/RS256/);
 assert.match(stage10Jwt,/claimString\(claims\.sid,256\)/);
+assert.match(stage10Jwt,/claimString\(claims\.wid,256\)/);
 assert.match(stage10App,/stage10SessionId=claims\.sid/);
+assert.match(stage10App,/stage10WorkspaceId=claims\.wid/);
 // Proibir qualquer escritor financeiro no bridge, na tela e na rota.
 for(const source of [bridge,live,routes]){
  for(const writer of ['financeClient.createEvent','financeClient.updateEvent',

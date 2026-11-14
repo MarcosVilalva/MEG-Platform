@@ -22,7 +22,8 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
   if(!parsed.success)return reply.code(400).send({error:'INVALID_STAGE10_READ_MONTH'});
   reply.header('Cache-Control','private, no-store');
   return withStage10ReadOnlySessionWorkspace(request.user.sub,
-   (request as typeof request & {stage10SessionId?:string}).stage10SessionId??'',async(tx,scope)=>{
+   (request as typeof request & {stage10SessionId?:string}).stage10SessionId??'',
+   (request as typeof request & {stage10WorkspaceId?:string}).stage10WorkspaceId??'',async(tx,scope)=>{
    const where={userId:scope.ownerId,workspaceId:scope.workspaceId,archivedAt:null};
    const total=await tx.financialEvent.count({where});
    // Os read models canonicos ainda agregam por userId. So podem ser
