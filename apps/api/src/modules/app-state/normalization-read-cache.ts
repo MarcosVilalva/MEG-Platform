@@ -23,6 +23,11 @@ const cache = new Map<string, CacheEntry>();
 const MAX_CACHED_WORKSPACES = 1;
 const MAX_CACHED_RESPONSE_BYTES = 10 * 1024 * 1024;
 
+/** Desativado por padrão. O rollout exige decisão operacional específica. */
+export function isStage09ReadCacheEnabled(): boolean {
+  return process.env.MEG_STAGE09_GET_APPSTATE_CACHE === 'enabled';
+}
+
 function reconciledPrimary(result: ReadResult): result is NonNullable<ReadResult> & {
   integrity: { reconciled: true; count: number };
 } {
