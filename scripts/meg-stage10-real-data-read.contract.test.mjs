@@ -8,6 +8,7 @@ const live=read('apps/web/src/meg-web-evolution/stage10/UnifiedRealReadQa.tsx');
 const edit=read('apps/web/src/meg-web-evolution/stage10/EditExpensePreview.tsx');
 const operational=read('apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx');
 const workspace=read('apps/api/src/modules/workspaces/service.ts');
+const isolatedWorkspace=read('apps/api/src/modules/finance/stage10-readonly-workspace.ts');
 const cors=read('apps/api/src/cors.ts');
 assert.match(qa,/realRequested=params\.get\('dados'\)==='reais'/);
 assert.match(qa,/if\(!realEnabled\)window\.fetch=/);
@@ -35,6 +36,11 @@ assert.match(edit,/a\.id===snapshot\.accountId/);
 assert.match(edit,/m\.id===snapshot\.paymentMethodId/);
 assert.match(operational,/type:accounts\.find\(account=>account\.id===id\)\?\.type/);
 assert.match(workspace,/await ensurePrimaryWorkspace\(\)/);
+assert.match(isolatedWorkspace,/SET TRANSACTION READ ONLY/);
+assert.match(isolatedWorkspace,/TransactionIsolationLevel.RepeatableRead/);
+assert.match(isolatedWorkspace,/workspace:\{isActive:true,ownerId:actorId\}/);
+assert.doesNotMatch(isolatedWorkspace,/\b(?:ensurePrimaryWorkspace|resolveWorkspaceContext)\s*\(/);
+assert.doesNotMatch(isolatedWorkspace,/\b(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(/);
 assert.match(cors,/configuredOrigins\.includes\(origin\)/);
 // O codigo de integracao tem somente chamadas a leitores; o componente
 // de edicao simula salvamento e nao chama nenhum writer financeiro.
