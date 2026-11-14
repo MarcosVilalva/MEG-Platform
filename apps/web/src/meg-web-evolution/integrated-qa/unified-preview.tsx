@@ -1,4 +1,6 @@
 import React,{useEffect,useState,type MouseEvent} from 'react';
+import {UnifiedRealReadQa} from '../stage10/UnifiedRealReadQa';
+import {stage10RealReadGate} from '../stage10/real-data-read';
 import {createRoot} from 'react-dom/client';
 import '../styles/tokens.css';
 import '../styles/base.css';
@@ -30,6 +32,12 @@ const known:Record<string,Screen>={
 };
 const params=new URLSearchParams(location.search);
 const initial=known[params.get('tela')||'']??'loading-entry';
+const realRequested=params.get('dados')==='reais';
+const realGate=stage10RealReadGate({
+ enabled:import.meta.env.VITE_MEG_STAGE10_REAL_READ_ENABLED,
+ apiUrl:import.meta.env.VITE_API_URL,
+},location.origin);
+const realEnabled=realRequested&&realGate.allowed;
 const rootElement=document.documentElement;
 rootElement.dataset.megTypographyPilot='true';
 rootElement.dataset.megPrismUi='true';
@@ -39,7 +47,7 @@ style.textContent=prismCssText;
 document.head.appendChild(style);
 const blockedRequests:string[]=[];
 (window as typeof window&{__MEG_UNIFIED_QA_BLOCKED__?:string[]}).__MEG_UNIFIED_QA_BLOCKED__=blockedRequests;
-window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
+if(!realEnabled)window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
  const path=typeof input==='string'||input instanceof URL?String(input):input.url;
  blockedRequests.push((init?.method||'GET')+' '+path);
  return new Response(JSON.stringify({error:'MEG_UNIFIED_QA_NETWORK_BLOCKED'}),{status:403,headers:{'Content-Type':'application/json'}});
@@ -166,4 +174,6 @@ function UnifiedQA(){
 }
 const el=document.getElementById('meg-unified-qa-root');
 if(!el)throw new Error('MEG_UNIFIED_QA_ROOT_NOT_FOUND');
-createRoot(el).render(<React.StrictMode><UnifiedQA/></React.StrictMode>);
+createRoot(el).render(<React.StrictMode>{realRequested
+ ? <UnifiedRealReadQa enabled={realEnabled} blockedReason={realGate.reason}/>
+ : <UnifiedQA/>}</React.StrictMode>);
