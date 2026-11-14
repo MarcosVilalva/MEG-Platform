@@ -1913,3 +1913,32 @@ Issues #674, #676, #690 e #691 consultadas e OPEN. Nenhum comentário externo en
 Gate 1 PARCIAL e BLOQUEADO para conclusão funcional pela restrição de serviço e evidências faltantes. Gates 2 a 4 NO-GO. Nenhuma fixture, restore remoto, GET/PUT de root key, SQL produtivo, mudança Render, merge, deploy, alteração de plano ou custo nesta rodada. Android, Web homologada, WSL e dados reais preservados. Apenas checkpoint alterado na branch #666.
 
 Próximo passo exato: concluir inspeção sanitizada de SMTP/SMS/hooks/Storage/Realtime e provedores customizados quando o serviço permitir, sem upgrade nem remoção de limite; então comprovar isolamento funcional antes de qualquer fixture/restore. Preparação #692 permanece revisável e bloqueada para aplicação. Novo SHA documental exige consulta de checks próprios; não transferir aprovação do SHA anterior.
+
+
+## 14/11/2026 | Etapa 09: avanço do isolamento e gate automático do build seguro
+
+Autorização de continuidade recebida. Checks aplicáveis de ffaa7d0975ebd75d1871c786693ebae78c6dce01 concluídos SUCCESS: validate, offline-contract, financial-invariants-postgres17, postgres17-synthetic-restore, pg17-disposable-financial-writers e cors-stage09. Jobs Android/financial-e2e/Foundation omitidos não são nova homologação.
+
+### Dashboard exclusivo do sandbox, somente leitura
+- Auth Hooks: painel vazio, convite Create an auth hook; nenhum hook listado.
+- SMTP Settings: Enable custom SMTP desmarcado; Save changes desabilitado. Não equivale a bloquear o serviço padrão de email.
+- Notificações de segurança listadas no painel Emails estavam desmarcadas.
+- Storage: Failed to retrieve buckets, exceed_egress_quota. Não substituir contagem histórica por alegação de inventário atual válido.
+- Storage Settings: transformação de imagens indisponível/desativada e limite Free fixo 50 MB; nenhuma configuração alterada.
+- Realtime Settings: Enable Realtime service desmarcado e aviso Realtime service is disabled. Nenhuma conexão/subscription/fixture iniciada.
+- Provedores customizados continuam sem leitura válida e saída de rede não comprovada. Restrição de quota não é política de isolamento. Gate 1 PARCIAL, Gates 2 a 4 NO-GO.
+
+### Correção restrita de CI da PR #692
+No HEAD 5bdefdb8c2b40090964d15fc3cf76b54f3162c7f o workflow de build compilatório aceitava somente fix/stage09-render-safe-build-qa-20261114. O check verde daquele SHA existe, porém edições futuras na branch da PR não o disparariam automaticamente.
+Commit 29f6a6aa1a61360e740a86201b959ddf4aac2448 adicionou safety/stage09-render-build-non-destructive-20261114 ao push.branches e à condição do job. Apenas .github/workflows/meg-stage09-render-api-safe-build.yml alterado. Script compilatório, contrato, API, banco e UI preservados. Verificar checks próprios desse commit; CI anterior não substitui esta execução.
+
+### Procedimento Render preparado, não executado
+Referências oficiais lidas em 14/11/2026: https://render.com/docs/deploys.md ; https://render.com/docs/health-checks.md ; https://render.com/docs/rollbacks.md .
+- Depois dos gates DR e autorização específica, registrar configuração/artefato live e verificar disponibilidade do artefato de rollback antes de mexer no serviço. Nenhum artefato foi escolhido ou rollback ensaiado em produção.
+- Auto-deploy On Commit deve ser controlado antes de qualquer futura publicação. O modo After CI Checks Pass do Render aceita conclusões skipped/neutral; portanto não substitui gates explícitos MEG.
+- Build proposto permanece bash scripts/meg-stage09-render-api-build.sh, sem tarefas de banco. Não aplicar enquanto o arquivo não existir no commit efetivamente implantável e os gates não forem liberados.
+- Rollback usa artefato anterior, não reverte efeitos no banco. Pelo Dashboard desativa autodeploy; pela API não desativa automaticamente. Não reintroduzir o comando destrutivo como rollback.
+- Confirmar /health e revisão efetiva apenas após publicação autorizada. Não há publicação nesta rodada.
+- Não usar pre-deploy pago nem upgrade para contornar limite de custo zero. Não presumir que editar Build Command é operação sem deploy.
+
+Issues #674/#676/#690/#691 permanecem rastreadas e abertas conforme última consulta. Nenhum backfill, segredo, SQL produtivo, restore, plano/cobrança, merge ou deploy. Android/Web homologada/WSL preservados. Próximo passo: verificar CI 29f6a6a e manter bloqueio de restore até leitura integral e isolamento funcional possíveis sem custos.
