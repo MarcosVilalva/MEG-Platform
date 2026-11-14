@@ -17,8 +17,9 @@ const MAX_WORKSPACES = 16;
 
 export async function completeDatabaseSignature(workspaceId: string): Promise<string | null> {
   // Uma única instrução SQL: as duas subconsultas compartilham o mesmo snapshot.
-  // to_jsonb(e) inclui TODAS as colunas, para detectar até edições externas à API
-  // de propriedades não projetadas no fingerprint de negócio.
+  // to_jsonb(e) inclui TODAS as colunas, para detectar edições externas à API.
+  // SHA-256 por linha, em ordem estável por ID, antes da agregação final.
+  // Isto evita construir um jsonb_agg gigante na memória do PostgreSQL.
   const rows = await prisma.$queryRaw<Array<{
     stateDigest: string | null;
     eventDigest: string;
@@ -27,10 +28,13 @@ export async function completeDatabaseSignature(workspaceId: string): Promise<st
       (SELECT encode(sha256(convert_to(to_jsonb(a)::text, 'UTF8')), 'hex')
        FROM "AppState" AS a WHERE a."workspaceId" = ${workspaceId}) AS "stateDigest",
       encode(sha256(convert_to(COALESCE((
-        SELECT jsonb_agg(to_jsonb(e) ORDER BY e."id")::text
+        SELECT string_agg(
+          encode(sha256(convert_to(to_jsonb(e)::text, 'UTF8')), 'hex'),
+          '' ORDER BY e."id"
+        )
         FROM "FinancialEvent" AS e
         WHERE e."workspaceId" = ${workspaceId}
-      ), '[]'), 'UTF8')), 'hex') AS "eventDigest"
+      ), ''), 'UTF8')), 'hex') AS "eventDigest"
   `);
   const value = rows[0];
   if (!value?.stateDigest || !value.eventDigest) return null;
