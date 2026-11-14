@@ -5,10 +5,9 @@
  * e autorizar a origem no backend sem modificar producao silenciosamente.
  */
 import {readSession,validateSession,authenticatedRequest} from '../../app/auth-client';
-import {financeClient,type Account,type Category,type PaymentMethod,type FinancialEvent,type FinanceSummary} from '../../app/finance-client';
-import {readAuthorizedHistory,readSmartAuthorizedHistory} from '../launches/authorized-history';
+import type {Account,Category,PaymentMethod,FinancialEvent} from '../../app/finance-client';
 import {buildReadOnlyData} from '../launches/OperationalLaunches';
-import {readHome,type HomeFinancialData} from '../home/HomeDashboard';
+import type {HomeFinancialData} from '../home/HomeDashboard';
 import type {ExpenseCatalogs} from './ExpenseForm';
 import type {HistorySnapshot} from './autocomplete-history';
 
@@ -16,7 +15,7 @@ export type Stage10RealRead={
   userId:string;
   userName:string;
   revision:string;
-  home:HomeFinancialData;
+  home:null;
   launches:HomeFinancialData;
   catalogs:ExpenseCatalogs;
   history:HistorySnapshot;
@@ -62,57 +61,56 @@ function catalogsFromReal(
   };
 }
 
+type Stage10Snapshot={
+ kind:'stage10-financial-readonly-snapshot-v1';
+ canWrite:false;consistency:'repeatable-read';
+ actorId:string;workspaceId:string;dataOwnerId:string;total:number;
+ events:FinancialEvent[];accounts:Account[];categories:Category[];
+ paymentMethods:PaymentMethod[];
+ cards:Array<{id:string;name:string;isActive:boolean;closingDay:number;dueDay:number}>;
+ summary:NonNullable<HomeFinancialData['summary']>;
+ cashflow:NonNullable<HomeFinancialData['cashflow']>;
+};
 export async function loadStage10RealRead(month:string,signal:AbortSignal):Promise<Stage10RealRead>{
-  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new Error('Periodo de leitura invalido.');
-  const session=readSession();
-  if(!session?.user?.id)throw new Error('Sessao autenticada obrigatoria.');
-  const identity=await validateSession(session);
-  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
-  if(identity.user.id!==session.user.id||!identity.user.isActive||identity.user.status!=='ACTIVE')
-    throw new Error('Sessao nao autorizada para leitura financeira.');
-  // A API atual nao anuncia este contrato. Sem uma rota dedicada auditada,
-  // nao executar sequer um GET financeiro que possa invocar o fallback de
-  // resolveWorkspaceContext/ensurePrimaryWorkspace com writes.
-  const guarantee=await authenticatedRequest<{
-    kind:string;actorId:string;workspaceId:string;dataOwnerId:string;
-    canRead:boolean;canWrite:boolean;sideEffects:string;
-  }>('/finance/stage10-readonly-capability',{cache:'no-store',signal});
-  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
-  if(!guarantee||guarantee.kind!=='stage10-financial-readonly-v1'
-    ||guarantee.actorId!==identity.user.id||!guarantee.workspaceId
-    ||!guarantee.dataOwnerId||guarantee.canRead!==true
-    ||guarantee.canWrite!==false||guarantee.sideEffects!=='none'){
-    throw new Error('A API nao confirmou o isolamento de leitura financeira exigido.');
+ if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new Error('Periodo de leitura invalido.');
+ const session=readSession();
+ if(!session?.user?.id)throw new Error('Sessao autenticada obrigatoria.');
+ const identity=await validateSession(session);
+ if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(identity.user.id!==session.user.id||!identity.user.isActive||identity.user.status!=='ACTIVE')
+  throw new Error('Sessao nao autorizada para leitura financeira.');
+ // Uma unica rota isolada: nunca chamar GET financeiro legado.
+ const data=await authenticatedRequest<Stage10Snapshot>(
+  '/finance/stage10-readonly/snapshot?month='+encodeURIComponent(month),
+  {cache:'no-store',signal});
+ if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(!data||data.kind!=='stage10-financial-readonly-snapshot-v1'||data.canWrite!==false
+   ||data.consistency!=='repeatable-read'||data.actorId!==session.user.id
+   ||!data.workspaceId||!data.dataOwnerId
+   ||!Number.isSafeInteger(data.total)||data.total<0||data.total>5000
+   ||!Array.isArray(data.events)||data.total!==data.events.length
+   ||!Array.isArray(data.accounts)||!Array.isArray(data.categories)
+   ||!Array.isArray(data.paymentMethods)||!Array.isArray(data.cards)
+   ||!data.summary||!data.cashflow||data.summary.month!==month||data.cashflow.month!==month){
+  throw new Error('Snapshot financeiro real incompleto ou nao autorizado.');
+ }
+ const ids=new Set<string>();
+ for(const item of data.events){
+  if(!item||typeof item.id!=='string'||!item.id||ids.has(item.id)){
+   throw new Error('Historico real contem identificadores invalidos ou repetidos.');
   }
-  const before=await financeClient.getSyncStatus();
-  if(typeof before.token!=='string'||!before.token)
-    throw new Error('A API nao confirmou a versao dos dados financeiros.');
-  const page=(number:number,size:number,s:AbortSignal)=>financeClient.listEvents(number,size,'',s);
-  const eventRead=before.capabilities?.historySnapshotV1===true
-    ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),page,signal)
-    : readAuthorizedHistory(page,signal);
-  const [home,events,summary,accounts,categories,methods]=await Promise.all([
-    readHome(month),
-    eventRead,
-    authenticatedRequest<FinanceSummary>('/finance/summary?month='+encodeURIComponent(month),{cache:'no-store',signal}),
-    authenticatedRequest<Account[]>('/finance/accounts',{cache:'no-store',signal}),
-    authenticatedRequest<Category[]>('/finance/categories',{cache:'no-store',signal}),
-    authenticatedRequest<PaymentMethod[]>('/finance/payment-methods',{cache:'no-store',signal}),
-  ]);
-  if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
-  const after=await financeClient.getSyncStatus();
-  if(!after.token||before.token!==after.token)
-    throw new Error('Os dados mudaram durante a consulta. Nenhum resultado parcial foi exibido.');
-  const current=readSession();
-  if(!current||current.user.id!==session.user.id)
-    throw new Error('A identidade da sessao mudou durante a consulta.');
-  if(!Array.isArray(events)||!Array.isArray(accounts)||!Array.isArray(categories)||!Array.isArray(methods))
-    throw new Error('A API retornou um catalogo financeiro incompleto.');
-  return {
-    userId:session.user.id,userName:identity.user.name,revision:before.token,
-    home,launches:buildReadOnlyData(events,summary,accounts,categories,methods),
-    catalogs:catalogsFromReal(accounts,categories,methods),
-    history:{protocol:'financial-history-v1',kind:'complete',items:events},
-    events,supportsFilteredSummary:before.capabilities?.filteredSummaryV1===true,
-  };
+  ids.add(item.id);
+ }
+ const current=readSession();
+ if(!current||current.user.id!==session.user.id||current.accessToken!==session.accessToken)
+  throw new Error('A identidade da sessao mudou durante a consulta.');
+ return {
+  userId:session.user.id,userName:identity.user.name,
+  revision:'stage10-snapshot:'+data.workspaceId+':'+data.total,
+  home:null,
+  launches:buildReadOnlyData(data.events,data.summary,data.accounts,data.categories,data.paymentMethods),
+  catalogs:catalogsFromReal(data.accounts,data.categories,data.paymentMethods),
+  history:{protocol:'financial-history-v1',kind:'complete',items:data.events},
+  events:data.events,supportsFilteredSummary:false,
+ };
 }
