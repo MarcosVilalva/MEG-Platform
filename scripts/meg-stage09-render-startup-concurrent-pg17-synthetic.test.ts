@@ -181,7 +181,7 @@ async function main() {
     assert.equal(await healthy(second.port), true,
       'Status runtime entre instancias nao deve ser compartilhado implicitamente');
     const drifted = await prisma.financialEvent.findUniqueOrThrow({ where: { id: event.id } });
-    assert.equal(drifted.amount.toString(), driftAmount, 'Auditoria nao pode reparar automaticamente a fonte normalizada');
+    assert.equal(drifted.amount.toFixed(2), driftAmount, 'Auditoria nao pode reparar automaticamente a fonte normalizada');
     await prisma.financialEvent.update({ where: { id: event.id }, data: original });
     await fire(first, 900000);
     await until(async () => (await healthy(first.port)) === true, 'HEALTH_RECOVERY');
