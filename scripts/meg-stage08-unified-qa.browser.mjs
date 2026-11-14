@@ -29,6 +29,50 @@ try{
    await page.locator('[data-meg-unified-screen="launches"]').waitFor({state:'visible'});
    assert.ok(await page.locator('.meg-l09').count()>0,'Lançamentos indisponíveis');
    await page.screenshot({path:resolve(output,'lancamentos-'+width+'.png'),fullPage:false});
+
+   // Stage10 QA: opções por registro, seleção integrada e lote sem writer.
+   const batchButton=page.getByTestId('qa-batch-action');
+   assert.equal(await batchButton.isDisabled(),true,'Lote desabilitado sem seleção '+width);
+   const selectable=page.locator('.meg-datagrid-card-row:visible input[type="checkbox"], .meg-datagrid-table tbody tr:visible input[type="checkbox"]').first();
+   assert.ok(await selectable.count()>0,'Checkbox do DataGrid disponível '+width);
+   await selectable.check();
+   assert.match(await batchButton.innerText(),/\\(1\\)/,'Contador do lote respeita seleção '+width);
+   assert.equal(await batchButton.isEnabled(),true,'Lote habilita com seleção '+width);
+   await batchButton.click();
+   const batchDialog=page.getByTestId('qa-batch-dialog');
+   await batchDialog.waitFor({state:'visible'});
+   assert.match(await batchDialog.innerText(),/Editar em lote \\(1\\)/);
+   assert.equal(await batchDialog.getByRole('button',{name:'Simular alterações'}).isDisabled(),true,'Lote não simula sem campo marcado');
+   await batchDialog.getByLabel('Alterar observações').check();
+   await batchDialog.getByLabel('Novas observações').fill('alteração de teste fictícia');
+   assert.equal(await batchDialog.getByRole('button',{name:'Simular alterações'}).isEnabled(),true);
+   await batchDialog.getByRole('button',{name:'Simular alterações'}).click();
+   assert.match(await page.locator('.meg-unified-notice').innerText(),/Nenhuma alteração foi gravada/);
+   await selectable.uncheck();
+   assert.equal(await batchButton.isDisabled(),true,'Limpar seleção desabilita lote '+width);
+   // A linha de Farmácia é despesa monetária fictícia, elegível somente na QA.
+   const editFarmacia=page.getByRole('button',{name:'Editar Farmácia'}).first();
+   await editFarmacia.click();
+   const rowEdit=page.getByTestId('stage10-edit-preview');
+   await rowEdit.waitFor({state:'visible'});
+   assert.equal(await rowEdit.getByLabel('Descrição da edição').inputValue(),'FARMÁCIA');
+   assert.equal(await rowEdit.getByRole('button',{name:'Salvar alterações'}).isDisabled(),true);
+   await rowEdit.getByRole('button',{name:'Fechar edição'}).click();
+   const menu=page.getByRole('button',{name:'Mais ações de Farmácia'}).first();
+   await menu.click();
+   await page.getByRole('menuitem',{name:'Ver detalhes'}).click();
+   assert.equal(await page.getByRole('heading',{name:'Farmácia'}).count(),1,'Consulta original preservada '+width);
+   await page.getByRole('button',{name:'Fechar detalhes'}).click();
+   await menu.click();
+   await page.getByRole('menuitem',{name:'Duplicar como rascunho'}).click();
+   const duplicated=page.locator('.meg-t10-expense').first();
+   await duplicated.waitFor({state:'visible'});
+   assert.equal(await duplicated.getByLabel('Descrição do lançamento').inputValue(),'FARMÁCIA');
+   assert.equal(await duplicated.getByRole('button',{name:'Salvar lançamento'}).first().isDisabled(),true,'Duplicação QA não grava');
+   await duplicated.getByRole('button',{name:'Fechar formulário'}).click();
+   assert.equal(await page.getByTestId('qa-batch-dialog').count(),0);
+   console.log('MEG_STAGE10_QA_ACTIONS '+width+' PASS');
+
    await page.getByRole('button',{name:'Novo lançamento'}).first().click();
    const picker=page.getByTestId('new-launch-types');
    await picker.waitFor({state:'visible'});
