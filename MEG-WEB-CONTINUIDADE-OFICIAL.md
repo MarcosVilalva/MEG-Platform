@@ -2276,3 +2276,81 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   configuracao efetiva Render ou mudanca prod. Sem gate #691/#694
   formalmente satisfeito e sem prova de gerenciados Supabase Gate 1,
   nao publicar nem declarar Etapa 09 concluida.
+
+
+## 14/11/2026 | Etapa 09: inventario final dos bloqueios, Render efetivo e gates de fechamento
+
+- **Escopo e documentos:** mantida exclusivamente a Etapa 09, lidos este
+  checkpoint, `docs/MEG-WEB-FINANCIAL-AUTHORITY.md`, o runbook de Build
+  seguro da #692, o plano de recuperacao gerenciada do Supabase e as
+  issues #691, #694, #674, #676 e #690. O relatorio detalhado desta
+  verificacao foi criado na branch #666 em
+  `docs/MEG-STAGE09-RELATORIO-FECHAMENTO-GATES-20261114.md`
+  (commit `fc579193533e7fc712aac8f952320742c619d16b`).
+  Nenhuma modificacao de regra financeira, API, Web ou Android.
+- **Evidencias CI previamente confirmadas:** PR #666 Draft no HEAD de
+  entrada `1d17133042abb045fa738292c756713303d6f111`:
+  MEG Platform CI [#43647657040](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647657040)
+  SUCCESS, financeiro PG17 [#43647657079](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647657079)
+  SUCCESS, Gate1 offline [#43647657045](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647657045)
+  SUCCESS, CORS [#43647657069](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647657069)
+  SUCCESS, Backup Safety [#43647657066](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647657066)
+  SUCCESS e Foundation [#43647657062](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647657062)
+  SKIPPED. PR #692 Draft HEAD
+  `50acb96c6cdb6411f990d0d5993708fa82de0ea6`:
+  PG17 HTTP [#43647615446](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647615446)
+  SUCCESS e build sem DB [#43647615472](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43647615472)
+  SUCCESS. Checks de SHA anterior nao substituem checks destes
+  novos commits documentais.
+- **Render verificacao SOMENTE LEITURA:** `get_service` do servico
+  `srv-d98k61daeets7384hvb0` indicou `meg-platform-api` ligado
+  a `main`, `autoDeploy=yes`, `autoDeployTrigger=commit`,
+  `healthCheckPath=/health`, Free, uma instancia. `list_deploys`
+  retornou o commit `28703a95310c9b9b5f193ef4f3a0cbe80e121f07`
+  como ultimo deploy `live`, de 05/11/2026. A candidata #692
+  com `autoDeployTrigger: 'off'` e build seguro NAO foi aplicada.
+  Nao foi possivel ler o Build Command efetivo nesta consulta
+  `get_service`; o comando perigoso documentado na issue #691
+  continua NO-GO ate reconfirmacao e mudanca autorizada.
+  **Merge direto na main nao e seguro enquanto autoDeploy estiver ativo**.
+- **Readiness de processo:** `/health` retorna HTTP 200 mesmo com
+  `financialReady=false`; Render usa `/health` como health check.
+  As provas PG17 de fallback e de duas instancias com status divergente
+  ja estavam aprovadas. Registrada issue
+  [#695](https://github.com/MarcosVilalva/MEG-Platform/issues/695)
+  para decisao funcional: `healthy` nao significa fonte financeira
+  reconciliada em todas as instancias. Sem alteracao automatica de
+  `server.ts` ou da politica de health.
+- **Supabase sandbox somente leitura, nenhuma escrita:** destino
+  `oxwmqbzeuiibdlkcbjzv` permaneceu `ACTIVE_HEALTHY`,
+  PostgreSQL `17.11.0.019`, `public` com 0 tabelas,
+  Edge Functions 0, lints security 0. Extensoes instaladas
+  `plpgsql`, `pgcrypto`, `uuid-ossp`, `pg_stat_statements`,
+  `supabase_vault` 0.3.2; `pg_net` e `pg_cron` ausentes.
+  Isto nao verifica providers Auth, SMS/SMTP, Storage gerenciado,
+  URLs/redirects, hooks, conexoes externas nem recuperacao funcional.
+  Gate 0 PASS anterior, Gate 1 PARCIAL, Gates 2-4 NO-GO.
+- **Estado real:** #691 e #694 seguem OPEN/P0. #674 e #676
+  permanecem OPEN; #690 permanece OPEN/P0 sem causa quantitativa
+  conclusiva para egress; #695 OPEN para health multi-instancia.
+  O ledger Payable corrigido da #666 e o parser de flag protegido da #692
+  estao tecnicamente caracterizados em PG17 descartavel, **nao
+  integrados ou implantados**. Persistem decisao sobre ordem
+  `reconcile -> activate`, rollback e leitura financeira em fallback.
+  Nenhuma aprovacao visual nova foi solicitada ou declarada.
+- **Restricoes preservadas:** nenhuma mudanca em Render efetivo,
+  Supabase origem/sandbox, Auth/Storage, secrets, producao,
+  Android, Web homologada, WSL, Vault/age, backups, main ou
+  dados reais; sem merge, deploy, Blueprint sync, upgrade,
+  cobranca, restauracao remota, cron ou notificacoes.
+- **Proximo passo exato para fechamento integral:** (1) confirmar
+  CI do SHA deste checkpoint e do relatorio; (2) obter decisao e
+  autorizacao **pontual** para impedir deploy automatico e corrigir
+  Build Command efetivo Render antes de qualquer merge, com janela e
+  rollback; (3) obter aceite de semantica #674/#694/#695 e revalidar
+  a integracao sem modificar dados reais; (4) concluir Gate 1 gerenciado
+  por evidencias autenticadas e sanitizadas, seguidas de autorizacoes
+  especificas para testes dos Gates 2, 3 e 4; (5) resolver
+  #676 e #690 conforme evidencias e atualizar checkpoints. Sem
+  tais provas, o veredito formal permanece **NO-GO**, nao concluir
+  Etapa 09 com base apenas em CI de ambiente sintetico.
