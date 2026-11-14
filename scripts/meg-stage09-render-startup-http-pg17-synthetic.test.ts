@@ -139,8 +139,10 @@ async function runCase(name: string, workspaceId: string, expected: {
   let process: Started | null = null;
   try {
     process = await start();
-    assert.equal(await health(), expected.ready, name + ' initial health');
+    // /ready responde antes das manutencoes do startup. Primeiro aguardar
+    // o log terminal da cadeia assíncrona e somente depois conferir /health.
     await waitUntil(async () => process!.messages.join('').includes(expected.log), name + '_LOG');
+    await waitUntil(async () => (await health()) === expected.ready, name + '_HEALTH');
     assert.equal(await health(), expected.ready, name + ' final health');
     const unauthorized = await get('/auth/me');
     assert.equal(unauthorized.status, 401, 'Sem autenticacao nao deve conceder sessao');
