@@ -36,12 +36,13 @@ try{
    const selectable=page.locator('.meg-datagrid-card-row:visible input[type="checkbox"], .meg-datagrid-table tbody tr:visible input[type="checkbox"]').first();
    assert.ok(await selectable.count()>0,'Checkbox do DataGrid disponível '+width);
    await selectable.check();
-   assert.match(await batchButton.innerText(),/\\(1\\)/,'Contador do lote respeita seleção '+width);
+   await page.waitForFunction(()=>document.querySelector('[data-testid="qa-batch-action"]')?.textContent?.includes('(1)'),null,{timeout:8000});
+   assert.match(await batchButton.innerText(),/\(1\)/,'Contador do lote respeita seleção '+width);
    assert.equal(await batchButton.isEnabled(),true,'Lote habilita com seleção '+width);
    await batchButton.click();
    const batchDialog=page.getByTestId('qa-batch-dialog');
    await batchDialog.waitFor({state:'visible'});
-   assert.match(await batchDialog.innerText(),/Editar em lote \\(1\\)/);
+   assert.match(await batchDialog.innerText(),/Editar em lote \(1\)/);
    assert.equal(await batchDialog.getByRole('button',{name:'Simular alterações'}).isDisabled(),true,'Lote não simula sem campo marcado');
    await batchDialog.getByLabel('Alterar observações').check();
    await batchDialog.getByLabel('Novas observações').fill('alteração de teste fictícia');
@@ -49,6 +50,7 @@ try{
    await batchDialog.getByRole('button',{name:'Simular alterações'}).click();
    assert.match(await page.locator('.meg-unified-notice').innerText(),/Nenhuma alteração foi gravada/);
    await selectable.uncheck();
+   await page.waitForFunction(()=>document.querySelector('[data-testid="qa-batch-action"]')?.hasAttribute('disabled'),null,{timeout:8000});
    assert.equal(await batchButton.isDisabled(),true,'Limpar seleção desabilita lote '+width);
    // A linha de Farmácia é despesa monetária fictícia, elegível somente na QA.
    const editFarmacia=page.getByRole('button',{name:'Editar Farmácia'}).first();
