@@ -287,4 +287,35 @@ try{
   }finally{await page.close();}
  }
 
+ // Editar Despesa também deve ocupar somente a altura necessária nos monitores
+ // largos e notebooks 16:10. Dados continuam fictícios e Salvar desabilitado.
+ for(const [width,height] of [[1440,900],[1920,1080],[1920,1200]]){
+  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});
+  try{
+   await page.goto(base+'/meg-unificado-qa.html?visual=prism&tela=lancamentos&modal=editar',
+    {waitUntil:'domcontentloaded'});
+   const edit=page.getByTestId('stage10-edit-preview');
+   await edit.waitFor({state:'visible'});
+   const data=await edit.evaluate(modal=>{
+    const wrapper=modal.getBoundingClientRect();
+    const grid=modal.querySelector('.meg-t10-expense-grid').getBoundingClientRect();
+    const panels=Array.from(modal.querySelectorAll('.meg-t10-expense-panel')).map(el=>el.getBoundingClientRect());
+    return {height:wrapper.height,emptyBottom:wrapper.bottom-grid.bottom,
+     panelWidths:panels.map(r=>r.width),panelBottoms:panels.map(r=>r.bottom),
+     horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+     panelVerticalExcess:Array.from(modal.querySelectorAll('.meg-t10-expense-panel'))
+      .map(el=>el.scrollHeight-el.clientHeight)};
+   });
+   assert.ok(data.height<height*.82,'Editor não deve preencher tela grande sem conteúdo '+width+'x'+height+JSON.stringify(data));
+   assert.ok(data.emptyBottom>=-2&&data.emptyBottom<=6,'Sem vazio abaixo das colunas '+width+'x'+height);
+   assert.ok(data.panelWidths.every(n=>n>260),'Três colunas reais '+width+'x'+height);
+   assert.ok(data.panelBottoms.every(n=>Math.abs(n-data.panelBottoms[0])<=2),'Colunas niveladas '+width+'x'+height);
+   assert.ok(data.horizontalOverflow<=2,'Sem scroll horizontal '+width+'x'+height);
+   assert.ok(data.panelVerticalExcess.every(n=>n<=2),'Sem texto cortado '+width+'x'+height+JSON.stringify(data));
+   assert.equal(await edit.getByRole('button',{name:'Salvar alterações'}).isDisabled(),true);
+   await page.screenshot({path:resolve(output,'editar-despesa-prism-wide-'+width+'x'+height+'.png'),fullPage:false});
+   console.log('MEG_EDIT_PRISM_WIDE '+width+'x'+height+' PASS');
+  }finally{await page.close()}
+ }
+
 }finally{await browser.close();}
