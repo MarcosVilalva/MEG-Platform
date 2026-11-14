@@ -43,6 +43,9 @@ function signToken(sub:string,role:string='VIEWER',options:{
 await assert.rejects(createStage10ReadOnlyApp(previewOrigin,{
  publicKeyPem:'',issuer,audience,
 }),/STAGE10_PUBLIC_JWT_CONFIGURATION_REQUIRED/);
+await assert.rejects(createStage10ReadOnlyApp(previewOrigin,{
+ publicKeyPem:'not-a-public-key',issuer,audience,
+}),/STAGE10_PUBLIC_JWT_KEY_INVALID/);
 const server=await createStage10ReadOnlyApp(previewOrigin,jwtConfig);
 const suffix='stage10-'+process.pid;
 const accountId='acct-'+suffix;
