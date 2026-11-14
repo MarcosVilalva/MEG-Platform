@@ -26,8 +26,12 @@ function selectedRealExpense(row:QaLaunchTarget,data:Stage10RealRead):{
 }|null{
  const event=data.events.find(item=>item.id===row.id);
  const account=data.catalogs.accounts.find(item=>item.id===event?.accountId&&item.active&&item.kind==='monetary');
- if(!event||event.type!=='expense'||!['paid','planned'].includes(event.status)||!account)return null;
- return {event,accountName:account.name};
+ if(!event||event.type!=='expense'||!['paid','planned'].includes(event.status)||
+  !Number.isFinite(event.enteredAmount)||!event.categoryId||!event.paymentMethodId||
+  !data.catalogs.categories.some(item=>item.active&&item.id===event.categoryId)||
+  !data.catalogs.paymentMethods.some(item=>item.active&&item.kind==='ordinary'&&item.id===event.paymentMethodId)||
+  (event.accountId&&!account)||(event.status==='paid'&&!account))return null;
+ return {event,accountName:account?.name??''};
 }
 function realEdit(row:QaLaunchTarget,data:Stage10RealRead):EditExpenseSnapshot|null{
  const selected=selectedRealExpense(row,data);
@@ -40,7 +44,7 @@ function realEdit(row:QaLaunchTarget,data:Stage10RealRead):EditExpenseSnapshot|n
   accountId:event.accountId,paymentMethodId:event.paymentMethodId,
   strictReferences:true,
   dateDisplay:row.date.slice(8)+'/'+row.date.slice(5,7)+'/'+row.date.slice(0,4),
-  amountDisplay:money.format(Math.abs(row.signedAmount)),
+  amountDisplay:money.format(event.enteredAmount),
   paymentMethodName:row.paymentMethod,accountName,
   statusLabel:event.status==='paid'?'Paga':'Pendente',
  };
