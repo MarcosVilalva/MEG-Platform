@@ -70,7 +70,7 @@ function sourceRows(source:HomeFinancialData):Row[]{
   };
   return {
    id:item.id,date:item.date.slice(0,10),description:item.description,
-    accountKind:accountKinds.get(item.accountId||'')==='benefit'?'benefit':accountKinds.get(item.accountId||'')==='checking'?'monetary':'unknown',
+    accountKind:(accountKinds.get(item.accountId||'')==='benefit'?'benefit':accountKinds.get(item.accountId||'')==='checking'?'monetary':'unknown') as Row['accountKind'],
    category:categories.get(item.categoryId||'')||(original.legacyCategoryName?.trim()||'Sem categoria'),
    account:accounts.get(item.accountId||'')||'Sem conta',
    paymentMethod:readable(original.paymentMethod?.name||original.paymentMethodName||original.sourceDetails?.paymentMethod),
