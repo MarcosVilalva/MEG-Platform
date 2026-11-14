@@ -176,3 +176,90 @@ aceites e provas de recuperacao/seguranca que ainda nao existem.
 **Veredito segue NO-GO** ate provas gerenciadas, correcoes autorizadas,
 RTO/RPO e aprovacao especifica da implantacao. Nao usar esta medicao
 para declarar economia de egress, reducao de custo ou resolucao #690.
+
+
+## 8. Integracao tecnicamente concluida em branch isolada, com teste no merge
+
+**Resultado verificavel de 14/11/2026:** apos a autorizacao de
+continuidade ate o limite seguro de fechamento, a
+[PR #692](https://github.com/MarcosVilalva/MEG-Platform/pull/692)
+foi marcada como pronta para revisao e **mergeada somente na
+branch stage09** da PR #666, nao na `main`. O commit da
+integracao isolada e
+[51b45adb2c13e1cd77ee28d23f50cd5dd83f52b3](https://github.com/MarcosVilalva/MEG-Platform/commit/51b45adb2c13e1cd77ee28d23f50cd5dd83f52b3).
+A PR #666 continua Draft e aberta; a #692 foi merged/closed.
+Nao houve deploy, Blueprint sync, restauracao remota,
+upgrade, alteracao de ambientes reais ou aprovacoes visuais
+implicitas.
+
+**Lacuna de CI descoberta e corrigida na branch isolada:** as
+workflows `.github/workflows/meg-stage09-render-api-safe-build.yml`
+e `.github/workflows/meg-stage09-render-startup-pg17.yml`
+estavam restritas a PR #692 para base `stage09`. Agora tambem
+rodam na PR #666 de head EXATO
+`stage09/backup-recovery-kit-20261110` para base `main`
+no mesmo repositorio, mediante escopos de `paths`,
+sem permitir CI em branches arbitrarias e sem segredos externos.
+Gatilhos readequados nos commits
+`f2115f94c04d87808c3fea5f06cccfa3586827e7` e
+`5b3787275cc50e127644d74a681dc8d910f0d364`.
+Os jobs mantiveram guardas de banco PG17 loopback, CI=true,
+credenciais ficticias e nenhuma integracao externa.
+
+**Todos os checks do HEAD tecnico
+`5b3787275cc50e127644d74a681dc8d910f0d364`:**
+
+| Verificacao no SHA consolidado | Run | Estado |
+| --- | --- | --- |
+| MEG Platform CI | [#43651508331](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508331) | SUCCESS |
+| Financeiro PG17 descartavel | [#43651508281](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508281) | SUCCESS |
+| Backup Recovery Safety offline | [#43651508320](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508320) | SUCCESS |
+| Sandbox Gate1 **offline**, nao gerenciado | [#43651508334](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508334) | SUCCESS |
+| CORS API limitado | [#43651508301](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508301) | SUCCESS |
+| **Build seguro sem banco**, depois do merge | [#43651508323](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508323) | SUCCESS |
+| **Startup PG17 HTTP real**, depois do merge | [#43651508310](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508310) | SUCCESS |
+| Foundation | [#43651508466](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43651508466) | SKIPPED |
+
+No log da PG17 integrada:
+`STAGE09_POSTGRES_TARGET=LOCAL_EPHEMERAL_ONLY`,
+`PG17_SYNTHETIC_REAL_HTTP_STARTUP_PASS`,
+`PG17_REAL_HTTP_CONCURRENT_AND_TIMERS_PASS`
+e `PG17_LEGACY_REPAIR_FAIL_CLOSED_REAL_SERVER_PASS`.
+Cinco partidas do servidor real confirmaram default, `false`,
+`0`, `off` sem reparo e `true` como unica ativacao explicita
+na fixture; nao inferir producao. O teste de concorrencia
+comprovou 2 processos, 1 unico Payable de recorrencia
+ficticia e status de readiness local a cada processo.
+NAO provou execucao por seis horas de relogio.
+
+**Render continua efetivamente em `main` com Auto Deploy ligado,**
+sem mudanca de configuracao nesta rodada. A integracao da #692
+na branch stage09 nao muda Build Command ou Auto Deploy
+do servico e nao representa implantacao da correcao.
+A ferramenta Render conectada aqui permite consultar o servico,
+deploys e metricas, mas nao fornece operacao direta para
+editar o Build Command e a flag Auto Deploy de um web service
+existente; uma Blueprint nao deve ser criada ou sincronizada
+para contornar isso, pois poderia alterar infraestrutura real.
+
+**Supabase DR mantido:** Gate 0 PASS previo, Gate 1 PARCIAL por
+Auth/Storage gerenciados e HTTP 402 observado; Gate 2, 3 e 4
+NO-GO. O projeto Free e teto R$ 0,00 nao foram alterados.
+O conector Supabase nao expoe todos os controles gerenciados
+de Auth/SMTP/SMS/Storage/egress e nao foi usado para
+disparar login, email, upload, segredo Vault, cron, restore
+ou SQL de mutacao. Nenhuma prova nova de RTO/RPO foi inventada.
+#691/#694 (P0), #690 (P0), #674/#676 e #695 continuam abertas
+nos termos dos checkpoints.
+
+**Decisao de fechamento:** a consolidacao de codigo e regressao
+isolada estao **tecnicamente concluidas**, mas a **Etapa 09
+integral nao foi encerrada**. Nao alterar status de DR para
+PASS nem promover para `main` sem resolver bloqueios reais.
+Proximo gate: acesso autenticado ao painel gerenciado do
+sandbox para atestar e corrigir, sem custo nem efeito externo,
+Auth/Storage/402; janela operacional do Render para
+controlar Auto Deploy e Build Command atual; aceite
+especifico dos contratos financeiros de fallback/health/
+Ledger; ensaios autorizados de Gate2/3/4 e RTO/RPO
+medidos antes de fechar e liberar producao.
