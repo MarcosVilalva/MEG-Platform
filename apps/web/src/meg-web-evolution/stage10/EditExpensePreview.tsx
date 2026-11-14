@@ -10,6 +10,7 @@ export type EditExpenseSnapshot={
  categoryId:string;categoryName:string;
  dateDisplay:string;amountDisplay:string;
  paymentMethodName:string;accountName:string;statusLabel:string;
+ accountId?:string|null;paymentMethodId?:string|null;strictReferences?:boolean;
 };
 export const QA_EDIT_EXPENSE_SNAPSHOT:EditExpenseSnapshot={
  source:'financial-event',financialScope:'monetary',type:'expense',
@@ -32,8 +33,13 @@ export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave}:{
  onSimulatedSave:()=>void;
 }){
  const initialDraft=useMemo<ExpenseDraft>(()=>{
-  const account=catalogs.accounts.find(a=>a.active&&a.kind==='monetary'&&a.name===snapshot.accountName);
-  const method=catalogs.paymentMethods.find(m=>m.active&&m.kind==='ordinary'&&m.name===snapshot.paymentMethodName);
+  // Na leitura real a identidade do cadastro prevalece sobre nomes historicos.
+  const account=snapshot.strictReferences
+   ? catalogs.accounts.find(a=>a.active&&a.kind==='monetary'&&a.id===snapshot.accountId)
+   : catalogs.accounts.find(a=>a.active&&a.kind==='monetary'&&a.name===snapshot.accountName);
+  const method=snapshot.strictReferences
+   ? catalogs.paymentMethods.find(m=>m.active&&m.kind==='ordinary'&&m.id===snapshot.paymentMethodId)
+   : catalogs.paymentMethods.find(m=>m.active&&m.kind==='ordinary'&&m.name===snapshot.paymentMethodName);
   const category=catalogs.categories.find(c=>c.active&&c.id===snapshot.categoryId);
   return {...EMPTY_EXPENSE_DRAFT,
    description:snapshot.description,
