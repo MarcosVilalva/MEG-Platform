@@ -64,7 +64,11 @@ test('o start da API expõe caminhos de escrita conhecidos e não é um smoke re
 
 test('reparo de importacao é condicional e não deve ser chamado de inofensivo', () => {
   assert.ok(server.includes('if (config.runLegacyRepair)'));
-  assert.ok(read('apps/api/src/config.ts').includes('RUN_LEGACY_REPAIR: z.coerce.boolean().default(false)'));
+  const config = read('apps/api/src/config.ts');
+  // O contrato deve BLOQUEAR o antigo parser, que interpreta a string 'false' como true.
+  assert.ok(config.includes("RUN_LEGACY_REPAIR: z.stringbool({ truthy: ['true'], falsy: ['false', '0', 'off'] }).default(false)"));
+  assert.ok(!config.includes('RUN_LEGACY_REPAIR: z.coerce.boolean()'));
+  assert.ok(config.includes('runLegacyRepair: values.RUN_LEGACY_REPAIR'));
   assert.ok(read('apps/api/src/modules/imports/repair.ts').includes('prisma.financialEvent.updateMany('));
 });
 
