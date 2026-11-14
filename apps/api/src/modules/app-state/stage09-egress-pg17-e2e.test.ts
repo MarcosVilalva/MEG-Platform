@@ -5,7 +5,7 @@
  */
 import assert from 'node:assert/strict';
 import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
-import { normalizationPreview } from './normalization-migration';
+import { normalizationPreview, normalizedStateForRead } from './normalization-migration';
 import { periodicNormalizationPreview } from './normalization-periodic-audit';
 import { buildNormalizationPreview } from './normalization-migration-core';
 import {
@@ -374,6 +374,31 @@ async function main() {
     data: { state: state as Prisma.InputJsonValue },
   });
   assert.equal((await periodicNormalizationPreview(workspace.id, user.id, normalizationPreview)).reconciled, true);
+
+  // A rota GET /app-state utiliza esta leitura. Caracterizar o custo
+  // real do protocolo mesmo quando o estado não mudou, sem otimizar a
+  // semântica de leitura neste experimento de auditoria periódica.
+  await resetWire();
+  const liveReadA = await normalizedStateForRead(workspace.id, user.id);
+  const liveReadWireA = await wireStats();
+  assert.equal(liveReadA?.normalizedPrimary, true, 'Read-model deve preservar primary.');
+  assert.equal((liveReadA?.integrity as { reconciled?: boolean })?.reconciled, true);
+  await resetWire();
+  const liveReadB = await normalizedStateForRead(workspace.id, user.id);
+  const liveReadWireB = await wireStats();
+  assert.deepEqual(liveReadB?.state, liveReadA?.state,
+    'Duas leituras sucessivas idênticas não podem apresentar divergência financeira.');
+  assert.ok(liveReadWireA.serverToClientBytes > 1_000_000);
+  assert.ok(liveReadWireB.serverToClientBytes > 1_000_000,
+    'Leitura real do AppState continua transferindo payloads integrais na repetição.');
+  console.log('STAGE09_GET_APPSTATE_BASELINE=' + JSON.stringify({
+    syntheticOnly: true,
+    events: EVENT_COUNT,
+    firstReadPgBytes: liveReadWireA.serverToClientBytes,
+    secondReadPgBytes: liveReadWireB.serverToClientBytes,
+    repeatedReadHasNoWireCache: true,
+    sameReconciledFinancialState: true,
+  }));
 
   // Caracterização da rotina anterior continua após os ensaios de cache.
   // Idempotencia: estado original e rows ja conciliados nao devem mudar.
