@@ -26,7 +26,7 @@ export function verifyStage10PublicJwt(
  token:string,publicKeyPem:string,
  expected:{issuer:string;audience:string;nowSeconds?:number},
 ):Stage10PublicClaims{
- const fail=()=>{throw new Error('STAGE10_JWT_INVALID');};
+ const fail=():never=>{throw new Error('STAGE10_JWT_INVALID');};
  if(typeof token!=='string'||token.length>12000||typeof publicKeyPem!=='string'||
   !/^-----BEGIN PUBLIC KEY-----\n[\s\S]+\n-----END PUBLIC KEY-----\n?$/.test(publicKeyPem))fail();
  if(!claimString(expected.issuer,256)||!claimString(expected.audience,256))fail();
