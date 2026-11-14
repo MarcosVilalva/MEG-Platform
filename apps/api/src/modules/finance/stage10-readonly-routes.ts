@@ -23,6 +23,19 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
   return withStage10ReadOnlyWorkspace(request.user.sub,async(tx,scope)=>{
    const where={userId:scope.ownerId,workspaceId:scope.workspaceId,archivedAt:null};
    const total=await tx.financialEvent.count({where});
+   // Os read models canonicos ainda agregam por userId. So podem ser
+   // reutilizados quando ha exclusividade comprovada de workspace,
+   // sem eventos ativos de outra base ou registros sem proprietario.
+   const [ownerWorkspaceCount,foreignOwnerEvents,workspaceEventCount]=await Promise.all([
+    tx.workspace.count({where:{ownerId:scope.ownerId,isActive:true}}),
+    tx.financialEvent.count({where:{
+     userId:scope.ownerId,archivedAt:null,
+     OR:[{workspaceId:null},{workspaceId:{not:scope.workspaceId}}],
+    }}),
+    tx.financialEvent.count({where:{workspaceId:scope.workspaceId,archivedAt:null}}),
+   ]);
+   if(ownerWorkspaceCount!==1||foreignOwnerEvents!==0||workspaceEventCount!==total)
+    throw new Error('STAGE10_WORKSPACE_FINANCIAL_SCOPE_NOT_EXCLUSIVE');
    if(total>HISTORY_LIMIT) return {
     kind:'stage10-financial-history-limit-v1' as const,
     canWrite:false as const,limit:HISTORY_LIMIT,total,
