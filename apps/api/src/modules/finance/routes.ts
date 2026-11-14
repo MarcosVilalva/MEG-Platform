@@ -161,7 +161,11 @@ async function financialDataOwnerId(userId: string) {
 
 export async function financeRoutes(app: FastifyInstance) {
   registerPhoenixPreviewReads(app);
-  registerStage10ReadOnlyRoutes(app);
+  // Rota financeira de QA em desenvolvimento. Nao publicar em APIs existentes
+  // por um merge acidental; ativacao requer ambiente e autorizacao separados.
+  if (process.env.MEG_STAGE10_REAL_READ_API_ENABLED === 'true') {
+    registerStage10ReadOnlyRoutes(app);
+  }
 
   app.get('/sync-status', { preHandler: app.authorize([...readRoles]) }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
