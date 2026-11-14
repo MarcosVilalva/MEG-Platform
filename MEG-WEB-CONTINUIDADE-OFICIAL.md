@@ -2584,3 +2584,60 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
 - **Subgates de configuração Render concluídos:** Auto Deploy `off` confirmado por API; novo Build Command exibido no painel. **Não houve deploy manual, alteração na main ou execução do novo script em produção neste atendimento**. O script seguro já está na branch stage09, mas continua ausente da main até integração posterior e autorizada.
 - **Não considerar resolvida a issue #691** nem a Etapa 09 apenas porque o comando foi salvo. Ainda faltam verificação pós-implantação sem DDL, gates funcionais/DR e aprovação operacional final. Não iniciar deploy antes de conferir a presença do script no SHA de main e a política de integridade financeira.
 - PR #666 permanece Draft, sem merge em main. Gate 0 Supabase PASS anterior, Gate 1 PARCIAL por Auth/Storage/HTTP 402; Gates 2-4 NO-GO. Seguem pendentes #674, #676, #690, #691, #694, #695 conforme matriz oficial.
+
+
+## 14/11/2026 | Gate 1 gerenciado Supabase: restricao de cotas confirmada no painel
+
+- O operador enviou print autenticado da pagina inicial do **sandbox**
+  `meg-stage09-restore-sandbox-20261112`, ref exclusiva
+  `oxwmqbzeuiibdlkcbjzv`. O Dashboard apresenta alerta no topo:
+  **"Serviços restritos"** e afirma que a organização atingiu
+  o **limite de cotas**. O projeto mostra selo
+  **"EXCEDER OS LIMITES DE USO"**, status **"Não saudável"**,
+  capacidade **Nano** e indicação **"Sem backups"** no
+  projeto novo. Estes avisos não se referem a uma
+  restauração executada, e o rótulo "principal/PRODUÇÃO"
+  da branch Supabase não transforma o sandbox na origem MEG.
+- Consulta read-only ao conector confirmou a organização
+  `MEG Vilalva` no plano `free` e o mesmo projeto sandbox
+  com metadata `ACTIVE_HEALTHY`. **A metadata é insuficiente
+  para atestar disponibilidade funcional**, pois o Dashboard
+  mostra restrição efetiva. Em consulta anterior, Auth e
+  Storage responderam HTTP 402; a evidência do painel é
+  compatível com essa restrição por cota, sem identificar
+  a categoria exata de consumo. Nenhuma consulta adicional
+  de dados privados foi feita e nenhum projeto foi alterado.
+- A [Billing FAQ oficial](https://supabase.com/docs/guides/platform/billing-faq#fair-use-policy)
+  informa que a restrição de uso pode afetar todos os
+  projetos da organização, inclusive APIs com HTTP 402,
+  e que restrições por cota são suspensas após renovação
+  da cota no início do próximo ciclo de cobrança,
+  sujeitas a pequeno atraso. A data efetiva desse ciclo
+  precisa ser **lida no Billing da organização**,
+  não deduzida de histórico de outros projetos ou
+  de cronogramas presumidos. Pausar/deletar projeto
+  não apaga consumo já contabilizado no ciclo.
+- **Gate 1 GERENCIADO = NO-GO OPERACIONAL, não homologado**:
+  o isolamento está parcialmente inventariado,
+  mas os serviços Auth e Storage estão restritos.
+  **Gates 2, 3, 4 = NO-GO**, nenhum teste autenticado,
+  conta fictícia, upload, Vault root key, restauração
+  remota, egress real ou RTO/RPO foi executado por
+  este checkpoint.
+- **Política imutável:** teto de custo R$ 0,00;
+  não fazer upgrade, não alterar spend cap,
+  não reativar `meg-evolution`, não criar outro
+  projeto Free para contornar restrição, não
+  excluir projeto, não modificar Supabase origem
+  `ugbiqzaqnrhulhetevby`, nem Render ou dados reais.
+- **Próximo passo real:** consulta somente leitura
+  em Organization > Usage/Billing para identificar
+  **qual cota excedeu e a data do fim do ciclo**.
+  Depois de o provedor levantar efetivamente a
+  restrição, reexecutar inspeções Auth/Storage
+  gerenciadas e os gates na ordem planejada,
+  nunca declarar o DR pronto por uma mudança
+  isolada no indicador metadata. Os controles
+  de Render Auto Deploy Off e Build Command seguro
+  permanecem registrados; #691 não foi encerrada,
+  nenhuma publicação em `main` ocorreu.
