@@ -11,6 +11,10 @@ const routes=read('apps/api/src/modules/finance/stage10-readonly-routes.ts');
 const financeRoutes=read('apps/api/src/modules/finance/routes.ts');
 const canonical=read('apps/api/src/modules/finance/read-model.ts');
 const cors=read('apps/api/src/cors.ts');
+const stage10App=read('apps/api/src/stage10-readonly-app.ts');
+const stage10Server=read('apps/api/src/stage10-readonly-server.ts');
+const stage10Jwt=read('apps/api/src/stage10-public-jwt-contract.ts');
+
 // A entrada original de QA permanece visual, ficticia e sem acesso a API.
 assert.match(qa,/realRequested=params\.get\('dados'\)==='reais'/);
 assert.match(qa,/readonlyApiUrl:import\.meta\.env\.VITE_MEG_STAGE10_READONLY_API_URL/);
@@ -72,6 +76,17 @@ assert.match(canonical,/getCanonicalFinancialSummary\(userId: string, month: str
 assert.match(canonical,/getCanonicalFinancialCashflow\(userId: string, month: string, db: Prisma.TransactionClient/);
 assert.match(financeRoutes,/MEG_STAGE10_REAL_READ_API_ENABLED/);
 assert.match(cors,/configuredOrigins\.includes\(origin\)/);
+// A API Fastify QA nunca deve aceitar o HMAC de login da API canonica.
+assert.match(stage10App,/verifyStage10PublicJwt/);
+assert.match(stage10App,/assertStage10PublicVerificationKey/);
+assert.doesNotMatch(stage10App,/registerAuth|authRoutes|jwtVerify|jwtSign|config\\.jwtSecret/);
+assert.match(stage10Server,/MEG_STAGE10_QA_JWT_PUBLIC_KEY_PEM/);
+assert.match(stage10Server,/MEG_STAGE10_QA_JWT_ISSUER/);
+assert.match(stage10Server,/MEG_STAGE10_QA_JWT_AUDIENCE/);
+assert.doesNotMatch(stage10Server,/registerAuth|authRoutes|jwtSign|config\\.jwtSecret/);
+assert.match(stage10Jwt,/stage10:finance:read/);
+assert.match(stage10Jwt,/RSA-SHA256/);
+assert.match(stage10Jwt,/RS256/);
 // Proibir qualquer escritor financeiro no bridge, na tela e na rota.
 for(const source of [bridge,live,routes]){
  for(const writer of ['financeClient.createEvent','financeClient.updateEvent',
