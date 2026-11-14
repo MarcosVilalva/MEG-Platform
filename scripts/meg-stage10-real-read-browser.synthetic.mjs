@@ -39,6 +39,7 @@ try{
  });
  const apiCalls=[];const errors=[];const requests=[];const failures=[];
  let exceedHistoryLimit=false;
+ let expireReadonlyTokenOnce=true;
  page.on('pageerror',error=>errors.push(String(error)));
  page.on('request',r=>{const pathname=new URL(r.url()).pathname;if(pathname.startsWith('/auth/')||pathname.startsWith('/finance/'))requests.push(r.method()+' '+r.url());});
  page.on('requestfailed',r=>failures.push(r.url()+' '+(r.failure()?.errorText||'')));
@@ -73,6 +74,15 @@ try{
    })});
   if(req.method()==='GET'&&url.pathname==='/auth/me')
    return route.fulfill({status:200,headers,body:JSON.stringify({user})});
+  if(req.method()==='POST'&&url.pathname==='/auth/refresh')
+   return route.fulfill({status:200,headers,body:JSON.stringify({
+    user,accessToken:'synthetic-refreshed-access',refreshToken:'synthetic-refreshed-token-valid',
+    refreshExpiresAt:'2099-01-01T00:00:00.000Z',
+   })});
+  if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot'&&expireReadonlyTokenOnce){
+   expireReadonlyTokenOnce=false;
+   return route.fulfill({status:401,headers,body:JSON.stringify({error:'UNAUTHORIZED'})});
+  }
   if(req.method()==='GET'&&url.pathname==='/finance/stage10-readonly/snapshot')
    return route.fulfill({status:200,headers,body:JSON.stringify(exceedHistoryLimit
     ? {kind:'stage10-financial-history-limit-v1',canWrite:false,limit:5000,total:5001}
@@ -99,6 +109,9 @@ try{
  await page.getByText('DESPESA SINTETICA PARA NAVEGADOR').first().waitFor({state:'visible',timeout:20000});
  assert.ok(apiCalls.includes(api+' POST /auth/login'));
  assert.ok(apiCalls.includes(api+' GET /auth/me'));
+ assert.ok(apiCalls.includes(api+' POST /auth/refresh'));
+ assert.equal(apiCalls.filter(call=>call===readonlyApi+' GET /finance/stage10-readonly/snapshot').length,2,
+  'Somente duas tentativas no backend QA: token expirado e token renovado');
  assert.ok(apiCalls.includes(readonlyApi+' GET /finance/stage10-readonly/snapshot'));
  assert.ok(apiCalls.filter(call=>call.includes('/finance/')).every(call=>
   call===readonlyApi+' GET /finance/stage10-readonly/snapshot'));
