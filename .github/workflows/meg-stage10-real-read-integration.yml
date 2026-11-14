@@ -70,3 +70,19 @@ jobs:
           done
           node scripts/meg-stage10-real-read-gate.browser.mjs
           node scripts/meg-stage08-unified-qa.browser.mjs
+      - name: Build isolated synthetic authenticated preview (never deploy)
+        env:
+          VITE_MEG_STAGE10_REAL_READ_ENABLED: 'true'
+          VITE_API_URL: https://qa-api.example.invalid
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.stage08-funcional-qa.config.ts
+      - name: Synthetic authenticated browser, without real credentials or external API
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4175 --directory apps/web/dist-stage08-funcional-qa >/tmp/meg-stage10-browser-synthetic.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4175/meg-unificado-qa.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage10-real-read-browser.synthetic.mjs
