@@ -200,7 +200,7 @@ async function main() {
   }
 
   const syntheticChange = record(projected[0].sourcePayload);
-  const divergent = { ...projected[0], sourcePayload: { ...syntheticChange, auditChanged: true } };
+  const divergent = { ...projected[0], sourcePayload: { ...syntheticChange, status: 'pending' } };
   assert.equal(
     normalizedMirrorNeedsSourceRefresh(divergent, mirrorFinancialEventToLegacyTransaction(divergent)),
     true,
