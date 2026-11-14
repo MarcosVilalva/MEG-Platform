@@ -15,7 +15,7 @@ type CacheEntry = { signature: string; preview: Preview };
 const cache = new Map<string, CacheEntry>();
 const MAX_WORKSPACES = 16;
 
-async function completeDatabaseSignature(workspaceId: string): Promise<string | null> {
+export async function completeDatabaseSignature(workspaceId: string): Promise<string | null> {
   // Uma única instrução SQL: as duas subconsultas compartilham o mesmo snapshot.
   // to_jsonb(e) inclui TODAS as colunas, para detectar até edições externas à API
   // de propriedades não projetadas no fingerprint de negócio.
