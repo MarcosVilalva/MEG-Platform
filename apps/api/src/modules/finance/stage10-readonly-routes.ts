@@ -2,6 +2,7 @@ import type {FastifyInstance} from 'fastify';
 import {z} from 'zod';
 import {getCanonicalFinancialSummary,getCanonicalFinancialCashflow} from './read-model';
 import {withStage10ReadOnlyWorkspace} from './stage10-readonly-workspace';
+import {stage10HistoricLabels} from './stage10-source-details';
 
 /**
  * Endpoint isolado da Etapa 10. SOMENTE GET e consulta em transação SQL
@@ -43,7 +44,7 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
    const [events,accounts,categories,paymentMethods,cards,summary,cashflow]=await Promise.all([
     tx.financialEvent.findMany({
      where,orderBy:[{date:'desc'},{createdAt:'desc'},{id:'asc'}],
-     include:{importedRow:{select:{rowNumber:true}}},
+     include:{importedRow:{select:{rowNumber:true,rawData:true}}},
     }),
     tx.account.findMany({where:{userId:scope.ownerId},
       orderBy:[{isActive:'desc'},{name:'asc'}]}),
@@ -66,12 +67,13 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
     canWrite:false as const,consistency:'repeatable-read' as const,
     actorId:scope.actorId,workspaceId:scope.workspaceId,dataOwnerId:scope.ownerId,
     total,
-    events:events.map(({importedRow,...item})=>({
+    events:events.map(({importedRow,sourcePayload,...item})=>({
      ...item,
      account:item.accountId?ownedAccounts.get(item.accountId)??null:null,
      category:item.categoryId?ownedCategories.get(item.categoryId)??null:null,
      paymentMethod:item.paymentMethodId?ownedMethods.get(item.paymentMethodId)??null:null,
      sourceRowNumber:importedRow?.rowNumber??null,
+     ...stage10HistoricLabels(importedRow?.rawData,sourcePayload),
     })),
     accounts,categories,paymentMethods,cards,summary,cashflow,
    };
