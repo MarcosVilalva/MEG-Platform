@@ -14,7 +14,6 @@ import type {HistorySnapshot} from './autocomplete-history';
 export type Stage10RealRead={
   userId:string;
   userName:string;
-  revision:string;
   home:null;
   launches:HomeFinancialData;
   catalogs:ExpenseCatalogs;
@@ -106,7 +105,6 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
   throw new Error('A identidade da sessao mudou durante a consulta.');
  return {
   userId:session.user.id,userName:identity.user.name,
-  revision:'stage10-snapshot:'+data.workspaceId+':'+data.total,
   home:null,
   launches:buildReadOnlyData(data.events,data.summary,data.accounts,data.categories,data.paymentMethods),
   catalogs:catalogsFromReal(data.accounts,data.categories,data.paymentMethods),
