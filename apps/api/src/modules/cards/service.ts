@@ -1,4 +1,5 @@
 import { prisma } from '@meg/database';
+import {cardPurchaseInstallmentRows} from './purchase-cycle-canonical';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
 import { buildCanonicalCardStatement, cardInstallmentRemaining, legacyCardStatementEffect } from '../finance/card-statement-canonical';
@@ -43,11 +44,6 @@ function legacyState(value: unknown) {
     cards: Array.isArray(catalogs.cards) ? catalogs.cards as LegacyCard[] : [],
     transactions: Array.isArray(state.transactions) ? state.transactions as LegacyTransaction[] : [],
   };
-}
-
-function addMonths(month: string, offset: number) {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
 }
 
 export async function sharedCardContext(userId: string) {
@@ -313,11 +309,12 @@ export async function createCardPurchaseProtected(userId: string, input: {
       }
     }
 
-    const purchaseMonth = input.purchaseDate.slice(0, 7);
-    const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > card.closingDay ? 1 : 0);
-    const totalCents = Math.round(input.totalAmount * 100);
-    const baseCents = Math.floor(totalCents / input.installments);
-    const remainder = totalCents - baseCents * input.installments;
+    const projectedInstallments = cardPurchaseInstallmentRows({
+      purchaseDate: input.purchaseDate,
+      totalAmount: input.totalAmount,
+      installments: input.installments,
+      closingDay: card.closingDay,
+    });
 
     const purchase = await tx.cardPurchase.create({
       data: {
@@ -329,11 +326,7 @@ export async function createCardPurchaseProtected(userId: string, input: {
         purchaseDate,
         installments: input.installments,
         entries: {
-          create: Array.from({ length: input.installments }, (_, index) => ({
-            number: index + 1,
-            amount: (baseCents + (index < remainder ? 1 : 0)) / 100,
-            statementMonth: addMonths(firstMonth, index),
-          })),
+          create: projectedInstallments,
         },
       },
       include: { entries: true, category: true },
