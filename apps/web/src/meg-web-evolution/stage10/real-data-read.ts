@@ -72,7 +72,7 @@ type Stage10Snapshot={
  cashflow:NonNullable<HomeFinancialData['cashflow']>;
 };
 export async function loadStage10RealRead(month:string,signal:AbortSignal):Promise<Stage10RealRead>{
- if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new Error('Periodo de leitura invalido.');
+ if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new Error('Periodo de leitura invalido.');
  const session=readSession();
  if(!session?.user?.id)throw new Error('Sessao autenticada obrigatoria.');
  const identity=await validateSession(session);
