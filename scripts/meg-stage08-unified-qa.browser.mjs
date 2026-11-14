@@ -80,6 +80,25 @@ try{
    await selectable.uncheck();
    await page.waitForFunction(()=>document.querySelector('[data-testid="qa-batch-action"]')?.hasAttribute('disabled'),null,{timeout:8000});
    assert.equal(await batchButton.isDisabled(),true,'Limpar seleção desabilita lote '+width);
+   const actionBounds=await batchButton.boundingBox();
+   assert.ok(actionBounds&&actionBounds.x>=0&&actionBounds.x+actionBounds.width<=width+2,'Editar em lote sem corte horizontal '+width);
+   const selectAll=page.locator('input[aria-label="Selecionar todos os itens filtrados"]:visible').first();
+   assert.ok(await selectAll.count()>0,'Seleção coletiva acessível '+width);
+   await selectAll.check();
+   await page.waitForFunction(()=>document.querySelector('[data-testid="qa-batch-action"]')?.textContent?.includes('(11)'),null,{timeout:8000});
+   await batchButton.click();
+   await batchDialog.waitFor({state:'visible'});
+   assert.match(await batchDialog.innerText(),/Editar em lote/);
+   assert.equal(await batchDialog.locator('.meg-t10-qa-batch-selection ul>li').count(),11,'11 registros na seleção com tipos mistos');
+   await batchDialog.getByLabel('Alterar data de vencimento').check();
+   await batchDialog.getByLabel('Nova data de vencimento').fill('2026-12-15');
+   await batchDialog.getByRole('button',{name:'Conferir alterações'}).click();
+   assert.equal(await page.getByTestId('qa-batch-preview').locator('li.is-protected').count(),11,'Bloqueio de lote financeiro misto');
+   assert.match(await page.getByTestId('qa-batch-preview').innerText(),/Benefício exige writer próprio/);
+   assert.match(await page.getByTestId('qa-batch-preview').innerText(),/Tipo de lançamento incompatível/);
+   await batchDialog.getByRole('button',{name:'Cancelar'}).click();
+   await selectAll.uncheck();
+   await page.waitForFunction(()=>document.querySelector('[data-testid="qa-batch-action"]')?.hasAttribute('disabled'),null,{timeout:8000});
    // Um único botão de lista+seta abre todas as ações, sem writer financeiro.
    const farmaciaActions=page.getByTestId('qa-actions-e3');
    const actionControls=await farmaciaActions.evaluateAll(els=>els.map(el=>el.querySelectorAll('button').length));
