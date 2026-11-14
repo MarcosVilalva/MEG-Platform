@@ -6,7 +6,7 @@
  */
 import {readSession,validateSession,authenticatedRequest} from '../../app/auth-client';
 import {financeClient,type Account,type Category,type PaymentMethod,type FinancialEvent,type FinanceSummary} from '../../app/finance-client';
-import {readSmartAuthorizedHistory} from '../launches/authorized-history';
+import {readAuthorizedHistory,readSmartAuthorizedHistory} from '../launches/authorized-history';
 import {buildReadOnlyData} from '../launches/OperationalLaunches';
 import {readHome,type HomeFinancialData} from '../home/HomeDashboard';
 import type {ExpenseCatalogs} from './ExpenseForm';
@@ -74,7 +74,9 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
   if(typeof before.token!=='string'||!before.token)
     throw new Error('A API nao confirmou a versao dos dados financeiros.');
   const page=(number:number,size:number,s:AbortSignal)=>financeClient.listEvents(number,size,'',s);
-  const eventRead=readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),page,signal);
+  const eventRead=before.capabilities?.historySnapshotV1===true
+    ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),page,signal)
+    : readAuthorizedHistory(page,signal);
   const [home,events,summary,accounts,categories,methods]=await Promise.all([
     readHome(month),
     eventRead,
