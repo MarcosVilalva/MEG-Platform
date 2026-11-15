@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'scripts/meg-stage09-local-supabase-smoke.mjs'
+      - 'scripts/meg-stage09-local-supabase-vault-rls.sh'
       - '.github/workflows/meg-stage09-supabase-local-auth-storage.yml'
       - 'docs/MEG-STAGE09-LOCAL-SUPABASE-ALTERNATIVE-20261114.md'
 
@@ -63,6 +64,10 @@ jobs:
           npm exec --yes --package=supabase@3.1.0 -- supabase start \
             --exclude imgproxy,studio,edge-runtime,logflare,vector,supavisor,realtime,postgres-meta
           echo 'MEG_STAGE09_LOCAL_SUPABASE_STACK_STARTED'
+
+      - name: Create synthetic RLS and Vault only in disposable Docker Postgres
+        shell: bash
+        run: bash "$GITHUB_WORKSPACE/scripts/meg-stage09-local-supabase-vault-rls.sh"
 
       - name: Local actual HTTP Auth and Storage smoke
         shell: bash
