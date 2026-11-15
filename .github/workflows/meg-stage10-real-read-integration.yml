@@ -76,6 +76,10 @@ jobs:
           npm --workspace apps/api run test:finance
       - name: Opt-in real expense commands fail-closed and typed to canonical writers
         run: npx tsx apps/web/src/meg-web-evolution/stage10/real-expense-mutation.contract.test.ts
+      - name: Stage10 Alimentação, Fixo, Verocard and benefit writer contract
+        run: |
+          npx tsx apps/web/src/meg-web-evolution/stage10/real-expense-category-policy.contract.test.ts
+          npx tsx apps/web/src/meg-web-evolution/stage10/real-benefit-expense-mutation.contract.test.ts
       - name: Typecheck Web integration
         run: npx tsc -p apps/web/tsconfig.json --noEmit
       - name: Install isolated Playwright

@@ -1,5 +1,6 @@
 import type {ExpenseCatalogs,ExpenseDraft} from './ExpenseForm';
 import type {FinancialEvent,FinancialEventInput,BulkEventChanges} from '../../app/finance-client';
+import {isStage10FoodBenefitCategory} from './real-expense-category-policy';
 
 /** Preparacao de entrada, NAO calculo financeiro. O saldo, o status
  * canonico e o sinal persistido sao decididos somente pela API.
@@ -25,7 +26,7 @@ function references(draft:ExpenseDraft,catalogs:ExpenseCatalogs){
  const category=catalogs.categories.find(x=>x.id===draft.categoryId&&x.active);
  const method=catalogs.paymentMethods.find(x=>x.id===draft.paymentMethodId&&x.active&&x.kind==='ordinary');
  const account=draft.accountId?catalogs.accounts.find(x=>x.id===draft.accountId&&x.active&&x.kind==='monetary'):null;
- if(!category||!method||(draft.accountId&&!account)||
+ if(!category||isStage10FoodBenefitCategory(category)||!method||(draft.accountId&&!account)||
     (draft.requestedStatus==='paid'&&!account))fail();
  if(draft.notes.length>4000)fail();
  return {categoryId:category.id,paymentMethodId:method.id,

@@ -2,6 +2,7 @@ import {useEffect,useId,useMemo,useRef,useState,type ClipboardEvent,type Keyboar
 import {Icon} from '../components/Icon';
 import {suggestionsFromCanonicalHistory,type HistorySnapshot} from './autocomplete-history';
 import {normalizeFinancialTextInput} from './text-entry-policy';
+import {applyStage10ExpenseCategory,isStage10FoodBenefitCategory,isStage10FixedCategory,stage10FoodBinding} from './real-expense-category-policy';
 import {EMPTY_BRL_INPUT,brlBackspace,brlDigit,brlFormatted,brlFromPasted,brlSignedDecimal,brlToggleSign,type BRLInput} from './brl-money-mask';
 import './ExpenseForm.css';
 
@@ -120,9 +121,13 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const formId=useId();
  const root=useRef<HTMLElement>(null);
  const categories=useMemo(()=>catalogs.categories.filter(x=>x.active),[catalogs.categories]);
- const accounts=useMemo(()=>catalogs.accounts.filter(x=>x.active&&x.kind==='monetary'),[catalogs.accounts]);
- const methods=useMemo(()=>catalogs.paymentMethods.filter(x=>x.active&&x.kind!=='benefit'),[catalogs.paymentMethods]);
- const visibleMethods=useMemo(()=>methods.filter(x=>x.kind==='ordinary'),[methods]);
+ const chosenCategory=categories.find(x=>x.id===draft.categoryId);
+ const isFood=isStage10FoodBenefitCategory(chosenCategory);
+ const isFixed=isStage10FixedCategory(chosenCategory);
+ const benefitBinding=stage10FoodBinding(catalogs);
+ const accounts=useMemo(()=>catalogs.accounts.filter(x=>x.active&&(isFood?x.kind==='benefit':x.kind==='monetary')),[catalogs.accounts,isFood]);
+ const methods=useMemo(()=>catalogs.paymentMethods.filter(x=>x.active&&(isFood?x.kind==='benefit':x.kind!=='benefit')),[catalogs.paymentMethods,isFood]);
+ const visibleMethods=useMemo(()=>methods.filter(x=>isFood?x.kind==='benefit'&&x.id===benefitBinding?.paymentMethodId:x.kind==='ordinary'),[methods,isFood,benefitBinding?.paymentMethodId]);
  const cards=useMemo(()=>catalogs.creditCards?.filter(x=>x.active)??[],[catalogs.creditCards]);
  const frequent=useMemo(()=>categories.slice().sort((a,b)=>(a.frequencyRank??999)-(b.frequencyRank??999)||a.name.localeCompare(b.name,'pt-BR')).slice(0,5),[categories]);
  const suggestions=useMemo(()=>historySnapshot?suggestionsFromCanonicalHistory(historySnapshot,draft.description,5):[],[historySnapshot,draft.description]);
@@ -135,11 +140,10 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const isRefund=money.negative&&requestedAmount!==null;
  const isDirty=isEdit&&Boolean(initialDraft)&&(Object.keys(EMPTY_EXPENSE_DRAFT) as (keyof ExpenseDraft)[]).some(key=>draft[key]!==initialDraft![key]);
  const validPayment=isCredit?Boolean(selectedCard)&&/^[1-9]\d*$/.test(draft.installmentsInput):Boolean(method)&&(!showSettlementAccount||Boolean(selectedAccount));
- const canSave=Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&draft.date&&requestedAmount&&validPayment&&(!isCredit||isEdit)&&(!isEdit||isDirty));
+ const canSave=Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&draft.date&&requestedAmount&&validPayment&&(!isCredit||isEdit)&&(!isEdit||isDirty)&&(!isFood||Boolean(benefitBinding)&&!isRefund));
  // A gravação continua desabilitada no QA. Para pendências, a API aceita accountId ausente,
  // mas qualquer writer real exigirá caracterização transacional antes de ser conectado.
  const currentSchedule=Boolean(schedule&&schedule.source==='canonical'&&schedule.cardId===draft.creditCardId&&schedule.purchaseDate===draft.date&&schedule.installments===Number(draft.installmentsInput)&&schedule.amountDecimal===requestedAmount&&schedule.rows.length===Number(draft.installmentsInput));
- const chosenCategory=categories.find(x=>x.id===draft.categoryId);
  const missingRequired=[
   ...(!draft.description.trim()?['Descrição']:[]),
   ...(!draft.date?['Data']:[]),
@@ -161,13 +165,14 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
   if(parsed){setDateText(parsed.display);patch('date',parsed.iso);setDateError(false);}
   else{patch('date','');setDateError(true);}
  }
- function chooseCategory(id:string){patch('categoryId',id);setCategoryPicker(false);}
+ function chooseCategory(id:string){setDraft(old=>applyStage10ExpenseCategory(old,catalogs,id));setCategoryPicker(false);}
  function chooseModality(modality:'cash'|'credit'){
+  if(isFood)return;
   setDraft(old=>({...old,modality,requestedStatus:modality==='credit'?'planned':'paid',accountId:modality==='cash'&&accounts.length===1?accounts[0].id:'',paymentMethodId:'',creditCardId:'',installmentsInput:'1'}));
   setParcelModal(false);
  }
  function chooseStatus(status:'paid'|'planned'){
-  if(isCredit)return;
+  if(isCredit||isFood||isFixed)return;
   setDraft(old=>({...old,requestedStatus:status,accountId:status==='paid'&&accounts.length===1?accounts[0].id:''}));
  }
  useEffect(()=>{
@@ -175,17 +180,30 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
   // Com uma só conta, preenche automaticamente; com várias, não presume escolha.
   if(!showSettlementAccount)return;
   const selectedValid=accounts.some(a=>a.id===draft.accountId);
-  const expected=selectedValid?draft.accountId:accounts.length===1?accounts[0].id:'';
+  const expected=isFood?benefitBinding?.accountId??'':selectedValid?draft.accountId:accounts.length===1?accounts[0].id:'';
   if(draft.accountId!==expected)setDraft(old=>({...old,accountId:expected}));
- },[showSettlementAccount,accounts,draft.accountId]);
+ },[showSettlementAccount,accounts,draft.accountId,isFood,benefitBinding?.accountId]);
+ useEffect(()=>{
+  if(!isFood&&!isFixed)return;
+  setDraft(old=>{
+   const updated=applyStage10ExpenseCategory(old,catalogs,old.categoryId);
+   return updated.accountId===old.accountId&&updated.paymentMethodId===old.paymentMethodId&&
+    updated.requestedStatus===old.requestedStatus&&updated.modality===old.modality&&
+    updated.creditCardId===old.creditCardId?old:updated;
+  });
+ },[isFood,isFixed,draft.categoryId,catalogs,benefitBinding?.accountId,benefitBinding?.paymentMethodId]);
  function selectSuggestion(s:(typeof suggestions)[number]){
   const categoryId=categories.some(x=>x.id===s.categoryId)?s.categoryId??'':'';
   // Uma sugestão histórica não define conta de baixa: apenas uma conta ativa autoriza autopreenchimento.
-  const accountId=accounts.length===1?accounts[0].id:'';
-  const matchedMethod=methods.find(x=>x.id===s.paymentMethodId);
+  const monetaryAccounts=catalogs.accounts.filter(x=>x.active&&x.kind==='monetary');
+  const historicalAccount=monetaryAccounts.find(x=>x.id===s.accountId);
+  const accountId=historicalAccount?.id??(monetaryAccounts.length===1?monetaryAccounts[0].id:'');
+  const matchedMethod=catalogs.paymentMethods.find(x=>x.active&&x.id===s.paymentMethodId);
   const modality=matchedMethod?.kind==='credit'?'credit':'cash';
   const paymentMethodId=modality==='cash'&&matchedMethod?.kind==='ordinary'?matchedMethod.id:'';
-  setDraft(old=>({...old,description:normalizeFinancialTextInput(s.description),categoryId,accountId:modality==='cash'?accountId:'',paymentMethodId,modality,requestedStatus:modality==='credit'?'planned':'paid',creditCardId:'',installmentsInput:'1'}));
+  setDraft(old=>applyStage10ExpenseCategory({...old,description:normalizeFinancialTextInput(s.description),
+   categoryId:old.categoryId,accountId:modality==='cash'?accountId:'',paymentMethodId,
+   modality,requestedStatus:modality==='credit'?'planned':'paid',creditCardId:'',installmentsInput:'1'},catalogs,categoryId));
   setSuggestionsOpen(false);
  }
  function changeMoney(next:BRLInput){
@@ -224,13 +242,13 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      </div>}
      <fieldset className="meg-t10-expense-choice meg-t10-expense-modality"><legend>Modalidade de pagamento *</legend>
       <button type="button" aria-pressed={!isCredit} onClick={()=>chooseModality('cash')}><Icon name="card"/> À vista</button>
-      <button type="button" aria-pressed={isCredit} onClick={()=>chooseModality('credit')}><Icon name="card"/> Crédito</button>
+      <button type="button" aria-pressed={isCredit} disabled={isFood} onClick={()=>chooseModality('credit')}><Icon name="card"/> Crédito</button>
      </fieldset>
      {!isCredit&&<div className="meg-t10-expense-method-field">
       <label htmlFor={formId+'method'}><Icon name="card"/> Forma de pagamento *</label>
       <div className="meg-t10-expense-method-control">
        <Icon name="card"/>
-       <select id={formId+'method'} value={draft.paymentMethodId} onChange={e=>patch('paymentMethodId',e.target.value)}><option value="">SELECIONE A FORMA</option>{visibleMethods.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
+       <select id={formId+'method'} value={draft.paymentMethodId} disabled={isFood} onChange={e=>patch('paymentMethodId',e.target.value)}><option value="">SELECIONE A FORMA</option>{visibleMethods.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
       </div>
      </div>}
 
@@ -265,12 +283,12 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      </div>
      <div className="meg-t10-expense-money-note" role="status">{isRefund?'ESTORNO / VALOR NEGATIVO': 'DIGITE OS CENTAVOS, SEM VÍRGULA'}</div>
      <fieldset className="meg-t10-expense-choice meg-t10-expense-status"><legend>Status solicitado *</legend>
-      <button type="button" aria-pressed={draft.requestedStatus==='paid'} disabled={isCredit} onClick={()=>chooseStatus('paid')}><Icon name="card"/> Paga</button>
-      <button type="button" aria-pressed={draft.requestedStatus==='planned'} disabled={isCredit} onClick={()=>chooseStatus('planned')}><Icon name="clock"/> Pendente</button>
+      <button type="button" aria-pressed={draft.requestedStatus==='paid'} disabled={isCredit||isFood||isFixed} onClick={()=>chooseStatus('paid')}><Icon name="card"/> Paga</button>
+      <button type="button" aria-pressed={draft.requestedStatus==='planned'} disabled={isCredit||isFood||isFixed} onClick={()=>chooseStatus('planned')}><Icon name="clock"/> Pendente</button>
      </fieldset>
      {showSettlementAccount&&<div className="meg-t10-expense-settlement-account">
       <label htmlFor={formId+'account'}><Icon name="card"/> Conta de saída do recurso *</label>
-      <select id={formId+'account'} value={draft.accountId} onChange={e=>patch('accountId',e.target.value)}><option value="">SELECIONE A CONTA</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
+      <select id={formId+'account'} value={draft.accountId} disabled={isFood} onChange={e=>patch('accountId',e.target.value)}><option value="">SELECIONE A CONTA</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
       {accounts.length===1&&<small>Conta monetária única preenchida automaticamente.</small>}
       {accounts.length===0&&<small role="status">Nenhuma conta monetária ativa disponível.</small>}
      </div>}
@@ -287,7 +305,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      </div>}
      {!isCredit&&<div className="meg-t10-expense-payment-context" aria-live="polite">
       <strong><Icon name="list"/> Conta e baixa</strong>
-      <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
+      <p>{isFood?(benefitBinding?'Conta Benefício + Verocard + Pago. Saldo conferido pelo servidor canônico na gravação.':'Vínculo de Conta Benefício e Verocard indisponível. Gravação bloqueada.'):draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
      </div>}
 
      {isRefund&&<p className="meg-t10-expense-refund-warning">Estorno sinalizado. A gravação deverá seguir o contrato financeiro específico, inclusive o do cartão.</p>}

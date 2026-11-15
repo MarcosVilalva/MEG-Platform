@@ -140,14 +140,20 @@ async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>
 
 function catalogsFromReal(
   accounts:readonly Account[],categories:readonly Category[],methods:readonly PaymentMethod[],
+  cards:readonly Stage10Snapshot['cards'][number][],
 ):ExpenseCatalogs{
   return {
-    // Nao promover cartoes visuais ou Verocard a CreditCard sem contrato tipado.
-    creditCards:[],
+    // Os cartoes reais do snapshot sao opcoes de selecao, jamais beneficio/Verocard.
+    creditCards:cards.filter(item=>item.isActive).map(item=>({
+      id:item.id,name:item.name,active:item.isActive,
+      closingDay:item.closingDay,dueDay:item.dueDay,
+    })),
     categories:categories.map(item=>({id:item.id,name:item.name,active:item.isActive,group:item.group??undefined})),
-    accounts:accounts.filter(item=>['checking','benefit','investment'].includes(item.type))
+    // Sao monetarias apenas as contas reconhecidas pela financial-policy canônica.
+    accounts:accounts.filter(item=>['checking','savings','cash','benefit','investment'].includes(item.type.toLowerCase()))
       .map(item=>({id:item.id,name:item.name,active:item.isActive,
-        kind:(item.type==='checking'?'monetary':item.type) as 'monetary'|'benefit'|'investment'})),
+        kind:(['checking','savings','cash'].includes(item.type.toLowerCase())?'monetary':
+          item.type.toLowerCase()) as 'monetary'|'benefit'|'investment'})),
     paymentMethods:methods.map(item=>{
       const type=typeof item.type==='string'?item.type.toLowerCase():'';
       // Verocard historico e beneficio, mesmo se o cadastro diz "credit".
@@ -217,7 +223,7 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
   userId:session.user.id,userName:session.user.name,
   home:null,
   launches:buildReadOnlyData(data.events,data.summary,data.accounts,data.categories,data.paymentMethods),
-  catalogs:catalogsFromReal(data.accounts,data.categories,data.paymentMethods),
+  catalogs:catalogsFromReal(data.accounts,data.categories,data.paymentMethods,data.cards),
   history:{protocol:'financial-history-v1',kind:'complete',items:data.events},
   events:data.events,supportsFilteredSummary:false,
  };

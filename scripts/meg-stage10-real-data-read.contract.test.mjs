@@ -42,7 +42,8 @@ assert.match(bridge,/data\.actorId!==session\.user\.id/);
 assert.match(bridge,/data\.total!==data\.events\.length/);
 assert.match(bridge,/current\.user\.id!==session\.user\.id/);
 assert.match(bridge,/history:\{protocol:'financial-history-v1',kind:'complete',items:data\.events\}/);
-assert.match(bridge,/creditCards:\[\]/);
+assert.match(bridge,/creditCards:cards\.filter\(item=>item\.isActive\)/);
+assert.match(bridge,/\['checking','savings','cash'\]/);
 assert.match(bridge,/verocard/i);
 assert.doesNotMatch(bridge,/getSyncStatus|readHome|readSmartAuthorizedHistory|financeClient\.listEvents/);
 assert.doesNotMatch(bridge,/homeP0QaPreviewFixture|QA_EDIT_EXPENSE_SNAPSHOT/);
@@ -135,4 +136,8 @@ console.log('MEG_STAGE10_DEFAULT_QA_NO_NETWORK PASS');
 
 // Writers reais somente na origem canonica e com opt-in de build, nao no snapshot QA.
 assert.match(live,/writeEnabled\|\|!data/);
-assert.doesNotMatch(live,/financeClient\.createTransfer|financeClient\.createCardPurchase|financeClient\.createBenefitEvent/);
+assert.match(live,/financeClient\.createBenefitEvent/);
+assert.match(live,/financeClient\.updateBenefitEvent/);
+assert.match(live,/edit\.financialScope==='benefit'/);
+assert.doesNotMatch(live,/financeClient\.createTransfer|financeClient\.createCardPurchase/);
+assert.doesNotMatch(bridge,/financeClient\.createBenefitEvent/);

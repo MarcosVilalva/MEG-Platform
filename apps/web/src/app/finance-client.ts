@@ -280,6 +280,11 @@ export const financeClient = {
       method: 'POST',
       body: JSON.stringify(data)
     }),
+  createBenefitEvent: (data: { description: string; type: 'income' | 'expense'; date: string; amount: number; accountId: string; categoryId?: string; paymentMethodId: string; notes?: string; operationId: string; allowDuplicate?: boolean }) =>
+    authorizedRequest<FinancialEvent>('/finance/benefit-events', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
   updateBenefitEvent: (id: string, data: { description: string; type: 'income' | 'expense'; date: string; amount: number; accountId: string; categoryId?: string; paymentMethodId: string; notes?: string; operationId: string; expectedUpdatedAt?: string }) =>
     authorizedRequest<FinancialEvent>(`/finance/benefit-events/${id}`, {
       method: 'PATCH',

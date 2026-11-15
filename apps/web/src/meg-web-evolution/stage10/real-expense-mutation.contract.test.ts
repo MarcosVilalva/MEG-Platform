@@ -5,7 +5,7 @@ import {prepareStage10ExpenseCreate,prepareStage10ExpenseUpdate,
  prepareStage10ExpenseArchive,stage10RealMutationGate} from './real-expense-mutation';
 
 const catalogs:ExpenseCatalogs={
- categories:[{id:'cat',name:'Casa',active:true}],
+ categories:[{id:'cat',name:'Casa',active:true},{id:'food',name:'Alimentação',active:true}],
  accounts:[{id:'account',name:'Conta',kind:'monetary',active:true},
   {id:'benefit',name:'Alimentacao',kind:'benefit',active:true}],
  paymentMethods:[{id:'pix',name:'PIX',kind:'ordinary',active:true},
@@ -41,6 +41,7 @@ const deny=(change:(x:ExpenseDraft)=>ExpenseDraft)=>assert.throws(
  /STAGE10_EXPENSE_MUTATION_NOT_AUTHORIZED/);
 deny(x=>({...x,modality:'credit',creditCardId:'card'}));
 deny(x=>({...x,paymentMethodId:'verocard'}));
+deny(x=>({...x,categoryId:'food'}));
 deny(x=>({...x,accountId:'benefit'}));
 deny(x=>({...x,date:'2026-02-30'}));
 deny(x=>({...x,date:''}));

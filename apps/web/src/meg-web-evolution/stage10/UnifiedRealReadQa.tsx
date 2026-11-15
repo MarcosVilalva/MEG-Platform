@@ -12,6 +12,8 @@ import {EditExpensePreview,type EditExpenseSnapshot} from './EditExpensePreview'
 import type {QaLaunchTarget} from './LaunchActionsQa';
 import {loadStage10RealRead,type Stage10RealRead} from './real-data-read';
 import {prepareStage10ExpenseCreate,prepareStage10ExpenseUpdate,prepareStage10ExpenseArchive,stage10RealMutationGate} from './real-expense-mutation';
+import {isStage10FoodBenefitCategory} from './real-expense-category-policy';
+import {prepareStage10BenefitExpenseCreate,prepareStage10BenefitExpenseUpdate} from './real-benefit-expense-mutation';
 
 type Screen='login'|'register'|'recover'|'home'|'launches';
 type Overlay='choice'|'expense'|'edit'|'duplicate'|null;
@@ -22,23 +24,27 @@ function brazilMonth(){
  return (values.find(v=>v.type==='year')?.value||'0000')+'-'+(values.find(v=>v.type==='month')?.value||'00');
 }
 function selectedRealExpense(row:QaLaunchTarget,data:Stage10RealRead):{
- event:Stage10RealRead['events'][number];accountName:string;
+ event:Stage10RealRead['events'][number];accountName:string;financialScope:'monetary'|'benefit';
 }|null{
  const event=data.events.find(item=>item.id===row.id);
- const account=data.catalogs.accounts.find(item=>item.id===event?.accountId&&item.active&&item.kind==='monetary');
+ const category=data.catalogs.categories.find(item=>item.active&&item.id===event?.categoryId);
+ const benefit=isStage10FoodBenefitCategory(category);
+ const account=data.catalogs.accounts.find(item=>item.id===event?.accountId&&item.active&&
+  item.kind===(benefit?'benefit':'monetary'));
+ const method=data.catalogs.paymentMethods.find(item=>item.active&&item.id===event?.paymentMethodId&&
+  item.kind===(benefit?'benefit':'ordinary'));
  if(!event||event.type!=='expense'||!['paid','planned'].includes(event.status)||
   !Number.isFinite(event.enteredAmount)||!event.categoryId||!event.paymentMethodId||
-  !data.catalogs.categories.some(item=>item.active&&item.id===event.categoryId)||
-  !data.catalogs.paymentMethods.some(item=>item.active&&item.kind==='ordinary'&&item.id===event.paymentMethodId)||
-  (event.accountId&&!account)||(event.status==='paid'&&!account))return null;
- return {event,accountName:account?.name??''};
+  !category||!method||(event.accountId&&!account)||(event.status==='paid'&&!account)||
+  (benefit&&event.status!=='paid'))return null;
+ return {event,accountName:account?.name??'',financialScope:benefit?'benefit':'monetary'};
 }
 function realEdit(row:QaLaunchTarget,data:Stage10RealRead):EditExpenseSnapshot|null{
  const selected=selectedRealExpense(row,data);
  if(!selected)return null;
- const {event,accountName}=selected;
+ const {event,accountName,financialScope}=selected;
  return {
-  source:'financial-event',financialScope:'monetary',type:'expense',
+  source:'financial-event',financialScope,type:'expense',
   id:event.id,description:event.description,notes:event.notes||'',
   categoryId:event.categoryId||'',categoryName:row.category,
   accountId:event.accountId,paymentMethodId:event.paymentMethodId,
@@ -52,9 +58,10 @@ function realEdit(row:QaLaunchTarget,data:Stage10RealRead):EditExpenseSnapshot|n
 function realDuplicate(row:QaLaunchTarget,data:Stage10RealRead):ExpenseDraft|null{
  const selected=selectedRealExpense(row,data);
  if(!selected)return null;
- const {event}=selected;
+ const {event,financialScope}=selected;
  const category=data.catalogs.categories.find(item=>item.active&&item.id===event.categoryId);
- const method=data.catalogs.paymentMethods.find(item=>item.active&&item.id===event.paymentMethodId&&item.kind==='ordinary');
+ const method=data.catalogs.paymentMethods.find(item=>item.active&&item.id===event.paymentMethodId&&
+  item.kind===(financialScope==='benefit'?'benefit':'ordinary'));
  return {...EMPTY_EXPENSE_DRAFT,
   description:event.description.toLocaleUpperCase('pt-BR'),notes:(event.notes||'').toLocaleUpperCase('pt-BR'),
   categoryId:category?.id||'',accountId:event.accountId||'',paymentMethodId:method?.id||'',
@@ -113,12 +120,23 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
     operationRef.current={fingerprint,operationId:crypto.randomUUID()};
    const operationId=operationRef.current.operationId;
    if(kind==='create'){
-    const command=prepareStage10ExpenseCreate(draft,data.catalogs);
-    await financeClient.createEvent({...command,operationId});
+    const category=data.catalogs.categories.find(item=>item.active&&item.id===draft.categoryId);
+    if(isStage10FoodBenefitCategory(category)){
+     const command=prepareStage10BenefitExpenseCreate(draft,data.catalogs);
+     await financeClient.createBenefitEvent({...command,operationId});
+    }else{
+     const command=prepareStage10ExpenseCreate(draft,data.catalogs);
+     await financeClient.createEvent({...command,operationId});
+    }
    }else{
     const event=data.events.find(item=>item.id===edit?.id);
-    const command=prepareStage10ExpenseUpdate(draft,data.catalogs,event!);
-    await financeClient.bulkUpdateEvents({...command,operationId});
+    if(edit?.financialScope==='benefit'){
+     const command=prepareStage10BenefitExpenseUpdate(draft,data.catalogs,event!);
+     await financeClient.updateBenefitEvent(event!.id,{...command,operationId});
+    }else{
+     const command=prepareStage10ExpenseUpdate(draft,data.catalogs,event!);
+     await financeClient.bulkUpdateEvents({...command,operationId});
+    }
    }
    operationRef.current=null;
    setOverlay(null);setEdit(null);setDuplicate(null);
@@ -131,7 +149,7 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
  async function archiveExpense(){
   if(savingRef.current)return;
   const session=readSession();
-  if(!writeEnabled||!data||!edit||!session||session.user.id!==data.userId||
+  if(!writeEnabled||!data||!edit||edit.financialScope==='benefit'||!session||session.user.id!==data.userId||
     !['ADMIN','MANAGER'].includes(session.user.role)){
    setNotice('Exclusao nao autorizada. Nenhum dado foi alterado.');return;
   }
@@ -165,13 +183,13 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
  function openEdit(row:QaLaunchTarget){
   if(!data)return;
   const snapshot=realEdit(row,data);
-  if(!snapshot){setNotice('Edicao bloqueada: identidade da conta monetaria nao comprovada.');return;}
+  if(!snapshot){setNotice('Edicao bloqueada: categoria, conta e forma de pagamento sem identidade canônica comprovada.');return;}
   setEdit(snapshot);setNotice('');setOverlay('edit');
  }
  function openDuplicate(row:QaLaunchTarget){
   if(!data)return;
   const draft=realDuplicate(row,data);
-  if(!draft){setNotice('Duplicacao bloqueada: conta monetaria nao comprovada.');return;}
+  if(!draft){setNotice('Duplicacao bloqueada: vinculos financeiros nao comprovados.');return;}
   setDuplicate(draft);setNotice('');setOverlay('duplicate');
  }
  if(!enabled)return <main data-meg-unified-screen="real-blocked" className="meg-unified-read-locked" role="alert">
@@ -226,7 +244,7 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&edit&&<EditExpensePreview snapshot={edit} catalogs={data.catalogs}
    readOnly={!writeEnabled||saving} onRequestSave={draft=>void saveExpense(draft,'edit')}
-   onRequestArchive={writeEnabled&&!saving&&['ADMIN','MANAGER'].includes(userRole||'')?
+   onRequestArchive={writeEnabled&&!saving&&edit.financialScope==='monetary'&&['ADMIN','MANAGER'].includes(userRole||'')?
     ()=>void archiveExpense():undefined}
    onBack={()=>{setOverlay(null);setEdit(null);}}/>}
   {overlay==='duplicate'&&duplicate&&<ExpenseForm catalogs={data.catalogs} historySnapshot={data.history}

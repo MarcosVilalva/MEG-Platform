@@ -4,7 +4,7 @@ import {brlFromPasted,brlSignedDecimal} from './brl-money-mask';
 
 /** Exclusivamente QA: snapshot fictício, sem writer e sem dados financeiros reais. */
 export type EditExpenseSnapshot={
- source:'financial-event';financialScope:'monetary';type:'expense';
+ source:'financial-event';financialScope:'monetary'|'benefit';type:'expense';
  id:string;
  description:string;notes:string;
  categoryId:string;categoryName:string;
@@ -37,12 +37,14 @@ export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave,onR
 }){
  const initialDraft=useMemo<ExpenseDraft>(()=>{
   // Na leitura real a identidade do cadastro prevalece sobre nomes historicos.
+  const kind=snapshot.financialScope==='benefit'?'benefit':'monetary';
+  const methodKind=snapshot.financialScope==='benefit'?'benefit':'ordinary';
   const account=snapshot.strictReferences
-   ? catalogs.accounts.find(a=>a.active&&a.kind==='monetary'&&a.id===snapshot.accountId)
-   : catalogs.accounts.find(a=>a.active&&a.kind==='monetary'&&a.name===snapshot.accountName);
+   ? catalogs.accounts.find(a=>a.active&&a.kind===kind&&a.id===snapshot.accountId)
+   : catalogs.accounts.find(a=>a.active&&a.kind===kind&&a.name===snapshot.accountName);
   const method=snapshot.strictReferences
-   ? catalogs.paymentMethods.find(m=>m.active&&m.kind==='ordinary'&&m.id===snapshot.paymentMethodId)
-   : catalogs.paymentMethods.find(m=>m.active&&m.kind==='ordinary'&&m.name===snapshot.paymentMethodName);
+   ? catalogs.paymentMethods.find(m=>m.active&&m.kind===methodKind&&m.id===snapshot.paymentMethodId)
+   : catalogs.paymentMethods.find(m=>m.active&&m.kind===methodKind&&m.name===snapshot.paymentMethodName);
   const category=catalogs.categories.find(c=>c.active&&c.id===snapshot.categoryId);
   return {...EMPTY_EXPENSE_DRAFT,
    description:snapshot.description,
@@ -55,7 +57,7 @@ export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave,onR
    requestedStatus:snapshot.statusLabel==='Paga'?'paid':'planned',
   };
  },[snapshot,catalogs]);
- if(snapshot.source!=='financial-event'||snapshot.financialScope!=='monetary'||snapshot.type!=='expense')return null;
+ if(snapshot.source!=='financial-event'||!['monetary','benefit'].includes(snapshot.financialScope)||snapshot.type!=='expense')return null;
  return <ExpenseForm mode="edit" initialDraft={initialDraft} catalogs={catalogs}
   dataMode={readOnly?'real-read':onRequestSave?'real-write':'demo'}
   saveEnabled={!readOnly&&Boolean(onRequestSave||onSimulatedSave)}

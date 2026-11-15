@@ -22,10 +22,16 @@ const snapshot={
   notes:'Dado ficticio, nunca exportado da base real',
   updatedAt:'2026-11-14T12:00:00.000Z',
  }],
- accounts:[{id:'synthetic-account',name:'Conta ficticia',type:'checking',isActive:true,openingBalance:'0'}],
- categories:[{id:'synthetic-category',name:'Categoria ficticia',type:'expense',isActive:true}],
- paymentMethods:[{id:'synthetic-method',name:'PIX ficticio',type:'ordinary',isActive:true}],
- cards:[],summary,cashflow:{month,openingBalance:0,projectedClosing:-12.5,realizedClosing:-12.5,totalIncome:0,totalExpense:12.5,days:[]},
+ accounts:[{id:'synthetic-account',name:'Conta ficticia',type:'checking',isActive:true,openingBalance:'0'},
+  {id:'synthetic-savings',name:'Poupanca ficticia',type:'savings',isActive:true,openingBalance:'0'},
+  {id:'synthetic-cash',name:'Caixa ficticio',type:'cash',isActive:true,openingBalance:'0'},
+  {id:'synthetic-benefit',name:'Conta Benefício',type:'benefit',isActive:true,openingBalance:'0'}],
+ categories:[{id:'synthetic-category',name:'Categoria ficticia',type:'expense',isActive:true},
+  {id:'synthetic-food-category',name:'Alimentação',group:'Benefícios',type:'expense',isActive:true},
+  {id:'synthetic-fixed-category',name:'Energia',group:'Fixo',type:'expense',isActive:true}],
+ paymentMethods:[{id:'synthetic-method',name:'PIX ficticio',type:'ordinary',isActive:true},
+  {id:'synthetic-verocard',name:'Verocard',type:'benefit',isActive:true}],
+ cards:[{id:'synthetic-card',name:'Cartao ficticio',isActive:true,closingDay:8,dueDay:15}],summary,cashflow:{month,openingBalance:0,projectedClosing:-12.5,realizedClosing:-12.5,totalIncome:0,totalExpense:12.5,days:[]},
 };
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
 try{
@@ -124,6 +130,22 @@ try{
    assert.match(body.operationId,/^[0-9a-f-]{36}$/);
    return route.fulfill({status:200,headers,body:JSON.stringify({
     ids:body.ids,archived:1,idempotentReplay:false,
+   })});
+  }
+  if(req.method()==='POST'&&url.pathname==='/finance/benefit-events'){
+   const body=JSON.parse(req.postData()||'{}');
+   writerCalls.push({path:url.pathname,body});
+   assert.equal(body.type,'expense');
+   assert.equal(body.accountId,'synthetic-benefit');
+   assert.equal(body.paymentMethodId,'synthetic-verocard');
+   assert.equal(body.categoryId,'synthetic-food-category');
+   assert.equal(body.amount,55.5);
+   assert.equal(body.date,'2026-11-14');
+   assert.equal(body.operationId.length,36);
+   assert.equal('status' in body,false,'status beneficio fixado no servidor');
+   return route.fulfill({status:201,headers,body:JSON.stringify({
+    id:'synthetic-created-benefit',...body,status:'paid',
+    signedAmount:'-55.50',updatedAt:new Date().toISOString(),
    })});
   }
   if(req.method()==='POST'&&url.pathname==='/finance/events'){
@@ -228,6 +250,36 @@ try{
  assert.equal(writerCalls.length,3,'um arquivamento idempotente');
  assert.ok(apiCalls.includes(api+' POST /finance/events/bulk/update'));
  assert.ok(apiCalls.includes(api+' POST /finance/events/bulk/archive'));
+ // Alimentação é sempre Conta Benefício + Verocard + Pago, sem conta monetária.
+ await page.getByRole('button',{name:'Novo lançamento'}).first().click();
+ await page.getByRole('button',{name:'Escolher Despesa'}).click();
+ const food=page.locator('.meg-t10-expense');
+ await food.waitFor({state:'visible'});
+ await food.locator('input[id$="description"]').fill('ALIMENTACAO QA');
+ await food.locator('select[id$="category"]').selectOption('synthetic-food-category');
+ assert.equal(await food.locator('select[id$="method"]').inputValue(),'synthetic-verocard');
+ assert.equal(await food.locator('select[id$="method"]').isDisabled(),true,
+  'Verocard obrigatório e travado');
+ assert.equal(await food.locator('select[id$="account"]').inputValue(),'synthetic-benefit');
+ assert.equal(await food.locator('select[id$="account"]').isDisabled(),true,
+  'Conta Benefício obrigatória e travada');
+ assert.equal(await food.getByRole('button',{name:'Pendente'}).isDisabled(),true,
+  'Benefício somente Pago');
+ assert.equal(await food.getByRole('button',{name:'Crédito'}).isDisabled(),true,
+  'Alimentação não vira compra parcelada no cartão');
+ await food.locator('.meg-t10-expense-date-entry input[type="text"]').fill('14/11/2026');
+ await food.locator('.meg-t10-expense-date-entry input[type="text"]').press('Tab');
+ await food.locator('input[id$="amount"]').fill('55,50');
+ const benefitSave=food.getByRole('button',{name:'Salvar lançamento'});
+ assert.equal(await benefitSave.isEnabled(),true);
+ await benefitSave.click();
+ await page.getByText('Lancamento criado pela API financeira.').waitFor({state:'visible',timeout:20000});
+ assert.equal(writerCalls.length,4,'beneficio exclusivo no quarto POST');
+ assert.equal(writerCalls[3].path,'/finance/benefit-events');
+ assert.equal(writerCalls.filter(x=>x.path==='/finance/events').length,1,
+  'benefício nunca passa pelo writer monetário comum');
+ assert.ok(!apiCalls.some(call=>call.startsWith(readonlyApi+' POST')));
+
  assert.ok(!apiCalls.some(call=>call.startsWith(readonlyApi+' POST')),
   'backend QA deve continuar somente leitura');
  assert.deepEqual(errors,[],'Navegador sem excecoes');
