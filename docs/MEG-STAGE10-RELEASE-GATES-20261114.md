@@ -95,3 +95,9 @@ Conservar este documento e o `MEG-WEB-CONTINUIDADE-OFICIAL.md` como referência.
 
 ## Infraestrutura Supabase, levantamento não intrusivo em 15/11/2026
 O inventário confirmou plano Free e três projetos: produção `ugbiqzaqnrhulhetevby` ativa; sandbox de recuperação da Etapa 09 `oxwmqbzeuiibdlkcbjzv` ativo; `meg-evolution` `dmrauztnozvxirbydtho` inativo. Não existe autorização de reutilizar o sandbox de recuperação como ambiente da Etapa 10. Essa consulta foi apenas de metadados, sem SQL e sem qualquer mudança. Não há evidência de infraestrutura de backend QA real e sem custos já aprovada; portanto o gate de infraestrutura segue PENDENTE.
+
+
+## 15/11/2026, concorrência em cartão sem quebra de clientes existentes
+- Foram preparados os parâmetros opcionais `expectedUpdatedAt` para compra e `expectedPurchaseUpdatedAt` para parcela nas rotas canônicas existentes, sempre validados dentro da transação serializável e rejeitados com 409 quando obsoletos.
+- `CardInstallment` não possui campo próprio de versão, portanto a revisão usada é `CardPurchase.updatedAt`, atualizada pelo serviço ao reconciliar total após edição unitária.
+- Sem o campo, as chamadas atuais de clientes legados preservam payload e hash de idempotência. **Não habilita writer de cartão na Web**; faltam identidade/deduplicação e prova de uso real. Resultado de CI pendente neste ponto.

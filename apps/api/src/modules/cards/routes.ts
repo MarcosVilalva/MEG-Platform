@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import {cardPurchaseStatementMonth} from './purchase-cycle-canonical';
+import {matchesExpectedCardPurchaseVersion} from './stage10-card-edit-version';
 import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
@@ -43,6 +44,7 @@ const purchaseUpdateSchema = z.object({
   categoryId: z.string().optional().nullable(),
   description: z.string().trim().min(2).max(160).optional(),
   purchaseDate: isoDateSchema.optional(),
+  expectedUpdatedAt: z.string().datetime({offset:true}).optional(),
   operationId: operationSchema,
 }).refine((value) => value.cardId !== undefined
   || value.categoryId !== undefined
@@ -53,6 +55,7 @@ const purchaseUpdateSchema = z.object({
 const installmentUpdateSchema = z.object({
   amount: z.coerce.number().positive().finite().optional(),
   statementMonth: monthSchema.optional(),
+  expectedPurchaseUpdatedAt: z.string().datetime({offset:true}).optional(),
   operationId: operationSchema,
 }).refine((value) => value.amount !== undefined || value.statementMonth !== undefined, {
   message: 'Informe valor e/ou competência da parcela.',
@@ -316,8 +319,10 @@ export async function cardRoutes(app: FastifyInstance) {
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
     const context = await sharedCardContext(request.user.sub);
-    const { operationId, ...purchaseInput } = parsed.data;
-    const requestHash = mutationRequestHash({ id, purchase: purchaseInput });
+    const { operationId, expectedUpdatedAt, ...purchaseInput } = parsed.data;
+    const requestHash = mutationRequestHash({ id, purchase: purchaseInput,
+      ...(expectedUpdatedAt ? { expectedUpdatedAt } : {}),
+    });
 
     try {
       const response = await protectedCardMutation({
@@ -327,6 +332,11 @@ export async function cardRoutes(app: FastifyInstance) {
         mutationType: 'CARD_PURCHASE_UPDATE',
         work: async (tx): Promise<JsonRecord> => {
           const before = await editablePurchase(tx, context.ownerId, id);
+          if (!matchesExpectedCardPurchaseVersion(expectedUpdatedAt, before.updatedAt)) {
+            throw new CardMutationError(409, 'CARD_PURCHASE_STALE_VERSION', {
+              expectedUpdatedAt, currentUpdatedAt: before.updatedAt.toISOString(),
+            });
+          }
           const targetCardId = purchaseInput.cardId ?? before.cardId;
           const targetCategoryId = purchaseInput.categoryId !== undefined ? purchaseInput.categoryId : before.categoryId;
           const card = await assertCardAndCategory(tx, context.ownerId, targetCardId, targetCategoryId);
@@ -390,8 +400,10 @@ export async function cardRoutes(app: FastifyInstance) {
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
     const context = await sharedCardContext(request.user.sub);
-    const { operationId, ...changes } = parsed.data;
-    const requestHash = mutationRequestHash({ id, installment: changes });
+    const { operationId, expectedPurchaseUpdatedAt, ...changes } = parsed.data;
+    const requestHash = mutationRequestHash({ id, installment: changes,
+      ...(expectedPurchaseUpdatedAt ? { expectedPurchaseUpdatedAt } : {}),
+    });
 
     try {
       const response = await protectedCardMutation({
@@ -408,6 +420,12 @@ export async function cardRoutes(app: FastifyInstance) {
             include: { purchase: { include: { card: true, category: true } } },
           });
           if (!before) throw new CardMutationError(404, 'CARD_INSTALLMENT_NOT_FOUND');
+          if (!matchesExpectedCardPurchaseVersion(expectedPurchaseUpdatedAt, before.purchase.updatedAt)) {
+            throw new CardMutationError(409, 'CARD_PURCHASE_STALE_VERSION', {
+              expectedUpdatedAt: expectedPurchaseUpdatedAt,
+              currentUpdatedAt: before.purchase.updatedAt.toISOString(),
+            });
+          }
           if (before.status !== 'open') {
             throw new CardMutationError(409, 'CARD_INSTALLMENT_ALREADY_PAID', { installmentId: id, status: before.status });
           }
