@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {ExpenseForm,type ExpenseCatalogs} from '../stage10/ExpenseForm';
 import {EditExpensePreview,type EditExpenseSnapshot} from '../stage10/EditExpensePreview';
+import {isStage10FoodBenefitCategory} from '../stage10/real-expense-category-policy';
 import {PrismLaunchChoice} from '../integrated-qa/PrismLaunchChoice';
 import type {HistorySnapshot} from '../stage10/autocomplete-history';
 import '../launches/new-launch.css';
@@ -116,7 +117,10 @@ function stage10ExpenseSnapshot(event:FinancialEvent,catalogs:ExpenseCatalogs):E
  const category=catalogs.categories.find(c=>c.id===event.categoryId&&c.active);
  const method=catalogs.paymentMethods.find(m=>m.id===event.paymentMethodId&&m.active);
  const benefit=account?.kind==='benefit';
- if(benefit && (!category||!method||method.kind!=='benefit'||event.status!=='paid'))return null;
+ // Não promover SUPERMERCADO ou texto legado à regra Alimentação.
+ // A edição de benefício exige identificação da categoria Alimentação canônica.
+ if(benefit && (!category||!isStage10FoodBenefitCategory(category)||!method||
+    method.kind!=='benefit'||event.status!=='paid'))return null;
  if(account&&account.kind==='investment')return null;
  if(!benefit&&method&&method.kind!=='ordinary')return null;
  const amount=displayMoney(event.amount);
@@ -263,7 +267,7 @@ export function OperationalLaunches({userId,userName,onHome,stage10ReadOnly=fals
  const openEdit=(id:string)=>{
   const event=stage10Read?.events.find(e=>e.id===id);
   const snapshot=event&&stage10Read?stage10ExpenseSnapshot(event,stage10Read.catalogs):null;
-  if(!snapshot){setStage10Notice('Edição bloqueada: lançamento incompatível ou vínculo financeiro não comprovado.');return;}
+  if(!snapshot){setStage10Notice('Edição bloqueada: categoria/conta/forma de pagamento sem identidade canônica compatível. O lançamento permanece disponível para consulta.');return;}
   setStage10Notice('');setStage10Selected(snapshot);setStage10Overlay('edit');
  };
  return <>
