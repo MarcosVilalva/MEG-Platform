@@ -143,6 +143,12 @@ try{
   competence:'2026-11',amount:'20',signedAmount:'-20',
  }});
  const tokenA=signToken(ownerId,'ADMIN');
+ const tokenB=signToken(otherId);
+ const endpoint='/finance/stage10-readonly/snapshot?month=2026-11';
+ const get=(token?:string,url=endpoint)=>server.inject({
+  method:'GET',url,headers:token?{authorization:'Bearer '+token}:{},
+ });
+
  const purchaseEndpoint='/finance/stage10-readonly/card-purchases?month=2026-11';
  const cardHistory=await get(tokenA,purchaseEndpoint);
  assert.equal(cardHistory.statusCode,200,cardHistory.body.slice(0,320));
@@ -166,12 +172,6 @@ try{
   'Compra e visivel tambem pelo mes da competencia da fatura');
  assert.ok(!JSON.stringify(cardData).includes('Despesa sintetica A'),
   'CardPurchase nunca deve incluir FinancialEvent implicitamente');
-
- const tokenB=signToken(otherId);
- const endpoint='/finance/stage10-readonly/snapshot?month=2026-11';
- const get=(token?:string,url=endpoint)=>server.inject({
-  method:'GET',url,headers:token?{authorization:'Bearer '+token}:{},
- });
 
  const allowedPreflight=await server.inject({
   method:'OPTIONS',url:endpoint,
