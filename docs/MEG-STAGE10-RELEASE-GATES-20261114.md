@@ -101,3 +101,10 @@ O inventário confirmou plano Free e três projetos: produção `ugbiqzaqnrhulhe
 - Foram preparados os parâmetros opcionais `expectedUpdatedAt` para compra e `expectedPurchaseUpdatedAt` para parcela nas rotas canônicas existentes, sempre validados dentro da transação serializável e rejeitados com 409 quando obsoletos.
 - `CardInstallment` não possui campo próprio de versão, portanto a revisão usada é `CardPurchase.updatedAt`, atualizada pelo serviço ao reconciliar total após edição unitária.
 - Sem o campo, as chamadas atuais de clientes legados preservam payload e hash de idempotência. **Não habilita writer de cartão na Web**; faltam identidade/deduplicação e prova de uso real. Resultado de CI pendente neste ponto.
+
+
+## Validação transacional da edição de cartão, 15/11/2026
+- Commit `748ff6a`, CI [#43701152774](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43701152774) **SUCCESS, 33 etapas**.
+- PATCH de compra e de parcela aceita revisão esperada opcional sem quebra do cliente histórico; uma revisão antiga retorna 409 sem alterar valores. O fluxo protegido continua idempotente e serializável.
+- Teste HTTP/PG17 criou apenas compra e parcela sintéticas, verificou erro 409 sem escrita, replay da mesma operação, atualização unitária e preservação dos IDs das demais parcelas. Total de teste 100,00 → 106,66 foi calculado pela implementação canônica existente, não pela Web.
+- Não é autorização de habilitar writer novo nem homologação real. O schema ainda não fornece correspondência inequívoca entre CardPurchase e FinancialEvent, e o ambiente QA real segregado ainda não foi configurado.
