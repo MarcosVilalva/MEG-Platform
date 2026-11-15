@@ -189,3 +189,11 @@ Implementado somente na branch `stage10/real-data-read-integration-20261114`, **
 - Teste HTTP/JWT/PostgreSQL17 rejeita parâmetros, falta de JWT, cartão de outro owner e sessão revogada, e confere a divisão de 100,00 em 33,34+33,33+33,33. E2E browser testou criação sintética de Alimentação; teste específico da renderização da prévia de cartão no browser ainda não foi adicionado.
 - `CardPurchase` usa writer distinto de `FinancialEvent`, portanto compras no cartão seguem sem gravação na nova Web até que Lançamentos leia e edite esse agregado sem duplicidade. Outros gates de publicação permanecem pendentes.
 - Runs verificados [#43657516631](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43657516631), [#43658208899](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43658208899): SUCCESS. Nenhum serviço implantado, custo criado ou dado real acessado.
+
+
+## 21. CardPurchase/CardInstallment histórico em GET exclusivo, 14/11/2026
+
+- `apps/api/src/modules/finance/stage10-readonly-routes.ts`: rota `/stage10-readonly/card-purchases` sob prefixo `/finance`, somente GET e `withStage10ReadOnlySessionWorkspace`. A leitura em PostgreSQL `SET TRANSACTION READ ONLY`, `RepeatableRead` confere workspace único para o owner, não aceita evento financeiro de workspace externo e filtra `CardPurchase` original com `CardInstallment` por mês da compra OU `statementMonth` da parcela.
+- Retorna `stage10-card-purchase-history-v1`, `source=canonical-card-purchases`, `canWrite=false`, IDs e parcelas, limite 5000. Nega rota para JWT inexistente/revogado, não usa `listCards` legada porque essa pode carregar rotinas de migração, e não calcula fatura nem status na Web. Permanece separada de `FinancialEvent` para evitar duplicação silenciosa.
+- Teste HTTP PostgreSQL17 sintético validou compra R$ 100,00 (33,34 + 33,33 + 33,33), visibilidade por competência, usuário diverso, mês inválido, ausência de token e revogação. CI [#43659104411](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43659104411) SUCCESS. Sem dados, chaves, custos ou servidores reais.
+- Próxima implementação apenas após resolver reconciliação/identidade e UI: leitura e edição canônicas de compras e parcelas, sem alterar regras financeiras. Publicação e aprovação visual permanecem pendentes.

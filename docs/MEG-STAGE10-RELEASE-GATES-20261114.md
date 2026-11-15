@@ -69,3 +69,11 @@ Conservar este documento e o `MEG-WEB-CONTINUIDADE-OFICIAL.md` como referência.
 - Prévia de parcelas agora existe via GET na API QA somente leitura, com `cardPurchaseCyclePreview`, nunca cálculo financeiro no browser. Teste SQL17 inclui divisão em centavos e competência por fechamento, sessão revogada e cartão de outro proprietário.
 - A integração de compra efetiva de cartão, a leitura posterior da compra no Lançamentos e a edição de parcelas **ainda não estão completas**; botão Salvar do modo Crédito permanece bloqueado em modo real, para evitar falso sucesso ou compra gravada e invisível.
 - Infraestrutura QA real, validação visual dos prints oficiais, dados reais e aprovação final continuam pendentes. Não houve deployment, merge, alteração Android ou produção.
+
+
+## Atualização: contrato isolado de leitura de CardPurchase/CardInstallment, 14/11/2026
+
+- Commit `2c3d9a3`, CI [#43659104411](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43659104411) **SUCCESS** (30 etapas).
+- Rota GET `/finance/stage10-readonly/card-purchases?month=` adicionada sem writers: sessão RS256 ativa, ator/workspace válido e proteção contra owner multiworkspace. Compra aparece por data própria ou competência de qualquer parcela. Dados reais não foram consultados; testes PostgreSQL17 usam fixtures.
+- A autoridade de cartão conserva as parcelas e o pagamento no agregado original, sem refazer juros, fatura, competência ou saldo na Web. A rota retorna o agregado **separado** do snapshot `FinancialEvent` para prevenir contagem dupla até deduplicação autorizada.
+- **Não concluído:** integração destas compras na tela real, edição de compra/parcela, decisão de exibição de representação histórica, liberação do writer de compra; ambiente QA real, CORS/RSA/role SQL, dados controlados e homologação visual explícita. Sem deploy, merge, custos ou alteração Android/produção.
