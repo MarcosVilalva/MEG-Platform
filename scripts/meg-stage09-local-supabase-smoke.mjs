@@ -88,6 +88,53 @@ assert.notEqual(userRead.status, 200, 'Usuario sem Storage policy leu arquivo pr
 const publicRead = await call('/storage/v1/object/public/' + bucket + '/' + object);
 assert.notEqual(publicRead.status, 200, 'URL publica expôs arquivo privado');
 
+
+const secondEmail = 'stage09-other-' + suffix + '@example.invalid';
+const secondUserResponse = await call('/auth/v1/admin/users', {
+  method: 'POST', bearer: service,
+  body: { email: secondEmail, password, email_confirm: true },
+});
+assert.ok([200, 201].includes(secondUserResponse.status), 'Segundo usuario ficticio nao criado');
+const secondUser = await secondUserResponse.json();
+const secondLogin = await call('/auth/v1/token?grant_type=password', {
+  method: 'POST', body: { email: secondEmail, password },
+});
+assert.equal(secondLogin.status, 200, 'Segundo login ficticio falhou');
+const secondJwt = (await secondLogin.json()).access_token;
+assert.ok(secondJwt, 'JWT ficticio da segunda conta ausente');
+
+const insertRls = await call('/rest/v1/meg_stage09_rls_fixture', {
+  method: 'POST', bearer: service,
+  body: [{ owner_id: user.id, label: 'OWNER_1' },
+    { owner_id: secondUser.id, label: 'OWNER_2' }],
+});
+assert.equal(insertRls.status, 201, 'RLS seed via service local HTTP ' + insertRls.status);
+const query = '/rest/v1/meg_stage09_rls_fixture?select=owner_id%2Clabel';
+const ownResponse = await call(query, { bearer: tokens.access_token });
+const otherResponse = await call(query, { bearer: secondJwt });
+const anonResponse = await call(query);
+assert.equal(ownResponse.status, 200, 'RLS usuario1 nao leu');
+assert.equal(otherResponse.status, 200, 'RLS usuario2 nao leu');
+assert.equal(anonResponse.status, 200, 'RLS anon nao retornou conjunto vazio');
+const ownRows = await ownResponse.json();
+const otherRows = await otherResponse.json();
+const anonRows = await anonResponse.json();
+assert.equal(ownRows.length, 1, 'RLS usuario1 leu linhas alheias');
+assert.equal(otherRows.length, 1, 'RLS usuario2 leu linhas alheias');
+assert.equal(anonRows.length, 0, 'RLS anon leu linhas privadas');
+assert.equal(ownRows[0].owner_id, user.id, 'RLS usuario1 dono divergente');
+assert.equal(otherRows[0].owner_id, secondUser.id, 'RLS usuario2 dono divergente');
+
+console.log(JSON.stringify({
+  marker: 'MEG_STAGE09_SUPABASE_LOCAL_RLS_ISOLATION_PASS',
+  user_workspaces: 2,
+  owner_only: true,
+  cross_user_denied: true,
+  anonymous_zero_rows: true,
+  cloud_gate: 'NOT_VALIDATED',
+  real_data: false,
+}));
+
 console.log(JSON.stringify({
   marker: 'MEG_STAGE09_SUPABASE_LOCAL_AUTH_STORAGE_SMOKE_PASS',
   stack: 'supabase_cli_local_disposable',
