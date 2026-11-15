@@ -1,0 +1,85 @@
+name: MEG Stage09 Render startup PG17 synthetic characterization
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'stage09/backup-recovery-kit-20261110'
+    paths:
+      - 'scripts/meg-stage09-render-startup-pg17-synthetic.test.ts'
+      - 'scripts/meg-stage09-render-startup-http-pg17-synthetic.test.ts'
+      - 'scripts/meg-stage09-render-startup-concurrent-pg17-synthetic.test.ts'
+      - 'scripts/meg-stage09-startup-timer-probe.mjs'
+      - 'scripts/meg-stage09-legacy-repair-flag-pg17.test.ts'
+      - 'apps/api/src/config.ts'
+      - 'scripts/meg-stage09-render-startup-writers.contract.test.mjs'
+      - '.github/workflows/meg-stage09-render-startup-pg17.yml'
+      - 'docs/MEG-STAGE09-RENDER-BUILD-SEGURO-20261114.md'
+
+permissions:
+  contents: read
+
+jobs:
+  pg17-synthetic-startup:
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'MarcosVilalva/MEG-Platform' && ((github.event.pull_request.base.ref == 'stage09/backup-recovery-kit-20261110' && github.event.pull_request.head.ref == 'safety/stage09-render-build-non-destructive-20261114') || (github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'stage09/backup-recovery-kit-20261110'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      ADMIN_EMAIL: stage09-synthetic-admin@example.invalid
+      DATABASE_URL: postgresql://stage09:stage09@127.0.0.1:65431/meg_stage09_ephemeral?schema=public
+      # Sem chaves de Supabase, Render, SMTP, WhatsApp ou banco real.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: stage09
+          POSTGRES_PASSWORD: stage09
+          POSTGRES_DB: meg_stage09_ephemeral
+        ports:
+          - 65431:5432
+        options: >-
+          --health-cmd "pg_isready -U stage09 -d meg_stage09_ephemeral"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Checkout without persistent credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Guard local-only target before any schema action
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${DATABASE_URL}" = 'postgresql://stage09:stage09@127.0.0.1:65431/meg_stage09_ephemeral?schema=public'
+          test "${NODE_ENV}" = 'test'
+          test "${CI}" = 'true'
+          test "${GITHUB_ACTIONS}" = 'true'
+          echo 'STAGE09_POSTGRES_TARGET=LOCAL_EPHEMERAL_ONLY'
+      - name: Install frozen packages without lifecycle scripts
+        run: npm ci --include=dev --ignore-scripts --audit=false --fund=false
+      - name: Generate Prisma client without DB access
+        run: npm run --ignore-scripts db:generate
+      - name: Initialize SCHEMA ONLY in fresh PG17 ephemeral database
+        # Explicit schema-only setup in the disposable runner, never the Render build.
+        # No --accept-data-loss, seeds, imports or external DB endpoints.
+        run: ./node_modules/.bin/prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Characterize actual startup functions with synthetic isolated fixtures
+        run: ./node_modules/.bin/tsx scripts/meg-stage09-render-startup-pg17-synthetic.test.ts
+      - name: Run real HTTP server.ts with synthetic PG17 only
+        # Consecutive process starts in the same disposable runner. No remote deploy.
+        run: ./node_modules/.bin/tsx scripts/meg-stage09-render-startup-http-pg17-synthetic.test.ts
+      - name: Run real concurrent HTTP startup and periodic timers on isolated PG17
+        # IPC callbacks fire real registered maintenance closures without altering server.ts.
+        # Only PG17 localhost fixture, no 6h wait and no external services.
+        run: ./node_modules/.bin/tsx scripts/meg-stage09-render-startup-concurrent-pg17-synthetic.test.ts
+      - name: Characterize legacy repair flag with actual HTTP server on synthetic PG17
+        # Never connects externally and does not patch financial code.
+        run: ./node_modules/.bin/tsx scripts/meg-stage09-legacy-repair-flag-pg17.test.ts

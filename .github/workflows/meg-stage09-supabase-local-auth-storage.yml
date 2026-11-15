@@ -1,0 +1,92 @@
+name: MEG Stage09 Local Supabase Auth and Storage (synthetic, no hosted connection)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'scripts/meg-stage09-local-supabase-smoke.mjs'
+      - 'scripts/meg-stage09-local-supabase-vault-rls.sh'
+      - '.github/workflows/meg-stage09-supabase-local-auth-storage.yml'
+      - 'docs/MEG-STAGE09-LOCAL-SUPABASE-ALTERNATIVE-20261114.md'
+
+permissions:
+  contents: read
+
+jobs:
+  local-auth-storage:
+    if: github.repository == 'MarcosVilalva/MEG-Platform' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'MarcosVilalva/MEG-Platform' && github.event.pull_request.head.ref == 'stage09/backup-recovery-kit-20261110' && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NO_COLOR: '1'
+      SUPABASE_ACCESS_TOKEN: ''
+      DATABASE_URL: ''
+    steps:
+      - name: Checkout PR without persistent credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Node 22 for local Supabase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify isolated Docker runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$CI" = 'true'
+          test "$GITHUB_ACTIONS" = 'true'
+          test -z "$SUPABASE_ACCESS_TOKEN"
+          test -z "$DATABASE_URL"
+          docker info --format '{{.ServerVersion}}' >/dev/null
+          echo 'MEG_STAGE09_SUPABASE_TARGET=LOCAL_GITHUB_ACTIONS_ONLY'
+
+      - name: Initialize local-only CLI project outside checkout
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/meg-stage09-supabase-local"
+          cd "$RUNNER_TEMP/meg-stage09-supabase-local"
+          npm exec --yes --package=supabase@3.1.0 -- supabase init
+          test -f supabase/config.toml
+          echo 'MEG_STAGE09_LOCAL_SUPABASE_INIT=PASS'
+
+      - name: Start minimal real Auth and Storage services, no remote keys
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -Eeuo pipefail
+          cd "$RUNNER_TEMP/meg-stage09-supabase-local"
+          npm exec --yes --package=supabase@3.1.0 -- supabase start \
+            --exclude imgproxy,studio,edge-runtime,logflare,vector,supavisor,realtime,postgres-meta
+          echo 'MEG_STAGE09_LOCAL_SUPABASE_STACK_STARTED'
+
+      - name: Create synthetic RLS and Vault only in disposable Docker Postgres
+        shell: bash
+        run: bash "$GITHUB_WORKSPACE/scripts/meg-stage09-local-supabase-vault-rls.sh"
+
+      - name: Local actual HTTP Auth and Storage smoke
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$RUNNER_TEMP/meg-stage09-supabase-local"
+          umask 077
+          npm exec --yes --package=supabase@3.1.0 -- supabase status -o env \
+            > "$RUNNER_TEMP/stage09-local-status.env"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/meg-stage09-local-supabase-smoke.mjs "$RUNNER_TEMP/stage09-local-status.env"
+          rm -f "$RUNNER_TEMP/stage09-local-status.env"
+
+      - name: Stop local stack and discard CI-only data
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/stage09-local-status.env"
+          if test -f "$RUNNER_TEMP/meg-stage09-supabase-local/supabase/config.toml"; then
+            cd "$RUNNER_TEMP/meg-stage09-supabase-local"
+            npm exec --yes --package=supabase@3.1.0 -- supabase stop --no-backup || true
+          fi
