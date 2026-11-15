@@ -2688,3 +2688,77 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   sido configurados no Render.
 - Evidencia adicional documentada na issue #690, sem nova
   consulta SQL, logs massivos ou novas leituras produtivas.
+
+
+## 14/11/2026 | Alternativa Zero Custo ao bloqueio 402: Supabase Auth/Storage reais em stack local CI
+
+- **Motivo:** operador comunicou que nao e viavel aguardar a
+  renovacao da cota de Egress de 27/11/2026 para fazer
+  progresso. Mantidos teto de despesa **R$ 0,00** e
+  proibicao de contornar quota com outra organizacao ou
+  projeto hospedado. O snapshot autenticado da
+  organizacao continua indicando **14,596/5 GB = 292%**,
+  restricao de Auth/Storage e HTTP 402 no sandbox.
+  Conforme Billing FAQ, quota so renova no novo ciclo,
+  podendo haver atraso na liberacao dos servicos gerenciados.
+- **Nova alternativa autorizada de testes isolados:** no
+  repo publico `MarcosVilalva/MEG-Platform`, GitHub Actions
+  standard runner de PR (gratuito para repos publicos)
+  inicializou **Supabase CLI v3.1.0 em runner Docker
+  efemero**, sem PAT, sem DATABASE_URL externo e sem
+  chamar a plataforma hospedada. Projeto de CLI criado
+  exclusivamente em `$RUNNER_TEMP`, nunca na WSL
+  ou banco do operador. Referencias oficiais:
+  https://supabase.com/docs/guides/local-development e
+  https://docs.github.com/en/actions/concepts/billing-and-usage.
+- **Arquivos novos em PR #666 Draft, sem main:**
+  `scripts/meg-stage09-local-supabase-smoke.mjs`,
+  `.github/workflows/meg-stage09-supabase-local-auth-storage.yml`
+  e `docs/MEG-STAGE09-LOCAL-SUPABASE-ALTERNATIVE-20261114.md`.
+  Workflow guardado exclusivamente para head
+  `stage09/backup-recovery-kit-20261110`, base `main`,
+  mesmo repositorio. Chaves obtidas so da stack local,
+  validadas como localhost:54321 e nunca publicadas.
+  Cleanup da stack feito no runner descartavel.
+- **Evidencia real:** [Actions #43655867184](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43655867184),
+  job `local-auth-storage` **SUCCESS** no commit que
+  apresentou a nova documentacao
+  `c53eb4cc3e21de9592b63dbcfa9cb31d260aedb2`.
+  Log com marcadores
+  `MEG_STAGE09_SUPABASE_TARGET=LOCAL_GITHUB_ACTIONS_ONLY`,
+  `MEG_STAGE09_LOCAL_SUPABASE_STACK_STARTED` e
+  `MEG_STAGE09_SUPABASE_LOCAL_AUTH_STORAGE_SMOKE_PASS`.
+  Testes com HTTP Auth real: config, admin ficticio,
+  login, JWT, senha invalida rejeitada. Storage HTTP
+  real: bucket privado, upload/download ficticio com
+  bytes identicos; anon, usuario autenticado sem
+  policy e URL publica **negados**. Dados de
+  fixtures aleatorias sem e-mails entregues a pessoas.
+  Docker retornou transitoriamente `toomanyrequests`
+  ao baixar imagens, mas recuperou e a CI concluiu
+  SUCCESS com cleanup.
+- **Limites:** a prova amplia caracterizacao de
+  Auth/Storage **self-hosted local**, nao prova
+  configuracoes gerenciadas do Supabase, nem a
+  recuperacao do Vault raiz original, dados MEG,
+  Realtime hospedado, backup full, RTO/RPO, egress
+  de producao ou seguranca de uma promocao em main.
+  **Gate 1 gerenciado permanece bloqueado por quota;**
+  Gates 2-4 gerenciados NAO EXECUTADOS/NO-GO.
+  Nao reclassificar gate operacional com base no
+  smoke local. #690 continua OPEN/P0.
+- **Status Render:** Build Command seguro ja salvo no
+  painel e Auto Deploy Off verificado, mas o script
+  continua apenas na branch stage09, ainda nao
+  promovido ou implantado. PR #666 segue Draft.
+  Nao executar deploy manual ou ativar Auto Deploy.
+- **Proximo passo:** caracterizar, quando possivel
+  em CI local descartavel, isolamento de RLS,
+  Vault ficticio e Realtime privado, sem usar a
+  chave original ou rede externa. Para fechar a
+  **Etapa 09 integral**, ainda faltam testes
+  gerenciados quando quota for liberada ou
+  alternativa de recuperacao formalmente
+  adotada e comprovada, RTO/RPO reais,
+  decisoes #674/#694/#695 e gate de release
+  Render/PR. Nao declarar etapa encerrada.
