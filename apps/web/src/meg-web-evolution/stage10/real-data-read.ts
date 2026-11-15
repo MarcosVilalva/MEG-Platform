@@ -14,6 +14,7 @@ import {validateStage10CardPurchasesRead,type Stage10CardPurchasesRead} from './
 
 export type Stage10RealRead={
   userId:string;
+  workspaceId:string;
   userName:string;
   home:null;
   launches:HomeFinancialData;
@@ -283,7 +284,7 @@ export async function loadStage10RealRead(month:string,signal:AbortSignal):Promi
     !current.accessToken||!current.refreshToken)
   throw new Error('A identidade da sessao mudou durante a consulta.');
  return {
-  userId:session.user.id,userName:session.user.name,
+  userId:session.user.id,workspaceId:data.workspaceId,userName:session.user.name,
   home:null,
   launches:buildReadOnlyData(data.events,data.summary,data.accounts,data.categories,data.paymentMethods),
   catalogs:catalogsFromReal(data.accounts,data.categories,data.paymentMethods,data.cards),
