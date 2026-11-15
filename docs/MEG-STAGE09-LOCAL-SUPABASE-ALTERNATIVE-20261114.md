@@ -40,3 +40,54 @@ Fontes:
 ## Alternativa para desbloqueio gerenciado
 
 Solicitar ao suporte Supabase esclarecimento sobre restricao da organizacao e possibilidade de liberacao antecipada sem custo pode ser feito pelo operador, sem garantia de concessao. Nao solicitar upgrade ou migracao. A data oficial do ciclo segue 27/11/2026, sujeita a atraso no restabelecimento. Antes de qualquer restauracao gerenciada, seguir matriz de DR de `docs/MEG-STAGE09-SUPABASE-MANAGED-RESTORE-DRILL-20261112.md`.
+
+
+## Segunda rodada: Vault ficticio e RLS entre usuarios (14/11/2026)
+
+Para ampliar a caracterizacao offline, foi incorporado
+`scripts/meg-stage09-local-supabase-vault-rls.sh` e
+adaptado o teste HTTP para duas identidades ficticias.
+O script opera **exclusivamente** no conteiner Docker
+`supabase_db_*` do runner descartavel, guardas
+`CI=true`, `GITHUB_ACTIONS=true`,
+`SUPABASE_ACCESS_TOKEN` vazio,
+`DATABASE_URL` vazio. Sem usuarios reais, e-mail externo,
+dados do MEG ou uso de root key original.
+
+**[Actions #43656308464](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43656308464) SUCCESS** no SHA
+`ab4b3a5cf2e550c697992e792e47c537a7d96623`
+incluiu as provas:
+
+- `MEG_STAGE09_VAULT_LOCAL_SYNTHETIC_PASS`: extensao
+  `supabase_vault` no banco local, segredo inventado
+  via `vault.create_secret`, consulta a
+  `vault.decrypted_secrets` confirmou round-trip e
+  diferença entre ciphertext e plaintext. **Nao
+  copia chave ou segredos da origem.**
+- `MEG_STAGE09_RLS_POLICY_LOCAL_CREATED`: tabela
+  `public.meg_stage09_rls_fixture` criada do zero,
+  com RLS e policy `owner_id = auth.uid()`.
+- `MEG_STAGE09_SUPABASE_LOCAL_RLS_ISOLATION_PASS`:
+  dois usuarios distintos criados localmente,
+  HTTP PostgREST com JWT de cada um recebeu
+  exatamente sua propria linha, nenhum registro
+  da outra identidade. Cliente anonimo obteve
+  zero linhas. Insercao de fixtures somente por
+  service role local.
+- `MEG_STAGE09_SUPABASE_LOCAL_AUTH_STORAGE_SMOKE_PASS`:
+  autenticacao, senha incorreta, bucket privado,
+  upload/download com integridade, negacoes
+  anonimas e sem policies continuam PASS.
+  Stack Docker encerrada; fixtures e chaves locais
+  descartadas com o runner.
+
+**Escopo estrito da prova:** somente implementacao
+**local** de Auth, Storage, RLS e Vault. Nao autoriza
+restore de dados reais, importacao de schema gerenciado,
+PUT da root key original, assinatura Realtime hospedada,
+operacao de cron/pg_net, correcoes na origem, gastos
+nem promocao de branch. O teste nao mediu RTO/RPO
+de um restore integral do MEG. Supabase remoto
+continua sob restricao HTTP 402/limite de Egress,
+Gate 1 gerenciado bloqueado; Gates 2–4 NO-GO.
+A PR #666 segue Draft e a main intacta.
