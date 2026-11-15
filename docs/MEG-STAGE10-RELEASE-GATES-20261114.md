@@ -83,3 +83,11 @@ Conservar este documento e o `MEG-WEB-CONTINUIDADE-OFICIAL.md` como referência.
 - O novo adaptador `card-purchases-read-contract.ts` separa compras e parcelas do conjunto `FinancialEvent`, exige proveniência canônica, consulta vinculada a ator/workspace, rejeita IDs duplicados/ordens de parcelas inválidas e recusa snapshots parciais.
 - `loadStage10CardPurchases` chama somente `GET /finance/stage10-readonly/card-purchases`, mantém refresh/JWT HMAC fora do backend QA e não injeta compras no lançamento monetário, no summary ou na fatura.
 - **Sem homologação:** não ativar escritor de cartão nem exibir dados como se fossem deduplicados sem comprovar identidade cruzada. Teste e build devem terminar verdes antes de considerar este contrato caracterizado.
+
+
+## Evidência adicional, 15/11/2026: identidade CardPurchase versus FinancialEvent
+- Commit `f36cc3a`, run [#43699812344](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43699812344) **SUCCESS, 31 passos**.
+- Foi concluída a leitura tipada e não agregada de `CardPurchase/CardInstallment` na Web. Nenhuma linha foi adicionada à grade financeira, nem compra convertida em `FinancialEvent`.
+- Schema: não existe referência canônica direta `CardPurchase ↔ FinancialEvent`, nem `workspaceId` em `CardPurchase`. O pagamento da fatura gera um `FinancialEvent` próprio; por isso, cruzamentos baseados em descrição/data/valor não comprovam identidade e são proibidos.
+- PATCH de compra/parcela não exige versão esperada do cliente. É necessário caracterizar a concorrência, a identidade na grade e o possível conflito com lançamentos históricos antes de liberar writers.
+- Pendências de liberação real e homologação visual permanecem inalteradas; CI verde não substitui aprovação do responsável.
