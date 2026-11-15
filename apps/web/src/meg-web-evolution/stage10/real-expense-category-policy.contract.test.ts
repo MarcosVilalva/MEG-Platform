@@ -34,7 +34,7 @@ assert.equal(leaving.paymentMethodId,'','Verocard nao pode vazar para despesa mo
 const restored=applyStage10ExpenseCategory({...selected,accountId:'bank',paymentMethodId:'pix'},catalogs,'general');
 assert.equal(restored.accountId,'bank','Autocomplete com conta monetaria ativa deve preservar ID historico');
 assert.equal(restored.paymentMethodId,'pix','Autocomplete com forma ordinaria ativa deve preservar ID historico');
-const fixed=applyStage10ExpenseCategory(draft,catalogs,'fixed');
+const fixed=applyStage10ExpenseCategory({...draft,modality:'cash'},catalogs,'fixed');
 assert.equal(fixed.requestedStatus,'paid');
 assert.equal(applyStage10ExpenseCategory({...draft,modality:'credit'},catalogs,'fixed').requestedStatus,'planned',
  'No cartao o planejamento tem precedencia conforme financial-policy canonica');
