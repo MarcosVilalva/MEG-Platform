@@ -185,7 +185,7 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
       {purchaseDate:{gte:start,lt:end}},
       {entries:{some:{statementMonth:parsed.data.month}}},
      ],
-    } as const;
+    };
     const total=await tx.cardPurchase.count({where});
     if(total>HISTORY_LIMIT)return {
      kind:'stage10-card-purchase-history-limit-v1' as const,
