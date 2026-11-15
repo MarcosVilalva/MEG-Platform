@@ -54,6 +54,18 @@ assert.match(live,/Number\.isFinite\(event\.enteredAmount\)/);
 assert.match(live,/amountDisplay:money\.format\(event\.enteredAmount\?\?Number\.NaN\)/);
 assert.doesNotMatch(live,/Math\.abs\(row\.signedAmount\)/);
 
+ // Historicos reais podem nao possuir FKs de categoria/metodo, mas a UI
+ // nunca atribui IDs por correspondencia textual ou converte beneficio.
+ assert.doesNotMatch(live,/!event\.categoryId\|\|!event\.paymentMethodId/);
+ assert.match(live,/const benefit=account\.kind==='benefit'/);
+ assert.match(live,/if\(!account\|\|!\['monetary','benefit'\]\.includes\(account\.kind\)\)return null/);
+ assert.match(live,/if\(!category\|\|!isStage10FoodBenefitCategory\(category\)\|\|!method/);
+ assert.match(live,/method\.kind!=='benefit'\|\|event\.status!=='paid'/);
+ assert.match(live,/method&&method\.kind!=='ordinary'/);
+ assert.match(editor,/categoryId:category\?\.id\?\?''/);
+ assert.match(editor,/paymentMethodId:method\?\.id\?\?''/);
+
+
 assert.match(live,/saveEnabled=\{writeEnabled&&!saving\}/);
 assert.match(live,/financeClient\.createEvent/);
 assert.match(live,/financeClient\.bulkUpdateEvents/);
