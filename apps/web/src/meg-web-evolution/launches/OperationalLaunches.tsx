@@ -95,14 +95,17 @@ type Props={userId:string;userName:string;onHome:()=>void;stage10ReadOnly?:boole
 type Stage10ReadCatalog={
  events:FinancialEvent[];catalogs:ExpenseCatalogs;history:HistorySnapshot;
 };
-function stage10RealCatalogs(accounts:Account[],categories:Category[],methods:PaymentMethod[]):ExpenseCatalogs {
+type Stage10CardRead={id:string;name:string;isActive:boolean;closingDay:number;dueDay:number;issuer?:string|null;brand?:string|null;lastFour?:string|null};
+function stage10RealCatalogs(accounts:Account[],categories:Category[],methods:PaymentMethod[],cards:Stage10CardRead[]):ExpenseCatalogs {
  return {
   accounts:accounts.filter(a=>['checking','savings','cash','benefit','investment'].includes(a.type.toLowerCase()))
    .map(a=>({id:a.id,name:a.name,active:a.isActive,kind:(['checking','savings','cash'].includes(a.type.toLowerCase())?'monetary':a.type.toLowerCase()) as 'monetary'|'benefit'|'investment'})),
   categories:categories.map(c=>({id:c.id,name:c.name,active:c.isActive,group:c.group??undefined})),
   paymentMethods:methods.map(m=>({id:m.id,name:m.name,active:m.isActive,
    kind:/verocard/i.test(m.name)?'benefit':m.type==='benefit'?'benefit':m.type==='credit'?'credit':'ordinary'})),
-  creditCards:[],
+  // Metadados canônicos da API, sem calcular vencimentos, parcelas ou limite.
+  creditCards:cards.filter(c=>c.isActive&&typeof c.id==='string'&&typeof c.name==='string'&&Number.isInteger(c.closingDay)&&Number.isInteger(c.dueDay))
+   .map(c=>({id:c.id,name:c.name,active:c.isActive,closingDay:c.closingDay,dueDay:c.dueDay,issuer:c.issuer,brand:c.brand,lastFour:c.lastFour})),
  };
 }
 const stage10Money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
@@ -171,12 +174,13 @@ export function OperationalLaunches({userId,userName,onHome,stage10ReadOnly=fals
     const eventRead=supportsSnapshot
      ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),fetchPage,signal,report)
      : readAuthorizedHistory(fetchPage,signal,p=>report({...p,mode:'legacy'}));
-    const [events,summary,accounts,categories,methods]=await Promise.all([
+    const [events,summary,accounts,categories,methods,cards]=await Promise.all([
      eventRead,
      authenticatedRequest<FinanceSummary>('/finance/summary?month='+encodeURIComponent(month),{cache:'no-store',signal}),
      authenticatedRequest<Account[]>('/finance/accounts',{cache:'no-store',signal}),
      authenticatedRequest<Category[]>('/finance/categories',{cache:'no-store',signal}),
      authenticatedRequest<PaymentMethod[]>('/finance/payment-methods',{cache:'no-store',signal}),
+     stage10ReadOnly?authenticatedRequest<Stage10CardRead[]>('/cards?month='+encodeURIComponent(month),{cache:'no-store',signal}):Promise.resolve([]),
     ]);
     if(signal.aborted)return;
     const after=await financeClient.getSyncStatus();
@@ -188,7 +192,8 @@ export function OperationalLaunches({userId,userName,onHome,stage10ReadOnly=fals
     setCanFilterCanonically(before.capabilities?.filteredSummaryV1===true);
     setData(buildReadOnlyData(events,summary,accounts,categories,methods));
     if(stage10ReadOnly){
-     setStage10Read({events,catalogs:stage10RealCatalogs(accounts,categories,methods),
+     if(!Array.isArray(cards))throw new Error('API não retornou catálogo de cartões autorizado.');
+     setStage10Read({events,catalogs:stage10RealCatalogs(accounts,categories,methods,cards),
       history:{protocol:'financial-history-v1',kind:'complete',items:events}});
     }
    }catch(cause){
