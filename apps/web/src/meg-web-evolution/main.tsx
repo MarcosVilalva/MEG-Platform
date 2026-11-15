@@ -167,7 +167,9 @@ function AuthGateway() {
       periodLabel={new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'America/Sao_Paulo'}).format(new Date()).replace(/^./,letter=>letter.toLocaleUpperCase('pt-BR'))}
     >
       {section==='launches'
-        ? <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={()=>setSection('home')}/>
+        ? <OperationalLaunches key={session.user.id} userId={session.user.id}
+          userName={session.user.name} onHome={()=>setSection('home')}
+          stage10ReadOnly={new URLSearchParams(window.location.search).get('etapa')==='10'}/>
         : <HomeDashboard />}
     </AppShell>
   );
