@@ -587,3 +587,12 @@ body:has(.meg-login-welcome),
     transition: none !important;
   }
 }
+
+/* Aviso de segurança apenas se a API não confirmar a revogação no logout. */
+.meg-auth-logout-warning{
+ position:fixed;z-index:2000;left:50%;bottom:1rem;transform:translateX(-50%);
+ width:min(38rem,calc(100vw - 2rem));margin:0;
+ padding:.8rem 1rem;border:1px solid #e6bc74;border-radius:.65rem;
+ background:#2b271e;color:#fff1d8;box-shadow:0 15px 35px #0009;
+ font:600 .82rem/1.45 Inter,system-ui,sans-serif;text-align:center;
+}

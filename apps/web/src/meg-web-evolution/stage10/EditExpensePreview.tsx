@@ -1,0 +1,66 @@
+import {useMemo} from 'react';
+import {ExpenseForm,EMPTY_EXPENSE_DRAFT,normalizeEntryDate,type ExpenseCatalogs,type ExpenseDraft} from './ExpenseForm';
+import {brlFromPasted,brlSignedDecimal} from './brl-money-mask';
+
+/** Exclusivamente QA: snapshot fictício, sem writer e sem dados financeiros reais. */
+export type EditExpenseSnapshot={
+ source:'financial-event';financialScope:'monetary'|'benefit';type:'expense';
+ id:string;
+ description:string;notes:string;
+ categoryId:string;categoryName:string;
+ dateDisplay:string;amountDisplay:string;
+ paymentMethodName:string;accountName:string;statusLabel:string;
+ accountId?:string|null;paymentMethodId?:string|null;strictReferences?:boolean;
+};
+export const QA_EDIT_EXPENSE_SNAPSHOT:EditExpenseSnapshot={
+ source:'financial-event',financialScope:'monetary',type:'expense',
+ id:'qa-edit-event-001',
+ description:'COMPRA DE MATERIAL PARA CASA',
+ notes:'LANÇAMENTO FICTÍCIO PARA REVISÃO VISUAL',
+ categoryId:'qa-category-house',categoryName:'Casa',
+ dateDisplay:'10/11/2026',amountDisplay:'R$ 125,49',
+ paymentMethodName:'PIX',accountName:'Conta corrente fictícia',
+ statusLabel:'Paga',
+};
+
+/** Adaptador de LEITURA da prévia. Reaproveita exatamente o formulário homologado.
+ * Não calcula saldo, parcelas, faturas ou permissões de edição do backend.
+ */
+export function EditExpensePreview({snapshot,catalogs,onBack,onSimulatedSave,onRequestSave,onRequestArchive,readOnly=false}:{
+ snapshot:EditExpenseSnapshot;
+ catalogs:ExpenseCatalogs;
+ onBack:()=>void;
+ onSimulatedSave?:()=>void;
+ onRequestSave?:(draft:ExpenseDraft)=>void;
+ onRequestArchive?:()=>void;
+ readOnly?:boolean;
+}){
+ const initialDraft=useMemo<ExpenseDraft>(()=>{
+  // Na leitura real a identidade do cadastro prevalece sobre nomes historicos.
+  const kind=snapshot.financialScope==='benefit'?'benefit':'monetary';
+  const methodKind=snapshot.financialScope==='benefit'?'benefit':'ordinary';
+  const account=snapshot.strictReferences
+   ? catalogs.accounts.find(a=>a.active&&a.kind===kind&&a.id===snapshot.accountId)
+   : catalogs.accounts.find(a=>a.active&&a.kind===kind&&a.name===snapshot.accountName);
+  const method=snapshot.strictReferences
+   ? catalogs.paymentMethods.find(m=>m.active&&m.kind===methodKind&&m.id===snapshot.paymentMethodId)
+   : catalogs.paymentMethods.find(m=>m.active&&m.kind===methodKind&&m.name===snapshot.paymentMethodName);
+  const category=catalogs.categories.find(c=>c.active&&c.id===snapshot.categoryId);
+  return {...EMPTY_EXPENSE_DRAFT,
+   description:snapshot.description,
+   notes:snapshot.notes,
+   categoryId:category?.id??'',
+   date:normalizeEntryDate(snapshot.dateDisplay,new Date().getFullYear())?.iso??'',
+   amountInput:brlSignedDecimal(brlFromPasted(snapshot.amountDisplay))??'',
+   paymentMethodId:method?.id??'',
+   accountId:account?.id??'',
+   requestedStatus:snapshot.statusLabel==='Paga'?'paid':'planned',
+  };
+ },[snapshot,catalogs]);
+ if(snapshot.source!=='financial-event'||!['monetary','benefit'].includes(snapshot.financialScope)||snapshot.type!=='expense')return null;
+ return <ExpenseForm mode="edit" initialDraft={initialDraft} catalogs={catalogs}
+  dataMode={readOnly?'real-read':onRequestSave?'real-write':'demo'}
+  saveEnabled={!readOnly&&Boolean(onRequestSave||onSimulatedSave)}
+  onRequestSave={readOnly?undefined:onRequestSave??(onSimulatedSave?()=>onSimulatedSave():undefined)}
+  onRequestArchive={readOnly?undefined:onRequestArchive} onBack={onBack}/>;
+}

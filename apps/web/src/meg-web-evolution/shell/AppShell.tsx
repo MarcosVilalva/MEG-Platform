@@ -24,7 +24,15 @@ function readSidebarPreference() {
   return window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === 'true';
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export type ShellSection = 'home'|'launches';
+export function AppShell({ children, activeSection='home', onNavigate, periodLabel, profileName, onLogout, logoutPending=false }: {
+ children: ReactNode;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;
+ periodLabel?:string;profileName?:string;
+ /** Disponível somente após autenticação; a prévia demonstrativa não executa logout. */
+ onLogout?:()=>void;logoutPending?:boolean;
+}) {
+ const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
+ const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
@@ -81,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sidebarCollapsed = isDesktopWide ? sidebarPreferenceCollapsed : true;
 
   return (
-    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+    <div className={`meg-evolution-bg meg-shell ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${onNavigate && activeSection === 'launches' ? 'is-launches-operational' : ''}`}>
       <div className="meg-sidebar-wrap">
         <aside className={`meg-sidebar ${drawerOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
         <div className="meg-brand" aria-label="MEG Finanças">
@@ -103,8 +111,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           {navigation.map(([icon, label], index) => (
             <button
               key={label}
-              className={`meg-nav-item ${index === 0 ? 'is-active' : ''}`}
+              className={`meg-nav-item ${(activeSection==='home' ? index===0 : index===1) ? 'is-active' : ''}`}
               type="button"
+              aria-current={onNavigate && (activeSection==='home' ? index===0 : index===1)?'page':undefined}
+              onClick={()=>{
+                if (!onNavigate) return; // A prévia mantém sua própria navegação, sem alterações.
+                if (index===0 || index===1){setDrawerOpen(false);onNavigate(index===0?'home':'launches')}
+              }}
               aria-label={label}
               data-tooltip={label}
               onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, label, 'right')}
@@ -191,15 +204,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="meg-nav-item meg-logout-button"
-            aria-label="Sair"
+            aria-label={logoutPending?'Encerrando sessão':'Sair'}
             data-tooltip="Sair"
+            aria-busy={logoutPending}
+            disabled={Boolean(onLogout)&&logoutPending}
+            onClick={()=>{if(onLogout&&!logoutPending){setDrawerOpen(false);hideTooltip();onLogout()}}}
             onMouseEnter={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
             onMouseLeave={hideTooltip}
             onFocus={(event) => sidebarCollapsed && showTooltip(event, 'Sair', 'right')}
             onBlur={hideTooltip}
           >
             <Icon name="logOut" width={20} height={20} strokeWidth={1.75} />
-            <span>Sair</span>
+            <span>{logoutPending?'Saindo...':'Sair'}</span>
           </button>
         </div>
 
@@ -268,7 +284,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="meg-topbar-actions">
             <button type="button" className="meg-period">
               <Icon name="calendar" />
-              <span>Outubro&nbsp;de&nbsp;2026</span>
+              <span>{periodLabel ?? <>Outubro&nbsp;de&nbsp;2026</>}</span>
               <Icon name="chevronDown" />
             </button>
 
@@ -286,8 +302,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </IconButton>
 
             <button type="button" className="meg-profile">
-              <span className="meg-avatar">MV</span>
-              <span className="meg-profile-name">Marcos de Andrade Vilalva</span>
+              <span className="meg-avatar">{avatarInitials}</span>
+              <span className="meg-profile-name">{profileName||'Marcos de Andrade Vilalva'}</span>
               <Icon name="chevronDown" />
             </button>
           </div>
