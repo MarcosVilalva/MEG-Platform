@@ -91,3 +91,7 @@ Conservar este documento e o `MEG-WEB-CONTINUIDADE-OFICIAL.md` como referência.
 - Schema: não existe referência canônica direta `CardPurchase ↔ FinancialEvent`, nem `workspaceId` em `CardPurchase`. O pagamento da fatura gera um `FinancialEvent` próprio; por isso, cruzamentos baseados em descrição/data/valor não comprovam identidade e são proibidos.
 - PATCH de compra/parcela não exige versão esperada do cliente. É necessário caracterizar a concorrência, a identidade na grade e o possível conflito com lançamentos históricos antes de liberar writers.
 - Pendências de liberação real e homologação visual permanecem inalteradas; CI verde não substitui aprovação do responsável.
+
+
+## Infraestrutura Supabase, levantamento não intrusivo em 15/11/2026
+O inventário confirmou plano Free e três projetos: produção `ugbiqzaqnrhulhetevby` ativa; sandbox de recuperação da Etapa 09 `oxwmqbzeuiibdlkcbjzv` ativo; `meg-evolution` `dmrauztnozvxirbydtho` inativo. Não existe autorização de reutilizar o sandbox de recuperação como ambiente da Etapa 10. Essa consulta foi apenas de metadados, sem SQL e sem qualquer mudança. Não há evidência de infraestrutura de backend QA real e sem custos já aprovada; portanto o gate de infraestrutura segue PENDENTE.
