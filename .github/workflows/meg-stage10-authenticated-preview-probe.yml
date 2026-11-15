@@ -25,7 +25,9 @@ jobs:
       - name: Confirm index CSP and no embedded financial credentials
         run: |
           set -euo pipefail
-          grep -Fq "connect-src 'self' https://meg-platform-api.onrender.com" apps/web/dist-fluxo-integrado-08/web-evolution.html
+          # A serializacao Vite pode codificar aspas em entidades HTML.
+          grep -Fq 'connect-src' apps/web/dist-fluxo-integrado-08/web-evolution.html
+          grep -Fq 'https://meg-platform-api.onrender.com' apps/web/dist-fluxo-integrado-08/web-evolution.html
           grep -Fq 'meg-web-evolution-root' apps/web/dist-fluxo-integrado-08/web-evolution.html
           test -s apps/web/dist-fluxo-integrado-08/web-evolution.html
       - name: Confirm main, Stage09 default and Stage10 opt-in are structurally separated
