@@ -1,0 +1,40 @@
+name: MEG Stage10 | Preview autenticada real (sem deploy)
+on:
+  push:
+    branches:
+      - 'stage10/preview-authenticated-real-20261115'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa-stage10-canonical-read-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install immutable dependencies
+        run: npm ci --audit=false
+      - name: Typecheck Web without mutating DB
+        run: npx tsc -p apps/web/tsconfig.json --noEmit
+      - name: Build authenticated canonical preview without prod credentials
+        run: cd apps/web && NODE_ENV=production npx vite build --config vite.fluxo-integrado-08.config.ts
+      - name: Confirm index CSP and no embedded financial credentials
+        run: |
+          set -euo pipefail
+          grep -Fq "connect-src 'self' https://meg-platform-api.onrender.com" apps/web/dist-fluxo-integrado-08/web-evolution.html
+          grep -Fq 'meg-web-evolution-root' apps/web/dist-fluxo-integrado-08/web-evolution.html
+          test -s apps/web/dist-fluxo-integrado-08/web-evolution.html
+      - name: Confirm main, Stage09 default and Stage10 opt-in are structurally separated
+        run: |
+          set -euo pipefail
+          grep -Fq "get('etapa')==='10'" apps/web/src/meg-web-evolution/main.tsx
+          grep -Fq 'stage10ReadOnly=false' apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx
+          grep -Fq 'readAuthorizedHistory' apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx
+          grep -Fq 'readOnly onBack' apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx
+          grep -Fq 'saveEnabled={false}' apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx
+          ! grep -Eq 'financeClient\.(createEvent|updateEvent|bulkUpdateEvents|archiveEvent|createBenefitEvent|updateBenefitEvent)' apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx
+          ! grep -Eq 'privateKey|service_role|SUPABASE_SERVICE_ROLE' apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx
