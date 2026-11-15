@@ -437,15 +437,20 @@ try{
   url:'postgresql://meg_stage10_ci_reader:meg_stage10_ci_reader@127.0.0.1:5439/meg_stage10_test?schema=public',
  }}});
  try{
-  await assertStage10ReadOnlyDatabaseRole(reader);
-  // Simula RLS produtiva sem policies exclusivamente no PostgreSQL17 CI.
+  await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
+   /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,
+   'Mesmo com role somente leitura, public sem RLS nao autoriza API QA');
+  // Simula RLS SEM policies no PostgreSQL17 descartavel. A guarda deve
+  // recusar ausencia de RLS, policy ausente e USING(true) mesmo com role SELECT.
   await prisma.$executeRawUnsafe('ALTER TABLE public."FinancialEvent" ENABLE ROW LEVEL SECURITY');
   try{
    await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
     /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,'RLS sem policy de leitura deve bloquear QA');
    await prisma.$executeRawUnsafe(
     'CREATE POLICY stage10_ci_select_event ON public."FinancialEvent" FOR SELECT TO meg_stage10_ci_reader USING (true)');
-   await assertStage10ReadOnlyDatabaseRole(reader);
+    await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
+    /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,
+    'USING(true) concede leitura global e deve bloquear a API QA');
   }finally{
    await prisma.$executeRawUnsafe('DROP POLICY IF EXISTS stage10_ci_select_event ON public."FinancialEvent"');
    await prisma.$executeRawUnsafe('ALTER TABLE public."FinancialEvent" DISABLE ROW LEVEL SECURITY');
@@ -459,7 +464,9 @@ try{
   await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
    /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,'sequence write grant must block QA startup');
   await prisma.$executeRawUnsafe('REVOKE UPDATE ON SEQUENCE meg_stage10_foreign_fixture.prohibited_sequence FROM meg_stage10_ci_reader');
-  await assertStage10ReadOnlyDatabaseRole(reader);
+  await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
+   /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,
+   'Remover escrita nao substitui isolamento RLS de tenant');
   assert.equal(await reader.financialEvent.count({where:{workspaceId}}),5001);
   await assert.rejects(reader.account.create({data:{
    userId:ownerId,name:'Role cannot insert',type:'checking',
