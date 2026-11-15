@@ -28,6 +28,9 @@ type Props={
  rememberedFilters?:Partial<LaunchesFilterPreset>;
  onRememberFilters?:(value:LaunchesFilterPreset)=>void;
  onFilteredSummary?:(criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal)=>Promise<CanonicalFilteredHistorySummary|null>;
+ /** Extra da Etapa10 isolada. Nao modifica comportamento da Etapa09 por padrao. */
+ stage10ReadOnly?:boolean;
+ onStage10Edit?:(eventId:string)=>void;
 };
 type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
@@ -105,7 +108,7 @@ function DemoBreakdown({rows,mode}:{rows:Row[];mode:'preview'|'live'}){
 }
 
 /** Detalhes exclusivos da leitura operacional. Não oferece writers financeiros. */
-function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
+function LaunchDetailModal({row,onClose,onStage10Edit}:{row:Row;onClose:()=>void;onStage10Edit?:(eventId:string)=>void}){
  const surfaceRef=useRef<HTMLElement|null>(null);
  const closeRef=useRef<HTMLButtonElement|null>(null);
  useEffect(()=>{
@@ -155,12 +158,12 @@ function LaunchDetailModal({row,onClose}:{row:Row;onClose:()=>void}){
       <dl className="meg-l09-modal-fields">{original.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
      </details>}
     </div>
-    <footer className="meg-l09-modal-footer"><span>Edição, exclusão e baixa permanecem indisponíveis nesta etapa.</span><button type="button" onClick={onClose}>Fechar</button></footer>
+    <footer className="meg-l09-modal-footer"><span>{onStage10Edit?'Prévia de edição com dados reais. Gravação bloqueada.':'Edição, exclusão e baixa permanecem indisponíveis nesta etapa.'}</span>{onStage10Edit&&row.type==='expense'&&<button type="button" onClick={()=>{onClose();onStage10Edit(row.id);}}>Editar (leitura)</button>}<button type="button" onClick={onClose}>Fechar</button></footer>
    </section>
   </div>,document.body
  );
 }
-export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters,onFilteredSummary}:Props){
+export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters,onFilteredSummary,stage10ReadOnly=false,onStage10Edit}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
  const [search,setSearch]=useState(rememberedFilters?.search??'');
@@ -378,7 +381,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   <div className={'meg-l09-hero-frame'+(mode==='live'?' is-sticky':'')}>
   <header className="meg-l09-hero">
    <div className="meg-l09-hero-intro"><h1>Lançamentos</h1><p>Visualize, filtre e gerencie todas as suas movimentações financeiras.</p></div>
-   <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'} title={mode==='live'?'Formulário de criação protegido será integrado na etapa própria':undefined}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
+   <button type="button" className="meg-l09-add" onClick={onNew} disabled={mode==='live'&&!stage10ReadOnly} title={mode==='live'&&!stage10ReadOnly?'Formulário de criação protegido será integrado na etapa própria':stage10ReadOnly?'Novo lançamento somente leitura':undefined}><LaunchIcon name="plus" width={19} height={19}/>Novo lançamento</button>
    {mode==='live'&&statisticsView}
   </header>
   </div>
@@ -493,6 +496,6 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    </div>
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><LaunchIcon name="chevronLeft" width={18} height={18}/>Voltar à Home</button>
-  {modalRow&&<LaunchDetailModal row={modalRow} onClose={closeModal}/>}
+  {modalRow&&<LaunchDetailModal row={modalRow} onClose={closeModal} onStage10Edit={stage10ReadOnly?onStage10Edit:undefined}/>}
  </section>;
 }
