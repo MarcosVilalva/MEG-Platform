@@ -15,6 +15,7 @@ export async function assertStage10ReadOnlyDatabaseRole(db:Pick<PrismaClient,'$q
   sequenceWrite:boolean;
   privilegedRole:boolean;
   sessionReadOnly:boolean;
+  rlsWithoutReadPolicy:boolean;
  }>>`
   SELECT
     has_database_privilege(current_user,current_database(),'CREATE') AS "databaseCreate",
@@ -55,11 +56,24 @@ export async function assertStage10ReadOnlyDatabaseRole(db:Pick<PrismaClient,'$q
         AND (r.rolsuper OR r.rolcreaterole OR r.rolcreatedb
              OR r.rolreplication OR r.rolbypassrls)
     ) AS "privilegedRole",
-    current_setting('transaction_read_only')='on' AS "sessionReadOnly"
+    current_setting('transaction_read_only')='on' AS "sessionReadOnly",
+    EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relkind IN ('r','p')
+        AND c.relname IN ('User','AuthSession','Workspace','WorkspaceMember',
+          'FinancialEvent','Account','Category','PaymentMethod','CreditCard',
+          'CardPurchase','CardInstallment','ImportedRow','LedgerEntry')
+        AND c.relrowsecurity
+        AND NOT EXISTS (
+          SELECT 1 FROM pg_policy p WHERE p.polrelid=c.oid
+            AND p.polcmd IN ('r','*')
+        )
+    ) AS "rlsWithoutReadPolicy"
  `;
  const row=rows[0];
  if(rows.length!==1||!row||row.databaseCreate||row.databaseTemporary||
     row.schemaCreate||row.tableWrite||row.sequenceWrite||
-    row.privilegedRole||!row.sessionReadOnly)
+    row.privilegedRole||!row.sessionReadOnly||row.rlsWithoutReadPolicy)
   throw new Error('STAGE10_DATABASE_ROLE_NOT_READ_ONLY');
 }

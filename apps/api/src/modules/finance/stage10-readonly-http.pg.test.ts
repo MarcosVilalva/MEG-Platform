@@ -438,6 +438,18 @@ try{
  }}});
  try{
   await assertStage10ReadOnlyDatabaseRole(reader);
+  // Simula RLS produtiva sem policies exclusivamente no PostgreSQL17 CI.
+  await prisma.$executeRawUnsafe('ALTER TABLE public."FinancialEvent" ENABLE ROW LEVEL SECURITY');
+  try{
+   await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
+    /STAGE10_DATABASE_ROLE_NOT_READ_ONLY/,'RLS sem policy de leitura deve bloquear QA');
+   await prisma.$executeRawUnsafe(
+    'CREATE POLICY stage10_ci_select_event ON public."FinancialEvent" FOR SELECT TO meg_stage10_ci_reader USING (true)');
+   await assertStage10ReadOnlyDatabaseRole(reader);
+  }finally{
+   await prisma.$executeRawUnsafe('DROP POLICY IF EXISTS stage10_ci_select_event ON public."FinancialEvent"');
+   await prisma.$executeRawUnsafe('ALTER TABLE public."FinancialEvent" DISABLE ROW LEVEL SECURITY');
+  }
   await prisma.$executeRawUnsafe('GRANT USAGE ON SCHEMA meg_stage10_foreign_fixture TO meg_stage10_ci_reader');
   await prisma.$executeRawUnsafe('GRANT INSERT ON TABLE meg_stage10_foreign_fixture.prohibited_table TO meg_stage10_ci_reader');
   await assert.rejects(assertStage10ReadOnlyDatabaseRole(reader),
