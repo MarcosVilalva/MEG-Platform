@@ -117,6 +117,17 @@ try{
   userId:ownerId,name:'Fixture Credito A',creditLimit:'2000',
   closingDay:8,dueDay:15,
  }});
+ // CardPurchase e CardInstallment sao agregados separados de FinancialEvent.
+ const cardPurchase=await prisma.cardPurchase.create({
+  data:{userId:ownerId,cardId:card.id,description:'Compra de cartao ficticia',
+   totalAmount:'100.00',purchaseDate:new Date('2026-11-14T12:00:00.000Z'),
+   installments:3,entries:{create:[
+    {number:1,amount:'33.34',statementMonth:'2026-12'},
+    {number:2,amount:'33.33',statementMonth:'2027-01'},
+    {number:3,amount:'33.33',statementMonth:'2027-02'},
+   ]}},
+ });
+
  const original=await prisma.financialEvent.create({data:{
   userId:ownerId,workspaceId,description:'Despesa sintetica A',
   type:'expense',status:'paid',date:new Date('2026-11-10T12:00:00Z'),
@@ -132,6 +143,30 @@ try{
   competence:'2026-11',amount:'20',signedAmount:'-20',
  }});
  const tokenA=signToken(ownerId,'ADMIN');
+ const purchaseEndpoint='/finance/stage10-readonly/card-purchases?month=2026-11';
+ const cardHistory=await get(tokenA,purchaseEndpoint);
+ assert.equal(cardHistory.statusCode,200,cardHistory.body.slice(0,320));
+ const cardData=cardHistory.json();
+ assert.equal(cardData.kind,'stage10-card-purchase-history-v1');
+ assert.equal(cardData.canWrite,false);
+ assert.equal(cardData.workspaceId,workspaceId);
+ assert.equal(cardData.total,1);
+ assert.equal(cardData.purchases[0].id,cardPurchase.id);
+ assert.deepEqual(cardData.purchases[0].entries.map((row:{number:number})=>row.number),[1,2,3]);
+ assert.deepEqual(cardData.purchases[0].entries.map((row:{amount:string})=>row.amount.toString()),
+  ['33.34','33.33','33.33']);
+ assert.equal((await get(tokenB,purchaseEndpoint)).json().total,0,
+  'Um usuario nao pode ler compra de cartao de outro proprietario');
+ assert.equal((await get(undefined,purchaseEndpoint)).statusCode,401,
+  'Historico de compra exige sessao QA');
+ assert.equal((await get(tokenA,purchaseEndpoint.replace('2026-11','2026-13'))).statusCode,400);
+ const decHistory=await get(tokenA,purchaseEndpoint.replace('2026-11','2026-12'));
+ assert.equal(decHistory.statusCode,200);
+ assert.equal(decHistory.json().purchases[0].id,cardPurchase.id,
+  'Compra e visivel tambem pelo mes da competencia da fatura');
+ assert.ok(!JSON.stringify(cardData).includes('Despesa sintetica A'),
+  'CardPurchase nunca deve incluir FinancialEvent implicitamente');
+
  const tokenB=signToken(otherId);
  const endpoint='/finance/stage10-readonly/snapshot?month=2026-11';
  const get=(token?:string,url=endpoint)=>server.inject({
@@ -257,6 +292,8 @@ try{
  assert.equal((await get(tokenA)).statusCode,403,'sessao revogada bloqueia token QA');
  assert.equal((await get(tokenA,previewUrl)).statusCode,403,
   'Preview canônico do cartão também respeita revogação de sessão');
+ assert.equal((await get(tokenA,purchaseEndpoint)).statusCode,403,
+  'Historico das compras tambem respeita revogacao de sessao');
  assert.equal((await get(qaBoundToken)).statusCode,403,
   'token emitido via troca sintética deve respeitar a revogação');
  await prisma.authSession.update({where:{id:ownerSession.id},
