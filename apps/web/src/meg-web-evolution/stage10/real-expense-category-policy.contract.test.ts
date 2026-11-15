@@ -36,6 +36,8 @@ assert.equal(restored.accountId,'bank','Autocomplete com conta monetaria ativa d
 assert.equal(restored.paymentMethodId,'pix','Autocomplete com forma ordinaria ativa deve preservar ID historico');
 const fixed=applyStage10ExpenseCategory(draft,catalogs,'fixed');
 assert.equal(fixed.requestedStatus,'paid');
+assert.equal(applyStage10ExpenseCategory({...draft,modality:'credit'},catalogs,'fixed').requestedStatus,'planned',
+ 'No cartao o planejamento tem precedencia conforme financial-policy canonica');
 const noMethod:ExpenseCatalogs={...catalogs,paymentMethods:catalogs.paymentMethods.filter(x=>x.id!=='verocard')};
 assert.equal(stage10FoodBinding(noMethod),null);
 const forcedWithoutMethod=applyStage10ExpenseCategory(draft,noMethod,'food');

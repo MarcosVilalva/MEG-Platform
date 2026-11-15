@@ -40,6 +40,6 @@ export function applyStage10ExpenseCategory(
   if(catalogs.accounts.some(a=>a.id===next.accountId&&a.kind==='benefit'))next.accountId='';
   if(catalogs.paymentMethods.some(m=>m.id===next.paymentMethodId&&m.kind==='benefit'))next.paymentMethodId='';
  }
- if(isStage10FixedCategory(nextCategory))next.requestedStatus='paid';
+ if(isStage10FixedCategory(nextCategory))next.requestedStatus=next.modality==='credit'?'planned':'paid';
  return next;
 }
