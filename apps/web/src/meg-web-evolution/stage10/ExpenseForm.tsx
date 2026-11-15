@@ -28,7 +28,7 @@ export type InstallmentSchedule={
 export type ExpenseFormProps={
  catalogs:ExpenseCatalogs;historySnapshot?:HistorySnapshot;
  schedule?:InstallmentSchedule;
- onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;onRequestArchive?:()=>void;saveEnabled?:boolean;
+ onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;onRequestArchive?:()=>void;onRequestSchedule?:(draft:ExpenseDraft)=>void;saveEnabled?:boolean;
  mode?:'create'|'edit';initialDraft?:ExpenseDraft;
  dataMode?:'demo'|'real-read'|'real-write';
 };
@@ -103,7 +103,7 @@ function EditCloseGlyph(){
   <path d="M5 5 19 19M19 5 5 19"/>
  </svg>;
 }
-export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,onRequestArchive,saveEnabled=false,mode='create',initialDraft,dataMode='demo'}:ExpenseFormProps){
+export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,onRequestArchive,onRequestSchedule,saveEnabled=false,mode='create',initialDraft,dataMode='demo'}:ExpenseFormProps){
  const isEdit=mode==='edit';
  const [draft,setDraft]=useState<ExpenseDraft>(()=>initialDraft??EMPTY_EXPENSE_DRAFT);
  const [money,setMoney]=useState<BRLInput>(()=>initialDraft?.amountInput?brlFromPasted(initialDraft.amountInput):EMPTY_BRL_INPUT);
@@ -301,7 +301,10 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
        <div className="meg-t10-credit-mini"><span className="meg-t10-credit-mini-brand">{selectedCard.issuer||selectedCard.name}</span><Icon name="card"/><strong>{selectedCard.brand||'CARTÃO DE CRÉDITO'}</strong><small>{selectedCard.lastFour?'•••• '+selectedCard.lastFour:'Final não informado'}</small></div>
        <div className="meg-t10-credit-details"><strong>{selectedCard.name}</strong><span>Fechamento: {selectedCard.closingDay?'dia '+selectedCard.closingDay:'não informado'}</span><span>Vencimento: {selectedCard.dueDay?'dia '+selectedCard.dueDay:'não informado'}</span></div>
       </div>}
-      <button type="button" className="meg-t10-expense-schedule-button" onClick={()=>setParcelModal(true)}><Icon name="calendar"/> Mostrar parcelamento <Icon name="chevronRight"/></button>
+      <button type="button" className="meg-t10-expense-schedule-button" onClick={()=>{
+       setParcelModal(true);
+       onRequestSchedule?.({...draft,amountInput:requestedAmount??''});
+      }}><Icon name="calendar"/> Mostrar parcelamento <Icon name="chevronRight"/></button>
      </div>}
      {!isCredit&&<div className="meg-t10-expense-payment-context" aria-live="polite">
       <strong><Icon name="list"/> Conta e baixa</strong>

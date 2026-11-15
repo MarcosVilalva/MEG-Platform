@@ -4,6 +4,7 @@ import {getCanonicalFinancialSummary,getCanonicalFinancialCashflow} from './read
 import {withStage10ReadOnlySessionWorkspace} from './stage10-readonly-workspace';
 import {stage10HistoricLabels} from './stage10-source-details';
 import {enteredAmountFromStored} from './amount-sign';
+import {cardPurchaseCyclePreview} from '../cards/purchase-cycle-canonical';
 
 /**
  * Endpoint isolado da Etapa 10. SOMENTE GET e consulta em transação SQL
@@ -90,4 +91,63 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
    throw error;
   });
  });
+ const cardPreviewQuery=z.object({
+  cardId:z.string().trim().min(1).max(256),
+  purchaseDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value=>{
+   const date=new Date(value+'T12:00:00.000Z');
+   return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value;
+  }),
+  amountDecimal:z.string().regex(/^(?:0|[1-9]\d{0,10})\.\d{2}$/),
+  installments:z.coerce.number().int().min(1).max(48),
+ });
+ app.get('/stage10-readonly/card-preview',{
+  preHandler:app.authorize([...readRoles]),
+ },async(request,reply)=>{
+  const parsed=cardPreviewQuery.safeParse(request.query);
+  if(!parsed.success)return reply.code(400).send({error:'INVALID_STAGE10_CARD_PREVIEW'});
+  const q=parsed.data,amount=Number(q.amountDecimal);
+  if(!Number.isFinite(amount)||amount<=0||
+   !Number.isSafeInteger(Math.round(amount*100)))
+   return reply.code(400).send({error:'INVALID_STAGE10_CARD_PREVIEW'});
+  reply.header('Cache-Control','private, no-store');
+  return withStage10ReadOnlySessionWorkspace(request.user.sub,
+   (request as typeof request & {stage10SessionId?:string}).stage10SessionId??'',
+   (request as typeof request & {stage10WorkspaceId?:string}).stage10WorkspaceId??'',
+   async(tx,scope)=>{
+    // Cartao legado e vinculado ao owner por userId, nao ao workspace.
+    // Com mais de um workspace do mesmo owner, negar em vez de adivinhar.
+    const workspaces=await tx.workspace.count({
+     where:{ownerId:scope.ownerId,isActive:true},
+    });
+    if(workspaces!==1)throw new Error('STAGE10_CARD_SCOPE_NOT_EXCLUSIVE');
+    const card=await tx.creditCard.findFirst({
+     where:{id:q.cardId,userId:scope.ownerId,isActive:true},
+     select:{id:true,closingDay:true,dueDay:true},
+    });
+    if(!card)throw new Error('STAGE10_CARD_NOT_FOUND');
+    const rows=cardPurchaseCyclePreview({
+     purchaseDate:q.purchaseDate,totalAmount:amount,installments:q.installments,
+     closingDay:card.closingDay,dueDay:card.dueDay,
+    });
+    return {
+     kind:'stage10-card-installments-preview-v1' as const,canWrite:false as const,
+     source:'canonical' as const,cardId:card.id,purchaseDate:q.purchaseDate,
+     amountDecimal:q.amountDecimal,installments:q.installments,
+     rows:rows.map(row=>({
+      sequence:row.number,dueDate:row.dueDate,competence:row.statementMonth,
+      amountDecimal:row.amount.toFixed(2),
+     })),
+    };
+   }).catch(error=>{
+    const code=error instanceof Error?error.message:'';
+    if(code==='STAGE10_READ_ACCESS_DENIED')
+     return reply.code(403).send({error:code});
+    if(code==='STAGE10_CARD_SCOPE_NOT_EXCLUSIVE')
+     return reply.code(409).send({error:code});
+    if(code==='STAGE10_CARD_NOT_FOUND')
+     return reply.code(404).send({error:code});
+    throw error;
+   });
+ });
+
 }

@@ -8,7 +8,7 @@ import {readSession,refreshAuthSession} from '../../app/auth-client';
 import type {Account,Category,PaymentMethod,FinancialEvent,FinanceSummary} from '../../app/finance-client';
 import {buildReadOnlyData} from '../launches/OperationalLaunches';
 import type {HomeFinancialData} from '../home/HomeDashboard';
-import type {ExpenseCatalogs} from './ExpenseForm';
+import type {ExpenseCatalogs,InstallmentSchedule} from './ExpenseForm';
 import type {HistorySnapshot} from './autocomplete-history';
 
 export type Stage10RealRead={
@@ -96,7 +96,8 @@ async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>
  const auth=strictHttpsOrigin(import.meta.env.VITE_API_URL||'');
  if(!origin||!auth||origin===auth||origin===window.location.origin)
   throw new Error('Origem QA somente leitura nao autorizada.');
- if(!path.startsWith('/finance/stage10-readonly/snapshot?month='))
+ if(!path.startsWith('/finance/stage10-readonly/snapshot?month=')&&
+    !path.startsWith('/finance/stage10-readonly/card-preview?'))
   throw new Error('Rota de consulta QA nao autorizada.');
  const send=(token:string)=>fetch(origin+path,{
   method:'GET',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',
@@ -136,6 +137,42 @@ async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>
  if(!current||current.user.id!==initial.user.id)
   throw new Error('A identidade da sessao mudou durante a consulta.');
  return await response.json() as T;
+}
+
+type Stage10CardPreviewResponse={
+ kind:'stage10-card-installments-preview-v1';canWrite:false;source:'canonical';
+ cardId:string;purchaseDate:string;amountDecimal:string;installments:number;
+ rows:Array<{sequence:number;dueDate:string;competence:string;amountDecimal:string}>;
+};
+/** A Web apenas apresenta o que a autoridade de cartões calcular no backend QA.
+ * Nenhum cálculo de competência, parcela ou vencimento existe na tela.
+ */
+export async function loadStage10CardPreview(
+ cardId:string,purchaseDate:string,amountDecimal:string,installments:number,
+ signal:AbortSignal,
+):Promise<InstallmentSchedule>{
+ if(!cardId||cardId.length>256||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(purchaseDate)||
+  !/^(?:0|[1-9][0-9]{0,10})\.[0-9]{2}$/.test(amountDecimal)||
+  !Number.isInteger(installments)||installments<1||installments>48)
+  throw new Error('Parâmetros para projeção canônica do cartão inválidos.');
+ const params=new URLSearchParams({cardId,purchaseDate,amountDecimal,installments:String(installments)});
+ const data=await readStage10Snapshot<Stage10CardPreviewResponse>(
+  '/finance/stage10-readonly/card-preview?'+params.toString(),signal,
+ );
+ if(!data||data.kind!=='stage10-card-installments-preview-v1'||
+  data.canWrite!==false||data.source!=='canonical'||data.cardId!==cardId||
+  data.purchaseDate!==purchaseDate||data.amountDecimal!==amountDecimal||
+  data.installments!==installments||!Array.isArray(data.rows)||
+  data.rows.length!==installments||
+  !data.rows.every((r,i)=>r.sequence===i+1&&
+   /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(r.dueDate)&&
+   /^[0-9]{4}-[0-9]{2}$/.test(r.competence)&&
+   /^(?:0|[1-9][0-9]*)\.[0-9]{2}$/.test(r.amountDecimal)))
+  throw new Error('Resposta canônica de parcelamento inválida.');
+ return {
+  source:'canonical',cardId,purchaseDate,amountDecimal,installments,
+  rows:data.rows,
+ };
 }
 
 function catalogsFromReal(

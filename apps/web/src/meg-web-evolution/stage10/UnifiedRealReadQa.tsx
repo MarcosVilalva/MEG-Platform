@@ -7,10 +7,10 @@ import {RecoverPasswordScreen} from '../auth/RecoverPasswordScreen';
 import {AppShell} from '../shell/AppShell';
 import {LaunchesStage09} from '../launches/LaunchesStage09';
 import {PrismLaunchChoice,PrismCloseGlyph} from '../integrated-qa/PrismLaunchChoice';
-import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseDraft} from './ExpenseForm';
+import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseDraft,type InstallmentSchedule} from './ExpenseForm';
 import {EditExpensePreview,type EditExpenseSnapshot} from './EditExpensePreview';
 import type {QaLaunchTarget} from './LaunchActionsQa';
-import {loadStage10RealRead,type Stage10RealRead} from './real-data-read';
+import {loadStage10RealRead,loadStage10CardPreview,type Stage10RealRead} from './real-data-read';
 import {prepareStage10ExpenseCreate,prepareStage10ExpenseUpdate,prepareStage10ExpenseArchive,stage10RealMutationGate} from './real-expense-mutation';
 import {isStage10FoodBenefitCategory} from './real-expense-category-policy';
 import {prepareStage10BenefitExpenseCreate,prepareStage10BenefitExpenseUpdate} from './real-benefit-expense-mutation';
@@ -87,6 +87,8 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
  const [saving,setSaving]=useState(false);
  const savingRef=useRef(false);
  const operationRef=useRef<{fingerprint:string;operationId:string}|null>(null);
+ const [cardSchedule,setCardSchedule]=useState<InstallmentSchedule|undefined>();
+ const cardPreviewRef=useRef<AbortController|null>(null);
  const userRole=readSession()?.user.role;
  // A flag so existe na build opt-in. Em QA normal e em producao fica off.
  const writeEnabled=Boolean(enabled&&stage10RealMutationGate({
@@ -107,6 +109,23 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    .finally(()=>{if(!controller.signal.aborted)setLoading(false);});
   return()=>controller.abort();
  },[enabled,authenticated,revision,month]);
+ async function requestCardSchedule(draft:ExpenseDraft){
+  cardPreviewRef.current?.abort();
+  const controller=new AbortController();
+  cardPreviewRef.current=controller;
+  setCardSchedule(undefined);
+  if(!enabled||!data||!draft.creditCardId||!draft.date)return;
+  const expectedUser=data.userId;
+  try{
+   const preview=await loadStage10CardPreview(draft.creditCardId,draft.date,
+    draft.amountInput,Number(draft.installmentsInput),controller.signal);
+   if(!controller.signal.aborted&&readSession()?.user.id===expectedUser)
+    setCardSchedule(preview);
+  }catch(cause){
+   if(!controller.signal.aborted)
+    setNotice(cause instanceof Error?cause.message:'Não foi possível consultar o parcelamento canônico.');
+  }
+ }
  async function saveExpense(draft:ExpenseDraft,kind:'create'|'edit'){
   if(savingRef.current)return;
   const session=readSession();
@@ -169,9 +188,10 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    setNotice('Exclusao nao concluida: '+(cause instanceof Error?cause.message:'erro desconhecido')+'.');
   }finally{savingRef.current=false;setSaving(false);}
  }
- function navigate(next:Screen){setOverlay(null);setNotice('');setScreen(next);}
- function signOut(){clearSession();setAuthenticated(false);setData(null);setOverlay(null);navigate('login');}
- function openNew(){setOverlay('choice');setNotice('');}
+ function navigate(next:Screen){cardPreviewRef.current?.abort();setCardSchedule(undefined);
+  setOverlay(null);setNotice('');setScreen(next);}
+ function signOut(){cardPreviewRef.current?.abort();clearSession();setAuthenticated(false);setData(null);setOverlay(null);navigate('login');}
+ function openNew(){cardPreviewRef.current?.abort();setCardSchedule(undefined);setOverlay('choice');setNotice('');}
  function capture(event:MouseEvent<HTMLDivElement>){
   const target=event.target;
   if(!(target instanceof Element))return;
@@ -239,6 +259,7 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    </section>
   </div>}
   {overlay==='expense'&&<ExpenseForm catalogs={data.catalogs} historySnapshot={data.history}
+   schedule={cardSchedule} onRequestSchedule={draft=>void requestCardSchedule(draft)}
    dataMode={writeEnabled?'real-write':'real-read'}
    saveEnabled={writeEnabled&&!saving} onRequestSave={draft=>void saveExpense(draft,'create')}
    onBack={()=>setOverlay('choice')}/>}
@@ -248,6 +269,7 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
     ()=>void archiveExpense():undefined}
    onBack={()=>{setOverlay(null);setEdit(null);}}/>}
   {overlay==='duplicate'&&duplicate&&<ExpenseForm catalogs={data.catalogs} historySnapshot={data.history}
+   schedule={cardSchedule} onRequestSchedule={draft=>void requestCardSchedule(draft)}
    dataMode={writeEnabled?'real-write':'real-read'}
    initialDraft={duplicate} saveEnabled={writeEnabled&&!saving}
    onRequestSave={draft=>void saveExpense(draft,'create')}

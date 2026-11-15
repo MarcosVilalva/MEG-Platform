@@ -113,6 +113,10 @@ try{
  const method=await prisma.paymentMethod.create({data:{
   userId:ownerId,name:'Fixture PIX A',type:'ordinary',
  }});
+ const card=await prisma.creditCard.create({data:{
+  userId:ownerId,name:'Fixture Credito A',creditLimit:'2000',
+  closingDay:8,dueDay:15,
+ }});
  const original=await prisma.financialEvent.create({data:{
   userId:ownerId,workspaceId,description:'Despesa sintetica A',
   type:'expense',status:'paid',date:new Date('2026-11-10T12:00:00Z'),
@@ -158,6 +162,22 @@ try{
   'workspace distinto do vinculo assinado deve falhar fechado');
  assert.equal(unauthenticated.statusCode,401,'sem JWT deve ser recusado');
 
+ const previewUrl='/finance/stage10-readonly/card-preview?'+new URLSearchParams({
+  cardId:card.id,purchaseDate:'2026-11-14',amountDecimal:'100.00',installments:'3',
+ }).toString();
+ const preview=await get(tokenA,previewUrl);
+ assert.equal(preview.statusCode,200,preview.body.slice(0,350));
+ const schedule=preview.json();
+ assert.equal(schedule.kind,'stage10-card-installments-preview-v1');
+ assert.equal(schedule.source,'canonical');
+ assert.equal(schedule.canWrite,false);
+ assert.deepEqual(schedule.rows.map((r:{amountDecimal:string})=>r.amountDecimal),['33.34','33.33','33.33']);
+ assert.deepEqual(schedule.rows.map((r:{competence:string})=>r.competence),['2026-12','2027-01','2027-02']);
+ assert.equal((await get(tokenB,previewUrl)).statusCode,404,'cartao nao pertence a outro owner');
+ assert.equal((await get(undefined,previewUrl)).statusCode,401,'preview sem JWT');
+ assert.equal((await get(tokenA,'/finance/stage10-readonly/card-preview?cardId=wrong&purchaseDate=2026-11-14&amountDecimal=100.00&installments=3')).statusCode,404);
+ assert.equal((await get(tokenA,previewUrl.replace('100.00','-5.00'))).statusCode,400);
+ assert.equal((await get(tokenA,previewUrl.replace('installments=3','installments=49'))).statusCode,400);
  const invalidSignature=await get(signToken(ownerId,'ADMIN',{privateKey:otherRsa.privateKey}));
  assert.equal(invalidSignature.statusCode,401,'assinatura de outro emissor');
  assert.equal((await get(signToken(ownerId,'ADMIN',{alg:'HS256'}))).statusCode,401,
@@ -235,6 +255,8 @@ try{
  await prisma.authSession.update({where:{id:ownerSession.id},
   data:{revokedAt:new Date()}});
  assert.equal((await get(tokenA)).statusCode,403,'sessao revogada bloqueia token QA');
+ assert.equal((await get(tokenA,previewUrl)).statusCode,403,
+  'Preview canônico do cartão também respeita revogação de sessão');
  assert.equal((await get(qaBoundToken)).statusCode,403,
   'token emitido via troca sintética deve respeitar a revogação');
  await prisma.authSession.update({where:{id:ownerSession.id},

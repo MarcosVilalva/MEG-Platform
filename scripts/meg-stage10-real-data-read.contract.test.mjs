@@ -80,6 +80,11 @@ assert.doesNotMatch(workspace,/\b(?:create|update|delete|upsert|createMany|updat
 // Escopo deve conter OS DOIS vinculos. Resumos userId-only apenas no
 // caso conservador em que uma unica base e os eventos do owner coincidem.
 assert.match(routes,/app\.get\('\/stage10-readonly\/snapshot'/);
+assert.match(routes,/app\.get\('\/stage10-readonly\/card-preview'/);
+assert.match(routes,/cardPurchaseCyclePreview/);
+assert.match(bridge,/loadStage10CardPreview/);
+assert.match(live,/onRequestSchedule/);
+assert.doesNotMatch(live,/cardPurchaseCyclePreview/);
 assert.match(routes,/preHandler:app\.authorize/);
 assert.match(routes,/withStage10ReadOnlySessionWorkspace\(request\.user\.sub/);
 assert.match(routes,/stage10SessionId/);
