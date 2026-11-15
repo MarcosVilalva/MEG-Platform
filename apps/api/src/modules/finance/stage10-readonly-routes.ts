@@ -150,4 +150,74 @@ export function registerStage10ReadOnlyRoutes(app:FastifyInstance){
    });
  });
 
+ /**
+  * Leitura isolada do agregado CardPurchase/CardInstallment. Nao mistura
+  * este agregado a FinancialEvent, pois pode haver representacoes legadas.
+  * A reconciliacao de duplicidades e a UI permanecem bloqueadas.
+  */
+ app.get('/stage10-readonly/card-purchases',{
+  preHandler:app.authorize([...readRoles]),
+ },async(request,reply)=>{
+  const parsed=monthSchema.safeParse(request.query);
+  if(!parsed.success)return reply.code(400).send({error:'INVALID_STAGE10_READ_MONTH'});
+  reply.header('Cache-Control','private, no-store');
+  return withStage10ReadOnlySessionWorkspace(request.user.sub,
+   (request as typeof request & {stage10SessionId?:string}).stage10SessionId??'',
+   (request as typeof request & {stage10WorkspaceId?:string}).stage10WorkspaceId??'',
+   async(tx,scope)=>{
+    // CardPurchase nao tem workspaceId na modelagem existente.
+    // Autorizar somente owner com UMA base ativa e evento sem escopo estranho.
+    const [ownerWorkspaceCount,foreignOwnerEvents]=await Promise.all([
+     tx.workspace.count({where:{ownerId:scope.ownerId,isActive:true}}),
+     tx.financialEvent.count({where:{userId:scope.ownerId,archivedAt:null,
+      OR:[{workspaceId:null},{workspaceId:{not:scope.workspaceId}}]}}),
+    ]);
+    if(ownerWorkspaceCount!==1||foreignOwnerEvents!==0)
+     throw new Error('STAGE10_CARD_SCOPE_NOT_EXCLUSIVE');
+    const year=Number(parsed.data.month.slice(0,4));
+    const month=Number(parsed.data.month.slice(5,7));
+    const start=new Date(Date.UTC(year,month-1,1));
+    const end=new Date(Date.UTC(year,month,1));
+    const where={
+     userId:scope.ownerId,status:'active',
+     card:{userId:scope.ownerId},
+     OR:[
+      {purchaseDate:{gte:start,lt:end}},
+      {entries:{some:{statementMonth:parsed.data.month}}},
+     ],
+    } as const;
+    const total=await tx.cardPurchase.count({where});
+    if(total>HISTORY_LIMIT)return {
+     kind:'stage10-card-purchase-history-limit-v1' as const,
+     canWrite:false as const,limit:HISTORY_LIMIT,total,
+    };
+    const purchases=await tx.cardPurchase.findMany({
+     where,orderBy:[{purchaseDate:'desc'},{id:'asc'}],
+     select:{
+      id:true,cardId:true,categoryId:true,description:true,totalAmount:true,
+      purchaseDate:true,installments:true,status:true,createdAt:true,updatedAt:true,
+      entries:{orderBy:{number:'asc'},select:{
+       id:true,number:true,amount:true,partialPaidAmount:true,
+       statementMonth:true,status:true,paidAt:true,
+      }},
+     },
+    });
+    if(purchases.length!==total)throw new Error('STAGE10_CARD_HISTORY_INCONSISTENT');
+    return {
+     kind:'stage10-card-purchase-history-v1' as const,canWrite:false as const,
+     source:'canonical-card-purchases' as const,
+     actorId:scope.actorId,workspaceId:scope.workspaceId,
+     dataOwnerId:scope.ownerId,month:parsed.data.month,total,
+     purchases,
+    };
+   }).catch(error=>{
+    const code=error instanceof Error?error.message:'';
+    if(code==='STAGE10_READ_ACCESS_DENIED')
+     return reply.code(403).send({error:code});
+    if(code==='STAGE10_CARD_SCOPE_NOT_EXCLUSIVE')
+     return reply.code(409).send({error:code});
+    throw error;
+   });
+ });
+
 }
