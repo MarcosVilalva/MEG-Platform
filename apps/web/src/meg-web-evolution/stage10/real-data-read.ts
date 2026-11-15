@@ -10,6 +10,7 @@ import {buildReadOnlyData} from '../launches/OperationalLaunches';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import type {ExpenseCatalogs,InstallmentSchedule} from './ExpenseForm';
 import type {HistorySnapshot} from './autocomplete-history';
+import {validateStage10CardPurchasesRead,type Stage10CardPurchasesRead} from './card-purchases-read-contract';
 
 export type Stage10RealRead={
   userId:string;
@@ -97,7 +98,8 @@ async function readStage10Snapshot<T>(path:string,signal:AbortSignal):Promise<T>
  if(!origin||!auth||origin===auth||origin===window.location.origin)
   throw new Error('Origem QA somente leitura nao autorizada.');
  if(!path.startsWith('/finance/stage10-readonly/snapshot?month=')&&
-    !path.startsWith('/finance/stage10-readonly/card-preview?'))
+    !path.startsWith('/finance/stage10-readonly/card-preview?')&&
+    !path.startsWith('/finance/stage10-readonly/card-purchases?month='))
   throw new Error('Rota de consulta QA nao autorizada.');
  const send=(token:string)=>fetch(origin+path,{
   method:'GET',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',
@@ -173,6 +175,30 @@ export async function loadStage10CardPreview(
   source:'canonical',cardId,purchaseDate,amountDecimal,installments,
   rows:data.rows,
  };
+}
+
+/** Leitura independente de compras do cartão, SEM compor FinancialEvent.
+ * Sem identidade canônica de deduplicação não altera grade, KPIs nem fatura.
+ */
+export async function loadStage10CardPurchases(
+ month:string,workspaceId:string,signal:AbortSignal,
+):Promise<Stage10CardPurchasesRead>{
+ if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||!workspaceId||
+  workspaceId.length>256)throw new Error('Consulta de compras do cartão inválida.');
+ const session=readSession();
+ if(!session?.user.id||!session.user.isActive||session.user.status!=='ACTIVE')
+  throw new Error('Sessão autenticada obrigatória para cartão.');
+ const raw=await readStage10Snapshot<unknown>(
+  '/finance/stage10-readonly/card-purchases?month='+encodeURIComponent(month),
+  signal,
+ );
+ if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(readSession()?.user.id!==session.user.id)
+  throw new Error('A identidade da sessão mudou durante a consulta de cartão.');
+ if(raw&&typeof raw==='object'&&!Array.isArray(raw)&&
+  (raw as {kind?:unknown}).kind==='stage10-card-purchase-history-limit-v1')
+  throw new Error('Histórico de cartão excede o limite de consulta integral. Nenhum resultado parcial exibido.');
+ return validateStage10CardPurchasesRead(raw,{actorId:session.user.id,workspaceId,month});
 }
 
 function catalogsFromReal(

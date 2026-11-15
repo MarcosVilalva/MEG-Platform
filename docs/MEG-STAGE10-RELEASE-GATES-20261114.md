@@ -77,3 +77,9 @@ Conservar este documento e o `MEG-WEB-CONTINUIDADE-OFICIAL.md` como referência.
 - Rota GET `/finance/stage10-readonly/card-purchases?month=` adicionada sem writers: sessão RS256 ativa, ator/workspace válido e proteção contra owner multiworkspace. Compra aparece por data própria ou competência de qualquer parcela. Dados reais não foram consultados; testes PostgreSQL17 usam fixtures.
 - A autoridade de cartão conserva as parcelas e o pagamento no agregado original, sem refazer juros, fatura, competência ou saldo na Web. A rota retorna o agregado **separado** do snapshot `FinancialEvent` para prevenir contagem dupla até deduplicação autorizada.
 - **Não concluído:** integração destas compras na tela real, edição de compra/parcela, decisão de exibição de representação histórica, liberação do writer de compra; ambiente QA real, CORS/RSA/role SQL, dados controlados e homologação visual explícita. Sem deploy, merge, custos ou alteração Android/produção.
+
+
+## Continuidade 15/11/2026: camada de consulta Web independente de compras em cartão
+- O novo adaptador `card-purchases-read-contract.ts` separa compras e parcelas do conjunto `FinancialEvent`, exige proveniência canônica, consulta vinculada a ator/workspace, rejeita IDs duplicados/ordens de parcelas inválidas e recusa snapshots parciais.
+- `loadStage10CardPurchases` chama somente `GET /finance/stage10-readonly/card-purchases`, mantém refresh/JWT HMAC fora do backend QA e não injeta compras no lançamento monetário, no summary ou na fatura.
+- **Sem homologação:** não ativar escritor de cartão nem exibir dados como se fossem deduplicados sem comprovar identidade cruzada. Teste e build devem terminar verdes antes de considerar este contrato caracterizado.
