@@ -58,3 +58,14 @@ Conservar este documento e o `MEG-WEB-CONTINUIDADE-OFICIAL.md` como referência.
 - Compare contra a branch de cabeça do PR #688: 171 commits à frente, zero atrás, 45 arquivos diferentes, nenhum em `android/**` ou `apps/web/src/mobile/**`.
 - O PR #688 continua Draft, head antigo, sem merge; nenhuma preview publicada, nenhuma produção acessada ou modificada, nenhum serviço criado, nenhum segredo configurado.
 - **Classificação final permanece:** gates técnicos isolados e sintéticos PASS; homologação/encerramento da Etapa 10 NÃO AUTORIZÁVEL até infraestrutura QA de custo aceito, emissão/consulta com credenciais seguras reais, integridade de dados sob controle, modalidades de cartão/benefício conforme autoridade, E2E de writers sobre sandbox aprovado e aprovação visual/funcional explícita.
+
+
+## Atualização Etapa 10, Alimentação, contas reais e prévia de cartão, 14/11/2026
+
+- Commits: `7cdb0c9`, `7f8f8da`, `6b9d7be`. CI [#43657110679](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43657110679), [#43657516631](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43657516631) e [#43658208899](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43658208899), todos SUCCESS.
+- Benefício de Alimentação: cadastro ativo único/inequívoco, Conta Benefício e Verocard travados, Pago obrigatório; exclusividade do writer `benefit-event-mutation` comprovada pelo navegador sintético. Edição do benefício usa atualização canônica e versão esperada, com teste de contrato; exclusão não autorizada. A UX demonstra somente categorias cadastradas, sem fabricar valores.
+- Contas de checking, savings e cash são monetárias no catálogo real; benefício e investimentos conservam identidade própria. Cartões de crédito ativos vêm do snapshot canônico, sem convertê-los em Verocard/benefício.
+- Autocomplete conserva data e valor informados, recupera os três IDs do histórico somente se ativos. Categoria Fixo força Pago para despesa à vista; quando pagamento é cartão de crédito, a precedência canônica mantém Pendente.
+- Prévia de parcelas agora existe via GET na API QA somente leitura, com `cardPurchaseCyclePreview`, nunca cálculo financeiro no browser. Teste SQL17 inclui divisão em centavos e competência por fechamento, sessão revogada e cartão de outro proprietário.
+- A integração de compra efetiva de cartão, a leitura posterior da compra no Lançamentos e a edição de parcelas **ainda não estão completas**; botão Salvar do modo Crédito permanece bloqueado em modo real, para evitar falso sucesso ou compra gravada e invisível.
+- Infraestrutura QA real, validação visual dos prints oficiais, dados reais e aprovação final continuam pendentes. Não houve deployment, merge, alteração Android ou produção.
