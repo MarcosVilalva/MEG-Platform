@@ -27,17 +27,29 @@ function selectedRealExpense(row:QaLaunchTarget,data:Stage10RealRead):{
  event:Stage10RealRead['events'][number];accountName:string;financialScope:'monetary'|'benefit';
 }|null{
  const event=data.events.find(item=>item.id===row.id);
- const category=data.catalogs.categories.find(item=>item.active&&item.id===event?.categoryId);
- const benefit=isStage10FoodBenefitCategory(category);
- const account=data.catalogs.accounts.find(item=>item.id===event?.accountId&&item.active&&
-  item.kind===(benefit?'benefit':'monetary'));
- const method=data.catalogs.paymentMethods.find(item=>item.active&&item.id===event?.paymentMethodId&&
-  item.kind===(benefit?'benefit':'ordinary'));
  if(!event||event.type!=='expense'||!['paid','planned'].includes(event.status)||
-  !Number.isFinite(event.enteredAmount)||!event.categoryId||!event.paymentMethodId||
-  !category||!method||(event.accountId&&!account)||(event.status==='paid'&&!account)||
-  (benefit&&event.status!=='paid'))return null;
- return {event,accountName:account?.name??'',financialScope:benefit?'benefit':'monetary'};
+  !Number.isFinite(event.enteredAmount)||Boolean(event.sourcePayload?.transferId)||
+  Boolean(event.sourcePayload?.transferLeg))return null;
+ // A conta com identidade comprovada distingue beneficio de dinheiro.
+ // Nomes de historico NAO podem ser promovidos a IDs ou alterar o escopo.
+ const account=data.catalogs.accounts.find(item=>item.active&&item.id===event.accountId);
+ if(!account||!['monetary','benefit'].includes(account.kind))return null;
+ const benefit=account.kind==='benefit';
+ const category=data.catalogs.categories.find(item=>item.active&&item.id===event.categoryId);
+ const method=data.catalogs.paymentMethods.find(item=>item.active&&item.id===event.paymentMethodId);
+ if(benefit){
+  // O writer do beneficio exige vinculos canonicos existentes. Legado
+  // incompleto permanece bloqueado ate regularizacao autorizada.
+  if(!category||!isStage10FoodBenefitCategory(category)||!method||
+   method.kind!=='benefit'||event.status!=='paid')return null;
+ }else{
+  // Despesa monetaria historica SEM FK pode abrir o formulario.
+  // A categoria e a forma ficam vazias ate escolha manual de IDs ativos;
+  // o writer canônico valida ambas antes de permitir gravar.
+  if((category&&isStage10FoodBenefitCategory(category))||
+   (method&&method.kind!=='ordinary'))return null;
+ }
+ return {event,accountName:account.name,financialScope:benefit?'benefit':'monetary'};
 }
 function realEdit(row:QaLaunchTarget,data:Stage10RealRead):EditExpenseSnapshot|null{
  const selected=selectedRealExpense(row,data);
