@@ -2762,3 +2762,62 @@ Proximo passo exato: tratar gates de recuperacao pendentes e a decisao de janela
   adotada e comprovada, RTO/RPO reais,
   decisoes #674/#694/#695 e gate de release
   Render/PR. Nao declarar etapa encerrada.
+
+
+## 14/11/2026 | Etapa 09: Vault sintetico e RLS cross-user reais em Supabase local aprovados
+
+- O teste real de Auth/Storage local foi ampliado na branch
+  de seguranca, ainda **nao em main**:
+  `scripts/meg-stage09-local-supabase-vault-rls.sh`,
+  `scripts/meg-stage09-local-supabase-smoke.mjs` e
+  `.github/workflows/meg-stage09-supabase-local-auth-storage.yml`.
+  A prova manipula somente fixtures e chaves **ficticias**
+  em container Docker `supabase_db_*`, dentro do runner
+  GitHub Actions de PR #666.
+- [Run #43656308464](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43656308464),
+  SHA `ab4b3a5cf2e550c697992e792e47c537a7d96623`,
+  job `local-auth-storage` **SUCCESS**, confirmou no log:
+  `MEG_STAGE09_VAULT_LOCAL_SYNTHETIC_PASS`,
+  `MEG_STAGE09_RLS_POLICY_LOCAL_CREATED`,
+  `MEG_STAGE09_SUPABASE_LOCAL_RLS_ISOLATION_PASS`
+  e `MEG_STAGE09_SUPABASE_LOCAL_AUTH_STORAGE_SMOKE_PASS`.
+- **Resultado:** Vault local ficticio criptografado e
+  recuperado, ciphertext divergente do plaintext;
+  dois usuarios ficticios e um anonimo submetidos a
+  regra RLS por `auth.uid()`, sem vazamento de
+  linhas entre usuarios; Auth, JWT e Storage privado
+  validados em HTTP real; dados sintéticos e stack
+  descartados no runner. Sem raiz Vault real,
+  sem restaurar backup, sem comunicacao com
+  Supabase hospedado, sem alterar DB/WSL/Render,
+  sem cobrar plataforma.
+- Documentacao ampliada em
+  `docs/MEG-STAGE09-LOCAL-SUPABASE-ALTERNATIVE-20261114.md`
+  commit `a5b524f2b6057f73680640fcfbd01c65b1c55f65`.
+  A prova nao testa Realtime hospedado, Auth/Storage
+  gerenciados, root key original, integridade
+  de restore real nem RTO/RPO. O screenshot
+  de Usage indica egress 14,596/5 GB e
+  reabertura do ciclo em 27/11/2026; politicas
+  de custo R$ 0,00 e isolamento permanecem.
+- **Gates oficiais:** alternativo LOCAL Auth/Storage/RLS/
+  Vault = PASS *somente para fixtures locais*.
+  Gate 0 remoto provisionamento PASS historico;
+  Gate 1 gerenciado segue **BLOQUEADO POR COTA**
+  e nao homologado; Gates 2,3,4 gerenciados
+  **NO-GO**. #691/#694/#690 e #674/#676/#695
+  ainda requerem resolucoes/decisoes rastreadas.
+  Nao declarar Etapa 09 integral concluida,
+  nao fazer merge em main, deploy manual,
+  alterar Autodeploy Off, liberar chaves ou
+  criar projeto/organização para contornar quota.
+- **Proximo passo preciso:** confirmar CI do SHA
+  documental deste checkpoint e planejar ensaio
+  local Realtime/RTO sintético adicional somente
+  se tecnicamente necessario, preservando fonte
+  de verdade. Para encerramento integral
+  e liberacao produtiva, ainda faltam a
+  infraestrutura Supabase gerenciada responsiva,
+  restauracao real controlada e aceite funcional/
+  financeiro/operacional, ou decisao formal de
+  escopo substitutivo sem disfarçar gate pendente.
