@@ -39,6 +39,8 @@ jobs:
           node scripts/meg-stage10-real-data-read.contract.test.mjs
       - name: Generate Prisma client without database access
         run: npm run db:generate
+      - name: Stage10 QA RLS deny-by-default contract (no database)
+        run: npx tsx apps/api/src/stage10-readonly-db-guard.contract.test.ts
       - name: Typecheck API read-only route
         run: npm --workspace apps/api run build
       - name: Public-key JWT RS256 synthetic characterisation (no secrets)
