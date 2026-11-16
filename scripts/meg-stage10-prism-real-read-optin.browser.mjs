@@ -33,19 +33,19 @@ const session={
  user:sessionUser,accessToken:'synthetic-ci-only',
  refreshToken:'synthetic-ci-refresh-only',refreshExpiresAt:'2099-01-01T00:00:00Z'
 };
-const endpoints=(path)=>{
+const endpoints=(path,monthAsked=monthKey)=>{
  if(path==='/auth/me')return {user:sessionUser};
  if(path==='/finance/sync-status')return {
   token:'synthetic-consistent-version-v1',
   capabilities:{historySnapshotV1:true,filteredSummaryV1:false}
  };
- if(path==='/finance/events/month')return {items:[item],total:1,page:1,pageSize:1};
+ if(path==='/finance/events/month'){const rows=monthAsked===monthKey?[item]:[];return {items:rows,total:rows.length,page:1,pageSize:rows.length};}
  if(path==='/finance/events/history-snapshot')return {
   protocol:'financial-history-v1',kind:'complete',
   consistency:'repeatable-read',total:1,items:[item]
  };
  if(path==='/finance/summary')return {
-  month:monthKey,availableBalance:900,income:0,expense:123.45,
+  month:monthAsked,availableBalance:900,income:0,expense:monthAsked===monthKey?123.45:0,
   projectedResult:-123.45,realizedIncome:0,realizedExpense:123.45,
   realizedResult:-123.45,eventCount:1,pendingCount:0,pendingAmount:0,
   nextDue:null,topCategories:[]
@@ -54,6 +54,8 @@ const endpoints=(path)=>{
   {id:'acc-checking',name:'Conta teste',type:'checking',isActive:true,openingBalance:'1000.00'},
   {id:'acc-benefit',name:'Benefício teste',type:'benefit',isActive:true,openingBalance:'100.00'}
  ];
+ if(path==='/finance/cashflow')return {month:monthAsked,days:[]};
+ if(path==='/finance/benefit-summary')return {month:monthAsked,balance:100,credits:20,used:5};
  if(path==='/finance/categories')return [
   {id:'cat-food',name:'Alimentação',group:'Consumo',isActive:true}
  ];
@@ -98,8 +100,12 @@ try{
     await route.fulfill({status:405,contentType:'application/json',body:JSON.stringify({error:'SYNTHETIC_READ_ONLY'})});
     return;
    }
-   const value=endpoints(url.pathname);
+   const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey);
    if(value===undefined){
+    if(url.pathname==='/finance/home-commitments'||url.pathname==='/finance/home-available'){
+     await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'CANONICAL_ROUTE_NOT_DEPLOYED'})});
+     return;
+    }
     unknownApi.push(url.pathname);
     await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'SYNTHETIC_UNKNOWN_ROUTE'})});
     return;
@@ -118,6 +124,11 @@ try{
    assert.equal(errors.length,0,'Unexpected page errors '+JSON.stringify(errors));
    await page.screenshot({path:resolve(evidence,'launches-'+width+'x'+height+'.png'),fullPage:false});
    if(width===1366){
+    const periodInput=page.getByLabel('Mês de referência');
+    await periodInput.fill('2026-10');
+    await page.waitForFunction(()=>document.body.textContent?.includes('Outubro de 2026'),null,{timeout:20000});
+    await periodInput.fill(monthKey);
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
     const action=page.getByRole('button',{name:'Ações de '+item.description}).first();
     await action.click();
     const menu=page.getByRole('menu',{name:'Ações de '+item.description});
@@ -143,6 +154,11 @@ try{
     await form.waitFor({state:'visible'});
     assert.equal(await form.getByRole('button',{name:'Salvar lançamento'}).isDisabled(),true);
     await page.screenshot({path:resolve(evidence,'new-readonly-'+width+'x'+height+'.png'),fullPage:false});
+    await page.goto(base+'/web-evolution.html?tela=home',{waitUntil:'domcontentloaded'});
+    await page.locator('.pano-root').waitFor({state:'visible',timeout:20000});
+    await page.getByText('Meus cartões',{exact:true}).waitFor({state:'visible'});
+    await page.getByText(/Compromissos ainda não disponíveis na API canônica/).waitFor({state:'visible'});
+    await page.screenshot({path:resolve(evidence,'home-canonical-404-'+width+'x'+height+'.png'),fullPage:false});
    }
    assert.equal(attemptedWrites.length,0,'Unexpected POST/PATCH/DELETE: '+attemptedWrites);
    assert.equal(unknownApi.length,0,'Unexpected API reads: '+unknownApi);
