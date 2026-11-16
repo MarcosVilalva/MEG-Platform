@@ -26,7 +26,7 @@ function readSidebarPreference() {
 }
 
 export type ShellSection = 'home'|'launches';
-type ShellProps={children:ReactNode;periodLabel?:string;periodMonth?:string;onPeriodMonthChange?:(month:string)=>void;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
+type ShellProps={children:ReactNode;periodLabel?:string;periodMonth?:string;onPeriodMonthChange?:(month:string)=>void;onGlobalSearch?:(query:string)=>void;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
 
 function shiftMonth(month:string,delta:number):string {
  const date=new Date(month+'-01T12:00:00Z');
@@ -80,10 +80,11 @@ function HeaderMonthPicker({label,month,onChange}:{label:string;month?:string;on
 export function AppShell(props:ShellProps){
  return <HomeDueAlertsProvider><AppShellView {...props}/></HomeDueAlertsProvider>;
 }
-function AppShellView({children,periodLabel,periodMonth,onPeriodMonthChange,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
+function AppShellView({children,periodLabel,periodMonth,onPeriodMonthChange,onGlobalSearch,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
   const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
   const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchDraft,setSearchDraft] = useState('');
   const [sidebarPreferenceCollapsed, setSidebarPreferenceCollapsed] = useState(readSidebarPreference);
   const [isDesktopWide, setIsDesktopWide] = useState(() =>
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
@@ -325,11 +326,15 @@ function AppShellView({children,periodLabel,periodMonth,onPeriodMonthChange,acti
             </button>
           </div>
 
-          <label className="meg-search">
-            <Icon name="search" />
-            <span className="sr-only">Buscar</span>
-            <input aria-label="Buscar" placeholder="Buscar movimentações, contas, cartões, relatórios..." />
-          </label>
+          <form className="meg-search" role="search" aria-label="Pesquisa global de lançamentos"
+            onSubmit={event=>{event.preventDefault();if(searchDraft.trim())onGlobalSearch?.(searchDraft.trim());}}>
+            <button type="submit" className="meg-search-submit" aria-label="Pesquisar lançamentos" disabled={!onGlobalSearch}>
+              <Icon name="search" />
+            </button>
+            <input aria-label="Buscar lançamentos" value={searchDraft}
+              onChange={event=>setSearchDraft(event.target.value)} disabled={!onGlobalSearch}
+              placeholder="Buscar no histórico de lançamentos ativos..." />
+          </form>
 
           <div className="meg-topbar-actions">
             <HeaderMonthPicker label={periodLabel||'Mês atual'} month={periodMonth} onChange={onPeriodMonthChange}/>
