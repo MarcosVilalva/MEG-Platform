@@ -91,7 +91,7 @@ const browser=await chromium.launch({
  headless:true,executablePath:process.env.PLAYWRIGHT_CHROME_PATH||'/usr/bin/google-chrome',
  args:['--no-sandbox'],
 });
-const viewports=[[390,844],[640,900],[960,900],[1024,768],[1366,768],[820,360],[1024,450],[1920,1080]];
+const viewports=[[320,700],[390,844],[640,900],[960,900],[1024,768],[1366,768],[820,360],[1024,450],[1920,1080],[2560,1440]];
 try{
  for(const [width,height] of viewports){
   const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'});
@@ -147,6 +147,8 @@ try{
    await page.getByLabel('Data inicial').waitFor({state:'visible'});
    await page.getByLabel('Data final').waitFor({state:'visible'});
    assert.equal(errors.length,0,'Unexpected page errors '+JSON.stringify(errors));
+   const layoutWidth=await page.evaluate(()=>({page:document.documentElement.scrollWidth,view:window.innerWidth}));
+   assert.ok(layoutWidth.page<=layoutWidth.view+1,'Horizontal overflow in '+width+'px: '+JSON.stringify(layoutWidth));
    await page.screenshot({path:resolve(evidence,'launches-'+width+'x'+height+'.png'),fullPage:false});
    if(width===1366){
     const periodInput=page.getByLabel('Mês de referência');
