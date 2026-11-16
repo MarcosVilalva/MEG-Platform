@@ -84,6 +84,13 @@ jobs:
         run: |
           npx tsx apps/web/src/meg-web-evolution/stage10/real-expense-category-policy.contract.test.ts
           npx tsx apps/web/src/meg-web-evolution/stage10/real-benefit-expense-mutation.contract.test.ts
+      - name: Monetary and benefit writers exact-cent characterization on disposable PG17
+        env:
+          DATABASE_URL: postgresql://meg_test:meg_test@127.0.0.1:5439/meg_stage10_test?schema=public
+          MEG_STAGE10_SYNTHETIC_DB: 'true'
+          JWT_SECRET: stage10-synthetic-ci-only-jwt-secret-value-not-production
+          NODE_ENV: test
+        run: npx tsx apps/api/src/modules/finance/stage10-money-precision.pg.test.ts
       - name: Card purchase create with idempotency, ownership and canonical installments on disposable PG17
         env:
           DATABASE_URL: postgresql://meg_test:meg_test@127.0.0.1:5439/meg_stage10_test?schema=public
