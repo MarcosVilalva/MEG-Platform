@@ -149,6 +149,8 @@ try{
    const headerPicker=page.getByRole('button',{name:'Selecionar período'});
    await headerPicker.waitFor({state:'visible'});
    assert.equal(await headerPicker.isEnabled(),true,'Topbar period control must be active');
+   assert.equal(await page.getByRole('button',{name:'Pesquisar lançamentos'}).isEnabled(),true,
+    'Topbar search must be active');
    await page.screenshot({path:resolve(evidence,'home-entry-'+width+'x'+height+'.png'),fullPage:false});
    if(width===390||width===1366){
     await headerPicker.click();
@@ -252,6 +254,16 @@ try{
     await page.getByText('Meus cartões',{exact:true}).waitFor({state:'visible'});
     await page.getByText(/Compromissos ainda não disponíveis na API canônica/).waitFor({state:'visible'});
     await page.screenshot({path:resolve(evidence,'home-canonical-404-'+width+'x'+height+'.png'),fullPage:false});
+    const globalInput=page.getByRole('textbox',{name:'Buscar lançamentos'});
+    await globalInput.fill('MERCADO OUTRO ANO');
+    await page.getByRole('button',{name:'Pesquisar lançamentos'}).click();
+    await page.locator('[data-meg-operational-prism="read-only"]').waitFor({state:'visible',timeout:20000});
+    await page.getByLabel('Abrangência do período').waitFor({state:'visible',timeout:20000});
+    assert.equal(await page.getByLabel('Abrangência do período').inputValue(),'all',
+     'Topbar search must use the active-history scope');
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description})
+     .first().waitFor({state:'visible',timeout:20000});
+    await page.screenshot({path:resolve(evidence,'global-topbar-search-'+width+'x'+height+'.png'),fullPage:false});
    }
    assert.equal(attemptedWrites.length,0,'Unexpected POST/PATCH/DELETE: '+attemptedWrites);
    assert.equal(unknownApi.length,0,'Unexpected API reads: '+unknownApi);
