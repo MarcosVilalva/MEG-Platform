@@ -33,6 +33,8 @@ type Props={
  onFilteredSummary?:(criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal)=>Promise<CanonicalFilteredHistorySummary|null>;
  /** Stage 10 opt-in QA only. Main, read models and finance writers are unchanged. */
  qaActions?:boolean;
+ /** Real-data mode permits viewing the approved editor, never mutations or batch editing. */
+ readOnlyRealData?:boolean;
  onQaEdit?:(row:QaLaunchTarget)=>void;
  onQaDuplicate?:(row:QaLaunchTarget)=>void;
  onQaNotice?:(message:string)=>void;
@@ -177,7 +179,7 @@ function toQaTarget(row:Row):QaLaunchTarget{return {id:row.id,description:row.de
  accountId:row.accountId,account:row.account,accountKind:row.accountKind,
  paymentMethod:row.paymentMethod,signedAmount:row.signedAmount};}
 export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters,onFilteredSummary,
- qaActions=false,onQaEdit,onQaDuplicate,onQaNotice,qaBatchCatalogs}:Props){
+ qaActions=false,readOnlyRealData=false,onQaEdit,onQaDuplicate,onQaNotice,qaBatchCatalogs}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
  const [search,setSearch]=useState(rememberedFilters?.search??'');
@@ -337,7 +339,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  return [
   ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:qaActions?78:82,minWidth:qaActions?72:72,sortable:false,filterable:false,
     render:(_value:unknown,row:Row)=>qaActions
-     ? <LaunchRowQaActions row={toQaTarget(row)} canEdit={row.type==='expense'&&row.accountKind==='monetary'&&Boolean(onQaEdit)}
+     ? <LaunchRowQaActions row={toQaTarget(row)} readOnlyRealData={readOnlyRealData} canEdit={row.type==='expense'&&row.accountKind==='monetary'&&Boolean(onQaEdit)}
         onView={()=>openDetails(row.id)} onEdit={()=>onQaEdit?.(toQaTarget(row))}
         onDuplicate={()=>onQaDuplicate?.(toQaTarget(row))} onNotice={message=>onQaNotice?.(message)}/>
      : <button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Ver detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} data-tooltip="Ver detalhes" onClick={()=>openDetails(row.id)}><LaunchIcon name="details3d" width={22} height={22}/></button>} as DataGridColumn<Row>]:[]),
@@ -359,7 +361,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   ...(mode==='preview'?[{key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
    render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>} as DataGridColumn<Row>]:[]),
   ...(mode==='live'?extraColumns:[]),
- ];},[openDetails,mode,qaActions,onQaEdit,onQaDuplicate,onQaNotice]);
+ ];},[openDetails,mode,qaActions,readOnlyRealData,onQaEdit,onQaDuplicate,onQaNotice]);
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
  // Os filtros do formulário e os do DataGrid pertencem à mesma consulta:
  // "Limpar tudo" precisa zerar os dois, inclusive o favorito selecionado.
@@ -519,8 +521,8 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       </form>}
       {favoriteMessage&&<p className="meg-l09-favorites-message" role="status">{favoriteMessage}</p>}
      </>}
-     <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable onSelectionChange={qaActions?onQaSelection:undefined}
-      toolbarAction={qaActions?<button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
+     <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable onSelectionChange={qaActions&&!readOnlyRealData?onQaSelection:undefined}
+      toolbarAction={qaActions&&!readOnlyRealData?<button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
        disabled={qaSelectedRows.length===0} onClick={()=>setQaBatchOpen(true)}>
        <ActionGlyph kind="batch"/> Editar em lote ({qaSelectedRows.length})
       </button>:undefined}
@@ -534,7 +536,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><LaunchIcon name="chevronLeft" width={18} height={18}/>Voltar à Home</button>
   {modalRow&&<LaunchDetailModal row={modalRow} onClose={closeModal}/>}
-   {qaActions&&qaBatchOpen&&<QaBatchEditor items={qaSelectedRows} catalogs={qaBatchCatalogs}
+   {qaActions&&!readOnlyRealData&&qaBatchOpen&&<QaBatchEditor items={qaSelectedRows} catalogs={qaBatchCatalogs}
     onClose={()=>setQaBatchOpen(false)} onSimulate={count=>{setQaBatchOpen(false);onQaNotice?.('QA: '+count+' lançamento(s) avaliados para edição em lote. Nenhuma alteração foi gravada.');}}/>}
  </section>;
 }
