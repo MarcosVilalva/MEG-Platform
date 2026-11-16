@@ -10,7 +10,7 @@ import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
 import { LoadingScreen } from './auth/LoadingScreen';
 import { HomeDashboard } from './home/HomeDashboard';
 import { OperationalLaunches } from './launches/OperationalLaunches';
-import {periodForMonth,periodLabel as launchPeriodLabel} from './launches/period-scope';
+import {periodBounds,periodForMonth,periodLabel as launchPeriodLabel,type LaunchPeriod} from './launches/period-scope';
 
 // Opt-in: the approved Prism is loaded only for authenticated operational sessions.
 const PrismOperationalLaunches = React.lazy(() => import('./integrated-qa/PrismOperationalLaunches'));
@@ -22,6 +22,20 @@ function currentBrazilMonth(){
  return value('year')+'-'+value('month');
 }
 
+const periodPreferenceKey=(userId:string)=>'meg:web-evolution:stage10:period:v1:'+encodeURIComponent(userId);
+function previousUserPeriod(userId:string):LaunchPeriod{
+ const fallback=periodForMonth(currentBrazilMonth());
+ try{
+  const raw=window.localStorage.getItem(periodPreferenceKey(userId));
+  if(!raw||raw.length>300)return fallback;
+  const saved=JSON.parse(raw) as Partial<LaunchPeriod>;
+  if(!saved||!['month','year','range','all'].includes(saved.mode??'')||
+   typeof saved.month!=='string'||typeof saved.start!=='string'||typeof saved.end!=='string')return fallback;
+  const period=saved as LaunchPeriod;
+  periodBounds(period);
+  return period;
+ }catch{return fallback;}
+}
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
 function currentAuthDestination(): AuthDestination {
@@ -34,6 +48,7 @@ function AuthGateway() {
   const [loggingOut,setLoggingOut] = useState(false);
   const [openPrismNew,setOpenPrismNew] = useState(false);
   const [activePeriod,setActivePeriod] = useState(()=>periodForMonth(currentBrazilMonth()));
+  const [periodPreferenceOwner,setPeriodPreferenceOwner] = useState<string|null>(null);
   const [logoutWarning,setLogoutWarning] = useState('');
   const [section,setSection] = useState<'home'|'launches'>(() => {
     const query = new URLSearchParams(window.location.search);
@@ -101,6 +116,17 @@ function AuthGateway() {
     window.history.pushState({}, '', url);
     setDestination(next);
   };
+
+  React.useEffect(()=>{
+    if(!session?.user.id||!prismLayoutEnabled){setPeriodPreferenceOwner(null);return;}
+    setActivePeriod(previousUserPeriod(session.user.id));
+    setPeriodPreferenceOwner(session.user.id);
+  },[session?.user.id]);
+  React.useEffect(()=>{
+    if(!prismLayoutEnabled||!session?.user.id||periodPreferenceOwner!==session.user.id)return;
+    try{window.localStorage.setItem(periodPreferenceKey(session.user.id),JSON.stringify(activePeriod));}
+    catch{ /* Navegador pode bloquear preferências; a sessão continua funcional. */ }
+  },[activePeriod,periodPreferenceOwner,session?.user.id]);
 
   React.useEffect(() => {
     // A prévia visual permanece isolada, mesmo com sessão armazenada.
