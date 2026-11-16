@@ -271,7 +271,8 @@ try{
    console.log('MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS '+width+'x'+height);
   }catch(error){
    await page.screenshot({path:resolve(evidence,'failure-'+width+'x'+height+'.png'),fullPage:false}).catch(()=>{});
-   console.error('VIEWPORT_FAILED '+width+'x'+height+' requests='+JSON.stringify({attemptedWrites,unknownApi,externalHosts,errors}));
+   const state=await page.evaluate(()=>({url:location.pathname,body:document.body.innerText.slice(0,1800),root:document.querySelector('#meg-web-evolution-root')?.innerHTML.slice(0,1200)})).catch(()=>null);
+   console.error('VIEWPORT_FAILED '+width+'x'+height+' requests='+JSON.stringify({attemptedWrites,unknownApi,externalHosts,errors,state}));
    throw error;
   }finally{await context.close();}
  }
