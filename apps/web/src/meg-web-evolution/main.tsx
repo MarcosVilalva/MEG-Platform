@@ -11,6 +11,10 @@ import { LoadingScreen } from './auth/LoadingScreen';
 import { HomeDashboard } from './home/HomeDashboard';
 import { OperationalLaunches } from './launches/OperationalLaunches';
 
+// Opt-in: the approved Prism is loaded only for authenticated operational sessions.
+const PrismOperationalLaunches = React.lazy(() => import('./integrated-qa/PrismOperationalLaunches'));
+const prismLayoutEnabled = import.meta.env.VITE_PRISM_LAYOUT === 'true';
+
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
 function currentAuthDestination(): AuthDestination {
@@ -21,6 +25,7 @@ function currentAuthDestination(): AuthDestination {
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loggingOut,setLoggingOut] = useState(false);
+  const [openPrismNew,setOpenPrismNew] = useState(false);
   const [logoutWarning,setLogoutWarning] = useState('');
   const [section,setSection] = useState<'home'|'launches'>(
     () => new URLSearchParams(window.location.search).get('tela') === 'lancamentos' ? 'launches' : 'home'
@@ -163,16 +168,22 @@ function AuthGateway() {
       <AppShell
         periodLabel={periodLabel}
         activeSection={section}
-        onNavigate={setSection}
+        onNavigate={next => {setOpenPrismNew(false);setSection(next);}}
         onLogout={() => {void handleLogout();}}
         logoutPending={loggingOut}
         profileName={session.user.name}
       >
         {section==='launches'
-          ? <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>
+          ? (prismLayoutEnabled
+            ? <React.Suspense fallback={<div role="status">Carregando Prism 2.0...</div>}>
+                <PrismOperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name}
+                  initialNew={openPrismNew} onInitialNewConsumed={() => setOpenPrismNew(false)} onHome={() => setSection('home')}/>
+              </React.Suspense>
+            : <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>)
           : <HomeDashboard userId={session.user.id} onNavigate={target => {
               // Só Lançamentos possui destino operacional autorizado nesta integração.
               // Os demais atalhos conservam o aviso da Home, sem rotas fictícias.
+              if(target==='novo' && prismLayoutEnabled){setOpenPrismNew(true);setSection('launches');return true;}
               if(target!=='lancamentos')return false;
               setSection('launches');
               return true;
