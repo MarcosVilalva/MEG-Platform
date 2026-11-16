@@ -179,7 +179,7 @@ async function staticRequest(req,res,url){
  if(req.method!=='GET'&&req.method!=='HEAD')return fail(res,405,'PREVIEW_READ_ONLY');
  let asset=url.pathname;
  if(asset==='/'||asset==='/index.html')asset='/web-evolution.html';
- if(asset!=='/web-evolution.html'&&!/^\/(?:assets|brand|fonts|images)\//.test(asset)&&asset!=='/favicon.ico'){
+ if(asset!=='/web-evolution.html'&&!/^\/(?:assets|brand|fonts|images|meg-web-evolution)\//.test(asset)&&asset!=='/favicon.ico'){
   return fail(res,404,'PREVIEW_ROUTE_NOT_AVAILABLE');
  }
  let filename;
