@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {authenticatedRequest} from '../../app/auth-client';
 // @ts-expect-error Adaptador JavaScript da fonte única já validada na Etapa 02
-import {composeMegApiSnapshot,fromCanonicalReadModels,fromFinancialEvents,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
+import {composeMegApiSnapshot,fromFinancialEvents,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
 import {DataGrid} from '../datagrid/DataGrid';
 import type {DataGridColumn} from '../datagrid/types';
 import {HomeChart,type CashflowDay} from './HomeChart';
@@ -132,7 +132,7 @@ function PanelTitle({icon,title,meta}:{icon:HomeIconName;title:string;meta?:stri
 function Money({value,hidden,className=''}:{value:number|null|undefined;hidden:boolean;className?:string}){
  return <span className={className}>{format(value,hidden)}</span>;
 }
-function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialData;month:string;preview:boolean;onNavigate?:Props['onNavigate'];userId?:string}){
+function HomeContent({data,month,preview,onNavigate,userId,readStates}:{data:HomeFinancialData;month:string;preview:boolean;onNavigate?:Props['onNavigate'];userId?:string;readStates:HomeReadStates}){
  const [hidden,setHidden]=useState(false);
  const [notice,setNotice]=useState<string|null>(null);
  const [movementMode,setMovementMode]=useState<'all'|'income'|'expense'>('all');
@@ -294,14 +294,14 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
   {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso" title="Fechar aviso"><HomeGlyph name="x" size={18}/></button></div>}
-  {!preview&&data.commitmentsUnavailable&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>Compromissos ainda não disponíveis na API canônica. Os cartões, benefícios e demais indicadores são leituras autenticadas; nenhuma pendência foi estimada.</span></div>}
+  {!preview&&data.commitmentsUnavailable&&readStates.commitments==='unavailable'&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>Compromissos não disponíveis na API canônica. As demais seções são consultadas separadamente; nenhuma pendência foi estimada.</span></div>}
   <div className="pano-spotlight" aria-label="Visão financeira e cartões">
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
    <div className="pano-balance" aria-label="Saldo disponível monetário">
     <div className="pano-balance-top"><h1>Saldo disponível <span className="pano-balance-scope">CONTAS MONETÁRIAS</span></h1><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={19}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
-    <div className="pano-balance-bottom"><span>{data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
+    <div className="pano-balance-bottom"><span>{readStates.available==='loading'?'Consultando saldo disponível...':data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
    </div>
   </section>
   <section className="pano-overview" aria-label="Indicadores financeiros">
@@ -320,7 +320,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    <section ref={cardsSection} className="pano-panel pano-cards">
     <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all pano-icon-action" onClick={()=>move('cartoes')}
  aria-label="Ver todos os cartões" title="Ver todos os cartões" data-tooltip="Ver todos os cartões"><HomeGlyph name="list" size={20}/></button></div>
-    {selectedCard?<>
+    {readStates.cards==='loading'?<div className="pano-card-empty" role="status">Consultando seus cartões...</div>:readStates.cards==='unavailable'?<div className="pano-card-empty" role="alert">Consulta dos cartões indisponível.</div>:selectedCard?<>
       <div className="pano-card-stage" aria-label={'Cartão '+(activeCardIndex+1)+' de '+cardCount} tabIndex={cardCount>1?0:undefined}
        onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();stepCard(event.key==='ArrowLeft'?-1:1)}}}
        onTouchStart={event=>{touchStartX.current=event.touches[0]?.clientX??null}}
@@ -379,7 +379,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  aria-label="Abrir relatórios financeiros" title="Abrir relatórios financeiros" data-tooltip="Relatórios"><HomeGlyph name="chart" size={20}/></button>
     </div>
     <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
-    <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
+    {readStates.cashflow==='loading'?<p role="status">Consultando fluxo financeiro...</p>:readStates.cashflow==='unavailable'?<p role="alert">Fluxo financeiro indisponível.</p>:<HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>}
     <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
    </section>
     <section ref={movementSection} className={'pano-panel pano-grid pano-grid--movements '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
@@ -390,7 +390,11 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  title={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'} data-tooltip={showMovementFilters?'Ocultar filtros':'Mostrar filtros'}>
  <HomeGlyph name="filter" size={20}/>{movementFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{movementFiltersCount}</span>}
  </button></div></div>
-     <DataGrid data={movements} columns={movementColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
+     {readStates.transactions==='loading'
+      ? <p role="status">Consultando movimentações...</p>
+      :readStates.transactions==='unavailable'
+       ? <p role="alert">Movimentações indisponíveis.</p>
+       :<DataGrid data={movements} columns={movementColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/>}</section>
    </div>
    <div className="pano-finance-column is-secondary">
     <section ref={benefitSection} className="pano-panel pano-benefits">
@@ -399,7 +403,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
      <div className="pano-benefit-card-copy"><span className="pano-eyebrow">BENEFÍCIO</span><h3>Alimentação</h3><span>Saldo do benefício</span><strong><Money hidden={hidden} value={data.benefit?.balance}/></strong><span className="pano-benefit-callout">Ver benefício <HomeGlyph name="arrow" size={15}/></span></div>
      <div className="pano-benefit-visual" aria-hidden="true"/>
     </button>
-    <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
+    <div className="pano-benefit-details">{readStates.benefit==='loading'&&<span role="status">Consultando benefício...</span>}{readStates.benefit==='unavailable'&&<span role="alert">Benefício indisponível.</span>}<span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
     <section ref={dueSection} className={'pano-panel pano-grid pano-grid--commitments '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
      <div className="pano-grid-actions"><button type="button" className="pano-icon-action" disabled={Boolean(data.commitmentsUnavailable)} onClick={()=>setShowAllCommitments(true)}
@@ -409,12 +413,14 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  title={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'} data-tooltip={showDueFilters?'Ocultar filtros':'Mostrar filtros'}>
  <HomeGlyph name="filter" size={20}/>{dueFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{dueFiltersCount}</span>}
  </button></div></div>
-     {data.commitmentsUnavailable
-      ? <div className="pano-card-empty" role="note">Não foi possível consultar os compromissos: rota canônica indisponível. Nenhuma lista vazia ou valor zero foi presumido.</div>
-      : <DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/>}</section>
+     {readStates.commitments==='loading'
+      ? <div className="pano-card-empty" role="status">Consultando próximos compromissos...</div>
+      :data.commitmentsUnavailable
+       ? <div className="pano-card-empty" role="note">Não foi possível consultar os compromissos na API canônica. Nenhuma lista vazia ou valor zero foi presumido.</div>
+       :<DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/>}</section>
    </div>
   </div>
-  {showAllCommitments&&!data.commitmentsUnavailable&&<HomeCommitmentsFullList
+  {showAllCommitments&&readStates.commitments==='ready'&&!data.commitmentsUnavailable&&<HomeCommitmentsFullList
     columns={dueColumns} mapRows={commitmentGridRows}
     preview={preview} previewRows={commitments}
     onDismiss={()=>setShowAllCommitments(false)}/>}
