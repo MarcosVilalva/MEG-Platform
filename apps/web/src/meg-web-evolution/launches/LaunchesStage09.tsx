@@ -27,7 +27,7 @@ import './launches-stage09.css';
 type Props={
  data:HomeFinancialData;onNew:()=>void;onHome:()=>void;
  mode?:'preview'|'live';periodMonth?:string;userId?:string;
- exportUserName?:string;onRefresh?:()=>void;
+ exportUserName?:string;onRefresh?:()=>void;onPeriodChange?:(month:string)=>void;
  rememberedFilters?:Partial<LaunchesFilterPreset>;
  onRememberFilters?:(value:LaunchesFilterPreset)=>void;
  onFilteredSummary?:(criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal)=>Promise<CanonicalFilteredHistorySummary|null>;
@@ -178,7 +178,7 @@ function toQaTarget(row:Row):QaLaunchTarget{return {id:row.id,description:row.de
  type:row.type,status:row.status,categoryId:row.categoryId,category:row.category,
  accountId:row.accountId,account:row.account,accountKind:row.accountKind,
  paymentMethod:row.paymentMethod,signedAmount:row.signedAmount};}
-export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters,onFilteredSummary,
+export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,onPeriodChange,rememberedFilters,onRememberFilters,onFilteredSummary,
  qaActions=false,readOnlyRealData=false,onQaEdit,onQaDuplicate,onQaNotice,qaBatchCatalogs}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
@@ -199,7 +199,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   try{return readSavedFilters(window.localStorage.getItem(savedFiltersKey(userId)));}catch{return [];}
  });
  const [selectedFavorite,setSelectedFavorite]=useState('');
- const [topFiltersOpen,setTopFiltersOpen]=useState(false);
+ const [topFiltersOpen,setTopFiltersOpen]=useState(mode==='live'&&readOnlyRealData);
  const [savingFavorite,setSavingFavorite]=useState(false);
  const [favoriteName,setFavoriteName]=useState('');
  const [confirmDelete,setConfirmDelete]=useState(false);
@@ -425,7 +425,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    ? <div className="meg-l09-preview-warning meg-l09-verification" role="note">
       <details className="meg-l09-verification-details">
        <summary><span className="meg-l09-verification-icon" aria-hidden="true">✓</span>Histórico verificado <span className="meg-l09-verification-hint">Detalhes da consulta</span></summary>
-       <p>Histórico autenticado e verificado integralmente. Use o ícone de visualização na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API canônica, inclusive sob filtros personalizados quando o backend confirmar suporte. Se a agregação não for segura, ficam indisponíveis. Nenhum lançamento é alterado.</p>
+       <p>{readOnlyRealData?'Todos os registros do mês selecionado foram consultados diretamente na API, sem recarregar o histórico de outros meses.':'Histórico autenticado e verificado integralmente.'} Use o ícone de visualização na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API canônica, inclusive sob filtros personalizados quando o backend confirmar suporte. Se a agregação não for segura, ficam indisponíveis. Nenhum lançamento é alterado.</p>
       </details>
       {onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
      </div>
@@ -434,12 +434,18 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    <div className="meg-l09-left">
     <form className="meg-l09-filters" id="meg-l09-extra-filters" hidden={mode==='live'&&!topFiltersOpen}
      onSubmit={event=>event.preventDefault()} role="search" aria-label="Filtros complementares de lançamentos">
+      {mode==='live'&&readOnlyRealData&&onPeriodChange&&
+       <label className="meg-l09-period-filter">
+        <span className="sr-only">Mês de referência</span>
+        <input type="month" aria-label="Mês de referência" value={periodMonth} min="2000-01" max="2100-12"
+         onChange={event=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value))onPeriodChange(event.target.value);}}/>
+       </label>}
       <label className="meg-l09-search"><LaunchIcon name="search" width={20} height={20}/><span className="sr-only">Buscar lançamentos</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar lançamentos..."/></label>
       <label><span className="sr-only">Tipo</span><select value={kind} onChange={event=>setKind(event.target.value)}><option value="all">Todos os tipos</option>{['income','expense','transfer','investment','redemption','adjustment'].map(k=><option key={k} value={k}>{shortType[k]}</option>)}</select></label>
       <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}{legacyCategoryOptions.length>0&&<optgroup label="Categorias do histórico">{legacyCategoryOptions.map(name=><option key={'legacy:'+name} value={'legacy:'+name}>{name}</option>)}</optgroup>}</select></label>
       <label><span className="sr-only">Conta ou cartão</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
       {mode==='live'&&<label className="meg-l09-payment-select"><span className="sr-only">Forma de pagamento</span><select value={paymentMethod} onChange={event=>setPaymentMethod(event.target.value)}><option value="all">Todas as formas de pagamento</option>{paymentMethodOptions.map(name=><option key={name} value={name}>{name}</option>)}</select></label>}
-      <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
+      <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" min={readOnlyRealData?startOfMonth:undefined} max={readOnlyRealData?endOfMonth:undefined} value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} max={readOnlyRealData?endOfMonth:undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
     <aside className={'meg-l09-right '+(mode==='live'?'is-operational':'')} hidden={mode==='live'&&!distributionOpen} aria-label="Painéis complementares da grade">
      <section className={'meg-l09-panel meg-l09-distribution '+(distributionOpen?'is-open':'is-collapsed')} aria-label="Distribuição no período">
