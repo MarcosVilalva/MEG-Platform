@@ -34,22 +34,23 @@ const session={
  refreshToken:'synthetic-ci-refresh-only',refreshExpiresAt:'2099-01-01T00:00:00Z'
 };
 const priorHistory={...item,id:'ci-prior-month-event',description:'MERCADO ANTERIOR',date:'2026-10-08T12:00:00.000Z',competence:'2026-10',amount:'89.00',signedAmount:'-89.00'};
+const priorYearHistory={...item,id:'ci-prior-year-event',description:'MERCADO OUTRO ANO',date:'2025-12-19T12:00:00.000Z',competence:'2025-12',amount:'49.01',signedAmount:'-49.01'};
 const endpoints=(path,monthAsked=monthKey,search='',rawFilter='')=>{
  if(path==='/auth/me')return {user:sessionUser};
  if(path==='/finance/sync-status')return {
   token:'synthetic-consistent-version-v1',
   capabilities:{historySnapshotV1:true,filteredSummaryV1:true}
  };
- if(path==='/finance/events/month'){const rows=monthAsked===monthKey?[item]:monthAsked==='2026-10'?[priorHistory]:[];return {items:rows,total:rows.length,page:1,pageSize:rows.length};}
+ if(path==='/finance/events/month'){const rows=monthAsked===monthKey?[item]:monthAsked==='2026-10'?[priorHistory]:monthAsked==='2025-12'?[priorYearHistory]:[];return {items:rows,total:rows.length,page:1,pageSize:rows.length};}
  if(path==='/finance/events'&&search.trim())return {items:[priorHistory],total:1,page:1,pageSize:100};
  if(path==='/finance/events/history-snapshot')return {
   protocol:'financial-history-v1',kind:'complete',
-  consistency:'repeatable-read',total:2,items:[item,priorHistory]
+  consistency:'repeatable-read',total:3,items:[item,priorHistory,priorYearHistory]
  };
  if(path==='/finance/events/filtered-summary'){
   const filters=JSON.parse(rawFilter);
   const c=filters.criteria;
-  const relevant=[item,priorHistory].filter(row=>{
+  const relevant=[item,priorHistory,priorYearHistory].filter(row=>{
    const day=row.date.slice(0,10);
    return (!c.start||day>=c.start)&&(!c.end||day<=c.end)&&
     (c.kind==='all'||row.type===c.kind)&&
@@ -60,7 +61,7 @@ const endpoints=(path,monthAsked=monthKey,search='',rawFilter='')=>{
   });
   const expense=relevant.reduce((sum,row)=>sum+Number(row.amount),0);
   return {kind:'complete',protocol:'financial-filter-summary-v1',consistency:'repeatable-read',
-   total:2,filteredCount:relevant.length,income:0,expense,
+   total:3,filteredCount:relevant.length,income:0,expense,
    projectedResult:-expense,realizedResult:-expense};
  }
  if(path==='/finance/summary')return {
@@ -122,6 +123,7 @@ try{
     return;
    }
    if(url.pathname==='/finance/events'&&url.searchParams.get('search'))historySearchRequests++;
+   if(/^\/(finance|cards)(\/|$)/.test(url.pathname)&&req.headers()['authorization']!=='Bearer synthetic-ci-only')errors.push('Authorization missing from authenticated finance request');
    if(url.pathname==='/finance/events/history-snapshot')snapshotReads++;
    const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey,url.searchParams.get('search')||'',url.searchParams.get('filter')||'');
    if(value===undefined){
@@ -157,11 +159,11 @@ try{
     await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
     assert.equal(snapshotReads,1,'Year must use one consistent snapshot, not double paging');
     await selection.selectOption('all');
-    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description}).first().waitFor({state:'visible',timeout:20000});
     assert.equal(snapshotReads,1,'All-history must reuse current revision snapshot');
     await selection.selectOption('range');
-    await page.getByLabel('Período inicial').fill('2026-10-01');
-    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    await page.getByLabel('Período inicial').fill('2025-12-01');
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description}).first().waitFor({state:'visible',timeout:20000});
     assert.equal(snapshotReads,1,'Range must reuse verified snapshot');
     await selection.selectOption('month');
     await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
