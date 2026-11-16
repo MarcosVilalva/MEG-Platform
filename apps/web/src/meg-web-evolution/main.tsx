@@ -27,9 +27,13 @@ function AuthGateway() {
   const [loggingOut,setLoggingOut] = useState(false);
   const [openPrismNew,setOpenPrismNew] = useState(false);
   const [logoutWarning,setLogoutWarning] = useState('');
-  const [section,setSection] = useState<'home'|'launches'>(
-    () => new URLSearchParams(window.location.search).get('tela') === 'lancamentos' ? 'launches' : 'home'
-  );
+  const [section,setSection] = useState<'home'|'launches'>(() => {
+    const query = new URLSearchParams(window.location.search);
+    // Nesta etapa somente leitura, abrir os lançamentos reais logo após o login.
+    // Com a flag desligada, a Web preserva exatamente a Home inicial existente.
+    return query.get('tela') === 'lancamentos'
+      || (prismLayoutEnabled && !query.has('tela')) ? 'launches' : 'home';
+  });
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
