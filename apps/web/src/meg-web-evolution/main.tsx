@@ -47,6 +47,17 @@ function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loggingOut,setLoggingOut] = useState(false);
   const [openPrismNew,setOpenPrismNew] = useState(false);
+  const [globalSearch,setGlobalSearch] = useState({query:'',revision:0});
+  const resetGlobalSearch=()=>setGlobalSearch(previous=>({query:'',revision:previous.revision+1}));
+  const submitGlobalSearch=(query:string)=>{
+    const normalized=query.trim();
+    if(!prismLayoutEnabled||!normalized)return;
+    setOpenPrismNew(false);
+    setGlobalSearch(previous=>({query:normalized,revision:previous.revision+1}));
+    // Busca do topo consulta somente historico ativo e agregado canonico.
+    setActivePeriod(previous=>({...previous,mode:'all'}));
+    setSection('launches');
+  };
   const [activePeriod,setActivePeriod] = useState(()=>periodForMonth(currentBrazilMonth()));
   const [periodPreferenceOwner,setPeriodPreferenceOwner] = useState<string|null>(null);
   const [logoutWarning,setLogoutWarning] = useState('');
@@ -97,6 +108,7 @@ function AuthGateway() {
       setSession(null);
       setSection('home');
       setActivePeriod(periodForMonth(currentBrazilMonth()));
+      setGlobalSearch({query:'',revision:0});
       setCheckingSession(false);
       navigate('login');
       setLogoutWarning(remoteRevocationFailed
@@ -206,9 +218,10 @@ function AuthGateway() {
       <AppShell
         periodLabel={periodLabel}
         periodMonth={prismLayoutEnabled?activePeriod.month:undefined}
-        onPeriodMonthChange={prismLayoutEnabled?month=>setActivePeriod(periodForMonth(month)):undefined}
+        onPeriodMonthChange={prismLayoutEnabled?month=>{resetGlobalSearch();setActivePeriod(periodForMonth(month));}:undefined}
+        onGlobalSearch={prismLayoutEnabled?submitGlobalSearch:undefined}
         activeSection={section}
-        onNavigate={next => {setOpenPrismNew(false);setSection(next);}}
+        onNavigate={next => {setOpenPrismNew(false);if(next==='launches')resetGlobalSearch();setSection(next);}}
         onLogout={() => {void handleLogout();}}
         logoutPending={loggingOut}
         profileName={session.user.name}
@@ -217,8 +230,9 @@ function AuthGateway() {
           ? (prismLayoutEnabled
             ? <React.Suspense fallback={<div role="status">Carregando Prism 2.0...</div>}>
                 <PrismOperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name}
-                  periodMonth={activePeriod.month} onPeriodChange={month=>setActivePeriod(periodForMonth(month))}
-                  periodSelection={activePeriod} onPeriodSelectionChange={setActivePeriod}
+                  periodMonth={activePeriod.month} onPeriodChange={month=>{resetGlobalSearch();setActivePeriod(periodForMonth(month));}}
+                  periodSelection={activePeriod} onPeriodSelectionChange={period=>{resetGlobalSearch();setActivePeriod(period);}}
+                  globalSearch={globalSearch}
                   initialNew={openPrismNew} onInitialNewConsumed={() => setOpenPrismNew(false)} onHome={() => setSection('home')}/>
               </React.Suspense>
             : <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>)
@@ -226,9 +240,9 @@ function AuthGateway() {
               month={prismLayoutEnabled?activePeriod.month:undefined} onNavigate={target => {
               // Só Lançamentos possui destino operacional autorizado nesta integração.
               // Os demais atalhos conservam o aviso da Home, sem rotas fictícias.
-              if(target==='novo' && prismLayoutEnabled){setOpenPrismNew(true);setSection('launches');return true;}
+              if(target==='novo' && prismLayoutEnabled){resetGlobalSearch();setOpenPrismNew(true);setSection('launches');return true;}
               if(target!=='lancamentos')return false;
-              setSection('launches');
+              resetGlobalSearch();setSection('launches');
               return true;
             }}/>}
       </AppShell>
