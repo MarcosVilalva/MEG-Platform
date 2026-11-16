@@ -4,13 +4,22 @@ import {readFileSync} from 'node:fs';
 // Static guard for the Stage 10 opt-in. Does not access API, DB or production.
 const read=path=>readFileSync(path,'utf8');
 const main=read('apps/web/src/meg-web-evolution/main.tsx');
+const shell=read('apps/web/src/meg-web-evolution/shell/AppShell.tsx');
+const home=read('apps/web/src/meg-web-evolution/home/HomeDashboard.tsx');
 const prism=read('apps/web/src/meg-web-evolution/integrated-qa/PrismOperationalLaunches.tsx');
 const operational=read('apps/web/src/meg-web-evolution/launches/OperationalLaunches.tsx');
 const grid=read('apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx');
 const actions=read('apps/web/src/meg-web-evolution/stage10/LaunchActionsQa.tsx');
 
 assert.match(main,/import\.meta\.env\.VITE_PRISM_LAYOUT === 'true'/);
-assert.match(main,/prismLayoutEnabled && !query\.has\('tela'\)/);
+assert.match(main,/const \[section,setSection\] = useState<'home'\|'launches'>\('home'\)/);
+assert.match(main,/periodMonth=\{prismLayoutEnabled\?activePeriod\.month:undefined\}/);
+assert.match(main,/onPeriodMonthChange=\{prismLayoutEnabled\?/);
+assert.match(main,/<HomeDashboard key=\{session\.user\.id\+/);
+assert.match(shell,/function HeaderMonthPicker\(/);
+assert.match(shell,/onChange=\{event=>select\(event\.currentTarget\.value\)\}/);
+assert.match(shell,/aria-label="Selecionar período"/);
+assert.match(home,/authenticatedRequest<NonNullable<HomeFinancialData\['summary'\]>>\('\/finance\/summary\?month='/);
 assert.match(main,/prismLayoutEnabled[\s\S]*<React\.Suspense/);
 assert.match(main,/\: <OperationalLaunches key=/);
 assert.match(prism,/from '\.\.\/launches\/OperationalLaunches'/);
