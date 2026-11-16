@@ -33,13 +33,15 @@ const session={
  user:sessionUser,accessToken:'synthetic-ci-only',
  refreshToken:'synthetic-ci-refresh-only',refreshExpiresAt:'2099-01-01T00:00:00Z'
 };
-const endpoints=(path,monthAsked=monthKey)=>{
+const priorHistory={...item,id:'ci-prior-month-event',description:'MERCADO ANTERIOR',date:'2026-10-08T12:00:00.000Z',competence:'2026-10',amount:'89.00',signedAmount:'-89.00'};
+const endpoints=(path,monthAsked=monthKey,search='')=>{
  if(path==='/auth/me')return {user:sessionUser};
  if(path==='/finance/sync-status')return {
   token:'synthetic-consistent-version-v1',
   capabilities:{historySnapshotV1:true,filteredSummaryV1:false}
  };
  if(path==='/finance/events/month'){const rows=monthAsked===monthKey?[item]:[];return {items:rows,total:rows.length,page:1,pageSize:rows.length};}
+ if(path==='/finance/events'&&search.trim())return {items:[priorHistory],total:1,page:1,pageSize:100};
  if(path==='/finance/events/history-snapshot')return {
   protocol:'financial-history-v1',kind:'complete',
   consistency:'repeatable-read',total:1,items:[item]
@@ -83,6 +85,7 @@ try{
   const unknownApi=[];
   const externalHosts=[];
   const errors=[];
+  let historySearchRequests=0;
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',req=>{
    const url=new URL(req.url());
@@ -100,7 +103,8 @@ try{
     await route.fulfill({status:405,contentType:'application/json',body:JSON.stringify({error:'SYNTHETIC_READ_ONLY'})});
     return;
    }
-   const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey);
+   if(url.pathname==='/finance/events'&&url.searchParams.get('search'))historySearchRequests++;
+   const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey,url.searchParams.get('search')||'');
    if(value===undefined){
     if(url.pathname==='/finance/home-commitments'||url.pathname==='/finance/home-available'){
      await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'CANONICAL_ROUTE_NOT_DEPLOYED'})});
@@ -152,6 +156,15 @@ try{
     await choice.getByRole('button',{name:/Escolher Despesa/}).click();
     const form=page.getByRole('dialog',{name:'Novo lançamento'});
     await form.waitFor({state:'visible'});
+    assert.equal(historySearchRequests,0,'Initial month load must not fetch lifetime history');
+    await form.getByPlaceholder('DESCREVA A DESPESA').fill('MERCADO');
+    const suggestions=page.getByRole('listbox',{name:'Descrições do histórico'});
+    const older=suggestions.getByRole('option',{name:/MERCADO ANTERIOR/});
+    await older.waitFor({state:'visible',timeout:20000});
+    await older.click();
+    assert.equal(await form.getByPlaceholder('DESCREVA A DESPESA').inputValue(),'MERCADO ANTERIOR');
+    assert.equal(await form.getByPlaceholder('DD/MM/AAAA').inputValue(),'','Autocomplete must never copy historical date');
+    assert.ok(historySearchRequests>=2,'Historical search must validate two complete passes on demand');
     assert.equal(await form.getByRole('button',{name:'Salvar lançamento'}).isDisabled(),true);
     await page.screenshot({path:resolve(evidence,'new-readonly-'+width+'x'+height+'.png'),fullPage:false});
     await page.goto(base+'/web-evolution.html?tela=home',{waitUntil:'domcontentloaded'});
