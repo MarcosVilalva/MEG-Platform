@@ -158,6 +158,10 @@ try{
     await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
     const selection=page.getByLabel('Abrangência do período');
     await selection.selectOption('year');
+    const annualYear=page.getByLabel('Ano de referência');
+    await annualYear.fill('2025');
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    await annualYear.fill('2026');
     await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
     assert.equal(snapshotReads,1,'Year must use one consistent snapshot, not double paging');
     await selection.selectOption('all');
