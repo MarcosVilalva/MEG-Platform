@@ -428,18 +428,43 @@ function HomeContent({data,month,preview,onNavigate,userId,readStates}:{data:Hom
 }
 export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId}:Props){
  const current=providedMonth&&/^\d{4}-(0[1-9]|1[0-2])$/.test(providedMonth)?providedMonth:dateNow().slice(0,7);
- const [data,setData]=useState<HomeFinancialData|null>(previewData||null);
- const [error,setError]=useState<string|null>(null);
- const [loading,setLoading]=useState(!previewData);
+ const [data,setData]=useState<HomeFinancialData>(previewData||emptyState);
+ const [readStates,setReadStates]=useState<HomeReadStates>(previewData?previewReadStates:initialReadStates);
+ const [refreshing,setRefreshing]=useState(false);
  const serial=useRef(0);
- const reload=useCallback(async()=>{
+ const inFlight=useRef<AbortController|null>(null);
+ const reload=useCallback(()=>{
   if(previewData)return;
-  const id=++serial.current;setLoading(true);setError(null);
-  try{const result=await readHome(current);if(serial.current===id)setData(result)}
-  catch{if(serial.current===id){setData(null);setError('Não foi possível consultar as informações financeiras e compromissos abertos. Nenhum resultado foi estimado.')}}
-  finally{if(serial.current===id)setLoading(false)}
+  inFlight.current?.abort();
+  const controller=new AbortController();
+  inFlight.current=controller;
+  const id=++serial.current;
+  setRefreshing(true);
+  // Cada leitura atualiza somente sua seção; erros não apagam seções válidas.
+  void readHomeProgressively(current,controller.signal,(part,patch,status)=>{
+   if(controller.signal.aborted||serial.current!==id)return;
+   setData(previous=>({...previous,...patch}));
+   setReadStates(previous=>({...previous,[part]:status}));
+  }).finally(()=>{
+   if(!controller.signal.aborted&&serial.current===id)setRefreshing(false);
+  });
  },[current,previewData]);
- useEffect(()=>{if(previewData){setData(previewData);return}void reload();const onRefresh=()=>void reload();window.addEventListener('meg:data-invalidated',onRefresh);window.addEventListener('focus',onRefresh);return()=>{serial.current++;window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh)}},[previewData,reload]);
- return <>{error&&<div className="pano-error" role="alert">{error}<button type="button" onClick={()=>void reload()}><HomeGlyph name="reload" size={16}/> Tentar novamente</button></div>}
- {!error&&(loading&&!data?<div className="pano-loading" role="status">Consultando seus dados financeiros...</div>:<HomeContent data={data||emptyState} month={current} preview={Boolean(previewData)} onNavigate={onNavigate} userId={userId}/>)}</>;
+ useEffect(()=>{
+  if(previewData){setData(previewData);setReadStates(previewReadStates);return;}
+  reload();
+  const onRefresh=()=>reload();
+  window.addEventListener('meg:data-invalidated',onRefresh);
+  window.addEventListener('focus',onRefresh);
+  return()=>{
+   serial.current++;
+   inFlight.current?.abort();
+   window.removeEventListener('meg:data-invalidated',onRefresh);
+   window.removeEventListener('focus',onRefresh);
+  };
+ },[previewData,reload]);
+ return <>
+  {!previewData&&refreshing&&<div className="pano-progressive-status" role="status">Atualizando dados financeiros...</div>}
+  <HomeContent data={data} month={current} preview={Boolean(previewData)}
+   onNavigate={onNavigate} userId={userId} readStates={readStates}/>
+ </>;
 }
