@@ -159,11 +159,11 @@ export default function PrismOperationalLaunches({
    </section>
   </div>}
   {overlay==='expense'&&catalogs&&<ExpenseForm
-   catalogs={catalogs} historySnapshot={history} saveEnabled={false}
+   catalogs={catalogs} historySnapshot={history} readOnlyRealData saveEnabled={false}
    onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&catalogs&&editDraft&&<ExpenseForm
    key={'prism-read-'+editId} mode="edit" catalogs={catalogs}
-   initialDraft={editDraft} saveEnabled={false}
+   initialDraft={editDraft} readOnlyRealData saveEnabled={false}
    onBack={()=>{setOverlay(null);setEditId(null);}}/>}
   {overlay==='edit'&&!editDraft&&<div role="alert">
    O lançamento não pode ser representado com segurança no editor. Nenhum valor foi estimado.
