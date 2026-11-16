@@ -1,4 +1,4 @@
-import { useEffect, useState, type FocusEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FocusEvent, type MouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../components/Icon';
 import { IconButton } from '../components/primitives';
@@ -26,11 +26,61 @@ function readSidebarPreference() {
 }
 
 export type ShellSection = 'home'|'launches';
-type ShellProps={children:ReactNode;periodLabel?:string;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
+type ShellProps={children:ReactNode;periodLabel?:string;periodMonth?:string;onPeriodMonthChange?:(month:string)=>void;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
+
+function shiftMonth(month:string,delta:number):string {
+ const date=new Date(month+'-01T12:00:00Z');
+ if(Number.isNaN(date.valueOf()))return month;
+ date.setUTCMonth(date.getUTCMonth()+delta);
+ return date.toISOString().slice(0,7);
+}
+function HeaderMonthPicker({label,month,onChange}:{label:string;month?:string;onChange?:(month:string)=>void}){
+ const [open,setOpen]=useState(false);
+ const container=useRef<HTMLDivElement>(null);
+ const valid=typeof month==='string'&&/^\\d{4}-(0[1-9]|1[0-2])$/.test(month);
+ const enabled=Boolean(onChange&&valid);
+ useEffect(()=>{
+  if(!open)return;
+  const dismiss=(event:PointerEvent)=>{
+   if(event.target instanceof Node&&!container.current?.contains(event.target))setOpen(false);
+  };
+  const onEscape=(event:KeyboardEvent)=>{if(event.key==='Escape')setOpen(false);};
+  document.addEventListener('pointerdown',dismiss);
+  document.addEventListener('keydown',onEscape);
+  return()=>{document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',onEscape);};
+ },[open]);
+ const select=(next:string,close=true)=>{
+  if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(next))return;
+  onChange?.(next);
+  if(close)setOpen(false);
+ };
+ return <div className="meg-period-anchor" ref={container}>
+  <button type="button" className="meg-period" aria-label="Selecionar período" aria-haspopup="dialog" aria-expanded={open}
+   disabled={!enabled} onClick={()=>setOpen(value=>!value)}>
+   <Icon name="calendar" />
+   <span>{label}</span>
+   <Icon name="chevronDown" />
+  </button>
+  {open&&enabled&&<div className="meg-period-popover" role="dialog" aria-label="Selecionar mês">
+   <strong>Período da consulta</strong>
+   <p>Os indicadores da Home utilizam o resumo mensal da API financeira.</p>
+   <label htmlFor="meg-header-month">Mês do painel</label>
+   <input id="meg-header-month" type="month" value={month} onChange={event=>select(event.currentTarget.value)}/>
+   <div className="meg-period-steps">
+    <button type="button" onClick={()=>select(shiftMonth(month!, -1),false)} aria-label="Voltar um mês">‹</button>
+    <button type="button" onClick={()=>select(shiftMonth(month!, 1),false)} aria-label="Avançar um mês">›</button>
+    <button type="button" className="meg-period-current" onClick={()=>{
+     const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+     select((parts.find(p=>p.type==='year')?.value||'')+'-'+(parts.find(p=>p.type==='month')?.value||''));
+    }}>Mês atual</button>
+   </div>
+  </div>}
+ </div>;
+}
 export function AppShell(props:ShellProps){
  return <HomeDueAlertsProvider><AppShellView {...props}/></HomeDueAlertsProvider>;
 }
-function AppShellView({children,periodLabel,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
+function AppShellView({children,periodLabel,periodMonth,onPeriodMonthChange,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
   const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
   const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -282,11 +332,7 @@ function AppShellView({children,periodLabel,activeSection='home',onNavigate,prof
           </label>
 
           <div className="meg-topbar-actions">
-            <button type="button" className="meg-period">
-              <Icon name="calendar" />
-              <span>{periodLabel || 'Outubro de 2026'}</span>
-              <Icon name="chevronDown" />
-            </button>
+            <HeaderMonthPicker label={periodLabel||'Mês atual'} month={periodMonth} onChange={onPeriodMonthChange}/>
 
             <HomeDueAlertsBell/>
             <button type="button" className="meg-profile">
