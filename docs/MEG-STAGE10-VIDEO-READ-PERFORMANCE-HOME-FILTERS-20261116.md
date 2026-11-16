@@ -57,3 +57,15 @@ Sem escrita financeira, sem alteração dos dados reais ou RLS, sem serviço Ren
 ## Saúde e retomada
 
 Saúde do chat: **ATENÇÃO**, histórico extenso e várias validações, mas checkpoint oficial atualizado. Em eventual troca, reutilizar o checkpoint em `MEG-WEB-CONTINUIDADE-OFICIAL.md` e permanecer na Etapa 10, não abrir Etapa 11 por conveniência.
+
+## Resultado adicional: autocomplete entre meses e publicação validada
+
+- Durante o fechamento, foi detectado que usar apenas os 49 registros de novembro como `HistorySnapshot.kind='complete'` reduziria indevidamente o autocomplete histórico. Essa hipótese foi descartada e o erro não foi aprovado.
+- `ExpenseForm.tsx` agora recebe o adaptador opcional `searchHistorySuggestions`, executado **apenas após o usuário digitar**, com debounce de 260 ms, cancelamento e aviso explícito de falha. A abertura de um lançamento no editor não aciona a busca global. A QA antiga preserva seu `historySnapshot` anterior na ausência da prop.
+- `integrated-qa/PrismOperationalLaunches.tsx` consulta `GET /finance/events?search=...` usando `readAuthorizedHistory` com duas passagens paginadas de resultados filtrados, e o conversor `suggestionsFromCanonicalHistory` consome o histórico integral correspondente ao termo. Seleção copia somente descrição, categoria e forma/conta conforme política existente, nunca data ou valor.
+- O teste sintético caracteriza lançamento de outubro encontrado ao digitar em novembro e proíbe a busca histórica na abertura do formulário ou no carregamento inicial da grade.
+- Contrato estático foi atualizado para exigir `readAuthorizedHistory` sob demanda, e não `historySnapshot={history}` como se o único mês fosse o histórico completo.
+- **CI principal:** [GitHub Actions #43888812214](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43888812214), commit de código `d6b573b3797d9ac6cf6bce07bf3e4d3af50be652`, **SUCCESS**, incluindo 8 viewports sintéticos, consulta mensal, Home sem rota de compromissos, autocomplete de mês anterior, npm ci, Vite OFF/ON, gateway e TypeScript.
+- **Render preview Free**: deploy manual `dep-dbthejmi0phs73f2a380`, no mesmo commit `d6b573b...`, status **live**, Auto Deploy OFF. Endereço sem cache para validar: https://meg-stage10-prism-real-preview.onrender.com/web-evolution.html?tela=lancamentos&v=d6b573b3797d9ac6cf6bce07bf3e4d3af50be652
+- A URL permite login real e consulta à API existente, porém a evidência de UI em sessão do responsável **ainda precisa de homologação visual explícita**. Nenhum writer liberado, banco/custos novos alterados, API produtiva/Android/main/merge intocados.
+- **Limites atuais:** filtro de mês e intervalo dentro dele, não período livre multimensal; Home compromissos indisponíveis porque API publicada retorna 404; área Cartões/Benefícios e módulos de escrita precisam dos gates de negócio seguintes. Não declarar a Etapa 10 concluída nem abrir a Etapa 11 por conveniência.
