@@ -47,6 +47,8 @@ const mock=(u,path)=>{
   realizedIncome:0,realizedExpense:18.75,realizedResult:-18.75,
   eventCount:1,pendingCount:0,pendingAmount:0,topCategories:[],
  };
+ if(path==='/finance/cashflow')return {month:key,days:[]};
+ if(path==='/finance/benefit-summary')return {month:key,balance:0,credits:0,used:0};
  if(path==='/finance/accounts')return [{id:'acc-'+u.id,name:'Conta '+u.name,
   type:'checking',openingBalance:'100',isActive:true}];
  if(path==='/finance/categories')return [{id:'cat-'+u.id,name:'Categoria '+u.name,
@@ -78,7 +80,12 @@ try{
   if(!user){violations.push('unknown token '+url.pathname);await route.fulfill({status:403,body:'{}'});return;}
   requests.push({user:user.id,path:url.pathname});
   const output=mock(user,url.pathname);
-  if(output===undefined){violations.push('unexpected read '+url.pathname);await route.fulfill({status:404,body:'{}'});return;}
+  if(output===undefined){
+   if(url.pathname==='/finance/home-commitments'||url.pathname==='/finance/home-available'){
+    await route.fulfill({status:404,contentType:'application/json',body:'{}'});return;
+   }
+   violations.push('unexpected read '+url.pathname);await route.fulfill({status:404,body:'{}'});return;
+  }
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(output),
    headers:{'Cache-Control':'no-store'}});
  });
@@ -86,6 +93,10 @@ try{
  for(const [index,u] of users.entries()){
   await page.evaluate(s=>sessionStorage.setItem('meg.auth.session',JSON.stringify(s)),session(u));
   await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.pano-root').waitFor({state:'visible',timeout:25000});
+  assert.equal(await page.getByRole('button',{name:'Selecionar período'}).isEnabled(),true,
+    'Shared month picker unavailable for '+u.id);
+  await page.getByRole('button',{name:'Lançamentos',exact:true}).click();
   await page.getByRole('button',{name:u.description}).first().waitFor({timeout:25000}).catch(async()=>{
    await page.locator('.meg-l09-open-row').filter({hasText:u.description}).first().waitFor({timeout:15000});
   });
