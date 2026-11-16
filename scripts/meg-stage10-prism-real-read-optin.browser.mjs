@@ -105,6 +105,7 @@ try{
   const errors=[];
   let historySearchRequests=0;
   let snapshotReads=0;
+  let delayedCards=false;
   const homeSummaryMonths=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',req=>{
@@ -127,6 +128,10 @@ try{
    if(/^\/(finance|cards)(\/|$)/.test(url.pathname)&&req.headers()['authorization']!=='Bearer synthetic-ci-only')errors.push('Authorization missing from authenticated finance request');
    if(url.pathname==='/finance/events/history-snapshot')snapshotReads++;
    if(url.pathname==='/finance/summary')homeSummaryMonths.push(url.searchParams.get('month'));
+   if(width===1366&&!delayedCards&&url.pathname==='/cards'&&url.searchParams.get('month')===monthKey){
+    delayedCards=true;
+    await new Promise(resolve=>setTimeout(resolve,2000));
+   }
 
    const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey,url.searchParams.get('search')||'',url.searchParams.get('filter')||'');
    if(value===undefined){
@@ -144,6 +149,11 @@ try{
    // A entrada, inclusive com link antigo apontando para Lançamentos, abre sempre na Home.
    await page.goto(base+'/web-evolution.html?tela=lancamentos',{waitUntil:'domcontentloaded'});
    await page.locator('.pano-root').waitFor({state:'visible',timeout:20000});
+   if(width===1366){
+    // Uma chamada lenta nao pode bloquear a exibicao do resumo ja retornado.
+    await page.getByRole('button',{name:/Despesas: R\$\s*123,45/}).waitFor({state:'visible',timeout:20000});
+    await page.getByText('Consultando seus cartões...').waitFor({state:'visible',timeout:1000});
+   }
    assert.equal(await page.locator('[data-meg-operational-prism="read-only"]').count(),0,
     'Authenticated entry must start on Home');
    const headerPicker=page.getByRole('button',{name:'Selecionar período'});
@@ -252,7 +262,7 @@ try{
     await page.goto(base+'/web-evolution.html?tela=home',{waitUntil:'domcontentloaded'});
     await page.locator('.pano-root').waitFor({state:'visible',timeout:20000});
     await page.getByText('Meus cartões',{exact:true}).waitFor({state:'visible'});
-    await page.getByText(/Compromissos ainda não disponíveis na API canônica/).waitFor({state:'visible'});
+    await page.getByText(/Compromissos (ainda )?não disponíveis na API canônica/).waitFor({state:'visible'});
     await page.screenshot({path:resolve(evidence,'home-canonical-404-'+width+'x'+height+'.png'),fullPage:false});
     const globalInput=page.getByRole('textbox',{name:'Buscar lançamentos'});
     await globalInput.fill('MERCADO OUTRO ANO');
