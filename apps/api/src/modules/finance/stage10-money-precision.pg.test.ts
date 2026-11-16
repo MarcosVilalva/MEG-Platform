@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {prisma,UserRole,UserStatus} from '@meg/database';
 import {createFinancialEventProtected} from './event-mutation';
-import {createBenefitEventProtected} from './benefit-event-mutation';
+import {updateFinancialEventsBulkProtected} from './event-bulk-mutation';
+import {createBenefitEventProtected,updateBenefitEventProtected} from './benefit-event-mutation';
 
 /** Caracterizacao, sem corrigir regras. POSTGRES 17 efemero do CI somente. */
 const db=process.env.DATABASE_URL??'';
@@ -62,6 +63,18 @@ try{
  assert.equal(money.ledgerEntries.length,1);
  assert.equal(money.ledgerEntries[0].credit.toString(),'125.49','Ledger exact credit');
  assert.equal(money.ledgerEntries[0].debit.toString(),'0');
+ const bulk=await updateFinancialEventsBulkProtected(user.id,{
+  ids:[money.id],changes:{amount:99.99},
+  expectedUpdatedAtById:{[money.id]:money.updatedAt.toISOString()},
+  operationId:tag+'-money-edit',
+ });
+ assert.equal(bulk.updated,1);
+ const editedMoney=await prisma.financialEvent.findUniqueOrThrow({
+  where:{id:money.id},include:{ledgerEntries:true},
+ });
+ assert.equal(editedMoney.amount.toString(),'99.99','Bulk monetary edit exact cents');
+ assert.equal(editedMoney.signedAmount.toString(),'-99.99');
+ assert.equal(editedMoney.ledgerEntries[0].credit.toString(),'99.99','Ledger rebuilt with exact cents');
 
  const recharge=await createBenefitEventProtected(user.id,{
   type:'income',date:'2026-11-15',description:'Synthetic benefit recharge',
@@ -86,7 +99,22 @@ try{
  assert.equal(consumptionDb.amount.toString(),'55.55','Benefit expense exact cents');
  assert.equal(consumptionDb.signedAmount.toString(),'-55.55');
  assert.equal(consumptionDb.ledgerEntries[0].credit.toString(),'55.55');
+ const updatedBenefit=await updateBenefitEventProtected(user.id,consumption.id,{
+  type:'expense',date:'2026-11-15',description:'Synthetic benefit consumption edited',
+  amount:49.99,accountId:benefit.id,categoryId:benefitCategory.id,
+  paymentMethodId:verocard.id,operationId:tag+'-consumption-edit',
+  expectedUpdatedAt:consumptionDb.updatedAt.toISOString(),
+ });
+ assert.equal(updatedBenefit.id,consumption.id);
+ const updatedBenefitDb=await prisma.financialEvent.findUniqueOrThrow({
+  where:{id:consumption.id},include:{ledgerEntries:true},
+ });
+ assert.equal(updatedBenefitDb.amount.toString(),'49.99','Benefit update exact cents');
+ assert.equal(updatedBenefitDb.signedAmount.toString(),'-49.99');
+ assert.equal(updatedBenefitDb.ledgerEntries.length,1);
+ assert.equal(updatedBenefitDb.ledgerEntries[0].credit.toString(),'49.99');
  console.log('STAGE10_MONEY_BENEFIT_PRECISION_PG17_EXACT_CENTS PASS');
+ console.log('STAGE10_MONETARY_BULK_BENEFIT_EDIT_PRECISION_PG17 PASS');
 }finally{
  await prisma.$disconnect();
 }
