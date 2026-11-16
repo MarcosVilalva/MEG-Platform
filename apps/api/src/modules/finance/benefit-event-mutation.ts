@@ -3,7 +3,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
-import { financialAmountValues } from './amount-sign';
+import { financialAmountValues, financialCentsDecimal } from './amount-sign';
 import { legacyOpeningBalanceFallbackTotal } from './opening-balance';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
 import {
@@ -177,8 +177,8 @@ export async function updateBenefitEventProtected(
           status: 'paid',
           date: new Date(`${input.date}T12:00:00.000Z`),
           competence: input.date.slice(0, 7),
-          amount: values.amount,
-          signedAmount: values.signedAmount,
+          amount: financialCentsDecimal(values.amount),
+          signedAmount: financialCentsDecimal(values.signedAmount),
           accountId: account.id,
           categoryId: category?.id || null,
           paymentMethodId: paymentMethod.id,
@@ -192,8 +192,8 @@ export async function updateBenefitEventProtected(
           eventId,
           date: updated.date,
           accountId: account.id,
-          debit: Number(updated.signedAmount) >= 0 ? Number(updated.amount) : 0,
-          credit: Number(updated.signedAmount) < 0 ? Number(updated.amount) : 0,
+          debit: Number(updated.signedAmount) >= 0 ? updated.amount : 0,
+          credit: Number(updated.signedAmount) < 0 ? updated.amount : 0,
           memo: updated.description,
         },
       });
@@ -292,8 +292,8 @@ export async function createBenefitEventProtected(
           type: input.type,
           status: 'paid',
           date: input.date,
-          amount: values.amount,
-          signedAmount: values.signedAmount,
+          amount: financialCentsDecimal(values.amount),
+          signedAmount: financialCentsDecimal(values.signedAmount),
           accountId: account.id,
           categoryId: category?.id || null,
           paymentMethodId: paymentMethod.id,
@@ -329,8 +329,8 @@ export async function createBenefitEventProtected(
           status: 'paid',
           date: new Date(`${input.date}T12:00:00.000Z`),
           competence: input.date.slice(0, 7),
-          amount: values.amount,
-          signedAmount: values.signedAmount,
+          amount: financialCentsDecimal(values.amount),
+          signedAmount: financialCentsDecimal(values.signedAmount),
           accountId: account.id,
           categoryId: category?.id,
           paymentMethodId: paymentMethod.id,
@@ -343,8 +343,8 @@ export async function createBenefitEventProtected(
           eventId: event.id,
           date: event.date,
           accountId: account.id,
-          debit: Number(event.signedAmount) >= 0 ? Number(event.amount) : 0,
-          credit: Number(event.signedAmount) < 0 ? Number(event.amount) : 0,
+          debit: Number(event.signedAmount) >= 0 ? event.amount : 0,
+          credit: Number(event.signedAmount) < 0 ? event.amount : 0,
           memo: event.description,
         },
       });

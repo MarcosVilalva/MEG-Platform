@@ -159,8 +159,8 @@ export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
   type: string;
   status: string;
   date: string;
-  amount: number;
-  signedAmount: number;
+  amount: number | string;
+  signedAmount: number | string;
   accountId?: string | null;
   categoryId?: string | null;
   paymentMethodId?: string | null;
@@ -174,7 +174,9 @@ export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
       type: input.type,
       status: input.status,
       date: { gte: start, lt: end },
-      amount: Math.abs(input.amount),
+      amount: typeof input.amount === 'string'
+        ? input.amount.replace(/^-/, '')
+        : Math.abs(input.amount),
       signedAmount: input.signedAmount,
       accountId: input.accountId || null,
       categoryId: input.categoryId || null,

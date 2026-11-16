@@ -3,7 +3,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
-import { financialAmountValues, enteredAmountFromStored } from './amount-sign';
+import { financialAmountValues, enteredAmountFromStored, financialCentsDecimal } from './amount-sign';
 import { assertActiveCatalogReferences } from './catalog-scope';
 import { serializableFinancialTransaction } from './monetary-protection';
 import { FinancialEventMutationError } from './event-mutation';
@@ -147,8 +147,8 @@ async function rebuildLedgers(tx: Tx, eventIds: string[]) {
       eventId: event.id,
       date: event.date,
       accountId: event.accountId!,
-      debit: Number(event.signedAmount) >= 0 ? Number(event.amount) : 0,
-      credit: Number(event.signedAmount) < 0 ? Number(event.amount) : 0,
+      debit: Number(event.signedAmount) >= 0 ? event.amount : 0,
+      credit: Number(event.signedAmount) < 0 ? event.amount : 0,
       memo: event.description,
     })),
   });
@@ -230,8 +230,8 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
             description: input.changes.description?.trim(),
             type: input.changes.type,
             status: input.changes.status,
-            amount: amountChanged ? amountValues.amount : undefined,
-            signedAmount: amountChanged ? amountValues.signedAmount : undefined,
+            amount: amountChanged ? financialCentsDecimal(amountValues.amount) : undefined,
+            signedAmount: amountChanged ? financialCentsDecimal(amountValues.signedAmount) : undefined,
             notes: input.changes.notes,
             accountId: input.changes.accountId,
             paymentMethodId: input.changes.paymentMethodId,

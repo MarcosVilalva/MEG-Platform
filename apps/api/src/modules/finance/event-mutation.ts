@@ -2,7 +2,7 @@ import { prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
-import { financialAmountValues } from './amount-sign';
+import { financialAmountValues, financialCentsDecimal } from './amount-sign';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
 import { isBenefitPaymentMethod, isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
 import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, serializableFinancialTransaction } from './monetary-protection';
@@ -82,6 +82,8 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         paymentMethod,
       });
       const values = financialAmountValues(input.type, input.amount);
+      const exactAmount = financialCentsDecimal(values.amount);
+      const exactSignedAmount = financialCentsDecimal(values.signedAmount);
       if (!input.allowDuplicate) {
         const duplicate = await findRecentFinancialEventDuplicate(tx, {
           workspaceId: workspace.workspaceId,
@@ -90,8 +92,8 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           type: input.type,
           status: resolvedStatus,
           date: input.date,
-          amount: values.amount,
-          signedAmount: values.signedAmount,
+          amount: exactAmount,
+          signedAmount: exactSignedAmount,
           accountId: input.accountId,
           categoryId: input.categoryId,
           paymentMethodId: input.paymentMethodId,
@@ -113,8 +115,8 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           status: resolvedStatus,
           date: new Date(input.date),
           competence: input.competence || input.date.slice(0, 7),
-          amount: values.amount,
-          signedAmount: values.signedAmount,
+          amount: exactAmount,
+          signedAmount: exactSignedAmount,
           accountId: input.accountId,
           categoryId: input.categoryId,
           paymentMethodId: input.paymentMethodId,
@@ -125,7 +127,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
 
       let ledgerEntry = null;
       if (event.accountId && isPostedFinancialStatus(event.status)) {
-        const value = Number(event.amount);
+        const value = event.amount;
         ledgerEntry = await tx.ledgerEntry.create({
           data: {
             eventId: event.id,
