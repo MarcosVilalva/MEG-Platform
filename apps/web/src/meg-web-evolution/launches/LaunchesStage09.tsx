@@ -188,6 +188,8 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const scopeBounds=periodBounds(period);
  const scopeStart=scopeBounds?.start??'';
  const scopeEnd=scopeBounds?.end??'';
+ const [yearDraft,setYearDraft]=useState(period.month.slice(0,4));
+ useEffect(()=>setYearDraft(period.month.slice(0,4)),[period.month]);
  const [search,setSearch]=useState(rememberedFilters?.search??'');
  const [kind,setKind]=useState(rememberedFilters?.kind??'all');
  const [category,setCategory]=useState(rememberedFilters?.category??'all');
@@ -467,10 +469,14 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
        </label>}
        {period.mode==='year'&&<label className="meg-l09-period-filter">
         <span className="sr-only">Ano de referência</span>
-        <select aria-label="Ano de referência" value={period.month.slice(0,4)}
-         onChange={event=>onPeriodSelectionChange({...period,month:event.target.value+period.month.slice(4)})}>
-         {Array.from({length:101},(_,i)=>String(2000+i)).map(year=><option key={year} value={year}>{year}</option>)}
-        </select>
+        <input type="text" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} aria-label="Ano de referência"
+         value={yearDraft} onChange={event=>{
+          const year=event.target.value.replace(/[^0-9]/g,'').slice(0,4);
+          setYearDraft(year);
+          if(/^\\d{4}$/.test(year)&&year!=='0000')
+           onPeriodSelectionChange({...period,month:year+period.month.slice(4)});
+         }}
+         onBlur={()=>{if(yearDraft.length!==4||yearDraft==='0000')setYearDraft(period.month.slice(0,4));}}/>
        </label>}
        {period.mode==='range'&&<fieldset className="meg-l09-date-range" aria-label="Período personalizado">
         <legend className="sr-only">Período personalizado</legend>
