@@ -473,7 +473,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
          value={yearDraft} onChange={event=>{
           const year=event.target.value.replace(/[^0-9]/g,'').slice(0,4);
           setYearDraft(year);
-          if(/^\\d{4}$/.test(year)&&year!=='0000')
+          if(/^\d{4}$/.test(year)&&year!=='0000')
            onPeriodSelectionChange({...period,month:year+period.month.slice(4)});
          }}
          onBlur={()=>{if(yearDraft.length!==4||yearDraft==='0000')setYearDraft(period.month.slice(0,4));}}/>
