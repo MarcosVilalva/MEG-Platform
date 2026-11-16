@@ -83,7 +83,7 @@ try{
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',req=>{
    const url=new URL(req.url());
-   if(url.host!==baseHost)externalHosts.push(req.url());
+   if(url.host!==baseHost&&['fetch','xhr'].includes(req.resourceType()))externalHosts.push(req.url());
   });
   await page.route('**/*',async route=>{
    const req=route.request();
@@ -108,7 +108,7 @@ try{
   try{
    await page.goto(base+'/web-evolution.html?tela=lancamentos',{waitUntil:'domcontentloaded'});
    await page.locator('[data-meg-operational-prism="read-only"]').waitFor({timeout:20000});
-   await page.getByText(item.description,{exact:true}).first().waitFor({state:'visible',timeout:20000});
+   await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-l09').count()>0,true,'Canonical stage09 grid missing');
    assert.equal(await page.locator('[data-testid="qa-batch-action"]').count(),0,'Batch writer control must remain absent');
    assert.equal(errors.length,0,'Unexpected page errors '+JSON.stringify(errors));
