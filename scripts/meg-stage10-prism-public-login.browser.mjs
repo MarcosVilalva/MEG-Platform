@@ -34,7 +34,7 @@ try{
    const login=page.locator('[data-meg-login="stage05"]');
    await login.waitFor({state:'visible',timeout:30000});
    await page.getByRole('textbox',{name:'E-mail'}).waitFor({state:'visible'});
-   await page.getByLabel('Senha').waitFor({state:'visible'});
+   await page.locator('input[name="password"]').waitFor({state:'visible'});
    await page.getByRole('button',{name:'Entrar no MEG'}).waitFor({state:'visible'});
    await page.waitForFunction(()=>{
     const logo=document.querySelector('.meg-login-logo');
