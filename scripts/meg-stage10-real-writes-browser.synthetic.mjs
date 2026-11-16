@@ -162,6 +162,24 @@ try{
     id:'synthetic-created',...body,signedAmount:'-125.49',updatedAt:new Date().toISOString(),
    })});
   }
+  if(req.method()==='POST'&&url.pathname==='/cards/purchases'){
+   const body=JSON.parse(req.postData()||'{}');
+   writerCalls.push({path:url.pathname,body});
+   assert.equal(body.cardId,'synthetic-card');
+   assert.equal(body.categoryId,'synthetic-category');
+   assert.equal(body.description,'COMPRA CARTAO QA');
+   assert.equal(body.totalAmount,99);
+   assert.equal(body.installments,3);
+   assert.equal(body.purchaseDate,'2026-11-14');
+   assert.equal('status' in body,false);
+   assert.equal('notes' in body,false);
+   assert.equal('statementMonth' in body,false,'UI nao escolhe competencia');
+   assert.match(body.operationId,/^[0-9a-f-]{36}$/);
+   return route.fulfill({status:201,headers,body:JSON.stringify({
+    id:'synthetic-card-purchase',...body,status:'active',
+    entries:[],updatedAt:new Date().toISOString(),
+   })});
+  }
   return route.fulfill({status:503,headers,body:JSON.stringify({error:'UNEXPECTED_SYNTHETIC_API_REQUEST'})});
  });
  await page.goto(base+'/meg-unificado-qa.html?visual=prism&dados=reais&tela=lancamentos',{waitUntil:'domcontentloaded'});
@@ -278,6 +296,28 @@ try{
  assert.equal(writerCalls[3].path,'/finance/benefit-events');
  assert.equal(writerCalls.filter(x=>x.path==='/finance/events').length,1,
   'benefício nunca passa pelo writer monetário comum');
+ // Compra no cartão deve ser criada em CardPurchase, nunca FinancialEvent.
+ await page.getByRole('button',{name:'Novo lançamento'}).first().click();
+ await page.getByRole('button',{name:'Escolher Despesa'}).click();
+ const credit=page.locator('.meg-t10-expense');
+ await credit.waitFor({state:'visible'});
+ await credit.locator('input[id$="description"]').fill('COMPRA CARTAO QA');
+ await credit.locator('select[id$="category"]').selectOption('synthetic-category');
+ await credit.getByRole('button',{name:'Crédito'}).click();
+ await credit.locator('select[id$="card"]').selectOption('synthetic-card');
+ await credit.locator('input[id$="installments"]').fill('3');
+ await credit.locator('.meg-t10-expense-date-entry input[type="text"]').fill('14/11/2026');
+ await credit.locator('.meg-t10-expense-date-entry input[type="text"]').press('Tab');
+ await credit.locator('input[id$="amount"]').fill('99,00');
+ const cardSave=credit.getByRole('button',{name:'Salvar lançamento'});
+ assert.equal(await cardSave.isEnabled(),true,'Compra de cartao liberada so no gate writer real opt-in');
+ await cardSave.click();
+ await page.getByText('Compra registrada no cartão pela API canônica.',{exact:false}).waitFor({state:'visible',timeout:20000});
+ assert.equal(writerCalls.length,5,'Compra no cartao usa quinto POST protegido');
+ assert.equal(writerCalls[4].path,'/cards/purchases','Nao criar evento financeiro duplicado');
+ assert.ok(apiCalls.includes(api+' POST /cards/purchases'));
+ assert.equal(writerCalls.filter(x=>x.path==='/finance/events').length,1,
+  'Compra parcelada nao converte para FinancialEvent');
  assert.ok(!apiCalls.some(call=>call.startsWith(readonlyApi+' POST')));
 
  assert.ok(!apiCalls.some(call=>call.startsWith(readonlyApi+' POST')),
