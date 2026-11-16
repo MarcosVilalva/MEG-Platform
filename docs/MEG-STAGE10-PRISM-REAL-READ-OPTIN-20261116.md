@@ -33,3 +33,40 @@ Nenhuma escrita. Consultas executadas dentro de `BEGIN TRANSACTION READ ONLY` co
 ## Próximo passo exato
 
 Resolver os gates de autorização de sessão e leitura sem efeitos colaterais usando ambiente de teste isolado; validar a conexão e CORS reais sem escrever dados financeiros, testar os oito viewports e solicitar aprovação visual do novo caminho. Não ativar a flag em produção nem mesclar PR #696/#688 antes de evidências técnicas e aprovação.
+
+## Complemento: browser sintético com oito viewports e screenshots (16/11/2026)
+
+Workflow [#43856294995](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43856294995), commit `3e31e1b9b3df32e6abb6465f9a3eb9e608857de8`, executado em GitHub Actions com Google Chrome, Vite, servidor estático em loopback e respostas financeiras **sintéticas**. Nenhuma credencial real, login real, banco real, writer ou API de produção acessados neste gate.
+
+Resultado bruto relevante:
+
+```text
+MEG_STAGE10_PRISM_REAL_READ_OPTIN_STATIC_GATE PASS
+MEG_STAGE10_BUNDLE_SECRET_GUARD PASS
+MEG_STAGE10_PRISM_REAL_OPTIN_BUILD PASS
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 390x844
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 640x900
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 960x900
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 1024x768
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 1366x768
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 820x360
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 1024x450
+MEG_STAGE10_PRISM_E2E_VIEWPORT_PASS 1920x1080
+MEG_STAGE10_PRISM_SYNTHETIC_BROWSER_PASS
+```
+
+Foram inspecionados: evento sintético no DataGrid, menu com duplicação/baixa/arquivo bloqueados, formulário de edição com valores DTO e salvar indisponível, novo lançamento com salvar indisponível, nenhuma requisição mutante, nenhum endpoint de API inesperado, nenhuma requisição de dados `fetch`/XHR a terceiros. A fonte de Google Fonts dos CSS aprovados foi abortada pelo runner e não foi contada como `fetch` de dados. Nenhuma alteração do CSS homologado.
+
+Capturas do navegador disponibilizadas no [artefato GitHub Actions #14219709412](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/43856294995/artifacts/14219709412), expiração anunciada em 23/11/2026.
+
+O gate `npx tsc -b` continua com **FAIL**, exclusivamente:
+```text
+src/meg-web-evolution/home/HomeDashboard.tsx(218,87): TS2550 replaceAll
+src/meg-web-evolution/home/home-commitments-read.ts(60,9): TS7022 query
+src/meg-web-evolution/home/home-commitments-read.ts(62,9): TS7022 page
+```
+Esses três erros estão em arquivos não alterados, protegidos na Etapa 10. **CI geral vermelho, apesar dos builds Vite e do browser passarem.** Não fazer merge/deploy nem declarar leitura real homologada.
+
+Mudança mínima adicional em `ExpenseForm.tsx`: prop opt-in `readOnlyRealData` altera somente rótulos de QA para rótulos verdadeiros quando o formulário exibe DTOs autenticados. Com a prop ausente, a QA homologada mantém os textos originais, sem alteração de CSS, layout ou operação financeira.
+
+A prova com uma sessão real e eventos reais apresentados no navegador continua **pendente**. O login atual escreve metadados de autenticação, e a API pode executar mutação em fallback de workspace; nenhum deles foi executado neste teste.
