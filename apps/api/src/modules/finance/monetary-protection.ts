@@ -212,7 +212,7 @@ export async function findRecentCardPurchaseDuplicate(tx: Tx, input: {
   cardId: string;
   categoryId?: string | null;
   description: string;
-  totalAmount: number;
+  totalAmount: number | string;
   purchaseDate: string;
   installments: number;
 }) {
