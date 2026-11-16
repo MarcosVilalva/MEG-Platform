@@ -93,6 +93,10 @@ try{
   assert.equal(response.status,200);
   response=await read('/web-evolution.html');assert.equal(response.status,200);
   assert.match(await response.text(),/meg-web-evolution-root/);
+  response=await read('/meg-web-evolution/visual-loading/logo-meg-oficial-recortada.webp');assert.equal(response.status,200);
+  assert.equal(response.headers.get('content-type'),'image/webp');
+  response=await read('/meg-web-evolution/fonts/InterVariable.woff2');assert.equal(response.status,200);
+  assert.equal(response.headers.get('content-type'),'font/woff2');
   response=await read('/meg-unificado-qa.html');assert.equal(response.status,404);
   response=await read('/.env');assert.equal(response.status,404);
   assert.ok(calls.every(x=>x.origin===null),'Proxy must never forward browser Origin');
