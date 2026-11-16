@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "project": "MEG Finanças Web Evolution",
+  "stage": 10,
+  "purpose": "card-batch-readonly-preview-qa",
+  "status": "DESIGN_ONLY_NOT_AUTHORIZED_FOR_DEPLOY",
+  "repository": "MarcosVilalva/MEG-Platform",
+  "branch": "stage08/unified-qa-stage05-08-10-20261112",
+  "render": {
+    "observedWorkspaceId": "tea-d98k1qhkh4rs73f4sfj0",
+    "observedServiceCount": 25,
+    "observedPostgresCount": 0,
+    "confirmedWorkspacePlan": null,
+    "proposedWebServiceName": "meg-stage10-readonly-preview-qa",
+    "proposedWebPlan": "free",
+    "proposedWebAutoDeploy": "off",
+    "proposedDatabaseName": "meg_stage10_qa_synthetic",
+    "proposedDatabasePlan": "free",
+    "proposedDatabaseExpiresAfterDays": 30,
+    "proposedRuntime": "node",
+    "actualQaFrontendType": "static_site",
+    "useExistingServices": false
+  },
+  "prohibitions": {
+    "resourceCreationAuthorized": false,
+    "publicEndpointAuthorized": false,
+    "deploymentAuthorized": false,
+    "mergeAuthorized": false,
+    "productionDataAllowed": false,
+    "productionCredentialsAllowed": false,
+    "productionDatabaseAllowed": false,
+    "productionDbPushAllowed": false,
+    "androidChangesAllowed": false,
+    "financialWritersAllowed": false,
+    "reuseRootRenderBlueprintAllowed": false,
+    "reuseExistingProductionServicesAllowed": false,
+    "copyRealDataToQaAllowed": false
+  },
+  "requirements": [
+    "new-or-dedicated-workspace-slot-confirmed",
+    "explicit-cost-approval",
+    "qa-database-with-synthetic-data-only",
+    "separate-qa-jwt-secret",
+    "no-secret-in-repository",
+    "no-writer-route",
+    "single-instance-rate-limit-or-distributed-enforcement",
+    "https-and-qa-origin-allowlist",
+    "manual-deploy-only",
+    "authorization-and-workspace-rbac",
+    "rollback-and-teardown-plan"
+  ],
+  "source": "docs/MEG-STAGE10-QA-PERSISTENT-INFRA-DECISION-20261114.md"
+}

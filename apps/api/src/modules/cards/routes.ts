@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import {cardPurchaseStatementMonth} from './purchase-cycle-canonical';
 import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
@@ -105,11 +106,6 @@ function domainError(reply: FastifyReply, error: unknown) {
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
-function addMonths(month: string, offset: number) {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
-}
-
 function text(value: unknown) { return typeof value === 'string' ? value.trim() : ''; }
 function number(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function key(value: unknown) { return text(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase(); }
@@ -147,25 +143,6 @@ async function migrateLegacyCards(ownerId: string, cards: LegacyCard[]) {
     } });
     existing.add(key(name));
   }
-}
-
-function installmentRows(input: {
-  purchaseDate: string;
-  totalAmount: number;
-  installments: number;
-  closingDay: number;
-}) {
-  const purchaseDate = new Date(input.purchaseDate);
-  const purchaseMonth = input.purchaseDate.slice(0, 7);
-  const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > input.closingDay ? 1 : 0);
-  const totalCents = Math.round(input.totalAmount * 100);
-  const baseCents = Math.floor(totalCents / input.installments);
-  const remainder = totalCents - baseCents * input.installments;
-  return Array.from({ length: input.installments }, (_, index) => ({
-    number: index + 1,
-    amount: (baseCents + (index < remainder ? 1 : 0)) / 100,
-    statementMonth: addMonths(firstMonth, index),
-  }));
 }
 
 function replayResponse(value: unknown): JsonRecord {
@@ -368,13 +345,10 @@ export async function cardRoutes(app: FastifyInstance) {
           });
 
           if (shouldRecalculateStatementMonths) {
-            const purchaseDate = new Date(nextPurchaseDate);
-            const purchaseMonth = nextPurchaseDate.slice(0, 7);
-            const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > card.closingDay ? 1 : 0);
             for (const entry of before.entries) {
               await tx.cardInstallment.update({
                 where: { id: entry.id },
-                data: { statementMonth: addMonths(firstMonth, entry.number - 1) },
+                data: { statementMonth: cardPurchaseStatementMonth(nextPurchaseDate, card.closingDay, entry.number) },
               });
             }
           }

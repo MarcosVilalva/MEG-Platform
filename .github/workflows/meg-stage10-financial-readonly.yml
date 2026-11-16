@@ -1,0 +1,64 @@
+name: MEG Stage10 | Prévia financeira e PostgreSQL descartável
+on:
+  push:
+    branches:
+      - 'stage08/unified-qa-stage05-08-10-20261112'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage10-readonly-and-transactional-characterization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependências imutáveis
+        run: npm ci --audit=false
+      - name: Gerar client Prisma apenas no runner descartável
+        run: npx prisma generate --schema packages/database/prisma/schema.prisma
+      - name: Criar esquema exclusivamente no Postgres descartável
+        run: |
+          node -e "const u=new URL(process.env.DATABASE_URL);if(u.hostname!=='127.0.0.1'||u.pathname!=='/meg_stage10_sandbox'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(1)"
+          npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Contratos canônicos e prévia estritamente somente leitura
+        run: |
+          npx tsx apps/api/src/modules/finance/card-statement-canonical.test.ts
+          npx tsx apps/api/src/modules/cards/routes.contract.test.ts
+          npx tsx apps/api/src/modules/finance/event-bulk-mutation.contract.test.ts
+          npx tsx apps/api/src/modules/finance/batch-edit-preview-read.test.ts
+      - name: PostgreSQL isolado - atomicidade, concorrência, idempotência e auditoria
+        run: npx tsx apps/api/src/modules/finance/stage10-batch-isolated.e2e.test.ts
+      - name: Adaptador autenticado de prévia em PostgreSQL isolado, sem writes
+        run: npx tsx apps/api/src/modules/finance/batch-edit-preview-adapter.isolated.test.ts
+      - name: Contrato HTTP autenticado da prévia em lote (Fastify.inject, não registrado)
+        run: npx tsx apps/api/src/modules/finance/batch-edit-preview-http-contract.test.ts
+      - name: QA HTTP em loopback com PostgreSQL descartável e JWT sintético
+        env:
+          NODE_ENV: test
+          MEG_STAGE10_QA_HTTP_ENABLED: '1'
+        run: npx tsx apps/api/src/modules/finance/stage10-qa-readonly-loopback.isolated.test.ts
+      - name: Gate de infraestrutura QA persistente sem autorizacao de deploy
+        run: node scripts/meg-stage10-qa-persistent-infra-preflight.mjs
+      - name: Check TypeScript da API na branch isolada
+        run: npx tsc -p apps/api/tsconfig.json --noEmit
