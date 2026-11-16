@@ -1,0 +1,24 @@
+name: MEG Stage10 | Teste publico CORS somente OPTIONS
+on:
+  push:
+    branches:
+      - 'stage10/prism-real-read-optin-20261116'
+permissions:
+  contents: read
+jobs:
+  read-only-cors-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Testar OPTIONS anonimo, sem token e sem escrita
+        shell: bash
+        run: |
+          set -euo pipefail
+          for origin in             "https://meg-web-evolution-preview.onrender.com"             "https://meg-stage08-alerta-prism-pr685.onrender.com"             "https://meg-stage10-prism-real-preview.onrender.com"             "http://localhost:5173"; do
+            echo "ORIGIN=$origin"
+            for path in /auth/login /finance/accounts /cards; do
+              echo "ENDPOINT=$path"
+              curl -sS -L --max-time 90 -D /tmp/meg-stage10-cors-headers                 -o /dev/null -X OPTIONS "https://meg-platform-api.onrender.com$path"                 -H "Origin: $origin"                 -H "Access-Control-Request-Method: GET"                 -H "Access-Control-Request-Headers: authorization,content-type"                 -w "HTTP=%{http_code}\n" || echo "HTTP=NETWORK_FAILURE"
+              grep -Ei '^(access-control-allow-origin|access-control-allow-methods|vary):'                 /tmp/meg-stage10-cors-headers || true
+            done
+          done
