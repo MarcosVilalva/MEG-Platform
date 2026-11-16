@@ -446,12 +446,50 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    <div className="meg-l09-left">
     <form className="meg-l09-filters" id="meg-l09-extra-filters" hidden={mode==='live'&&!topFiltersOpen}
      onSubmit={event=>event.preventDefault()} role="search" aria-label="Filtros complementares de lançamentos">
-      {mode==='live'&&readOnlyRealData&&onPeriodChange&&
+      {mode==='live'&&readOnlyRealData&&onPeriodSelectionChange?<>
+       <label className="meg-l09-period-filter">
+        <span className="sr-only">Abrangência do período</span>
+        <select aria-label="Abrangência do período" value={period.mode} onChange={event=>{
+         const next=event.target.value as LaunchPeriod['mode'];
+         if(next==='month')onPeriodSelectionChange(periodForMonth(period.month));
+         else if(next==='year')onPeriodSelectionChange({...period,mode:'year'});
+         else if(next==='all')onPeriodSelectionChange({...period,mode:'all',start:'',end:''});
+         else onPeriodSelectionChange({...period,mode:'range',start:startOfMonth,end:endOfMonth});
+        }}>
+         <option value="month">Mensal</option><option value="year">Anual</option>
+         <option value="range">Intervalo personalizado</option><option value="all">Todo o histórico ativo</option>
+        </select>
+       </label>
+       {period.mode==='month'&&<label className="meg-l09-period-filter">
+        <span className="sr-only">Mês de referência</span>
+        <input type="month" aria-label="Mês de referência" value={period.month} min="2000-01" max="2100-12"
+         onChange={event=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value))onPeriodSelectionChange(periodForMonth(event.target.value));}}/>
+       </label>}
+       {period.mode==='year'&&<label className="meg-l09-period-filter">
+        <span className="sr-only">Ano de referência</span>
+        <select aria-label="Ano de referência" value={period.month.slice(0,4)}
+         onChange={event=>onPeriodSelectionChange({...period,month:event.target.value+period.month.slice(4)})}>
+         {Array.from({length:101},(_,i)=>String(2000+i)).map(year=><option key={year} value={year}>{year}</option>)}
+        </select>
+       </label>}
+       {period.mode==='range'&&<fieldset className="meg-l09-date-range" aria-label="Período personalizado">
+        <legend className="sr-only">Período personalizado</legend>
+        <input type="date" aria-label="Período inicial" value={period.start} onChange={event=>{
+         const day=event.target.value;if(validDay(day))
+          onPeriodSelectionChange({...period,start:day,end:day>period.end?day:period.end});
+        }}/>
+        <span aria-hidden="true">a</span>
+        <input type="date" aria-label="Período final" value={period.end} onChange={event=>{
+         const day=event.target.value;if(validDay(day))
+          onPeriodSelectionChange({...period,start:day<period.start?day:period.start,end:day});
+        }}/>
+       </fieldset>}
+      </>:mode==='live'&&readOnlyRealData&&onPeriodChange?
        <label className="meg-l09-period-filter">
         <span className="sr-only">Mês de referência</span>
         <input type="month" aria-label="Mês de referência" value={periodMonth} min="2000-01" max="2100-12"
          onChange={event=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value))onPeriodChange(event.target.value);}}/>
-       </label>}
+       </label>:null}
       <label className="meg-l09-search"><LaunchIcon name="search" width={20} height={20}/><span className="sr-only">Buscar lançamentos</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar lançamentos..."/></label>
       <label><span className="sr-only">Tipo</span><select value={kind} onChange={event=>setKind(event.target.value)}><option value="all">Todos os tipos</option>{['income','expense','transfer','investment','redemption','adjustment'].map(k=><option key={k} value={k}>{shortType[k]}</option>)}</select></label>
       <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}{legacyCategoryOptions.length>0&&<optgroup label="Categorias do histórico">{legacyCategoryOptions.map(name=><option key={'legacy:'+name} value={'legacy:'+name}>{name}</option>)}</optgroup>}</select></label>
