@@ -129,8 +129,10 @@ try{
     assert.match(await editor.innerText(),/Dados reais consultados/);
     await page.screenshot({path:resolve(evidence,'edit-readonly-'+width+'x'+height+'.png'),fullPage:false});
     await editor.getByRole('button',{name:'Fechar edição'}).click();
-    await page.getByRole('button',{name:'Novo lançamento'}).first().click();
-    const choice=page.getByRole('dialog',{name:'Novo lançamento'});
+    const createButton=page.locator('.meg-l09-hero-actions .meg-l09-add:visible');
+    assert.equal(await createButton.count(),1,'Operational stage10 Create button must be unique');
+    await createButton.click();
+    const choice=page.locator('.meg-unified-choice-overlay [role="dialog"]');
     await choice.waitFor({state:'visible'});
     await choice.getByRole('button',{name:/Escolher Despesa/}).click();
     const form=page.getByRole('dialog',{name:'Novo lançamento'});
