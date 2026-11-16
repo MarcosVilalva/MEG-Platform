@@ -97,6 +97,7 @@ export type PrismReadData = {
 };
 export type PrismReadOnlyCallbacks = {
  onLoaded:(data:PrismReadData)=>void;
+ onLoading?:()=>void;
  onNew:()=>void;
  onEdit:(row:QaLaunchTarget)=>void;
  onNotice:(message:string)=>void;
@@ -116,7 +117,7 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
  useEffect(()=>{
   const controller=new AbortController();
   const {signal}=controller;
-  setData(null);setError('');setCanFilterCanonically(false);loadedRevision.current='';setProgress({loaded:0,total:0,pass:1,mode:'snapshot'});
+  setData(null);prismReadOnlyCallbacks?.onLoading?.();setError('');setCanFilterCanonically(false);loadedRevision.current='';setProgress({loaded:0,total:0,pass:1,mode:'snapshot'});
   const run=async()=>{
    try{
     // O snapshot da API oferece consistência transacional para eventos.
