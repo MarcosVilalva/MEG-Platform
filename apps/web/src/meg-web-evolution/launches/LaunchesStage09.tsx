@@ -31,6 +31,7 @@ type Props={
  exportUserName?:string;onRefresh?:()=>void;onPeriodChange?:(month:string)=>void;
  periodSelection?:LaunchPeriod;onPeriodSelectionChange?:(period:LaunchPeriod)=>void;
  rememberedFilters?:Partial<LaunchesFilterPreset>;
+ globalSearch?:{query:string;revision:number};
  onRememberFilters?:(value:LaunchesFilterPreset)=>void;
  onFilteredSummary?:(criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal)=>Promise<CanonicalFilteredHistorySummary|null>;
  /** Stage 10 opt-in QA only. Main, read models and finance writers are unchanged. */
@@ -180,7 +181,7 @@ function toQaTarget(row:Row):QaLaunchTarget{return {id:row.id,description:row.de
  type:row.type,status:row.status,categoryId:row.categoryId,category:row.category,
  accountId:row.accountId,account:row.account,accountKind:row.accountKind,
  paymentMethod:row.paymentMethod,signedAmount:row.signedAmount};}
-export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,onPeriodChange,periodSelection,onPeriodSelectionChange,rememberedFilters,onRememberFilters,onFilteredSummary,
+export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,onPeriodChange,periodSelection,onPeriodSelectionChange,rememberedFilters,globalSearch,onRememberFilters,onFilteredSummary,
  qaActions=false,readOnlyRealData=false,onQaEdit,onQaDuplicate,onQaNotice,qaBatchCatalogs}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
@@ -190,7 +191,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const scopeEnd=scopeBounds?.end??'';
  const [yearDraft,setYearDraft]=useState(period.month.slice(0,4));
  useEffect(()=>setYearDraft(period.month.slice(0,4)),[period.month]);
- const [search,setSearch]=useState(rememberedFilters?.search??'');
+ const [search,setSearch]=useState(rememberedFilters?.search??globalSearch?.query??'');
  const [kind,setKind]=useState(rememberedFilters?.kind??'all');
  const [category,setCategory]=useState(rememberedFilters?.category??'all');
  const [account,setAccount]=useState(rememberedFilters?.account??'all');
@@ -208,6 +209,15 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  });
  const [selectedFavorite,setSelectedFavorite]=useState('');
  const [topFiltersOpen,setTopFiltersOpen]=useState(mode==='live'&&readOnlyRealData);
+ useEffect(()=>{
+  if(mode!=='live'||!globalSearch?.revision)return;
+  // A busca global desconsidera filtros locais preexistentes do outro periodo.
+  // O resumo financeiro continua sendo calculado exclusivamente na API.
+  setSearch(globalSearch.query);
+  setKind('all');setCategory('all');setAccount('all');setPaymentMethod('all');
+  setStart(scopeStart);setEnd(scopeEnd);setAdvanced({});
+  setTopFiltersOpen(true);
+ },[globalSearch?.revision]);
  const [savingFavorite,setSavingFavorite]=useState(false);
  const [favoriteName,setFavoriteName]=useState('');
  const [confirmDelete,setConfirmDelete]=useState(false);
