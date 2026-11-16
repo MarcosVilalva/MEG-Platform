@@ -68,6 +68,8 @@ try{
   expectedUpdatedAtById:{[money.id]:money.updatedAt.toISOString()},
   operationId:tag+'-money-edit',
  });
+ assert.ok(bulk && typeof bulk==='object' && 'updated' in bulk,
+  'Bulk writer must return an updated count');
  assert.equal(bulk.updated,1);
  const editedMoney=await prisma.financialEvent.findUniqueOrThrow({
   where:{id:money.id},include:{ledgerEntries:true},
