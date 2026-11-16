@@ -130,7 +130,7 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
  const [remoteError,setRemoteError]=useState<{query:string;message:string}|null>(null);
  const localSuggestions=useMemo(()=>historySnapshot?suggestionsFromCanonicalHistory(historySnapshot,draft.description,5):[],[historySnapshot,draft.description]);
  useEffect(()=>{
-  if(!searchHistorySuggestions)return;
+  if(!searchHistorySuggestions||!suggestionsOpen)return;
   const query=draft.description.trim();
   setRemoteError(null);
   if(query.length<2){setRemoteResult({query,items:[]});return;}
@@ -143,7 +143,7 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
    });
   },260);
   return ()=>{window.clearTimeout(timeout);controller.abort()};
- },[draft.description,searchHistorySuggestions]);
+ },[draft.description,searchHistorySuggestions,suggestionsOpen]);
  const suggestions=searchHistorySuggestions
   ? remoteResult.query===draft.description.trim()?remoteResult.items:[]
   : localSuggestions;
