@@ -39,6 +39,7 @@ const endpoints=(path)=>{
   token:'synthetic-consistent-version-v1',
   capabilities:{historySnapshotV1:true,filteredSummaryV1:false}
  };
+ if(path==='/finance/events/month')return {items:[item],total:1,page:1,pageSize:1};
  if(path==='/finance/events/history-snapshot')return {
   protocol:'financial-history-v1',kind:'complete',
   consistency:'repeatable-read',total:1,items:[item]
@@ -111,6 +112,9 @@ try{
    await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-l09').count()>0,true,'Canonical stage09 grid missing');
    assert.equal(await page.locator('[data-testid="qa-batch-action"]').count(),0,'Batch writer control must remain absent');
+   await page.getByLabel('Mês de referência').waitFor({state:'visible'});
+   await page.getByLabel('Data inicial').waitFor({state:'visible'});
+   await page.getByLabel('Data final').waitFor({state:'visible'});
    assert.equal(errors.length,0,'Unexpected page errors '+JSON.stringify(errors));
    await page.screenshot({path:resolve(evidence,'launches-'+width+'x'+height+'.png'),fullPage:false});
    if(width===1366){
