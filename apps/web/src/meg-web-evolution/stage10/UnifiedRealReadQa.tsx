@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState,type MouseEvent} from 'react';
 import {clearSession,readSession} from '../../app/auth-client';
 import {financeClient} from '../../app/finance-client';
+import {cardsClient} from '../../app/cards-client';
 import {LoginScreen} from '../auth/LoginScreen';
 import {CreateAccountScreen} from '../auth/CreateAccountScreen';
 import {RecoverPasswordScreen} from '../auth/RecoverPasswordScreen';
@@ -14,6 +15,7 @@ import {loadStage10RealRead,loadStage10CardPreview,type Stage10RealRead} from '.
 import {prepareStage10ExpenseCreate,prepareStage10ExpenseUpdate,prepareStage10ExpenseArchive,stage10RealMutationGate} from './real-expense-mutation';
 import {isStage10FoodBenefitCategory} from './real-expense-category-policy';
 import {prepareStage10BenefitExpenseCreate,prepareStage10BenefitExpenseUpdate} from './real-benefit-expense-mutation';
+import {prepareStage10CardPurchaseCreate} from './real-card-expense-mutation';
 
 type Screen='login'|'register'|'recover'|'home'|'launches';
 type Overlay='choice'|'expense'|'edit'|'duplicate'|null;
@@ -150,9 +152,18 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    if(operationRef.current?.fingerprint!==fingerprint)
     operationRef.current={fingerprint,operationId:crypto.randomUUID()};
    const operationId=operationRef.current.operationId;
+   let successMessage=kind==='create'
+    ?'Lancamento criado pela API financeira.'
+    :'Alteracoes registradas pela API financeira.';
    if(kind==='create'){
     const category=data.catalogs.categories.find(item=>item.active&&item.id===draft.categoryId);
-    if(isStage10FoodBenefitCategory(category)){
+    if(draft.modality==='credit'){
+     // CardPurchase e identidade propria. Nunca criar um FinancialEvent
+     // com mesma descricao/valor nem calcular fatura/parcelas nesta tela.
+     const command=prepareStage10CardPurchaseCreate(draft,data.catalogs);
+     await cardsClient.createPurchase({...command,operationId});
+     successMessage='Compra registrada no cartão pela API canônica. As parcelas pertencem ao domínio Cartões e não são duplicadas no histórico.';
+    }else if(isStage10FoodBenefitCategory(category)){
      const command=prepareStage10BenefitExpenseCreate(draft,data.catalogs);
      await financeClient.createBenefitEvent({...command,operationId});
     }else{
@@ -171,7 +182,7 @@ export function UnifiedRealReadQa({enabled,blockedReason}:{enabled:boolean;block
    }
    operationRef.current=null;
    setOverlay(null);setEdit(null);setDuplicate(null);
-   setNotice(kind==='create'?'Lancamento criado pela API financeira.':'Alteracoes registradas pela API financeira.');
+   setNotice(successMessage);
    setRevision(n=>n+1);
   }catch(cause){
    setNotice('Nao foi possivel concluir a gravacao: '+(cause instanceof Error?cause.message:'erro desconhecido')+'. O historico nao foi alterado nesta tela.');
