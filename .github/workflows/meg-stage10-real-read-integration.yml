@@ -78,6 +78,8 @@ jobs:
           npm --workspace apps/api run test:finance
       - name: Opt-in real expense commands fail-closed and typed to canonical writers
         run: npx tsx apps/web/src/meg-web-evolution/stage10/real-expense-mutation.contract.test.ts
+      - name: CardPurchase creation strictly canonical, without Web installment calculations
+        run: npx tsx apps/web/src/meg-web-evolution/stage10/real-card-expense-mutation.contract.test.ts
       - name: Stage10 Alimentação, Fixo, Verocard and benefit writer contract
         run: |
           npx tsx apps/web/src/meg-web-evolution/stage10/real-expense-category-policy.contract.test.ts
