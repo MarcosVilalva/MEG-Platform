@@ -139,8 +139,12 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const requestedAmount=brlSignedDecimal(money);
  const isRefund=money.negative&&requestedAmount!==null;
  const isDirty=isEdit&&Boolean(initialDraft)&&(Object.keys(EMPTY_EXPENSE_DRAFT) as (keyof ExpenseDraft)[]).some(key=>draft[key]!==initialDraft![key]);
- const validPayment=isCredit?Boolean(selectedCard)&&/^[1-9]\d*$/.test(draft.installmentsInput):Boolean(method)&&(!showSettlementAccount||Boolean(selectedAccount));
- const canSave=Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&draft.date&&requestedAmount&&validPayment&&(!isCredit||isEdit)&&(!isEdit||isDirty)&&(!isFood||Boolean(benefitBinding)&&!isRefund));
+ const validPayment=isCredit?Boolean(selectedCard)&&/^(?:[1-9]|[1-3]\\d|4[0-8])$/.test(draft.installmentsInput):Boolean(method)&&(!showSettlementAccount||Boolean(selectedAccount));
+ // Criacao de compra parcelada usa exclusivamente o writer CardPurchase.
+ // Nunca ativar para edicao de FinancialEvent nem para preview real-read.
+ const creditCreateAllowed=!isEdit&&dataMode==='real-write'&&!isRefund&&
+  !draft.notes.trim()&&!draft.firstInstallmentDate;
+ const canSave=Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&draft.date&&requestedAmount&&validPayment&&(!isCredit||creditCreateAllowed)&&(!isEdit||isDirty)&&(!isFood||Boolean(benefitBinding)&&!isRefund));
  // A gravação continua desabilitada no QA. Para pendências, a API aceita accountId ausente,
  // mas qualquer writer real exigirá caracterização transacional antes de ser conectado.
  const currentSchedule=Boolean(schedule&&schedule.source==='canonical'&&schedule.cardId===draft.creditCardId&&schedule.purchaseDate===draft.date&&schedule.installments===Number(draft.installmentsInput)&&schedule.amountDecimal===requestedAmount&&schedule.rows.length===Number(draft.installmentsInput));
@@ -151,7 +155,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
   ...(!chosenCategory?['Categoria']:[]),
   ...(isCredit?[
    ...(!selectedCard?['Cartão']:[]),
-   ...(!/^[1-9]\d*$/.test(draft.installmentsInput)?['Número de parcelas']:[])
+   ...(!/^(?:[1-9]|[1-3]\\d|4[0-8])$/.test(draft.installmentsInput)?['Número de parcelas (1 a 48)']:[])
   ]:[
    ...(!method?['Forma de pagamento']:[]),
    ...(showSettlementAccount&&!selectedAccount?['Conta de saída']:[])
@@ -295,7 +299,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      {isCredit&&<div className="meg-t10-expense-credit"><div className="meg-t10-expense-credit-title"><Icon name="card"/> Cartão de crédito</div>
       <div className="meg-t10-expense-credit-fields">
        <div><label htmlFor={formId+'card'}>Cartão</label><select id={formId+'card'} value={draft.creditCardId} onChange={e=>patch('creditCardId',e.target.value)}><option value="">SELECIONE</option>{cards.map(c=><option key={c.id} value={c.id}>{c.name}{c.lastFour?' • '+c.lastFour:''}</option>)}</select></div>
-       <div><label htmlFor={formId+'installments'}>Número de parcelas</label><input id={formId+'installments'} type="number" min="1" step="1" value={draft.installmentsInput} onChange={e=>patch('installmentsInput',e.target.value)}/></div>
+       <div><label htmlFor={formId+'installments'}>Número de parcelas</label><input id={formId+'installments'} type="number" min="1" max="48" step="1" value={draft.installmentsInput} onChange={e=>patch('installmentsInput',e.target.value)}/></div>
       </div>
       {selectedCard&&<div className="meg-t10-credit-preview" aria-label="Identificação do cartão selecionado" style={{'--meg-card-accent':selectedCard.color||'#14e5d4'} as CSSProperties}>
        <div className="meg-t10-credit-mini"><span className="meg-t10-credit-mini-brand">{selectedCard.issuer||selectedCard.name}</span><Icon name="card"/><strong>{selectedCard.brand||'CARTÃO DE CRÉDITO'}</strong><small>{selectedCard.lastFour?'•••• '+selectedCard.lastFour:'Final não informado'}</small></div>
