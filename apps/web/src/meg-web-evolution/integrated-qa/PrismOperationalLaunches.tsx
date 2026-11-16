@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import type {LaunchPeriod} from '../launches/period-scope';
 import {OperationalLaunches,type PrismReadData,type PrismReadOnlyCallbacks} from '../launches/OperationalLaunches';
 import type {QaLaunchTarget} from '../stage10/LaunchActionsQa';
 import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseCatalogs,type ExpenseDraft} from '../stage10/ExpenseForm';
@@ -22,6 +23,7 @@ type Overlay='choice'|'expense'|'edit'|null;
 type Props={
  userId:string;userName:string;onHome:()=>void;
  periodMonth?:string;onPeriodChange?:(month:string)=>void;
+ periodSelection?:LaunchPeriod;onPeriodSelectionChange?:(period:LaunchPeriod)=>void;
  initialNew?:boolean;onInitialNewConsumed?:()=>void;
 };
 
@@ -79,7 +81,7 @@ function existingExpenseDraft(
 }
 
 export default function PrismOperationalLaunches({
- userId,userName,onHome,periodMonth,onPeriodChange,initialNew=false,onInitialNewConsumed,
+ userId,userName,onHome,periodMonth,onPeriodChange,periodSelection,onPeriodSelectionChange,initialNew=false,onInitialNewConsumed,
 }:Props){
  const [readData,setReadData]=useState<PrismReadData|null>(null);
  const readDataRef=useRef<PrismReadData|null>(null);
@@ -156,7 +158,8 @@ export default function PrismOperationalLaunches({
 
  return <div data-meg-operational-prism="read-only">
   <OperationalLaunches userId={userId} userName={userName} onHome={onHome}
-   periodMonth={periodMonth} onPeriodChange={onPeriodChange} prismReadOnlyCallbacks={callbacks}/>
+   periodMonth={periodMonth} onPeriodChange={onPeriodChange}
+    periodSelection={periodSelection} onPeriodSelectionChange={onPeriodSelectionChange} prismReadOnlyCallbacks={callbacks}/>
   {overlay==='choice'&&catalogs&&<div className="meg-new-launch__overlay is-choice-overlay meg-unified-choice-overlay">
    <section className="meg-new-launch is-choose" role="dialog" aria-modal="true" aria-labelledby="meg-unified-new-title">
     <header className="meg-new-launch__header">
