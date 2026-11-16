@@ -47,6 +47,8 @@ jobs:
             exit 1
           fi
           echo 'MEG_STAGE10_PRISM_REAL_OPTIN_BUILD PASS'
+      - name: Exercitar gateway de preview privado sem banco real
+        run: node scripts/meg-stage10-prism-read-preview-server.test.mjs
       - name: Instalar Playwright isoladamente no runner descartavel
         shell: bash
         run: |
