@@ -300,7 +300,7 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
  }
  return <LaunchesStage09
   key={userId+':'+periodKey} data={data} mode="live" periodMonth={month} userId={userId}
-  periodSelection={period} onPeriodSelectionChange={onPeriodSelectionChange}
+  periodSelection={period} onPeriodSelectionChange={onPeriodSelectionChange?next=>{filterMemory.current={};onPeriodSelectionChange(next)}:undefined}
   onPeriodChange={onPeriodChange?next=>{filterMemory.current={};onPeriodChange(next)}:undefined}
   exportUserName={userName} onRefresh={reload}
   onFilteredSummary={canFilterCanonically?readCanonicalFiltered:undefined}
