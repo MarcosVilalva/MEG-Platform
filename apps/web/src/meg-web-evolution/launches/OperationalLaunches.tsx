@@ -7,6 +7,7 @@ import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchesStage09, type LaunchesFilterPreset} from './LaunchesStage09';
 import type {QaLaunchTarget} from '../stage10/LaunchActionsQa';
 import {displayMoney, readAuthorizedHistory, readSmartAuthorizedHistory, type HistoryProgress} from './authorized-history';
+import {filterEventsForPeriod,periodForMonth,type LaunchPeriod} from './period-scope';
 
 const todayBrazil = () => {
  const parts = new Intl.DateTimeFormat('en-US', {
@@ -49,7 +50,7 @@ function historicLabels(event:FinancialEvent){
 }
 
 function buildReadOnlyData(
- events:FinancialEvent[], summary:FinanceSummary, accounts:Account[],
+ events:FinancialEvent[], summary:FinanceSummary|null, accounts:Account[],
  categories:Category[], methods:PaymentMethod[], includeAccountTypes=false,
 ):HomeFinancialData {
  const nameAccounts = new Map(accounts.map(a=>[a.id, a.name]));
@@ -77,11 +78,11 @@ function buildReadOnlyData(
   competence:event.competence,
  }));
  return {
-  summary:{
+  summary:summary?{
    month:summary.month,income:summary.income,expense:summary.expense,
    projectedResult:summary.projectedResult,realizedResult:summary.realizedResult,
    pendingCount:summary.pendingCount,pendingAmount:summary.pendingAmount
-  },
+  }:null,
   cashflow:null,benefit:null,available:null,transactions,payables:[],cards:[],
   accounts:[...nameAccounts].map(([id,name])=>({id,name,...(includeAccountTypes&&accountTypes.has(id)?{type:accountTypes.get(id)}:{})})),
   categories:[...nameCategories].map(([id,name])=>({id,name}))
@@ -111,6 +112,27 @@ async function readVerifiedMonthlyEvents(month:string,signal:AbortSignal):Promis
  return result.items;
 }
 
+/** Historico ativo integral, autenticado e consistente, sem fallback duplo. */
+async function readVerifiedHistoricalSnapshot(signal:AbortSignal):Promise<FinancialEvent[]>{
+ const data=await financeClient.getHistorySnapshot(signal);
+ if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(data.kind==='limit-exceeded')throw new Error(
+  'O historico ativo ultrapassa o limite de '+data.limit.toLocaleString('pt-BR')+
+  ' registros desta API. Nenhum resultado parcial foi exibido.');
+ if(data.kind!=='complete'||data.protocol!=='financial-history-v1'||
+  data.consistency!=='repeatable-read'||!Number.isSafeInteger(data.total)||
+  data.total<0||data.total>5000||!Array.isArray(data.items)||data.items.length!==data.total){
+  throw new Error('A API nao confirmou o snapshot integral e consistente do historico ativo.');
+ }
+ const ids=new Set<string>();
+ for(const item of data.items){
+  if(!item||typeof item.id!=='string'||!item.id||ids.has(item.id)){
+   throw new Error('A API retornou eventos repetidos ou sem identificador no snapshot.');
+  }
+  ids.add(item.id);
+ }
+ return data.items;
+}
 export type PrismCardRead = {
  id:string;name:string;isActive:boolean;closingDay:number;dueDay:number;
  issuer?:string|null;brand?:string|null;lastFour?:string|null;
@@ -126,9 +148,12 @@ export type PrismReadOnlyCallbacks = {
  onEdit:(row:QaLaunchTarget)=>void;
  onNotice:(message:string)=>void;
 };
-type Props={userId:string;userName:string;onHome:()=>void;prismReadOnlyCallbacks?:PrismReadOnlyCallbacks;periodMonth?:string;onPeriodChange?:(month:string)=>void};
-export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbacks,periodMonth,onPeriodChange}:Props){
- const month = periodMonth??todayBrazil().slice(0,7);
+type Props={userId:string;userName:string;onHome:()=>void;prismReadOnlyCallbacks?:PrismReadOnlyCallbacks;periodMonth?:string;onPeriodChange?:(month:string)=>void;periodSelection?:LaunchPeriod;onPeriodSelectionChange?:(period:LaunchPeriod)=>void};
+export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbacks,periodMonth,onPeriodChange,periodSelection,onPeriodSelectionChange}:Props){
+ const month=periodSelection?.month??periodMonth??todayBrazil().slice(0,7);
+ const period=periodSelection??periodForMonth(month);
+ const periodKey=JSON.stringify(period);
+ const historyCache=useRef<{userId:string;revision:string;items:FinancialEvent[]}|null>(null);
  const [data,setData]=useState<HomeFinancialData|null>(null);
  const [error,setError]=useState('');
  const [progress,setProgress]=useState<HistoryProgress>({loaded:0,total:0,pass:1,mode:'snapshot'});
@@ -157,10 +182,22 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
     if(!supportsSnapshot&&!signal.aborted){
      setProgress({loaded:0,total:0,pass:1,mode:'legacy'});
     }
+    const multiPeriod=Boolean(prismReadOnlyCallbacks&&period.mode!=='month');
+    if(multiPeriod&&before.capabilities?.filteredSummaryV1!==true){
+     throw new Error('A API nao confirmou agregacao financeira canonica para periodos completos.');
+    }
+    let completeHistory:FinancialEvent[]|null=null;
     const fetchPage=(page:number,pageSize:number,s:AbortSignal)=>financeClient.listEvents(page,pageSize,'',s);
     const report=(p:HistoryProgress)=>{if(!signal.aborted)setProgress(p)};
     const eventRead=prismReadOnlyCallbacks
-     ? readVerifiedMonthlyEvents(month,signal)
+     ? multiPeriod
+       ? (async()=>{
+          const cached=historyCache.current;
+          completeHistory=cached?.userId===userId&&cached.revision===before.token
+           ? cached.items : await readVerifiedHistoricalSnapshot(signal);
+          return filterEventsForPeriod(completeHistory,period);
+         })()
+       : readVerifiedMonthlyEvents(month,signal)
      : supportsSnapshot
        ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),fetchPage,signal,report)
        : readAuthorizedHistory(fetchPage,signal,p=>report({...p,mode:'legacy'}));
@@ -169,7 +206,7 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
      : Promise.resolve([] as PrismCardRead[]);
     const [events,summary,accounts,categories,methods,cards]=await Promise.all([
      eventRead,
-     authenticatedRequest<FinanceSummary>('/finance/summary?month='+encodeURIComponent(month),{cache:'no-store',signal}),
+     multiPeriod?Promise.resolve(null):authenticatedRequest<FinanceSummary>('/finance/summary?month='+encodeURIComponent(month),{cache:'no-store',signal}),
      authenticatedRequest<Account[]>('/finance/accounts',{cache:'no-store',signal}),
      authenticatedRequest<Category[]>('/finance/categories',{cache:'no-store',signal}),
      authenticatedRequest<PaymentMethod[]>('/finance/payment-methods',{cache:'no-store',signal}),
@@ -182,6 +219,7 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
      throw new Error('Os dados foram alterados durante a consulta. Atualize o histórico.');
     }
     loadedRevision.current=before.token;
+    if(completeHistory)historyCache.current={userId,revision:before.token,items:completeHistory};
     setCanFilterCanonically(before.capabilities?.filteredSummaryV1===true);
     if(prismReadOnlyCallbacks)prismReadOnlyCallbacks.onLoaded({events,accounts,categories,methods,cards});
     setData(buildReadOnlyData(events,summary,accounts,categories,methods,Boolean(prismReadOnlyCallbacks)));
@@ -199,7 +237,7 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
   const invalidate=()=>reload();
   window.addEventListener('meg:data-invalidated',invalidate);
   return ()=>{controller.abort();window.removeEventListener('meg:data-invalidated',invalidate)};
- },[userId,month,version,reload,prismReadOnlyCallbacks]);
+ },[userId,month,periodKey,version,reload,prismReadOnlyCallbacks]);
  const readCanonicalFiltered=useCallback(async(
   criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal,
  ):Promise<CanonicalFilteredHistorySummary|null>=>{
@@ -261,7 +299,8 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
   </section>;
  }
  return <LaunchesStage09
-  key={userId+':'+month} data={data} mode="live" periodMonth={month} userId={userId}
+  key={userId+':'+periodKey} data={data} mode="live" periodMonth={month} userId={userId}
+  periodSelection={period} onPeriodSelectionChange={onPeriodSelectionChange}
   onPeriodChange={onPeriodChange?next=>{filterMemory.current={};onPeriodChange(next)}:undefined}
   exportUserName={userName} onRefresh={reload}
   onFilteredSummary={canFilterCanonically?readCanonicalFiltered:undefined}
