@@ -3,7 +3,9 @@ import {OperationalLaunches,type PrismReadData,type PrismReadOnlyCallbacks} from
 import type {QaLaunchTarget} from '../stage10/LaunchActionsQa';
 import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseCatalogs,type ExpenseDraft} from '../stage10/ExpenseForm';
 import {PrismLaunchChoice,PrismCloseGlyph} from './PrismLaunchChoice';
-import type {HistorySnapshot} from '../stage10/autocomplete-history';
+import {suggestionsFromCanonicalHistory} from '../stage10/autocomplete-history';
+import {readAuthorizedHistory} from '../launches/authorized-history';
+import {financeClient} from '../../app/finance-client';
 import {brlFromPasted,brlSignedDecimal} from '../stage10/brl-money-mask';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
 import '../launches/new-launch.css';
@@ -105,8 +107,20 @@ export default function PrismOperationalLaunches({
  },[]);
 
  const catalogs=useMemo(()=>readData?catalogsFromRealRead(readData):null,[readData]);
- const history=useMemo<HistorySnapshot|undefined>(()=>readData?
-  {kind:'complete',protocol:'financial-history-v1',items:readData.events}:undefined,[readData]);
+ // Full historical suggestions are fetched only after the user types a query.
+ // Never label the selected month's records as a complete lifetime snapshot.
+ const searchHistorySuggestions=useCallback(async(query:string,signal:AbortSignal)=>{
+  const term=query.trim();
+  if(term.length<2)return [];
+  if(term.length>120)throw new Error('A descrição da pesquisa excedeu o limite autorizado.');
+  const read=await readAuthorizedHistory(
+   (page,pageSize,requestSignal)=>financeClient.listEvents(page,pageSize,term,requestSignal),
+   signal,
+  );
+  return suggestionsFromCanonicalHistory(
+   {kind:'complete',protocol:'financial-history-v1',items:read},term,5,
+  );
+ },[]);
  const editDraft=useMemo(()=>readData&&catalogs&&editId?
   existingExpenseDraft(readData,catalogs,editId):null,[readData,catalogs,editId]);
 
@@ -160,11 +174,11 @@ export default function PrismOperationalLaunches({
    </section>
   </div>}
   {overlay==='expense'&&catalogs&&<ExpenseForm
-   catalogs={catalogs} historySnapshot={history} readOnlyRealData saveEnabled={false}
+   catalogs={catalogs} searchHistorySuggestions={searchHistorySuggestions} readOnlyRealData saveEnabled={false}
    onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&catalogs&&editDraft&&<ExpenseForm
    key={'prism-read-'+editId} mode="edit" catalogs={catalogs}
-   initialDraft={editDraft} readOnlyRealData saveEnabled={false}
+   initialDraft={editDraft} searchHistorySuggestions={searchHistorySuggestions} readOnlyRealData saveEnabled={false}
    onBack={()=>{setOverlay(null);setEditId(null);}}/>}
   {overlay==='edit'&&!editDraft&&<div role="alert">
    O lançamento não pode ser representado com segurança no editor. Nenhum valor foi estimado.
