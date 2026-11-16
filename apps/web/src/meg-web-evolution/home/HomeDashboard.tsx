@@ -463,7 +463,7 @@ export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId
   };
  },[previewData,reload]);
  return <>
-  {!previewData&&refreshing&&<div className="pano-progressive-status" role="status">Atualizando dados financeiros...</div>}
+  {!previewData&&refreshing&&<div className="sr-only" role="status">Atualizando dados financeiros...</div>}
   <HomeContent data={data} month={current} preview={Boolean(previewData)}
    onNavigate={onNavigate} userId={userId} readStates={readStates}/>
  </>;
