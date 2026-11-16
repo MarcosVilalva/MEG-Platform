@@ -23,6 +23,7 @@ export type HomeFinancialData={
  followingTransactions?:HomeFinancialData['transactions'];
  /** Fonte exclusiva em sessão autenticada. Em prévia visual mantém dados fictícios existentes. */
  canonicalCommitments?:CanonicalHomeCommitment[];
+ commitmentsUnavailable?:boolean;
  payables:Array<{id:string;description:string;dueDate:string;status:string;openAmount:number;categoryId?:string|null}>;
  accounts:Array<{id:string;name:string;type?:string}>;
  categories:Array<{id:string;name:string}>;
@@ -37,7 +38,15 @@ const format=(n:number|null|undefined,hidden:boolean)=>hidden?'R$ ••••�
 const dateString=(s:string)=>/^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
 const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,available:null,transactions:[],payables:[],accounts:[],categories:[],cards:[]};
 async function readHome(month:string):Promise<HomeFinancialData>{
- const [summary,cashflow,benefit,events,cards,accounts,categories,available,canonicalCommitments]=await Promise.all([
+ const commitmentsRead=readCanonicalHomeCommitments(authenticatedRequest).then(items=>({items,unavailable:false}))
+  .catch((error:unknown)=>{
+   // Missing canonical reader must not suppress independently authorized
+   // Home, card and benefit reads. Never compute a due list on the client.
+   if((error as {status?:number}|null)?.status===404)
+    return {items:undefined,unavailable:true};
+   throw error;
+  });
+ const [summary,cashflow,benefit,events,cards,accounts,categories,available,commitments]=await Promise.all([
   authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
   authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
@@ -47,8 +56,8 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
   // Rota nova, canônica; até ser implantada na API retorna ausente, nunca estimado.
   authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
-  // Falha de compromisso canônico é crítica: não mostrar um falso quadro vazio.
-  readCanonicalHomeCommitments(authenticatedRequest)
+  // When HTTP 404, report commitments unavailable rather than false zero.
+  commitmentsRead
  ]);
  const adapted=composeMegApiSnapshot([
   fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
@@ -57,7 +66,7 @@ async function readHome(month:string):Promise<HomeFinancialData>{
   fromFinanceCatalogs({accounts,categories})
  ]) as HomeFinancialData & {readModels?:unknown};
  return {
-  summary,cashflow,benefit,available,canonicalCommitments,
+  summary,cashflow,benefit,available,canonicalCommitments:commitments.items,commitmentsUnavailable:commitments.unavailable,
   transactions:adapted.transactions||[],
   followingTransactions:[],
   payables:[],
@@ -253,6 +262,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
   {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso" title="Fechar aviso"><HomeGlyph name="x" size={18}/></button></div>}
+  {!preview&&data.commitmentsUnavailable&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>Compromissos ainda não disponíveis na API canônica. Os cartões, benefícios e demais indicadores são leituras autenticadas; nenhuma pendência foi estimada.</span></div>}
   <div className="pano-spotlight" aria-label="Visão financeira e cartões">
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
@@ -360,17 +370,19 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
     <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
     <section ref={dueSection} className={'pano-panel pano-grid pano-grid--commitments '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
-     <div className="pano-grid-actions"><button type="button" className="pano-icon-action" onClick={()=>setShowAllCommitments(true)}
+     <div className="pano-grid-actions"><button type="button" className="pano-icon-action" disabled={Boolean(data.commitmentsUnavailable)} onClick={()=>setShowAllCommitments(true)}
  aria-label="Ver todos os compromissos" title="Ver todos os compromissos" data-tooltip="Ver todos"><HomeGlyph name="list" size={20}/></button>
  <button type="button" className="pano-icon-action" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters}
  aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'+(dueFiltersCount>0?' ('+dueFiltersCount+')':'')}
  title={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'} data-tooltip={showDueFilters?'Ocultar filtros':'Mostrar filtros'}>
  <HomeGlyph name="filter" size={20}/>{dueFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{dueFiltersCount}</span>}
  </button></div></div>
-     <DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
+     {data.commitmentsUnavailable
+      ? <div className="pano-card-empty" role="note">Não foi possível consultar os compromissos: rota canônica indisponível. Nenhuma lista vazia ou valor zero foi presumido.</div>
+      : <DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/>}</section>
    </div>
   </div>
-  {showAllCommitments&&<HomeCommitmentsFullList
+  {showAllCommitments&&!data.commitmentsUnavailable&&<HomeCommitmentsFullList
     columns={dueColumns} mapRows={commitmentGridRows}
     preview={preview} previewRows={commitments}
     onDismiss={()=>setShowAllCommitments(false)}/>}
