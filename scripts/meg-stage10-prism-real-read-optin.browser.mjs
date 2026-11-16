@@ -105,6 +105,7 @@ try{
   const errors=[];
   let historySearchRequests=0;
   let snapshotReads=0;
+  const homeSummaryMonths=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',req=>{
    const url=new URL(req.url());
@@ -125,6 +126,8 @@ try{
    if(url.pathname==='/finance/events'&&url.searchParams.get('search'))historySearchRequests++;
    if(/^\/(finance|cards)(\/|$)/.test(url.pathname)&&req.headers()['authorization']!=='Bearer synthetic-ci-only')errors.push('Authorization missing from authenticated finance request');
    if(url.pathname==='/finance/events/history-snapshot')snapshotReads++;
+   if(url.pathname==='/finance/summary')homeSummaryMonths.push(url.searchParams.get('month'));
+
    const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey,url.searchParams.get('search')||'',url.searchParams.get('filter')||'');
    if(value===undefined){
     if(url.pathname==='/finance/home-commitments'||url.pathname==='/finance/home-available'){
@@ -138,7 +141,33 @@ try{
    await route.fulfill({status:200,contentType:'application/json',headers:{'Cache-Control':'no-store'},body:JSON.stringify(value)});
   });
   try{
-   await page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
+   // A entrada, inclusive com link antigo apontando para Lançamentos, abre sempre na Home.
+   await page.goto(base+'/web-evolution.html?tela=lancamentos',{waitUntil:'domcontentloaded'});
+   await page.locator('.pano-root').waitFor({state:'visible',timeout:20000});
+   assert.equal(await page.locator('[data-meg-operational-prism="read-only"]').count(),0,
+    'Authenticated entry must start on Home');
+   const headerPicker=page.getByRole('button',{name:'Selecionar período'});
+   await headerPicker.waitFor({state:'visible'});
+   assert.equal(await headerPicker.isEnabled(),true,'Topbar period control must be active');
+   await page.screenshot({path:resolve(evidence,'home-entry-'+width+'x'+height+'.png'),fullPage:false});
+   if(width===390||width===1366){
+    await headerPicker.click();
+    const picker=page.getByLabel('Mês do painel');
+    await picker.waitFor({state:'visible'});
+    await picker.fill('2025-12');
+    await page.waitForFunction(()=>document.querySelector('.meg-period')?.textContent?.includes('Dezembro de 2025'),null,{timeout:20000});
+    await page.getByRole('button',{name:/Despesas: R\\$\\s*0,00/}).waitFor({state:'visible',timeout:20000});
+    assert.ok(homeSummaryMonths.includes('2025-12'),'Home must ask API for selected month');
+    await page.screenshot({path:resolve(evidence,'home-period-2025-12-'+width+'x'+height+'.png'),fullPage:false});
+    await headerPicker.click();
+    await page.getByLabel('Mês do painel').fill(monthKey);
+    await page.getByRole('button',{name:/Despesas: R\\$\\s*123,45/}).waitFor({state:'visible',timeout:20000});
+    assert.ok(homeSummaryMonths.includes(monthKey),'Home must restore current month via API');
+   }
+   const homeWidth=await page.evaluate(()=>({page:document.documentElement.scrollWidth,view:window.innerWidth}));
+   assert.ok(homeWidth.page<=homeWidth.view+1,'Horizontal overflow in Home '+width+'px: '+JSON.stringify(homeWidth));
+   if(width<640)await page.getByRole('button',{name:'Abrir menu'}).click();
+   await page.getByRole('button',{name:'Lançamentos',exact:true}).click();
    await page.locator('[data-meg-operational-prism="read-only"]').waitFor({timeout:20000});
    await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-l09').count()>0,true,'Canonical stage09 grid missing');
