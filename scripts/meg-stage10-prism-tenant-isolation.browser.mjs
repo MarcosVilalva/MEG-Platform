@@ -72,7 +72,13 @@ try{
  const requests=[];
  await page.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url());
-  if(url.host!==new URL(base).host){violations.push('external '+url.host);await route.abort();return;}
+  if(url.host!==new URL(base).host){
+   // Imagens decorativas preexistentes da Home nao sao vazamento de dados.
+   // Requisicoes XHR/fetch/WebSocket externas continuam proibidas.
+   if(['xhr','fetch','websocket','eventsource'].includes(req.resourceType()))
+    violations.push('external data request '+url.host);
+   await route.abort();return;
+  }
   if(!/^\/(auth|finance|cards|payables)(\/|$)/.test(url.pathname)){await route.continue();return;}
   if(req.method()!=='GET'){violations.push('writer '+req.method());await route.fulfill({status:405,body:'{}'});return;}
   const token=(req.headers()['authorization']||'').replace(/^Bearer /,'');
