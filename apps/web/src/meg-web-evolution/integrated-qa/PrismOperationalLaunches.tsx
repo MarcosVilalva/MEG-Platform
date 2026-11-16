@@ -1,4 +1,4 @@
-import React,{useCallback,useEffect,useMemo,useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {OperationalLaunches,type PrismReadData,type PrismReadOnlyCallbacks} from '../launches/OperationalLaunches';
 import type {QaLaunchTarget} from '../stage10/LaunchActionsQa';
 import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseCatalogs,type ExpenseDraft} from '../stage10/ExpenseForm';
@@ -79,6 +79,7 @@ export default function PrismOperationalLaunches({
  userId,userName,onHome,initialNew=false,onInitialNewConsumed,
 }:Props){
  const [readData,setReadData]=useState<PrismReadData|null>(null);
+ const readDataRef=useRef<PrismReadData|null>(null);
  const [overlay,setOverlay]=useState<Overlay>(null);
  const [editId,setEditId]=useState<string|null>(null);
  const [notice,setNotice]=useState('');
@@ -112,8 +113,9 @@ export default function PrismOperationalLaunches({
   setNotice('');setEditId(null);setOverlay('choice');
  },[]);
  const startEdit=useCallback((row:QaLaunchTarget)=>{
-  if(!readData){setNotice('Histórico financeiro ainda não disponível.');return;}
-  const event=readData.events.find(item=>item.id===row.id);
+  const current=readDataRef.current;
+  if(!current){setNotice('Histórico financeiro ainda não disponível.');return;}
+  const event=current.events.find(item=>item.id===row.id);
   if(!event||event.type!=='expense'||row.accountKind!=='monetary'){
    setNotice('Este lançamento não pertence ao editor monetário de despesas. Consulta preservada.');
    return;
@@ -123,9 +125,9 @@ export default function PrismOperationalLaunches({
    return;
   }
   setNotice('');setEditId(row.id);setOverlay('edit');
- },[readData]);
- const receive=useCallback((next:PrismReadData)=>setReadData(next),[]);
- const clear=useCallback(()=>{setReadData(null);setEditId(null);setOverlay(null);},[]);
+ },[]);
+ const receive=useCallback((next:PrismReadData)=>{readDataRef.current=next;setReadData(next);},[]);
+ const clear=useCallback(()=>{readDataRef.current=null;setReadData(null);setEditId(null);setOverlay(null);},[]);
  const callbacks=useMemo<PrismReadOnlyCallbacks>(()=>({
   onLoaded:receive,onLoading:clear,onNew:startNew,onEdit:startEdit,onNotice:setNotice,
  }),[receive,clear,startNew,startEdit]);
