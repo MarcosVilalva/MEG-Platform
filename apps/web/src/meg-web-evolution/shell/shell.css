@@ -1570,3 +1570,14 @@
   .meg-period-anchor { grid-area: period; justify-self: stretch; width: 100%; }
   .meg-period-popover { width: 100%; max-width: 100%; }
 }
+
+
+/* A lupa do cabeçalho executa a busca pelo Enter ou toque, sem mudar o bloco oficial. */
+.meg-search-submit {
+  flex: 0 0 1.4rem; min-width: 1.4rem; min-height: 2.5rem;
+  display: inline-grid; place-items: center; padding: 0;
+  border: 0; background: transparent; color: #d8eeee; cursor: pointer;
+}
+.meg-search-submit:focus-visible { outline: 2px solid #30ddca; outline-offset: 3px; border-radius: .25rem; }
+.meg-search-submit:disabled { cursor: default; }
+.meg-search-submit svg { width: 1.2rem; height: 1.2rem; }
