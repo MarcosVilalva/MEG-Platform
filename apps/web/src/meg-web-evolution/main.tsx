@@ -10,6 +10,7 @@ import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
 import { LoadingScreen } from './auth/LoadingScreen';
 import { HomeDashboard } from './home/HomeDashboard';
 import { OperationalLaunches } from './launches/OperationalLaunches';
+import {periodForMonth,periodLabel as launchPeriodLabel} from './launches/period-scope';
 
 // Opt-in: the approved Prism is loaded only for authenticated operational sessions.
 const PrismOperationalLaunches = React.lazy(() => import('./integrated-qa/PrismOperationalLaunches'));
@@ -32,7 +33,7 @@ function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loggingOut,setLoggingOut] = useState(false);
   const [openPrismNew,setOpenPrismNew] = useState(false);
-  const [activeMonth,setActiveMonth] = useState(currentBrazilMonth);
+  const [activePeriod,setActivePeriod] = useState(()=>periodForMonth(currentBrazilMonth()));
   const [logoutWarning,setLogoutWarning] = useState('');
   const [section,setSection] = useState<'home'|'launches'>(() => {
     const query = new URLSearchParams(window.location.search);
@@ -83,6 +84,7 @@ function AuthGateway() {
       clearSession();
       setSession(null);
       setSection('home');
+      setActivePeriod(periodForMonth(currentBrazilMonth()));
       setCheckingSession(false);
       navigate('login');
       setLogoutWarning(remoteRevocationFailed
@@ -173,8 +175,8 @@ function AuthGateway() {
     // vencimentos nem qualquer cálculo financeiro.
     const monthLabel = new Intl.DateTimeFormat('pt-BR', {
       month: 'long', year: 'numeric', timeZone: 'UTC',
-    }).format(new Date((prismLayoutEnabled?activeMonth:currentBrazilMonth())+'-01T12:00:00Z'));
-    const periodLabel = monthLabel.slice(0, 1).toLocaleUpperCase('pt-BR') + monthLabel.slice(1);
+    }).format(new Date((prismLayoutEnabled?activePeriod.month:currentBrazilMonth())+'-01T12:00:00Z'));
+    const periodLabel = prismLayoutEnabled&&section==='launches'?launchPeriodLabel(activePeriod):monthLabel.slice(0, 1).toLocaleUpperCase('pt-BR') + monthLabel.slice(1);
     return (
       <AppShell
         periodLabel={periodLabel}
@@ -188,11 +190,12 @@ function AuthGateway() {
           ? (prismLayoutEnabled
             ? <React.Suspense fallback={<div role="status">Carregando Prism 2.0...</div>}>
                 <PrismOperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name}
-                  periodMonth={activeMonth} onPeriodChange={setActiveMonth}
+                  periodMonth={activePeriod.month} onPeriodChange={month=>setActivePeriod(periodForMonth(month))}
+                  periodSelection={activePeriod} onPeriodSelectionChange={setActivePeriod}
                   initialNew={openPrismNew} onInitialNewConsumed={() => setOpenPrismNew(false)} onHome={() => setSection('home')}/>
               </React.Suspense>
             : <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>)
-          : <HomeDashboard userId={session.user.id} month={prismLayoutEnabled?activeMonth:undefined} onNavigate={target => {
+          : <HomeDashboard userId={session.user.id} month={prismLayoutEnabled?activePeriod.month:undefined} onNavigate={target => {
               // Só Lançamentos possui destino operacional autorizado nesta integração.
               // Os demais atalhos conservam o aviso da Home, sem rotas fictícias.
               if(target==='novo' && prismLayoutEnabled){setOpenPrismNew(true);setSection('launches');return true;}
