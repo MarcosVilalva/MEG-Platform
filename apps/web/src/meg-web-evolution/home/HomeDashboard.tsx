@@ -37,43 +37,75 @@ function dateNow(){const v=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sa
 const format=(n:number|null|undefined,hidden:boolean)=>hidden?'R$ •••••':n==null||!Number.isFinite(n)?'—':currency.format(n);
 const dateString=(s:string)=>/^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
 const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,available:null,transactions:[],payables:[],accounts:[],categories:[],cards:[]};
-async function readHome(month:string):Promise<HomeFinancialData>{
- const commitmentsRead=readCanonicalHomeCommitments(authenticatedRequest).then(items=>({items,unavailable:false}))
-  .catch((error:unknown)=>{
-   // Missing canonical reader must not suppress independently authorized
-   // Home, card and benefit reads. Never compute a due list on the client.
-   if((error as {status?:number}|null)?.status===404)
-    return {items:undefined,unavailable:true};
-   throw error;
-  });
- const [summary,cashflow,benefit,events,cards,accounts,categories,available,commitments]=await Promise.all([
-  authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
-  authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
-  authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/finance/accounts',{cache:'no-store'}),
-  authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
-  // Rota nova, canônica; até ser implantada na API retorna ausente, nunca estimado.
-  authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
-  // When HTTP 404, report commitments unavailable rather than false zero.
-  commitmentsRead
- ]);
- const adapted=composeMegApiSnapshot([
-  fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
-  fromFinancialEvents(events),
-  fromCards(cards),
-  fromFinanceCatalogs({accounts,categories})
- ]) as HomeFinancialData & {readModels?:unknown};
- return {
-  summary,cashflow,benefit,available,canonicalCommitments:commitments.items,commitmentsUnavailable:commitments.unavailable,
-  transactions:adapted.transactions||[],
-  followingTransactions:[],
-  payables:[],
-  accounts:adapted.accounts||[],
-  categories:adapted.categories||[],
-  cards:adapted.cards||[]
- };
+type HomeReadPart='summary'|'cashflow'|'benefit'|'transactions'|'cards'|'available'|'commitments';
+type HomeReadStatus='loading'|'ready'|'unavailable';
+type HomeReadStates=Record<HomeReadPart,HomeReadStatus>;
+const initialReadStates:HomeReadStates={
+ summary:'loading',cashflow:'loading',benefit:'loading',transactions:'loading',
+ cards:'loading',available:'loading',commitments:'loading'
+};
+const previewReadStates:HomeReadStates={
+ summary:'ready',cashflow:'ready',benefit:'ready',transactions:'ready',
+ cards:'ready',available:'ready',commitments:'ready'
+};
+const unavailablePatch:Record<HomeReadPart,Partial<HomeFinancialData>>={
+ summary:{summary:null},cashflow:{cashflow:null},benefit:{benefit:null},
+ transactions:{transactions:[],accounts:[],categories:[]},cards:{cards:[]},
+ available:{available:null},commitments:{canonicalCommitments:undefined,commitmentsUnavailable:true}
+};
+
+/** Cada painel recebe somente sua própria leitura canônica. A Home não espera os
+ * sete grupos concluírem para mostrar o primeiro resultado. Não usa valores
+ * estimados nem redistribui regras financeiras entre componentes. */
+async function readHomeProgressively(
+ month:string,signal:AbortSignal,
+ onPart:(part:HomeReadPart,patch:Partial<HomeFinancialData>,status:HomeReadStatus)=>void
+):Promise<void>{
+ const options:RequestInit={cache:'no-store',signal};
+ const readers:Array<[HomeReadPart,()=>Promise<Partial<HomeFinancialData>>]>=[
+  ['summary',async()=>({
+   summary:await authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,options)
+  })],
+  ['cashflow',async()=>({
+   cashflow:await authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,options)
+  })],
+  ['benefit',async()=>({
+   benefit:await authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,options)
+  })],
+  ['transactions',async()=>{
+   const [events,accounts,categories]=await Promise.all([
+    authenticatedRequest<unknown>('/finance/events/month?month='+month,options),
+    authenticatedRequest<unknown>('/finance/accounts',options),
+    authenticatedRequest<unknown>('/finance/categories',options)
+   ]);
+   const adapted=composeMegApiSnapshot([
+    fromFinancialEvents(events),fromFinanceCatalogs({accounts,categories})
+   ]) as HomeFinancialData;
+   return {transactions:adapted.transactions||[],accounts:adapted.accounts||[],categories:adapted.categories||[]};
+  }],
+  ['cards',async()=>{
+   const cards=await authenticatedRequest<unknown>('/cards?month='+month,options);
+   const adapted=composeMegApiSnapshot([fromCards(cards)]) as HomeFinancialData;
+   return {cards:adapted.cards||[]};
+  }],
+  ['available',async()=>({
+   available:await authenticatedRequest<HomeFinancialData['available']>(
+    '/finance/home-available?date='+dateNow(),options)
+  })],
+  ['commitments',async()=>({
+   canonicalCommitments:await readCanonicalHomeCommitments(
+    <T,>(path:string,init?:RequestInit)=>authenticatedRequest<T>(path,{...init,signal})),
+   commitmentsUnavailable:false
+  })]
+ ];
+ await Promise.allSettled(readers.map(async([part,read])=>{
+  try{
+   const patch=await read();
+   if(!signal.aborted)onPart(part,patch,'ready');
+  }catch{
+   if(!signal.aborted)onPart(part,unavailablePatch[part],'unavailable');
+  }
+ }));
 }
 // Conversão de exibição compartilhada pelo resumo e pela listagem paginada.
  // Nenhuma regra financeira é recalculada: os valores e estados são da API.
