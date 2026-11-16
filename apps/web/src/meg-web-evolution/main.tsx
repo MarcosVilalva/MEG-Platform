@@ -50,13 +50,9 @@ function AuthGateway() {
   const [activePeriod,setActivePeriod] = useState(()=>periodForMonth(currentBrazilMonth()));
   const [periodPreferenceOwner,setPeriodPreferenceOwner] = useState<string|null>(null);
   const [logoutWarning,setLogoutWarning] = useState('');
-  const [section,setSection] = useState<'home'|'launches'>(() => {
-    const query = new URLSearchParams(window.location.search);
-    // Nesta etapa somente leitura, abrir os lançamentos reais logo após o login.
-    // Com a flag desligada, a Web preserva exatamente a Home inicial existente.
-    return query.get('tela') === 'lancamentos'
-      || (prismLayoutEnabled && !query.has('tela')) ? 'launches' : 'home';
-  });
+  // Entrada operacional sempre na Home, inclusive após recarregar links antigos
+  // com ?tela=lancamentos. A navegação explícita continua disponível pelo menu.
+  const [section,setSection] = useState<'home'|'launches'>('home');
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
@@ -79,6 +75,7 @@ function AuthGateway() {
       await validateSession(current);
       reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
       setSession(current);
+      setSection('home');
       setLogoutWarning('');
     } catch {
       // Uma validação malsucedida não libera o shell.
@@ -143,6 +140,7 @@ function AuthGateway() {
         if (!cancelled) {
           reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
           setSession(existing);
+          setSection('home');
           setLogoutWarning('');
         }
       } catch (cause) {
@@ -165,6 +163,7 @@ function AuthGateway() {
             if (!cancelled) {
               reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
               setSession(refreshed);
+              setSection('home');
               setLogoutWarning('');
             }
           } catch {
@@ -206,6 +205,8 @@ function AuthGateway() {
     return (
       <AppShell
         periodLabel={periodLabel}
+        periodMonth={prismLayoutEnabled?activePeriod.month:undefined}
+        onPeriodMonthChange={prismLayoutEnabled?month=>setActivePeriod(periodForMonth(month)):undefined}
         activeSection={section}
         onNavigate={next => {setOpenPrismNew(false);setSection(next);}}
         onLogout={() => {void handleLogout();}}
@@ -221,7 +222,8 @@ function AuthGateway() {
                   initialNew={openPrismNew} onInitialNewConsumed={() => setOpenPrismNew(false)} onHome={() => setSection('home')}/>
               </React.Suspense>
             : <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>)
-          : <HomeDashboard userId={session.user.id} month={prismLayoutEnabled?activePeriod.month:undefined} onNavigate={target => {
+          : <HomeDashboard key={session.user.id+':'+(prismLayoutEnabled?activePeriod.month:'current')} userId={session.user.id}
+              month={prismLayoutEnabled?activePeriod.month:undefined} onNavigate={target => {
               // Só Lançamentos possui destino operacional autorizado nesta integração.
               // Os demais atalhos conservam o aviso da Home, sem rotas fictícias.
               if(target==='novo' && prismLayoutEnabled){setOpenPrismNew(true);setSection('launches');return true;}
