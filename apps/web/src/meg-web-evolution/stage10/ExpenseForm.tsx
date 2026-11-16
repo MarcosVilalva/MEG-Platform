@@ -1,6 +1,6 @@
 import {useEffect,useId,useMemo,useRef,useState,type ClipboardEvent,type KeyboardEvent,type RefObject,type CSSProperties} from 'react';
 import {Icon} from '../components/Icon';
-import {suggestionsFromCanonicalHistory,type HistorySnapshot} from './autocomplete-history';
+import {suggestionsFromCanonicalHistory,type HistorySnapshot,type AutocompleteSuggestion} from './autocomplete-history';
 import {normalizeFinancialTextInput} from './text-entry-policy';
 import {EMPTY_BRL_INPUT,brlBackspace,brlDigit,brlFormatted,brlFromPasted,brlSignedDecimal,brlToggleSign,type BRLInput} from './brl-money-mask';
 import './ExpenseForm.css';
@@ -26,6 +26,7 @@ export type InstallmentSchedule={
 };
 export type ExpenseFormProps={
  catalogs:ExpenseCatalogs;historySnapshot?:HistorySnapshot;
+ searchHistorySuggestions?:(query:string,signal:AbortSignal)=>Promise<AutocompleteSuggestion[]>;
  schedule?:InstallmentSchedule;
  onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;saveEnabled?:boolean;
  mode?:'create'|'edit';initialDraft?:ExpenseDraft;
@@ -103,7 +104,7 @@ function EditCloseGlyph(){
   <path d="M5 5 19 19M19 5 5 19"/>
  </svg>;
 }
-export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft,readOnlyRealData=false}:ExpenseFormProps){
+export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft,readOnlyRealData=false}:ExpenseFormProps){
  const isEdit=mode==='edit';
  const [draft,setDraft]=useState<ExpenseDraft>(()=>initialDraft??EMPTY_EXPENSE_DRAFT);
  const [money,setMoney]=useState<BRLInput>(()=>initialDraft?.amountInput?brlFromPasted(initialDraft.amountInput):EMPTY_BRL_INPUT);
@@ -125,7 +126,27 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const visibleMethods=useMemo(()=>methods.filter(x=>x.kind==='ordinary'),[methods]);
  const cards=useMemo(()=>catalogs.creditCards?.filter(x=>x.active)??[],[catalogs.creditCards]);
  const frequent=useMemo(()=>categories.slice().sort((a,b)=>(a.frequencyRank??999)-(b.frequencyRank??999)||a.name.localeCompare(b.name,'pt-BR')).slice(0,5),[categories]);
- const suggestions=useMemo(()=>historySnapshot?suggestionsFromCanonicalHistory(historySnapshot,draft.description,5):[],[historySnapshot,draft.description]);
+ const [remoteResult,setRemoteResult]=useState<{query:string;items:AutocompleteSuggestion[]}>({query:'',items:[]});
+ const [remoteError,setRemoteError]=useState<{query:string;message:string}|null>(null);
+ const localSuggestions=useMemo(()=>historySnapshot?suggestionsFromCanonicalHistory(historySnapshot,draft.description,5):[],[historySnapshot,draft.description]);
+ useEffect(()=>{
+  if(!searchHistorySuggestions)return;
+  const query=draft.description.trim();
+  setRemoteError(null);
+  if(query.length<2){setRemoteResult({query,items:[]});return;}
+  const controller=new AbortController();
+  const timeout=window.setTimeout(()=>{
+   void searchHistorySuggestions(query,controller.signal).then(items=>{
+    if(!controller.signal.aborted)setRemoteResult({query,items});
+   }).catch(()=>{
+    if(!controller.signal.aborted)setRemoteError({query,message:'Falha na pesquisa do histórico. Nenhuma sugestão incompleta foi apresentada.'});
+   });
+  },260);
+  return ()=>{window.clearTimeout(timeout);controller.abort()};
+ },[draft.description,searchHistorySuggestions]);
+ const suggestions=searchHistorySuggestions
+  ? remoteResult.query===draft.description.trim()?remoteResult.items:[]
+  : localSuggestions;
  const selectedAccount=accounts.find(x=>x.id===draft.accountId);
  const method=visibleMethods.find(x=>x.id===draft.paymentMethodId);
  const isCredit=draft.modality==='credit';
@@ -217,6 +238,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
     <section className={'meg-t10-expense-panel meg-t10-expense-primary'+(mobileStep==='data'?' is-step':'')} aria-label="Dados da despesa">
      <label htmlFor={formId+'description'}><Icon name="list"/> Descrição *</label>
      <input id={formId+'description'} aria-label={isEdit?'Descrição da edição':undefined} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(true);}} placeholder="DESCREVA A DESPESA" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'}/>
+     {suggestionsOpen&&remoteError?.query===draft.description.trim()&&<p role="alert">{remoteError.message}</p>}
      {suggestionsOpen&&suggestions.length>0&&<div className="meg-t10-expense-suggestions" id={formId+'suggestions'} role="listbox" aria-label="Descrições do histórico">
       <strong className="meg-t10-expense-suggestions-title"><Icon name="list"/> Histórico relacionado</strong>
       {suggestions.slice(0,3).map(s=><button type="button" key={s.sourceEventId} role="option" aria-selected={false} onClick={()=>selectSuggestion(s)}>{s.description}<small>{s.categoryName??'Categoria indisponível'} · Sem copiar valor ou data</small></button>)}
