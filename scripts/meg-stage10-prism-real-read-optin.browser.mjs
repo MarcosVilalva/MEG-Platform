@@ -106,7 +106,7 @@ try{
    await route.fulfill({status:200,contentType:'application/json',headers:{'Cache-Control':'no-store'},body:JSON.stringify(value)});
   });
   try{
-   await page.goto(base+'/web-evolution.html?tela=lancamentos',{waitUntil:'domcontentloaded'});
+   await page.goto(base+'/web-evolution.html',{waitUntil:'domcontentloaded'});
    await page.locator('[data-meg-operational-prism="read-only"]').waitFor({timeout:20000});
    await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.meg-l09').count()>0,true,'Canonical stage09 grid missing');
