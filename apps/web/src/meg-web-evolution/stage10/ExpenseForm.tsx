@@ -139,7 +139,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const requestedAmount=brlSignedDecimal(money);
  const isRefund=money.negative&&requestedAmount!==null;
  const isDirty=isEdit&&Boolean(initialDraft)&&(Object.keys(EMPTY_EXPENSE_DRAFT) as (keyof ExpenseDraft)[]).some(key=>draft[key]!==initialDraft![key]);
- const validPayment=isCredit?Boolean(selectedCard)&&/^(?:[1-9]|[1-3]\\d|4[0-8])$/.test(draft.installmentsInput):Boolean(method)&&(!showSettlementAccount||Boolean(selectedAccount));
+ const validPayment=isCredit?Boolean(selectedCard)&&/^(?:[1-9]|[1-3]\d|4[0-8])$/.test(draft.installmentsInput):Boolean(method)&&(!showSettlementAccount||Boolean(selectedAccount));
  // Criacao de compra parcelada usa exclusivamente o writer CardPurchase.
  // Nunca ativar para edicao de FinancialEvent nem para preview real-read.
  const creditCreateAllowed=!isEdit&&dataMode==='real-write'&&!isRefund&&
@@ -155,7 +155,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
   ...(!chosenCategory?['Categoria']:[]),
   ...(isCredit?[
    ...(!selectedCard?['Cartão']:[]),
-   ...(!/^(?:[1-9]|[1-3]\\d|4[0-8])$/.test(draft.installmentsInput)?['Número de parcelas (1 a 48)']:[])
+   ...(!/^(?:[1-9]|[1-3]\d|4[0-8])$/.test(draft.installmentsInput)?['Número de parcelas (1 a 48)']:[])
   ]:[
    ...(!method?['Forma de pagamento']:[]),
    ...(showSettlementAccount&&!selectedAccount?['Conta de saída']:[])
