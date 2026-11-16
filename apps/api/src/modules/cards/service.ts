@@ -255,6 +255,17 @@ export async function listCards(userId: string, month: string) {
   });
 }
 
+/**
+ * Persistir centavos como DECIMAL textual exato. O rateio permanece exclusivamente
+ * em cardPurchaseInstallmentRows, sem alterar arredondamento, competência ou regras.
+ * Evita a conversão implícita de Number IEEE754 em NUMERIC com dígitos espúrios.
+ */
+function cardCanonicalDecimal(value:number):string{
+ const cents=Math.round(value*100);
+ if(!Number.isFinite(value)||!Number.isSafeInteger(cents)||cents<0)
+  throw new CardDomainError('INVALID_CARD_AMOUNT');
+ return String(Math.trunc(cents/100))+'.'+String(cents%100).padStart(2,'0');
+}
 export async function createCardPurchaseProtected(userId: string, input: {
   cardId: string;
   categoryId?: string | null;
@@ -266,6 +277,8 @@ export async function createCardPurchaseProtected(userId: string, input: {
   allowDuplicate?: boolean;
 }) {
   const shared = await sharedCardContext(userId);
+  // Os cents sao calculados com a mesma regra canônica usada no parcelamento.
+  const exactAmount=cardCanonicalDecimal(input.totalAmount);
   const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined }) : null;
 
   return serializableFinancialTransaction(async (tx) => {
@@ -297,7 +310,7 @@ export async function createCardPurchaseProtected(userId: string, input: {
         cardId: card.id,
         categoryId: input.categoryId || null,
         description: input.description,
-        totalAmount: input.totalAmount,
+        totalAmount: exactAmount,
         purchaseDate: input.purchaseDate,
         installments: input.installments,
       });
@@ -322,11 +335,13 @@ export async function createCardPurchaseProtected(userId: string, input: {
         cardId: card.id,
         categoryId: input.categoryId,
         description: input.description.trim(),
-        totalAmount: input.totalAmount,
+        totalAmount: exactAmount,
         purchaseDate,
         installments: input.installments,
         entries: {
-          create: projectedInstallments,
+          create: projectedInstallments.map(entry=>({
+           ...entry,amount:cardCanonicalDecimal(entry.amount),
+          })),
         },
       },
       include: { entries: true, category: true },
