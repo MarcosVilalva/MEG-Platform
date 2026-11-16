@@ -10,6 +10,7 @@ const grid=read('apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx');
 const actions=read('apps/web/src/meg-web-evolution/stage10/LaunchActionsQa.tsx');
 
 assert.match(main,/import\.meta\.env\.VITE_PRISM_LAYOUT === 'true'/);
+assert.match(main,/prismLayoutEnabled && !query\.has\('tela'\)/);
 assert.match(main,/prismLayoutEnabled[\s\S]*<React\.Suspense/);
 assert.match(main,/\: <OperationalLaunches key=/);
 assert.match(prism,/from '\.\.\/launches\/OperationalLaunches'/);
