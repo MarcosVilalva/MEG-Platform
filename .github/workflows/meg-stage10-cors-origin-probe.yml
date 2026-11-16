@@ -22,3 +22,15 @@ jobs:
               grep -Ei '^(access-control-allow-origin|access-control-allow-methods|vary):'                 /tmp/meg-stage10-cors-headers || true
             done
           done
+          echo "NO_ORIGIN_HEALTH_CHECKS"
+          for path in /health /auth/me /finance/accounts /cards?month=2026-11; do
+            echo "ENDPOINT_NO_ORIGIN=$path"
+            curl -sS --max-time 90 -o /dev/null \
+              -w "HTTP_NO_ORIGIN=%{http_code}\\n" \
+              "https://meg-platform-api.onrender.com$path" \
+              || echo "HTTP_NO_ORIGIN=NETWORK_FAILURE"
+          done
+          echo "NO_ORIGIN_OPTIONS"
+          curl -sS --max-time 90 -X OPTIONS -o /dev/null \
+            -w "HTTP_OPTIONS_NO_ORIGIN=%{http_code}\\n" \
+            "https://meg-platform-api.onrender.com/auth/login" || echo "HTTP_OPTIONS_NO_ORIGIN=NETWORK_FAILURE"
