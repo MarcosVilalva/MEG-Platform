@@ -163,6 +163,17 @@ try{
     await selection.selectOption('all');
     await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description}).first().waitFor({state:'visible',timeout:20000});
     assert.equal(snapshotReads,1,'All-history must reuse current revision snapshot');
+    const waitCanonicalExpense=async(expected)=>{
+     await page.waitForFunction(value=>[...document.querySelectorAll('.meg-l09-stat.is-expense strong')]
+      .some(node=>node.textContent?.replace(/\\s/g,'').includes(value)),expected,{timeout:20000});
+    };
+    await waitCanonicalExpense('261,46');
+    const search=page.getByPlaceholder('Buscar lançamentos...');
+    await search.fill('OUTRO ANO');
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    await waitCanonicalExpense('49,01');
+    await search.fill('');
+    await waitCanonicalExpense('261,46');
     await selection.selectOption('range');
     await page.getByLabel('Período inicial').fill('2025-12-01');
     await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description}).first().waitFor({state:'visible',timeout:20000});
