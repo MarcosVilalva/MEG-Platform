@@ -1,0 +1,67 @@
+name: MEG Stage10 | Smoke publico da preview protegida
+on:
+  push:
+    branches:
+      - 'stage10/prism-real-read-optin-20261116'
+permissions:
+  contents: read
+jobs:
+  preview-readonly-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Conferir somente HTTP publico, sem credenciais e sem login real
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://meg-stage10-prism-real-preview.onrender.com"
+          request() {
+            curl --retry 3 --retry-all-errors --retry-delay 2 --max-time 90 -sS \
+              -o /tmp/meg-stage10-smoke-response -w '%{http_code}' "$@"
+          }
+          actual="$(request "$base/health")"
+          test "$actual" = 200
+          grep -q '"read-only-prism-preview"' /tmp/meg-stage10-smoke-response
+          echo "PREVIEW_HEALTH=200"
+
+          actual="$(request "$base/web-evolution.html?v=smoke")"
+          test "$actual" = 200
+          grep -q 'meg-web-evolution-root' /tmp/meg-stage10-smoke-response
+          echo "PREVIEW_OPERATIONAL_WEB=200"
+
+          actual="$(request "$base/finance/accounts")"
+          test "$actual" = 401
+          echo "PREVIEW_FINANCE_WITHOUT_TOKEN=401"
+
+          actual="$(request "$base/cards?month=2026-11")"
+          test "$actual" = 401
+          echo "PREVIEW_CARDS_WITHOUT_TOKEN=401"
+
+          actual="$(request -X POST -H 'Content-Type: application/json' \
+            --data '{}' "$base/finance/events")"
+          test "$actual" = 405
+          echo "PREVIEW_FINANCIAL_WRITE_POST=405"
+
+          actual="$(request -X POST -H 'Content-Type: application/json' \
+            -H 'Origin: https://evil.invalid' \
+            --data '{"email":"no@ci.invalid","password":"not-a-real-password"}' \
+            "$base/auth/login")"
+          test "$actual" = 403
+          echo "PREVIEW_CROSS_ORIGIN_AUTH=403"
+
+          actual="$(request -X POST -H 'Content-Type: application/json' \
+            -H "Origin: $base" \
+            --data '{"email":"no@ci.invalid","password":"not-a-real-password"}' \
+            "$base/auth/login")"
+          test "$actual" = 403
+          echo "PREVIEW_NONOWNER_LOGIN=403"
+
+          actual="$(request "$base/meg-unificado-qa.html")"
+          test "$actual" = 404
+          echo "PREVIEW_QA_FIXTURE_ENTRY_NOT_SERVED=404"
+
+          actual="$(request "$base/.env")"
+          test "$actual" = 404
+          echo "PREVIEW_ENV_FILE_NOT_SERVED=404"
+
+          echo "MEG_STAGE10_PUBLIC_PREVIEW_READONLY_SMOKE_PASS"
