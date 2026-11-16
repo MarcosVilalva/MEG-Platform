@@ -19,6 +19,7 @@ import './unified-qa.css';
 type Overlay='choice'|'expense'|'edit'|null;
 type Props={
  userId:string;userName:string;onHome:()=>void;
+ periodMonth?:string;onPeriodChange?:(month:string)=>void;
  initialNew?:boolean;onInitialNewConsumed?:()=>void;
 };
 
@@ -76,7 +77,7 @@ function existingExpenseDraft(
 }
 
 export default function PrismOperationalLaunches({
- userId,userName,onHome,initialNew=false,onInitialNewConsumed,
+ userId,userName,onHome,periodMonth,onPeriodChange,initialNew=false,onInitialNewConsumed,
 }:Props){
  const [readData,setReadData]=useState<PrismReadData|null>(null);
  const readDataRef=useRef<PrismReadData|null>(null);
@@ -141,7 +142,7 @@ export default function PrismOperationalLaunches({
 
  return <div data-meg-operational-prism="read-only">
   <OperationalLaunches userId={userId} userName={userName} onHome={onHome}
-   prismReadOnlyCallbacks={callbacks}/>
+   periodMonth={periodMonth} onPeriodChange={onPeriodChange} prismReadOnlyCallbacks={callbacks}/>
   {overlay==='choice'&&catalogs&&<div className="meg-new-launch__overlay is-choice-overlay meg-unified-choice-overlay">
    <section className="meg-new-launch is-choose" role="dialog" aria-modal="true" aria-labelledby="meg-unified-new-title">
     <header className="meg-new-launch__header">
