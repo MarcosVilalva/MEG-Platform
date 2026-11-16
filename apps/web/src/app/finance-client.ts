@@ -241,8 +241,8 @@ export const financeClient = {
     authorizedRequest<BenefitSummary>(`/finance/benefit-summary?month=${encodeURIComponent(month)}`),
   getMonetaryBalance: (accountId: string, date: string) =>
     authorizedRequest<MonetaryAccountBalance>(`/finance/monetary-balance?accountId=${encodeURIComponent(accountId)}&date=${encodeURIComponent(date)}`, { cache: 'no-store' }),
-  listEventsForMonth: (month: string) =>
-    authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
+  listEventsForMonth: (month: string, signal?: AbortSignal) =>
+    authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`, { cache: 'no-store', signal }),
   getSyncStatus: () =>
     authorizedRequest<{token:string;changedAt:string|null;mutationType:string|null;capabilities?:{historySnapshotV1?:boolean;filteredSummaryV1?:boolean}}>('/finance/sync-status',{cache:'no-store'}),
   getHistorySnapshot: (signal?:AbortSignal) =>
