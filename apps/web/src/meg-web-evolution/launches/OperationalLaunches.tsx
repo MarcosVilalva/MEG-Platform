@@ -5,6 +5,7 @@ import type {DataGridFilterState} from '../datagrid/types';
 import {financeClient} from '../../app/finance-client';
 import type {HomeFinancialData} from '../home/HomeDashboard';
 import {LaunchesStage09, type LaunchesFilterPreset} from './LaunchesStage09';
+import type {QaLaunchTarget} from '../stage10/LaunchActionsQa';
 import {displayMoney, readAuthorizedHistory, readSmartAuthorizedHistory, type HistoryProgress} from './authorized-history';
 
 const todayBrazil = () => {
@@ -49,9 +50,10 @@ function historicLabels(event:FinancialEvent){
 
 function buildReadOnlyData(
  events:FinancialEvent[], summary:FinanceSummary, accounts:Account[],
- categories:Category[], methods:PaymentMethod[],
+ categories:Category[], methods:PaymentMethod[], includeAccountTypes=false,
 ):HomeFinancialData {
  const nameAccounts = new Map(accounts.map(a=>[a.id, a.name]));
+ const accountTypes = new Map(accounts.map(a=>[a.id,a.type]));
  const nameCategories = new Map(categories.map(c=>[c.id, c.name]));
  const nameMethods = new Map(methods.map(m=>[m.id, m.name]));
  for(const event of events){
@@ -81,12 +83,26 @@ function buildReadOnlyData(
    pendingCount:summary.pendingCount,pendingAmount:summary.pendingAmount
   },
   cashflow:null,benefit:null,available:null,transactions,payables:[],cards:[],
-  accounts:[...nameAccounts].map(([id,name])=>({id,name})),
+  accounts:[...nameAccounts].map(([id,name])=>({id,name,...(includeAccountTypes&&accountTypes.has(id)?{type:accountTypes.get(id)}:{})})),
   categories:[...nameCategories].map(([id,name])=>({id,name}))
  };
 }
-type Props={userId:string;userName:string;onHome:()=>void};
-export function OperationalLaunches({userId,userName,onHome}:Props){
+export type PrismCardRead = {
+ id:string;name:string;isActive:boolean;closingDay:number;dueDay:number;
+ issuer?:string|null;brand?:string|null;lastFour?:string|null;
+};
+export type PrismReadData = {
+ events:FinancialEvent[];accounts:Account[];categories:Category[];
+ methods:PaymentMethod[];cards:PrismCardRead[];
+};
+export type PrismReadOnlyCallbacks = {
+ onLoaded:(data:PrismReadData)=>void;
+ onNew:()=>void;
+ onEdit:(row:QaLaunchTarget)=>void;
+ onNotice:(message:string)=>void;
+};
+type Props={userId:string;userName:string;onHome:()=>void;prismReadOnlyCallbacks?:PrismReadOnlyCallbacks};
+export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbacks}:Props){
  const month = todayBrazil().slice(0,7);
  const [data,setData]=useState<HomeFinancialData|null>(null);
  const [error,setError]=useState('');
@@ -121,12 +137,16 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
     const eventRead=supportsSnapshot
      ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),fetchPage,signal,report)
      : readAuthorizedHistory(fetchPage,signal,p=>report({...p,mode:'legacy'}));
-    const [events,summary,accounts,categories,methods]=await Promise.all([
+    const cardsRead = prismReadOnlyCallbacks
+     ? authenticatedRequest<PrismCardRead[]>('/cards?month='+encodeURIComponent(month),{cache:'no-store',signal})
+     : Promise.resolve([] as PrismCardRead[]);
+    const [events,summary,accounts,categories,methods,cards]=await Promise.all([
      eventRead,
      authenticatedRequest<FinanceSummary>('/finance/summary?month='+encodeURIComponent(month),{cache:'no-store',signal}),
      authenticatedRequest<Account[]>('/finance/accounts',{cache:'no-store',signal}),
      authenticatedRequest<Category[]>('/finance/categories',{cache:'no-store',signal}),
      authenticatedRequest<PaymentMethod[]>('/finance/payment-methods',{cache:'no-store',signal}),
+     cardsRead,
     ]);
     if(signal.aborted)return;
     const after=await financeClient.getSyncStatus();
@@ -136,7 +156,8 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
     }
     loadedRevision.current=before.token;
     setCanFilterCanonically(before.capabilities?.filteredSummaryV1===true);
-    setData(buildReadOnlyData(events,summary,accounts,categories,methods));
+    if(prismReadOnlyCallbacks)prismReadOnlyCallbacks.onLoaded({events,accounts,categories,methods,cards});
+    setData(buildReadOnlyData(events,summary,accounts,categories,methods,Boolean(prismReadOnlyCallbacks)));
    }catch(cause){
     if(!signal.aborted){
      const networkFailure=cause instanceof TypeError &&
@@ -151,7 +172,7 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
   const invalidate=()=>reload();
   window.addEventListener('meg:data-invalidated',invalidate);
   return ()=>{controller.abort();window.removeEventListener('meg:data-invalidated',invalidate)};
- },[userId,month,version,reload]);
+ },[userId,month,version,reload,prismReadOnlyCallbacks]);
  const readCanonicalFiltered=useCallback(async(
   criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal,
  ):Promise<CanonicalFilteredHistorySummary|null>=>{
@@ -206,6 +227,8 @@ export function OperationalLaunches({userId,userName,onHome}:Props){
   exportUserName={userName} onRefresh={reload}
   onFilteredSummary={canFilterCanonically?readCanonicalFiltered:undefined}
   rememberedFilters={filterMemory.current} onRememberFilters={rememberFilters}
-  onNew={()=>{}} onHome={onHome}
+  onNew={prismReadOnlyCallbacks?.onNew??(()=>{})} onHome={onHome}
+  qaActions={Boolean(prismReadOnlyCallbacks)} readOnlyRealData={Boolean(prismReadOnlyCallbacks)}
+  onQaEdit={prismReadOnlyCallbacks?.onEdit} onQaNotice={prismReadOnlyCallbacks?.onNotice}
  />;
 }
