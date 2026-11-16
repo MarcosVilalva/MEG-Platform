@@ -156,12 +156,12 @@ try{
     await picker.waitFor({state:'visible'});
     await picker.fill('2025-12');
     await page.waitForFunction(()=>document.querySelector('.meg-period')?.textContent?.includes('Dezembro de 2025'),null,{timeout:20000});
-    await page.getByRole('button',{name:/Despesas: R\\$\\s*0,00/}).waitFor({state:'visible',timeout:20000});
+    await page.getByRole('button',{name:/Despesas: R\$\s*0,00/}).waitFor({state:'visible',timeout:20000});
     assert.ok(homeSummaryMonths.includes('2025-12'),'Home must ask API for selected month');
     await page.screenshot({path:resolve(evidence,'home-period-2025-12-'+width+'x'+height+'.png'),fullPage:false});
     await headerPicker.click();
     await page.getByLabel('Mês do painel').fill(monthKey);
-    await page.getByRole('button',{name:/Despesas: R\\$\\s*123,45/}).waitFor({state:'visible',timeout:20000});
+    await page.getByRole('button',{name:/Despesas: R\$\s*123,45/}).waitFor({state:'visible',timeout:20000});
     assert.ok(homeSummaryMonths.includes(monthKey),'Home must restore current month via API');
    }
    const homeWidth=await page.evaluate(()=>({page:document.documentElement.scrollWidth,view:window.innerWidth}));
