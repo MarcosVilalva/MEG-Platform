@@ -15,6 +15,12 @@ import { OperationalLaunches } from './launches/OperationalLaunches';
 const PrismOperationalLaunches = React.lazy(() => import('./integrated-qa/PrismOperationalLaunches'));
 const prismLayoutEnabled = import.meta.env.VITE_PRISM_LAYOUT === 'true';
 
+function currentBrazilMonth(){
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+ const value=(type:string)=>parts.find(part=>part.type===type)?.value||'';
+ return value('year')+'-'+value('month');
+}
+
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
 function currentAuthDestination(): AuthDestination {
@@ -26,6 +32,7 @@ function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loggingOut,setLoggingOut] = useState(false);
   const [openPrismNew,setOpenPrismNew] = useState(false);
+  const [activeMonth,setActiveMonth] = useState(currentBrazilMonth);
   const [logoutWarning,setLogoutWarning] = useState('');
   const [section,setSection] = useState<'home'|'launches'>(() => {
     const query = new URLSearchParams(window.location.search);
@@ -165,8 +172,8 @@ function AuthGateway() {
     // Exibição do período civil no fuso da Home. Não altera competência,
     // vencimentos nem qualquer cálculo financeiro.
     const monthLabel = new Intl.DateTimeFormat('pt-BR', {
-      month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo',
-    }).format(new Date());
+      month: 'long', year: 'numeric', timeZone: 'UTC',
+    }).format(new Date((prismLayoutEnabled?activeMonth:currentBrazilMonth())+'-01T12:00:00Z'));
     const periodLabel = monthLabel.slice(0, 1).toLocaleUpperCase('pt-BR') + monthLabel.slice(1);
     return (
       <AppShell
@@ -181,10 +188,11 @@ function AuthGateway() {
           ? (prismLayoutEnabled
             ? <React.Suspense fallback={<div role="status">Carregando Prism 2.0...</div>}>
                 <PrismOperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name}
+                  periodMonth={activeMonth} onPeriodChange={setActiveMonth}
                   initialNew={openPrismNew} onInitialNewConsumed={() => setOpenPrismNew(false)} onHome={() => setSection('home')}/>
               </React.Suspense>
             : <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>)
-          : <HomeDashboard userId={session.user.id} onNavigate={target => {
+          : <HomeDashboard userId={session.user.id} month={prismLayoutEnabled?activeMonth:undefined} onNavigate={target => {
               // Só Lançamentos possui destino operacional autorizado nesta integração.
               // Os demais atalhos conservam o aviso da Home, sem rotas fictícias.
               if(target==='novo' && prismLayoutEnabled){setOpenPrismNew(true);setSection('launches');return true;}
