@@ -11,7 +11,7 @@ const fake=http.createServer(async(req,res)=>{
  calls.push({method:req.method,url:req.url,origin:req.headers.origin??null,authorization:req.headers.authorization??null});
  res.setHeader('Content-Type','application/json');
  if(req.url==='/auth/me'){
-  if(req.headers.authorization==='Bearer owner-token'){
+  if(req.headers.authorization==='Bearer owner-token'||req.headers.authorization==='Bearer owner-concurrent-token'){
    res.end(JSON.stringify({user:owner}));return;
   }
   if(req.headers.authorization==='Bearer outsider-token'){
@@ -72,6 +72,15 @@ try{
   assert.equal((await response.json())[0].id,'ci-account');
   assert.deepEqual(calls.map(x=>x.url),['/auth/me','/finance/accounts']);
   assert.equal(calls.some(x=>x.origin!==null),false,'No Origin headers sent to existing API');
+  const beforeConcurrentAuth=calls.filter(x=>x.url==='/auth/me').length;
+  const beforeConcurrentReads=calls.filter(x=>x.url==='/finance/accounts').length;
+  const concurrent=await Promise.all(Array.from({length:9},()=>read('/finance/accounts','owner-concurrent-token')));
+  assert.ok(concurrent.every(x=>x.status===200),'Parallel owner requests must all be authorized');
+  assert.equal(calls.filter(x=>x.url==='/auth/me').length-beforeConcurrentAuth,1,
+   'One auth/me check per token for concurrent requests');
+  assert.equal(calls.filter(x=>x.url==='/finance/accounts').length-beforeConcurrentReads,9,
+   'Every authorized finance read must still go to the upstream');
+
   const beforeOutsider=calls.filter(x=>x.url==='/finance/accounts').length;
   response=await read('/finance/accounts','outsider-token');assert.equal(response.status,403);
   assert.equal(calls.filter(x=>x.url==='/finance/accounts').length,beforeOutsider);
