@@ -34,18 +34,35 @@ const session={
  refreshToken:'synthetic-ci-refresh-only',refreshExpiresAt:'2099-01-01T00:00:00Z'
 };
 const priorHistory={...item,id:'ci-prior-month-event',description:'MERCADO ANTERIOR',date:'2026-10-08T12:00:00.000Z',competence:'2026-10',amount:'89.00',signedAmount:'-89.00'};
-const endpoints=(path,monthAsked=monthKey,search='')=>{
+const endpoints=(path,monthAsked=monthKey,search='',rawFilter='')=>{
  if(path==='/auth/me')return {user:sessionUser};
  if(path==='/finance/sync-status')return {
   token:'synthetic-consistent-version-v1',
-  capabilities:{historySnapshotV1:true,filteredSummaryV1:false}
+  capabilities:{historySnapshotV1:true,filteredSummaryV1:true}
  };
- if(path==='/finance/events/month'){const rows=monthAsked===monthKey?[item]:[];return {items:rows,total:rows.length,page:1,pageSize:rows.length};}
+ if(path==='/finance/events/month'){const rows=monthAsked===monthKey?[item]:monthAsked==='2026-10'?[priorHistory]:[];return {items:rows,total:rows.length,page:1,pageSize:rows.length};}
  if(path==='/finance/events'&&search.trim())return {items:[priorHistory],total:1,page:1,pageSize:100};
  if(path==='/finance/events/history-snapshot')return {
   protocol:'financial-history-v1',kind:'complete',
-  consistency:'repeatable-read',total:1,items:[item]
+  consistency:'repeatable-read',total:2,items:[item,priorHistory]
  };
+ if(path==='/finance/events/filtered-summary'){
+  const filters=JSON.parse(rawFilter);
+  const c=filters.criteria;
+  const relevant=[item,priorHistory].filter(row=>{
+   const day=row.date.slice(0,10);
+   return (!c.start||day>=c.start)&&(!c.end||day<=c.end)&&
+    (c.kind==='all'||row.type===c.kind)&&
+    (c.category==='all'||row.categoryId===c.category)&&
+    (c.account==='all'||row.accountId===c.account)&&
+    (c.paymentMethod==='all'||row.paymentMethod?.name===c.paymentMethod)&&
+    (!c.search||row.description.toLocaleLowerCase('pt-BR').includes(c.search.toLocaleLowerCase('pt-BR')));
+  });
+  const expense=relevant.reduce((sum,row)=>sum+Number(row.amount),0);
+  return {kind:'complete',protocol:'financial-filter-summary-v1',consistency:'repeatable-read',
+   total:2,filteredCount:relevant.length,income:0,expense,
+   projectedResult:-expense,realizedResult:-expense};
+ }
  if(path==='/finance/summary')return {
   month:monthAsked,availableBalance:900,income:0,expense:monthAsked===monthKey?123.45:0,
   projectedResult:-123.45,realizedIncome:0,realizedExpense:123.45,
@@ -86,6 +103,7 @@ try{
   const externalHosts=[];
   const errors=[];
   let historySearchRequests=0;
+  let snapshotReads=0;
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',req=>{
    const url=new URL(req.url());
@@ -104,7 +122,8 @@ try{
     return;
    }
    if(url.pathname==='/finance/events'&&url.searchParams.get('search'))historySearchRequests++;
-   const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey,url.searchParams.get('search')||'');
+   if(url.pathname==='/finance/events/history-snapshot')snapshotReads++;
+   const value=endpoints(url.pathname,url.searchParams.get('month')||monthKey,url.searchParams.get('search')||'',url.searchParams.get('filter')||'');
    if(value===undefined){
     if(url.pathname==='/finance/home-commitments'||url.pathname==='/finance/home-available'){
      await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'CANONICAL_ROUTE_NOT_DEPLOYED'})});
@@ -132,6 +151,19 @@ try{
     await periodInput.fill('2026-10');
     await page.waitForFunction(()=>document.body.textContent?.includes('Outubro de 2026'),null,{timeout:20000});
     await periodInput.fill(monthKey);
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
+    const selection=page.getByLabel('Abrangência do período');
+    await selection.selectOption('year');
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    assert.equal(snapshotReads,1,'Year must use one consistent snapshot, not double paging');
+    await selection.selectOption('all');
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    assert.equal(snapshotReads,1,'All-history must reuse current revision snapshot');
+    await selection.selectOption('range');
+    await page.getByLabel('Período inicial').fill('2026-10-01');
+    await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    assert.equal(snapshotReads,1,'Range must reuse verified snapshot');
+    await selection.selectOption('month');
     await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
     const action=page.getByRole('button',{name:'Ações de '+item.description}).first();
     await action.click();
