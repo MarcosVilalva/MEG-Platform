@@ -87,6 +87,30 @@ function buildReadOnlyData(
   categories:[...nameCategories].map(([id,name])=>({id,name}))
  };
 }
+/**
+ * The live financial API provides every event in a selected civil month
+ * through one canonical authenticated GET, instead of 76 global page reads.
+ * Nothing here interprets a single month as the entire historical dataset.
+ */
+async function readVerifiedMonthlyEvents(month:string,signal:AbortSignal):Promise<FinancialEvent[]>{
+ const result=await financeClient.listEventsForMonth(month,signal);
+ if(signal.aborted)throw new DOMException('Consulta cancelada.','AbortError');
+ if(!result||result.page!==1||!Array.isArray(result.items)
+  ||!Number.isSafeInteger(result.total)||result.total!==result.items.length
+  ||result.pageSize!==result.items.length){
+  throw new Error('A API retornou histórico mensal incompleto. Nenhum resultado parcial foi mostrado.');
+ }
+ const unique=new Set<string>();
+ for(const event of result.items){
+  if(!event||typeof event.id!=='string'||!event.id||unique.has(event.id)
+   ||typeof event.date!=='string'||!event.date.startsWith(month+'-')){
+   throw new Error('A API retornou registros inválidos para o mês selecionado.');
+  }
+  unique.add(event.id);
+ }
+ return result.items;
+}
+
 export type PrismCardRead = {
  id:string;name:string;isActive:boolean;closingDay:number;dueDay:number;
  issuer?:string|null;brand?:string|null;lastFour?:string|null;
@@ -102,9 +126,9 @@ export type PrismReadOnlyCallbacks = {
  onEdit:(row:QaLaunchTarget)=>void;
  onNotice:(message:string)=>void;
 };
-type Props={userId:string;userName:string;onHome:()=>void;prismReadOnlyCallbacks?:PrismReadOnlyCallbacks};
-export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbacks}:Props){
- const month = todayBrazil().slice(0,7);
+type Props={userId:string;userName:string;onHome:()=>void;prismReadOnlyCallbacks?:PrismReadOnlyCallbacks;periodMonth?:string;onPeriodChange?:(month:string)=>void};
+export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbacks,periodMonth,onPeriodChange}:Props){
+ const month = periodMonth??todayBrazil().slice(0,7);
  const [data,setData]=useState<HomeFinancialData|null>(null);
  const [error,setError]=useState('');
  const [progress,setProgress]=useState<HistoryProgress>({loaded:0,total:0,pass:1,mode:'snapshot'});
@@ -135,9 +159,11 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
     }
     const fetchPage=(page:number,pageSize:number,s:AbortSignal)=>financeClient.listEvents(page,pageSize,'',s);
     const report=(p:HistoryProgress)=>{if(!signal.aborted)setProgress(p)};
-    const eventRead=supportsSnapshot
-     ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),fetchPage,signal,report)
-     : readAuthorizedHistory(fetchPage,signal,p=>report({...p,mode:'legacy'}));
+    const eventRead=prismReadOnlyCallbacks
+     ? readVerifiedMonthlyEvents(month,signal)
+     : supportsSnapshot
+       ? readSmartAuthorizedHistory(s=>financeClient.getHistorySnapshot(s),fetchPage,signal,report)
+       : readAuthorizedHistory(fetchPage,signal,p=>report({...p,mode:'legacy'}));
     const cardsRead = prismReadOnlyCallbacks
      ? authenticatedRequest<PrismCardRead[]>('/cards?month='+encodeURIComponent(month),{cache:'no-store',signal})
      : Promise.resolve([] as PrismCardRead[]);
@@ -194,6 +220,17 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
   <button type="button" className="meg-l09-add" onClick={reload}>Tentar novamente</button>
   <button type="button" className="meg-l09-back" onClick={onHome}>Voltar à Home</button>
  </section>;
+ if(!data && prismReadOnlyCallbacks){
+  return <section className="meg-l09 meg-l09-loading" aria-label="Consultando lançamentos do mês" aria-busy="true">
+   <div className="meg-l09-loading-panel" role="status">
+    <div className="meg-l09-loading-head">
+     <div><span className="meg-l09-loading-eyebrow">DADOS REAIS · CONSULTA AUTENTICADA</span>
+      <h1>Lançamentos</h1></div>
+    </div>
+    <p className="meg-l09-loading-status">Consultando registros de {month.slice(5,7)}/{month.slice(0,4)}. Os dados não são copiados nem importados novamente.</p>
+   </div>
+  </section>;
+ }
  if(!data){
   // Percentual de carregamento da interface, nunca indicador financeiro.
   const fraction=progress.total>0?progress.loaded/progress.total:0;
@@ -224,7 +261,8 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
   </section>;
  }
  return <LaunchesStage09
-  key={userId} data={data} mode="live" periodMonth={month} userId={userId}
+  key={userId+':'+month} data={data} mode="live" periodMonth={month} userId={userId}
+  onPeriodChange={onPeriodChange?next=>{filterMemory.current={};onPeriodChange(next)}:undefined}
   exportUserName={userName} onRefresh={reload}
   onFilteredSummary={canFilterCanonically?readCanonicalFiltered:undefined}
   rememberedFilters={filterMemory.current} onRememberFilters={rememberFilters}
