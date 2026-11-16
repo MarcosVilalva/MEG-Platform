@@ -37,7 +37,7 @@ function shiftMonth(month:string,delta:number):string {
 function HeaderMonthPicker({label,month,onChange}:{label:string;month?:string;onChange?:(month:string)=>void}){
  const [open,setOpen]=useState(false);
  const container=useRef<HTMLDivElement>(null);
- const valid=typeof month==='string'&&/^\\d{4}-(0[1-9]|1[0-2])$/.test(month);
+ const valid=typeof month==='string'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(month);
  const enabled=Boolean(onChange&&valid);
  useEffect(()=>{
   if(!open)return;
@@ -50,7 +50,7 @@ function HeaderMonthPicker({label,month,onChange}:{label:string;month?:string;on
   return()=>{document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',onEscape);};
  },[open]);
  const select=(next:string,close=true)=>{
-  if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(next))return;
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(next))return;
   onChange?.(next);
   if(close)setOpen(false);
  };
