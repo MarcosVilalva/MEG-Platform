@@ -29,6 +29,8 @@ export type ExpenseFormProps={
  schedule?:InstallmentSchedule;
  onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;saveEnabled?:boolean;
  mode?:'create'|'edit';initialDraft?:ExpenseDraft;
+ /** Rótulos neutros para o caminho real de consulta, mantendo QA original por padrão. */
+ readOnlyRealData?:boolean;
 };
 export const EMPTY_EXPENSE_DRAFT:ExpenseDraft={
  description:'',categoryId:'',accountId:'',paymentMethodId:'',
@@ -101,7 +103,7 @@ function EditCloseGlyph(){
   <path d="M5 5 19 19M19 5 5 19"/>
  </svg>;
 }
-export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft}:ExpenseFormProps){
+export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft,readOnlyRealData=false}:ExpenseFormProps){
  const isEdit=mode==='edit';
  const [draft,setDraft]=useState<ExpenseDraft>(()=>initialDraft??EMPTY_EXPENSE_DRAFT);
  const [money,setMoney]=useState<BRLInput>(()=>initialDraft?.amountInput?brlFromPasted(initialDraft.amountInput):EMPTY_BRL_INPUT);
@@ -204,7 +206,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
     {!isEdit&&<button type="button" className="meg-t10-expense-head-icon" aria-label="Voltar à escolha do tipo" onClick={onBack}><Icon name="chevronLeft"/></button>}
     <span className="meg-t10-expense-title"><h2 id={formId+'title'}>{isEdit?'Editar lançamento':'Novo lançamento'}</h2><small><span className="meg-t10-expense-type"><Icon name="chevronDown"/> DESPESA</span> {isEdit?'Revise os dados do lançamento.':'Registre sua movimentação com segurança.'}</small></span>
     <span className="meg-t10-expense-head-actions">
-     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={isEdit?'Simulação QA: não grava dados financeiros':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
+     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={readOnlyRealData?'Somente leitura: salvamento indisponível':isEdit?'Simulação QA: não grava dados financeiros':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
      <button type="button" className="meg-t10-expense-head-icon" aria-label={isEdit?'Fechar edição':'Fechar formulário'} title={isEdit?'Descartar alterações e fechar':undefined} onClick={onBack}>{isEdit?<EditCloseGlyph/>:'×'}</button>
     </span>
    </header>
@@ -284,7 +286,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      </div>}
      {!isCredit&&<div className="meg-t10-expense-payment-context" aria-live="polite">
       <strong><Icon name="list"/> Conta e baixa</strong>
-      <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
+      <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+(readOnlyRealData?'. Saldo não consultado neste formulário.':'. Saldo não consultado nesta prévia.'):'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
      </div>}
 
      {isRefund&&<p className="meg-t10-expense-refund-warning">Estorno sinalizado. A gravação deverá seguir o contrato financeiro específico, inclusive o do cartão.</p>}
@@ -305,7 +307,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       {isCredit&&<div><dt>Cartão / parcelas</dt><dd>{nameOf(cards,draft.creditCardId)} · {draft.installmentsInput||'1'}x</dd></div>}
       {isCredit&&selectedCard&&<div><dt>Fecha / vence</dt><dd>{selectedCard.closingDay||'?' } / {selectedCard.dueDay||'?'}</dd></div>}
      </dl>
-     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> Prévia fictícia, sem operações financeiras.</div>
+     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> {readOnlyRealData?'Dados reais consultados. Gravações financeiras indisponíveis.':'Prévia fictícia, sem operações financeiras.'}</div>
     </aside>
    </div>
    {categoryPicker&&<div className="meg-t10-expense-suboverlay"><section className="meg-t10-expense-subdialog" role="dialog" aria-modal="true" aria-label="Todas as categorias">
