@@ -148,8 +148,8 @@ export type PrismReadOnlyCallbacks = {
  onEdit:(row:QaLaunchTarget)=>void;
  onNotice:(message:string)=>void;
 };
-type Props={userId:string;userName:string;onHome:()=>void;prismReadOnlyCallbacks?:PrismReadOnlyCallbacks;periodMonth?:string;onPeriodChange?:(month:string)=>void;periodSelection?:LaunchPeriod;onPeriodSelectionChange?:(period:LaunchPeriod)=>void};
-export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbacks,periodMonth,onPeriodChange,periodSelection,onPeriodSelectionChange}:Props){
+type Props={userId:string;userName:string;onHome:()=>void;prismReadOnlyCallbacks?:PrismReadOnlyCallbacks;periodMonth?:string;onPeriodChange?:(month:string)=>void;periodSelection?:LaunchPeriod;onPeriodSelectionChange?:(period:LaunchPeriod)=>void;globalSearch?:{query:string;revision:number}};
+export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbacks,periodMonth,onPeriodChange,periodSelection,onPeriodSelectionChange,globalSearch}:Props){
  const month=periodSelection?.month??periodMonth??todayBrazil().slice(0,7);
  const period=periodSelection??periodForMonth(month);
  const periodKey=JSON.stringify(period);
@@ -302,7 +302,7 @@ export function OperationalLaunches({userId,userName,onHome,prismReadOnlyCallbac
   key={userId+':'+periodKey} data={data} mode="live" periodMonth={month} userId={userId}
   periodSelection={period} onPeriodSelectionChange={onPeriodSelectionChange?next=>{filterMemory.current={};onPeriodSelectionChange(next)}:undefined}
   onPeriodChange={onPeriodChange?next=>{filterMemory.current={};onPeriodChange(next)}:undefined}
-  exportUserName={userName} onRefresh={reload}
+  exportUserName={userName} onRefresh={reload} globalSearch={globalSearch}
   onFilteredSummary={canFilterCanonically?readCanonicalFiltered:undefined}
   rememberedFilters={filterMemory.current} onRememberFilters={rememberFilters}
   onNew={prismReadOnlyCallbacks?.onNew??(()=>{})} onHome={onHome}
