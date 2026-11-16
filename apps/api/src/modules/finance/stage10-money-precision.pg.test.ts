@@ -51,6 +51,9 @@ try{
   categoryId:expenseCategory.id,paymentMethodId:pix.id,
   operationId:tag+'-money',
  });
+ assert.ok(ordinary && typeof ordinary==='object' &&
+  'id' in ordinary && typeof ordinary.id==='string',
+  'Canonic writer must return a persisted event identifier');
  const money=await prisma.financialEvent.findUniqueOrThrow({
   where:{id:ordinary.id},include:{ledgerEntries:true},
  });
