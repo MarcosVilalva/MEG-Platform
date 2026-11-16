@@ -43,6 +43,8 @@ const allowedGet=new Set([
 ]);
 const allowedPostAuth=new Set(['/auth/login','/auth/refresh','/auth/logout']);
 const authCache=new Map();
+// Concentra verificacoes concorrentes do MESMO token, sem misturar titulares.
+const authChecksInFlight=new Map();
 
 if(!allowedEmail||!configuredOrigin||!Number.isInteger(port)||port<1||port>65535){
  throw new Error('PREVIEW_REQUIRED_CONFIGURATION_MISSING');
@@ -101,14 +103,22 @@ async function assertAuthorizedUser(bearer){
  const key=cacheKey(bearer);
  const cached=authCache.get(key);
  if(cached&&cached>Date.now())return 200;
- const reply=await fetchAllowed(new URL('/auth/me',upstreamUrl),{
-  method:'GET',headers:{Authorization:bearer,Accept:'application/json'}
- });
- if(reply.status!==200)return reply.status===401?401:403;
- if(emailOfUser(reply.text)!==allowedEmail)return 403;
- if(authCache.size>128)authCache.clear();
- authCache.set(key,Date.now()+25000);
- return 200;
+ const pending=authChecksInFlight.get(key);
+ if(pending)return pending;
+ // A verificacao de identidade continua no upstream; nunca confiar apenas no JWT.
+ const check=(async()=>{
+  const reply=await fetchAllowed(new URL('/auth/me',upstreamUrl),{
+   method:'GET',headers:{Authorization:bearer,Accept:'application/json'}
+  });
+  if(reply.status!==200)return reply.status===401?401:403;
+  if(emailOfUser(reply.text)!==allowedEmail)return 403;
+  if(authCache.size>128)authCache.clear();
+  authCache.set(key,Date.now()+25000);
+  return 200;
+ })();
+ authChecksInFlight.set(key,check);
+ try{return await check}
+ finally{if(authChecksInFlight.get(key)===check)authChecksInFlight.delete(key)}
 }
 async function readBody(req){
  let length=0;
