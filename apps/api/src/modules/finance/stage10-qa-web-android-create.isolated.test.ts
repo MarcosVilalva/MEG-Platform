@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import fastify from 'fastify';
+import bcrypt from 'bcryptjs';
+import { registerAuth } from '../../plugins/auth';
+import { authRoutes } from '../auth/routes';
 import { LicenseStatus, Prisma, prisma, UserRole, UserStatus } from '@meg/database';
 import { appStateRoutes } from '../app-state/routes';
 import { financeRoutes } from './routes';
@@ -19,12 +22,14 @@ if(process.env.MEG_STAGE10_ISOLATED_PG!=='1'
 const stamp='stage10-qa-bridge-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 let ownerId:string|null=null,workspaceId:string|null=null,planId:string|null=null;
 let app:ReturnType<typeof fastify>|null=null;
+const fixturePassword='Stage10QAOnly-Password-NotProduction-2026';
 
 async function main(){
  try {
   process.env.MEG_STAGE10_WEB_WRITE_QA='1';
   const user=await prisma.user.create({data:{
-   email:stamp+'@meg.test',name:'Operador QA Web/Android',passwordHash:'QA_ONLY',
+   email:stamp+'@meg.test',name:'Operador QA Web/Android',
+   passwordHash:await bcrypt.hash(fixturePassword,10),
    role:UserRole.ADMIN,status:UserStatus.ACTIVE,isActive:true,approvedAt:new Date(),
   }});
   ownerId=user.id;
@@ -52,13 +57,44 @@ async function main(){
   }});
 
   app=fastify();
-  app.decorate('authenticate',async(req:unknown)=>{(req as {user:unknown}).user={sub:user.id,role:UserRole.ADMIN};});
-  app.decorate('authorize',(_roles:unknown)=>async(req:unknown)=>{(req as {user:unknown}).user={sub:user.id,role:UserRole.ADMIN};});
+  // JWT REAL, senha bcrypt e rota de login real; usuario e banco sao descartaveis.
+  await registerAuth(app);
+  await app.register(authRoutes,{prefix:'/auth'});
   await app.register(appStateRoutes,{prefix:'/app-state'});
   await app.register(financeRoutes,{prefix:'/finance'});
   await app.ready();
 
-  const gate=await app.inject({method:'GET',url:'/app-state/stage10-qa-write-gate'});
+
+  const denied=await app.inject({method:'GET',url:'/app-state/stage10-qa-write-gate'});
+  assert.equal(denied.statusCode,401,'Sem Bearer a rota e privada');
+  const forged=await app.inject({
+   method:'GET',url:'/app-state/stage10-qa-write-gate',
+   headers:{authorization:'Bearer invalido.sem.assinatura'},
+  });
+  assert.equal(forged.statusCode,401,'JWT falso deve ser recusado');
+  const wrongPassword=await app.inject({
+   method:'POST',url:'/auth/login',
+   payload:{email:user.email,password:'SenhaQA-Incorreta-2026'},
+  });
+  assert.equal(wrongPassword.statusCode,401);
+  const login=await app.inject({
+   method:'POST',url:'/auth/login',
+   payload:{email:user.email,password:fixturePassword},
+  });
+  assert.equal(login.statusCode,200,login.body);
+  const accessToken=JSON.parse(login.body).accessToken as string;
+  assert.ok(accessToken && accessToken.split('.').length===3);
+  const withAuth=(request:{method:'GET'|'POST'|'PATCH';url:string;payload?:unknown})=>
+   app!.inject({...request,headers:{authorization:'Bearer '+accessToken}});
+  const viewerToken=await app.jwt.sign({sub:user.id,role:UserRole.VIEWER,email:user.email});
+  const unauthorizedRole=await app.inject({
+   method:'GET',url:'/app-state/stage10-qa-write-gate',
+   headers:{authorization:'Bearer '+viewerToken},
+  });
+  assert.equal(unauthorizedRole.statusCode,403,'VIEWER nao pode abrir gate de escrita');
+  console.log('MEG_STAGE10_REAL_JWT_LOGIN_ACCESS_ROLE_GATE_PASS');
+
+  const gate=await withAuth({method:'GET',url:'/app-state/stage10-qa-write-gate'});
   assert.equal(gate.statusCode,200,gate.body);
   assert.equal(JSON.parse(gate.body).allowed,true);
 
@@ -68,7 +104,7 @@ async function main(){
    accountId:account.id,categoryId:category.id,paymentMethodId:method.id,
    notes:'Somente QA descartavel',
   };
-  const write=async(input:typeof payload)=>app!.inject({
+  const write=async(input:typeof payload)=>withAuth({
    method:'POST',url:'/finance/events',payload:input,
   });
   const created=await write(payload);
@@ -99,7 +135,7 @@ async function main(){
   assert.equal(integrity.source.invalidCount,0);
   assert.equal(integrity.source.validCount,1);
 
-  const read=await app.inject({method:'GET',url:'/finance/events?page=1&pageSize=50'});
+  const read=await withAuth({method:'GET',url:'/finance/events?page=1&pageSize=50'});
   assert.equal(read.statusCode,200,read.body);
   const listed=JSON.parse(read.body);
   assert.ok(listed.items.some((x:{id:string})=>x.id===row.id));
@@ -123,7 +159,7 @@ async function main(){
 
   // Fluxo editavel: Web QA -> mesmo FinancialEvent -> ledger -> AppState
   // lido pelo contrato legado, sem criar ID nem evento adicional.
-  const gateEdit=await app.inject({method:'GET',url:'/app-state/stage10-qa-write-gate'});
+  const gateEdit=await withAuth({method:'GET',url:'/app-state/stage10-qa-write-gate'});
   assert.equal(gateEdit.statusCode,200,gateEdit.body);
   assert.equal(JSON.parse(gateEdit.body).editSupported,true);
   assert.equal(JSON.parse(gateEdit.body).revision,2);
@@ -135,7 +171,7 @@ async function main(){
    accountId:account.id,categoryId:category.id,paymentMethodId:method.id,
    notes:'Edicao canonica QA',
   };
-  const edit=(changes:typeof editPayload)=>app!.inject({
+  const edit=(changes:typeof editPayload)=>withAuth({
    method:'PATCH',url:'/finance/events/'+row.id+'/stage10-qa-edit',
    payload:changes,
   });
@@ -159,7 +195,7 @@ async function main(){
   assert.equal(Number(changed.ledgerEntries[0].credit),10.35);
   assert.equal(await prisma.financialEvent.count({where:{workspaceId:workspace.id}}),1);
 
-  const androidRead=await app.inject({method:'GET',url:'/app-state'});
+  const androidRead=await withAuth({method:'GET',url:'/app-state'});
   assert.equal(androidRead.statusCode,200,androidRead.body);
   const androidDto=JSON.parse(androidRead.body);
   assert.equal(androidDto.revision,3);
@@ -169,7 +205,7 @@ async function main(){
   assert.equal(androidItems[0].description,editPayload.description);
   assert.equal(Number(androidItems[0].amount),10.35);
   assert.equal(androidItems[0].financialAccountId,account.id);
-  const canonicalRead=await app.inject({method:'GET',url:'/finance/events?page=1&pageSize=50'});
+  const canonicalRead=await withAuth({method:'GET',url:'/finance/events?page=1&pageSize=50'});
   assert.equal(canonicalRead.statusCode,200,canonicalRead.body);
   const readChanged=JSON.parse(canonicalRead.body).items.find((x:{id:string})=>x.id===row.id);
   assert.equal(readChanged.description,editPayload.description);
@@ -210,9 +246,10 @@ async function main(){
   console.log('MEG_STAGE10_WEB_EDIT_ANDROID_READBACK_ATOMIC_QA_PASS');
 
   process.env.MEG_STAGE10_WEB_WRITE_QA='0';
-  const disabled=await app.inject({method:'GET',url:'/app-state/stage10-qa-write-gate'});
+  const disabled=await withAuth({method:'GET',url:'/app-state/stage10-qa-write-gate'});
   assert.equal(disabled.statusCode,403);
   console.log('MEG_STAGE10_WEB_CREATE_CANONICAL_AND_ANDROID_MIRROR_QA_PASS');
+  console.log('MEG_STAGE10_WEB_CREATE_EDIT_REAL_JWT_QA_PASS');
  } finally {
   delete process.env.MEG_STAGE10_WEB_WRITE_QA;
   if(app)await app.close();
