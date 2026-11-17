@@ -86,6 +86,24 @@ const normalizationReconcileSchema = z.object({
   confirmation: z.literal('RECONCILIAR_ESPELHO_APPSTATE'),
 });
 
+const NORMALIZATION_WRITE_CONFLICTS = new Set([
+  'NORMALIZATION_INVALID_SOURCE',
+  'NORMALIZATION_DUPLICATE_LEGACY_ID',
+  'NORMALIZATION_EVENT_OWNER_MISMATCH',
+  'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE',
+  'NORMALIZATION_INVALID_ACCOUNT_SCOPE',
+  'NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER',
+  'NORMALIZATION_CANONICAL_CATEGORY_CONFLICT',
+  'NORMALIZATION_CANONICAL_PAYMENT_METHOD_CONFLICT',
+  'NORMALIZATION_ACCOUNT_CHANGE_REQUIRES_CANONICAL_WRITER',
+  'NORMALIZATION_CONCURRENT_EVENT_CHANGE',
+]);
+
+function normalizationWriteConflictCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  return NORMALIZATION_WRITE_CONFLICTS.has(error.message) ? error.message : null;
+}
+
 function activityMetadata(activityLog: unknown[] | undefined): Record<string, unknown> {
   return activityLog === undefined ? {} : { activityLog };
 }
@@ -306,7 +324,9 @@ export async function appStateRoutes(app: FastifyInstance) {
 
     const changedIds = [...new Set([...parsed.data.upserts.map((item) => item.id), ...parsed.data.deletes])];
     let normalization = { active: false, reconciled: false } as Awaited<ReturnType<typeof synchronizeNormalizedRows>>;
-    const updated = await prisma.$transaction(async (tx) => {
+    let updated: { count: number };
+    try {
+      updated = await prisma.$transaction(async (tx) => {
       const result = await tx.appState.updateMany({
         where: { id: current.id, revision: parsed.data.expectedRevision },
         data: { state: nextState.data as Prisma.InputJsonValue, revision: { increment: 1 } }
@@ -319,7 +339,12 @@ export async function appStateRoutes(app: FastifyInstance) {
         }, changedIds);
       }
       return result;
-    }, { maxWait: 10_000, timeout: 120_000 });
+      }, { maxWait: 10_000, timeout: 120_000 });
+    } catch (error) {
+      const code = normalizationWriteConflictCode(error);
+      if (code) return reply.status(409).send({ error: code, revision: current.revision });
+      throw error;
+    }
     if (updated.count !== 1) {
       const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: latest?.revision || current.revision, updatedAt: latest?.updatedAt || current.updatedAt });
@@ -473,10 +498,12 @@ export async function appStateRoutes(app: FastifyInstance) {
       : parsed.data.state;
     const jsonState = nextState as Prisma.InputJsonValue;
     let normalization = { active: false, reconciled: false } as Awaited<ReturnType<typeof synchronizeNormalizedRows>>;
-    const saved = current
+    let saved: { revision: number; updatedAt: Date };
+    try {
+      saved = current
       ? await prisma.$transaction(async (tx) => {
           const updated = await tx.appState.update({
-            where: { id: current.id },
+            where: { id: current.id, revision: current.revision },
             data: { state: jsonState, revision: { increment: 1 } },
             select: { revision: true, updatedAt: true }
           });
@@ -491,6 +518,14 @@ export async function appStateRoutes(app: FastifyInstance) {
           data: { userId: context.workspace.ownerId, workspaceId: context.workspaceId, state: jsonState, revision: 1 },
           select: { revision: true, updatedAt: true }
         });
+    } catch (error) {
+      const code = normalizationWriteConflictCode(error);
+      if (code) return reply.status(409).send({ error: code, revision: current?.revision || 0 });
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current?.revision || 0 });
+      }
+      throw error;
+    }
     return { revision: saved.revision, updatedAt: saved.updatedAt, normalization, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 }
