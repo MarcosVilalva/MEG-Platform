@@ -19,6 +19,7 @@ import {
 import { reconcilePrimaryAppStateFromNormalized } from './normalized-primary-writeback';
 import { normalizationWriteConflictCode, normalizationWriteConflictPayload } from './normalization-conflict-policy';
 import { LegacyRestoreError, previewLegacyRestore, restoreLegacyFinancialEventQa, stage10RestoreQaEnabled } from './legacy-restore';
+import { stage10QaWebWriteEnabled, MEG_STAGE10_QA_WRITE_PROTOCOL } from './stage10-qa-write-gate';
 
 const legacyRestoreSchema = z.object({
   operationId: z.string().uuid(),
@@ -113,6 +114,16 @@ async function assertWriteAccess(workspaceId: string, reply: { status(code: numb
 }
 
 export async function appStateRoutes(app: FastifyInstance) {
+  if (stage10QaWebWriteEnabled()) {
+    app.get('/stage10-qa-write-gate', {preHandler:app.authorize(['ADMIN'])}, async request => {
+      const context=await resolveWorkspaceContext(request.user.sub);
+      const state=await prisma.appState.findUnique({where:{workspaceId:context.workspaceId},select:{state:true}});
+      return {
+        protocol:MEG_STAGE10_QA_WRITE_PROTOCOL,
+        allowed:Boolean(state&&isNormalizedPrimary(state.state)),
+      };
+    });
+  }
 
   // Nao registra rotas de restauracao fora do PG17 descartavel explicitamente habilitado.
   // O PATCH legado continua proibido de restaurar tombstones implicitamente.

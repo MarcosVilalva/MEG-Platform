@@ -7,6 +7,8 @@ import {PrismLaunchChoice,PrismCloseGlyph} from './PrismLaunchChoice';
 import {suggestionsFromCanonicalHistory} from '../stage10/autocomplete-history';
 import {readAuthorizedHistory} from '../launches/authorized-history';
 import {financeClient} from '../../app/finance-client';
+import {authenticatedRequest} from '../../app/auth-client';
+import {stage10LocalQaWriteOptIn,approvedQaCatalogs,toQaMonetaryExpense} from './stage10-qa-monetary-create';
 import {brlFromPasted,brlSignedDecimal} from '../stage10/brl-money-mask';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
 import '../launches/new-launch.css';
@@ -89,6 +91,10 @@ export default function PrismOperationalLaunches({
  const [overlay,setOverlay]=useState<Overlay>(null);
  const [editId,setEditId]=useState<string|null>(null);
  const [notice,setNotice]=useState('');
+ const [qaWriteReady,setQaWriteReady]=useState(false);
+ const [qaSaving,setQaSaving]=useState(false);
+ const qaSavingRef=useRef(false);
+ const lastWriteRef=useRef<{fingerprint:string;operationId:string}|null>(null);
 
  useEffect(()=>{
   const root=document.documentElement;
@@ -109,7 +115,42 @@ export default function PrismOperationalLaunches({
   };
  },[]);
 
- const catalogs=useMemo(()=>readData?catalogsFromRealRead(readData):null,[readData]);
+ const catalogs=useMemo(()=>readData?
+    {...catalogsFromRealRead(readData),...approvedQaCatalogs(readData)}:null,[readData]);
+ useEffect(()=>{
+  setQaWriteReady(false);
+  if(!readData||!stage10LocalQaWriteOptIn())return;
+  let cancelled=false;
+  void authenticatedRequest<{protocol:string;allowed:boolean}>('/app-state/stage10-qa-write-gate',{cache:'no-store'})
+   .then(result=>{if(!cancelled)setQaWriteReady(result.protocol==='meg-stage10-qa-transactional-mirror-v1'&&result.allowed===true);})
+   .catch(()=>{if(!cancelled)setQaWriteReady(false);});
+  return()=>{cancelled=true;};
+ },[readData,userId]);
+ const createQaExpense=useCallback(async(draft:ExpenseDraft)=>{
+  if(!qaWriteReady||!catalogs||qaSavingRef.current)return;
+  try {
+   const payload=toQaMonetaryExpense(draft,catalogs);
+   const fingerprint=JSON.stringify(payload);
+   const previous=lastWriteRef.current;
+   if(!previous||previous.fingerprint!==fingerprint){
+    if(!globalThis.crypto?.randomUUID)throw new Error('STAGE10_QA_UUID_INDISPONIVEL');
+    lastWriteRef.current={fingerprint,operationId:globalThis.crypto.randomUUID()};
+   }
+   qaSavingRef.current=true;setQaSaving(true);setNotice('');
+   const gate=await authenticatedRequest<{protocol:string;allowed:boolean}>('/app-state/stage10-qa-write-gate',{cache:'no-store'});
+   if(!gate.allowed||gate.protocol!=='meg-stage10-qa-transactional-mirror-v1'){
+    throw new Error('STAGE10_QA_GATE_NAO_AUTORIZADO');
+   }
+   const saved=await financeClient.createEvent({...payload,operationId:lastWriteRef.current!.operationId});
+   if(!saved?.id||saved.legacyTransactionId!==saved.id){
+    throw new Error('STAGE10_QA_ESPELHO_NAO_CONFIRMADO');
+   }
+   lastWriteRef.current=null;
+   setOverlay(null);setNotice('Lançamento confirmado na base QA e no espelho financeiro.');
+  }catch(error){
+   setNotice(error instanceof Error?error.message:'Falha ao confirmar gravação. Os dados do formulário foram preservados.');
+  }finally{qaSavingRef.current=false;setQaSaving(false);}
+ },[qaWriteReady,catalogs]);
  // Full historical suggestions are fetched only after the user types a query.
  // Never label the selected month's records as a complete lifetime snapshot.
  const searchHistorySuggestions=useCallback(async(query:string,signal:AbortSignal)=>{
@@ -128,7 +169,7 @@ export default function PrismOperationalLaunches({
   existingExpenseDraft(readData,catalogs,editId):null,[readData,catalogs,editId]);
 
  const startNew=useCallback(()=>{
-  setNotice('');setEditId(null);setOverlay('choice');
+  setNotice('');setEditId(null);lastWriteRef.current=null;setOverlay('choice');
  },[]);
  const startEdit=useCallback((row:QaLaunchTarget)=>{
   const current=readDataRef.current;
@@ -157,7 +198,7 @@ export default function PrismOperationalLaunches({
   }
  },[initialNew,readData,startNew,onInitialNewConsumed]);
 
- return <div data-meg-operational-prism="read-only">
+ return <div data-meg-operational-prism={qaWriteReady?'isolated-qa-financial-write':'read-only'}>
   <OperationalLaunches userId={userId} userName={userName} onHome={onHome}
    periodMonth={periodMonth} onPeriodChange={onPeriodChange}
     periodSelection={periodSelection} onPeriodSelectionChange={onPeriodSelectionChange} globalSearch={globalSearch} prismReadOnlyCallbacks={callbacks}/>
@@ -178,8 +219,9 @@ export default function PrismOperationalLaunches({
    </section>
   </div>}
   {overlay==='expense'&&catalogs&&<ExpenseForm
-   catalogs={catalogs} searchHistorySuggestions={searchHistorySuggestions} readOnlyRealData saveEnabled={false}
-   onBack={()=>setOverlay('choice')}/>}
+   catalogs={catalogs} searchHistorySuggestions={searchHistorySuggestions}
+   readOnlyRealData={!qaWriteReady} saveEnabled={qaWriteReady&&!qaSaving}
+   onRequestSave={createQaExpense} onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&catalogs&&editDraft&&<ExpenseForm
    key={'prism-read-'+editId} mode="edit" catalogs={catalogs}
    initialDraft={editDraft} searchHistorySuggestions={searchHistorySuggestions} readOnlyRealData saveEnabled={false}

@@ -1,4 +1,6 @@
 import { prisma } from '@meg/database';
+import { stage10QaWebWriteEnabled } from '../app-state/stage10-qa-write-gate';
+import { mirrorNewMonetaryExpenseToLegacyQa } from '../app-state/stage10-qa-web-mirror';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
@@ -104,6 +106,10 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         }
       }
 
+      const qaMirror = stage10QaWebWriteEnabled();
+      if (qaMirror && input.type !== 'expense') {
+        throw new FinancialEventMutationError('STAGE10_QA_ONLY_MONETARY_EXPENSE_SUPPORTED');
+      }
       const event = await tx.financialEvent.create({
         data: {
           userId: dataOwnerId,
@@ -138,6 +144,12 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         });
       }
 
+      const qaMirrorResult = qaMirror
+        ? await mirrorNewMonetaryExpenseToLegacyQa(
+            tx, workspace.workspaceId, dataOwnerId, event.id, input.amount,
+          )
+        : null;
+
       // A resposta já pode ser montada com o retorno do INSERT. Antes havia um
       // SELECT adicional apenas para reler o evento recém-criado.
       const result = { ...event, ledgerEntries: ledgerEntry ? [ledgerEntry] : [] };
@@ -159,7 +171,11 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         },
       });
 
-      const response = { ...result, idempotentReplay: false };
+      const response = {
+        ...result,
+        ...(qaMirrorResult ? {legacyTransactionId:qaMirrorResult.legacyTransactionId, appStateRevision:qaMirrorResult.revision} : {}),
+        idempotentReplay: false,
+      };
       if (input.operationId && requestHash) {
         const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
         await tx.cloudMutationReceipt.create({ data: receiptCreateData({
