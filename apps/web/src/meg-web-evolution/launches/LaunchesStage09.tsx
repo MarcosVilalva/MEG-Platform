@@ -80,10 +80,11 @@ function sourceRows(source:HomeFinancialData):Row[]{
    ||(typeof original.sourcePayload?.category==='string'?original.sourcePayload.category.trim():'');
   const hasLegacyLabel=Boolean(originalCategory&&originalCategory.toLocaleLowerCase('pt-BR')!=='sem categoria');
   const category=canonical||originalCategory||'Sem categoria';
+  const categoryOrigin:Row['categoryOrigin']=canonical?'canonical':hasLegacyLabel?'historical':'unclassified';
   return {
    id:item.id,date:item.date.slice(0,10),description:item.description,
     accountKind:(accountKinds.get(item.accountId||'')==='benefit'?'benefit':accountKinds.get(item.accountId||'')==='checking'?'monetary':'unknown') as Row['accountKind'],
-   category,categoryOrigin:canonical?'canonical':hasLegacyLabel?'historical':'unclassified',
+   category,categoryOrigin,
    account:accounts.get(item.accountId||'')||'Sem conta',
    paymentMethod:readable(original.paymentMethod?.name||original.paymentMethodName||original.sourceDetails?.paymentMethod),
    status:item.status,type:item.type,signedAmount:item.signedAmount,
