@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Etapa 10: auditoria estática SOMENTE LEITURA do APK público do GitHub Release.
+
+Baixa cópia efêmera no CI; sem instalar, executar, reempacotar ou alterar APK.
+Imprime SOMENTE hash, tamanho, versionamento e nomes de hosts de API conhecidos.
+Nunca imprime senhas, tokens, URLs completas ou conteúdo de assets.
+"""
+from __future__ import annotations
+
+import hashlib
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import tempfile
+import urllib.request
+import zipfile
+
+URL = ("https://github.com/MarcosVilalva/MEG-Platform/"
+       "releases/download/android-latest/MEG-Financas-708.apk")
+EXPECTED_BYTES = 6_715_918
+CI_FLAG = os.environ.get("MEG_STAGE10_APK_STATIC_QA")
+if CI_FLAG != "1" or os.environ.get("GITHUB_ACTIONS") != "true":
+    raise SystemExit("STAGE10_APK_AUDIT_GITHUB_CI_ONLY")
+
+with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
+    filename = pathlib.Path(tmp) / "release-708.apk"
+    request = urllib.request.Request(URL, headers={
+        "User-Agent": "MEG-Stage10-ReadOnly-Release-Audit",
+        "Accept": "application/octet-stream",
+    })
+    with urllib.request.urlopen(request, timeout=75) as response, filename.open("wb") as output:
+        total = 0
+        sha = hashlib.sha256()
+        while (chunk := response.read(1024 * 512)):
+            total += len(chunk)
+            if total > EXPECTED_BYTES + 1024:
+                raise SystemExit("STAGE10_APK_RELEASE_SIZE_LIMIT")
+            sha.update(chunk)
+            output.write(chunk)
+    if total != EXPECTED_BYTES:
+        raise SystemExit(f"STAGE10_APK_SIZE_MISMATCH expected={EXPECTED_BYTES} received={total}")
+    if not zipfile.is_zipfile(filename):
+        raise SystemExit("STAGE10_APK_NOT_ZIP")
+
+    hosts: set[str] = set()
+    files_inspected = 0
+    embedded = {"app-state/transactions": False, "megCloudConfirmation": False}
+    with zipfile.ZipFile(filename) as apk:
+        entries = apk.infolist()
+        for entry in entries:
+            if entry.is_dir() or entry.file_size > 12_000_000:
+                continue
+            # APK assets (JS/JSON/HTML) are text and carry the endpoint.
+            if not entry.filename.startswith("assets/"):
+                continue
+            if not entry.filename.endswith((".js", ".json", ".html", ".txt", ".xml", ".css", ".properties")):
+                continue
+            raw = apk.read(entry)
+            files_inspected += 1
+            text = raw.decode("utf-8", errors="ignore")
+            for value in embedded:
+                if value in text:
+                    embedded[value] = True
+            for match in re.finditer(r"https?://([a-zA-Z0-9.-]+)", text):
+                host = match.group(1).lower().strip(".")
+                if host.endswith(".onrender.com"):
+                    hosts.add(host)
+
+    print("MEG_STAGE10_APK_RELEASE_ASSET_NAME MEG-Financas-708.apk")
+    print("MEG_STAGE10_APK_RELEASE_SIZE", total)
+    print("MEG_STAGE10_APK_RELEASE_SHA256", sha.hexdigest())
+    print("MEG_STAGE10_APK_ASSETS_SCANNED", files_inspected)
+    print("MEG_STAGE10_APK_ONRENDER_HOSTS", ",".join(sorted(hosts)) or "NONE")
+    for term, found in embedded.items():
+        print("MEG_STAGE10_APK_SIGNATURE", term, "FOUND" if found else "NOT_FOUND")
+
+    aapt_candidates = []
+    if shutil.which("aapt"):
+        aapt_candidates.append(pathlib.Path(shutil.which("aapt")))
+    for root in (os.getenv("ANDROID_HOME"), os.getenv("ANDROID_SDK_ROOT")):
+        if root:
+            aapt_candidates += list((pathlib.Path(root) / "build-tools").glob("*/aapt"))
+    for aapt in reversed(aapt_candidates):
+        if not aapt.is_file():
+            continue
+        result = subprocess.run([str(aapt), "dump", "badging", str(filename)],
+                                capture_output=True, text=True, timeout=20, check=False)
+        package = next((line for line in result.stdout.splitlines()
+                        if line.startswith("package:")), None)
+        if package:
+            safe = re.search(r"name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", package)
+            if safe:
+                print("MEG_STAGE10_APK_PACKAGE_NAME", safe.group(1))
+                print("MEG_STAGE10_APK_VERSION_CODE", safe.group(2))
+                print("MEG_STAGE10_APK_VERSION_NAME", safe.group(3))
+            break
+    print("MEG_STAGE10_APK_READONLY_RELEASE_INSPECTION_OK")
