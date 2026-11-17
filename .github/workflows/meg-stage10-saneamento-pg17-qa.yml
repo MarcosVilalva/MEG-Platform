@@ -78,6 +78,8 @@ jobs:
         run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-fk-delete-risk-synthetic.pg17.sql
       - name: Prova estrutural identidade/FK no Postgres17, trigger apenas dentro de rollback
         run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-identity-guard-synthetic.pg17.sql
+      - name: Prova de neutralidade de vinculos historicos com rollback integral PG17
+        run: npx tsx apps/api/src/modules/finance/stage10-mapping-link-neutrality.isolated.test.ts
       - name: Regressao da politica de status e competencia de cartao
         run: |
           npx tsx apps/api/src/modules/finance/financial-policy.test.ts
