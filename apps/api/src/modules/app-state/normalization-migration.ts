@@ -304,6 +304,31 @@ export async function synchronizeNormalizedRows(
       && normalizationFingerprint([old]) === normalizationFingerprint([proposed]);
     if (identical) continue;
 
+    // sourcePayload e rotulo legado, nao autoriza trocar uma FK canonica ja
+    // atribuida. Evita categoria A com label B ou metodo PIX com label cartao.
+    const legacyText = (raw: unknown, key: string) => {
+      const record = raw && typeof raw === 'object' && !Array.isArray(raw)
+        ? raw as Record<string, unknown> : {};
+      return String(record[key] ?? '').trim();
+    };
+    const changedLegacyFields = (fields: readonly string[]) => fields.some(field =>
+      legacyText(old.sourcePayload, field) !== legacyText(proposed.sourcePayload, field));
+    if (old.categoryId && (
+      old.type !== proposed.type
+      || changedLegacyFields(['category', 'group', 'expenseClass'])
+    )) {
+      throw new Error('NORMALIZATION_CANONICAL_CATEGORY_CONFLICT');
+    }
+    if (old.paymentMethodId && (
+      old.type !== proposed.type
+      || changedLegacyFields(['paymentMethod', 'modality', 'financialScope'])
+    )) {
+      throw new Error('NORMALIZATION_CANONICAL_PAYMENT_METHOD_CONFLICT');
+    }
+    if (accountChanged) {
+      throw new Error('NORMALIZATION_ACCOUNT_CHANGE_REQUIRES_CANONICAL_WRITER');
+    }
+
     const hasLinkedDomain = old.ledgerEntries.length > 0
       || old.receipt !== null || old.payablePayment !== null || old.importedRow !== null;
     if (hasLinkedDomain) {
