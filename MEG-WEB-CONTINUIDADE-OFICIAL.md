@@ -3031,3 +3031,69 @@ Sem merge, deploy produtivo, real writer, credencial real, SQL, migrations, alte
 - **PR e restrições:** [PR #696](https://github.com/MarcosVilalva/MEG-Platform/pull/696) OPEN/DRAFT, sem merge. Nenhum deploy, API, schema, RLS, banco/credencial real, Android, serviço/custo novo ou writer financeiro alterado nesta atualização.
 - **Próxima ação exata:** executar o gate diagnóstico read-only de latência, egress atual e planos de leitura QA; a implementação posterior depende desse baseline e de autorização de escopo. Não iniciar Etapa 11.
 - **Saúde:** ATENÇÃO; checkpoint e plano armazenam as decisões, sem necessidade de troca imediata de chat.
+
+
+## Etapa 10 | Correção visual da conta e auditoria crítica de categorias (17/11/2026)
+
+### 1. Tema, objetivo e etapa
+- **Somente Etapa 10** da MEG Finanças Web Evolution. O responsável mostrou prints do DataGrid e Home e pediu estabilidade para uso real, categorias corretas e truncar `Conta / Cartão` com reticências sem ultrapassar a coluna. **Etapa 11 NÃO autorizada.**
+- A nova Web está numa **preview QA Free** com dados reais via API existente, e **não** é produção Web homologada. Android congelado.
+
+### 2. Decisões e regras confirmadas
+- Não inventar categoria, `categoryId`, valor financeiro, saldo ou status na UI. Rótulo importado pode aparecer como categoria **histórica** sem equivaler à categoria canônica. Quando não houver rótulo válido, mostrar `Sem categoria` e não presumir vínculo.
+- Não migrar categorias automaticamente por nome. Preservar filtros canônicos, filtros `legacy:`, histórico ativo, exportação, tooltip e dados completos no modal.
+- Account name pode ser visualmente truncado na célula, mas o dado subjacente e a informação acessível devem permanecer integrais.
+- Escritores financeiros, pagamento, edição de dados reais e merge permanecem bloqueados.
+
+### 3. Trabalho concluído
+- Supabase produtivo consultado **exclusivamente com SELECT/lista de metadados**. Dos 3.731 `FinancialEvent` ativos, 3.626 têm `categoryId` nulo; 105 têm vínculo canônico válido; os 3.626 possuem `sourcePayload.category` não vazio, mas 2 têm rótulo literal `Sem categoria`. Não há conta órfã ou `accountId` nulo nos eventos ativos e nenhum ativo sem workspace.
+- Comparação diagnóstica de nomes restrita ao mesmo `userId`: **3.624 registros sem `categoryId` com nome histórico correspondente a mais de uma `Category.name`**. Não é seguro atribuir categoria única por nome. Além disso, 326 despesas planejadas não têm `categoryId`; 3.512 ativos não têm `paymentMethodId`, sem implicar necessariamente falta de rótulo textual. Nenhum registro foi modificado.
+- `LaunchesStage09.tsx` agora preserva a origem do rótulo `canonical/historical/unclassified`, lê fallback tanto de `legacyCategoryName` quanto de `sourcePayload.category` e não inventa ID.
+- `LaunchCategoryBadge.tsx` distingue categoria histórica e falta de categoria via tooltip, sem mudar a identidade visual.
+- `launches-stage09.css` e `LaunchesStage09.tsx`: coluna `Conta / Cartão` renderizada com pill limitada ao tamanho da célula e texto `text-overflow:ellipsis`, `white-space:nowrap`, `min-width:0`, preservando o nome integral no `title` e modal. Não alterou o DataGrid compartilhado.
+- `scripts/meg-stage10-prism-real-read-optin.browser.mjs`: teste de conta longa com overflow interno e tooltip correto e categoria histórica (`BEBIDAS E SIMILARES`) em outro ano, sem reclassificação.
+
+### 4. Testes e resultados comprovados
+- Código final **`8ec6fbf750307bd7a806ac80b151a7213358cc4a`**.
+- [CI Prism #44057580340](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44057580340) **SUCCESS**: Vite opt-in/OFF, TypeScript estrito, browser em 10 resoluções, isolamento de usuários com API sintética, contratos read-only e nenhum writer.
+- [CORS #44057580303](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44057580303) **SUCCESS**.
+- Primeira revisão do teste levantou TS2322 na origem da categoria e foi corrigida antes da CI final verde; não ocultar esse histórico.
+- **Render Free QA** `meg-stage10-prism-real-preview` (workspace já autorizado `My Workspace`, ID `tea-d98k1qhkh4rs73f4sfj0`, serviço `srv-dbtf9q3m8hqs73aotkm0`, Auto Deploy OFF): deploy único `dep-dbu22s4ipgvc73ag4l00`, commit acima, **LIVE** em 17/11/2026 às `09:43:27Z`. Evento Render `deploy_ended: succeeded`.
+- [Smoke público #44057580203 attempt 2](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44057580203/attempts/2) executado **APÓS** LIVE: **SUCCESS** em login público e recursos, sem sessão financeira real.
+
+### 5. Aprovações e itens não validados
+- Autorização prévia para atualizações somente na mesma preview Free, com gates verdes; usuário solicitou correção e auditoria da Etapa 10.
+- **Não há aprovação visual/funcional explícita dessa nova correção**. Não há evidência de escrita financeira permitida, de migração de categoria aprovada ou de liberação operacional da Web de produção.
+- CI e smoke público não substituem teste real autenticado e homologação humana.
+
+### 6. Riscos e pendências reais
+- **P0**: 3.626 vínculos de categoria ausentes nos dados ativos (3.624 com rótulo legado que encontra nomes canônicos duplicados, 2 literalmente `Sem categoria`). Migração só com mapa aprovado, testes em QA isolado, backup/rollback e autorização específica. A apresentação preserva rótulos, mas **não corrige a integridade referencial do histórico**.
+- **P0/P1**: 3.512 `paymentMethodId` nulos precisam ser caracterizados antes de habilitar edição/baixa, preservando texto histórico e regras de benefício/Verocard.
+- **P0**: conferir no navegador autenticado categorias exibidas em meses reais, filtros `legacy:`, exportações, conta truncada, responsividade, totais e isolamento por workspace.
+- **P1**: Home mostrava placeholders enquanto consultas assíncronas completavam; pré-carregamento após login e eliminação da tela de despertar Render estão somente em plano, não implementados. Medir latência e egress reais antes do prefetch, mantendo Supabase Free.
+
+### 7. Arquivos e fontes
+- Alterados: `apps/web/src/meg-web-evolution/launches/LaunchesStage09.tsx`, `LaunchCategoryBadge.tsx`, `launches-stage09.css`, `scripts/meg-stage10-prism-real-read-optin.browser.mjs`; sem edição de API ou DB.
+- Relatório sem informações individuais: [`docs/MEG-STAGE10-AUDITORIA-CATEGORIA-CONTA-20261117.md`](docs/MEG-STAGE10-AUDITORIA-CATEGORIA-CONTA-20261117.md).
+- Plano anterior: `docs/MEG-STAGE10-PLANO-LOADING-WARMUP-COTA-FREE-20261117.md`.
+- **Link sem cache para validar apenas a preview:** https://meg-stage10-prism-real-preview.onrender.com/web-evolution.html?v=8ec6fbf750307bd7a806ac80b151a7213358cc4a
+
+### 8. Repositório, branch, commits, PRs e issues
+- Repositório `MarcosVilalva/MEG-Platform`, branch `stage10/prism-real-read-optin-20261116`, [PR #696](https://github.com/MarcosVilalva/MEG-Platform/pull/696) **OPEN/DRAFT**, não mesclada. PR #688 também segue fora de merge.
+- SHA de código publicado `8ec6fbf750307bd7a806ac80b151a7213358cc4a`; commit documental posterior pode ser HEAD sem novo deploy (Auto Deploy OFF). Não foi aberta issue adicional nesta entrega.
+
+### 9. Restrições e ações proibidas
+- Não modificar produção/API, Supabase real, RLS, schema, pagamentos, transferências, escritores, Android, main, planos/custos ou serviços Render adicionais; não promover merge nem Etapa 11.
+- Nenhum `UPDATE`/migração SQL automática, inferência ambígua de categoria ou substituição de cálculo canônico por front-end. Não declarar sistema homologado até fechamento real dos bloqueios.
+
+### 10. Próximo passo exato
+1. Obter validação visual e funcional da preview no período real onde o usuário observou o corte e as categorias. Reproduzir se há linhas que ainda mostram `Sem categoria`.
+2. Caracterizar no QA isolado a ligação canônica de categorias legadas, ambiguidade de nomes e meios de pagamento, com plano de mapeamento auditável, sem tocar produção.
+3. Depois de gates financeiros e aprovação explícita, propor migração/solução definitiva em etapa autorizada; manter Etapa 10 até estabilização comprovada.
+
+**Texto de retomada pronto:**
+```text
+Continuar somente a Etapa 10 do MEG Finanças Web Evolution em MarcosVilalva/MEG-Platform, PR #696 Draft, branch stage10/prism-real-read-optin-20261116. Ler primeiro MEG-WEB-CONTINUIDADE-OFICIAL.md e docs/MEG-STAGE10-AUDITORIA-CATEGORIA-CONTA-20261117.md. Código publicado na preview Free: 8ec6fbf750307bd7a806ac80b151a7213358cc4a, deploy dep-dbu22s4ipgvc73ag4l00 LIVE, CI 44057580340 SUCCESS, smoke pós-deploy 44057580203 attempt 2 SUCCESS. Usuário ainda não homologou visualmente. Auditoria read-only Supabase: 3731 eventos ativos, 3626 sem categoryId, 3624 com rótulos históricos ambíguos frente a Category.name duplicado, 2 literais Sem categoria, 3512 sem paymentMethodId. Não migrar nem reclassificar automaticamente. Próximo gate: validação real da coluna Conta / Cartão truncada, categorias históricas, filtros, resumo, exportação e isolamento; planejar tratamento de dados somente em QA e com aprovação. Proibidos produção/API/banco, Android, writers, merge, custos e Etapa 11.
+```
+
+**Saúde do chat após auditoria:** TROCA RECOMENDADA, pois o histórico e os testes já exigiram checkpoints extensos. O registro oficial acima permite retomada sem refazer auditorias nem presumir aprovações.
