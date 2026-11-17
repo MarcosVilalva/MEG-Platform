@@ -97,5 +97,53 @@ assert.equal(offline.readCount, 0);
 assert.equal(offline.cleared, 0);
 assert.equal(offline.hasPending, true);
 
+// Mudar 409 para 422 não resolve: o agendador legado reenvia todo erro
+// enquanto a operação persistente permanecer no outbox.
+const schedulerBegin = source.indexOf('function scheduleOutboxRetry(');
+const schedulerEnd = source.indexOf('\nasync function flushImmediateSave()', schedulerBegin);
+assert.ok(schedulerBegin > 0 && schedulerEnd > schedulerBegin);
+const schedulerCode = source.slice(schedulerBegin, schedulerEnd);
+const pendingTimers = [];
+let failureNotices = 0;
+const retryScheduler = new Function('h', `
+  "use strict";
+  let outboxRetryTimer = null;
+  const {
+    readOutbox, hasTransactionOperations, hasStateOutbox, readStateOutbox,
+    globalThis, flushImmediateSave, setSyncStatus,
+    isCloudSessionReady, notifyPendingFailure, OUTBOX_RETRY_MS
+  } = h;
+  ${schedulerCode}
+  return scheduleOutboxRetry;
+`)({
+  readOutbox: () => ({ upserts: [{ id: 'qa-protected' }], deletes: [], activities: [] }),
+  hasTransactionOperations: x => x.upserts.length > 0,
+  hasStateOutbox: () => false,
+  readStateOutbox: () => ({}),
+  globalThis: {
+    setTimeout: (callback, delay) => {
+      pendingTimers.push({ callback, delay });
+      return pendingTimers.length;
+    },
+  },
+  flushImmediateSave: async () => { throw new Error('HTTP 422 sem alteração'); },
+  setSyncStatus: () => undefined,
+  isCloudSessionReady: () => true,
+  notifyPendingFailure: () => { failureNotices += 1; },
+  OUTBOX_RETRY_MS: 2000,
+});
+retryScheduler();
+assert.equal(pendingTimers.length, 1);
+for (let n = 0; n < 3; n += 1) {
+  const job = pendingTimers.shift();
+  assert.ok(job, 'O agendador continua tentando novamente');
+  job.callback();
+  // Aguarda a reação à Promise rejection do save, sem timers reais.
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(pendingTimers.length, 1, 'Mesmo após 422, o cliente agendou outra tentativa');
+}
+assert.equal(failureNotices, 3);
+assert.equal(pendingTimers[0].delay, 16000);
+
 // Isto comprova a lacuna, NÃO resolve a issue #699 nem valida aparelho Android.
 console.log('MEG_STAGE10_FROZEN_LEGACY_409_REPLAY_CONTRACT_CHARACTERIZED PASS');
