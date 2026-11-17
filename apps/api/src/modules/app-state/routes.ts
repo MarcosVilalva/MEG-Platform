@@ -18,6 +18,16 @@ import {
 } from './normalization-migration';
 import { reconcilePrimaryAppStateFromNormalized } from './normalized-primary-writeback';
 import { normalizationWriteConflictCode, normalizationWriteConflictPayload } from './normalization-conflict-policy';
+import { LegacyRestoreError, previewLegacyRestore, restoreLegacyFinancialEventQa, stage10RestoreQaEnabled } from './legacy-restore';
+
+const legacyRestoreSchema = z.object({
+  operationId: z.string().uuid(),
+  eventId: z.string().trim().min(1),
+  expectedRevision: z.number().int().nonnegative(),
+  expectedArchivedAt: z.string().datetime({offset:true}),
+  expectedUpdatedAt: z.string().datetime({offset:true}),
+  confirmation: z.literal('CONFIRMAR_RESTAURACAO_EXPLICITA'),
+}).strict();
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -103,6 +113,35 @@ async function assertWriteAccess(workspaceId: string, reply: { status(code: numb
 }
 
 export async function appStateRoutes(app: FastifyInstance) {
+
+  // Nao registra rotas de restauracao fora do PG17 descartavel explicitamente habilitado.
+  // O PATCH legado continua proibido de restaurar tombstones implicitamente.
+  if (stage10RestoreQaEnabled()) {
+    app.get('/legacy-restore/:legacyId', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+      const legacyId = (request.params as {legacyId: string}).legacyId;
+      try {
+        return await previewLegacyRestore(request.user.sub, legacyId);
+      } catch (error) {
+        if (!(error instanceof LegacyRestoreError)) throw error;
+        return reply.status(error.code === 'RESTORE_EVENT_NOT_FOUND' ? 404 : 409).send({error:error.code});
+      }
+    });
+
+    app.post('/legacy-restore/:legacyId', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+      const parsed = legacyRestoreSchema.safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({error:'RESTORE_INTENT_INVALID',details:parsed.error.flatten()});
+      const legacyId = (request.params as {legacyId: string}).legacyId;
+      if (!(await assertWriteAccess((await resolveWorkspaceContext(request.user.sub)).workspaceId, reply))) return;
+      try {
+        return await restoreLegacyFinancialEventQa(request.user.sub, {legacyId,...parsed.data});
+      } catch (error) {
+        if (!(error instanceof LegacyRestoreError)) throw error;
+        const status = error.code === 'RESTORE_EVENT_NOT_FOUND' ? 404 : 409;
+        return reply.status(status).send({error:error.code,retryable:false});
+      }
+    });
+  }
+
   app.get('/normalization-preview', { preHandler: app.authenticate }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
     return normalizationPreview(context.workspaceId, context.workspace.ownerId);

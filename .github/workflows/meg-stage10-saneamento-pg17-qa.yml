@@ -104,7 +104,7 @@ jobs:
           npx tsx apps/api/src/modules/finance/benefit-event.contract.test.ts
           npx tsx apps/api/src/modules/finance/transfer-service.contract.test.ts
           npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
-      - name: HTTP real Fastify.inject PATCH/PUT em PG17 e rollback 409
+      - name: HTTP QA real Fastify.inject, tombstones e restauracao explicita idempotente
         run: npx tsx apps/api/src/modules/finance/stage10-saneamento-routes.isolated.test.ts
       - name: 'Shadow inicial apenas, bloquear reescrita de ID e vinculos PG17'
         run: npx tsx apps/api/src/modules/finance/stage10-shadow-id-preservation.isolated.test.ts

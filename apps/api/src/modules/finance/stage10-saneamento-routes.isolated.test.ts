@@ -58,7 +58,7 @@ async function main() {
     } });
     workspaceId = workspace.id;
     const account = await prisma.account.create({ data: {
-      userId: owner.id, name: 'Conta QA', type: 'checking',
+      userId: owner.id, name: 'Conta QA', type: 'checking', openingBalance: 100,
     } });
     const category = await prisma.category.create({ data: {
       userId: owner.id, name: 'Mercado', group: 'CONTAS GERAIS', type: 'expense',
@@ -79,6 +79,7 @@ async function main() {
     eventId = event.id;
 
     // Guard de papel simulado: testa a rota real, NAO o mecanismo JWT.
+    process.env.MEG_STAGE10_LEGACY_RESTORE_QA = '1';
     app = fastify();
     app.decorate('authenticate', async (request: unknown) => {
       (request as { user: unknown }).user = { sub: owner.id, role: UserRole.ADMIN };
@@ -180,9 +181,85 @@ async function main() {
     assert.equal(await prisma.financialEvent.count({
       where: { workspaceId: workspace.id, legacyTransactionId: legacyAdditionalId },
     }), 1);
+
+    // O endpoint explicito nao se confunde com o PATCH legado.
+    const preview = await app!.inject({method:'GET',url:'/app-state/legacy-restore/'+legacyAdditionalId});
+    assert.equal(preview.statusCode,200,preview.body);
+    const intent = JSON.parse(preview.body);
+    assert.equal(intent.eligible,true,preview.body);
+    assert.equal(intent.eventId,createdLegacy.id);
+    assert.equal(intent.expectedRevision,5);
+    const payloadRestore = {
+      operationId: randomUUID(),
+      eventId: intent.eventId,
+      expectedRevision: intent.expectedRevision,
+      expectedArchivedAt: intent.expectedArchivedAt,
+      expectedUpdatedAt: intent.expectedUpdatedAt,
+      confirmation: 'CONFIRMAR_RESTAURACAO_EXPLICITA',
+    };
+    const missingIntent = await app!.inject({
+      method:'POST',url:'/app-state/legacy-restore/'+legacyAdditionalId,
+      payload:{...payloadRestore,confirmation:'INVALIDO'},
+    });
+    assert.equal(missingIntent.statusCode,400);
+    const staleIntent = await app!.inject({
+      method:'POST',url:'/app-state/legacy-restore/'+legacyAdditionalId,
+      payload:{...payloadRestore,expectedRevision:4},
+    });
+    assert.equal(staleIntent.statusCode,409);
+    assert.equal(JSON.parse(staleIntent.body).error,'RESTORE_REVISION_CONFLICT');
+
+    const restoredResponse = await app!.inject({
+      method:'POST',url:'/app-state/legacy-restore/'+legacyAdditionalId,
+      payload:payloadRestore,
+    });
+    assert.equal(restoredResponse.statusCode,200,restoredResponse.body);
+    const restoredPayload = JSON.parse(restoredResponse.body);
+    assert.equal(restoredPayload.id,createdLegacy.id,'Preserva ID financeiro');
+    assert.equal(restoredPayload.revision,6);
+    const restoredRow = await prisma.financialEvent.findUniqueOrThrow({
+      where:{id:createdLegacy.id},include:{ledgerEntries:true},
+    });
+    assert.equal(restoredRow.archivedAt,null);
+    assert.equal(restoredRow.legacyTransactionId,legacyAdditionalId);
+    assert.equal(restoredRow.categoryId,createdLegacy.categoryId);
+    assert.equal(restoredRow.paymentMethodId,createdLegacy.paymentMethodId);
+    assert.equal(Number(restoredRow.signedAmount),Number(createdLegacy.signedAmount));
+    assert.equal(restoredRow.ledgerEntries.length,1,'Writer de ledger canonico reutilizado');
+    const stateAfterRestore = await prisma.appState.findUniqueOrThrow({
+      where:{workspaceId:workspace.id},
+    });
+    assert.equal(stateAfterRestore.revision,6);
+    assert.equal((stateAfterRestore.state as {transactions:{id:string}[]}).transactions
+      .filter(x=>x.id===legacyAdditionalId).length,1);
+
+    const replay = await app!.inject({
+      method:'POST',url:'/app-state/legacy-restore/'+legacyAdditionalId,
+      payload:payloadRestore,
+    });
+    assert.equal(replay.statusCode,200,replay.body);
+    assert.equal(JSON.parse(replay.body).idempotentReplay,true);
+    assert.equal((await prisma.financialEvent.findUniqueOrThrow({where:{id:createdLegacy.id}})).id,createdLegacy.id);
+    assert.equal(await prisma.ledgerEntry.count({where:{eventId:createdLegacy.id}}),1);
+    assert.equal((await prisma.appState.findUniqueOrThrow({where:{workspaceId:workspace.id}})).revision,6);
+
+    const duplicateId = await app!.inject({
+      method:'POST',url:'/app-state/legacy-restore/'+legacyAdditionalId,
+      payload:{...payloadRestore,eventId:'outro-id'},
+    });
+    assert.equal(duplicateId.statusCode,409);
+    assert.equal(JSON.parse(duplicateId.body).error,'OPERATION_ID_REUSED');
+
+    // Nao ha rota de recuperacao no servidor normal: apenas QA descartavel.
+    process.env.MEG_STAGE10_LEGACY_RESTORE_QA = '0';
+    assert.equal((await import('../app-state/legacy-restore')).stage10RestoreQaEnabled(),false);
+    process.env.MEG_STAGE10_LEGACY_RESTORE_QA = '1';
+    console.log('MEG_STAGE10_EXPLICIT_RESTORE_SAME_ID_ATOMIC_IDEMPOTENT_PASS');
+
     console.log('MEG_STAGE10_LEGACY_DELETE_REINSERT_GAP_CHARACTERIZED PASS');
     console.log('MEG_STAGE10_QA_P0_PATCH_PUT_409_REVISION_LEDGER_ROLLBACK PASS');
   } finally {
+    delete process.env.MEG_STAGE10_LEGACY_RESTORE_QA;
     if (app) await app.close();
     if (eventId) await prisma.ledgerEntry.deleteMany({ where: { eventId } });
     if (workspaceId) await prisma.workspace.delete({ where: { id: workspaceId } });
