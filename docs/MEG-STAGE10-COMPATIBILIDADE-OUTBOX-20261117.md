@@ -67,3 +67,7 @@ Implementacao QA commit 77e769549b685e154991eb0e99c72b2f339ff882:
 Evidencia: GitHub Actions #44140953790 SUCCESS, 30 passos verdes. Nao houve instalacao em aparelho, migracao, deploy nem alteracao em producao.
 
 Lacunas: a APK instalada pode nao usar este codigo; versao real desconhecida. Repeticao infinita corrigida no fonte QA nao resolve por si a restauracao legitima da mesma ID, que exige protocolo autenticado separado. Issue #699 segue P0 aberta. 40% tecnico, 0% dados reais.
+
+## 17/11/2026 | Versao instalada declarada: 2.0.708
+
+O usuario confirmou **2.0.708** como versao Android instalada. A correcao do outbox da branch QA ainda nao foi distribuida para este aparelho. O contrato exato do bundle instalado e o fluxo de restauracao de evento arquivado continuam sem comprovacao. A issue #699 nao esta resolvida com a declaracao da versao. Sem deploy, merge, Supabase real ou APK publicada.

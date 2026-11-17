@@ -3352,3 +3352,13 @@ Continuar somente a Etapa 10 do MEG Finanças Web Evolution em MarcosVilalva/MEG
 Progresso: 40% tecnico (4/10 marcos), 0% saneamento produtivo. Saude do chat: NORMAL.
 
 Retomada: Continuar apenas Etapa 10 do MEG Web Evolution, PR #697 Draft branch stage10/saneamento-qa-descartavel-20261117. Autorizada excecao Android apenas para codigo do protocolo e diagnostico read-only. Commit tecnico 77e7695, CI #44140953790 SUCCESS. O outbox agora estaciona 409 permanente sem apagar dados e sem retry infinito na branch QA, mas falta comprovar APK instalada e restauracao autentica. Issues #699 P0 e #700 abertas, 40% tecnico, 0% producao. Sem deploy, merge, Render, Supabase real, main, custos ou Etapa 11.
+
+## ETAPA 10 | 17/11/2026 | Android instalado informado: versao 2.0.708
+
+1. **Novo fato confirmado pelo usuario:** a versao instalada atualmente no aparelho Android e **2.0.708**. O historico de 1.1.167 corresponde a 26/08/2026, nao a versao atual. A identificacao nominal do aplicativo esta resolvida por declaracao direta.
+2. **Limite:** nao houve consulta ADB ao dispositivo nem verificacao de hash, versionCode, assinatura ou do protocolo financeiro executado. A release MEG-Financas-708.apk tem a mesma versao nominal 2.0.708 e hash auditado, mas a identidade binaria nao foi demonstrada.
+3. **Proximo passo:** focar a compatibilidade do writer Android 2.0.708 com a API protegida, identificar a rota do outbox financeiro no bundle e caracterizar a recuperacao autenticada de ID arquivada em QA isolada. Nao confundir o retry de preferencias encontrado no bundle com retry financeiro.
+4. **Autorizacao:** permanece a excecao tecnica para corrigir o protocolo de sincronizacao Android e para diagnostico somente leitura. Nao autoriza instalar APK, publicar release, alterar aparelho, producao, Supabase real, Render, main, merge/deploy ou custos.
+5. **Estado:** PR #697 Draft, issue #699 P0 e #700 abertas, 40% tecnico, 0% migracao produtiva.
+
+Checkpoint de retomada: Etapa 10 exclusivamente, PR #697 Draft. Android instalado informado pelo usuario como 2.0.708 em 17/11/2026. Release 708 auditada, mas sem hash nem protocolo financeiro comprovado no aparelho. Correcao de replay QA no commit 77e7695, Actions #44140953790 SUCCESS; doc commit a2e8a04, Actions #44141501990 SUCCESS. Nenhuma operacao produtiva.

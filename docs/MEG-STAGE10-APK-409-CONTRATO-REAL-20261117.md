@@ -33,3 +33,11 @@ As duas APIs Fastify/Prisma isoladas em PG17 QA e os testes de concorrência 200
 ## Diagnóstico de versão instalada preparado, não executado
 
 O script `scripts/meg-stage10-android-instalado-versao-readonly.ps1` utiliza somente `adb devices` e `adb shell dumpsys package br.com.megfinancas.app`. Valida que haja exatamente um aparelho Android autorizado e imprime apenas versão, código e datas, sem alterar aplicativo, acessar dados MEG ou chamar a API. **Não houve execução em aparelho real**, logo a versão atual do usuário segue desconhecida. A existência desse script não libera o P0.
+
+## 17/11/2026 | Usuario confirmou a versao instalada: 2.0.708
+
+A versao Android instalada foi informada diretamente pelo usuario como **2.0.708**. O numero deixou de ser desconhecido, e a referencia historica a 1.1.167 nao deve ser usada como versao corrente.
+
+A release publica MEG-Financas-708.apk tem tambem versao nominal 2.0.708, mas ainda nao foi demonstrada identidade binaria com o APK do aparelho: nao houve leitura ADB, signature, SHA-256 nem observacao da rota financeira. O retry 409 visivel no bundle da release parece pertencer a preferencias e nao prova o comportamento do outbox.
+
+A compatibilidade deve focar o cliente 2.0.708, confrontar o protocolo embarcado com a API financeira de QA e caracterizar intencao autenticada de restauracao de ID arquivada. Nenhuma APK foi alterada/publicada, nenhum dado real foi escrito. #699 continua P0 aberta.
