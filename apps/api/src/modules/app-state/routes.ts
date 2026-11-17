@@ -155,7 +155,9 @@ export async function appStateRoutes(app: FastifyInstance) {
     } catch (error) {
       const code = error instanceof Error ? error.message : 'NORMALIZATION_FAILED';
       if (code === 'NORMALIZATION_REVISION_CONFLICT') return reply.status(409).send({ error: code });
-      if (code === 'NORMALIZATION_INVALID_SOURCE') return reply.status(422).send({ error: code, preview });
+      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_SHADOW_REBUILD_REQUIRES_CANONICAL_MIGRATION') {
+        return reply.status(422).send({ error: code, preview });
+      }
       throw error;
     }
   });
@@ -178,7 +180,8 @@ export async function appStateRoutes(app: FastifyInstance) {
     } catch (error) {
       const code = error instanceof Error ? error.message : 'NORMALIZATION_CUTOVER_FAILED';
       if (code === 'NORMALIZATION_REVISION_CONFLICT') return reply.status(409).send({ error: code });
-      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_RECONCILIATION_FAILED') {
+      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_RECONCILIATION_FAILED'
+        || code === 'NORMALIZATION_SHADOW_REBUILD_REQUIRES_CANONICAL_MIGRATION') {
         return reply.status(422).send({ error: code, preview: await normalizationPreview(context.workspaceId, context.workspace.ownerId) });
       }
       throw error;
