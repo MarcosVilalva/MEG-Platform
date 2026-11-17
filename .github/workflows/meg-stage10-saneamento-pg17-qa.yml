@@ -46,6 +46,11 @@ jobs:
             apps/web/src/durable-outbox-core.js \
             apps/web/src/durable-outbox-store.js \
             apps/web/src/legacy-finance.js
+      - name: Auditar APK publicado em modo estritamente somente leitura (one-shot)
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[audit-apk]')
+        env:
+          MEG_STAGE10_APK_STATIC_QA: '1'
+        run: python3 scripts/meg-stage10-apk-release-readonly-audit.py
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
