@@ -4,7 +4,7 @@ import { classifyStage10HistoricalLink } from './stage10-historical-mapping-revi
 type Proposal = Parameters<typeof classifyStage10HistoricalLink>[0];
 const base: Proposal = {
   event: {
-    id:'synthetic-event',userId:'qa-owner',type:'expense',status:'paid',
+    id:'synthetic-event',userId:'qa-owner',description:'Mercado ficticio',type:'expense',status:'paid',
     amount:22.35,signedAmount:-22.35,categoryId:null,paymentMethodId:null,
     archivedAt:null,
     sourcePayload:{
@@ -101,6 +101,7 @@ blocked('ambiguous category',scenario({categoryMatchCount:2}),'NO_UNAMBIGUOUS_CA
 blocked('unknown payment',scenario({paymentMethod:null,paymentMatchCount:0}),'NO_UNAMBIGUOUS_CATALOG_MATCH');
 blocked('wrong owner',scenario({paymentMethod:{...base.paymentMethod!,userId:'other-tenant'}}),'PAYMENT_SCOPE_OR_LABEL_MISMATCH');
 blocked('wrong group',scenario({category:{...base.category!,group:'OUTRA'}}),'CATEGORY_SCOPE_OR_LABEL_MISMATCH');
+blocked('description verocard',scenario({}, {description:'Recarga Verocard ficticia'}),'FINANCIAL_DOMAIN_SPECIALIST_REQUIRED');
 blocked('account benefit',scenario({event:{...base.event,account:{id:'qa-account',userId:'qa-owner',type:'benefit',isActive:true}}}),'FINANCIAL_DOMAIN_SPECIALIST_REQUIRED');
 blocked('account wrong owner',scenario({event:{...base.event,account:{...base.event.account!,userId:'other'}}}),'MONETARY_ACCOUNT_SCOPE_OR_STATUS_INVALID');
 blocked('account inactive',scenario({event:{...base.event,account:{...base.event.account!,isActive:false}}}),'MONETARY_ACCOUNT_SCOPE_OR_STATUS_INVALID');
