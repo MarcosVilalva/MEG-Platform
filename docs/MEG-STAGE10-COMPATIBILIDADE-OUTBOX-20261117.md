@@ -51,3 +51,19 @@ O PATCH legado contém `operationId`, `expectedRevision`, `upserts`/`deletes` e 
 
 ## 17/11/2026 | Distinção obrigatória do APK
 A inspeção estática do APK oficial 2.0.708 no CI não comprovou que `instant-persistence.js` e o ramo de outbox financeiro sejam idênticos aos do cliente compilado. O único ramo `.status===409` encontrado é de retorno `{preference:...,synced:...}`, aparentemente preferência. A APK usa Web local embutida e host Render em seus assets. Não confundir `409` de preferência com `409` de transação. Última versão instalada explicitamente confirmada em 26/08/2026: **1.1.167**, sem confirmação de atualização posterior. Esse registro histórico NÃO demonstra a versão instalada atualmente. Provas: [CI #44103544308](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44103544308), docs/MEG-STAGE10-APK-409-CONTRATO-REAL-20261117.md. Issue #699 P0 continua aberta até homologação do contrato efetivamente instalado, sem modificar Android.
+
+
+## 17/11/2026 | Correcao efetiva da sincronizacao legada autorizada
+
+O usuario autorizou excecao limitada ao codigo do protocolo Android/legado e ao diagnostico somente leitura da versao instalada, sem permitir APK publicada, instalacao, alteracao visual, producao, merge, deploy ou custos. Esta atualizacao substitui a afirmacao historica de que instant-persistence.js permanecia intocado.
+
+Implementacao QA commit 77e769549b685e154991eb0e99c72b2f339ff882:
+- cloud-outbox-conflict-policy.js classifica respostas HTTP 409 de revisao como reexecutaveis apos releitura; conflitos permanentes e HTTP 400/403/404/422 exigem intervencao. 401/408/429/5xx continuam pendentes no protocolo de retentativa.
+- instant-persistence.js agora interpreta o codigo de rejeicao, estaciona a fila inteira com marcador persistido de metadados, preserva os lancamentos e a protecao duravel, suspende timers automaticos e informa que e necessaria resolucao. Nenhum erro e convertido em sucesso.
+- API de diagnostico: MEG_INSTANT_PERSISTENCE.conflict() e rechecagem iniciada explicitamente por retryBlocked(). Nenhum dado financeiro e registrado no marcador.
+- O guard da CI manteve Android/Capacitor e demais JS legados congelados, liberando apenas instant-persistence.js.
+- Teste de fonte stage10-frozen-legacy-409-harness.test.js atualizado, sem APK gerada.
+
+Evidencia: GitHub Actions #44140953790 SUCCESS, 30 passos verdes. Nao houve instalacao em aparelho, migracao, deploy nem alteracao em producao.
+
+Lacunas: a APK instalada pode nao usar este codigo; versao real desconhecida. Repeticao infinita corrigida no fonte QA nao resolve por si a restauracao legitima da mesma ID, que exige protocolo autenticado separado. Issue #699 segue P0 aberta. 40% tecnico, 0% dados reais.

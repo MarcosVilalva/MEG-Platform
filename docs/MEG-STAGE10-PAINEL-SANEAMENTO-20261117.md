@@ -96,3 +96,12 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 - [Actions #44122338137](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44122338137) SUCCESS (commit `e3d7061`): caracterização negativa de evento hipotético com Account.type=checking e método Verocard: vinculação nominal pode mudar a inclusão no saldo por política de benefício; Account.type=benefit continua excluído em ambos cenários. Não houve constatação de dado produtivo incorreto.
 - Primeiro gate novo [#44121476463](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44121476463) falhou no typecheck TS2322 apenas do novo teste, corrigido e revalidado no gate verde seguinte.
 - Issues #699 e #700 ABERTAS. Sem Android físico, migração, deploy, merge ou mudanças no banco real; indicador **40% técnico (4/10), 0% produção**.
+
+
+## 17/11/2026 | Implementacao do controle de replay legado com excecao Android
+
+- Excecao tecnica autorizada pelo usuario somente para o codigo de sincronizacao Android e diagnostico da versao instalada; sem autorizar APK, deploy, merge, visual ou banco real.
+- Arquivo instant-persistence.js alterado em QA e novo cloud-outbox-conflict-policy.js: rejeicao financeira permanente agora estaciona a operacao protegida, com marcador persistente e sem novos reenvios de background. Dados do outbox continuam preservados; 409 de revisao continua admitindo releitura.
+- CI #44140953790 SUCCESS no commit 77e7695, 30 passos verdes. Guard do repositorio ainda protege Android/Capacitor e demais modulos.
+- Marco 5 continua aberto: versao da APK realmente instalada e fluxo seguro de recuperacao deliberada de ID arquivada ainda nao validados. Issue #699 P0 mantida.
+- Saneamento historico issue #700 sem alteracoes reais. Indicador permanece 40% tecnico e 0% produtivo.
