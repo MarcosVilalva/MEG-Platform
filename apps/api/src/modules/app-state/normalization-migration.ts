@@ -128,7 +128,15 @@ async function replaceNormalizedProjection(workspaceId: string, preview: ReturnT
     archivedAt: null,
   }));
   await prisma.$transaction(async (tx) => {
-    await tx.financialEvent.deleteMany({ where: { workspaceId, legacyTransactionId: { not: null } } });
+    // A migracao sombra pode SEMEAR um espelho ainda vazio, nunca substituir
+    // eventos preexistentes. Eles podem ter FKs e identidade usadas por
+    // ledger/recibos/baixas/importacao. Divergencias exigem plano de migracao
+    // com mapeamento por ID, nao deleteMany/createMany.
+    const existing = await tx.financialEvent.findFirst({
+      where: { workspaceId, legacyTransactionId: { not: null } },
+      select: { id: true },
+    });
+    if (existing) throw new Error('NORMALIZATION_SHADOW_REBUILD_REQUIRES_CANONICAL_MIGRATION');
     if (rows.length) await tx.financialEvent.createMany({ data: rows });
   }, { maxWait: 10_000, timeout: 120_000 });
 }
