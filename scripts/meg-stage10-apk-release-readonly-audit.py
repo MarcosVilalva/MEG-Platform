@@ -78,8 +78,8 @@ with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
                 # Uma ocorrencia so demonstra sintaxe empacotada, nao que
                 # um dispositivo de verdade tenha executado o ramo.
                 patterns = {
-                    "status_409": r"\\.status\\s*={2,3}\\s*409\\b",
-                    "409_continue": r"409\\s*\\)\\s*continue\\b",
+                    "status_409": r"\.status\s*={2,3}\s*409\b",
+                    "409_continue": r"409\s*\)\s*continue\b",
                     "409_retryable": r"409.{0,100}retryable",
                     "patch_appstate": r"app-state.{0,100}PATCH",
                     "appstate_patch": r"PATCH.{0,100}app-state",
