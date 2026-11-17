@@ -120,6 +120,95 @@ async function main(){
   assert.equal(await prisma.financialEvent.count({where:{workspaceId:workspace.id}}),1,
    'Sem conta, criacao e espelho falham juntos sem evento orfao');
 
+
+  // Fluxo editavel: Web QA -> mesmo FinancialEvent -> ledger -> AppState
+  // lido pelo contrato legado, sem criar ID nem evento adicional.
+  const gateEdit=await app.inject({method:'GET',url:'/app-state/stage10-qa-write-gate'});
+  assert.equal(gateEdit.statusCode,200,gateEdit.body);
+  assert.equal(JSON.parse(gateEdit.body).editSupported,true);
+  assert.equal(JSON.parse(gateEdit.body).revision,2);
+
+  const editPayload={
+   operationId:randomUUID(),expectedUpdatedAt:row.updatedAt.toISOString(),
+   expectedRevision:2,description:'Despesa QA alterada pela Web',
+   date:payload.date,status:'paid',amount:10.35,
+   accountId:account.id,categoryId:category.id,paymentMethodId:method.id,
+   notes:'Edicao canonica QA',
+  };
+  const edit=(changes:typeof editPayload)=>app!.inject({
+   method:'PATCH',url:'/finance/events/'+row.id+'/stage10-qa-edit',
+   payload:changes,
+  });
+  const updated=await edit(editPayload);
+  assert.equal(updated.statusCode,200,updated.body);
+  assert.equal(JSON.parse(updated.body).id,row.id);
+  assert.equal(JSON.parse(updated.body).legacyTransactionId,row.id);
+  assert.equal(JSON.parse(updated.body).revision,3);
+  assert.equal(JSON.parse(updated.body).idempotentReplay,false);
+  const changed=await prisma.financialEvent.findUniqueOrThrow({
+   where:{id:row.id},include:{ledgerEntries:true},
+  });
+  assert.equal(changed.id,row.id);
+  assert.equal(changed.description,editPayload.description);
+  assert.equal(Number(changed.amount),10.35);
+  assert.equal(Number(changed.signedAmount),-10.35);
+  assert.equal(changed.accountId,account.id);
+  assert.equal(changed.categoryId,category.id);
+  assert.equal(changed.paymentMethodId,method.id);
+  assert.equal(changed.ledgerEntries.length,1);
+  assert.equal(Number(changed.ledgerEntries[0].credit),10.35);
+  assert.equal(await prisma.financialEvent.count({where:{workspaceId:workspace.id}}),1);
+
+  const androidRead=await app.inject({method:'GET',url:'/app-state'});
+  assert.equal(androidRead.statusCode,200,androidRead.body);
+  const androidDto=JSON.parse(androidRead.body);
+  assert.equal(androidDto.revision,3);
+  assert.equal(androidDto.dataSource,'normalized',androidRead.body);
+  const androidItems=androidDto.state.transactions.filter((x:{id:string})=>x.id===row.id);
+  assert.equal(androidItems.length,1);
+  assert.equal(androidItems[0].description,editPayload.description);
+  assert.equal(Number(androidItems[0].amount),10.35);
+  assert.equal(androidItems[0].financialAccountId,account.id);
+  const canonicalRead=await app.inject({method:'GET',url:'/finance/events?page=1&pageSize=50'});
+  assert.equal(canonicalRead.statusCode,200,canonicalRead.body);
+  const readChanged=JSON.parse(canonicalRead.body).items.find((x:{id:string})=>x.id===row.id);
+  assert.equal(readChanged.description,editPayload.description);
+  assert.equal(Number(readChanged.amount),10.35);
+
+  const replayEdit=await edit(editPayload);
+  assert.equal(replayEdit.statusCode,200,replayEdit.body);
+  assert.equal(JSON.parse(replayEdit.body).idempotentReplay,true);
+  const reusedId=await edit({...editPayload,amount:10.34});
+  assert.equal(reusedId.statusCode,409,reusedId.body);
+  assert.equal(JSON.parse(reusedId.body).error,'OPERATION_ID_REUSED');
+
+  const rejectedStale=await edit({
+   ...editPayload,operationId:randomUUID(),expectedRevision:2,
+  });
+  assert.equal(rejectedStale.statusCode,409,rejectedStale.body);
+  assert.equal(JSON.parse(rejectedStale.body).error,'STAGE10_QA_REVISION_CONFLICT');
+
+  const rejectedStatus=await edit({
+   ...editPayload,operationId:randomUUID(),expectedRevision:3,
+   expectedUpdatedAt:changed.updatedAt.toISOString(),status:'planned',
+  });
+  assert.equal(rejectedStatus.statusCode,409,rejectedStatus.body);
+  assert.equal(JSON.parse(rejectedStatus.body).error,'STAGE10_QA_SCOPE_ACCOUNT_DATE_STATUS_LOCKED');
+
+  const insufficient=await edit({
+   ...editPayload,operationId:randomUUID(),expectedRevision:3,
+   expectedUpdatedAt:changed.updatedAt.toISOString(),amount:200,
+  });
+  assert.equal(insufficient.statusCode,409,insufficient.body);
+  assert.equal(JSON.parse(insufficient.body).error,'STAGE10_QA_INSUFFICIENT_ACCOUNT_BALANCE');
+  const afterReject=await prisma.financialEvent.findUniqueOrThrow({
+   where:{id:row.id},include:{ledgerEntries:true},
+  });
+  assert.equal(Number(afterReject.amount),10.35);
+  assert.equal(afterReject.ledgerEntries.length,1);
+  assert.equal((await prisma.appState.findUniqueOrThrow({where:{workspaceId:workspace.id}})).revision,3);
+  console.log('MEG_STAGE10_WEB_EDIT_ANDROID_READBACK_ATOMIC_QA_PASS');
+
   process.env.MEG_STAGE10_WEB_WRITE_QA='0';
   const disabled=await app.inject({method:'GET',url:'/app-state/stage10-qa-write-gate'});
   assert.equal(disabled.statusCode,403);
