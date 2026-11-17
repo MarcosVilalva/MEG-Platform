@@ -7,7 +7,7 @@ Data-base: 17/11/2026. Escopo: **somente saneamento estrutural e histórico dent
 **10 marcos verificáveis, 10 pontos cada, contagem binária: 10 pontos somente com resultado comprovado.**
 Proposta, implementação isolada sem teste ou CI que passou em componentes diferentes não contam como conclusão do marco correspondente. Reavaliar o indicador após cada gate, com documento/commit, workflow e evidência.
 
-**Progresso da regularização: 40% (4/10 marcos).**
+**Progresso atual da regularização: 50% (5/10 marcos).**
 **Migração/saneamento executado em produção: 0% (nenhum `UPDATE`/migração real aprovado ou realizado).**
 **Fase em andamento: marco 5 de 10, compatibilidade do cliente legado/Android congelado.**
 
@@ -18,7 +18,7 @@ Proposta, implementação isolada sem teste ou CI que passou em componentes dife
 | 3. Proteção no código | `synchronizeNormalizedRows` sem apagar/recriar a identidade, FKs preservadas, conflitos bloqueados | **CONCLUÍDO EM QA**. PR #697 Draft, sem deploy; alteração em `normalization-migration.ts` e `routes.ts` |
 | 4. Regressão técnica isolada | PostgreSQL 17, contrato HTTP, rollback/idempotência, proteção de relações, TypeScript e regressões financeiras verdes | **CONCLUÍDO EM QA**. [Actions #44075672369](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44075672369), SUCCESS |
 | 5. Compatibilidade cliente legado | Retentativas, 409, outbox, exclusão/reinclusão, offline e Android congelado sem regressão ou perda | **EM ANDAMENTO, BLOQUEADO**. [Issue #699](https://github.com/MarcosVilalva/MEG-Platform/issues/699): cliente congelado tenta novamente em todo 409. O payload aditivo `retryable` da API e o módulo Web-only passaram em [Actions #44082221551](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44082221551), mas **não** estão integrados ao Android ou writer real; o 409 legado ainda fica em loop. Decisão: `docs/MEG-STAGE10-COMPATIBILIDADE-OUTBOX-20261117.md` |
-| 6. Segurança de sessão integrada | JWT real e fluxos autorizados em QA isolado, sem escrita produtiva | **PENDENTE**. Fastify.inject anterior usou autenticação simulada |
+| 6. Segurança de sessão integrada | JWT real e fluxos autorizados em QA isolado, sem escrita produtiva | **CONCLUÍDO EM QA**. POST /auth/login real (bcrypt) + Bearer JWT, testes 401/403 e create/edit/releitura com PG17 descartável. [Actions #44194162073](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44194162073) SUCCESS. Navegador físico e JWT produtivo não homologados |
 | 7. Mapeamento de categorias e prevenção | Revisão e aceite financeiro dos 3.033 candidatos; tratamento explícito dos 591 restantes; impedir recorrência na importação/edição | **PENDENTE**. Nomes não bastam para atribuir FK |
 | 8. Mapeamento de pagamentos e benefícios | Revisão e aceite dos 2.900 candidatos e 612 exceções, modalidade credit/other, Verocard/benefício, receitas e cartões | **PENDENTE**. Regras/status precisam ser preservados |
 | 9. Recuperação e ensaio migratório | Backup/restauração verificáveis em ambiente autorizado, plano por IDs, dry-run com comparativos e rollback; arquivados avaliados | **PENDENTE**. Não reutilizar sandbox da Etapa 09 |
@@ -119,3 +119,10 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 A criacao Web estava apenas em read-only e o escritor canonico criava FinancialEvent sem legacyTransactionId / AppState para o Android. Foi implementado fluxo opt-in local QA com categoria, conta e metodo identificados por ID e escrita no writer event-mutation existente. A API so libera gate autenticado quando PostgreSQL 17 descartavel estrito esta habilitado. A MESMA transacao atualiza FinancialEvent, ledger e espelho AppState com legacyTransactionId igual ao ID financeiro; fingerprint normalizado incoerente reverte tudo. Beneficio/Verocard, credito e dominios especiais ficam bloqueados. Modo Editar continua read-only.
 
 CI #44153114515 SUCCESS no codigo SHA ca77ac26c5299c62a3ce9150d79be15b80b0db6e. Um teste de integracao Fastify/PG17 ficticio confirmou um evento criado com mesmo ID no AppState, FKs intactas, ledger unico, historico consultavel, idempotencia e rollback. Verificacao TypeScript API e Web verde. NAO houve gravacao no banco real, deploy, APK instalada, merge ou homologacao funcional/visual. Progresso formal nao muda (4/10; 40% tecnico, 0% producao). 
+
+## Atualizacao 17/11/2026 | Marco 6 comprovado, 5/10 = 50%
+
+- A identidade simulada do teste integrado foi substituida pelo login real de API com bcrypt, JWT emitido pela propria API, Bearer em TODAS as rotas financeiras protegidas, 401 para token falso/ausente/senha errada e 403 para VIEWER, no PostgreSQL17 descartavel.
+- [Actions #44194162073](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44194162073) SUCCESS no commit e554270a. Isso comprova estritamente o marco 6 de sessao integrada QA, sem representar homologacao em navegador e Android fisicos.
+- Banco real consultado somente com SELECT: 278 Verocard ativos sao todos Account.type=benefit, status paid, sem paymentMethodId; o candidato textual unico por owner se chama Verocard, porem PaymentMethod.type=credit. Sao 3 valores com signedAmount positivo. Nao vincular automaticamente nem alterar writer de beneficio.
+- 50% = cinco marcos efetivamente comprovados (1,2,3,4,6). O marco 5 Android e os marcos 7-10 permanecem abertos. Migracao produtiva = 0%. Sem deploy/merge/producao/Android.

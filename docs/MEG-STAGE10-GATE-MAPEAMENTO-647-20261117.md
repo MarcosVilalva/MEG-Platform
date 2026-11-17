@@ -56,3 +56,12 @@ Foi acrescida uma caracterização **hipotética e puramente em memória** no te
 O controle também verifica a condição oposta: se `Account.type=benefit`, a exclusão monetária ocorre antes e depois do vínculo, sem mudança de saldo. Portanto, não se pode concluir que as 278 movimentações históricas de benefício estejam incorretas sem uma auditoria das contas efetivamente vinculadas e da autoridade de benefício.
 
 **Evidência:** [Actions #44122338137](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44122338137) **SUCCESS** no commit `e3d70619afeb8cb314b3331d9091e410653014ae`, 30 passos verdes e APK condicional skipped. Nenhum dado real consultado/escrito nesta alteração.
+
+## 17/11/2026 | Consulta real adicional, somente leitura: onde estao os 278 Verocard
+
+Consulta SELECT com JOIN Account, subconsulta de PaymentMethod por titular/nome e agregacao de status sobre os eventos ativos com sourcePayload.paymentMethod=Verocard mostrou:
+- 278/278 com Account.type=benefit;
+- 278/278 com status paid, paymentMethodId NULL;
+- 278/278 com exatamente um metodo ativo candidato por nome/titular, mas esse metodo declara type=credit;
+- 3/278 possuem signedAmount positivo e exigem tratamento pelo escritor de beneficio.
+Nenhum evento foi modificado. Como a autoridade monetaria exclui Account.type=benefit, nao se observou neste recorte o exemplo hipotetico checking/Verocard que afetaria saldo monetario. Isso NAO valida a associacao de FK, politica futura de status, saldo de beneficio ou inexistencia de outras excecoes. Proibido transformar Verocard em CreditCard ou associar FK sem aprovacao do dominio.
