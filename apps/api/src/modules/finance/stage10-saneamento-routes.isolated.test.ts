@@ -116,6 +116,7 @@ async function main() {
     const conflictingCategory = await patch(2, [{ ...updatePayload, category: 'Nao e mercado' }]);
     assert.equal(conflictingCategory.statusCode, 409, conflictingCategory.body);
     assert.equal(JSON.parse(conflictingCategory.body).error, 'NORMALIZATION_CANONICAL_CATEGORY_CONFLICT');
+    assert.equal(JSON.parse(conflictingCategory.body).retryable, false);
     const afterRejected = await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } });
     assert.equal(afterRejected.revision, 2, 'Conflito nao atualiza AppState');
     assert.equal((afterRejected.state as { transactions: { category: string }[] }).transactions[0].category, 'Mercado');
@@ -137,9 +138,11 @@ async function main() {
     const linkedPatch = await patch(3, [{ ...updatePayload, description: 'Nao alterar ledger vinculado' }]);
     assert.equal(linkedPatch.statusCode, 409, linkedPatch.body);
     assert.equal(JSON.parse(linkedPatch.body).error, 'NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER');
+    assert.equal(JSON.parse(linkedPatch.body).retryable, false);
     const linkedPut = await put(3, [{ ...updatePayload, description: 'Nao alterar via PUT' }]);
     assert.equal(linkedPut.statusCode, 409, linkedPut.body);
     assert.equal(JSON.parse(linkedPut.body).error, 'NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER');
+    assert.equal(JSON.parse(linkedPut.body).retryable, false);
     assert.equal((await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } })).revision, 3);
     assert.equal(await prisma.ledgerEntry.count({ where: { eventId: event.id } }), 1);
     assert.equal((await prisma.financialEvent.findUniqueOrThrow({ where: { id: event.id } })).id, event.id);
@@ -167,6 +170,7 @@ async function main() {
     const attemptedRestore = await patch(5, [additionalPayload]);
     assert.equal(attemptedRestore.statusCode, 409, attemptedRestore.body);
     assert.equal(JSON.parse(attemptedRestore.body).error, 'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE');
+    assert.equal(JSON.parse(attemptedRestore.body).retryable, false);
     const afterBlockedRestore = await prisma.appState.findUniqueOrThrow({
       where: { workspaceId: workspace.id },
     });
