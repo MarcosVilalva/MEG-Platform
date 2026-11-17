@@ -55,4 +55,4 @@ Foi acrescida uma caracterização **hipotética e puramente em memória** no te
 
 O controle também verifica a condição oposta: se `Account.type=benefit`, a exclusão monetária ocorre antes e depois do vínculo, sem mudança de saldo. Portanto, não se pode concluir que as 278 movimentações históricas de benefício estejam incorretas sem uma auditoria das contas efetivamente vinculadas e da autoridade de benefício.
 
-**Status:** teste acrescentado ao gate QA existente, CI do novo commit ainda não confirmado. Nenhum dado real consultado/escrito nesta alteração.
+**Evidência:** [Actions #44122338137](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44122338137) **SUCCESS** no commit `e3d70619afeb8cb314b3331d9091e410653014ae`, 30 passos verdes e APK condicional skipped. Nenhum dado real consultado/escrito nesta alteração.

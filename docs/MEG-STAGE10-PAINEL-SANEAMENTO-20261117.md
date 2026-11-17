@@ -89,3 +89,10 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 - As facetas de categoria e método **mudam legitimamente** ao vincular FKs, sem que isso signifique neutralidade integral dos relatórios: não prometer igualdade de agrupamentos.
 - Documentação: `docs/MEG-STAGE10-GATE-NEUTRALIDADE-PROJECOES-20261117.md`; teste `apps/api/src/modules/finance/stage10-mapping-projection-neutrality.isolated.test.ts`.
 - Nenhuma prova sobre 647 registros reais ou APK efetivamente instalada; issues #699 e #700 abertas, **40% técnico**, **0% produção**, nenhum merge/deploy.
+
+## 17/11/2026 | Integração dos três read-models PG17 e risco Verocard caracterizado
+
+- [Actions #44121899464](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44121899464) SUCCESS (commit `c36a5e6`): três eventos fictícios, consulta direta às funções `getCanonicalFinancialSummary`, `getCanonicalFinancialCashflow` e `getCanonicalFinancialAnalytics`, antes/depois do vínculo de FKs. Saldos, competência, assinaturas e totais preservados, facetas de nomes alteradas conforme esperado. Cleanup aprovado.
+- [Actions #44122338137](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44122338137) SUCCESS (commit `e3d7061`): caracterização negativa de evento hipotético com Account.type=checking e método Verocard: vinculação nominal pode mudar a inclusão no saldo por política de benefício; Account.type=benefit continua excluído em ambos cenários. Não houve constatação de dado produtivo incorreto.
+- Primeiro gate novo [#44121476463](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44121476463) falhou no typecheck TS2322 apenas do novo teste, corrigido e revalidado no gate verde seguinte.
+- Issues #699 e #700 ABERTAS. Sem Android físico, migração, deploy, merge ou mudanças no banco real; indicador **40% técnico (4/10), 0% produção**.

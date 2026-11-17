@@ -20,7 +20,7 @@ Três eventos sintéticos são criados no banco descartável: despesa paga de R$
 
 O teste confere `DATABASE_URL` com host 127.0.0.1, DB `meg_stage10_sandbox`, usuário `meg_stage10_ci`, schema `public` e flag `MEG_STAGE10_ISOLATED_PG=1` antes de qualquer comando.
 
-**Status:** aguardando confirmação de CI para o commit técnico que incluiu o teste. A prova ainda não autoriza migração.
+**Evidência de execução:** [Actions #44121899464](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44121899464) **SUCCESS** no commit técnico `c36a5e6b8900a09b37b7461d9794073d973095f3`. Uma execução anterior [#44121476463](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44121476463) falhou somente no TypeScript de limpeza (TS2322), corrigido sem alterar regra financeira. O teste integrou os três read-models com dados fictícios; não autoriza migração.
 
 ## Limites
 
