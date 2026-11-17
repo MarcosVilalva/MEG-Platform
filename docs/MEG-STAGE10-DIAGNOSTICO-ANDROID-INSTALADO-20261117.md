@@ -1,0 +1,21 @@
+# MEG Web Evolution | Etapa 10 | Diagnostico Android 2.0.708 instalado (somente leitura)
+
+## Objetivo
+Conferir **no dispositivo que o operador possui**, sem inferir pela release publica, a versao instalada do pacote `br.com.megfinancas.app`. Nao equivale a testar funcionamento offline ou outbox.
+
+## Script
+`scripts/meg-stage10-android-installed-readonly.ps1` nao instala nem atualiza APK, nao faz backup do aplicativo, nao consulta o conteudo do banco local, nao roda comandos de sync, nao apaga cache, nao muda configuracao do Android e nao exibe serial/IMEI. Usa exclusivamente `adb devices` e `adb shell dumpsys package` para leitura de metadados.
+
+O operador deve ter ADB disponivel e o dispositivo conectado e autorizado para diagnostico USB por ele. O script nao altera essa permissao. Se estiverem conectados 0 ou varios dispositivos autorizados, falha fechado e informa somente a quantidade.
+
+No PowerShell aberto na raiz do repositorio, com o dispositivo conectado:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\meg-stage10-android-installed-readonly.ps1
+```
+
+O resultado e exibido e copiado para a area de transferencia (quando disponivel). Apenas dados nao identificaveis sao emitidos: status, nome de pacote, versao, versionCode e flag de presenca. Em seguida, encaminhar **somente** esse relatorio. Se aparecer `ADB_NAO_LOCALIZADO`, corrigir a disponibilidade da ferramenta antes de tentar novamente; nao instalar programas automaticamente.
+
+## Limites e gate
+Uma versao confirmada nao prova que o binario seja identico ao APK publicado nem que trate 409, tombstones, exclusao/reinclusao ou outbox offline. Para o marco 5, testes funcionais posteriores devem usar usuario e lancamentos de QA, sem tocar nos dados pessoais, sem alterar a APK nem reintroduzir migracao de identidade. Nao executar 409/replay em producao ou no banco financeiro real.
+
+**Estado:** documento de diagnostico preparado, sem acesso fisico ao dispositivo neste chat e sem resultados apresentados. Marco 5 permanece P0, percentual oficial nao muda.
