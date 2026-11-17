@@ -51,3 +51,12 @@ A ordem correta é:
 5. Aplicar apenas com autorização produtiva separada, CI e aprovação funcional/visual.
 
 **Estado do indicador:** 4/10 marcos (40% técnico), migração produtiva 0%. Marco 5 ainda bloqueado.
+
+
+## Evidências de execução final desta auditoria
+- [Actions #44085364186](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44085364186): **SUCCESS** da primeira prova de bloqueio de identidade/FK em PG17; o trigger foi revertido no próprio teste.
+- [Actions #44085725365](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44085725365): **SUCCESS** da prova negativa do comportamento das FKs SET NULL e do RESTRICT no ledger, com rollback.
+- [Actions #44086462524](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44086462524): **SUCCESS** depois de retirar a exclusão destrutiva de `replaceNormalizedProjection`; inclui `stage10-shadow-id-preservation.isolated.test.ts`, que aprova a semeadura inicial e rejeita reconstrução sobre eventos existentes, com FKs e ID preservados. Regressões financeiras, Fastify HTTP e TypeScript também passaram.
+- Duas tentativas anteriores de CI com o novo teste shadow falharam **antes de iniciar jobs** por YAML inválido (nome do passo com dois-pontos sem aspas); corrigido no commit `2672d8a534b71827e7be4abea904ef0bd7bc2929`. Não eram falhas financeiras e não devem ser contabilizadas como testes aprovados.
+
+**Estado:** provas técnicas de integridade em QA aprovadas; ainda não é uma proposta de ativação de trigger no banco real. A compatibilidade de Android e a autorização de dados reais continuam pendentes.
