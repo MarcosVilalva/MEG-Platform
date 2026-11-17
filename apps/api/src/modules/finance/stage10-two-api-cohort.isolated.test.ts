@@ -81,12 +81,19 @@ try {
   app.decorate('authenticate', async (request: unknown) => { asAuth(request); });
   app.decorate('authorize', (_roles:unknown) => async (request:unknown) => { asAuth(request); });
   await app.register(appStateRoutes, {prefix: '/app-state'});
-  await app.ready();
+  // Servidor de loopback real em porta efemera, sem interface publica.
+  // Cada processo Fastify tem seu proprio listener e credencial Prisma.
+  const origin = await app.listen({host:'127.0.0.1',port:0});
+  if (new URL(origin).hostname !== '127.0.0.1') throw new Error('STAGE10_LOOPBACK_ONLY');
   await cohortBarrier('ready');
-  const request = async (revision: number, data:typeof payload) => app.inject({
-    method: 'PATCH', url:'/app-state/transactions',
-    payload:{operationId:randomUUID(),expectedRevision:revision,upserts:[data],deletes:[]},
-  });
+  const request = async (revision: number, data:typeof payload) => {
+    const response = await fetch(origin+'app-state/transactions', {
+      method: 'PATCH',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({operationId:randomUUID(),expectedRevision:revision,upserts:[data],deletes:[]}),
+    });
+    return {statusCode:response.status,body:await response.text()};
+  };
   const first = await request(1,payload);
   assert.equal(first.statusCode,200,first.body);
   const original = await prisma.financialEvent.findFirstOrThrow({where: {
@@ -103,9 +110,10 @@ try {
   assert.equal(updated.id,original.id);
   assert.equal(updated.description,'QA descricao editada');
   assert.equal(await prisma.financialEvent.count({where:{workspaceId:workspace.id,legacyTransactionId:payload.id}}),1);
-  const read = await app.inject({method:'GET',url:'/app-state'});
-  assert.equal(read.statusCode,200,read.body);
-  assert.equal(JSON.parse(read.body).dataSource,'normalized');
+  const read = await fetch(origin+'app-state');
+  const readBody = await read.json() as {dataSource: string};
+  assert.equal(read.status,200);
+  assert.equal(readBody.dataSource,'normalized');
   await cohortBarrier('updated');
 
   // Duas solicitações simultâneas para o MESMO lançamento e revisão. Apenas
@@ -160,7 +168,7 @@ try {
   assert.equal(writeDenied, true, 'Proibido alterar registros da outra coorte');
   assert.equal((await prisma.financialEvent.findUniqueOrThrow({where:{id:original.id}})).description,
     winner);
-  console.log('MEG_STAGE10_TWO_REAL_FASTIFY_COHORTS_SCHEMA_ISOLATION ' + mode.toUpperCase() + ' PASS');
+  console.log('MEG_STAGE10_TWO_CONCURRENT_LOOPBACK_HTTP_SERVERS_' + mode.toUpperCase() + ' PASS');
 } finally {
   await app.close();
   if (workspaceId) await prisma.workspace.delete({where:{id:workspaceId}});
