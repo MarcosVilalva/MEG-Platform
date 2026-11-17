@@ -7,7 +7,7 @@ DO $$
 BEGIN
  IF current_database() <> 'meg_stage10_sandbox'
     OR current_user <> 'meg_stage10_ci'
-    OR inet_server_addr() IS DISTINCT FROM inet '127.0.0.1' THEN
+    OR current_setting('application_name',true) <> 'MEG_STAGE10_QA_DISPOSABLE_ONLY' THEN
   RAISE EXCEPTION 'STAGE10_QA_DISPOSABLE_ONLY';
  END IF;
 END $$;
