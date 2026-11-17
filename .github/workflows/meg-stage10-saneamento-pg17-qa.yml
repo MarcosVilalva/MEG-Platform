@@ -53,6 +53,8 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
       - name: Prova de vinculacao, preservacao, rollback e idempotencia
         run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-saneamento-qa.pg.sql
+      - name: Prova estrutural identidade/FK no Postgres17, trigger apenas dentro de rollback
+        run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-identity-guard-synthetic.pg17.sql
       - name: Regressao da politica de status e competencia de cartao
         run: |
           npx tsx apps/api/src/modules/finance/financial-policy.test.ts
