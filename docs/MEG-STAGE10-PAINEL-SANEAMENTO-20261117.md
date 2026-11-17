@@ -42,3 +42,13 @@ Resolver `#699` em desenho que preserve o cliente Android congelado, sem reintro
 Em 17/11/2026 a branch de QA adicionou `normalization-conflict-policy.ts` à API e `stage10-write-conflict-policy.ts` **somente** ao espaço da nova Web, sem alterar Android. O protocolo classifica erros permanentes como `retryable:false` e evita considerar 2xx prova suficiente sem recibo. Em teste, a decisão de nova Web esgota até três releituras de revisão antes de proteger a operação pendente sem novos replays automáticos. [CI #44082221551](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44082221551) **SUCCESS**. A função da nova Web é ainda **não conectada a um writer ativo**.
 
 A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e o Render apontam para a API compartilhada; `render.yaml` contém **auto deploy** e `db:push:production` no build. Merge/deploy poderia atingir Android e schema real sem aprovação. Logo, **marco 5 ainda NÃO concluído, indicador 40%, migração produtiva 0%**. Ver `docs/MEG-STAGE10-COMPATIBILIDADE-OUTBOX-20261117.md` e issue #699.
+
+
+## 17/11/2026 | Compatibilidade: testes de protocolo e segregação aprovados, marco 5 ainda aberto
+- [Actions #44088509491](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44088509491) **SUCCESS**: função `ensureOutboxConfirmed` extraída literalmente do JS legado repete qualquer 409 e não lê `retryable:false`; outbox permanece protegido.
+- [Actions #44088879141](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44088879141) **SUCCESS**: prova que a simples substituição por HTTP 422 não encerra o agendamento de retry; CI verifica que os arquivos centrais Android/legado cobertos não sofreram modificações desde o baseline do PR #696.
+- [Actions #44089175372](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44089175372) **SUCCESS**: dois schemas e papéis PostgreSQL 17 temporários, bloqueando leitura/escrita cruzadas e revertendo tudo.
+- [Actions #44089989091](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44089989091) **SUCCESS**: duas execuções sequenciais reais de Fastify e Prisma, com credenciais/esquemas próprios, PATCH e GET de dados fictícios, preservação de IDs e acesso SQL cruzado recusado; cleanup dos esquemas/roles. Autenticação de teste simulada.
+- Plano técnico e limitações: `docs/MEG-STAGE10-ISOLAMENTO-COORTES-GATE-20261117.md`.
+
+**Contagem segue 4/10 = 40% técnico, migração real 0%.** O marco 5 exige evidência com Android instalado e decisão segura de coexistência/reconciliação, não apenas isolamento de QA. Não há merge/deploy, produção, Android, custos ou migração. A Issue #699 P0 permanece aberta.
