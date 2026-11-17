@@ -88,6 +88,20 @@ with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
                     n = len(re.findall(pregex, content))
                     print("MEG_STAGE10_APK_BUNDLE_PATTERN", entry.filename[:150],
                           pname, n)
+                if entry.filename.endswith(".js"):
+                    for match in list(re.finditer(patterns["status_409"], content))[:2]:
+                        segment = content[max(0, match.start()-50):match.end()+90]
+                        # Remove qualquer string literária antes de registrar
+                        # o CONTROLE de fluxo, para não publicar chave/credencial.
+                        segment = re.sub(
+                            r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)""",
+                            "[STRING_REDACTED]", segment,
+                        )
+                        segment = re.sub(r"https?://[^\\s,;]+", "[URL_REDACTED]", segment)
+                        segment = re.sub(r"[^A-Za-z0-9.=$!(){};,:?&|><+*/_\\s\\[\\]-]",
+                                         "?", segment)
+                        print("MEG_STAGE10_APK_STATUS_409_FLOW",
+                              entry.filename[:150], segment[:170])
         if "assets/capacitor.config.json" in apk.namelist():
             conf = json.loads(apk.read("assets/capacitor.config.json"))
             from urllib.parse import urlparse
