@@ -20,6 +20,7 @@ import zipfile
 URL = ("https://github.com/MarcosVilalva/MEG-Platform/"
        "releases/download/android-latest/MEG-Financas-708.apk")
 EXPECTED_BYTES = 6_715_918
+EXPECTED_SHA256 = "1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6"
 CI_FLAG = os.environ.get("MEG_STAGE10_APK_STATIC_QA")
 if CI_FLAG != "1" or os.environ.get("GITHUB_ACTIONS") != "true":
     raise SystemExit("STAGE10_APK_AUDIT_GITHUB_CI_ONLY")
@@ -41,6 +42,8 @@ with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
             output.write(chunk)
     if total != EXPECTED_BYTES:
         raise SystemExit(f"STAGE10_APK_SIZE_MISMATCH expected={EXPECTED_BYTES} received={total}")
+    if sha.hexdigest() != EXPECTED_SHA256:
+        raise SystemExit("STAGE10_APK_RELEASE_SHA256_CHANGED")
     if not zipfile.is_zipfile(filename):
         raise SystemExit("STAGE10_APK_NOT_ZIP")
 
@@ -49,6 +52,23 @@ with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
     embedded = {"app-state/transactions": False, "megCloudConfirmation": False}
     with zipfile.ZipFile(filename) as apk:
         entries = apk.infolist()
+        # Apenas NOMES e TAMANHOS de assets; nunca imprimimos o texto bruto.
+        for entry in sorted(entries, key=lambda x: x.filename):
+            if entry.filename.startswith("assets/") and not entry.is_dir():
+                print("MEG_STAGE10_APK_ASSET_PATH", entry.filename[:220],
+                      "BYTES", entry.file_size)
+        for suffix in ("classes.dex", "classes2.dex", "classes3.dex"):
+            if suffix not in apk.namelist():
+                continue
+            dex = apk.read(suffix)
+            # DEX strings podem conter segredos: só saída booleana de marcadores.
+            for marker in (b"app-state/transactions",
+                           b"meg-platform-api.onrender.com",
+                           b"megCloudConfirmation", b"loadUrl",
+                           b"WebView", b"capacitor"):
+                print("MEG_STAGE10_APK_DEX_MARKER", suffix,
+                      marker.decode("ascii"), "FOUND" if marker in dex else "NOT_FOUND")
+
         for entry in entries:
             if entry.is_dir() or entry.file_size > 12_000_000:
                 continue
