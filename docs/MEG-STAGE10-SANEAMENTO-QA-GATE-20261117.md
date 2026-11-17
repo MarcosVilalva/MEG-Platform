@@ -68,3 +68,18 @@ As rotas `apps/api/src/modules/app-state/routes.ts` agora traduzem bloqueios do 
 6. Preparar backup restaurado, dry-run referenciado por IDs, plano de rollback e autorização **específica** antes de qualquer saneamento do Supabase real ou merge/deploy.
 
 A Issue [#698](https://github.com/MarcosVilalva/MEG-Platform/issues/698) fica aberta até integração e aprovação dos gates. Sem iniciar a Etapa 11.
+
+
+## Gate adicional: HTTP Fastify.inject integrado, PG17 descartável
+**Data:** 17/11/2026. [Actions #44075362762](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44075362762): **SUCCESS** no commit de código `21ef93b91b8fb02e50369af58694c3a26c527160`.
+
+Novo teste `apps/api/src/modules/finance/stage10-saneamento-routes.isolated.test.ts`, com rotas **reais** `appStateRoutes`, usando `Fastify.inject`, isolamento PostgreSQL 17 e autenticação **simulada**, não JWT real. Provas:
+1. `PATCH /app-state/transactions` com revisão válida atualiza em lugar, preservando ID e referências de categoria/pagamento, e incrementa revisão.
+2. `PATCH` obsoleto retorna HTTP 409 `STATE_CONFLICT`.
+3. Mudar rótulo legado com `categoryId` canônico gera HTTP 409 `NORMALIZATION_CANONICAL_CATEGORY_CONFLICT` sem atualização de AppState ou evento.
+4. `PUT /app-state` completo com revisão correta mantém ID e avança revisão; revisão obsoleta retorna 409.
+5. Após anexar `LedgerEntry`, `PATCH` e `PUT` que tentem modificar a mesma origem retornam HTTP 409 `NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER`, mantendo AppState, ID e ledger.
+6. Banco descartável tem fixtures removidas ao fim e workflow verifica ausência de resíduos; nenhuma consulta/escrita ao Supabase produtivo.
+7. Testes de AppState, autoridade financeira, benefício, transferências e `tsc` concluíram com sucesso.
+
+**Limitação:** o teste não usou JWT real e não constitui homologação visual/funcional com conta financeira real. A compatibilidade do comportamento de soft archive e da política fail-closed com fluxos legítimos do Android/legado precisa ser caracterizada sem alterar o Android. A Issue P0 #698 permanece aberta até aprovação técnica e autorização de integração. Ainda **não** há autorização para deploy, merge ou saneamento do banco real.
