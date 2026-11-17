@@ -1,0 +1,99 @@
+name: MEG Stage10 | Smoke publico da preview protegida
+on:
+  push:
+    branches:
+      - 'stage10/prism-real-read-optin-20261116'
+permissions:
+  contents: read
+jobs:
+  preview-readonly-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Conferir somente HTTP publico, sem credenciais e sem login real
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://meg-stage10-prism-real-preview.onrender.com"
+          request() {
+            curl --retry 3 --retry-all-errors --retry-delay 2 --max-time 90 -sS \
+              -o /tmp/meg-stage10-smoke-response -w '%{http_code}' "$@"
+          }
+          actual="$(request "$base/health")"
+          test "$actual" = 200
+          grep -q '"read-only-prism-preview"' /tmp/meg-stage10-smoke-response
+          echo "PREVIEW_HEALTH=200"
+
+          actual="$(request "$base/web-evolution.html?v=smoke")"
+          test "$actual" = 200
+          grep -q 'meg-web-evolution-root' /tmp/meg-stage10-smoke-response
+          echo "PREVIEW_OPERATIONAL_WEB=200"
+
+          actual="$(request "$base/finance/accounts")"
+          test "$actual" = 401
+          echo "PREVIEW_FINANCE_WITHOUT_TOKEN=401"
+
+          actual="$(request "$base/cards?month=2026-11")"
+          test "$actual" = 401
+          echo "PREVIEW_CARDS_WITHOUT_TOKEN=401"
+
+          actual="$(request -X POST -H 'Content-Type: application/json' \
+            --data '{}' "$base/finance/events")"
+          test "$actual" = 405
+          echo "PREVIEW_FINANCIAL_WRITE_POST=405"
+
+          actual="$(request -X POST -H 'Content-Type: application/json' \
+            -H 'Origin: https://evil.invalid' \
+            --data '{"email":"no@ci.invalid","password":"not-a-real-password"}' \
+            "$base/auth/login")"
+          test "$actual" = 403
+          echo "PREVIEW_CROSS_ORIGIN_AUTH=403"
+
+          actual="$(request -X POST -H 'Content-Type: application/json' \
+            -H "Origin: $base" \
+            --data '{"email":"no@ci.invalid","password":"not-a-real-password"}' \
+            "$base/auth/login")"
+          test "$actual" = 403
+          echo "PREVIEW_NONOWNER_LOGIN=403"
+
+          actual="$(request "$base/meg-unificado-qa.html")"
+          test "$actual" = 404
+          echo "PREVIEW_QA_FIXTURE_ENTRY_NOT_SERVED=404"
+
+          actual="$(request "$base/.env")"
+          test "$actual" = 404
+          echo "PREVIEW_ENV_FILE_NOT_SERVED=404"
+
+          actual="$(request "$base/meg-web-evolution/visual-loading/logo-meg-oficial-recortada.webp")"
+          test "$actual" = 200
+          echo "PREVIEW_OFFICIAL_LOGO=200"
+
+          actual="$(request "$base/meg-web-evolution/fonts/InterVariable.woff2")"
+          test "$actual" = 200
+          echo "PREVIEW_OFFICIAL_LOCAL_FONT=200"
+
+          echo "MEG_STAGE10_PUBLIC_PREVIEW_READONLY_SMOKE_PASS"
+
+      - name: Instalar Playwright isolado
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p node_modules/@playwright "$RUNNER_TEMP/meg-prism-public-browser"
+          npm install --prefix "$RUNNER_TEMP/meg-prism-public-browser" --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+          ln -s "$RUNNER_TEMP/meg-prism-public-browser/node_modules/@playwright/test" node_modules/@playwright/test
+      - name: Validar login publico em duas resolucoes sem dados reais
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/meg-stage10-prism-public-login.browser.mjs
+      - name: Guardar capturas da tela de login da preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage10-prism-public-login
+          path: artifacts/meg-stage10-prism-public-login/
+          retention-days: 7
+          if-no-files-found: warn

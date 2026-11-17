@@ -15,6 +15,7 @@ import type {ExpenseCatalogs} from '../stage10/ExpenseForm';
 import {applySavedFilter,readSavedFilters,saveNamedFilter,savedFiltersKey,serializeSavedFilters,MAX_SAVED_FILTERS,
  type SavedLaunchesFilter,type LaunchesFilterPreset} from './saved-filters';
 export type {LaunchesFilterPreset} from './saved-filters';
+import {periodBounds,periodForMonth,periodLabel,validDay,type LaunchPeriod} from './period-scope';
 import './launches-stage09.css';
 
 /**
@@ -27,12 +28,16 @@ import './launches-stage09.css';
 type Props={
  data:HomeFinancialData;onNew:()=>void;onHome:()=>void;
  mode?:'preview'|'live';periodMonth?:string;userId?:string;
- exportUserName?:string;onRefresh?:()=>void;
+ exportUserName?:string;onRefresh?:()=>void;onPeriodChange?:(month:string)=>void;
+ periodSelection?:LaunchPeriod;onPeriodSelectionChange?:(period:LaunchPeriod)=>void;
  rememberedFilters?:Partial<LaunchesFilterPreset>;
+ globalSearch?:{query:string;revision:number};
  onRememberFilters?:(value:LaunchesFilterPreset)=>void;
  onFilteredSummary?:(criteria:LaunchesFilterPreset,grid:DataGridFilterState,signal:AbortSignal)=>Promise<CanonicalFilteredHistorySummary|null>;
  /** Stage 10 opt-in QA only. Main, read models and finance writers are unchanged. */
  qaActions?:boolean;
+ /** Real-data mode permits viewing the approved editor, never mutations or batch editing. */
+ readOnlyRealData?:boolean;
  onQaEdit?:(row:QaLaunchTarget)=>void;
  onQaDuplicate?:(row:QaLaunchTarget)=>void;
  onQaNotice?:(message:string)=>void;
@@ -42,6 +47,7 @@ type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
  paymentMethod:string;status:string;type:string;signedAmount:number;
  notes:string;categoryId:string;accountId:string;
+ categoryOrigin:'canonical'|'historical'|'unclassified';
  typeLabel:string;statusLabel:string;competence:string;
  weekday:string;launchType:string;expenseClass:string;group:string;
  situation:string;modality:string;historicalNotes:string;
@@ -67,11 +73,18 @@ function sourceRows(source:HomeFinancialData):Row[]{
    notes?:string;legacyCategoryName?:string;paymentMethod?:{name?:string};
    paymentMethodName?:string;sourceDetails?:{paymentMethod?:string};
    competence?:string;sourceLabels?:HistoryLabels;
+   sourcePayload?:Record<string,unknown>|null;
   };
+  const canonical=categories.get(item.categoryId||'');
+  const originalCategory=original.legacyCategoryName?.trim()
+   ||(typeof original.sourcePayload?.category==='string'?original.sourcePayload.category.trim():'');
+  const hasLegacyLabel=Boolean(originalCategory&&originalCategory.toLocaleLowerCase('pt-BR')!=='sem categoria');
+  const category=canonical||originalCategory||'Sem categoria';
+  const categoryOrigin:Row['categoryOrigin']=canonical?'canonical':hasLegacyLabel?'historical':'unclassified';
   return {
    id:item.id,date:item.date.slice(0,10),description:item.description,
-    accountKind:accountKinds.get(item.accountId||'')==='benefit'?'benefit':accountKinds.get(item.accountId||'')==='checking'?'monetary':'unknown',
-   category:categories.get(item.categoryId||'')||(original.legacyCategoryName?.trim()||'Sem categoria'),
+    accountKind:(accountKinds.get(item.accountId||'')==='benefit'?'benefit':accountKinds.get(item.accountId||'')==='checking'?'monetary':'unknown') as Row['accountKind'],
+   category,categoryOrigin,
    account:accounts.get(item.accountId||'')||'Sem conta',
    paymentMethod:readable(original.paymentMethod?.name||original.paymentMethodName||original.sourceDetails?.paymentMethod),
    status:item.status,type:item.type,signedAmount:item.signedAmount,
@@ -176,17 +189,23 @@ function toQaTarget(row:Row):QaLaunchTarget{return {id:row.id,description:row.de
  type:row.type,status:row.status,categoryId:row.categoryId,category:row.category,
  accountId:row.accountId,account:row.account,accountKind:row.accountKind,
  paymentMethod:row.paymentMethod,signedAmount:row.signedAmount};}
-export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,rememberedFilters,onRememberFilters,onFilteredSummary,
- qaActions=false,onQaEdit,onQaDuplicate,onQaNotice,qaBatchCatalogs}:Props){
+export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2026-10',userId,exportUserName,onRefresh,onPeriodChange,periodSelection,onPeriodSelectionChange,rememberedFilters,globalSearch,onRememberFilters,onFilteredSummary,
+ qaActions=false,readOnlyRealData=false,onQaEdit,onQaDuplicate,onQaNotice,qaBatchCatalogs}:Props){
  const startOfMonth=periodMonth+'-01';
  const endOfMonth=new Date(Date.UTC(Number(periodMonth.slice(0,4)),Number(periodMonth.slice(5,7)),0)).toISOString().slice(0,10);
- const [search,setSearch]=useState(rememberedFilters?.search??'');
+ const period=periodSelection??periodForMonth(periodMonth);
+ const scopeBounds=periodBounds(period);
+ const scopeStart=scopeBounds?.start??'';
+ const scopeEnd=scopeBounds?.end??'';
+ const [yearDraft,setYearDraft]=useState(period.month.slice(0,4));
+ useEffect(()=>setYearDraft(period.month.slice(0,4)),[period.month]);
+ const [search,setSearch]=useState(rememberedFilters?.search??globalSearch?.query??'');
  const [kind,setKind]=useState(rememberedFilters?.kind??'all');
  const [category,setCategory]=useState(rememberedFilters?.category??'all');
  const [account,setAccount]=useState(rememberedFilters?.account??'all');
  const [paymentMethod,setPaymentMethod]=useState(rememberedFilters?.paymentMethod??'all');
- const [start,setStart]=useState(rememberedFilters?.start??startOfMonth);
- const [end,setEnd]=useState(rememberedFilters?.end??endOfMonth);
+ const [start,setStart]=useState(rememberedFilters?.start??scopeStart);
+ const [end,setEnd]=useState(rememberedFilters?.end??scopeEnd);
  useEffect(()=>{
   if(mode==='live')onRememberFilters?.({search,kind,category,account,paymentMethod,start,end});
  },[search,kind,category,account,paymentMethod,start,end,mode,onRememberFilters]);
@@ -197,12 +216,27 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   try{return readSavedFilters(window.localStorage.getItem(savedFiltersKey(userId)));}catch{return [];}
  });
  const [selectedFavorite,setSelectedFavorite]=useState('');
- const [topFiltersOpen,setTopFiltersOpen]=useState(false);
+ const [topFiltersOpen,setTopFiltersOpen]=useState(mode==='live'&&readOnlyRealData);
+ useEffect(()=>{
+  if(mode!=='live'||!globalSearch?.revision)return;
+  // A busca global desconsidera filtros locais preexistentes do outro periodo.
+  // O resumo financeiro continua sendo calculado exclusivamente na API.
+  setSearch(globalSearch.query);
+  setKind('all');setCategory('all');setAccount('all');setPaymentMethod('all');
+  setStart(scopeStart);setEnd(scopeEnd);setAdvanced({});
+  setTopFiltersOpen(true);
+ },[globalSearch?.revision]);
  const [savingFavorite,setSavingFavorite]=useState(false);
  const [favoriteName,setFavoriteName]=useState('');
  const [confirmDelete,setConfirmDelete]=useState(false);
  const [favoriteMessage,setFavoriteMessage]=useState('');
  const currentCriteria:LaunchesFilterPreset={search,kind,category,account,paymentMethod,start,end};
+ const canonicalCriteria:LaunchesFilterPreset={
+  ...currentCriteria,
+  start:scopeStart&&start?start>scopeStart?start:scopeStart:start||scopeStart,
+  end:scopeEnd&&end?end<scopeEnd?end:scopeEnd:end||scopeEnd,
+ };
+ const invalidIntersection=Boolean(canonicalCriteria.start&&canonicalCriteria.end&&canonicalCriteria.start>canonicalCriteria.end);
  const persistFavorites=(next:SavedLaunchesFilter[]):boolean=>{
   if(mode!=='live'||!userId)return false;
   try{
@@ -337,7 +371,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  return [
   ...(mode==='live'?[{key:'id',label:'Ações',type:'text',width:qaActions?78:82,minWidth:qaActions?72:72,sortable:false,filterable:false,
     render:(_value:unknown,row:Row)=>qaActions
-     ? <LaunchRowQaActions row={toQaTarget(row)} canEdit={row.type==='expense'&&row.accountKind==='monetary'&&Boolean(onQaEdit)}
+     ? <LaunchRowQaActions row={toQaTarget(row)} readOnlyRealData={readOnlyRealData} canEdit={row.type==='expense'&&row.accountKind==='monetary'&&Boolean(onQaEdit)}
         onView={()=>openDetails(row.id)} onEdit={()=>onQaEdit?.(toQaTarget(row))}
         onDuplicate={()=>onQaDuplicate?.(toQaTarget(row))} onNotice={message=>onQaNotice?.(message)}/>
      : <button className="meg-l09-row-menu meg-l09-row-view" type="button" title="Ver detalhes do lançamento" aria-label={'Ver detalhes de '+row.description} data-tooltip="Ver detalhes" onClick={()=>openDetails(row.id)}><LaunchIcon name="details3d" width={22} height={22}/></button>} as DataGridColumn<Row>]:[]),
@@ -346,12 +380,17 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
   {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
    render:(_value,row)=>mode==='live'
-    ? <LaunchCategoryBadge category={row.category}/>
+    ? <LaunchCategoryBadge category={row.category} origin={row.categoryOrigin}/>
     : <span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
        <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
        <span className="meg-l09-chip-label">{row.category}</span>
       </span>},
-  {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
+  {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true,
+   render:(_value,row)=><span className="meg-datagrid-enum-pill meg-l09-account-pill"
+    title={row.account} aria-label={row.account}>
+    <span className="meg-datagrid-enum-dot" aria-hidden="true"/>
+    <span className="meg-l09-account-text">{row.account}</span>
+   </span>},
   {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true,
    render:(_value,row)=>mode==='live'?<LaunchPaymentBadge method={row.paymentMethod}/>:row.paymentMethod},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
@@ -359,13 +398,13 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
   ...(mode==='preview'?[{key:'id',label:'Ações',type:'text',width:84,minWidth:72,sortable:false,filterable:false,
    render:(_value:unknown,row:Row)=><button className="meg-l09-row-menu" type="button" title="Ver lançamento" aria-label={'Detalhes de '+row.description} onClick={()=>openDetails(row.id)}>•••</button>} as DataGridColumn<Row>]:[]),
   ...(mode==='live'?extraColumns:[]),
- ];},[openDetails,mode,qaActions,onQaEdit,onQaDuplicate,onQaNotice]);
+ ];},[openDetails,mode,qaActions,readOnlyRealData,onQaEdit,onQaDuplicate,onQaNotice]);
  const onGridFilter=useCallback(({filters}:{filters:DataGridFilterState})=>setAdvanced(filters),[]);
  // Os filtros do formulário e os do DataGrid pertencem à mesma consulta:
  // "Limpar tudo" precisa zerar os dois, inclusive o favorito selecionado.
  const clearAllLaunchFilters=()=>{
   setSearch('');setKind('all');setCategory('all');setAccount('all');
-  setPaymentMethod('all');setStart(startOfMonth);setEnd(endOfMonth);
+  setPaymentMethod('all');setStart(scopeStart);setEnd(scopeEnd);
   setAdvanced({});
   setApplyGridPreset(current=>({revision:(current?.revision??0)+1,filters:{}}));
   setSelectedFavorite('');setConfirmDelete(false);setSavingFavorite(false);
@@ -374,21 +413,21 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
  const shownRows=useMemo(()=>applyFilters(rows,columns,advanced),[rows,columns,advanced]);
  const chosen=allRows.find(row=>row.id===selectedId)??shownRows[0]??null;
  const modalRow=mode==='live'?allRows.find(row=>row.id===modalId)??null:null;
- const filtered=Boolean(search||kind!=='all'||category!=='all'||account!=='all'||paymentMethod!=='all'||start!==startOfMonth||end!==endOfMonth||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
+ const filtered=Boolean(period.mode!=='month'||search||kind!=='all'||category!=='all'||account!=='all'||paymentMethod!=='all'||start!==scopeStart||end!==scopeEnd||Object.keys(advanced).some(key=>{const f=advanced[key];return Boolean(f?.selected?.length||f?.operator||f?.booleanValue!==undefined&&f?.booleanValue!==null)}));
  // O navegador só encaminha critérios; nenhuma regra monetária é calculada aqui.
  const [filteredSummary,setFilteredSummary]=useState<{key:string;value:CanonicalFilteredHistorySummary}|null>(null);
- const filterKey=JSON.stringify({criteria:currentCriteria,grid:advanced});
+ const filterKey=JSON.stringify({criteria:canonicalCriteria,grid:advanced});
  useEffect(()=>{
   setFilteredSummary(null);
-  if(mode!=='live'||!filtered||!onFilteredSummary)return;
+  if(mode!=='live'||!filtered||!onFilteredSummary||invalidIntersection)return;
   const controller=new AbortController();
   const timeout=setTimeout(()=>{
-   void onFilteredSummary(currentCriteria,advanced,controller.signal)
+   void onFilteredSummary(canonicalCriteria,advanced,controller.signal)
     .then(value=>{if(!controller.signal.aborted&&value?.kind==='complete')setFilteredSummary({key:filterKey,value});})
     .catch(()=>{if(!controller.signal.aborted)setFilteredSummary(null);});
   },350);
   return ()=>{clearTimeout(timeout);controller.abort()};
- },[filterKey,filtered,onFilteredSummary,mode]);
+ },[filterKey,filtered,onFilteredSummary,mode,invalidIntersection]);
  const summary=filtered
   ? (filteredSummary?.key===filterKey&&filteredSummary.value.kind==='complete'?filteredSummary.value:null)
   : data.summary?.month===periodMonth?data.summary:null;
@@ -423,7 +462,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    ? <div className="meg-l09-preview-warning meg-l09-verification" role="note">
       <details className="meg-l09-verification-details">
        <summary><span className="meg-l09-verification-icon" aria-hidden="true">✓</span>Histórico verificado <span className="meg-l09-verification-hint">Detalhes da consulta</span></summary>
-       <p>Histórico autenticado e verificado integralmente. Use o ícone de visualização na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API canônica, inclusive sob filtros personalizados quando o backend confirmar suporte. Se a agregação não for segura, ficam indisponíveis. Nenhum lançamento é alterado.</p>
+       <p>{readOnlyRealData?'O escopo foi consultado por rotas autenticadas. Todo o historico considera somente registros ativos, sem arquivados. Nenhuma lista parcial e apresentada como completa.':'Histórico autenticado e verificado integralmente.'} Use o ícone de visualização na primeira coluna para consultar os rótulos originais. Os indicadores vêm da API canônica, inclusive sob filtros personalizados quando o backend confirmar suporte. Se a agregação não for segura, ficam indisponíveis. Nenhum lançamento é alterado.</p>
       </details>
       {onRefresh&&<button type="button" className="meg-l09-refresh" onClick={onRefresh}>Atualizar consulta</button>}
      </div>
@@ -432,12 +471,60 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    <div className="meg-l09-left">
     <form className="meg-l09-filters" id="meg-l09-extra-filters" hidden={mode==='live'&&!topFiltersOpen}
      onSubmit={event=>event.preventDefault()} role="search" aria-label="Filtros complementares de lançamentos">
+      {mode==='live'&&readOnlyRealData&&onPeriodSelectionChange?<>
+       <label className="meg-l09-period-filter">
+        <span className="sr-only">Abrangência do período</span>
+        <select aria-label="Abrangência do período" value={period.mode} onChange={event=>{
+         const next=event.target.value as LaunchPeriod['mode'];
+         if(next==='month')onPeriodSelectionChange(periodForMonth(period.month));
+         else if(next==='year')onPeriodSelectionChange({...period,mode:'year'});
+         else if(next==='all')onPeriodSelectionChange({...period,mode:'all',start:'',end:''});
+         else onPeriodSelectionChange({...period,mode:'range',start:startOfMonth,end:endOfMonth});
+        }}>
+         <option value="month">Mensal</option><option value="year">Anual</option>
+         <option value="range">Intervalo personalizado</option><option value="all">Todo o histórico ativo</option>
+        </select>
+       </label>
+       {period.mode==='month'&&<label className="meg-l09-period-filter">
+        <span className="sr-only">Mês de referência</span>
+        <input type="month" aria-label="Mês de referência" value={period.month} min="2000-01" max="2100-12"
+         onChange={event=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value))onPeriodSelectionChange(periodForMonth(event.target.value));}}/>
+       </label>}
+       {period.mode==='year'&&<label className="meg-l09-period-filter">
+        <span className="sr-only">Ano de referência</span>
+        <input type="text" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} aria-label="Ano de referência"
+         value={yearDraft} onChange={event=>{
+          const year=event.target.value.replace(/[^0-9]/g,'').slice(0,4);
+          setYearDraft(year);
+          if(/^\d{4}$/.test(year)&&year!=='0000')
+           onPeriodSelectionChange({...period,month:year+period.month.slice(4)});
+         }}
+         onBlur={()=>{if(yearDraft.length!==4||yearDraft==='0000')setYearDraft(period.month.slice(0,4));}}/>
+       </label>}
+       {period.mode==='range'&&<fieldset className="meg-l09-date-range" aria-label="Período personalizado">
+        <legend className="sr-only">Período personalizado</legend>
+        <input type="date" aria-label="Período inicial" value={period.start} onChange={event=>{
+         const day=event.target.value;if(validDay(day))
+          onPeriodSelectionChange({...period,start:day,end:day>period.end?day:period.end});
+        }}/>
+        <span aria-hidden="true">a</span>
+        <input type="date" aria-label="Período final" value={period.end} onChange={event=>{
+         const day=event.target.value;if(validDay(day))
+          onPeriodSelectionChange({...period,start:day<period.start?day:period.start,end:day});
+        }}/>
+       </fieldset>}
+      </>:mode==='live'&&readOnlyRealData&&onPeriodChange?
+       <label className="meg-l09-period-filter">
+        <span className="sr-only">Mês de referência</span>
+        <input type="month" aria-label="Mês de referência" value={periodMonth} min="2000-01" max="2100-12"
+         onChange={event=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value))onPeriodChange(event.target.value);}}/>
+       </label>:null}
       <label className="meg-l09-search"><LaunchIcon name="search" width={20} height={20}/><span className="sr-only">Buscar lançamentos</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar lançamentos..."/></label>
       <label><span className="sr-only">Tipo</span><select value={kind} onChange={event=>setKind(event.target.value)}><option value="all">Todos os tipos</option>{['income','expense','transfer','investment','redemption','adjustment'].map(k=><option key={k} value={k}>{shortType[k]}</option>)}</select></label>
       <label><span className="sr-only">Categoria</span><select value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Todas as categorias</option>{data.categories.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}{legacyCategoryOptions.length>0&&<optgroup label="Categorias do histórico">{legacyCategoryOptions.map(name=><option key={'legacy:'+name} value={'legacy:'+name}>{name}</option>)}</optgroup>}</select></label>
       <label><span className="sr-only">Conta ou cartão</span><select value={account} onChange={event=>setAccount(event.target.value)}><option value="all">Todas as contas</option>{data.accounts.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
       {mode==='live'&&<label className="meg-l09-payment-select"><span className="sr-only">Forma de pagamento</span><select value={paymentMethod} onChange={event=>setPaymentMethod(event.target.value)}><option value="all">Todas as formas de pagamento</option>{paymentMethodOptions.map(name=><option key={name} value={name}>{name}</option>)}</select></label>}
-      <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
+      <fieldset className="meg-l09-date-range"><legend className="sr-only">Intervalo de datas</legend><LaunchIcon name="calendar" width={16} height={16}/><input lang="pt-BR" type="date" min={readOnlyRealData?scopeStart||undefined:undefined} max={readOnlyRealData?scopeEnd||undefined:undefined} value={start} onChange={event=>setStart(event.target.value)} aria-label="Data inicial"/><span aria-hidden="true">–</span><input lang="pt-BR" type="date" min={start||scopeStart||undefined} max={readOnlyRealData?scopeEnd||undefined:undefined} value={end} onChange={event=>setEnd(event.target.value)} aria-label="Data final"/></fieldset>
     </form>
     <aside className={'meg-l09-right '+(mode==='live'?'is-operational':'')} hidden={mode==='live'&&!distributionOpen} aria-label="Painéis complementares da grade">
      <section className={'meg-l09-panel meg-l09-distribution '+(distributionOpen?'is-open':'is-collapsed')} aria-label="Distribuição no período">
@@ -519,22 +606,22 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
       </form>}
       {favoriteMessage&&<p className="meg-l09-favorites-message" role="status">{favoriteMessage}</p>}
      </>}
-     <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable onSelectionChange={qaActions?onQaSelection:undefined}
-      toolbarAction={qaActions?<button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
+     <DataGrid<Row> data={rows} columns={columns} pageSize={25} selectable onSelectionChange={qaActions&&!readOnlyRealData?onQaSelection:undefined}
+      toolbarAction={qaActions&&!readOnlyRealData?<button data-testid="qa-batch-action" type="button" className="meg-l09-batch-action"
        disabled={qaSelectedRows.length===0} onClick={()=>setQaBatchOpen(true)}>
        <ActionGlyph kind="batch"/> Editar em lote ({qaSelectedRows.length})
       </button>:undefined}
       rowKey="id" persistenceKey={mode==='live'?'stage09-launches-live-v2-'+(userId||'user'):'stage09-launches-demo-only'} ariaLabel="Lançamentos do período"
       footerAggregates={false} filterButtonLabel={mode==='live'?'Filtros da grade':undefined} onFilterChange={onGridFilter} onClearAllFilters={mode==='live'?clearAllLaunchFilters:undefined}
       applySavedFilters={mode==='live'?applyGridPreset:undefined} exportUserName={mode==='live'?exportUserName:undefined}
-      exportPeriod={mode==='live'?'Histórico autorizado — '+periodMonth:'Demonstração visual'} />
+      exportPeriod={mode==='live'?'Historico autorizado: '+periodLabel(period):'Demonstração visual'} />
     </section>
-    <div className="meg-l09-grid-summary">{shownRows.length.toLocaleString('pt-BR')} de {allRows.length.toLocaleString('pt-BR')} registros {mode==='live'?'do histórico autorizado':'da amostra de demonstração'}. Ordem cronológica, sem agrupamento por categoria.</div>
+    <div className="meg-l09-grid-summary">{shownRows.length.toLocaleString('pt-BR')} de {allRows.length.toLocaleString('pt-BR')} registros {mode==='live'?'do periodo autorizado':'da amostra de demonstração'}. Ordem cronológica, sem agrupamento por categoria.</div>
    </div>
   </div>
   <button type="button" className="meg-l09-back" onClick={onHome}><LaunchIcon name="chevronLeft" width={18} height={18}/>Voltar à Home</button>
   {modalRow&&<LaunchDetailModal row={modalRow} onClose={closeModal}/>}
-   {qaActions&&qaBatchOpen&&<QaBatchEditor items={qaSelectedRows} catalogs={qaBatchCatalogs}
+   {qaActions&&!readOnlyRealData&&qaBatchOpen&&<QaBatchEditor items={qaSelectedRows} catalogs={qaBatchCatalogs}
     onClose={()=>setQaBatchOpen(false)} onSimulate={count=>{setQaBatchOpen(false);onQaNotice?.('QA: '+count+' lançamento(s) avaliados para edição em lote. Nenhuma alteração foi gravada.');}}/>}
  </section>;
 }

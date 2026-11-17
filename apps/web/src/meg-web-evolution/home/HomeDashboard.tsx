@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {authenticatedRequest} from '../../app/auth-client';
 // @ts-expect-error Adaptador JavaScript da fonte única já validada na Etapa 02
-import {composeMegApiSnapshot,fromCanonicalReadModels,fromFinancialEvents,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
+import {composeMegApiSnapshot,fromFinancialEvents,fromCards,fromFinanceCatalogs} from '../../evolution/data/api-adapter.js';
 import {DataGrid} from '../datagrid/DataGrid';
 import type {DataGridColumn} from '../datagrid/types';
 import {HomeChart,type CashflowDay} from './HomeChart';
@@ -23,6 +23,7 @@ export type HomeFinancialData={
  followingTransactions?:HomeFinancialData['transactions'];
  /** Fonte exclusiva em sessão autenticada. Em prévia visual mantém dados fictícios existentes. */
  canonicalCommitments?:CanonicalHomeCommitment[];
+ commitmentsUnavailable?:boolean;
  payables:Array<{id:string;description:string;dueDate:string;status:string;openAmount:number;categoryId?:string|null}>;
  accounts:Array<{id:string;name:string;type?:string}>;
  categories:Array<{id:string;name:string}>;
@@ -36,35 +37,75 @@ function dateNow(){const v=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sa
 const format=(n:number|null|undefined,hidden:boolean)=>hidden?'R$ •••••':n==null||!Number.isFinite(n)?'—':currency.format(n);
 const dateString=(s:string)=>/^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
 const emptyState:HomeFinancialData={summary:null,cashflow:null,benefit:null,available:null,transactions:[],payables:[],accounts:[],categories:[],cards:[]};
-async function readHome(month:string):Promise<HomeFinancialData>{
- const [summary,cashflow,benefit,events,cards,accounts,categories,available,canonicalCommitments]=await Promise.all([
-  authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,{cache:'no-store'}),
-  authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,{cache:'no-store'}),
-  authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/finance/events/month?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/cards?month='+month,{cache:'no-store'}),
-  authenticatedRequest<unknown>('/finance/accounts',{cache:'no-store'}),
-  authenticatedRequest<unknown>('/finance/categories',{cache:'no-store'}),
-  // Rota nova, canônica; até ser implantada na API retorna ausente, nunca estimado.
-  authenticatedRequest<HomeFinancialData['available']>('/finance/home-available?date='+dateNow(),{cache:'no-store'}).catch(()=>null),
-  // Falha de compromisso canônico é crítica: não mostrar um falso quadro vazio.
-  readCanonicalHomeCommitments(authenticatedRequest)
- ]);
- const adapted=composeMegApiSnapshot([
-  fromCanonicalReadModels({summary,cashflow,benefitSummary:benefit}),
-  fromFinancialEvents(events),
-  fromCards(cards),
-  fromFinanceCatalogs({accounts,categories})
- ]) as HomeFinancialData & {readModels?:unknown};
- return {
-  summary,cashflow,benefit,available,canonicalCommitments,
-  transactions:adapted.transactions||[],
-  followingTransactions:[],
-  payables:[],
-  accounts:adapted.accounts||[],
-  categories:adapted.categories||[],
-  cards:adapted.cards||[]
- };
+type HomeReadPart='summary'|'cashflow'|'benefit'|'transactions'|'cards'|'available'|'commitments';
+type HomeReadStatus='loading'|'ready'|'unavailable';
+type HomeReadStates=Record<HomeReadPart,HomeReadStatus>;
+const initialReadStates:HomeReadStates={
+ summary:'loading',cashflow:'loading',benefit:'loading',transactions:'loading',
+ cards:'loading',available:'loading',commitments:'loading'
+};
+const previewReadStates:HomeReadStates={
+ summary:'ready',cashflow:'ready',benefit:'ready',transactions:'ready',
+ cards:'ready',available:'ready',commitments:'ready'
+};
+const unavailablePatch:Record<HomeReadPart,Partial<HomeFinancialData>>={
+ summary:{summary:null},cashflow:{cashflow:null},benefit:{benefit:null},
+ transactions:{transactions:[],accounts:[],categories:[]},cards:{cards:[]},
+ available:{available:null},commitments:{canonicalCommitments:undefined,commitmentsUnavailable:true}
+};
+
+/** Cada painel recebe somente sua própria leitura canônica. A Home não espera os
+ * sete grupos concluírem para mostrar o primeiro resultado. Não usa valores
+ * estimados nem redistribui regras financeiras entre componentes. */
+async function readHomeProgressively(
+ month:string,signal:AbortSignal,
+ onPart:(part:HomeReadPart,patch:Partial<HomeFinancialData>,status:HomeReadStatus)=>void
+):Promise<void>{
+ const options:RequestInit={cache:'no-store',signal};
+ const readers:Array<[HomeReadPart,()=>Promise<Partial<HomeFinancialData>>]>=[
+  ['summary',async()=>({
+   summary:await authenticatedRequest<NonNullable<HomeFinancialData['summary']>>('/finance/summary?month='+month,options)
+  })],
+  ['cashflow',async()=>({
+   cashflow:await authenticatedRequest<NonNullable<HomeFinancialData['cashflow']>>('/finance/cashflow?month='+month,options)
+  })],
+  ['benefit',async()=>({
+   benefit:await authenticatedRequest<NonNullable<HomeFinancialData['benefit']>>('/finance/benefit-summary?month='+month,options)
+  })],
+  ['transactions',async()=>{
+   const [events,accounts,categories]=await Promise.all([
+    authenticatedRequest<unknown>('/finance/events/month?month='+month,options),
+    authenticatedRequest<unknown>('/finance/accounts',options),
+    authenticatedRequest<unknown>('/finance/categories',options)
+   ]);
+   const adapted=composeMegApiSnapshot([
+    fromFinancialEvents(events),fromFinanceCatalogs({accounts,categories})
+   ]) as HomeFinancialData;
+   return {transactions:adapted.transactions||[],accounts:adapted.accounts||[],categories:adapted.categories||[]};
+  }],
+  ['cards',async()=>{
+   const cards=await authenticatedRequest<unknown>('/cards?month='+month,options);
+   const adapted=composeMegApiSnapshot([fromCards(cards)]) as HomeFinancialData;
+   return {cards:adapted.cards||[]};
+  }],
+  ['available',async()=>({
+   available:await authenticatedRequest<HomeFinancialData['available']>(
+    '/finance/home-available?date='+dateNow(),options)
+  })],
+  ['commitments',async()=>({
+   canonicalCommitments:await readCanonicalHomeCommitments(
+    <T,>(path:string,init?:RequestInit)=>authenticatedRequest<T>(path,{...init,signal})),
+   commitmentsUnavailable:false
+  })]
+ ];
+ await Promise.allSettled(readers.map(async([part,read])=>{
+  try{
+   const patch=await read();
+   if(!signal.aborted)onPart(part,patch,'ready');
+  }catch{
+   if(!signal.aborted)onPart(part,unavailablePatch[part],'unavailable');
+  }
+ }));
 }
 // Conversão de exibição compartilhada pelo resumo e pela listagem paginada.
  // Nenhuma regra financeira é recalculada: os valores e estados são da API.
@@ -91,7 +132,7 @@ function PanelTitle({icon,title,meta}:{icon:HomeIconName;title:string;meta?:stri
 function Money({value,hidden,className=''}:{value:number|null|undefined;hidden:boolean;className?:string}){
  return <span className={className}>{format(value,hidden)}</span>;
 }
-function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialData;month:string;preview:boolean;onNavigate?:Props['onNavigate'];userId?:string}){
+function HomeContent({data,month,preview,onNavigate,userId,readStates}:{data:HomeFinancialData;month:string;preview:boolean;onNavigate?:Props['onNavigate'];userId?:string;readStates:HomeReadStates}){
  const [hidden,setHidden]=useState(false);
  const [notice,setNotice]=useState<string|null>(null);
  const [movementMode,setMovementMode]=useState<'all'|'income'|'expense'>('all');
@@ -253,13 +294,14 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  return <div className="pano-root">
   {preview&&<div className="pano-preview-banner" role="note">PRÉVIA VISUAL · Dados fictícios de demonstração · Sem acesso ao banco de produção</div>}
   {notice&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>{notice}</span><button type="button" onClick={()=>setNotice(null)} aria-label="Fechar aviso" title="Fechar aviso"><HomeGlyph name="x" size={18}/></button></div>}
+  {!preview&&data.commitmentsUnavailable&&readStates.commitments==='unavailable'&&<div className="pano-notice" role="status"><HomeGlyph name="alert" size={18}/><span>Compromissos não disponíveis na API canônica. As demais seções são consultadas separadamente; nenhuma pendência foi estimada.</span></div>}
   <div className="pano-spotlight" aria-label="Visão financeira e cartões">
    <div className="pano-financial-column">
   <section className="pano-hero" aria-label="Saldo disponível monetário">
    <div className="pano-balance" aria-label="Saldo disponível monetário">
     <div className="pano-balance-top"><h1>Saldo disponível <span className="pano-balance-scope">CONTAS MONETÁRIAS</span></h1><button type="button" onClick={()=>setHidden(v=>!v)} aria-label={hidden?'Exibir valores':'Ocultar valores'} aria-pressed={hidden}><HomeGlyph name={hidden?'eyeOff':'eye'} size={19}/></button></div>
     <strong><Money hidden={hidden} value={data.available?.available}/></strong>
-    <div className="pano-balance-bottom"><span>{data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
+    <div className="pano-balance-bottom"><span>{readStates.available==='loading'?'Consultando saldo disponível...':data.available?'Posição de '+dateString(data.available.date):'Consulta de saldo indisponível'}</span><button type="button" onClick={()=>focusMovements('all')}>Ver movimentações <HomeGlyph name="arrow" size={17}/></button></div>
    </div>
   </section>
   <section className="pano-overview" aria-label="Indicadores financeiros">
@@ -278,7 +320,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
    <section ref={cardsSection} className="pano-panel pano-cards">
     <div className="pano-carousel-head"><PanelTitle icon="card" title="Meus cartões"/><button type="button" className="pano-view-all pano-icon-action" onClick={()=>move('cartoes')}
  aria-label="Ver todos os cartões" title="Ver todos os cartões" data-tooltip="Ver todos os cartões"><HomeGlyph name="list" size={20}/></button></div>
-    {selectedCard?<>
+    {readStates.cards==='loading'?<div className="pano-card-empty" role="status">Consultando seus cartões...</div>:readStates.cards==='unavailable'?<div className="pano-card-empty" role="alert">Consulta dos cartões indisponível.</div>:selectedCard?<>
       <div className="pano-card-stage" aria-label={'Cartão '+(activeCardIndex+1)+' de '+cardCount} tabIndex={cardCount>1?0:undefined}
        onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();stepCard(event.key==='ArrowLeft'?-1:1)}}}
        onTouchStart={event=>{touchStartX.current=event.touches[0]?.clientX??null}}
@@ -337,7 +379,7 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  aria-label="Abrir relatórios financeiros" title="Abrir relatórios financeiros" data-tooltip="Relatórios"><HomeGlyph name="chart" size={20}/></button>
     </div>
     <div className="pano-flow-balance"><span>Resultado projetado</span><strong><Money value={data.summary?.projectedResult} hidden={hidden}/></strong></div>
-    <HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>
+    {readStates.cashflow==='loading'?<p role="status">Consultando fluxo financeiro...</p>:readStates.cashflow==='unavailable'?<p role="alert">Fluxo financeiro indisponível.</p>:<HomeChart days={data.cashflow?.days||[]} hidden={hidden}/>}
     <p className="pano-flow-footnote">Entradas <i className="pano-chart-key is-income"/> · Saídas <i className="pano-chart-key is-expense"/> · Linha azul: resultado diário</p>
    </section>
     <section ref={movementSection} className={'pano-panel pano-grid pano-grid--movements '+(showMovementFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="activity" title={movementMode==='income'?'Últimas receitas':movementMode==='expense'?'Últimas despesas':'Últimas movimentações'}/>
@@ -348,7 +390,11 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
  title={(showMovementFilters?'Ocultar':'Mostrar')+' filtros das movimentações'} data-tooltip={showMovementFilters?'Ocultar filtros':'Mostrar filtros'}>
  <HomeGlyph name="filter" size={20}/>{movementFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{movementFiltersCount}</span>}
  </button></div></div>
-     <DataGrid data={movements} columns={movementColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/></section>
+     {readStates.transactions==='loading'
+      ? <p role="status">Consultando movimentações...</p>
+      :readStates.transactions==='unavailable'
+       ? <p role="alert">Movimentações indisponíveis.</p>
+       :<DataGrid data={movements} columns={movementColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-06-movements" ariaLabel="Últimas movimentações" onFilterChange={state=>setMovementFiltersCount(state.activeKeys.length)}/>}</section>
    </div>
    <div className="pano-finance-column is-secondary">
     <section ref={benefitSection} className="pano-panel pano-benefits">
@@ -357,20 +403,24 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
      <div className="pano-benefit-card-copy"><span className="pano-eyebrow">BENEFÍCIO</span><h3>Alimentação</h3><span>Saldo do benefício</span><strong><Money hidden={hidden} value={data.benefit?.balance}/></strong><span className="pano-benefit-callout">Ver benefício <HomeGlyph name="arrow" size={15}/></span></div>
      <div className="pano-benefit-visual" aria-hidden="true"/>
     </button>
-    <div className="pano-benefit-details"><span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
+    <div className="pano-benefit-details">{readStates.benefit==='loading'&&<span role="status">Consultando benefício...</span>}{readStates.benefit==='unavailable'&&<span role="alert">Benefício indisponível.</span>}<span>Créditos no mês <strong><Money value={data.benefit?.credits} hidden={hidden}/></strong></span><span>Utilizado no mês <strong><Money value={data.benefit?.used} hidden={hidden}/></strong></span></div>
    </section>
     <section ref={dueSection} className={'pano-panel pano-grid pano-grid--commitments '+(showDueFilters?'is-filters-open':'')}><div className="pano-grid-heading"><PanelTitle icon="calendarClock" title="Próximos compromissos"/>
-     <div className="pano-grid-actions"><button type="button" className="pano-icon-action" onClick={()=>setShowAllCommitments(true)}
+     <div className="pano-grid-actions"><button type="button" className="pano-icon-action" disabled={Boolean(data.commitmentsUnavailable)} onClick={()=>setShowAllCommitments(true)}
  aria-label="Ver todos os compromissos" title="Ver todos os compromissos" data-tooltip="Ver todos"><HomeGlyph name="list" size={20}/></button>
  <button type="button" className="pano-icon-action" onClick={()=>setShowDueFilters(v=>!v)} aria-expanded={showDueFilters}
  aria-label={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'+(dueFiltersCount>0?' ('+dueFiltersCount+')':'')}
  title={(showDueFilters?'Ocultar':'Mostrar')+' filtros dos compromissos'} data-tooltip={showDueFilters?'Ocultar filtros':'Mostrar filtros'}>
  <HomeGlyph name="filter" size={20}/>{dueFiltersCount>0&&<span className="pano-icon-action__count" aria-hidden="true">{dueFiltersCount}</span>}
  </button></div></div>
-     <DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/></section>
+     {readStates.commitments==='loading'
+      ? <div className="pano-card-empty" role="status">Consultando próximos compromissos...</div>
+      :data.commitmentsUnavailable
+       ? <div className="pano-card-empty" role="note">Não foi possível consultar os compromissos na API canônica. Nenhuma lista vazia ou valor zero foi presumido.</div>
+       :<DataGrid data={commitments} columns={compactDueColumns} pageSize={5} pageSizeOptions={[5,10]} rowKey="id" persistenceKey="meg-panorama-08-due-compact-v1" ariaLabel="Próximos compromissos" onFilterChange={state=>setDueFiltersCount(state.activeKeys.length)}/>}</section>
    </div>
   </div>
-  {showAllCommitments&&<HomeCommitmentsFullList
+  {showAllCommitments&&readStates.commitments==='ready'&&!data.commitmentsUnavailable&&<HomeCommitmentsFullList
     columns={dueColumns} mapRows={commitmentGridRows}
     preview={preview} previewRows={commitments}
     onDismiss={()=>setShowAllCommitments(false)}/>}
@@ -378,18 +428,43 @@ function HomeContent({data,month,preview,onNavigate,userId}:{data:HomeFinancialD
 }
 export function HomeDashboard({previewData,onNavigate,month:providedMonth,userId}:Props){
  const current=providedMonth&&/^\d{4}-(0[1-9]|1[0-2])$/.test(providedMonth)?providedMonth:dateNow().slice(0,7);
- const [data,setData]=useState<HomeFinancialData|null>(previewData||null);
- const [error,setError]=useState<string|null>(null);
- const [loading,setLoading]=useState(!previewData);
+ const [data,setData]=useState<HomeFinancialData>(previewData||emptyState);
+ const [readStates,setReadStates]=useState<HomeReadStates>(previewData?previewReadStates:initialReadStates);
+ const [refreshing,setRefreshing]=useState(false);
  const serial=useRef(0);
- const reload=useCallback(async()=>{
+ const inFlight=useRef<AbortController|null>(null);
+ const reload=useCallback(()=>{
   if(previewData)return;
-  const id=++serial.current;setLoading(true);setError(null);
-  try{const result=await readHome(current);if(serial.current===id)setData(result)}
-  catch{if(serial.current===id){setData(null);setError('Não foi possível consultar as informações financeiras e compromissos abertos. Nenhum resultado foi estimado.')}}
-  finally{if(serial.current===id)setLoading(false)}
+  inFlight.current?.abort();
+  const controller=new AbortController();
+  inFlight.current=controller;
+  const id=++serial.current;
+  setRefreshing(true);
+  // Cada leitura atualiza somente sua seção; erros não apagam seções válidas.
+  void readHomeProgressively(current,controller.signal,(part,patch,status)=>{
+   if(controller.signal.aborted||serial.current!==id)return;
+   setData(previous=>({...previous,...patch}));
+   setReadStates(previous=>({...previous,[part]:status}));
+  }).finally(()=>{
+   if(!controller.signal.aborted&&serial.current===id)setRefreshing(false);
+  });
  },[current,previewData]);
- useEffect(()=>{if(previewData){setData(previewData);return}void reload();const onRefresh=()=>void reload();window.addEventListener('meg:data-invalidated',onRefresh);window.addEventListener('focus',onRefresh);return()=>{serial.current++;window.removeEventListener('meg:data-invalidated',onRefresh);window.removeEventListener('focus',onRefresh)}},[previewData,reload]);
- return <>{error&&<div className="pano-error" role="alert">{error}<button type="button" onClick={()=>void reload()}><HomeGlyph name="reload" size={16}/> Tentar novamente</button></div>}
- {!error&&(loading&&!data?<div className="pano-loading" role="status">Consultando seus dados financeiros...</div>:<HomeContent data={data||emptyState} month={current} preview={Boolean(previewData)} onNavigate={onNavigate} userId={userId}/>)}</>;
+ useEffect(()=>{
+  if(previewData){setData(previewData);setReadStates(previewReadStates);return;}
+  reload();
+  const onRefresh=()=>reload();
+  window.addEventListener('meg:data-invalidated',onRefresh);
+  window.addEventListener('focus',onRefresh);
+  return()=>{
+   serial.current++;
+   inFlight.current?.abort();
+   window.removeEventListener('meg:data-invalidated',onRefresh);
+   window.removeEventListener('focus',onRefresh);
+  };
+ },[previewData,reload]);
+ return <>
+  {!previewData&&refreshing&&<div className="sr-only" role="status">Atualizando dados financeiros...</div>}
+  <HomeContent data={data} month={current} preview={Boolean(previewData)}
+   onNavigate={onNavigate} userId={userId} readStates={readStates}/>
+ </>;
 }

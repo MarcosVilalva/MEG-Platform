@@ -1,6 +1,6 @@
 import {useEffect,useId,useMemo,useRef,useState,type ClipboardEvent,type KeyboardEvent,type RefObject,type CSSProperties} from 'react';
 import {Icon} from '../components/Icon';
-import {suggestionsFromCanonicalHistory,type HistorySnapshot} from './autocomplete-history';
+import {suggestionsFromCanonicalHistory,type HistorySnapshot,type AutocompleteSuggestion} from './autocomplete-history';
 import {normalizeFinancialTextInput} from './text-entry-policy';
 import {EMPTY_BRL_INPUT,brlBackspace,brlDigit,brlFormatted,brlFromPasted,brlSignedDecimal,brlToggleSign,type BRLInput} from './brl-money-mask';
 import './ExpenseForm.css';
@@ -26,9 +26,12 @@ export type InstallmentSchedule={
 };
 export type ExpenseFormProps={
  catalogs:ExpenseCatalogs;historySnapshot?:HistorySnapshot;
+ searchHistorySuggestions?:(query:string,signal:AbortSignal)=>Promise<AutocompleteSuggestion[]>;
  schedule?:InstallmentSchedule;
  onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;saveEnabled?:boolean;
  mode?:'create'|'edit';initialDraft?:ExpenseDraft;
+ /** Rótulos neutros para o caminho real de consulta, mantendo QA original por padrão. */
+ readOnlyRealData?:boolean;
 };
 export const EMPTY_EXPENSE_DRAFT:ExpenseDraft={
  description:'',categoryId:'',accountId:'',paymentMethodId:'',
@@ -101,7 +104,7 @@ function EditCloseGlyph(){
   <path d="M5 5 19 19M19 5 5 19"/>
  </svg>;
 }
-export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft}:ExpenseFormProps){
+export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft,readOnlyRealData=false}:ExpenseFormProps){
  const isEdit=mode==='edit';
  const [draft,setDraft]=useState<ExpenseDraft>(()=>initialDraft??EMPTY_EXPENSE_DRAFT);
  const [money,setMoney]=useState<BRLInput>(()=>initialDraft?.amountInput?brlFromPasted(initialDraft.amountInput):EMPTY_BRL_INPUT);
@@ -123,7 +126,27 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
  const visibleMethods=useMemo(()=>methods.filter(x=>x.kind==='ordinary'),[methods]);
  const cards=useMemo(()=>catalogs.creditCards?.filter(x=>x.active)??[],[catalogs.creditCards]);
  const frequent=useMemo(()=>categories.slice().sort((a,b)=>(a.frequencyRank??999)-(b.frequencyRank??999)||a.name.localeCompare(b.name,'pt-BR')).slice(0,5),[categories]);
- const suggestions=useMemo(()=>historySnapshot?suggestionsFromCanonicalHistory(historySnapshot,draft.description,5):[],[historySnapshot,draft.description]);
+ const [remoteResult,setRemoteResult]=useState<{query:string;items:AutocompleteSuggestion[]}>({query:'',items:[]});
+ const [remoteError,setRemoteError]=useState<{query:string;message:string}|null>(null);
+ const localSuggestions=useMemo(()=>historySnapshot?suggestionsFromCanonicalHistory(historySnapshot,draft.description,5):[],[historySnapshot,draft.description]);
+ useEffect(()=>{
+  if(!searchHistorySuggestions||!suggestionsOpen)return;
+  const query=draft.description.trim();
+  setRemoteError(null);
+  if(query.length<2){setRemoteResult({query,items:[]});return;}
+  const controller=new AbortController();
+  const timeout=window.setTimeout(()=>{
+   void searchHistorySuggestions(query,controller.signal).then(items=>{
+    if(!controller.signal.aborted)setRemoteResult({query,items});
+   }).catch(()=>{
+    if(!controller.signal.aborted)setRemoteError({query,message:'Falha na pesquisa do histórico. Nenhuma sugestão incompleta foi apresentada.'});
+   });
+  },260);
+  return ()=>{window.clearTimeout(timeout);controller.abort()};
+ },[draft.description,searchHistorySuggestions,suggestionsOpen]);
+ const suggestions=searchHistorySuggestions
+  ? remoteResult.query===draft.description.trim()?remoteResult.items:[]
+  : localSuggestions;
  const selectedAccount=accounts.find(x=>x.id===draft.accountId);
  const method=visibleMethods.find(x=>x.id===draft.paymentMethodId);
  const isCredit=draft.modality==='credit';
@@ -204,7 +227,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
     {!isEdit&&<button type="button" className="meg-t10-expense-head-icon" aria-label="Voltar à escolha do tipo" onClick={onBack}><Icon name="chevronLeft"/></button>}
     <span className="meg-t10-expense-title"><h2 id={formId+'title'}>{isEdit?'Editar lançamento':'Novo lançamento'}</h2><small><span className="meg-t10-expense-type"><Icon name="chevronDown"/> DESPESA</span> {isEdit?'Revise os dados do lançamento.':'Registre sua movimentação com segurança.'}</small></span>
     <span className="meg-t10-expense-head-actions">
-     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={isEdit?'Simulação QA: não grava dados financeiros':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
+     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={readOnlyRealData?'Somente leitura: salvamento indisponível':isEdit?'Simulação QA: não grava dados financeiros':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
      <button type="button" className="meg-t10-expense-head-icon" aria-label={isEdit?'Fechar edição':'Fechar formulário'} title={isEdit?'Descartar alterações e fechar':undefined} onClick={onBack}>{isEdit?<EditCloseGlyph/>:'×'}</button>
     </span>
    </header>
@@ -215,6 +238,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
     <section className={'meg-t10-expense-panel meg-t10-expense-primary'+(mobileStep==='data'?' is-step':'')} aria-label="Dados da despesa">
      <label htmlFor={formId+'description'}><Icon name="list"/> Descrição *</label>
      <input id={formId+'description'} aria-label={isEdit?'Descrição da edição':undefined} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(true);}} placeholder="DESCREVA A DESPESA" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'}/>
+     {suggestionsOpen&&remoteError?.query===draft.description.trim()&&<p role="alert">{remoteError.message}</p>}
      {suggestionsOpen&&suggestions.length>0&&<div className="meg-t10-expense-suggestions" id={formId+'suggestions'} role="listbox" aria-label="Descrições do histórico">
       <strong className="meg-t10-expense-suggestions-title"><Icon name="list"/> Histórico relacionado</strong>
       {suggestions.slice(0,3).map(s=><button type="button" key={s.sourceEventId} role="option" aria-selected={false} onClick={()=>selectSuggestion(s)}>{s.description}<small>{s.categoryName??'Categoria indisponível'} · Sem copiar valor ou data</small></button>)}
@@ -284,7 +308,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
      </div>}
      {!isCredit&&<div className="meg-t10-expense-payment-context" aria-live="polite">
       <strong><Icon name="list"/> Conta e baixa</strong>
-      <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+'. Saldo não consultado nesta prévia.':'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
+      <p>{draft.requestedStatus==='planned'?'A conta será informada na baixa da pendência.':selectedAccount?'Conta selecionada: '+selectedAccount.name+(readOnlyRealData?'. Saldo não consultado neste formulário.':'. Saldo não consultado nesta prévia.'):'Selecione uma conta monetária ativa para a saída do recurso.'}</p>
      </div>}
 
      {isRefund&&<p className="meg-t10-expense-refund-warning">Estorno sinalizado. A gravação deverá seguir o contrato financeiro específico, inclusive o do cartão.</p>}
@@ -305,7 +329,7 @@ export function ExpenseForm({catalogs,historySnapshot,schedule,onBack,onRequestS
       {isCredit&&<div><dt>Cartão / parcelas</dt><dd>{nameOf(cards,draft.creditCardId)} · {draft.installmentsInput||'1'}x</dd></div>}
       {isCredit&&selectedCard&&<div><dt>Fecha / vence</dt><dd>{selectedCard.closingDay||'?' } / {selectedCard.dueDay||'?'}</dd></div>}
      </dl>
-     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> Prévia fictícia, sem operações financeiras.</div>
+     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> {readOnlyRealData?'Dados reais consultados. Gravações financeiras indisponíveis.':'Prévia fictícia, sem operações financeiras.'}</div>
     </aside>
    </div>
    {categoryPicker&&<div className="meg-t10-expense-suboverlay"><section className="meg-t10-expense-subdialog" role="dialog" aria-modal="true" aria-label="Todas as categorias">

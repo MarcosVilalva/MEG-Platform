@@ -23,9 +23,9 @@ function ActionGlyph({kind}:{kind:'edit'|'view'|'duplicate'|'history'|'settle'|'
 }
 export {ActionGlyph};
 
-export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNotice}:{
+export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNotice,readOnlyRealData=false}:{
  row:QaLaunchTarget;canEdit:boolean;onView:()=>void;onEdit:()=>void;
- onDuplicate:()=>void;onNotice:(message:string)=>void;
+ onDuplicate:()=>void;onNotice:(message:string)=>void;readOnlyRealData?:boolean;
 }){
  const trigger=useRef<HTMLButtonElement|null>(null);
  const menuNode=useRef<HTMLDivElement|null>(null);
@@ -40,7 +40,7 @@ export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNoti
   const keys=(event:KeyboardEvent)=>{
    if(event.key==='Escape'){event.preventDefault();close();trigger.current?.focus();return;}
    if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
-   const items=Array.from(menuNode.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]')??[]);
+   const items=Array.from(menuNode.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]:not(:disabled)')??[]);
    if(!items.length)return;
    event.preventDefault();
    const current=items.findIndex(item=>item===document.activeElement);
@@ -92,11 +92,13 @@ export function LaunchRowQaActions({row,canEdit,onView,onEdit,onDuplicate,onNoti
   {position&&createPortal(<div ref={menuNode} className="meg-t10-qa-menu" role="menu"
    aria-label={'Ações de '+row.description} style={{top:position.top,left:position.left}}>
    <p>{row.description}</p>
-   {options.map(([action,glyph,label])=><button key={action} type="button" role="menuitem" onClick={()=>perform(action)}>
+   {options.map(([action,glyph,label])=><button key={action} type="button" role="menuitem"
+    disabled={readOnlyRealData && (action!=='view' && action!=='edit' || (action==='edit' && !canEdit))}
+    onClick={()=>perform(action)}>
     <ActionGlyph kind={glyph}/><span>{label}</span>
     {(action==='settle'||action==='archive'||action==='history'||(!canEdit&&(action==='edit'||action==='duplicate')))&&<small>Protegido</small>}
    </button>)}
-   <small className="meg-t10-qa-menu-foot">Simulação QA, nenhuma gravação financeira.</small>
+   <small className="meg-t10-qa-menu-foot">{readOnlyRealData?'Dados reais em leitura: operações financeiras bloqueadas.':'Simulação QA, nenhuma gravação financeira.'}</small>
   </div>,document.body)}
  </span>;
 }

@@ -1,0 +1,85 @@
+name: MEG Stage10 | Prism real-read opt-in (sem banco)
+on:
+  push:
+    branches:
+      - 'stage10/prism-real-read-optin-20261116'
+permissions:
+  contents: read
+jobs:
+  prism-real-read:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validar contratos de isolamento e flag
+        run: node scripts/meg-stage10-prism-real-read-optin.contract.test.mjs
+      - name: Instalar dependencias imutaveis, sem banco
+        run: npm ci --audit=false --fund=false
+      - name: Build Vite da Web operacional com flag desligada
+        env:
+          VITE_PRISM_LAYOUT: 'false'
+          VITE_PUBLIC_BASE_PATH: '/'
+        run: cd apps/web && npx vite build
+      - name: Conferir ausencia de segredos no bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RIE '(SUPABASE_SERVICE_ROLE_KEY|DATABASE_URL_READER|JWT_SECRET|postgresql://|service_role)' apps/web/dist --include='*.js'; then
+            echo 'Bloqueio: material sensivel identificado no bundle'
+            exit 1
+          fi
+          echo 'MEG_STAGE10_BUNDLE_SECRET_GUARD PASS'
+      - name: Build Vite da Web operacional com flag opt-in ligada, sem API real
+        env:
+          VITE_PRISM_LAYOUT: 'true'
+          VITE_PUBLIC_BASE_PATH: '/'
+        run: cd apps/web && npx vite build
+      - name: Garantir segredo ausente tambem no build opt-in
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RIE '(SUPABASE_SERVICE_ROLE_KEY|DATABASE_URL_READER|JWT_SECRET|postgresql://|service_role)' apps/web/dist --include='*.js'; then
+            echo 'Bloqueio: material sensivel identificado no bundle opt-in'
+            exit 1
+          fi
+          echo 'MEG_STAGE10_PRISM_REAL_OPTIN_BUILD PASS'
+      - name: Exercitar gateway de preview privado sem banco real
+        run: node scripts/meg-stage10-prism-read-preview-server.test.mjs
+      - name: Instalar Playwright isoladamente no runner descartavel
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLAYWRIGHT_DIR="${RUNNER_TEMP}/meg-stage10-real-read-browser"
+          mkdir -p "$PLAYWRIGHT_DIR" node_modules/@playwright
+          npm install --prefix "$PLAYWRIGHT_DIR" --no-save --package-lock=false --audit=false @playwright/test@1.64.0
+          ln -s "$PLAYWRIGHT_DIR/node_modules/@playwright/test" node_modules/@playwright/test
+          node -e "import('@playwright/test').then(() => console.log('Playwright isolado: OK'))"
+      - name: Validar Prism real-read em oito viewports com API sintetica
+        shell: bash
+        env:
+          PLAYWRIGHT_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4175 --bind 127.0.0.1 --directory apps/web/dist > /tmp/meg-stage10-read-browser.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:4175/web-evolution.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/meg-stage10-prism-real-read-optin.browser.mjs
+          node scripts/meg-stage10-prism-tenant-isolation.browser.mjs
+      - name: Reter capturas do navegador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage10-prism-real-read-synthetic
+          path: artifacts/meg-stage10-prism-real-read-optin/
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Gate estrito TypeScript da Web (nao corrigir Home legada)
+        run: cd apps/web && npx tsc -b

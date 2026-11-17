@@ -10,7 +10,32 @@ import { RecoverPasswordScreen } from './auth/RecoverPasswordScreen';
 import { LoadingScreen } from './auth/LoadingScreen';
 import { HomeDashboard } from './home/HomeDashboard';
 import { OperationalLaunches } from './launches/OperationalLaunches';
+import {periodBounds,periodForMonth,periodLabel as launchPeriodLabel,type LaunchPeriod} from './launches/period-scope';
 
+// Opt-in: the approved Prism is loaded only for authenticated operational sessions.
+const PrismOperationalLaunches = React.lazy(() => import('./integrated-qa/PrismOperationalLaunches'));
+const prismLayoutEnabled = import.meta.env.VITE_PRISM_LAYOUT === 'true';
+
+function currentBrazilMonth(){
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+ const value=(type:string)=>parts.find(part=>part.type===type)?.value||'';
+ return value('year')+'-'+value('month');
+}
+
+const periodPreferenceKey=(userId:string)=>'meg:web-evolution:stage10:period:v1:'+encodeURIComponent(userId);
+function previousUserPeriod(userId:string):LaunchPeriod{
+ const fallback=periodForMonth(currentBrazilMonth());
+ try{
+  const raw=window.localStorage.getItem(periodPreferenceKey(userId));
+  if(!raw||raw.length>300)return fallback;
+  const saved=JSON.parse(raw) as Partial<LaunchPeriod>;
+  if(!saved||!['month','year','range','all'].includes(saved.mode??'')||
+   typeof saved.month!=='string'||typeof saved.start!=='string'||typeof saved.end!=='string')return fallback;
+  const period=saved as LaunchPeriod;
+  periodBounds(period);
+  return period;
+ }catch{return fallback;}
+}
 type AuthDestination = 'login' | 'create-account' | 'recover-password' | 'loading';
 
 function currentAuthDestination(): AuthDestination {
@@ -21,10 +46,24 @@ function currentAuthDestination(): AuthDestination {
 function AuthGateway() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loggingOut,setLoggingOut] = useState(false);
+  const [openPrismNew,setOpenPrismNew] = useState(false);
+  const [globalSearch,setGlobalSearch] = useState({query:'',revision:0});
+  const resetGlobalSearch=()=>setGlobalSearch(previous=>({query:'',revision:previous.revision+1}));
+  const submitGlobalSearch=(query:string)=>{
+    const normalized=query.trim();
+    if(!prismLayoutEnabled||!normalized)return;
+    setOpenPrismNew(false);
+    setGlobalSearch(previous=>({query:normalized,revision:previous.revision+1}));
+    // Busca do topo consulta somente historico ativo e agregado canonico.
+    setActivePeriod(previous=>({...previous,mode:'all'}));
+    setSection('launches');
+  };
+  const [activePeriod,setActivePeriod] = useState(()=>periodForMonth(currentBrazilMonth()));
+  const [periodPreferenceOwner,setPeriodPreferenceOwner] = useState<string|null>(null);
   const [logoutWarning,setLogoutWarning] = useState('');
-  const [section,setSection] = useState<'home'|'launches'>(
-    () => new URLSearchParams(window.location.search).get('tela') === 'lancamentos' ? 'launches' : 'home'
-  );
+  // Entrada operacional sempre na Home, inclusive após recarregar links antigos
+  // com ?tela=lancamentos. A navegação explícita continua disponível pelo menu.
+  const [section,setSection] = useState<'home'|'launches'>('home');
   const [destination, setDestination] = useState<AuthDestination>(currentAuthDestination);
   const [checkingSession, setCheckingSession] = useState(
     () => currentAuthDestination() !== 'loading' && Boolean(readSession())
@@ -47,6 +86,7 @@ function AuthGateway() {
       await validateSession(current);
       reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
       setSession(current);
+      setSection('home');
       setLogoutWarning('');
     } catch {
       // Uma validação malsucedida não libera o shell.
@@ -67,6 +107,8 @@ function AuthGateway() {
       clearSession();
       setSession(null);
       setSection('home');
+      setActivePeriod(periodForMonth(currentBrazilMonth()));
+      setGlobalSearch({query:'',revision:0});
       setCheckingSession(false);
       navigate('login');
       setLogoutWarning(remoteRevocationFailed
@@ -84,6 +126,17 @@ function AuthGateway() {
     setDestination(next);
   };
 
+  React.useEffect(()=>{
+    if(!session?.user.id||!prismLayoutEnabled){setPeriodPreferenceOwner(null);return;}
+    setActivePeriod(previousUserPeriod(session.user.id));
+    setPeriodPreferenceOwner(session.user.id);
+  },[session?.user.id]);
+  React.useEffect(()=>{
+    if(!prismLayoutEnabled||!session?.user.id||periodPreferenceOwner!==session.user.id)return;
+    try{window.localStorage.setItem(periodPreferenceKey(session.user.id),JSON.stringify(activePeriod));}
+    catch{ /* Navegador pode bloquear preferências; a sessão continua funcional. */ }
+  },[activePeriod,periodPreferenceOwner,session?.user.id]);
+
   React.useEffect(() => {
     // A prévia visual permanece isolada, mesmo com sessão armazenada.
     if (currentAuthDestination() === 'loading') return;
@@ -99,6 +152,7 @@ function AuthGateway() {
         if (!cancelled) {
           reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
           setSession(existing);
+          setSection('home');
           setLogoutWarning('');
         }
       } catch (cause) {
@@ -121,6 +175,7 @@ function AuthGateway() {
             if (!cancelled) {
               reportProgress(100, 'Acesso validado. Abrindo seu espaço...');
               setSession(refreshed);
+              setSection('home');
               setLogoutWarning('');
             }
           } catch {
@@ -156,25 +211,38 @@ function AuthGateway() {
     // Exibição do período civil no fuso da Home. Não altera competência,
     // vencimentos nem qualquer cálculo financeiro.
     const monthLabel = new Intl.DateTimeFormat('pt-BR', {
-      month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo',
-    }).format(new Date());
-    const periodLabel = monthLabel.slice(0, 1).toLocaleUpperCase('pt-BR') + monthLabel.slice(1);
+      month: 'long', year: 'numeric', timeZone: 'UTC',
+    }).format(new Date((prismLayoutEnabled?activePeriod.month:currentBrazilMonth())+'-01T12:00:00Z'));
+    const periodLabel = prismLayoutEnabled&&section==='launches'?launchPeriodLabel(activePeriod):monthLabel.slice(0, 1).toLocaleUpperCase('pt-BR') + monthLabel.slice(1);
     return (
       <AppShell
         periodLabel={periodLabel}
+        periodMonth={prismLayoutEnabled?activePeriod.month:undefined}
+        onPeriodMonthChange={prismLayoutEnabled?month=>{resetGlobalSearch();setActivePeriod(periodForMonth(month));}:undefined}
+        onGlobalSearch={prismLayoutEnabled?submitGlobalSearch:undefined}
         activeSection={section}
-        onNavigate={setSection}
+        onNavigate={next => {setOpenPrismNew(false);if(next==='launches')resetGlobalSearch();setSection(next);}}
         onLogout={() => {void handleLogout();}}
         logoutPending={loggingOut}
         profileName={session.user.name}
       >
         {section==='launches'
-          ? <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>
-          : <HomeDashboard userId={session.user.id} onNavigate={target => {
+          ? (prismLayoutEnabled
+            ? <React.Suspense fallback={<div role="status">Carregando Prism 2.0...</div>}>
+                <PrismOperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name}
+                  periodMonth={activePeriod.month} onPeriodChange={month=>{resetGlobalSearch();setActivePeriod(periodForMonth(month));}}
+                  periodSelection={activePeriod} onPeriodSelectionChange={period=>{resetGlobalSearch();setActivePeriod(period);}}
+                  globalSearch={globalSearch}
+                  initialNew={openPrismNew} onInitialNewConsumed={() => setOpenPrismNew(false)} onHome={() => setSection('home')}/>
+              </React.Suspense>
+            : <OperationalLaunches key={session.user.id} userId={session.user.id} userName={session.user.name} onHome={() => setSection('home')}/>)
+          : <HomeDashboard key={session.user.id+':'+(prismLayoutEnabled?activePeriod.month:'current')} userId={session.user.id}
+              month={prismLayoutEnabled?activePeriod.month:undefined} onNavigate={target => {
               // Só Lançamentos possui destino operacional autorizado nesta integração.
               // Os demais atalhos conservam o aviso da Home, sem rotas fictícias.
+              if(target==='novo' && prismLayoutEnabled){resetGlobalSearch();setOpenPrismNew(true);setSection('launches');return true;}
               if(target!=='lancamentos')return false;
-              setSection('launches');
+              resetGlobalSearch();setSection('launches');
               return true;
             }}/>}
       </AppShell>

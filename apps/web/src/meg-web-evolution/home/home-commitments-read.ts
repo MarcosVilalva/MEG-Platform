@@ -57,9 +57,9 @@ export async function readCanonicalHomeCommitments(
  let referenceDay:string|null=null;
 
  for(let pageIndex=0;pageIndex<MAX_PAGES;pageIndex++){
-  const query='/finance/home-commitments?limit='+PAGE_LIMIT
+  const query:string='/finance/home-commitments?limit='+PAGE_LIMIT
    +(cursor?'&cursor='+encodeURIComponent(cursor):'');
-  const page=await request<CommitmentPage>(query,{cache:'no-store'});
+  const page:CommitmentPage=await request<CommitmentPage>(query,{cache:'no-store'});
   if(!validPage(page))throw new Error('HOME_COMMITMENTS_INVALID_RESPONSE');
   if(referenceDay!==null&&referenceDay!==page.asOf)throw new Error('HOME_COMMITMENTS_REFERENCE_DAY_CHANGED');
   referenceDay=page.asOf;
