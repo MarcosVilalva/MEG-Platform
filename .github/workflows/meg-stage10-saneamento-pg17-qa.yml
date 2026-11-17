@@ -63,6 +63,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
+      - name: Duas APIs Fastify em Prisma schemas isolados com credenciais distintas
+        run: bash scripts/meg-stage10-two-api-cohort-qa.sh
       - name: Isolamento transacional de coortes Android e Web em schemas PG17
         run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-writer-cohort-isolation-synthetic.pg17.sql
       - name: Prova de vinculacao, preservacao, rollback e idempotencia
