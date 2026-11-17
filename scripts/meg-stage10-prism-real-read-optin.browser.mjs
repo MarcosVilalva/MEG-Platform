@@ -14,6 +14,7 @@ const year=month.find(x=>x.type==='year').value;
 const mon=month.find(x=>x.type==='month').value;
 const monthKey=year+'-'+mon;
 const day=monthKey+'-12';
+const longAccountName='Conta monetária principal de movimentações financeiras';
 const item={
  id:'ci-contract-event-e1',
  description:'MERCADO DO CONTRATO E2E',
@@ -21,7 +22,7 @@ const item={
  competence:monthKey,amount:'123.45',signedAmount:'-123.45',
  notes:'SOMENTE TESTE SINTETICO',accountId:'acc-checking',categoryId:'cat-food',
  paymentMethodId:'pay-instant',sourcePayload:null,
- account:{id:'acc-checking',name:'Conta teste',type:'checking'},
+ account:{id:'acc-checking',name:longAccountName,type:'checking'},
  category:{id:'cat-food',name:'Alimentação',group:'Consumo'},
  paymentMethod:{id:'pay-instant',name:'PIX',type:'instant'}
 };
@@ -34,7 +35,7 @@ const session={
  refreshToken:'synthetic-ci-refresh-only',refreshExpiresAt:'2099-01-01T00:00:00Z'
 };
 const priorHistory={...item,id:'ci-prior-month-event',description:'MERCADO ANTERIOR',date:'2026-10-08T12:00:00.000Z',competence:'2026-10',amount:'89.00',signedAmount:'-89.00'};
-const priorYearHistory={...item,id:'ci-prior-year-event',description:'MERCADO OUTRO ANO',date:'2025-12-19T12:00:00.000Z',competence:'2025-12',amount:'49.01',signedAmount:'-49.01'};
+const priorYearHistory={...item,id:'ci-prior-year-event',description:'MERCADO OUTRO ANO',date:'2025-12-19T12:00:00.000Z',competence:'2025-12',amount:'49.01',signedAmount:'-49.01',categoryId:null,category:null,sourcePayload:{category:'BEBIDAS E SIMILARES'}};
 const endpoints=(path,monthAsked=monthKey,search='',rawFilter='')=>{
  if(path==='/auth/me')return {user:sessionUser};
  if(path==='/finance/sync-status')return {
@@ -71,7 +72,7 @@ const endpoints=(path,monthAsked=monthKey,search='',rawFilter='')=>{
   nextDue:null,topCategories:[]
  };
  if(path==='/finance/accounts')return [
-  {id:'acc-checking',name:'Conta teste',type:'checking',isActive:true,openingBalance:'1000.00'},
+  {id:'acc-checking',name:longAccountName,type:'checking',isActive:true,openingBalance:'1000.00'},
   {id:'acc-benefit',name:'Benefício teste',type:'benefit',isActive:true,openingBalance:'100.00'}
  ];
  if(path==='/finance/cashflow')return {month:monthAsked,days:[]};
@@ -182,6 +183,20 @@ try{
    await page.getByRole('button',{name:'Lançamentos',exact:true}).click();
    await page.locator('[data-meg-operational-prism="read-only"]').waitFor({timeout:20000});
    await page.locator('.meg-l09-open-row:visible').filter({hasText:item.description}).first().waitFor({state:'visible',timeout:20000});
+   if(width===1366){
+    const account=page.locator('.meg-l09-account-pill').first();
+    await account.waitFor({state:'visible'});
+    assert.equal(await account.getAttribute('title'),longAccountName,
+     'Complete account name must survive truncation');
+    const clipping=await account.locator('.meg-l09-account-text').evaluate(element=>{
+     const style=getComputedStyle(element);
+     return {ellipsis:style.textOverflow,nowrap:style.whiteSpace,
+      clientWidth:element.clientWidth,scrollWidth:element.scrollWidth};
+    });
+    assert.equal(clipping.ellipsis,'ellipsis','Account must use ellipsis');
+    assert.equal(clipping.nowrap,'nowrap','Account must stay in one line');
+    assert.ok(clipping.scrollWidth>clipping.clientWidth,'Long account should be visually truncated without losing title');
+   }
    assert.equal(await page.locator('.meg-l09').count()>0,true,'Canonical stage09 grid missing');
    assert.equal(await page.locator('[data-testid="qa-batch-action"]').count(),0,'Batch writer control must remain absent');
    await page.getByLabel('Mês de referência').waitFor({state:'visible'});
@@ -202,6 +217,10 @@ try{
     const annualYear=page.getByLabel('Ano de referência');
     await annualYear.fill('2025');
     await page.locator('.meg-l09-open-row:visible').filter({hasText:priorYearHistory.description}).first().waitFor({state:'visible',timeout:20000});
+    const legacyBadge=page.locator('.meg-l09-category-chip[data-category-origin="historical"]').first();
+    await legacyBadge.waitFor({state:'visible',timeout:20000});
+    assert.match(await legacyBadge.getAttribute('title')||'',/Categoria histórica: BEBIDAS E SIMILARES/,
+     'Legacy sourcePayload.category must remain visible and must not be reclassified');
     await annualYear.fill('2026');
     await page.locator('.meg-l09-open-row:visible').filter({hasText:priorHistory.description}).first().waitFor({state:'visible',timeout:20000});
     assert.equal(snapshotReads,1,'Year must use one consistent snapshot, not double paging');
