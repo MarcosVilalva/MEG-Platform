@@ -49,3 +49,10 @@ Os números são históricos e não provam erro de saldo. Crédito, parcelamento
 Antes de qualquer execução produtiva, é necessário revisão das correspondências por ID, concordância das regras de cartão e benefício, neutralidade de status/saldos/parcelas, backup e restauração verificáveis, transação com controle de concorrência e autorização expressa de migração. Resolver também #699 quanto ao Android: atribuir FKs e então bloquear edições legadas pode criar repetição de 409 no cliente congelado.
 
 **Indicador mantido:** 40% técnico da Etapa 10, 0% de migração real. Sem merge, deploy, Android, produção ou custos.
+## 17/11/2026 | Contraprova do risco de saldo na classificação Verocard
+
+Foi acrescida uma caracterização **hipotética e puramente em memória** no teste `stage10-mapping-status-collision.test.ts` para um lançamento legado com `Account.type=checking`, sem método vinculado e sem o nome Verocard na descrição. O método `isBenefitFinancialEvent` não consulta `sourcePayload.financialScope`; quando uma FK com `PaymentMethod.name=Verocard` é associada, o mesmo lançamento passa a ser excluído de `countsTowardMonetaryBalance`, embora os campos `signedAmount` e `status` permaneçam iguais. Isso demonstra um **risco de divergência de saldo**, não um defeito comprovado na base real.
+
+O controle também verifica a condição oposta: se `Account.type=benefit`, a exclusão monetária ocorre antes e depois do vínculo, sem mudança de saldo. Portanto, não se pode concluir que as 278 movimentações históricas de benefício estejam incorretas sem uma auditoria das contas efetivamente vinculadas e da autoridade de benefício.
+
+**Status:** teste acrescentado ao gate QA existente, CI do novo commit ainda não confirmado. Nenhum dado real consultado/escrito nesta alteração.
