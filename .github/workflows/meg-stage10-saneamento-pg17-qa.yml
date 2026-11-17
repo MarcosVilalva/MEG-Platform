@@ -80,6 +80,8 @@ jobs:
           node apps/web/src/cloud-state-properties-core.test.js
           node apps/web/src/state-recovery-core.test.js
           node apps/web/src/stage10-legacy-client-compatibility.test.js
+      - name: Politica de conflito opt-in da nova Web, sem modificar Android
+        run: npx tsx apps/web/src/meg-web-evolution/qa/stage10-write-conflict-policy.test.ts
       - name: Verificacao TypeScript da API isolada
         run: npx tsc -p apps/api/tsconfig.json --noEmit
       - name: Garantir que nenhuma fixture ficou persistida
