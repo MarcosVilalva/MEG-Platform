@@ -81,6 +81,7 @@ jobs:
       - name: Regressao da politica de status e competencia de cartao
         run: |
           npx tsx apps/api/src/modules/finance/financial-policy.test.ts
+          npx tsx apps/api/src/modules/finance/stage10-mapping-status-collision.test.ts
           npx tsx apps/api/src/modules/finance/card-statement-canonical.test.ts
           npx tsx apps/api/src/modules/finance/stage10-saneamento-risk-characterization.test.ts
       - name: Caracterizar risco de sincronizacao normalized-primary (transacao revertida)
