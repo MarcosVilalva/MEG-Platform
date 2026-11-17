@@ -10,6 +10,9 @@ pg_admin() {
 }
 
 cleanup() {
+  if [[ -n "${barrier_dir:-}" && "${barrier_dir}" == /tmp/meg-stage10-cohorts.* ]]; then
+    rm -rf -- "${barrier_dir}"
+  fi
   pg_admin <<'SQL'
 DO $$
 BEGIN
@@ -37,6 +40,7 @@ trap cleanup EXIT
 
 pg_admin -f scripts/meg-stage10-two-api-schemas-init.pg17.sql
 
+# Primeiro aplica schema separadamente, ainda sem processo Fastify.
 for cohort in android web; do
   if [ "$cohort" = android ]; then
     QA_DB_ROLE='stage10_cohort_android_login'
@@ -45,11 +49,41 @@ for cohort in android web; do
     QA_DB_ROLE='stage10_cohort_web_login'
     QA_DB_PASSWORD='QA_WEB_DISPOSABLE_ONLY'
   fi
-  export MEG_STAGE10_COHORT="$cohort"
-  export DATABASE_URL="postgresql://${QA_DB_ROLE}:${QA_DB_PASSWORD}@127.0.0.1:5432/meg_stage10_sandbox?schema=stage10_cohort_${cohort}"
-  npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
-  npx tsx apps/api/src/modules/finance/stage10-two-api-cohort.isolated.test.ts
+  DATABASE_URL="postgresql://${QA_DB_ROLE}:${QA_DB_PASSWORD}@127.0.0.1:5432/meg_stage10_sandbox?schema=stage10_cohort_${cohort}" \
+    npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
 done
 
-# Nao vazar credenciais testadas para passos posteriores.
-unset QA_DB_ROLE QA_DB_PASSWORD MEG_STAGE10_COHORT
+# Duas instancias Fastify simultaneas, com barreira de 3 fases (ready,
+# insert e update). Nunca compartilham usuario, URL Prisma ou schema.
+barrier_dir="$(mktemp -d /tmp/meg-stage10-cohorts.XXXXXX)"
+export MEG_STAGE10_CONCURRENT_BARRIER_DIR="$barrier_dir"
+
+(
+  export MEG_STAGE10_COHORT=android
+  export DATABASE_URL='postgresql://stage10_cohort_android_login:QA_ANDROID_DISPOSABLE_ONLY@127.0.0.1:5432/meg_stage10_sandbox?schema=stage10_cohort_android'
+  npx tsx apps/api/src/modules/finance/stage10-two-api-cohort.isolated.test.ts
+) &
+android_pid=$!
+(
+  export MEG_STAGE10_COHORT=web
+  export DATABASE_URL='postgresql://stage10_cohort_web_login:QA_WEB_DISPOSABLE_ONLY@127.0.0.1:5432/meg_stage10_sandbox?schema=stage10_cohort_web'
+  npx tsx apps/api/src/modules/finance/stage10-two-api-cohort.isolated.test.ts
+) &
+web_pid=$!
+
+# Aguarda os dois retornos. Mesmo que um falhe, aguarda o outro para que
+# cleanup nao destrua schemas durante query de um processo ainda vivo.
+set +e
+wait "$android_pid"
+android_exit=$?
+wait "$web_pid"
+web_exit=$?
+set -e
+if [ "$android_exit" -ne 0 ] || [ "$web_exit" -ne 0 ]; then
+  echo "MEG_STAGE10_TWO_FASTIFY_PROCESSES_FAILED android=$android_exit web=$web_exit" >&2
+  exit 1
+fi
+echo 'MEG_STAGE10_TWO_FASTIFY_CONCURRENT_BARRIERS_PASS'
+
+# Nenhuma credencial do teste sobrevive fora deste shell ou sera exportada.
+unset QA_DB_ROLE QA_DB_PASSWORD MEG_STAGE10_CONCURRENT_BARRIER_DIR
