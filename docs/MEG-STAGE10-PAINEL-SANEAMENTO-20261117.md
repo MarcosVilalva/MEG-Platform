@@ -81,3 +81,11 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 
 
 **Gate final do ajuste QA:** [CI #44105117369](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44105117369) **SUCCESS (28 passos)** após ampliar a triagem de vínculo para considerar `description` no reconhecimento de Verocard. A consulta real mostrou **0 descrições Verocard entre os 649 candidatos comuns**, mantendo 647 revisáveis e duas exceções por sinal positivo. Preparado `scripts/meg-stage10-android-instalado-versao-readonly.ps1` para leitura ADB autorizada da versão real, **não executado**, sem dispositivo. Bloqueios #699 e #700 mantidos e percentuais inalterados.
+
+## 17/11/2026 | Gate adicional de neutralidade financeira e facetas, issue #700
+
+- [Actions #44116800145](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44116800145) **SUCCESS** no commit técnico `cf600ab89ab42f2767e76e4840f857d8fb512725` (29 etapas bem-sucedidas, 1 etapa de APK ignorada).
+- PostgreSQL 17 descartável: três eventos fictícios em transação revertida, preservação de identidade, status, valores, saldos por conta e global, resumo monetário e ausência de fatura/ledger artificial.
+- As facetas de categoria e método **mudam legitimamente** ao vincular FKs, sem que isso signifique neutralidade integral dos relatórios: não prometer igualdade de agrupamentos.
+- Documentação: `docs/MEG-STAGE10-GATE-NEUTRALIDADE-PROJECOES-20261117.md`; teste `apps/api/src/modules/finance/stage10-mapping-projection-neutrality.isolated.test.ts`.
+- Nenhuma prova sobre 647 registros reais ou APK efetivamente instalada; issues #699 e #700 abertas, **40% técnico**, **0% produção**, nenhum merge/deploy.

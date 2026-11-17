@@ -19,7 +19,7 @@ Vincular `categoryId` e `paymentMethodId` não deve modificar ID, titular, conta
 6. Confirma que as facetas de categoria e forma de pagamento mudam como consequência informativa das FKs, sem declarar homologada a reclassificação de eventos reais.
 7. Guard de conexão exige exclusivamente `127.0.0.1`, usuário `meg_stage10_ci`, banco `meg_stage10_sandbox`, schema `public` e flag de isolamento.
 
-**Status inicial:** aguardando execução do gate GitHub Actions neste commit. Não alegar sucesso até verificação.
+**Gate verificado:** [GitHub Actions #44116800145](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44116800145), SUCCESS no commit `cf600ab89ab42f2767e76e4840f857d8fb512725`. Job PG17 concluído, 29 etapas bem-sucedidas, 1 etapa condicional de APK ignorada, zero falhas. Este resultado comprova somente os cenários fictícios acima, não homologação financeira de dados reais.
 
 ## Limites, pendências e decisões preservadas
 
