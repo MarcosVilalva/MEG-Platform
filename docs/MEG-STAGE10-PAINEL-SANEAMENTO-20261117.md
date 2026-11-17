@@ -60,3 +60,13 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 - A tentativa anterior [#44091761244](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44091761244) teve **falha de TypeScript** no teste QA, corrigida antes dos gates verdes.
 - Detalhes, limites e próximos gates: `docs/MEG-STAGE10-CONCORRENCIA-HTTP-QA-20261117.md`.
 - **Marco 5 ainda NÃO concluído**: o Android instalado, JWT real e coexistência de dados reais não foram homologados. **40% técnico, 0% migração produtiva**.
+
+
+## 17/11/2026 | Evidência REAL Supabase e APK, sem migração
+- Catálogo real: 3.035 candidatos técnicos de categoria por owner+tipo+nome+grupo, menos 2 sentinelas 'Sem categoria' = **3.033 revisáveis**, e 591 sem correspondência. Formas de pagamento: **2.900** candidatos técnicos, **612** exceções (496 'Não informado', 116 'CARTÃO LATAM PASS').
+- Recorte conservador: **649** lançamentos monetários à vista com ambas as correspondências técnicas mas ainda não aprovadas; **2.157** com par técnico e marcação de crédito/cartão/benefício exigem política específica.
+- **Risco financeiro confirmado:** 1.855 casos históricos de modalidade CREDITO com candidato PaymentMethod.type='other', e 278 Verocard/benefício com candidato type='credit'. [Issue #700](https://github.com/MarcosVilalva/MEG-Platform/issues/700). Teste de caracterização de financial-policy aprovado em [CI #44097355894](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44097355894), sem escritor alterado. Nenhum saldo atual foi declarado incorreto.
+- **Android publicado:** APK 2.0.708, pacote br.com.megfinancas.app, hash SHA256 1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6; host embutido **meg-platform-api.onrender.com**, verificado em [CI #44096487998](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44096487998). Não comprovada versão instalada; issue #699 continua P0.
+- **Segurança da base real:** 32/32 tabelas public com RLS on, 0 políticas, 0 privilégios diretos anon/authenticated; isso não prova segurança de todos os writers Prisma. Advisors: pg_net em public, 9 FKs sem índice, 13 índices estatisticamente não usados. Não modificar sem revisão.
+- Script auditável: scripts/meg-stage10-saneamento-real-readonly.sql, BEGIN TRANSACTION READ ONLY. Relatório: docs/MEG-STAGE10-DIAGNOSTICO-REAL-DB-APK-20261117.md.
+- **Indicador mantém 4/10 = 40% técnico, produção 0%.** Marcos 5, 7, 8 ainda pendentes de comprovação funcional e revisão de regra; nenhum UPDATE executado.

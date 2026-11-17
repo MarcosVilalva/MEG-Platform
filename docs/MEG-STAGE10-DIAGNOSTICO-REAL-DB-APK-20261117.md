@@ -81,3 +81,6 @@ O pacote de QA sintético da Etapa 10 (branch PR #696, produzido anteriormente) 
 5. Somente após compatibilidade, autenticação integrada e backup/restauração isolada com dry-run e rollback realizar qualquer saneamento autorizado de produção. Progresso técnico permanece **40% (4/10)** e execução produtiva **0%**.
 
 **Sem deploy, merge, alteração do Android, Render, Supabase, main, custos novos ou Etapa 11.**
+
+
+**Rastreabilidade:** [Issue #700](https://github.com/MarcosVilalva/MEG-Platform/issues/700) acompanha o bloqueio de tipos de método/cálculo; consulta reproduzível em scripts/meg-stage10-saneamento-real-readonly.sql, criada somente com BEGIN READ ONLY e SELECT. O pacote histórico de QA da PR #696 já havia identificado os candidatos; esta execução reconfirmou os totais diretamente no banco real.
