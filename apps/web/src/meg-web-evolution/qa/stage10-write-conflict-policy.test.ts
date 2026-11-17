@@ -18,13 +18,23 @@ const expectations: Array<[number, unknown, string]> = [
   [422, { error: 'INVALID_FINANCIAL_INPUT' }, 'keep-protected-requires-resolution'],
   [500, { error: 'INTERNAL' }, 'keep-protected-requires-resolution'],
   [0, null, 'keep-protected-offline'],
-  [200, { error: 'OK' }, 'confirmed'],
+  [200, { error: 'OK' }, 'verify-server-receipt'],
 ];
 for (const [status, payload, action] of expectations) {
   const result = decideStage10WriteConflict(status, payload);
   assert.equal(result.action, action, `HTTP ${status}, payload ${JSON.stringify(payload)}`);
   assert.equal(result.preserveOutbox, true, 'O outbox só sai após confirmação canônica');
 }
+// Nenhum status ou resposta pode gerar replay infinito sem intervenção.
+for (const code of ['STATE_CONFLICT', 'NORMALIZATION_CONCURRENT_EVENT_CHANGE']) {
+  for (const attempts of [3, 4, 20]) {
+    const result = decideStage10WriteConflict(409, { error: code, retryable: true }, attempts);
+    assert.equal(result.action, 'keep-protected-requires-resolution');
+    assert.equal(result.preserveOutbox, true);
+  }
+}
+assert.equal(decideStage10WriteConflict(409, { error: 'STATE_CONFLICT' }, 2).action,
+  'refresh-and-retry-bounded');
 assert.equal(normalizationWriteConflictPayload('NORMALIZATION_CONCURRENT_EVENT_CHANGE', 7).retryable, true);
 assert.equal(normalizationWriteConflictPayload('NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE', 7).retryable, false);
 assert.throws(() => normalizationWriteConflictPayload('UNTRUSTED_RETRYABLE', 7), /NORMALIZATION_UNKNOWN_CONFLICT_CODE/);
