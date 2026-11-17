@@ -8,13 +8,14 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { decideLegacyOutboxRejection, protectedOutboxConflict } from './cloud-outbox-conflict-policy.js';
 
 const source = readFileSync(new URL('./instant-persistence.js', import.meta.url), 'utf8');
 const begin = source.indexOf('async function ensureOutboxConfirmed() {');
 const end = source.indexOf('\nasync function ensureStateOutboxConfirmed()', begin);
 assert.ok(begin > 0 && end > begin, 'Estrutura legada alterada: rever contrato manualmente.');
 const functionCode = source.slice(begin, end);
-assert.ok(functionCode.includes('if (response.status === 409) continue;'));
+assert.ok(functionCode.includes('decideLegacyOutboxRejection'));
 
 function originalFunction(h) {
   // Reproduz literalmente o corpo da função versionada no repositório,
@@ -27,7 +28,8 @@ function originalFunction(h) {
       navigator, ensureOutboxOperationId, readRemoteState, verifyTransactionOperations,
       window, publishCloudConfirmation, clearOutboxIfGeneration, setSyncStatus,
       showPersistenceBlocker, cloudRequest, verifyMutationConfirmation,
-      applyTransactionOperations
+      applyTransactionOperations, readOutboxConflict, parkedOutboxMessage,
+      decideLegacyOutboxRejection, parkOutboxConflict
     } = h;
     ${functionCode}
     return ensureOutboxConfirmed;
@@ -47,6 +49,7 @@ async function exercise({ code, online = true }) {
   let cleared = 0;
   let hasPending = true;
   let readResponseBodies = 0;
+  let parked = null;
   const h = {
     awaitDurableProtection: async () => undefined,
     readOutbox: () => hasPending ? persisted : { upserts: [], deletes: [], activities: [] },
@@ -71,23 +74,29 @@ async function exercise({ code, online = true }) {
     },
     verifyMutationConfirmation: () => false,
     applyTransactionOperations: state => state,
+    decideLegacyOutboxRejection,
+    readOutboxConflict: () => protectedOutboxConflict(persisted, parked) ? parked : null,
+    parkedOutboxMessage: code => 'Bloqueio QA: ' + code,
+    parkOutboxConflict: (_pending, code) => { parked = { code, generation: 5 }; },
   };
   const attempt = originalFunction(h);
   const first = await attempt();
   const second = await attempt();
-  return { first, second, patchCount, readCount, cleared, hasPending, readResponseBodies };
+  return { first, second, patchCount, readCount, cleared, hasPending, readResponseBodies, parked };
 }
 
 const retryable = await exercise({ code: 'STATE_CONFLICT' });
 assert.equal(retryable.patchCount, 6);
+assert.equal(retryable.parked, null);
 assert.equal(retryable.cleared, 0);
 assert.equal(retryable.hasPending, true);
 
 const permanent = await exercise({ code: 'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE' });
 assert.equal(permanent.first, false);
 assert.equal(permanent.second, false);
-assert.equal(permanent.patchCount, 6, 'Mesmo 409 permanente é reenviado duas vezes, 3 por execução');
-assert.equal(permanent.readResponseBodies, 0, 'Cliente legado ignora error/retryable do HTTP 409');
+assert.equal(permanent.patchCount, 1, '409 permanente nao e reenviado');
+assert.equal(permanent.readResponseBodies, 1, 'Cliente examina rejeicao financeira');
+assert.equal(permanent.parked.code, 'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE');
 assert.equal(permanent.cleared, 0, 'Operação fica protegida e não é confirmada');
 assert.equal(permanent.hasPending, true);
 
@@ -104,6 +113,7 @@ const schedulerEnd = source.indexOf('\nasync function flushImmediateSave()', sch
 assert.ok(schedulerBegin > 0 && schedulerEnd > schedulerBegin);
 const schedulerCode = source.slice(schedulerBegin, schedulerEnd);
 const pendingTimers = [];
+let schedulerParked = null;
 let failureNotices = 0;
 const retryScheduler = new Function('h', `
   "use strict";
@@ -111,12 +121,14 @@ const retryScheduler = new Function('h', `
   const {
     readOutbox, hasTransactionOperations, hasStateOutbox, readStateOutbox,
     globalThis, flushImmediateSave, setSyncStatus,
-    isCloudSessionReady, notifyPendingFailure, OUTBOX_RETRY_MS
+    isCloudSessionReady, notifyPendingFailure, OUTBOX_RETRY_MS,
+    readOutboxConflict
   } = h;
   ${schedulerCode}
   return scheduleOutboxRetry;
 `)({
   readOutbox: () => ({ upserts: [{ id: 'qa-protected' }], deletes: [], activities: [] }),
+  readOutboxConflict: () => schedulerParked,
   hasTransactionOperations: x => x.upserts.length > 0,
   hasStateOutbox: () => false,
   readStateOutbox: () => ({}),
@@ -145,5 +157,13 @@ for (let n = 0; n < 3; n += 1) {
 assert.equal(failureNotices, 3);
 assert.equal(pendingTimers[0].delay, 16000);
 
-// Isto comprova a lacuna, NÃO resolve a issue #699 nem valida aparelho Android.
+schedulerParked = { code: 'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE' };
+pendingTimers.shift().callback();
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(pendingTimers.length, 0, 'Marcador bloqueia timer pendente');
+retryScheduler();
+assert.equal(pendingTimers.length, 0, 'Conflito estacionado nao gera novas retentativas');
+assert.equal(decideLegacyOutboxRejection(422, { error: 'INVALID_APP_STATE_PATCH' }).action, 'manual-resolution-required');
+assert.equal(decideLegacyOutboxRejection(429, {}).action, 'retry-later');
+// Fonte corrigida em QA; nao equivale a homologacao da APK instalada.
 console.log('MEG_STAGE10_FROZEN_LEGACY_409_REPLAY_CONTRACT_CHARACTERIZED PASS');
