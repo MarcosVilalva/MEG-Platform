@@ -5,7 +5,7 @@
  * Este módulo decide o destino do outbox, nunca confirma pagamento/lancamento.
  */
 export type Stage10WriteConflictAction =
-  | 'confirmed'
+  | 'verify-server-receipt'
   | 'refresh-and-retry-bounded'
   | 'keep-protected-requires-resolution'
   | 'keep-protected-offline';
@@ -25,6 +25,7 @@ function codeOf(payload: unknown) {
 export function decideStage10WriteConflict(
   status: number,
   payload: unknown,
+  attemptsAfterRefresh = 0,
 ): {
   action: Stage10WriteConflictAction;
   code: string;
@@ -37,15 +38,15 @@ export function decideStage10WriteConflict(
   if (status >= 200 && status < 300) {
     // O HTTP bem-sucedido NÃO basta para excluir o outbox. O cliente ainda
     // deve verificar recibo/releitura canônica antes de liberar a operação.
-    return { action: 'confirmed', code, preserveOutbox: true };
+    return { action: 'verify-server-receipt', code, preserveOutbox: true };
   }
 
-  if (status === 409 && REVISION_RETRYABLE.has(code)) {
-    // Somente com nova leitura de revisão, e limitado pelo cliente.
+  if (status === 409 && REVISION_RETRYABLE.has(code) && attemptsAfterRefresh < 3) {
+    // Somente após releitura de revisão, até 3 tentativas no fluxo atual.
     return { action: 'refresh-and-retry-bounded', code, preserveOutbox: true };
   }
 
-  // Qualquer 4xx permanente ou conflito desconhecido nunca vira sucesso,
+  // Tentativas de revisão esgotadas e 4xx permanentes nunca viram sucesso,
   // nunca é descartado e jamais é repetido automaticamente até o infinito.
   return { action: 'keep-protected-requires-resolution', code, preserveOutbox: true };
 }
