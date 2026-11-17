@@ -1,0 +1,60 @@
+name: MEG Stage10 | Saneamento PG17 isolado e rollback
+on:
+  push:
+    branches:
+      - 'stage10/saneamento-qa-descartavel-20261117'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  saneamento-qa-pg17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+      PGPASSWORD: stage10_ci_disposable_only
+      PGAPPNAME: MEG_STAGE10_QA_DISPOSABLE_ONLY
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validar endereco e escopo descartavel
+        run: |
+          node -e "const u=new URL(process.env.DATABASE_URL); if(u.hostname!=='127.0.0.1'||u.pathname!=='/meg_stage10_sandbox'||u.username!=='meg_stage10_ci'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(1)"
+      - name: Dependencias imutaveis
+        run: npm ci --audit=false --fund=false
+      - name: Prisma client e schema SOMENTE no PG17 descartavel
+        run: |
+          npx prisma generate --schema packages/database/prisma/schema.prisma
+          npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Cliente psql do runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Prova de vinculacao, preservacao, rollback e idempotencia
+        run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-saneamento-qa.pg.sql
+      - name: Regressao da politica de status e competencia de cartao
+        run: |
+          npx tsx apps/api/src/modules/finance/financial-policy.test.ts
+          npx tsx apps/api/src/modules/finance/card-statement-canonical.test.ts
+      - name: Garantir que nenhuma fixture ficou persistida
+        run: |
+          psql -h 127.0.0.1 -U meg_stage10_ci -d meg_stage10_sandbox -tAc "SELECT count(*) FROM \"FinancialEvent\" WHERE id LIKE 'stage10qa-%'" | grep -x 0
+          psql -h 127.0.0.1 -U meg_stage10_ci -d meg_stage10_sandbox -tAc "SELECT count(*) FROM \"User\" WHERE id LIKE 'stage10qa-%'" | grep -x 0
