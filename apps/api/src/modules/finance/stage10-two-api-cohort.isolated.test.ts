@@ -108,6 +108,32 @@ try {
   assert.equal(JSON.parse(read.body).dataSource,'normalized');
   await cohortBarrier('updated');
 
+  // Duas solicitações simultâneas para o MESMO lançamento e revisão. Apenas
+  // uma pode avançar AppState e FinancialEvent, sem perda de identidade.
+  // É concorrência HTTP simulada por Fastify.inject, não dois dispositivos.
+  const [raceA, raceB] = await Promise.all([
+    request(3, {...payload,description:'QA concorrente A'}),
+    request(3, {...payload,description:'QA concorrente B'}),
+  ]);
+  assert.deepEqual([raceA.statusCode,raceB.statusCode].sort((a,b)=>a-b),[200,409],
+    'CAS da mesma revisão deve aceitar exatamente uma alteração');
+  const rejected = raceA.statusCode === 409 ? raceA : raceB;
+  assert.equal(JSON.parse(rejected.body).error, 'STATE_CONFLICT', rejected.body);
+  const winner = raceA.statusCode === 200 ? 'QA concorrente A' : 'QA concorrente B';
+  const afterRace = await prisma.financialEvent.findUniqueOrThrow({where:{id:original.id}});
+  assert.equal(afterRace.description,winner);
+  assert.equal(afterRace.id,original.id);
+  assert.equal(afterRace.amount.toString(),'42.37');
+  assert.equal(await prisma.financialEvent.count({where:{
+    workspaceId:workspace.id,legacyTransactionId:payload.id,
+  }}),1);
+  const currentState = await prisma.appState.findUniqueOrThrow({where:{workspaceId:workspace.id}});
+  assert.equal(currentState.revision,4);
+  const expectedState = currentState.state as { transactions?: Array<{id:string;description:string}> };
+  assert.equal(expectedState.transactions?.find(item=>item.id===payload.id)?.description,winner);
+  console.log('MEG_STAGE10_QA_SAME_REVISION_CONCURRENT_CAS_' + mode.toUpperCase() + ' PASS');
+
+
   // A credencial real de cada processo (sem superuser) nao pode ler o outro
   // schema, mesmo que os IDs/entidades sejam equivalentes.
   const other = mode === 'android' ? 'stage10_cohort_web' : 'stage10_cohort_android';
@@ -133,7 +159,7 @@ try {
   }
   assert.equal(writeDenied, true, 'Proibido alterar registros da outra coorte');
   assert.equal((await prisma.financialEvent.findUniqueOrThrow({where:{id:original.id}})).description,
-    'QA descricao editada');
+    winner);
   console.log('MEG_STAGE10_TWO_REAL_FASTIFY_COHORTS_SCHEMA_ISOLATION ' + mode.toUpperCase() + ' PASS');
 } finally {
   await app.close();
