@@ -70,6 +70,8 @@ jobs:
           npx tsx apps/api/src/modules/finance/benefit-event.contract.test.ts
           npx tsx apps/api/src/modules/finance/transfer-service.contract.test.ts
           npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
+      - name: HTTP real Fastify.inject PATCH/PUT em PG17 e rollback 409
+        run: npx tsx apps/api/src/modules/finance/stage10-saneamento-routes.isolated.test.ts
       - name: Verificacao TypeScript da API isolada
         run: npx tsc -p apps/api/tsconfig.json --noEmit
       - name: Garantir que nenhuma fixture ficou persistida
