@@ -118,7 +118,7 @@ try {
 
   // Duas solicitações simultâneas para o MESMO lançamento e revisão. Apenas
   // uma pode avançar AppState e FinancialEvent, sem perda de identidade.
-  // É concorrência HTTP simulada por Fastify.inject, não dois dispositivos.
+  // É concorrência HTTP por loopback real em QA, não dois dispositivos físicos.
   const [raceA, raceB] = await Promise.all([
     request(3, {...payload,description:'QA concorrente A'}),
     request(3, {...payload,description:'QA concorrente B'}),
