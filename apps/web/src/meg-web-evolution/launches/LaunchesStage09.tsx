@@ -47,6 +47,7 @@ type Row=Record<string,unknown>&{
  id:string;date:string;description:string;category:string;account:string;
  paymentMethod:string;status:string;type:string;signedAmount:number;
  notes:string;categoryId:string;accountId:string;
+ categoryOrigin:'canonical'|'historical'|'unclassified';
  typeLabel:string;statusLabel:string;competence:string;
  weekday:string;launchType:string;expenseClass:string;group:string;
  situation:string;modality:string;historicalNotes:string;
@@ -72,11 +73,17 @@ function sourceRows(source:HomeFinancialData):Row[]{
    notes?:string;legacyCategoryName?:string;paymentMethod?:{name?:string};
    paymentMethodName?:string;sourceDetails?:{paymentMethod?:string};
    competence?:string;sourceLabels?:HistoryLabels;
+   sourcePayload?:Record<string,unknown>|null;
   };
+  const canonical=categories.get(item.categoryId||'');
+  const originalCategory=original.legacyCategoryName?.trim()
+   ||(typeof original.sourcePayload?.category==='string'?original.sourcePayload.category.trim():'');
+  const hasLegacyLabel=Boolean(originalCategory&&originalCategory.toLocaleLowerCase('pt-BR')!=='sem categoria');
+  const category=canonical||originalCategory||'Sem categoria';
   return {
    id:item.id,date:item.date.slice(0,10),description:item.description,
     accountKind:(accountKinds.get(item.accountId||'')==='benefit'?'benefit':accountKinds.get(item.accountId||'')==='checking'?'monetary':'unknown') as Row['accountKind'],
-   category:categories.get(item.categoryId||'')||(original.legacyCategoryName?.trim()||'Sem categoria'),
+   category,categoryOrigin:canonical?'canonical':hasLegacyLabel?'historical':'unclassified',
    account:accounts.get(item.accountId||'')||'Sem conta',
    paymentMethod:readable(original.paymentMethod?.name||original.paymentMethodName||original.sourceDetails?.paymentMethod),
    status:item.status,type:item.type,signedAmount:item.signedAmount,
@@ -372,12 +379,17 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
   {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
    render:(_value,row)=>mode==='live'
-    ? <LaunchCategoryBadge category={row.category}/>
+    ? <LaunchCategoryBadge category={row.category} historical={row.categoryOrigin==='historical'}/>
     : <span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
        <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
        <span className="meg-l09-chip-label">{row.category}</span>
       </span>},
-  {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true},
+  {key:'account',label:'Conta / Cartão',type:'enum',width:174,minWidth:135,sortable:true,filterable:true,
+   render:(_value,row)=><span className="meg-datagrid-enum-pill meg-l09-account-pill"
+    title={row.account} aria-label={row.account}>
+    <span className="meg-datagrid-enum-dot" aria-hidden="true"/>
+    <span className="meg-l09-account-text">{row.account}</span>
+   </span>},
   {key:'paymentMethod',label:'Forma de pagamento',type:'enum',width:182,minWidth:155,sortable:true,filterable:true,
    render:(_value,row)=>mode==='live'?<LaunchPaymentBadge method={row.paymentMethod}/>:row.paymentMethod},
   {key:'signedAmount',label:'Valor',type:'currency',width:142,minWidth:125,sortable:true,filterable:true,
