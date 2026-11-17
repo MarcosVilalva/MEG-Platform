@@ -143,6 +143,40 @@ async function main() {
     assert.equal((await prisma.appState.findUniqueOrThrow({ where: { workspaceId: workspace.id } })).revision, 3);
     assert.equal(await prisma.ledgerEntry.count({ where: { eventId: event.id } }), 1);
     assert.equal((await prisma.financialEvent.findUniqueOrThrow({ where: { id: event.id } })).id, event.id);
+    // Contrato legado: o cliente envia um delete e pode tentar reinserir a
+    // mesma ID. A sincronizacao conserva o ID arquivado, mas ainda bloqueia
+    // restauracao implicita. Registrar divergencia antes de liberar Android.
+    const legacyAdditionalId = 'qa-delete-restore-' + stamp;
+    const additionalPayload = {
+      ...payload, id: legacyAdditionalId, description: 'Evento QA para exclusao',
+      amount: 8.15, expenseAmount: 8.15,
+    };
+    const createdByPatch = await patch(3, [additionalPayload]);
+    assert.equal(createdByPatch.statusCode, 200, createdByPatch.body);
+    const createdLegacy = await prisma.financialEvent.findFirstOrThrow({
+      where: { workspaceId: workspace.id, legacyTransactionId: legacyAdditionalId },
+    });
+    assert.equal(createdLegacy.archivedAt, null);
+    const deletedByPatch = await patch(4, [], [legacyAdditionalId]);
+    assert.equal(deletedByPatch.statusCode, 200, deletedByPatch.body);
+    const archivedLegacy = await prisma.financialEvent.findUniqueOrThrow({
+      where: { id: createdLegacy.id },
+    });
+    assert.ok(archivedLegacy.archivedAt, 'Excluir deve arquivar, preservando a identidade');
+    assert.equal(archivedLegacy.id, createdLegacy.id);
+    const attemptedRestore = await patch(5, [additionalPayload]);
+    assert.equal(attemptedRestore.statusCode, 409, attemptedRestore.body);
+    assert.equal(JSON.parse(attemptedRestore.body).error, 'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE');
+    const afterBlockedRestore = await prisma.appState.findUniqueOrThrow({
+      where: { workspaceId: workspace.id },
+    });
+    assert.equal(afterBlockedRestore.revision, 5);
+    assert.equal((afterBlockedRestore.state as { transactions: { id: string }[] })
+      .transactions.some(item => item.id === legacyAdditionalId), false);
+    assert.equal(await prisma.financialEvent.count({
+      where: { workspaceId: workspace.id, legacyTransactionId: legacyAdditionalId },
+    }), 1);
+    console.log('MEG_STAGE10_LEGACY_DELETE_REINSERT_GAP_CHARACTERIZED PASS');
     console.log('MEG_STAGE10_QA_P0_PATCH_PUT_409_REVISION_LEDGER_ROLLBACK PASS');
   } finally {
     if (app) await app.close();
