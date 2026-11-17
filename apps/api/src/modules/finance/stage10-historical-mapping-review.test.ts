@@ -11,7 +11,7 @@ const base: Proposal = {
       category:'Mercado',expenseClass:'CONTAS GERAIS',paymentMethod:'PIX',
       modality:'à vista',financialScope:'monetary',
     },
-    account:{type:'checking'},hasLedger:false,hasReceipt:false,
+    account:{id:'qa-account',userId:'qa-owner',type:'checking',isActive:true},hasLedger:false,hasReceipt:false,
     hasPayablePayment:false,hasImportedRow:false,
   },
   category: {
@@ -56,7 +56,7 @@ assert.equal(paidIncome.writeAuthorized,false);
 // Verocard possa passar pelo writer de crédito monetário.
 blocked('verocard credit',scenario({
   paymentMethod:{...base.paymentMethod!,name:'Verocard',type:'credit'},
-  event:{...base.event,account:{type:'benefit'},sourcePayload:{
+  event:{...base.event,account:{id:'qa-account',userId:'qa-owner',type:'benefit',isActive:true},sourcePayload:{
     category:'Mercado',expenseClass:'CONTAS GERAIS',paymentMethod:'Verocard',
     modality:'alimentação',financialScope:'benefit',
   }},
@@ -101,7 +101,9 @@ blocked('ambiguous category',scenario({categoryMatchCount:2}),'NO_UNAMBIGUOUS_CA
 blocked('unknown payment',scenario({paymentMethod:null,paymentMatchCount:0}),'NO_UNAMBIGUOUS_CATALOG_MATCH');
 blocked('wrong owner',scenario({paymentMethod:{...base.paymentMethod!,userId:'other-tenant'}}),'PAYMENT_SCOPE_OR_LABEL_MISMATCH');
 blocked('wrong group',scenario({category:{...base.category!,group:'OUTRA'}}),'CATEGORY_SCOPE_OR_LABEL_MISMATCH');
-blocked('account benefit',scenario({event:{...base.event,account:{type:'benefit'}}}),'FINANCIAL_DOMAIN_SPECIALIST_REQUIRED');
+blocked('account benefit',scenario({event:{...base.event,account:{id:'qa-account',userId:'qa-owner',type:'benefit',isActive:true}}}),'FINANCIAL_DOMAIN_SPECIALIST_REQUIRED');
+blocked('account wrong owner',scenario({event:{...base.event,account:{...base.event.account!,userId:'other'}}}),'MONETARY_ACCOUNT_SCOPE_OR_STATUS_INVALID');
+blocked('account inactive',scenario({event:{...base.event,account:{...base.event.account!,isActive:false}}}),'MONETARY_ACCOUNT_SCOPE_OR_STATUS_INVALID');
 blocked('old category linked',scenario({}, {categoryId:'already-linked'}),'ALREADY_CANONICALLY_LINKED');
 blocked('archived',scenario({}, {archivedAt:new Date('2026-11-17')}),'EVENT_NOT_ACTIVE_OR_OWNED');
 blocked('ledger',scenario({}, {hasLedger:true}),'LINKED_FINANCIAL_DOMAIN_REQUIRES_CANONICAL_WRITER');
@@ -121,4 +123,4 @@ blocked('planned income changes status',scenario({
 }, {type:'income',signedAmount:22.35,status:'planned'}),'CANONICAL_STATUS_WOULD_CHANGE');
 blocked('no legacy payload',scenario({}, {sourcePayload:null}),'CATEGORY_SCOPE_OR_LABEL_MISMATCH');
 
-console.log('MEG_STAGE10_HISTORICAL_MAPPING_FAIL_CLOSED_24_CASES PASS');
+console.log('MEG_STAGE10_HISTORICAL_MAPPING_FAIL_CLOSED_TEST_MATRIX PASS');
