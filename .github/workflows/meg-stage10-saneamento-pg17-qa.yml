@@ -82,6 +82,8 @@ jobs:
         run: npx tsx apps/api/src/modules/finance/stage10-mapping-link-neutrality.isolated.test.ts
       - name: Neutralidade financeira e dos IDs em leituras canonicas PG17 (rollback)
         run: npx tsx apps/api/src/modules/finance/stage10-mapping-projection-neutrality.isolated.test.ts
+      - name: Contrato integrado dos read-models reais antes e depois de FKs QA
+        run: npx tsx apps/api/src/modules/finance/stage10-mapping-read-models.isolated.test.ts
       - name: Regressao da politica de status e competencia de cartao
         run: |
           npx tsx apps/api/src/modules/finance/financial-policy.test.ts
