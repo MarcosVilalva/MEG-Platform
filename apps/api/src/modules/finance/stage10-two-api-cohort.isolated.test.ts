@@ -31,7 +31,7 @@ let workspaceId: string | null = null;
 let planId: string | null = null;
 // Barreira local: garante duas instancias vivas antes e durante os PATCHs.
 // O diretório é criado pelo runner efêmero, nunca em instalação Android.
-const barrierDir = process.env.MEG_STAGE10_CONCURRENT_BARRIER_DIR;
+const barrierDir = process.env.MEG_STAGE10_CONCURRENT_BARRIER_DIR || '';
 if (!barrierDir || !isAbsolute(barrierDir) || !barrierDir.startsWith('/tmp/meg-stage10-cohorts.')) {
   throw new Error('STAGE10_QA_CONCURRENT_BARRIER_REQUIRED');
 }
