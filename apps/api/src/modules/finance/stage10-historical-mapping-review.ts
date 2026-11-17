@@ -17,7 +17,7 @@ type HistoricalCandidate = {
     paymentMethodId: string | null;
     archivedAt: Date | null;
     sourcePayload: unknown;
-    account: { type: string } | null;
+    account: { id: string; userId: string | null; type: string; isActive: boolean } | null;
     hasLedger: boolean;
     hasReceipt: boolean;
     hasPayablePayment: boolean;
@@ -56,6 +56,10 @@ export function classifyStage10HistoricalLink(input: HistoricalCandidate): Class
 
   if (!e.id || !e.userId || e.archivedAt) reasons.push('EVENT_NOT_ACTIVE_OR_OWNED');
   if (e.categoryId || e.paymentMethodId) reasons.push('ALREADY_CANONICALLY_LINKED');
+  if (!e.account || !e.account.id || !e.account.isActive || e.account.userId !== e.userId
+    || !['checking','savings','cash'].includes(low(e.account.type))) {
+    reasons.push('MONETARY_ACCOUNT_SCOPE_OR_STATUS_INVALID');
+  }
   if (!c || !p || input.categoryMatchCount !== 1 || input.paymentMatchCount !== 1) {
     reasons.push('NO_UNAMBIGUOUS_CATALOG_MATCH');
   }
