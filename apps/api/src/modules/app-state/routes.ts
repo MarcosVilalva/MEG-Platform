@@ -17,6 +17,7 @@ import {
   synchronizeNormalizedRows,
 } from './normalization-migration';
 import { reconcilePrimaryAppStateFromNormalized } from './normalized-primary-writeback';
+import { normalizationWriteConflictCode, normalizationWriteConflictPayload } from './normalization-conflict-policy';
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -85,24 +86,6 @@ const normalizationReconcileSchema = z.object({
   expectedRevision: z.number().int().nonnegative(),
   confirmation: z.literal('RECONCILIAR_ESPELHO_APPSTATE'),
 });
-
-const NORMALIZATION_WRITE_CONFLICTS = new Set([
-  'NORMALIZATION_INVALID_SOURCE',
-  'NORMALIZATION_DUPLICATE_LEGACY_ID',
-  'NORMALIZATION_EVENT_OWNER_MISMATCH',
-  'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE',
-  'NORMALIZATION_INVALID_ACCOUNT_SCOPE',
-  'NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER',
-  'NORMALIZATION_CANONICAL_CATEGORY_CONFLICT',
-  'NORMALIZATION_CANONICAL_PAYMENT_METHOD_CONFLICT',
-  'NORMALIZATION_ACCOUNT_CHANGE_REQUIRES_CANONICAL_WRITER',
-  'NORMALIZATION_CONCURRENT_EVENT_CHANGE',
-]);
-
-function normalizationWriteConflictCode(error: unknown): string | null {
-  if (!(error instanceof Error)) return null;
-  return NORMALIZATION_WRITE_CONFLICTS.has(error.message) ? error.message : null;
-}
 
 function activityMetadata(activityLog: unknown[] | undefined): Record<string, unknown> {
   return activityLog === undefined ? {} : { activityLog };
@@ -342,7 +325,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       }, { maxWait: 10_000, timeout: 120_000 });
     } catch (error) {
       const code = normalizationWriteConflictCode(error);
-      if (code) return reply.status(409).send({ error: code, revision: current.revision });
+      if (code) return reply.status(409).send(normalizationWriteConflictPayload(code, current.revision));
       throw error;
     }
     if (updated.count !== 1) {
@@ -520,7 +503,7 @@ export async function appStateRoutes(app: FastifyInstance) {
         });
     } catch (error) {
       const code = normalizationWriteConflictCode(error);
-      if (code) return reply.status(409).send({ error: code, revision: current?.revision || 0 });
+      if (code) return reply.status(409).send(normalizationWriteConflictPayload(code, current?.revision || 0));
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current?.revision || 0 });
       }
