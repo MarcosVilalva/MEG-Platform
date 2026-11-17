@@ -119,7 +119,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       if(!stage10QaWebWriteEnabled())return reply.status(403).send({error:'STAGE10_QA_WRITE_DISABLED'});
       const context=await resolveWorkspaceContext(request.user.sub);
       if(!(await assertWriteAccess(context.workspaceId,reply)))return;
-      const state=await prisma.appState.findUnique({where:{workspaceId:context.workspaceId},select:{state:true}});
+      const state=await prisma.appState.findUnique({where:{workspaceId:context.workspaceId},select:{state:true,revision:true}});
       return {
         protocol:MEG_STAGE10_QA_WRITE_PROTOCOL,
         allowed:Boolean(state&&isNormalizedPrimary(state.state)),
