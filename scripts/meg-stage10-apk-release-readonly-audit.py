@@ -8,6 +8,7 @@ Nunca imprime senhas, tokens, URLs completas ou conteúdo de assets.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import pathlib
 import re
@@ -57,6 +58,31 @@ with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
             if entry.filename.startswith("assets/") and not entry.is_dir():
                 print("MEG_STAGE10_APK_ASSET_PATH", entry.filename[:220],
                       "BYTES", entry.file_size)
+        # Identificar se a release usa caminhos de AppState, outbox ou PATCH.
+        # Produz apenas booleanos e nomes dos bundles, nunca codigo empacotado.
+        protocol_markers = (
+            "app-state", "/transactions", "PATCH", "409", "outbox",
+            "instant-persistence", "cloudRequest", "cloud-write-ahead",
+        )
+        for entry in entries:
+            if not (entry.filename.startswith("assets/public/")
+                    and entry.filename.endswith(".js") and not entry.is_dir()
+                    and entry.file_size < 4_000_000):
+                continue
+            content = apk.read(entry).decode("utf-8", errors="ignore")
+            hits = [x for x in protocol_markers if x in content]
+            if hits:
+                print("MEG_STAGE10_APK_BUNDLE_MARKERS", entry.filename[:180], ",".join(hits))
+        if "assets/capacitor.config.json" in apk.namelist():
+            conf = json.loads(apk.read("assets/capacitor.config.json"))
+            from urllib.parse import urlparse
+            server = conf.get("server") if isinstance(conf, dict) else None
+            server = server if isinstance(server, dict) else {}
+            print("MEG_STAGE10_APK_CAPACITOR_REMOTE_URL_CONFIGURED",
+                  bool(server.get("url")))
+            if isinstance(server.get("url"), str):
+                print("MEG_STAGE10_APK_CAPACITOR_REMOTE_HOST",
+                      urlparse(server["url"]).hostname or "NONE")
         for suffix in ("classes.dex", "classes2.dex", "classes3.dex"):
             if suffix not in apk.namelist():
                 continue
