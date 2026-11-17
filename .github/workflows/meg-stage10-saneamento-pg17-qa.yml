@@ -34,6 +34,18 @@ jobs:
       PGAPPNAME: MEG_STAGE10_QA_DISPOSABLE_ONLY
     steps:
       - uses: actions/checkout@v4
+      - name: Guard de congelamento Android e sincronizacao legada
+        run: |
+          git fetch --no-tags --depth=1 origin 5a3f6b81817b7739d0c13f509d93f9898b7b5245
+          git diff --exit-code FETCH_HEAD HEAD -- \
+            android/ capacitor.config.ts \
+            apps/web/index.html apps/web/vite.config.ts \
+            apps/web/src/instant-persistence.js \
+            apps/web/src/legacy-state-patch.js \
+            apps/web/src/cloud-write-ahead-core.js \
+            apps/web/src/durable-outbox-core.js \
+            apps/web/src/durable-outbox-store.js \
+            apps/web/src/legacy-finance.js
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
