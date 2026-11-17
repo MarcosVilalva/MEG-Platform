@@ -40,7 +40,12 @@ export function approvedQaCatalogs(data:{
  * Apenas conversao de formulario para contrato da API. Nao calcula saldo,
  * status canonico, parcela, fatura nem faz alteracoes fora do writer central.
  */
-export function toQaMonetaryExpense(draft:ExpenseDraft,catalogs:ExpenseCatalogs):FinancialEventInput {
+export type QaMonetaryExpenseInput=FinancialEventInput & {
+ type:'expense';status:'paid'|'planned';
+ accountId:string;categoryId:string;paymentMethodId:string;
+};
+
+export function toQaMonetaryExpense(draft:ExpenseDraft,catalogs:ExpenseCatalogs):QaMonetaryExpenseInput {
   if (draft.modality!=='cash' || draft.creditCardId || draft.installmentsInput!=='1'
     || draft.firstInstallmentDate) throw new Error('STAGE10_QA_CARTAO_NAO_SUPORTADO');
   const category=catalogs.categories.find(x=>x.active&&x.id===draft.categoryId);

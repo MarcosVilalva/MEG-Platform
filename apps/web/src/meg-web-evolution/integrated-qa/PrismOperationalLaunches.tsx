@@ -93,6 +93,7 @@ export default function PrismOperationalLaunches({
  const [notice,setNotice]=useState('');
  const [qaWriteReady,setQaWriteReady]=useState(false);
  const [qaSaving,setQaSaving]=useState(false);
+ const [writeRefreshRevision,setWriteRefreshRevision]=useState(0);
  const qaSavingRef=useRef(false);
  const lastWriteRef=useRef<{fingerprint:string;operationId:string}|null>(null);
  const lastEditRef=useRef<{fingerprint:string;operationId:string}|null>(null);
@@ -161,7 +162,7 @@ export default function PrismOperationalLaunches({
      throw new Error('STAGE10_QA_EDICAO_SEM_CONFIRMACAO');
    }
    lastEditRef.current=null;
-   setOverlay(null);setEditId(null);
+   setOverlay(null);setEditId(null);setWriteRefreshRevision(v=>v+1);
    setNotice('Alterações confirmadas na base QA e no espelho Android.');
   }catch(error){
    setNotice(error instanceof Error?error.message:'Falha na edição QA. Nenhum dado foi confirmado.');
@@ -188,7 +189,7 @@ export default function PrismOperationalLaunches({
     throw new Error('STAGE10_QA_ESPELHO_NAO_CONFIRMADO');
    }
    lastWriteRef.current=null;
-   setOverlay(null);setNotice('Lançamento confirmado na base QA e no espelho financeiro.');
+   setOverlay(null);setWriteRefreshRevision(v=>v+1);setNotice('Lançamento confirmado na base QA e no espelho financeiro.');
   }catch(error){
    setNotice(error instanceof Error?error.message:'Falha ao confirmar gravação. Os dados do formulário foram preservados.');
   }finally{qaSavingRef.current=false;setQaSaving(false);}
@@ -242,7 +243,7 @@ export default function PrismOperationalLaunches({
  },[initialNew,readData,startNew,onInitialNewConsumed]);
 
  return <div data-meg-operational-prism={qaWriteReady?'isolated-qa-financial-write':'read-only'}>
-  <OperationalLaunches userId={userId} userName={userName} onHome={onHome}
+  <OperationalLaunches key={'stage10-qa-write-'+writeRefreshRevision} userId={userId} userName={userName} onHome={onHome}
    periodMonth={periodMonth} onPeriodChange={onPeriodChange}
     periodSelection={periodSelection} onPeriodSelectionChange={onPeriodSelectionChange} globalSearch={globalSearch} prismReadOnlyCallbacks={callbacks}/>
   {overlay==='choice'&&catalogs&&<div className="meg-new-launch__overlay is-choice-overlay meg-unified-choice-overlay">
