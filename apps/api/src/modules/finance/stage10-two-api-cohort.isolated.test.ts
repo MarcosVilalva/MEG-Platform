@@ -87,7 +87,7 @@ try {
   if (new URL(origin).hostname !== '127.0.0.1') throw new Error('STAGE10_LOOPBACK_ONLY');
   await cohortBarrier('ready');
   const request = async (revision: number, data:typeof payload) => {
-    const response = await fetch(origin+'app-state/transactions', {
+    const response = await fetch(new URL('/app-state/transactions',origin), {
       method: 'PATCH',
       headers: {'content-type': 'application/json'},
       body: JSON.stringify({operationId:randomUUID(),expectedRevision:revision,upserts:[data],deletes:[]}),
@@ -110,7 +110,7 @@ try {
   assert.equal(updated.id,original.id);
   assert.equal(updated.description,'QA descricao editada');
   assert.equal(await prisma.financialEvent.count({where:{workspaceId:workspace.id,legacyTransactionId:payload.id}}),1);
-  const read = await fetch(origin+'app-state');
+  const read = await fetch(new URL('/app-state',origin));
   const readBody = await read.json() as {dataSource: string};
   assert.equal(read.status,200);
   assert.equal(readBody.dataSource,'normalized');
