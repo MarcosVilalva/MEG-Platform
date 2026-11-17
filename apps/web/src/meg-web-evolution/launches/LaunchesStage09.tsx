@@ -379,7 +379,7 @@ export function LaunchesStage09({data,onNew,onHome,mode='preview',periodMonth='2
    render:(_value,row)=><button type="button" className="meg-l09-open-row" onClick={()=>openDetails(row.id)} title={'Abrir detalhes de '+row.description}>{row.description}</button>},
   {key:'category',label:'Categoria',type:'enum',width:160,minWidth:128,sortable:true,filterable:true,
    render:(_value,row)=>mode==='live'
-    ? <LaunchCategoryBadge category={row.category} historical={row.categoryOrigin==='historical'}/>
+    ? <LaunchCategoryBadge category={row.category} origin={row.categoryOrigin}/>
     : <span className={'meg-l09-chip '+(row.type==='income'?'is-income':row.category==='Supermercado'?'is-food':'')} title={row.category}>
        <LaunchIcon name={launchCategoryIcon(row.category)} width={17} height={17} strokeWidth={1.9}/>
        <span className="meg-l09-chip-label">{row.category}</span>
