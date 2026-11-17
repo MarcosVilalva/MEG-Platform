@@ -76,6 +76,8 @@ jobs:
           npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
       - name: HTTP real Fastify.inject PATCH/PUT em PG17 e rollback 409
         run: npx tsx apps/api/src/modules/finance/stage10-saneamento-routes.isolated.test.ts
+      - name: Shadow inicial apenas: bloquear reescrita de ID e vinculos PG17
+        run: npx tsx apps/api/src/modules/finance/stage10-shadow-id-preservation.isolated.test.ts
       - name: Compatibilidade read-only do cliente legado e do outbox
         run: |
           node apps/web/src/legacy-state-patch.test.js
