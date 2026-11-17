@@ -54,3 +54,19 @@ Novo script `scripts/meg-stage10-writer-cohort-isolation-synthetic.pg17.sql` cri
 **Próximo gate para o Marco 5:** executar **dois serviços API reais** com credenciais de banco de privilégio mínimo em QA isolado; comprovar que cada serviço não acessa o esquema do outro, que offline/replay/409 do cliente existente não atingem os eventos da nova Web e que não há duplicidade/reconciliação falsa. Verificar a rota efetivamente usada pela APK instalada. Em seguida definir cutover/reconciliação com autorização específica e sem perda de histórico. Somente com essa evidência e compatibilidade demonstrada o marcador 5 poderá ser concluído.
 
 O [PR #697](https://github.com/MarcosVilalva/MEG-Platform/pull/697) permanece Draft e a [Issue #699](https://github.com/MarcosVilalva/MEG-Platform/issues/699) permanece aberta. Não há merge, deploy, alteração de dados reais nem aprovação visual implícita.
+
+
+## 6. Segundo gate: duas instâncias reais Fastify/Prisma, credenciais separadas, PG17 descartável
+
+**Evidência:** [Actions #44089989091](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44089989091) **SUCCESS**.
+
+Arquivos adicionados:
+- `scripts/meg-stage10-two-api-schemas-init.pg17.sql`: cria, exclusivamente no banco descartável `meg_stage10_sandbox`, os usuários de conexão `stage10_cohort_android_login` e `stage10_cohort_web_login`, cada um proprietário de um schema próprio;
+- `scripts/meg-stage10-two-api-cohort-qa.sh`: inicializa os schemas, aplica Prisma `db push` de teste separadamente em cada schema, executa testes sequenciais em processos Node/tsx independentes e destrói os schemas/roles no encerramento;
+- `apps/api/src/modules/finance/stage10-two-api-cohort.isolated.test.ts`: inicializa Fastify com as rotas reais `appStateRoutes`, usa identidade de sessão **simulada**, cria workspace/conta fictícios, faz PATCH de criação e edição preservando ID, confere a leitura de fonte normalizada e recusa leitura direta do schema da outra coorte com PostgreSQL `insufficient_privilege` / SQLSTATE `42501`.
+
+**Escopo da prova:** as duas instâncias foram executadas **sequencialmente**, não foram publicadas, não compartilharam escrita nas mesmas tabelas e não testaram simultaneidade de dois dispositivos. O teste usa schema e credencial de banco separados dentro do mesmo container PostgreSQL 17 do GitHub Actions, sem serviço externo. `Prisma db push` ocorreu **somente** nesses schemas fictícios, e a rotina de cleanup conferiu a destruição de papéis e esquemas criados.
+
+**Resultado arquitetural:** ficou comprovado que a mesma aplicação pode operar com duas credenciais de privilégio mínimo e schemas separados, sem acesso SQL cruzado nos cenários testados. Não foi comprovada a compatibilidade do Android instalado, a segurança da infraestrutura de hospedagem, a replicação/cutover de dados reais, nem uma integração de sessão JWT real. Essas tarefas permanecem pendentes. O pacote de produção não pode simplesmente compartilhar a mesma credencial administrativa ou apontar ambas as instâncias para o mesmo schema `public`.
+
+**Atualização do próximo gate:** validar um cenário simultâneo de cliente legado/novos escritores em QA isolado e autenticação real, além do contrato de transição/reconciliação. Manter a Issue #699 P0 e o marco 5 abertos. Indicador do saneamento: 40% técnico, 0% migração real.
