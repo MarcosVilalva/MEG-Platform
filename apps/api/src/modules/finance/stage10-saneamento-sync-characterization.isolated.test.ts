@@ -171,6 +171,67 @@ async function main() {
         /NORMALIZATION_DUPLICATE_LEGACY_ID/,
       );
 
+      // Recibo, baixa de contas a pagar e importacao também preservam a FK.
+      const linkedFixtures = [];
+      for (const domain of ['receipt', 'payable', 'import'] as const) {
+        const item = legacy(domain + '-' + stamp, account.id, 11.25);
+        const event = await tx.financialEvent.create({ data: {
+          workspaceId: ws.id, userId: owner.id, legacyTransactionId: item.id,
+          description: item.description, type: 'expense', status: 'paid',
+          date: new Date('2026-11-11T12:00:00Z'), competence: '2026-11',
+          amount: 11.25, signedAmount: -11.25, accountId: account.id,
+          categoryId: category.id, paymentMethodId: method.id, sourcePayload: item,
+        } });
+        if (domain === 'receipt') {
+          const receivable = await tx.receivable.create({ data: {
+            userId: owner.id, description: 'Recebivel QA', totalAmount: 11.25,
+            openAmount: 0, dueDate: event.date, status: 'paid',
+          } });
+          await tx.receipt.create({ data: {
+            receivableId: receivable.id, financialEventId: event.id,
+            amount: 11.25, receivedAt: event.date,
+          } });
+        } else if (domain === 'payable') {
+          const payable = await tx.payable.create({ data: {
+            userId: owner.id, description: 'Obrigacao QA', totalAmount: 11.25,
+            openAmount: 0, dueDate: event.date, status: 'paid',
+          } });
+          await tx.payablePayment.create({ data: {
+            payableId: payable.id, financialEventId: event.id,
+            amount: 11.25, paidAt: event.date,
+          } });
+        } else {
+          const batch = await tx.importBatch.create({ data: {
+            userId: owner.id, fileName: 'qa.csv', fileHash: 'qa-' + stamp,
+            rowCount: 1, status: 'completed',
+          } });
+          await tx.importedRow.create({ data: {
+            batchId: batch.id, rowNumber: 1, status: 'imported',
+            eventId: event.id, rawData: { source: 'QA_DISPOSABLE_ONLY' },
+          } });
+        }
+        linkedFixtures.push({ domain, item, event });
+      }
+      for (const { domain, item, event } of linkedFixtures) {
+        await assert.rejects(
+          () => synchronizeNormalizedRows(tx,
+            state([payloadA, { ...item, description: 'Alteracao bloqueada' }]),
+            context(ws.id, owner.id, 13), [item.id]),
+          /NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER/,
+          'Dominio protegido: ' + domain,
+        );
+        await assert.rejects(
+          () => synchronizeNormalizedRows(tx, state([payloadA]), context(ws.id, owner.id, 14), [item.id]),
+          /NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER/,
+          'Arquivo em dominio protegido: ' + domain,
+        );
+        const persisted = await tx.financialEvent.findUniqueOrThrow({ where: { id: event.id } });
+        assert.equal(persisted.categoryId, category.id);
+        assert.equal(persisted.paymentMethodId, method.id);
+        assert.equal(persisted.archivedAt, null);
+      }
+      console.log('MEG_STAGE10_QA_P0_RECEIPT_PAYABLE_IMPORT_FK_GUARDS PASS');
+
       // Todas as fixtures e updates desta prova sao revertidos por design.
       throw new ExpectedRollback();
     }, { timeout: 60000 });
