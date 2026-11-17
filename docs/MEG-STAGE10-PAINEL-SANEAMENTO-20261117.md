@@ -52,3 +52,11 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 - Plano técnico e limitações: `docs/MEG-STAGE10-ISOLAMENTO-COORTES-GATE-20261117.md`.
 
 **Contagem segue 4/10 = 40% técnico, migração real 0%.** O marco 5 exige evidência com Android instalado e decisão segura de coexistência/reconciliação, não apenas isolamento de QA. Não há merge/deploy, produção, Android, custos ou migração. A Issue #699 P0 permanece aberta.
+
+
+## 17/11/2026 | Gate HTTP concorrente de duas coortes
+- [Actions #44092660163](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44092660163) **SUCCESS, 27 etapas**: duas instâncias Fastify paralelas em HTTP loopback real, credenciais e schemas Prisma distintos no PG17 descartável, barreiras de sincronização, acesso cruzado negado, disputa pelo mesmo lançamento/revisão (200 + 409), IDs/valores preservados e limpeza final. Auth simulada, sem APK instalada.
+- [Actions #44092200586](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44092200586) **SUCCESS, 27 etapas**: primeira versão da disputa pela mesma revisão; depois expandida para HTTP loopback.
+- A tentativa anterior [#44091761244](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44091761244) teve **falha de TypeScript** no teste QA, corrigida antes dos gates verdes.
+- Detalhes, limites e próximos gates: `docs/MEG-STAGE10-CONCORRENCIA-HTTP-QA-20261117.md`.
+- **Marco 5 ainda NÃO concluído**: o Android instalado, JWT real e coexistência de dados reais não foram homologados. **40% técnico, 0% migração produtiva**.

@@ -70,3 +70,12 @@ Arquivos adicionados:
 **Resultado arquitetural:** ficou comprovado que a mesma aplicação pode operar com duas credenciais de privilégio mínimo e schemas separados, sem acesso SQL cruzado nos cenários testados. Não foi comprovada a compatibilidade do Android instalado, a segurança da infraestrutura de hospedagem, a replicação/cutover de dados reais, nem uma integração de sessão JWT real. Essas tarefas permanecem pendentes. O pacote de produção não pode simplesmente compartilhar a mesma credencial administrativa ou apontar ambas as instâncias para o mesmo schema `public`.
 
 **Atualização do próximo gate:** validar um cenário simultâneo de cliente legado/novos escritores em QA isolado e autenticação real, além do contrato de transição/reconciliação. Manter a Issue #699 P0 e o marco 5 abertos. Indicador do saneamento: 40% técnico, 0% migração real.
+
+
+## 7. Terceiro gate: duas APIs HTTP simultâneas e CAS concorrente, 17/11/2026
+
+Novas barreiras de sincronização `ready/inserted/updated` foram incluídas nos testes; os serviços são iniciados **em paralelo**, usam portas HTTP locais distintas `127.0.0.1:0` atribuídas pelo SO e fazem PATCH/GET com `fetch` real. O runner configura duas conexões Prisma sem privilégios cruzados, e limpa os schemas/roles ao final. Em **cada** coorte, dois PATCH concorrentes sobre a mesma revisão produziram exatamente um HTTP 200 e um HTTP 409, sem alteração de ID, valor ou saldo, mantendo a revision do AppState coerente.
+
+[CI #44092660163](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44092660163) **SUCCESS** com 27 etapas; [CI #44092200586](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44092200586) **SUCCESS** com teste concorrente via chamada interna, antes da conversão a HTTP local. Uma run anterior falhou **só no typecheck TS** (tipagem de `barrierDir`), corrigida.
+
+A prova é mais próxima de dois serviços reais, porém **não é uma APK Android**, não usa JWT real, não envolve dados de produção nem demonstra reconciliação entre schemas. Marco 5 ainda P0 aberto; sem merge/deploy. Documento de detalhes: `docs/MEG-STAGE10-CONCORRENCIA-HTTP-QA-20261117.md`.
