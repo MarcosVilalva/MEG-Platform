@@ -50,7 +50,7 @@ try {
     eventId=row.id;
     const proposal = classifyStage10HistoricalLink({
       event:{
-        id:row.id,userId:row.userId,type:row.type,status:row.status,
+        id:row.id,userId:row.userId,description:row.description,type:row.type,status:row.status,
         amount:Number(row.amount),signedAmount:Number(row.signedAmount),
         categoryId:row.categoryId,paymentMethodId:row.paymentMethodId,
         archivedAt:row.archivedAt,sourcePayload:row.sourcePayload,
