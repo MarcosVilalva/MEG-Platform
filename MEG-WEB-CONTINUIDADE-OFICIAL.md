@@ -3097,3 +3097,21 @@ Continuar somente a Etapa 10 do MEG Finanças Web Evolution em MarcosVilalva/MEG
 ```
 
 **Saúde do chat após auditoria:** TROCA RECOMENDADA, pois o histórico e os testes já exigiram checkpoints extensos. O registro oficial acima permite retomada sem refazer auditorias nem presumir aprovações.
+
+
+## Etapa 10 | Gate PG17 descartavel para saneamento historico | 17/11/2026
+
+1. **Tema e etapa:** exclusivamente Etapa 10. Nenhuma autorização para a Etapa 11. Consolidar vínculos históricos de categoria e pagamento sem alterar regras financeiras nem o banco produtivo até gates e aprovação específica.
+2. **Autorização e limites:** o responsável autorizou avançar com todas as fases necessárias ao saneamento, mantendo proibição de alterar produção, Android, API pública, escritores, merge, banco real, serviços/custos ou o sandbox de recuperação da Etapa 09 sem liberação específica.
+3. **Trabalho concluído:** branch isolada `stage10/saneamento-qa-descartavel-20261117`, PR #697 Draft com base na branch do PR #696; adicionado workflow `.github/workflows/meg-stage10-saneamento-pg17-qa.yml`, SQL sintético `scripts/meg-stage10-saneamento-qa.pg.sql`, teste de risco `apps/api/src/modules/finance/stage10-saneamento-risk-characterization.test.ts` e documento `docs/MEG-STAGE10-SANEAMENTO-QA-GATE-20261117.md`. PR #696 mantém HEAD `5a3f6b81817b7739d0c13f509d93f9898b7b5245` no momento da abertura, sem merge.
+4. **Gates comprovados:** 18/18 testes do classificador sintético local existente passaram novamente nesta retomada, sem acesso ao banco. **Os novos testes PostgreSQL 17 de Actions ainda não têm execução SUCCESS confirmada.** Não declarar liberação funcional.
+5. **Aprovação visual:** a correção da coluna `Conta / Cartão` do código LIVE `8ec6fbf750307bd7a806ac80b151a7213358cc4a` continua SEM aprovação explícita. Nenhum teste real de sessão financeira autenticada foi executado.
+6. **Riscos/pendências:** 3.033 categorias ativas candidatas, 591 casos não mapeados; 2.900 métodos candidatos sem aprovação, 612 não mapeados; 2.838 arquivados sem workspace. Métodos `CREDITO` tipo `other` e `ALIMENTAÇÃO/VEROCARD` tipo `credit` exigem caracterização por autoridade financeira antes de vincular dados. Esses totais provêm da auditoria read-only de 17/11.
+7. **Fontes:** `docs/MEG-STAGE10-AUDITORIA-CATEGORIA-CONTA-20261117.md`, `docs/MEG-WEB-FINANCIAL-AUTHORITY.md` e `docs/MEG-STAGE10-SANEAMENTO-QA-GATE-20261117.md`. PR #697: https://github.com/MarcosVilalva/MEG-Platform/pull/697 . PR #696: https://github.com/MarcosVilalva/MEG-Platform/pull/696 .
+8. **Repositório e branch:** `MarcosVilalva/MEG-Platform`; trabalho de QA só no PR #697 Draft; nenhuma alteração de `main`, nenhum writer de aplicação e nenhum merge.
+9. **Restrições:** testes em PostgreSQL 17 descartável apenas, dados totalmente fictícios, guardas de conexão, rollback final, conferência de invariantes. Não reutilizar sandbox da Etapa 09; não contratar serviços.
+10. **Próximo passo exato:** verificar execução do CI de PR #697; se falhar, corrigir exclusivamente o gate QA e repetir. Depois caracterizar importadores/leitores/benefício/cartões com dados sintéticos, submeter matriz de casos restantes à aprovação e somente então planejar backup restaurável, dry-run e autorização separada da migração produtiva. Etapa 10 continua aberta.
+
+**Texto de retomada:** "Continuar somente a Etapa 10 do MEG Finanças Web Evolution. Ler MEG-WEB-CONTINUIDADE-OFICIAL.md e docs/MEG-STAGE10-SANEAMENTO-QA-GATE-20261117.md. PR #696 Draft ainda não homologado, PR #697 Draft de QA PG17 descartável. Próximo passo: confirmar e corrigir CI do PR #697, validar invariantes financeiros e mapear casos históricos sem correspondência. Proibidos produção, Android, escritor, merge, deploy, custo e Etapa 11."
+
+**Saúde na origem deste checkpoint:** NORMAL; continuidade disponível no registro.
