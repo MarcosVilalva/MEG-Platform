@@ -29,3 +29,7 @@ As duas APIs Fastify/Prisma isoladas em PG17 QA e os testes de concorrência 200
 5. Aprovação técnica e funcional específica antes de merge/deploy. Nenhum link de prévia publicada existe nesta entrega.
 
 **Marco 5 permanece P0 bloqueado.** Indicador 40% técnico, 0% de migração real.
+
+## Diagnóstico de versão instalada preparado, não executado
+
+O script `scripts/meg-stage10-android-instalado-versao-readonly.ps1` utiliza somente `adb devices` e `adb shell dumpsys package br.com.megfinancas.app`. Valida que haja exatamente um aparelho Android autorizado e imprime apenas versão, código e datas, sem alterar aplicativo, acessar dados MEG ou chamar a API. **Não houve execução em aparelho real**, logo a versão atual do usuário segue desconhecida. A existência desse script não libera o P0.
