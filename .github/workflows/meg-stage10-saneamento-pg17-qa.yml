@@ -61,6 +61,10 @@ jobs:
           node -e "const u=new URL(process.env.DATABASE_URL); if(u.hostname!=='127.0.0.1'||u.pathname!=='/meg_stage10_sandbox'||u.username!=='meg_stage10_ci'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(1)"
       - name: Dependencias imutaveis
         run: npm ci --audit=false --fund=false
+      - name: Bloquear build com mutacao de producao ou hooks inesperados
+        run: |
+          node scripts/meg-stage09-render-api-build.contract.test.mjs
+          node scripts/meg-stage09-render-api-build.regression.test.mjs
       - name: Prisma client e schema SOMENTE no PG17 descartavel
         run: |
           npx prisma generate --schema packages/database/prisma/schema.prisma
