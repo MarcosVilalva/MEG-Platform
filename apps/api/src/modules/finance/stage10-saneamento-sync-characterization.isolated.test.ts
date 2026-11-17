@@ -122,6 +122,24 @@ async function main() {
       assert.equal(afterB.categoryId, category.id);
       assert.equal(afterB.paymentMethodId, method.id);
       assert.equal(afterB.id, second.id);
+      // O rotulo legado nao pode contradizer FKs canonicas ja persistidas.
+      await assert.rejects(
+        () => synchronizeNormalizedRows(tx, state([payloadA, { ...newB, category: 'Outra categoria' }]), context(ws.id, owner.id, 8), [legacyB]),
+        /NORMALIZATION_CANONICAL_CATEGORY_CONFLICT/,
+      );
+      await assert.rejects(
+        () => synchronizeNormalizedRows(tx, state([payloadA, { ...newB, paymentMethod: 'BOLETO' }]), context(ws.id, owner.id, 8), [legacyB]),
+        /NORMALIZATION_CANONICAL_PAYMENT_METHOD_CONFLICT/,
+      );
+      const anotherAccount = await tx.account.create({ data: {
+        userId: owner.id, name: 'Outra conta QA', type: 'checking',
+      } });
+      await assert.rejects(
+        () => synchronizeNormalizedRows(tx, state([payloadA, { ...newB, financialAccountId: anotherAccount.id }]), context(ws.id, owner.id, 8), [legacyB]),
+        /NORMALIZATION_ACCOUNT_CHANGE_REQUIRES_CANONICAL_WRITER/,
+      );
+      assert.equal((await tx.financialEvent.findUniqueOrThrow({ where: { id: second.id } })).accountId, account.id);
+
       const deleted = await synchronizeNormalizedRows(tx, state([payloadA]), context(ws.id, owner.id, 8), [legacyB]);
       assert.equal(deleted.archived, 1);
       const archived = await tx.financialEvent.findUniqueOrThrow({ where: { id: second.id } });
