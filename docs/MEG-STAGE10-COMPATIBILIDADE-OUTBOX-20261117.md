@@ -47,3 +47,7 @@ O PATCH legado contém `operationId`, `expectedRevision`, `upserts`/`deletes` e 
 - Para conclusão do **marco 5**, testar o cliente atual contra a API de destino em ambiente isolado, incluindo offline, repetição, conflito permanente, reintrodução, saldo, ledger, dois dispositivos, rollback e sem alteração do Android. Hoje o marco permanece **BLOQUEADO**.
 
 **Indicador oficial:** 4/10 marcos, **40%** do saneamento técnico. **0%** dos dados reais migrados. Etapa 10 não concluída.
+
+
+## 17/11/2026 | Distinção obrigatória do APK
+A inspeção estática do APK oficial 2.0.708 no CI não comprovou que `instant-persistence.js` e o ramo de outbox financeiro sejam idênticos aos do cliente compilado. O único ramo `.status===409` encontrado é de retorno `{preference:...,synced:...}`, aparentemente preferência. A APK usa Web local embutida e host Render em seus assets. Não confundir `409` de preferência com `409` de transação. Última versão instalada explicitamente confirmada em 26/08/2026: **1.1.167**, sem confirmação de atualização posterior. Esse registro histórico NÃO demonstra a versão instalada atualmente. Provas: [CI #44103544308](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44103544308), docs/MEG-STAGE10-APK-409-CONTRATO-REAL-20261117.md. Issue #699 P0 continua aberta até homologação do contrato efetivamente instalado, sem modificar Android.
