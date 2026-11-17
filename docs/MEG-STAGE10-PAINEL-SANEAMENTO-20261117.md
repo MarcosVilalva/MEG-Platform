@@ -113,3 +113,9 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 - Primeiro CI #44145704517 FAILURE por cleanup incompleto de fixture ledger (assercoes funcionalmente passaram); corrigido no commit 02f9ed6. [CI #44145843511](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44145843511) SUCCESS.
 - Protocolo Android instalado 2.0.708, JWT real, restauracao de dominios especiais e migração por FKs ainda nao aprovados. Issues #699/#700 abertas.
 - Indicador permanece 40% tecnico e 0% saneamento produtivo, sem homologacao funcional ou visual.
+
+## 17/11/2026 | Acao de integracao: Novo Lancamento Web no writer canonico, espelho atomico em QA
+
+A criacao Web estava apenas em read-only e o escritor canonico criava FinancialEvent sem legacyTransactionId / AppState para o Android. Foi implementado fluxo opt-in local QA com categoria, conta e metodo identificados por ID e escrita no writer event-mutation existente. A API so libera gate autenticado quando PostgreSQL 17 descartavel estrito esta habilitado. A MESMA transacao atualiza FinancialEvent, ledger e espelho AppState com legacyTransactionId igual ao ID financeiro; fingerprint normalizado incoerente reverte tudo. Beneficio/Verocard, credito e dominios especiais ficam bloqueados. Modo Editar continua read-only.
+
+CI #44153114515 SUCCESS no codigo SHA ca77ac26c5299c62a3ce9150d79be15b80b0db6e. Um teste de integracao Fastify/PG17 ficticio confirmou um evento criado com mesmo ID no AppState, FKs intactas, ledger unico, historico consultavel, idempotencia e rollback. Verificacao TypeScript API e Web verde. NAO houve gravacao no banco real, deploy, APK instalada, merge ou homologacao funcional/visual. Progresso formal nao muda (4/10; 40% tecnico, 0% producao). 
