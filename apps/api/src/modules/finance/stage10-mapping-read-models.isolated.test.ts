@@ -215,13 +215,19 @@ try {
   // O PostgreSQL 17 existe apenas durante este job. Mesmo se uma assercao
   // falhar, tentar descartar tudo sem afetar outras fixtures do mesmo banco.
   if (ownerId && workspaceId && accountId) {
+    // Captura campos nao nulos antes do callback assincrono para TypeScript.
+    const cleanup = {ownerId, workspaceId, accountId};
     await prisma.$transaction(async tx=>{
-      await tx.financialEvent.deleteMany({where:{id:{in:eventIds},workspaceId}});
-      await tx.category.deleteMany({where:{userId:ownerId}});
-      await tx.paymentMethod.deleteMany({where:{userId:ownerId}});
-      await tx.account.deleteMany({where:{id:accountId,userId:ownerId}});
-      await tx.workspace.delete({where:{id:workspaceId}});
-      await tx.user.delete({where:{id:ownerId}});
+      await tx.financialEvent.deleteMany({
+        where:{id:{in:eventIds},workspaceId:cleanup.workspaceId},
+      });
+      await tx.category.deleteMany({where:{userId:cleanup.ownerId}});
+      await tx.paymentMethod.deleteMany({where:{userId:cleanup.ownerId}});
+      await tx.account.deleteMany({
+        where:{id:cleanup.accountId,userId:cleanup.ownerId},
+      });
+      await tx.workspace.delete({where:{id:cleanup.workspaceId}});
+      await tx.user.delete({where:{id:cleanup.ownerId}});
     },{maxWait:10_000,timeout:30_000});
     assert.equal(await prisma.financialEvent.count({where:{id:{in:eventIds}}}),0);
     assert.equal(await prisma.user.count({where:{email}}),0);
