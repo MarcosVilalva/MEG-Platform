@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import fastify from 'fastify';
-import { LicenseStatus, prisma, UserRole, UserStatus } from '@meg/database';
+import { LicenseStatus, Prisma, prisma, UserRole, UserStatus } from '@meg/database';
 import { appStateRoutes } from '../app-state/routes';
 
 /**
@@ -52,7 +52,7 @@ async function main() {
       members: { create: { userId: owner.id, role: UserRole.ADMIN, status: UserStatus.ACTIVE, isActive: true } },
       appState: { create: {
         userId: owner.id, revision: 1,
-        state: stateFor([{ ...stateTransaction }]),
+        state: stateFor([{ ...stateTransaction }]) as unknown as Prisma.InputJsonValue,
       } },
       subscription: { create: { planId: plan.id, status: LicenseStatus.ACTIVE } },
     } });
@@ -68,7 +68,7 @@ async function main() {
     } });
     const payload = { ...stateTransaction, financialAccountId: account.id };
     const state = stateFor([payload]);
-    await prisma.appState.update({ where: { workspaceId: workspace.id }, data: { state } });
+    await prisma.appState.update({ where: { workspaceId: workspace.id }, data: { state: state as unknown as Prisma.InputJsonValue } });
     const event = await prisma.financialEvent.create({ data: {
       userId: owner.id, workspaceId: workspace.id, legacyTransactionId: legacyId,
       description: payload.description, type: 'expense', status: 'paid',
@@ -80,7 +80,7 @@ async function main() {
 
     // Guard de papel simulado: testa a rota real, NAO o mecanismo JWT.
     app = fastify();
-    app.decorate('authenticate', async (request) => {
+    app.decorate('authenticate', async (request: unknown) => {
       (request as { user: unknown }).user = { sub: owner.id, role: UserRole.ADMIN };
     });
     app.decorate('authorize', (_roles: unknown) => async (request: unknown) => {
