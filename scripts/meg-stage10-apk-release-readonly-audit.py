@@ -73,6 +73,21 @@ with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
             hits = [x for x in protocol_markers if x in content]
             if hits:
                 print("MEG_STAGE10_APK_BUNDLE_MARKERS", entry.filename[:180], ",".join(hits))
+            if "app-state" in content or "409" in content:
+                # Reportar contagens de PADRÕES, não trechos de codigo nem tokens.
+                # Uma ocorrencia so demonstra sintaxe empacotada, nao que
+                # um dispositivo de verdade tenha executado o ramo.
+                patterns = {
+                    "status_409": r"\\.status\\s*={2,3}\\s*409\\b",
+                    "409_continue": r"409\\s*\\)\\s*continue\\b",
+                    "409_retryable": r"409.{0,100}retryable",
+                    "patch_appstate": r"app-state.{0,100}PATCH",
+                    "appstate_patch": r"PATCH.{0,100}app-state",
+                }
+                for pname, pregex in patterns.items():
+                    n = len(re.findall(pregex, content))
+                    print("MEG_STAGE10_APK_BUNDLE_PATTERN", entry.filename[:150],
+                          pname, n)
         if "assets/capacitor.config.json" in apk.namelist():
             conf = json.loads(apk.read("assets/capacitor.config.json"))
             from urllib.parse import urlparse
