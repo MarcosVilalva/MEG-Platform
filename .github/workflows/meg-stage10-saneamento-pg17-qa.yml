@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - 'stage10/saneamento-qa-descartavel-20261117'
+  pull_request:
+    branches:
+      - 'stage10/prism-real-read-optin-20261116'
   workflow_dispatch:
 permissions:
   contents: read
@@ -54,6 +57,7 @@ jobs:
         run: |
           npx tsx apps/api/src/modules/finance/financial-policy.test.ts
           npx tsx apps/api/src/modules/finance/card-statement-canonical.test.ts
+          npx tsx apps/api/src/modules/finance/stage10-saneamento-risk-characterization.test.ts
       - name: Garantir que nenhuma fixture ficou persistida
         run: |
           psql -h 127.0.0.1 -U meg_stage10_ci -d meg_stage10_sandbox -tAc "SELECT count(*) FROM \"FinancialEvent\" WHERE id LIKE 'stage10qa-%'" | grep -x 0
