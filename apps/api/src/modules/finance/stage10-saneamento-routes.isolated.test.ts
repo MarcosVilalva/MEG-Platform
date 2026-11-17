@@ -261,7 +261,9 @@ async function main() {
   } finally {
     delete process.env.MEG_STAGE10_LEGACY_RESTORE_QA;
     if (app) await app.close();
-    if (eventId) await prisma.ledgerEntry.deleteMany({ where: { eventId } });
+    // O restore cria ledger pela autoridade canonica. Limpar todas as
+    // dependencias da fixture antes de remover workspace, inclusive falhas.
+    if (workspaceId) await prisma.ledgerEntry.deleteMany({ where: { event: { workspaceId } } });
     if (workspaceId) await prisma.workspace.delete({ where: { id: workspaceId } });
     if (planId) await prisma.plan.delete({ where: { id: planId } });
     if (ownerId) await prisma.user.delete({ where: { id: ownerId } });
