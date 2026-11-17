@@ -31,3 +31,13 @@ O responsável autorizou continuar as etapas necessárias à regularização. Pr
 - Teste real autenticado da Web e homologação visual/funcional explícita. PR #696 continua Draft, sem merge.
 
 **Estado:** gate QA preparado; não confundir com banco normalizado ou homologação de produção.
+
+
+## Bloqueio P0 encontrado depois do primeiro gate
+Consulta somente leitura ao AppState real: `mode=normalized-primary`, revisão **1561**, espelho com **3.630** transações. Dos **3.731** eventos ativos, **3.630** possuem `legacyTransactionId`; destes, **4** já têm `categoryId`, **118** têm `paymentMethodId`, e **118** têm `LedgerEntry`. Não significa que todos sofrerão uma nova sincronização, mas define o conjunto potencialmente atingível.
+
+A função existente `synchronizeNormalizedRows` em `apps/api/src/modules/app-state/normalization-migration.ts` contém `deleteMany` seguido de `createMany`. As rotas `PATCH /app-state/transactions` e `PUT /app-state` a alcançam nas condições descritas em `apps/api/src/modules/app-state/routes.ts`. No teste isolado `stage10-saneamento-sync-characterization.isolated.test.ts`, o evento fictício teve **ID recriado, categoryId e paymentMethodId perdidos**; a transação foi revertida. [GitHub Actions #44068500928](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44068500928) **SUCCESS**, incluindo o teste de reprodução da perda e rollback.
+
+**Decisão de segurança:** nenhuma correção histórica em produção até resolver a [Issue P0 #698](https://github.com/MarcosVilalva/MEG-Platform/issues/698). A regularização de IDs sem sanear essa sincronização pode ser desfeita em futura gravação legítima.
+
+**Escopo obrigatório da futura correção:** preservar ID existente, vínculos canônicos e FK de ledger/receipt/payable/import; usar atualização em lugar quando juridicamente/financeiramente permitida, nunca apagar/recriar sem prova; caracterizar caminhos `PATCH`/`PUT`, exclusões, estados antigos, concorrência e Android. Se a semântica de operação não estiver comprovada, rejeitar a mutação e não perder dados. Testar tudo em PostgreSQL 17 descartável. Sem deploy, merge nem alteração produtiva neste gate.
