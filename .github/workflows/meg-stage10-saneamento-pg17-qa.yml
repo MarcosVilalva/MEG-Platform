@@ -72,6 +72,14 @@ jobs:
           npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
       - name: HTTP real Fastify.inject PATCH/PUT em PG17 e rollback 409
         run: npx tsx apps/api/src/modules/finance/stage10-saneamento-routes.isolated.test.ts
+      - name: Compatibilidade read-only do cliente legado e do outbox
+        run: |
+          node apps/web/src/legacy-state-patch.test.js
+          node apps/web/src/cloud-write-ahead-core.test.js
+          node --test apps/web/src/durable-outbox-core.test.js
+          node apps/web/src/cloud-state-properties-core.test.js
+          node apps/web/src/state-recovery-core.test.js
+          node apps/web/src/stage10-legacy-client-compatibility.test.js
       - name: Verificacao TypeScript da API isolada
         run: npx tsc -p apps/api/tsconfig.json --noEmit
       - name: Garantir que nenhuma fixture ficou persistida
