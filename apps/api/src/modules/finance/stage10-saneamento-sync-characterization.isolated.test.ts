@@ -77,6 +77,25 @@ async function test(){
  assert.equal(await prisma.financialEvent.count({where:{
   workspaceId:workspace.id,legacyTransactionId:legacyId,
  }}),1);
+ // Uma referencia canonica no ledger deve impedir o delete destrutivo.
+ await prisma.ledgerEntry.create({data:{
+  eventId:before.id,accountId:account.id,date:before.date,
+  debit:0,credit:35.25,memo:'Linked ledger de QA',
+ }});
+ await assert.rejects(()=>prisma.$transaction(async tx=>{
+  const state={__megNormalization:{mode:'normalized-primary'},transactions:[payload]};
+  await synchronizeNormalizedRows(tx,state,{
+   workspaceId:workspace.id,userId:user.id,revision:3,
+  },[legacyId]);
+ }), 'Com LedgerEntry referenciada, sincronizacao destrutiva nao deve confirmar');
+ const linked=await prisma.financialEvent.findUniqueOrThrow({
+  where:{id:before.id},include:{ledgerEntries:true},
+ });
+ assert.equal(linked.id,before.id);
+ assert.equal(linked.categoryId,category.id);
+ assert.equal(linked.paymentMethodId,method.id);
+ assert.equal(linked.ledgerEntries.length,1);
+ console.log('MEG_STAGE10_QA_SYNC_LINKED_LEDGER_FAIL_CLOSED PASS');
  console.log('MEG_STAGE10_QA_SYNC_DESTRUCTIVE_RISK_REPRODUCED_AND_ROLLED_BACK PASS');
 }
 test().catch(e=>{console.error('MEG_STAGE10_QA_SYNC_CHARACTERIZATION_FAIL',e);process.exitCode=1;})
