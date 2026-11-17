@@ -123,6 +123,8 @@ export async function appStateRoutes(app: FastifyInstance) {
       return {
         protocol:MEG_STAGE10_QA_WRITE_PROTOCOL,
         allowed:Boolean(state&&isNormalizedPrimary(state.state)),
+        editSupported:Boolean(state&&isNormalizedPrimary(state.state)),
+        revision:state?.revision??null,
       };
     });
   }

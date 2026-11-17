@@ -44,6 +44,7 @@ export async function mirrorNewMonetaryExpenseToLegacyQa(
   }
   const payload = {
     id:event.id,
+    __megStage10QaSource:'web-monetary-create-v1',
     date:event.date.toISOString().slice(0,10),
     description:event.description,
     type:'expense',

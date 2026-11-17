@@ -95,6 +95,7 @@ export default function PrismOperationalLaunches({
  const [qaSaving,setQaSaving]=useState(false);
  const qaSavingRef=useRef(false);
  const lastWriteRef=useRef<{fingerprint:string;operationId:string}|null>(null);
+ const lastEditRef=useRef<{fingerprint:string;operationId:string}|null>(null);
 
  useEffect(()=>{
   const root=document.documentElement;
@@ -129,6 +130,44 @@ export default function PrismOperationalLaunches({
    .catch(()=>{if(!cancelled)setQaWriteReady(false);});
   return()=>{cancelled=true;};
  },[readData,userId]);
+ const editQaExpense=useCallback(async(draft:ExpenseDraft)=>{
+  if(!qaWriteReady||!catalogs||!editId||qaSavingRef.current)return;
+  const current=readDataRef.current?.events.find(item=>item.id===editId);
+  if(!current||current.legacyTransactionId!==current.id
+    ||current.sourcePayload?.__megStage10QaSource!=='web-monetary-create-v1'
+    ||!current.updatedAt){
+    setNotice('Edição QA permitida somente para lançamentos criados na Web QA e identificados por ID.');
+    return;
+  }
+  try{
+   const payload=toQaMonetaryExpense(draft,catalogs);
+   const fingerprint=JSON.stringify({id:editId,payload,updatedAt:current.updatedAt});
+   if(!lastEditRef.current||lastEditRef.current.fingerprint!==fingerprint){
+     lastEditRef.current={fingerprint,operationId:globalThis.crypto.randomUUID()};
+   }
+   qaSavingRef.current=true;setQaSaving(true);setNotice('');
+   const gate=await authenticatedRequest<{
+     protocol:string;allowed:boolean;editSupported:boolean;revision:number|null;
+   }>('/app-state/stage10-qa-write-gate',{cache:'no-store'});
+   if(!gate.allowed||!gate.editSupported||gate.revision===null
+     ||gate.protocol!=='meg-stage10-qa-transactional-mirror-v1')
+     throw new Error('STAGE10_QA_GATE_NAO_AUTORIZADO');
+   const saved=await financeClient.updateStage10QaMonetaryExpense(editId,{
+     ...payload,status:payload.status as 'planned'|'paid',
+     notes:payload.notes??'',expectedUpdatedAt:current.updatedAt,
+     expectedRevision:gate.revision,operationId:lastEditRef.current.operationId,
+   });
+   if(!saved?.id||saved.id!==editId||saved.legacyTransactionId!==editId){
+     throw new Error('STAGE10_QA_EDICAO_SEM_CONFIRMACAO');
+   }
+   lastEditRef.current=null;
+   setOverlay(null);setEditId(null);
+   setNotice('Alterações confirmadas na base QA e no espelho Android.');
+  }catch(error){
+   setNotice(error instanceof Error?error.message:'Falha na edição QA. Nenhum dado foi confirmado.');
+  }finally{qaSavingRef.current=false;setQaSaving(false);}
+ },[qaWriteReady,catalogs,editId]);
+
  const createQaExpense=useCallback(async(draft:ExpenseDraft)=>{
   if(!qaWriteReady||!catalogs||qaSavingRef.current)return;
   try {
@@ -175,6 +214,7 @@ export default function PrismOperationalLaunches({
   setNotice('');setEditId(null);lastWriteRef.current=null;setOverlay('choice');
  },[]);
  const startEdit=useCallback((row:QaLaunchTarget)=>{
+  lastEditRef.current=null;
   const current=readDataRef.current;
   if(!current){setNotice('Histórico financeiro ainda não disponível.');return;}
   const event=current.events.find(item=>item.id===row.id);
@@ -227,7 +267,10 @@ export default function PrismOperationalLaunches({
    onRequestSave={createQaExpense} onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&catalogs&&editDraft&&<ExpenseForm
    key={'prism-read-'+editId} mode="edit" catalogs={catalogs}
-   initialDraft={editDraft} searchHistorySuggestions={searchHistorySuggestions} readOnlyRealData saveEnabled={false}
+   initialDraft={editDraft} searchHistorySuggestions={searchHistorySuggestions}
+   readOnlyRealData={!qaWriteReady} saveEnabled={qaWriteReady&&!qaSaving
+     &&readData?.events.find(event=>event.id===editId)?.sourcePayload?.__megStage10QaSource==='web-monetary-create-v1'}
+   onRequestSave={editQaExpense}
    onBack={()=>{setOverlay(null);setEditId(null);}}/>}
   {overlay==='edit'&&!editDraft&&<div role="alert">
    O lançamento não pode ser representado com segurança no editor. Nenhum valor foi estimado.

@@ -20,6 +20,8 @@ import { listCanonicalHomeCommitments } from './home-commitments-read';
 import { decodeCommitmentCursor } from './home-commitments-core';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
+import { stage10QaWebWriteEnabled } from '../app-state/stage10-qa-write-gate';
+import { updateStage10QaMonetaryExpense,Stage10QaEditError } from './stage10-qa-financial-edit';
 import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
 import {
@@ -160,6 +162,32 @@ async function financialDataOwnerId(userId: string) {
 
 export async function financeRoutes(app: FastifyInstance) {
   registerPhoenixPreviewReads(app);
+  if(stage10QaWebWriteEnabled()){
+    app.patch('/events/:id/stage10-qa-edit', {preHandler:app.authorize(['ADMIN'])},async(request,reply)=>{
+      if(!stage10QaWebWriteEnabled())return reply.code(403).send({error:'STAGE10_QA_WRITE_DISABLED'});
+      const parsed=z.object({
+        operationId:z.string().uuid(),
+        expectedUpdatedAt:z.string().datetime({offset:true}),
+        expectedRevision:z.number().int().nonnegative(),
+        description:z.string().trim().min(1).max(160),
+        date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        status:z.enum(['planned','paid']),
+        amount:z.number().finite().refine(v=>v!==0),
+        accountId:z.string().min(1),
+        categoryId:z.string().min(1),
+        paymentMethodId:z.string().min(1),
+        notes:z.string().max(1000),
+      }).strict().safeParse(request.body);
+      if(!parsed.success)return validationError(reply,parsed.error.flatten());
+      const {id}=request.params as {id:string};
+      try {return await updateStage10QaMonetaryExpense(request.user.sub,id,parsed.data);}
+      catch(error){
+        if(!(error instanceof Stage10QaEditError))throw error;
+        return reply.code(error.code==='STAGE10_QA_EVENT_NOT_FOUND'?404:409)
+          .send({error:error.code,retryable:false});
+      }
+    });
+  }
 
   app.get('/sync-status', { preHandler: app.authorize([...readRoles]) }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
