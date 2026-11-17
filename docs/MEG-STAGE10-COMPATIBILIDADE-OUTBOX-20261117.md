@@ -71,3 +71,13 @@ Lacunas: a APK instalada pode nao usar este codigo; versao real desconhecida. Re
 ## 17/11/2026 | Versao instalada declarada: 2.0.708
 
 O usuario confirmou **2.0.708** como versao Android instalada. A correcao do outbox da branch QA ainda nao foi distribuida para este aparelho. O contrato exato do bundle instalado e o fluxo de restauracao de evento arquivado continuam sem comprovacao. A issue #699 nao esta resolvida com a declaracao da versao. Sem deploy, merge, Supabase real ou APK publicada.
+
+## 17/11/2026 | Solucao de restore por intencao explicita implementada no codigo
+
+Novo arquivo apps/api/src/modules/app-state/legacy-restore.ts, rotas GET/POST sob /app-state/legacy-restore/:legacyId. Rota so e registrada no PG17 descartavel, quando flags, host e usuario coincidirem; ADMIN e assertWorkspaceWriteAccess. Requer eventId, operationId UUID, expectedRevision, expectedArchivedAt, expectedUpdatedAt e confirmacao literal, portanto o PATCH antigo nao pode desencadear restore.
+
+O writer utiliza transacao SERIALIZABLE, compare-and-swap do tombstone, syncLedger financeiro existente, writeBackNormalizedEventsToAppState e AuditLog/CloudMutationReceipt para idempotencia. Preserva id, categoria, metodo, competencia, tipo, status e valor. Rejeita status archived sem proveniencia original, beneficios, Verocard, credito/cartao, dominio vinculado e conta invalida; nao adivinha regras antigas.
+
+[Actions #44145843511](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44145843511) SUCCESS no SHA 02f9ed64421627b3094947243bd1de256cd04c91. Execucao isolada de fixtures PG17, autenticao simulada; nao e homologacao de JWT ou Android 2.0.708. O commit anterior c3a2ffa executou assercoes com PASS, mas o workflow #44145704517 falhou apenas na limpeza da fixture de ledger, corrigida antes do CI verde. Detalhes docs/MEG-STAGE10-RESTORE-EXPLICITO-QA-20261117.md.
+
+Issue #699 P0 ainda aberta. O novo endpoint nao existe em producao, nao deve ser ativado sem autorizacao independente, e a nova Web ainda nao envia restore real.

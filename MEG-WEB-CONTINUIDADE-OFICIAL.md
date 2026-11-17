@@ -3362,3 +3362,21 @@ Retomada: Continuar apenas Etapa 10 do MEG Web Evolution, PR #697 Draft branch s
 5. **Estado:** PR #697 Draft, issue #699 P0 e #700 abertas, 40% tecnico, 0% migracao produtiva.
 
 Checkpoint de retomada: Etapa 10 exclusivamente, PR #697 Draft. Android instalado informado pelo usuario como 2.0.708 em 17/11/2026. Release 708 auditada, mas sem hash nem protocolo financeiro comprovado no aparelho. Correcao de replay QA no commit 77e7695, Actions #44140953790 SUCCESS; doc commit a2e8a04, Actions #44141501990 SUCCESS. Nenhuma operacao produtiva.
+
+## ETAPA 10 | CHECKPOINT 17/11/2026 | Protocolo de recuperacao explicita na mesma base, QA
+
+1. **Tema/objetivo/etapa:** unificar Android e Web usando as autoridades do mesmo banco; somente Etapa 10, focada no tombstone da issue #699.
+2. **Decisoes:** FinancialEvent continua fonte de verdade e AppState permanece espelho; excluir preserva ID e referencia historica; replay antigo nao vira restore. A restauracao exige intencao administrativa explicita, revision e arquivamento conferidos; nenhum layout Android antigo sera reutilizado.
+3. **Codigo implementado:** apps/api/src/modules/app-state/legacy-restore.ts com GET de metadados e POST de restauracao explicita. Integrado em app-state/routes.ts, no writer ledger canonico de finance/service.ts, auditoria em finance/audit.ts e teste HTTP/PG17. Restrito por flag + URL/usuario PG17 descartavel e papel ADMIN. A linha FinancialEvent conserva o ID, sem criar outra base ou evento.
+4. **Testes comprovados:** commit c3a2ffa tinha todas as assercoes novas passando, mas CI #44145704517 FAILURE devido a cleanup da fixture com ledger; corrigido em 02f9ed64421627b3094947243bd1de256cd04c91, CI #44145843511 SUCCESS. PostgreSQL 17 ficticio, Fastify.inject e auth simulada, nao JWT real. Reexecucao idempotente e rollback, saldo canonico, status, IDs, FKs e espelho conferidos.
+5. **Aprovacoes/nao validados:** autorizacao tecnica limitada para protocolo Android e QA, sem autorizacao para producao, novas APKs, escrita em dados reais, deploy ou merge; sem homologacao funcional/visual real ou autenticacao JWT real.
+6. **Riscos/pendencias:** Android instalado 2.0.708 informado pelo usuario, sem comprovar hash/protocolo fisico. Codigo no fonte QA nao foi distribuido. Recuperacao especial de cartao/beneficio/recebivel/status archived rejeitada; 647 historicos ordinarios e 1855 CREDITO/278 Verocard ainda sem revisao real. #699 e #700 abertas.
+7. **Arquivos/fontes:** docs/MEG-STAGE10-RESTORE-EXPLICITO-QA-20261117.md, docs/MEG-STAGE10-COMPATIBILIDADE-OUTBOX-20261117.md, docs/MEG-WEB-FINANCIAL-AUTHORITY.md, apps/api/src/modules/app-state/legacy-restore.ts, apps/api/src/modules/finance/stage10-saneamento-routes.isolated.test.ts, PR #697.
+8. **Repo/branch/commits:** MarcosVilalva/MEG-Platform, stage10/saneamento-qa-descartavel-20261117, PR #697 Draft, HEAD de codigo testado 02f9ed64421627b3094947243bd1de256cd04c91, sem merge.
+9. **Restricoes:** proibidos Android UI/instalacao/publicacao, Supabase real de escrita, Render, producao, main, merge, deploy, custos e Etapa 11. CI nao substitui homologacao funcional/visual.
+10. **Proximo passo exato:** identificar protocolo real do bundle 2.0.708, validar rota/JWT em QA isolado e contrato de restauracao seletiva no dominio adequado; preparar writer da nova Web somente apos compatibilidade. Nao promover flags QA a producao.
+
+**Percentual:** 40% tecnico (4 de 10 marcos), 0% saneamento real. O marco 5 nao e considerado encerrado com esta implementacao.
+**Saude do chat:** NORMAL, checkpoint oficial preservado.
+
+**Retomada pronta:** Continuar somente a Etapa 10 do MEG Web Evolution, repo MarcosVilalva/MEG-Platform PR #697 Draft branch stage10/saneamento-qa-descartavel-20261117. Ler MEG-WEB-CONTINUIDADE-OFICIAL.md e docs/MEG-STAGE10-RESTORE-EXPLICITO-QA-20261117.md. Android instalado versao 2.0.708 informada pelo usuario. Implementada restauracao explicita tombstone monetario em QA, GET+POST protegidos com revisao/tombstone, mesma ID, ledger/writeback/auditoria canonicos, CI #44145843511 SUCCESS, commit 02f9ed6. Sem JWT real, APK instalada testada, merge, deploy, producao, dados reais ou aprovacoes visuais. Issues #699 P0 e #700 abertas. Proximo passo: protocolo do bundle 2.0.708 e integracao real isolada da API.

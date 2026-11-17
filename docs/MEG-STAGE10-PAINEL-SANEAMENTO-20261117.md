@@ -105,3 +105,11 @@ A incompatibilidade da APK congelada permanece. A origem padrão do aplicativo e
 - CI #44140953790 SUCCESS no commit 77e7695, 30 passos verdes. Guard do repositorio ainda protege Android/Capacitor e demais modulos.
 - Marco 5 continua aberto: versao da APK realmente instalada e fluxo seguro de recuperacao deliberada de ID arquivada ainda nao validados. Issue #699 P0 mantida.
 - Saneamento historico issue #700 sem alteracoes reais. Indicador permanece 40% tecnico e 0% produtivo.
+
+## 17/11/2026 | Recuperacao explicita e idempotente no escritor QA
+
+- Implementado codigo de GET/POST de recuperacao administrativa de tombstone financeiro normalizado, com idempotencia de recibo e integracao ao writer ledger e espelho canonicos, sem inventar segunda base.
+- Endpoint so e registrado no banco ficticio PG17 local com flags de QA; nao publica funcionalidade financeira produtiva.
+- Primeiro CI #44145704517 FAILURE por cleanup incompleto de fixture ledger (assercoes funcionalmente passaram); corrigido no commit 02f9ed6. [CI #44145843511](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44145843511) SUCCESS.
+- Protocolo Android instalado 2.0.708, JWT real, restauracao de dominios especiais e migração por FKs ainda nao aprovados. Issues #699/#700 abertas.
+- Indicador permanece 40% tecnico e 0% saneamento produtivo, sem homologacao funcional ou visual.
