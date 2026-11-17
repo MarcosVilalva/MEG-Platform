@@ -30,7 +30,7 @@ assert.notEqual(historicalPlanned,fixedPlanned,
  'Vincular categoria Fixo pode mudar a politica de status');
 
 assert.equal(isBenefitFinancialEvent({account:{type:'benefit'}}),true);
-assert.equal(isBenefitFinancialEvent({paymentMethod:{name:'VEROCARD',type:'credit'}}),true);
-assert.equal(isBenefitFinancialEvent({account:{type:'checking'},paymentMethod:{name:'PIX',type:'instant'}}),false);
+assert.equal(isBenefitFinancialEvent({paymentMethod:{name:'VEROCARD'}}),true);
+assert.equal(isBenefitFinancialEvent({account:{type:'checking'},paymentMethod:{name:'PIX'}}),false);
 
 console.log('MEG_STAGE10_QA_FINANCIAL_POLICY_CHANGE_RISKS_CHARACTERIZED PASS');
