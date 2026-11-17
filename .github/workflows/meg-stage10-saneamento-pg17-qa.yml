@@ -58,6 +58,8 @@ jobs:
           npx tsx apps/api/src/modules/finance/financial-policy.test.ts
           npx tsx apps/api/src/modules/finance/card-statement-canonical.test.ts
           npx tsx apps/api/src/modules/finance/stage10-saneamento-risk-characterization.test.ts
+      - name: Caracterizar risco de sincronizacao normalized-primary (transacao revertida)
+        run: npx tsx apps/api/src/modules/finance/stage10-saneamento-sync-characterization.isolated.test.ts
       - name: Garantir que nenhuma fixture ficou persistida
         run: |
           psql -h 127.0.0.1 -U meg_stage10_ci -d meg_stage10_sandbox -tAc "SELECT count(*) FROM \"FinancialEvent\" WHERE id LIKE 'stage10qa-%'" | grep -x 0
