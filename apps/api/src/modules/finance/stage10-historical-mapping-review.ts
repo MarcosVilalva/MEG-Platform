@@ -9,6 +9,7 @@ type HistoricalCandidate = {
   event: {
     id: string;
     userId: string | null;
+    description: string;
     type: string;
     status: string;
     amount: number;
@@ -75,7 +76,7 @@ export function classifyStage10HistoricalLink(input: HistoricalCandidate): Class
   if (scope !== 'monetary' || modality !== 'à vista' || method.startsWith('cartão')
     || method.startsWith('cartao') || method === 'verocard'
     || isBenefitFinancialEvent({
-      description: '', paymentMethod: p ? {name:p.name} : null, account:e.account,
+      description:e.description, paymentMethod: p ? {name:p.name} : null, account:e.account,
     })) {
     reasons.push('FINANCIAL_DOMAIN_SPECIALIST_REQUIRED');
   }
