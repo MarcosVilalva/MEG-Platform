@@ -115,8 +115,11 @@ export default function PrismOperationalLaunches({
   };
  },[]);
 
- const catalogs=useMemo(()=>readData?
-    {...catalogsFromRealRead(readData),...approvedQaCatalogs(readData)}:null,[readData]);
+ const catalogs=useMemo(()=>readData
+    ? stage10LocalQaWriteOptIn()
+      ? {...catalogsFromRealRead(readData),...approvedQaCatalogs(readData)}
+      : catalogsFromRealRead(readData)
+    : null,[readData]);
  useEffect(()=>{
   setQaWriteReady(false);
   if(!readData||!stage10LocalQaWriteOptIn())return;

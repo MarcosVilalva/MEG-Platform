@@ -119,8 +119,12 @@ jobs:
           node apps/web/src/stage10-frozen-legacy-409-harness.test.js
       - name: Politica de conflito opt-in da nova Web, sem modificar Android
         run: npx tsx apps/web/src/meg-web-evolution/qa/stage10-write-conflict-policy.test.ts
-      - name: Verificacao TypeScript da API isolada
-        run: npx tsc -p apps/api/tsconfig.json --noEmit
+      - name: Integracao de gravacao unica Web e espelho Android em PG17 QA
+        run: npx tsx apps/api/src/modules/finance/stage10-qa-web-android-create.isolated.test.ts
+      - name: Verificacao TypeScript da API e Web
+        run: |
+          npx tsc -p apps/api/tsconfig.json --noEmit
+          npx tsc -p apps/web/tsconfig.json --noEmit
       - name: Garantir que nenhuma fixture ficou persistida
         run: |
           psql -h 127.0.0.1 -U meg_stage10_ci -d meg_stage10_sandbox -tAc "SELECT count(*) FROM \"FinancialEvent\" WHERE id LIKE 'stage10qa-%'" | grep -x 0
