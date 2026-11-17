@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { existsSync, writeFileSync } from 'node:fs';
+import { isAbsolute, join } from 'node:path';
 import fastify from 'fastify';
 import { LicenseStatus, Prisma, prisma, UserRole, UserStatus } from '@meg/database';
 import { appStateRoutes } from '../app-state/routes';
@@ -27,6 +29,22 @@ const stamp = 'stage10-cohort-' + mode + '-' + Date.now() + '-' + Math.random().
 let userId: string | null = null;
 let workspaceId: string | null = null;
 let planId: string | null = null;
+// Barreira local: garante duas instancias vivas antes e durante os PATCHs.
+// O diretório é criado pelo runner efêmero, nunca em instalação Android.
+const barrierDir = process.env.MEG_STAGE10_CONCURRENT_BARRIER_DIR;
+if (!barrierDir || !isAbsolute(barrierDir) || !barrierDir.startsWith('/tmp/meg-stage10-cohorts.')) {
+  throw new Error('STAGE10_QA_CONCURRENT_BARRIER_REQUIRED');
+}
+const otherMode = mode === 'android' ? 'web' : 'android';
+async function cohortBarrier(phase: 'ready' | 'inserted' | 'updated') {
+  writeFileSync(join(barrierDir, phase + '-' + mode), String(process.pid));
+  const peer = join(barrierDir, phase + '-' + otherMode);
+  const deadline = Date.now() + 40_000;
+  while (!existsSync(peer)) {
+    if (Date.now() > deadline) throw new Error('STAGE10_QA_CONCURRENT_PEER_TIMEOUT_' + phase);
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+}
 const app = fastify();
 try {
   const user = await prisma.user.create({data: {
@@ -64,6 +82,7 @@ try {
   app.decorate('authorize', (_roles:unknown) => async (request:unknown) => { asAuth(request); });
   await app.register(appStateRoutes, {prefix: '/app-state'});
   await app.ready();
+  await cohortBarrier('ready');
   const request = async (revision: number, data:typeof payload) => app.inject({
     method: 'PATCH', url:'/app-state/transactions',
     payload:{operationId:randomUUID(),expectedRevision:revision,upserts:[data],deletes:[]},
@@ -75,6 +94,7 @@ try {
   }});
   assert.equal(original.accountId,account.id);
   assert.equal(original.amount.toString(),'42.37');
+  await cohortBarrier('inserted');
   const second = await request(2,{...payload,description:'QA descricao editada'});
   assert.equal(second.statusCode,200,second.body);
   const updated = await prisma.financialEvent.findFirstOrThrow({where: {
@@ -86,6 +106,7 @@ try {
   const read = await app.inject({method:'GET',url:'/app-state'});
   assert.equal(read.statusCode,200,read.body);
   assert.equal(JSON.parse(read.body).dataSource,'normalized');
+  await cohortBarrier('updated');
 
   // A credencial real de cada processo (sem superuser) nao pode ler o outro
   // schema, mesmo que os IDs/entidades sejam equivalentes.
@@ -99,6 +120,20 @@ try {
       || /permission denied|permissao negada/i.test(String(error));
   }
   assert.equal(denied,true,'Proibido ler evento da outra coorte');
+  // Confirmar que a role tampouco pode alterar o registro que a outra
+  // instancia acabou de gravar, enquanto ambas estao vivas.
+  let writeDenied = false;
+  try {
+    await prisma.$executeRawUnsafe('UPDATE "' + other + '"."FinancialEvent" SET description = $1',
+      'QA MODIFICACAO CRUZADA PROIBIDA');
+  } catch (error) {
+    const pgError = error as {code?: string; meta?: {code?: string}};
+    writeDenied = pgError.code === 'P2010' && pgError.meta?.code === '42501'
+      || /permission denied|permissao negada/i.test(String(error));
+  }
+  assert.equal(writeDenied, true, 'Proibido alterar registros da outra coorte');
+  assert.equal((await prisma.financialEvent.findUniqueOrThrow({where:{id:original.id}})).description,
+    'QA descricao editada');
   console.log('MEG_STAGE10_TWO_REAL_FASTIFY_COHORTS_SCHEMA_ISOLATION ' + mode.toUpperCase() + ' PASS');
 } finally {
   await app.close();
