@@ -41,3 +41,30 @@ A função existente `synchronizeNormalizedRows` em `apps/api/src/modules/app-st
 **Decisão de segurança:** nenhuma correção histórica em produção até resolver a [Issue P0 #698](https://github.com/MarcosVilalva/MEG-Platform/issues/698). A regularização de IDs sem sanear essa sincronização pode ser desfeita em futura gravação legítima.
 
 **Escopo obrigatório da futura correção:** preservar ID existente, vínculos canônicos e FK de ledger/receipt/payable/import; usar atualização em lugar quando juridicamente/financeiramente permitida, nunca apagar/recriar sem prova; caracterizar caminhos `PATCH`/`PUT`, exclusões, estados antigos, concorrência e Android. Se a semântica de operação não estiver comprovada, rejeitar a mutação e não perder dados. Testar tudo em PostgreSQL 17 descartável. Sem deploy, merge nem alteração produtiva neste gate.
+
+
+## Correção da causa P0 implementada e testada na branch QA
+**Data:** 17/11/2026. **Status:** implementação em PR #697 Draft, não mesclada e NÃO implantada.
+
+A função `synchronizeNormalizedRows` foi modificada **somente nesta branch** para atualização em lugar com `updatedAt` como guarda concorrente. Ela mantém o `FinancialEvent.id` e os `categoryId` / `paymentMethodId` existentes; não usa mais `deleteMany/createMany` no caminho sincronizado primário. Valida unicidade de ID legado, proprietário e conta antes de aceitar criação ou alteração. Não aceita classificação de origem incompatível com vínculos canônicos já existentes. Eventos com `LedgerEntry`, `Receipt`, `PayablePayment` ou `ImportedRow` somente admitem repetição idêntica do espelho; qualquer mudança de conteúdo ou exclusão exige escritor canônico específico e retorna conflito. Mudança de conta via espelho também é rejeitada para registros existentes.
+
+A exclusão de evento legado *sem dependências* passou a efetuar arquivamento, conservando o registro e ID; reativação implícita da mesma chave legada é bloqueada por exigência de protocolo explícito de restauração. Isso é adaptação funcional deliberadamente conservadora que precisa de validação de compatibilidade na integração com Android/legado antes de deploy.
+
+As rotas `apps/api/src/modules/app-state/routes.ts` agora traduzem bloqueios do sincronizador em HTTP **409**, com falha fechada. No `PUT`, o `UPDATE` usa a revisão original no `where` para impedir gravação obsoleta e traduz eventual `P2025` em `STATE_CONFLICT`.
+
+### Evidência técnica
+- Workflow [#44074296133](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44074296133): **SUCCESS** na revisão de código da branch QA, contendo provas sintéticas de identidade/FKs, rollback, bloqueio das alterações de categorias, métodos e conta, arquivo de histórico, teste de referência a `LedgerEntry`, `Receipt`, `PayablePayment`, `ImportedRow`, preservação de usuário e workspace, idempotência.
+- Testes existentes de normalização, espelho primário, AppState, `event-mutation`, benefício, transferência e autoridade financeira: executados no mesmo workflow com **SUCCESS**.
+- TypeScript `npx tsc -p apps/api/tsconfig.json --noEmit`: **SUCCESS**.
+- O teste inicial de TypeScript falhou em teste de caracterização por propriedades extras no objeto Verocard, foi corrigido antes do gate final verde. Não esconder o histórico.
+- Sem modificações em Supabase real, Render, `main`, Android, autenticação produtiva ou banco externo; PostgreSQL descartável `meg_stage10_sandbox` com fixtures fictícias revertidas.
+
+### Gates remanescentes antes de retirar o P0
+1. Verificar end-to-end autenticado o comportamento dos endpoints `PATCH/PUT` e o tratamento de 409 em fluxo legítimo do cliente. O teste atual é de função e contratos existentes, não homologação de navegador autenticado.
+2. Caracterizar explicitamente efeitos da nova política de arquivamento e restauração sobre o cliente legado/Android, sem modificar o Android.
+3. Conferir invariantes financeiros com os demais escritores e concorrência da Web, quando for disponibilizada QA integrada isolada, sem dados reais.
+4. Validar visualmente a Web publicada, ainda SEM aprovação explícita do usuário.
+5. Resolver a correspondência das 3.033 categorias candidatas e 2.900 formas de pagamento candidatas, os casos não resolvidos, catálogo Verocard/credit/other e os 2.838 arquivados sem workspace. Não assumir que correspondência nominal é migração autorizada.
+6. Preparar backup restaurado, dry-run referenciado por IDs, plano de rollback e autorização **específica** antes de qualquer saneamento do Supabase real ou merge/deploy.
+
+A Issue [#698](https://github.com/MarcosVilalva/MEG-Platform/issues/698) fica aberta até integração e aprovação dos gates. Sem iniciar a Etapa 11.
