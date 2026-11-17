@@ -213,6 +213,17 @@ export async function rollbackNormalizationPrimary(workspaceId: string) {
   return { active: false, mode: ROLLBACK_MODE, revision: appState.revision + 1 };
 }
 
+/**
+ * Sincroniza o espelho legado SEM substituir a identidade de um FinancialEvent.
+ *
+ * A versao anterior fazia deleteMany/createMany e descartava categoryId,
+ * paymentMethodId e referencias externas. O AppState nao e autoridade sobre
+ * esses vinculos canonicos. Em caso de evento ligado a ledger/baixa/importacao,
+ * mudancas devem passar pelo escritor financeiro de origem: falhar fechado.
+ *
+ * Recebe a mesma transacao da gravacao do AppState. Qualquer erro provoca
+ * rollback de ambos, evitando espelho divergente ou gravacao parcial.
+ */
 export async function synchronizeNormalizedRows(
   tx: Prisma.TransactionClient,
   state: unknown,
@@ -222,20 +233,145 @@ export async function synchronizeNormalizedRows(
   if (!isNormalizedPrimary(state)) return { active: false, reconciled: false };
   const preview = buildNormalizationPreview(state, context);
   if (preview.summary.invalidCount > 0) throw new Error('NORMALIZATION_INVALID_SOURCE');
-  const changed = new Set(changedIds || []);
-  const changedEvents = changed.size ? preview.events.filter((event) => changed.has(event.legacyTransactionId)) : preview.events;
 
-  if (changed.size) {
-    await tx.financialEvent.deleteMany({ where: { workspaceId: context.workspaceId, legacyTransactionId: { in: [...changed] } } });
-  } else {
-    await tx.financialEvent.deleteMany({ where: { workspaceId: context.workspaceId, legacyTransactionId: { not: null } } });
+  const desired = new Map<string, (typeof preview.events)[number]>();
+  for (const event of preview.events) {
+    if (!event.legacyTransactionId || desired.has(event.legacyTransactionId)) {
+      throw new Error('NORMALIZATION_DUPLICATE_LEGACY_ID');
+    }
+    desired.set(event.legacyTransactionId, event);
   }
-  if (changedEvents.length) {
-    await tx.financialEvent.createMany({
-      data: changedEvents.map((event) => ({ ...event, sourcePayload: event.sourcePayload as Prisma.InputJsonValue, archivedAt: null })),
+
+  // undefined = PUT integral. Array preenchido = PATCH somente das IDs alteradas.
+  const changed = changedIds === undefined ? null : new Set(changedIds);
+  if (changed && changed.size === 0) {
+    return { active: true, reconciled: true, fingerprint: preview.summary.fingerprint, count: preview.summary.validCount };
+  }
+  const existingRows = await tx.financialEvent.findMany({
+    where: {
+      workspaceId: context.workspaceId,
+      legacyTransactionId: changed
+        ? { in: [...changed] }
+        : { not: null },
+    },
+    include: {
+      ledgerEntries: { select: { id: true }, take: 1 },
+      receipt: { select: { id: true } },
+      payablePayment: { select: { id: true } },
+      importedRow: { select: { id: true } },
+    },
+  });
+  const existingByLegacyId = new Map(existingRows.map(row => [row.legacyTransactionId!, row]));
+  const updates = changed
+    ? [...changed].flatMap(id => desired.has(id) ? [desired.get(id)!] : [])
+    : [...desired.values()];
+  let updated = 0;
+  let created = 0;
+  let archived = 0;
+
+  for (const proposed of updates) {
+    const legacyId = proposed.legacyTransactionId!;
+    const old = existingByLegacyId.get(legacyId);
+    if (old && old.userId !== context.userId) {
+      throw new Error('NORMALIZATION_EVENT_OWNER_MISMATCH');
+    }
+    if (old?.archivedAt) {
+      // Restauracao precisa de contrato explicito, nao reativacao implicita.
+      throw new Error('NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE');
+    }
+    const accountChanged = old?.accountId !== proposed.accountId;
+    if (proposed.accountId && (!old || accountChanged)) {
+      const account = await tx.account.findFirst({
+        where: { id: proposed.accountId, userId: context.userId, isActive: true },
+        select: { id: true },
+      });
+      if (!account) throw new Error('NORMALIZATION_INVALID_ACCOUNT_SCOPE');
+    }
+
+    if (!old) {
+      await tx.financialEvent.create({
+        data: {
+          ...proposed,
+          sourcePayload: proposed.sourcePayload as Prisma.InputJsonValue,
+          archivedAt: null,
+        },
+      });
+      created += 1;
+      continue;
+    }
+
+    const identical = old.accountId === proposed.accountId
+      && normalizationFingerprint([old]) === normalizationFingerprint([proposed]);
+    if (identical) continue;
+
+    const hasLinkedDomain = old.ledgerEntries.length > 0
+      || old.receipt !== null || old.payablePayment !== null || old.importedRow !== null;
+    if (hasLinkedDomain) {
+      // Qualquer mudanca de fonte, classificacao ou valor exige o writer do dominio.
+      throw new Error('NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER');
+    }
+
+    // Atualizacao em lugar. O AppState NAO pode zerar IDs canonicos, substituir
+    // userId/workspaceId ou redefinir a identidade legada ja persistida.
+    const changedRow = await tx.financialEvent.updateMany({
+      where: {
+        id: old.id,
+        workspaceId: context.workspaceId,
+        userId: context.userId,
+        updatedAt: old.updatedAt,
+        archivedAt: null,
+      },
+      data: {
+        description: proposed.description,
+        type: proposed.type,
+        status: proposed.status,
+        date: proposed.date,
+        competence: proposed.competence,
+        amount: proposed.amount,
+        signedAmount: proposed.signedAmount,
+        accountId: proposed.accountId,
+        notes: proposed.notes,
+        sourceRevision: proposed.sourceRevision,
+        sourcePayload: proposed.sourcePayload as Prisma.InputJsonValue,
+        amountBehavior: proposed.amountBehavior,
+        necessity: proposed.necessity,
+        frequency: proposed.frequency,
+        classificationConfidence: proposed.classificationConfidence,
+        classificationSource: proposed.classificationSource,
+      },
     });
+    if (changedRow.count !== 1) throw new Error('NORMALIZATION_CONCURRENT_EVENT_CHANGE');
+    updated += 1;
   }
-  return { active: true, reconciled: true, fingerprint: preview.summary.fingerprint, count: preview.summary.validCount };
+
+  // Remocao do espelho deve manter o registro historico e nunca destruir suas
+  // referencias. A exclusao de dominio vinculado exige operacao canonica.
+  const remaining = changed
+    ? [...changed].filter(id => !desired.has(id))
+    : existingRows
+      .filter(row => !row.archivedAt && !desired.has(row.legacyTransactionId!))
+      .map(row => row.legacyTransactionId!);
+  for (const legacyId of remaining) {
+    const old = existingByLegacyId.get(legacyId);
+    if (!old || old.archivedAt) continue;
+    if (old.userId !== context.userId) throw new Error('NORMALIZATION_EVENT_OWNER_MISMATCH');
+    if (old.ledgerEntries.length || old.receipt || old.payablePayment || old.importedRow) {
+      throw new Error('NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER');
+    }
+    const result = await tx.financialEvent.updateMany({
+      where: {
+        id: old.id, workspaceId: context.workspaceId, userId: context.userId,
+        updatedAt: old.updatedAt, archivedAt: null,
+      },
+      data: { archivedAt: new Date(), sourceRevision: context.revision },
+    });
+    if (result.count !== 1) throw new Error('NORMALIZATION_CONCURRENT_EVENT_CHANGE');
+    archived += 1;
+  }
+  return {
+    active: true, reconciled: true, fingerprint: preview.summary.fingerprint,
+    count: preview.summary.validCount, updated, created, archived,
+  };
 }
 
 export async function normalizedStateForRead(workspaceId: string, userId: string) {
