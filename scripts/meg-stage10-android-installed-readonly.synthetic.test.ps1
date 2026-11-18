@@ -45,13 +45,17 @@ exit 2
 
   $env:MEG_STAGE10_ADB_TEST_MODE = 'connected'
   $connected = (& pwsh -NoProfile -NonInteractive -File $scriptPath 2>&1 | Out-String)
-  if ($LASTEXITCODE -ne 0
-    -or $connected -notmatch 'STATUS=METADADOS_INSTALADOS_CONFIRMADOS'
-    -or $connected -notmatch 'VERSAO_INSTALADA=2\.0\.708'
-    -or $connected -notmatch 'VERSION_CODE=708'
-    -or $connected -notmatch 'PACOTE_PRESENTE=SIM'
-    -or $connected -match 'qa-synthetic-device') {
-    throw 'STAGE10_ANDROID_FAKE_CONNECTED_FAILED'
+  if ($LASTEXITCODE -ne 0) { throw 'STAGE10_ANDROID_FAKE_CONNECTED_EXIT_CODE' }
+  foreach ($required in @(
+    'STATUS=METADADOS_INSTALADOS_CONFIRMADOS'
+    'VERSAO_INSTALADA=2\.0\.708'
+    'VERSION_CODE=708'
+    'PACOTE_PRESENTE=SIM'
+  )) {
+    if ($connected -notmatch $required) { throw ('STAGE10_ANDROID_FAKE_CONNECTED_MISSING_' + $required) }
+  }
+  if ($connected -match 'qa-synthetic-device') {
+    throw 'STAGE10_ANDROID_FAKE_LEAKED_DEVICE_IDENTIFIER'
   }
 
   Write-Output 'STAGE10_ANDROID_POWERSHELL_FAKE_ADB_RUNTIME=PASS'
