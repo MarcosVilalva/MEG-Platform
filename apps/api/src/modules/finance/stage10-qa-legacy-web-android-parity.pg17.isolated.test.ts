@@ -7,7 +7,7 @@ import { registerAuth } from '../../plugins/auth';
 import { authRoutes } from '../auth/routes';
 import { appStateRoutes } from '../app-state/routes';
 import { financeRoutes } from './routes';
-import { legacyTransactionToFinancialEvent } from '../app-state/normalization-migration-core';
+import { buildNormalizationPreview } from '../app-state/normalization-migration-core';
 import { normalizationPreview } from '../app-state/normalization-migration';
 import { monetaryAccountBalanceAt, monetaryBalanceAt } from './monetary-protection';
 import { readStage10HistoricalReview } from './stage10-historical-review-report';
@@ -95,11 +95,13 @@ async function main() {
    subscription:{create:{planId:plan.id,status:LicenseStatus.ACTIVE}},
   } });
   workspaceId=workspace.id;
-  for (const line of lines) {
-   const event = legacyTransactionToFinancialEvent(line,{workspaceId:workspace.id,userId:user.id,revision:1});
-   assert.ok(event);
+  const projection=buildNormalizationPreview({transactions:lines},{
+   workspaceId:workspace.id,userId:user.id,revision:1,
+  });
+  assert.equal(projection.events.length,3);
+  for (const event of projection.events) {
    await prisma.financialEvent.create({data:{
-    ...event,sourcePayload:line as Prisma.InputJsonValue,
+    ...event,sourcePayload:event.sourcePayload as Prisma.InputJsonValue,
     // SQL migration has not yet been applied: both FKs are missing.
     categoryId:null,paymentMethodId:null,
    }});
