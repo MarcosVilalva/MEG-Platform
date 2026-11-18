@@ -26,6 +26,7 @@ import {
   protectDurableOutbox,
   readDurableOutbox,
 } from './durable-outbox-store.js';
+import { decideLegacyOutboxRejection, protectedOutboxConflict } from './cloud-outbox-conflict-policy.js';
 import './activity-history.js';
 
 const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
@@ -33,6 +34,7 @@ const REVISION_KEY = 'meg-cloud-revision-v1';
 const ACCESS_KEY = 'meg-access-token';
 const OUTBOX_KEY = 'meg-cloud-transaction-outbox-v1';
 const OUTBOX_RECOVERY_KEY = 'meg-cloud-transaction-outbox-recovery-v1';
+const OUTBOX_CONFLICT_KEY = 'meg-cloud-transaction-outbox-conflict-v1';
 const STATE_OUTBOX_KEY = 'meg-cloud-state-properties-outbox-v1';
 const ACTIVITY_MIGRATION_KEY = 'meg-cloud-activity-outbox-migrated-v1';
 const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3333';
@@ -50,6 +52,7 @@ let durableHydrationRunning = true;
 let durableStorageUnavailable = false;
 let durableWriteBarrier = Promise.resolve();
 let durableWriteFailure = null;
+let unpersistedOutboxConflict = null;
 
 function isFinancialState(value) {
   return Boolean(value && typeof value === 'object' && Array.isArray(value.transactions));
@@ -266,6 +269,39 @@ function persistOutbox(operations) {
   return next;
 }
 
+
+// Somente o marcador e persistido, nunca valores ou dados financeiros.
+function readOutboxConflict(pending = readOutbox()) {
+  const stored = parseJson(globalThis.localStorage?.getItem?.(OUTBOX_CONFLICT_KEY));
+  const marker = stored || unpersistedOutboxConflict;
+  return protectedOutboxConflict(pending, marker) ? marker : null;
+}
+
+function clearOutboxConflict() {
+  unpersistedOutboxConflict = null;
+  try { globalThis.localStorage?.removeItem?.(OUTBOX_CONFLICT_KEY); } catch {}
+}
+
+function parkedOutboxMessage(code = '') {
+  return 'A base recusou esta operacao (' + code + '). O lancamento permanece protegido neste aparelho. A sincronizacao automatica foi suspensa; e necessaria resolucao antes de reenviar.';
+}
+
+function parkOutboxConflict(pending, code) {
+  const marker = {
+    generation: pending.generation, operationId: pending.operationId,
+    code, detectedAt: new Date().toISOString(),
+  };
+  unpersistedOutboxConflict = marker;
+  try { globalThis.localStorage?.setItem?.(OUTBOX_CONFLICT_KEY, JSON.stringify(marker)); } catch {}
+  setSyncStatus('Sincronizacao bloqueada por conflito financeiro. Dados locais protegidos.');
+  showPersistenceBlocker(parkedOutboxMessage(code));
+  window.MEG_APP?.showToast?.('Sincronizacao requer revisao',
+    'A operacao foi preservada, mas nao pode ser reenviada automaticamente.', 'warning');
+  try { window.dispatchEvent(new CustomEvent('meg:cloud-sync-needs-resolution', {
+    detail: { code, generation: pending.generation },
+  })); } catch {}
+}
+
 function ensureOutboxOperationId(value) {
   if (value.operationId) return value;
   const next = { ...value, generation: value.generation + 1, operationId: createOperationId() };
@@ -278,6 +314,7 @@ function clearOutboxIfGeneration(generation) {
   const latest = readOutbox();
   if (latest.generation !== generation) return false;
   localStorage.removeItem(OUTBOX_KEY);
+  clearOutboxConflict();
   enqueueDurableWrite(() => deleteDurableOutboxIfGeneration('transactions', generation));
   if (!pendingImmediateState && !immediateSaveRunning && !hasStateOutbox()) hidePersistenceBlocker();
   return true;
@@ -389,6 +426,12 @@ async function ensureOutboxConfirmed() {
   if (outboxReplayRunning) return false;
   const initial = readOutbox();
   if (!hasTransactionOperations(initial)) return true;
+  const blocked = readOutboxConflict(initial);
+  if (blocked) {
+    setSyncStatus('Sincronizacao bloqueada por conflito financeiro.');
+    showPersistenceBlocker(parkedOutboxMessage(blocked.code));
+    return false;
+  }
   if (!isCloudSessionReady() || navigator.onLine === false) {
     return false;
   }
@@ -419,6 +462,13 @@ async function ensureOutboxConfirmed() {
           activities: pending.activities,
         }),
       });
+      const rejected = [400, 403, 404, 409, 422].includes(response.status)
+        ? await response.json().catch(() => null) : null;
+      const decision = decideLegacyOutboxRejection(response.status, rejected);
+      if (decision.action === 'manual-resolution-required') {
+        parkOutboxConflict(pending, decision.code);
+        return false;
+      }
       if (response.status === 409) continue;
       if (!response.ok) {
         const detail = await response.text().catch(() => '');
@@ -498,9 +548,10 @@ async function ensureStateOutboxConfirmed() {
 }
 
 function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
-  if (outboxRetryTimer || (!hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
+  if (readOutboxConflict() || outboxRetryTimer || (!hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
   outboxRetryTimer = globalThis.setTimeout?.(() => {
     outboxRetryTimer = null;
+    if (readOutboxConflict()) return;
     flushImmediateSave()
       .then(() => {
         if (hasTransactionOperations(readOutbox()) || hasStateOutbox() || pendingImmediateState) {
@@ -517,6 +568,12 @@ function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
 
 async function flushImmediateSave() {
   await durableReadyPromise;
+  const blocked = readOutboxConflict();
+  if (blocked) {
+    setSyncStatus('Sincronizacao bloqueada por conflito financeiro.');
+    showPersistenceBlocker(parkedOutboxMessage(blocked.code));
+    return;
+  }
   if (immediateSaveRunning || (!pendingImmediateState && !hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
   const cloud = window.MEG_CLOUD;
   if (!cloud?.saveNow || !isCloudSessionReady()) return;
@@ -666,13 +723,24 @@ function installStorageBridge() {
   window.MEG_INSTANT_PERSISTENCE = {
     pending: () => Boolean(durableHydrationRunning || pendingImmediateState || immediateSaveRunning || hasTransactionOperations(readOutbox()) || hasStateOutbox() || outboxReplayRunning),
     outbox: () => safeClone(readOutbox()),
+    conflict: () => safeClone(readOutboxConflict()),
+    async retryBlocked() {
+      if (!readOutboxConflict()) return false;
+      clearOutboxConflict();
+      await flushImmediateSave();
+      return !hasTransactionOperations(readOutbox()) && !hasStateOutbox();
+    },
     stateOutbox: () => safeClone(readStateOutbox()),
     hasProtectedState: () => hasStateOutbox(),
     durableStorage: () => durableStorageUnavailable ? 'local-fallback' : 'indexeddb',
     async flush() {
+      const blocked = readOutboxConflict();
+      if (blocked) throw new Error(parkedOutboxMessage(blocked.code));
       const deadline = Date.now() + 120_000;
       showPersistenceBlocker('Aguardando o recibo definitivo da base de dados...');
       while (Date.now() < deadline) {
+        const parked = readOutboxConflict();
+        if (parked) throw new Error(parkedOutboxMessage(parked.code));
         if (!immediateSaveRunning) await flushImmediateSave();
         if (!outboxReplayRunning && hasTransactionOperations(readOutbox())) {
           await ensureOutboxConfirmed().catch(() => false);

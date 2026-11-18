@@ -59,7 +59,7 @@ async function validateActiveReferences(tx: Tx, userId: string, input: { account
   }
 }
 
-async function syncLedger(tx: Tx, eventId: string) {
+export async function syncLedger(tx: Tx, eventId: string) {
   const event = await tx.financialEvent.findUnique({ where: { id: eventId } });
   if (!event) return;
 

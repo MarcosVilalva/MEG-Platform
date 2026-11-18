@@ -17,6 +17,18 @@ import {
   synchronizeNormalizedRows,
 } from './normalization-migration';
 import { reconcilePrimaryAppStateFromNormalized } from './normalized-primary-writeback';
+import { normalizationWriteConflictCode, normalizationWriteConflictPayload } from './normalization-conflict-policy';
+import { LegacyRestoreError, previewLegacyRestore, restoreLegacyFinancialEventQa, stage10RestoreQaEnabled } from './legacy-restore';
+import { stage10QaWebWriteEnabled, MEG_STAGE10_QA_WRITE_PROTOCOL } from './stage10-qa-write-gate';
+
+const legacyRestoreSchema = z.object({
+  operationId: z.string().uuid(),
+  eventId: z.string().trim().min(1),
+  expectedRevision: z.number().int().nonnegative(),
+  expectedArchivedAt: z.string().datetime({offset:true}),
+  expectedUpdatedAt: z.string().datetime({offset:true}),
+  confirmation: z.literal('CONFIRMAR_RESTAURACAO_EXPLICITA'),
+}).strict();
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -102,6 +114,49 @@ async function assertWriteAccess(workspaceId: string, reply: { status(code: numb
 }
 
 export async function appStateRoutes(app: FastifyInstance) {
+  if (stage10QaWebWriteEnabled()) {
+    app.get('/stage10-qa-write-gate', {preHandler:app.authorize(['ADMIN'])}, async (request,reply) => {
+      if(!stage10QaWebWriteEnabled())return reply.status(403).send({error:'STAGE10_QA_WRITE_DISABLED'});
+      const context=await resolveWorkspaceContext(request.user.sub);
+      if(!(await assertWriteAccess(context.workspaceId,reply)))return;
+      const state=await prisma.appState.findUnique({where:{workspaceId:context.workspaceId},select:{state:true,revision:true}});
+      return {
+        protocol:MEG_STAGE10_QA_WRITE_PROTOCOL,
+        allowed:Boolean(state&&isNormalizedPrimary(state.state)),
+        editSupported:Boolean(state&&isNormalizedPrimary(state.state)),
+        revision:state?.revision??null,
+      };
+    });
+  }
+
+  // Nao registra rotas de restauracao fora do PG17 descartavel explicitamente habilitado.
+  // O PATCH legado continua proibido de restaurar tombstones implicitamente.
+  if (stage10RestoreQaEnabled()) {
+    app.get('/legacy-restore/:legacyId', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+      const legacyId = (request.params as {legacyId: string}).legacyId;
+      try {
+        return await previewLegacyRestore(request.user.sub, legacyId);
+      } catch (error) {
+        if (!(error instanceof LegacyRestoreError)) throw error;
+        return reply.status(error.code === 'RESTORE_EVENT_NOT_FOUND' ? 404 : 409).send({error:error.code});
+      }
+    });
+
+    app.post('/legacy-restore/:legacyId', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+      const parsed = legacyRestoreSchema.safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({error:'RESTORE_INTENT_INVALID',details:parsed.error.flatten()});
+      const legacyId = (request.params as {legacyId: string}).legacyId;
+      if (!(await assertWriteAccess((await resolveWorkspaceContext(request.user.sub)).workspaceId, reply))) return;
+      try {
+        return await restoreLegacyFinancialEventQa(request.user.sub, {legacyId,...parsed.data});
+      } catch (error) {
+        if (!(error instanceof LegacyRestoreError)) throw error;
+        const status = error.code === 'RESTORE_EVENT_NOT_FOUND' ? 404 : 409;
+        return reply.status(status).send({error:error.code,retryable:false});
+      }
+    });
+  }
+
   app.get('/normalization-preview', { preHandler: app.authenticate }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
     return normalizationPreview(context.workspaceId, context.workspace.ownerId);
@@ -154,7 +209,9 @@ export async function appStateRoutes(app: FastifyInstance) {
     } catch (error) {
       const code = error instanceof Error ? error.message : 'NORMALIZATION_FAILED';
       if (code === 'NORMALIZATION_REVISION_CONFLICT') return reply.status(409).send({ error: code });
-      if (code === 'NORMALIZATION_INVALID_SOURCE') return reply.status(422).send({ error: code, preview });
+      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_SHADOW_REBUILD_REQUIRES_CANONICAL_MIGRATION') {
+        return reply.status(422).send({ error: code, preview });
+      }
       throw error;
     }
   });
@@ -177,7 +234,8 @@ export async function appStateRoutes(app: FastifyInstance) {
     } catch (error) {
       const code = error instanceof Error ? error.message : 'NORMALIZATION_CUTOVER_FAILED';
       if (code === 'NORMALIZATION_REVISION_CONFLICT') return reply.status(409).send({ error: code });
-      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_RECONCILIATION_FAILED') {
+      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_RECONCILIATION_FAILED'
+        || code === 'NORMALIZATION_SHADOW_REBUILD_REQUIRES_CANONICAL_MIGRATION') {
         return reply.status(422).send({ error: code, preview: await normalizationPreview(context.workspaceId, context.workspace.ownerId) });
       }
       throw error;
@@ -306,7 +364,9 @@ export async function appStateRoutes(app: FastifyInstance) {
 
     const changedIds = [...new Set([...parsed.data.upserts.map((item) => item.id), ...parsed.data.deletes])];
     let normalization = { active: false, reconciled: false } as Awaited<ReturnType<typeof synchronizeNormalizedRows>>;
-    const updated = await prisma.$transaction(async (tx) => {
+    let updated: { count: number };
+    try {
+      updated = await prisma.$transaction(async (tx) => {
       const result = await tx.appState.updateMany({
         where: { id: current.id, revision: parsed.data.expectedRevision },
         data: { state: nextState.data as Prisma.InputJsonValue, revision: { increment: 1 } }
@@ -319,7 +379,12 @@ export async function appStateRoutes(app: FastifyInstance) {
         }, changedIds);
       }
       return result;
-    }, { maxWait: 10_000, timeout: 120_000 });
+      }, { maxWait: 10_000, timeout: 120_000 });
+    } catch (error) {
+      const code = normalizationWriteConflictCode(error);
+      if (code) return reply.status(409).send(normalizationWriteConflictPayload(code, current.revision));
+      throw error;
+    }
     if (updated.count !== 1) {
       const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: latest?.revision || current.revision, updatedAt: latest?.updatedAt || current.updatedAt });
@@ -473,10 +538,12 @@ export async function appStateRoutes(app: FastifyInstance) {
       : parsed.data.state;
     const jsonState = nextState as Prisma.InputJsonValue;
     let normalization = { active: false, reconciled: false } as Awaited<ReturnType<typeof synchronizeNormalizedRows>>;
-    const saved = current
+    let saved: { revision: number; updatedAt: Date };
+    try {
+      saved = current
       ? await prisma.$transaction(async (tx) => {
           const updated = await tx.appState.update({
-            where: { id: current.id },
+            where: { id: current.id, revision: current.revision },
             data: { state: jsonState, revision: { increment: 1 } },
             select: { revision: true, updatedAt: true }
           });
@@ -491,6 +558,14 @@ export async function appStateRoutes(app: FastifyInstance) {
           data: { userId: context.workspace.ownerId, workspaceId: context.workspaceId, state: jsonState, revision: 1 },
           select: { revision: true, updatedAt: true }
         });
+    } catch (error) {
+      const code = normalizationWriteConflictCode(error);
+      if (code) return reply.status(409).send(normalizationWriteConflictPayload(code, current?.revision || 0));
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current?.revision || 0 });
+      }
+      throw error;
+    }
     return { revision: saved.revision, updatedAt: saved.updatedAt, normalization, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 }

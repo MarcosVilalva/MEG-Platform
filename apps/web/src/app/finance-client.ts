@@ -269,6 +269,14 @@ export const financeClient = {
       method: 'POST',
       body: JSON.stringify(data)
     }),
+  updateStage10QaMonetaryExpense: (id:string,data:{
+    operationId:string;expectedUpdatedAt:string;expectedRevision:number;
+    description:string;date:string;status:'planned'|'paid';amount:number;
+    accountId:string;categoryId:string;paymentMethodId:string;notes:string;
+  }) => authorizedRequest<{id:string;legacyTransactionId:string;updatedAt:string;revision:number;idempotentReplay:boolean}>(
+    `/finance/events/${id}/stage10-qa-edit`,{
+    method:'PATCH',body:JSON.stringify(data),
+  }),
   updateEvent: (id: string, data: Partial<FinancialEventInput>) => authorizedRequest<FinancialEvent>(`/finance/events/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data)

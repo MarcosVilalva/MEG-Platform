@@ -227,7 +227,7 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
     {!isEdit&&<button type="button" className="meg-t10-expense-head-icon" aria-label="Voltar à escolha do tipo" onClick={onBack}><Icon name="chevronLeft"/></button>}
     <span className="meg-t10-expense-title"><h2 id={formId+'title'}>{isEdit?'Editar lançamento':'Novo lançamento'}</h2><small><span className="meg-t10-expense-type"><Icon name="chevronDown"/> DESPESA</span> {isEdit?'Revise os dados do lançamento.':'Registre sua movimentação com segurança.'}</small></span>
     <span className="meg-t10-expense-head-actions">
-     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={readOnlyRealData?'Somente leitura: salvamento indisponível':isEdit?'Simulação QA: não grava dados financeiros':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
+     <button type="button" className="meg-t10-expense-head-save" aria-label={isEdit?'Salvar alterações':'Salvar lançamento'} title={readOnlyRealData?'Somente leitura: salvamento indisponível':isEdit?'Salvar alterações no QA isolado':'Salvar lançamento'} disabled={!canSave} onClick={()=>onRequestSave?.({...draft,amountInput:requestedAmount??''})}><Icon name="plus"/> <span>{isEdit?'Salvar alterações':'Salvar'}</span></button>
      <button type="button" className="meg-t10-expense-head-icon" aria-label={isEdit?'Fechar edição':'Fechar formulário'} title={isEdit?'Descartar alterações e fechar':undefined} onClick={onBack}>{isEdit?<EditCloseGlyph/>:'×'}</button>
     </span>
    </header>

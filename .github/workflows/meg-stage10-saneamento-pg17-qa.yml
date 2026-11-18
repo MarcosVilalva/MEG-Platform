@@ -1,0 +1,171 @@
+name: MEG Stage10 | Saneamento PG17 isolado e rollback
+on:
+  push:
+    branches:
+      - 'stage10/saneamento-qa-descartavel-20261117'
+  pull_request:
+    branches:
+      - 'stage10/prism-real-read-optin-20261116'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  saneamento-qa-pg17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+      PGPASSWORD: stage10_ci_disposable_only
+      PGAPPNAME: MEG_STAGE10_QA_DISPOSABLE_ONLY
+    steps:
+      - uses: actions/checkout@v4
+      # Excecao Android 17/11: somente instant-persistence.js alterado em QA.
+      # Android e demais arquivos legados continuam congelados.
+      - name: Guard de congelamento Android e demais modulos legados
+        run: |
+          git fetch --no-tags --depth=1 origin 5a3f6b81817b7739d0c13f509d93f9898b7b5245
+          git diff --exit-code FETCH_HEAD HEAD -- \
+            android/ capacitor.config.ts \
+            apps/web/index.html apps/web/vite.config.ts \
+            apps/web/src/legacy-state-patch.js \
+            apps/web/src/cloud-write-ahead-core.js \
+            apps/web/src/durable-outbox-core.js \
+            apps/web/src/durable-outbox-store.js \
+            apps/web/src/legacy-finance.js
+      - name: Caracterizar fontes exatos do APK 708 do build oficial sem executar Android
+        run: |
+          git fetch --no-tags --depth=1 origin 36c886b9597be95a28eb2add00f073e5f43f6fe0
+          node scripts/meg-stage10-apk708-historical-entry.contract.mjs
+          node scripts/meg-stage10-apk708-bridge-status.contract.mjs
+      - name: Fingerprint sintetico de protocolo empacotado, sem Android real
+        run: python3 scripts/meg_stage10_apk_protocol_signatures_test.py
+      - name: Auditar APK publicado em modo estritamente somente leitura (one-shot)
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[audit-apk]')
+        env:
+          MEG_STAGE10_APK_STATIC_QA: '1'
+        run: python3 scripts/meg-stage10-apk-release-readonly-audit.py
+      - name: Validar sintaxe PowerShell do diagnostico Android somente leitura
+        shell: pwsh
+        run: |
+          $file = 'scripts/meg-stage10-android-installed-readonly.ps1'
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -ne 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          Write-Output 'STAGE10_ANDROID_POWERSHELL_PARSE=PASS'
+      - name: Validar execucao do diagnostico com ADB sintetico sem Android fisico
+        shell: pwsh
+        run: ./scripts/meg-stage10-android-installed-readonly.synthetic.test.ps1
+      - name: Validar sintaxe e hash APK instalado com ADB simulado somente leitura
+        shell: pwsh
+        run: |
+          $file = 'scripts/meg-stage10-android-apk-hash-readonly.ps1'
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          ./scripts/meg-stage10-android-apk-hash-readonly.synthetic.test.ps1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Executar bridge e gateway historicos da APK708 com transporte simulado
+        run: node --experimental-vm-modules scripts/meg-stage10-apk708-runtime.contract.mjs
+      - name: Validar endereco e escopo descartavel
+        run: |
+          node -e "const u=new URL(process.env.DATABASE_URL); if(u.hostname!=='127.0.0.1'||u.pathname!=='/meg_stage10_sandbox'||u.username!=='meg_stage10_ci'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(1)"
+      - name: Dependencias imutaveis
+        run: npm ci --audit=false --fund=false
+      - name: Bloquear build com mutacao de producao ou hooks inesperados
+        run: |
+          node scripts/meg-stage09-render-api-build.contract.test.mjs
+          node scripts/meg-stage09-render-api-build.regression.test.mjs
+      - name: Prisma client e schema SOMENTE no PG17 descartavel
+        run: |
+          npx prisma generate --schema packages/database/prisma/schema.prisma
+          npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Cliente psql do runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Duas APIs Fastify em Prisma schemas isolados com credenciais distintas
+        run: bash scripts/meg-stage10-two-api-cohort-qa.sh
+      - name: Isolamento transacional de coortes Android e Web em schemas PG17
+        run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-writer-cohort-isolation-synthetic.pg17.sql
+      - name: Prova de vinculacao, preservacao, rollback e idempotencia
+        run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-saneamento-qa.pg.sql
+      - name: Prova negativa de SET NULL em referencia historica versus RESTRICT no ledger
+        run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-fk-delete-risk-synthetic.pg17.sql
+      - name: Prova estrutural identidade/FK no Postgres17, trigger apenas dentro de rollback
+        run: psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_sandbox -v ON_ERROR_STOP=1 -f scripts/meg-stage10-identity-guard-synthetic.pg17.sql
+      - name: Prova de neutralidade de vinculos historicos com rollback integral PG17
+        run: npx tsx apps/api/src/modules/finance/stage10-mapping-link-neutrality.isolated.test.ts
+      - name: Neutralidade financeira e dos IDs em leituras canonicas PG17 (rollback)
+        run: npx tsx apps/api/src/modules/finance/stage10-mapping-projection-neutrality.isolated.test.ts
+      - name: Contrato integrado dos read-models reais antes e depois de FKs QA
+        run: npx tsx apps/api/src/modules/finance/stage10-mapping-read-models.isolated.test.ts
+      - name: Regressao da politica de status e competencia de cartao
+        run: |
+          npx tsx apps/api/src/modules/finance/financial-policy.test.ts
+          npx tsx apps/api/src/modules/finance/stage10-mapping-status-collision.test.ts
+          npx tsx apps/api/src/modules/finance/stage10-historical-mapping-review.test.ts
+          npx tsx apps/api/src/modules/finance/card-statement-canonical.test.ts
+          npx tsx apps/api/src/modules/finance/stage10-saneamento-risk-characterization.test.ts
+      - name: Caracterizar risco de sincronizacao normalized-primary (transacao revertida)
+        run: npx tsx apps/api/src/modules/finance/stage10-saneamento-sync-characterization.isolated.test.ts
+      - name: Regressao da normalizacao, espelho, app-state e autoridade financeira
+        run: |
+          npx tsx apps/api/src/modules/app-state/normalization-migration-core.test.ts
+          npx tsx apps/api/src/modules/app-state/normalized-primary-writeback.test.ts
+          npx tsx apps/api/src/modules/app-state/normalized-primary-reconcile.contract.test.ts
+          npm run test:app-state
+          npx tsx apps/api/src/modules/finance/event-mutation.contract.test.ts
+          npx tsx apps/api/src/modules/finance/benefit-event.contract.test.ts
+          npx tsx apps/api/src/modules/finance/transfer-service.contract.test.ts
+          npx tsx apps/api/src/modules/finance/web-financial-authority.contract.test.ts
+      - name: HTTP QA real Fastify.inject, tombstones e restauracao explicita idempotente
+        run: npx tsx apps/api/src/modules/finance/stage10-saneamento-routes.isolated.test.ts
+      - name: 'Shadow inicial apenas, bloquear reescrita de ID e vinculos PG17'
+        run: npx tsx apps/api/src/modules/finance/stage10-shadow-id-preservation.isolated.test.ts
+      - name: Compatibilidade read-only do cliente legado e do outbox
+        run: |
+          node apps/web/src/legacy-state-patch.test.js
+          node apps/web/src/cloud-write-ahead-core.test.js
+          node --test apps/web/src/durable-outbox-core.test.js
+          node apps/web/src/cloud-state-properties-core.test.js
+          node apps/web/src/state-recovery-core.test.js
+          node apps/web/src/stage10-legacy-client-compatibility.test.js
+          node apps/web/src/stage10-frozen-legacy-409-harness.test.js
+      - name: Politica de conflito opt-in da nova Web, sem modificar Android
+        run: npx tsx apps/web/src/meg-web-evolution/qa/stage10-write-conflict-policy.test.ts
+      - name: Integracao de gravacao unica Web e espelho Android em PG17 QA
+        run: npx tsx apps/api/src/modules/finance/stage10-qa-web-android-create.isolated.test.ts
+      - name: Verificacao TypeScript da API e Web
+        run: |
+          npx tsc -p apps/api/tsconfig.json --noEmit
+          npx tsc -p apps/web/tsconfig.json --noEmit
+      - name: Garantir que nenhuma fixture ficou persistida
+        run: |
+          psql -h 127.0.0.1 -U meg_stage10_ci -d meg_stage10_sandbox -tAc "SELECT count(*) FROM \"FinancialEvent\" WHERE id LIKE 'stage10qa-%'" | grep -x 0
+          psql -h 127.0.0.1 -U meg_stage10_ci -d meg_stage10_sandbox -tAc "SELECT count(*) FROM \"User\" WHERE id LIKE 'stage10qa-%'" | grep -x 0

@@ -7,6 +7,8 @@ import {PrismLaunchChoice,PrismCloseGlyph} from './PrismLaunchChoice';
 import {suggestionsFromCanonicalHistory} from '../stage10/autocomplete-history';
 import {readAuthorizedHistory} from '../launches/authorized-history';
 import {financeClient} from '../../app/finance-client';
+import {authenticatedRequest} from '../../app/auth-client';
+import {stage10LocalQaWriteOptIn,approvedQaCatalogs,toQaMonetaryExpense} from './stage10-qa-monetary-create';
 import {brlFromPasted,brlSignedDecimal} from '../stage10/brl-money-mask';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
 import '../launches/new-launch.css';
@@ -89,6 +91,12 @@ export default function PrismOperationalLaunches({
  const [overlay,setOverlay]=useState<Overlay>(null);
  const [editId,setEditId]=useState<string|null>(null);
  const [notice,setNotice]=useState('');
+ const [qaWriteReady,setQaWriteReady]=useState(false);
+ const [qaSaving,setQaSaving]=useState(false);
+ const [writeRefreshRevision,setWriteRefreshRevision]=useState(0);
+ const qaSavingRef=useRef(false);
+ const lastWriteRef=useRef<{fingerprint:string;operationId:string}|null>(null);
+ const lastEditRef=useRef<{fingerprint:string;operationId:string}|null>(null);
 
  useEffect(()=>{
   const root=document.documentElement;
@@ -109,7 +117,83 @@ export default function PrismOperationalLaunches({
   };
  },[]);
 
- const catalogs=useMemo(()=>readData?catalogsFromRealRead(readData):null,[readData]);
+ const catalogs=useMemo(()=>readData
+    ? stage10LocalQaWriteOptIn()
+      ? {...catalogsFromRealRead(readData),...approvedQaCatalogs(readData)}
+      : catalogsFromRealRead(readData)
+    : null,[readData]);
+ useEffect(()=>{
+  setQaWriteReady(false);
+  if(!readData||!stage10LocalQaWriteOptIn())return;
+  let cancelled=false;
+  void authenticatedRequest<{protocol:string;allowed:boolean}>('/app-state/stage10-qa-write-gate',{cache:'no-store'})
+   .then(result=>{if(!cancelled)setQaWriteReady(result.protocol==='meg-stage10-qa-transactional-mirror-v1'&&result.allowed===true);})
+   .catch(()=>{if(!cancelled)setQaWriteReady(false);});
+  return()=>{cancelled=true;};
+ },[readData,userId]);
+ const editQaExpense=useCallback(async(draft:ExpenseDraft)=>{
+  if(!qaWriteReady||!catalogs||!editId||qaSavingRef.current)return;
+  const current=readDataRef.current?.events.find(item=>item.id===editId);
+  if(!current||current.legacyTransactionId!==current.id
+    ||current.sourcePayload?.__megStage10QaSource!=='web-monetary-create-v1'
+    ||!current.updatedAt){
+    setNotice('Edição QA permitida somente para lançamentos criados na Web QA e identificados por ID.');
+    return;
+  }
+  try{
+   const payload=toQaMonetaryExpense(draft,catalogs);
+   const fingerprint=JSON.stringify({id:editId,payload,updatedAt:current.updatedAt});
+   if(!lastEditRef.current||lastEditRef.current.fingerprint!==fingerprint){
+     lastEditRef.current={fingerprint,operationId:globalThis.crypto.randomUUID()};
+   }
+   qaSavingRef.current=true;setQaSaving(true);setNotice('');
+   const gate=await authenticatedRequest<{
+     protocol:string;allowed:boolean;editSupported:boolean;revision:number|null;
+   }>('/app-state/stage10-qa-write-gate',{cache:'no-store'});
+   if(!gate.allowed||!gate.editSupported||gate.revision===null
+     ||gate.protocol!=='meg-stage10-qa-transactional-mirror-v1')
+     throw new Error('STAGE10_QA_GATE_NAO_AUTORIZADO');
+   const saved=await financeClient.updateStage10QaMonetaryExpense(editId,{
+     ...payload,status:payload.status as 'planned'|'paid',
+     notes:payload.notes??'',expectedUpdatedAt:current.updatedAt,
+     expectedRevision:gate.revision,operationId:lastEditRef.current.operationId,
+   });
+   if(!saved?.id||saved.id!==editId||saved.legacyTransactionId!==editId){
+     throw new Error('STAGE10_QA_EDICAO_SEM_CONFIRMACAO');
+   }
+   lastEditRef.current=null;
+   setOverlay(null);setEditId(null);setWriteRefreshRevision(v=>v+1);
+   setNotice('Alterações confirmadas na base QA e no espelho Android.');
+  }catch(error){
+   setNotice(error instanceof Error?error.message:'Falha na edição QA. Nenhum dado foi confirmado.');
+  }finally{qaSavingRef.current=false;setQaSaving(false);}
+ },[qaWriteReady,catalogs,editId]);
+
+ const createQaExpense=useCallback(async(draft:ExpenseDraft)=>{
+  if(!qaWriteReady||!catalogs||qaSavingRef.current)return;
+  try {
+   const payload=toQaMonetaryExpense(draft,catalogs);
+   const fingerprint=JSON.stringify(payload);
+   const previous=lastWriteRef.current;
+   if(!previous||previous.fingerprint!==fingerprint){
+    if(!globalThis.crypto?.randomUUID)throw new Error('STAGE10_QA_UUID_INDISPONIVEL');
+    lastWriteRef.current={fingerprint,operationId:globalThis.crypto.randomUUID()};
+   }
+   qaSavingRef.current=true;setQaSaving(true);setNotice('');
+   const gate=await authenticatedRequest<{protocol:string;allowed:boolean}>('/app-state/stage10-qa-write-gate',{cache:'no-store'});
+   if(!gate.allowed||gate.protocol!=='meg-stage10-qa-transactional-mirror-v1'){
+    throw new Error('STAGE10_QA_GATE_NAO_AUTORIZADO');
+   }
+   const saved=await financeClient.createEvent({...payload,operationId:lastWriteRef.current!.operationId});
+   if(!saved?.id||saved.legacyTransactionId!==saved.id){
+    throw new Error('STAGE10_QA_ESPELHO_NAO_CONFIRMADO');
+   }
+   lastWriteRef.current=null;
+   setOverlay(null);setWriteRefreshRevision(v=>v+1);setNotice('Lançamento confirmado na base QA e no espelho financeiro.');
+  }catch(error){
+   setNotice(error instanceof Error?error.message:'Falha ao confirmar gravação. Os dados do formulário foram preservados.');
+  }finally{qaSavingRef.current=false;setQaSaving(false);}
+ },[qaWriteReady,catalogs]);
  // Full historical suggestions are fetched only after the user types a query.
  // Never label the selected month's records as a complete lifetime snapshot.
  const searchHistorySuggestions=useCallback(async(query:string,signal:AbortSignal)=>{
@@ -128,9 +212,10 @@ export default function PrismOperationalLaunches({
   existingExpenseDraft(readData,catalogs,editId):null,[readData,catalogs,editId]);
 
  const startNew=useCallback(()=>{
-  setNotice('');setEditId(null);setOverlay('choice');
+  setNotice('');setEditId(null);lastWriteRef.current=null;setOverlay('choice');
  },[]);
  const startEdit=useCallback((row:QaLaunchTarget)=>{
+  lastEditRef.current=null;
   const current=readDataRef.current;
   if(!current){setNotice('Histórico financeiro ainda não disponível.');return;}
   const event=current.events.find(item=>item.id===row.id);
@@ -157,8 +242,8 @@ export default function PrismOperationalLaunches({
   }
  },[initialNew,readData,startNew,onInitialNewConsumed]);
 
- return <div data-meg-operational-prism="read-only">
-  <OperationalLaunches userId={userId} userName={userName} onHome={onHome}
+ return <div data-meg-operational-prism={qaWriteReady?'isolated-qa-financial-write':'read-only'}>
+  <OperationalLaunches key={'stage10-qa-write-'+writeRefreshRevision} userId={userId} userName={userName} onHome={onHome}
    periodMonth={periodMonth} onPeriodChange={onPeriodChange}
     periodSelection={periodSelection} onPeriodSelectionChange={onPeriodSelectionChange} globalSearch={globalSearch} prismReadOnlyCallbacks={callbacks}/>
   {overlay==='choice'&&catalogs&&<div className="meg-new-launch__overlay is-choice-overlay meg-unified-choice-overlay">
@@ -178,11 +263,15 @@ export default function PrismOperationalLaunches({
    </section>
   </div>}
   {overlay==='expense'&&catalogs&&<ExpenseForm
-   catalogs={catalogs} searchHistorySuggestions={searchHistorySuggestions} readOnlyRealData saveEnabled={false}
-   onBack={()=>setOverlay('choice')}/>}
+   catalogs={catalogs} searchHistorySuggestions={searchHistorySuggestions}
+   readOnlyRealData={!qaWriteReady} saveEnabled={qaWriteReady&&!qaSaving}
+   onRequestSave={createQaExpense} onBack={()=>setOverlay('choice')}/>}
   {overlay==='edit'&&catalogs&&editDraft&&<ExpenseForm
    key={'prism-read-'+editId} mode="edit" catalogs={catalogs}
-   initialDraft={editDraft} searchHistorySuggestions={searchHistorySuggestions} readOnlyRealData saveEnabled={false}
+   initialDraft={editDraft} searchHistorySuggestions={searchHistorySuggestions}
+   readOnlyRealData={!qaWriteReady} saveEnabled={qaWriteReady&&!qaSaving
+     &&readData?.events.find(event=>event.id===editId)?.sourcePayload?.__megStage10QaSource==='web-monetary-create-v1'}
+   onRequestSave={editQaExpense}
    onBack={()=>{setOverlay(null);setEditId(null);}}/>}
   {overlay==='edit'&&!editDraft&&<div role="alert">
    O lançamento não pode ser representado com segurança no editor. Nenhum valor foi estimado.
