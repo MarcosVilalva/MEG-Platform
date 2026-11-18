@@ -81,3 +81,13 @@ O writer utiliza transacao SERIALIZABLE, compare-and-swap do tombstone, syncLedg
 [Actions #44145843511](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44145843511) SUCCESS no SHA 02f9ed64421627b3094947243bd1de256cd04c91. Execucao isolada de fixtures PG17, autenticao simulada; nao e homologacao de JWT ou Android 2.0.708. O commit anterior c3a2ffa executou assercoes com PASS, mas o workflow #44145704517 falhou apenas na limpeza da fixture de ledger, corrigida antes do CI verde. Detalhes docs/MEG-STAGE10-RESTORE-EXPLICITO-QA-20261117.md.
 
 Issue #699 P0 ainda aberta. O novo endpoint nao existe em producao, nao deve ser ativado sem autorizacao independente, e a nova Web ainda nao envia restore real.
+
+## 17/11/2026 | RETIFICACAO baseada na APK publica 2.0.708 e no PUT de estado completo
+
+A afirmacao de que o Android fisico 2.0.708 usa o fluxo `ensureOutboxConfirmed` de `apps/web/src/instant-persistence.js` **nao foi demonstrada**. O defeito do fonte QA permanece valido nesse fonte, mas nao se deve assumir sua inclusao na APK ja instalada.
+
+[Actions #44210176996](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44210176996) SUCCESS, fingerprint estatico do APK PUBLICO de codigo 708 (hash ancorado) verificou 15 assets Web. Ausentes literais `app-state/transactions`, `meg-cloud-transaction-outbox-v1`, `meg-cloud-transaction-outbox-conflict-v1`, `meg-cloud-state-properties-outbox-v1`, `megCloudConfirmation`. Presentes literais `app-state`, `expectedRevision`, `operationId`, `PUT`, `PATCH`, `409`. Ausencia de strings nao prova que nao exista rota calculada dinamicamente; presenca de PUT/409 nao vincula os dois ao mesmo request.
+
+[Actions #44210739918](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44210739918) SUCCESS (PG17 ficticio), protege contra PUT de estado completo com reinsercao de ID arquivado, alem do PATCH legado; a rejeicao nao altera eventos, tombstones, ledger ou revisao. Sem homologacao real na APK.
+
+O operador verificou pelo ADB somente versao instalada 2.0.708/code 708. Prova de igualdade binaria com a release ainda nao existe. Script `scripts/meg-stage10-android-apk-hash-readonly.ps1` faz hash remoto sem extrair APK ou dados; teste sintetico e parser PowerShell aprovados em [Actions #44211331939](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44211331939). Resultado fisico pendente. Manter issue #699 P0 ate prova de protocolo/409/offline em QA independente.

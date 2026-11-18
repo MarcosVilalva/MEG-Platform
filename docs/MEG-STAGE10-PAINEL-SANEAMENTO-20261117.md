@@ -132,3 +132,11 @@ CI #44153114515 SUCCESS no codigo SHA ca77ac26c5299c62a3ce9150d79be15b80b0db6e. 
 - O operador executou o diagnóstico READ_ONLY com dispositivo USB autorizado e relatou `STATUS=METADADOS_INSTALADOS_CONFIRMADOS`, pacote `br.com.megfinancas.app`, versão `2.0.708`, versionCode `708` e `PACOTE_PRESENTE=SIM`. Os campos do próprio diagnóstico informam `TESTE_OFFLINE_OUTBOX=NAO_EXECUTADO` e `DADOS_FINANCEIROS_EXTRAIDOS=NAO`.
 - Essa evidência encerra **somente a incerteza da versão instalada**, não o marco 5. O protocolo offline/retry/409, recuperação de arquivados e a equivalência binária da APK ainda exigem provas. Nenhuma alteração no Android ou banco real ocorreu.
 - **Indicador preservado:** 50% (5/10 marcos) e 0% de saneamento produtivo.
+
+## Atualizacao 17/11/2026 | Identificar protocolo real da APK 2.0.708, nao atribuir falha de fonte ao binario
+
+- Auditoria release PUBLICA com SHA imutavel e 15 assets Web: [Actions #44210176996](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44210176996) SUCCESS. Literais transacionais `app-state/transactions`, outbox e `megCloudConfirmation` nao encontrados, enquanto `app-state`, `expectedRevision`, `operationId`, `PUT`, `PATCH` e `409` foram encontrados (sem conclusao sobre associacao dos trechos).
+- Constatacao: source legacy `instant-persistence.js` corrigido em QA nao prova comportamento do Android fisico 2.0.708. A ausencia de literal nao exclui geracao dinamica de rota. Evidencia de ADB do operador so confirma versionName/code, NAO SHA.
+- Regressoes HTTP PostgreSQL 17 ficticias: [Actions #44210739918](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44210739918) SUCCESS, tanto PATCH quanto PUT rejeitam reinsercao implicita de tombstone e preservam identidade.
+- Script de comparacao hash somente leitura preparado, ensaiado com ADB sintetico em [Actions #44211331939](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44211331939) SUCCESS; execucao no aparelho ainda pendente.
+- Marcos comprovados continuam **5/10 = 50%**. Saneamento produtivo **0%**. Issue #699 ainda **P0 aberta**.
