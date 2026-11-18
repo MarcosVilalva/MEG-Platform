@@ -1,0 +1,117 @@
+-- ETAPA 10 | PG17 local em WSL, leitura somente, sem dados reais neste arquivo.
+-- NUNCA usar com a base produtiva ou com o sandbox de recuperacao da Etapa 09.
+-- Executar APENAS no cluster 17/meg_stage10_qa (socket Unix /var/run/postgresql, port 5448)
+-- com role m_vil, banco meg_stage10_qa e transacoes somente leitura.
+-- Parametros privados injetados por psql -v id_a=... -v id_b=... -v id_c=...
+-- Nao versionar IDs, montantes, JSON, credenciais, assinaturas ou resultados.
+\set ON_ERROR_STOP on
+\if :{?id_a}
+\else
+  \echo 'BLOCKED: private id_a is missing'
+  \quit
+\endif
+\if :{?id_b}
+\else
+  \echo 'BLOCKED: private id_b is missing'
+  \quit
+\endif
+\if :{?id_c}
+\else
+  \echo 'BLOCKED: private id_c is missing'
+  \quit
+\endif
+
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SET LOCAL statement_timeout = '15s';
+SELECT CASE WHEN current_database() = 'meg_stage10_qa'
+  AND current_user = 'm_vil'
+  AND current_setting('port') = '5448'
+  AND inet_server_addr() IS NULL
+  AND current_setting('transaction_read_only') = 'on'
+  AND NOT (SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user)
+  THEN 'true' ELSE 'false' END AS stage10_safe_local \gset
+\if :stage10_safe_local
+  \echo 'MEG_STAGE10_CLUSTER_LOCAL_READONLY_GUARD=PASS'
+\else
+  \echo 'BLOCKED: host, role, database, port, peer/socket or read-only guard mismatch'
+  ROLLBACK;
+  \quit
+\endif
+
+WITH targets(label, id) AS (
+  VALUES ('A', :'id_a'), ('B', :'id_b'), ('C', :'id_c')
+), found AS (
+  SELECT t.label, e.*, a.id AS linked_account_id,
+    a."userId" AS account_owner, a."isActive" AS account_active, a.type AS account_type,
+    c.n AS cat_n, cat.id AS candidate_category_id, cat.name AS candidate_category_name,
+    cat."group" AS candidate_category_group,
+    p.n AS pay_n, pm.id AS candidate_payment_id, pm.name AS candidate_payment_name,
+    pm.type AS candidate_payment_type,
+    mirror.exact_n AS mirror_n,
+    (SELECT count(*) FROM public."LedgerEntry" l WHERE l."eventId" = e.id) AS ledger_n,
+    (SELECT count(*) FROM public."Receipt" rr WHERE rr."financialEventId" = e.id) AS receipt_n,
+    (SELECT count(*) FROM public."PayablePayment" pp WHERE pp."financialEventId" = e.id) AS payable_n,
+    (SELECT count(*) FROM public."ImportedRow" ii WHERE ii."eventId" = e.id) AS import_n,
+    md5((to_jsonb(e) - 'updatedAt')::text) AS event_fingerprint,
+    md5((to_jsonb(a) - 'updatedAt')::text) AS account_fingerprint,
+    md5((to_jsonb(cat) - 'updatedAt')::text) AS category_fingerprint,
+    md5((to_jsonb(pm) - 'updatedAt')::text) AS payment_fingerprint,
+    md5((to_jsonb(e."sourcePayload"))::text) AS source_fingerprint
+  FROM targets t
+  LEFT JOIN public."FinancialEvent" e ON e.id = t.id
+  LEFT JOIN public."Account" a ON a.id = e."accountId"
+  LEFT JOIN LATERAL (
+    SELECT count(*)::int AS n, min(c0.id) AS id
+    FROM public."Category" c0
+    WHERE c0."userId" = e."userId" AND c0."isActive" = TRUE
+      AND c0.type = e.type
+      AND lower(btrim(c0.name)) = lower(btrim(e."sourcePayload"->>'category'))
+      AND lower(btrim(coalesce(c0."group", ''))) = lower(btrim(e."sourcePayload"->>'expenseClass'))
+  ) c ON TRUE
+  LEFT JOIN public."Category" cat ON cat.id = c.id AND c.n = 1
+  LEFT JOIN LATERAL (
+    SELECT count(*)::int AS n, min(p0.id) AS id
+    FROM public."PaymentMethod" p0
+    WHERE p0."userId" = e."userId" AND p0."isActive" = TRUE
+      AND lower(btrim(p0.name)) = lower(btrim(e."sourcePayload"->>'paymentMethod'))
+  ) p ON TRUE
+  LEFT JOIN public."PaymentMethod" pm ON pm.id = p.id AND p.n = 1
+  LEFT JOIN LATERAL (
+    SELECT count(*)::int AS exact_n
+    FROM public."AppState" s
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(s.state->'transactions') = 'array'
+        THEN s.state->'transactions' ELSE '[]'::jsonb END
+    ) x
+    WHERE s."workspaceId" = e."workspaceId"
+      AND x->>'id' = e."legacyTransactionId"
+      AND x = e."sourcePayload"
+  ) mirror ON TRUE
+)
+SELECT label AS padrao,
+  CASE WHEN
+    id IS NOT NULL AND "archivedAt" IS NULL AND type = 'expense'
+    AND status = CASE WHEN label IN ('A', 'B') THEN 'paid' ELSE 'planned' END
+    AND frequency = 'ONE_OFF'
+    AND amount > 0 AND "signedAmount" < 0 AND abs("signedAmount") = amount
+    AND "categoryId" IS NULL AND "paymentMethodId" IS NULL
+    AND linked_account_id IS NOT NULL AND account_owner = "userId"
+    AND account_active = TRUE AND account_type IN ('checking', 'savings', 'cash')
+    AND lower(btrim(coalesce("sourcePayload"->>'financialScope', ''))) = 'monetary'
+    AND lower(btrim(coalesce("sourcePayload"->>'modality', ''))) = 'à vista'
+    AND cat_n = 1 AND pay_n = 1 AND candidate_payment_type IS DISTINCT FROM 'credit'
+    AND mirror_n = 1 AND ledger_n = 0 AND receipt_n = 0
+    AND payable_n = 0 AND import_n = 0
+    THEN 'PASS' ELSE 'FAIL' END AS elegibilidade,
+  coalesce(cat_n, 0) AS categorias_unicas,
+  coalesce(pay_n, 0) AS meios_unicos,
+  coalesce(mirror_n, 0) AS espelhos_exatos,
+  coalesce(ledger_n, 0) AS ledger,
+  coalesce(receipt_n, 0) AS recibos,
+  coalesce(payable_n, 0) AS baixas,
+  coalesce(import_n, 0) AS importacoes,
+  event_fingerprint, account_fingerprint, category_fingerprint,
+  payment_fingerprint, source_fingerprint
+FROM found ORDER BY label;
+ROLLBACK;
+\echo 'MEG_STAGE10_LOTE03_LOCAL_READONLY_COMPLETE=TRUE'
