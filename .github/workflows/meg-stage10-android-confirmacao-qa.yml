@@ -14,6 +14,7 @@ on:
       - 'apps/web/src/phoenix/data/phoenix-write-gateway.ts'
       - 'scripts/meg-stage10-*.sh'
       - 'scripts/meg-stage10-apk708-runtime.contract.mjs'
+      - 'scripts/meg-stage10-android-emulator-smoke.mjs'
 
 permissions:
   contents: read
@@ -38,7 +39,24 @@ jobs:
           timeout 30 node --experimental-vm-modules scripts/meg-stage10-apk708-runtime.contract.mjs
       - run: npm ci --audit=false --fund=false
       - run: bash scripts/meg-stage10-build-android-qa.sh
-      - run: node scripts/npm-security-audit.mjs --audit-level=high
+      - name: Exercise the isolated APK in an Android emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          sudo chown "$(id -u):$(id -g)" /dev/kvm
+          image='system-images;android-35;google_apis;x86_64'
+          sdkmanager "emulator" "$image"
+          avdmanager create avd --name meg-stage10 --package "$image" <<< no
+          "$ANDROID_HOME/emulator/emulator" @meg-stage10 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >"$RUNNER_TEMP/stage10-emulator.log" 2>&1 &
+          trap 'adb emu kill >/dev/null 2>&1 || true' EXIT
+          export ANDROID_SERIAL=emulator-5554
+          timeout 240 bash -c 'adb wait-for-device; until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == 1 ]]; do sleep 3; done'
+          adb shell input keyevent 82
+          adb install android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
+          node scripts/meg-stage10-android-emulator-smoke.mjs
+      - if: ${{ !cancelled() }}
+        run: node scripts/npm-security-audit.mjs --audit-level=high
       - uses: actions/upload-artifact@v4
         with:
           name: meg-stage10-android-confirmacao-qa
