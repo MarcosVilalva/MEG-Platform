@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { MegMobilePicker, type MegMobilePickerOption } from './MegMobilePicker';
@@ -209,6 +209,11 @@ export function MegMobileLaunchSheet({
   const [installments, setInstallments] = useState(Math.max(1, Number(cardPurchase?.installments || 1)));
   const [notes, setNotes] = useState(event?.notes || '');
   const [busy, setBusy] = useState(false);
+  const activeSheet = useRef(true);
+  useEffect(() => {
+    activeSheet.current = true;
+    return () => { activeSheet.current = false; };
+  }, []);
   const [message, setMessage] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning | null>(null);
@@ -450,6 +455,7 @@ export function MegMobileLaunchSheet({
     if (validation) { setMessage(validation); return; }
     setBusy(true);
     setMessage(event ? 'Salvando alterações…' : allowDuplicate ? 'Confirmando novo lançamento…' : 'Salvando lançamento…');
+    const canAcknowledge = () => activeSheet.current;
 
     const duplicateFrom = (
       result: { status: string; operationId?: string; code?: string; details?: { duplicate?: PhoenixDuplicateCandidate; duplicateWindowSeconds?: number } },
@@ -508,7 +514,7 @@ export function MegMobileLaunchSheet({
           const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
           if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
-          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit, existingOperationId), data.month);
+          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit, existingOperationId), data.month, undefined, canAcknowledge);
           if (duplicateFrom(result)) return;
           if (result.status === 'error') throw new Error(result.code);
           if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
@@ -525,7 +531,7 @@ export function MegMobileLaunchSheet({
           const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
           if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
-          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit, existingOperationId), data.month);
+          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit, existingOperationId), data.month, undefined, canAcknowledge);
           if (duplicateFrom(result)) return;
           if (result.status === 'error') throw new Error(result.code);
           if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
@@ -534,7 +540,7 @@ export function MegMobileLaunchSheet({
         const result = await runPhoenixSimpleEventEdit(event.id, simple, data.month, event.updatedAt);
         if (result.snapshot) dispatchSnapshot(result.snapshot);
       } else {
-        const result = await runPhoenixSimpleEventWrite(preparePhoenixSimpleEvent(simple, existingOperationId), data.month);
+        const result = await runPhoenixSimpleEventWrite(preparePhoenixSimpleEvent(simple, existingOperationId), data.month, undefined, canAcknowledge);
         if (duplicateFrom(result)) return;
         if (result.status === 'error') throw new Error(result.code);
         if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);

@@ -1,5 +1,6 @@
 import { payablesClient } from '../app/payables-client';
 import {
+  isolatedAndroidConfirmationQa,
   preparePhoenixBenefitEvent,
   preparePhoenixSimpleEvent,
   runPhoenixBenefitEventWrite,
@@ -10,7 +11,7 @@ import { preparePhoenixTransfer, runPhoenixTransferWrite } from './data/phoenix-
 import { clearPhoenixReadModelCache } from './data/load-phoenix-read-model';
 import { PHOENIX_INCOME_PAYMENT_METHODS, canonicalPhoenixIncomePaymentMethod } from './income-payment-methods';
 
-type BridgeMode = 'review' | 'save' | 'saving' | 'error' | 'confirmed';
+type BridgeMode = 'review' | 'save' | 'saving' | 'error' | 'pending' | 'confirmed';
 
 type BridgeState = {
   mode: BridgeMode;
@@ -340,6 +341,11 @@ function setButton(root: HTMLElement) {
     button.textContent = 'Tentar gravar novamente';
     return;
   }
+  if (state.mode === 'pending') {
+    button.disabled = false;
+    button.textContent = 'Verificar gravação';
+    return;
+  }
   if (button.disabled) {
     state.mode = 'review';
     state.fingerprint = '';
@@ -358,6 +364,7 @@ function syncDrawer() {
   if (syncing) return;
   const root = drawer();
   if (!root) {
+    if (isolatedAndroidConfirmationQa && state.mode === 'saving') return;
     state.mode = 'review';
     state.fingerprint = '';
     state.operationId = undefined;
@@ -485,16 +492,31 @@ async function submit(root: HTMLElement) {
       const payload = payloadFromDrawer(root);
       if (!payload) throw new Error('PHOENIX_WRITE_NOT_READY');
       const benefit = benefitSelection(root);
-      const prepared = benefit.isBenefit && benefit.isVerocard
+      const isBenefit = benefit.isBenefit && benefit.isVerocard;
+      const prepared = isBenefit
         ? preparePhoenixBenefitEvent({ ...payload, status: 'paid' }, state.operationId)
         : preparePhoenixSimpleEvent(payload, state.operationId);
       state.operationId = prepared.operationId;
-      const result = benefit.isBenefit && benefit.isVerocard
-        ? await runPhoenixBenefitEventWrite(prepared as ReturnType<typeof preparePhoenixBenefitEvent>, visibleRefreshMonth(root, payload.date))
-        : await runPhoenixSimpleEventWrite(prepared as ReturnType<typeof preparePhoenixSimpleEvent>, visibleRefreshMonth(root, payload.date));
+      const refreshMonth = visibleRefreshMonth(root, payload.date);
+      const canAcknowledge = () => drawer() === root;
+      const result = isBenefit
+        ? await runPhoenixBenefitEventWrite(prepared as ReturnType<typeof preparePhoenixBenefitEvent>, refreshMonth, undefined, canAcknowledge)
+        : await runPhoenixSimpleEventWrite(prepared as ReturnType<typeof preparePhoenixSimpleEvent>, refreshMonth, undefined, canAcknowledge);
+      if (isolatedAndroidConfirmationQa && drawer() !== root) {
+        state.mode = 'review';
+        syncDrawer();
+        return;
+      }
       if (result.status === 'error') {
-        state.mode = 'error';
+        state.mode = result.code === 'PHOENIX_CREATE_UNCONFIRMED' ? 'pending' : 'error';
         setFeedback(root, result.message, 'warn');
+        setButton(root);
+        return;
+      }
+      if (isolatedAndroidConfirmationQa && result.status === 'accepted') {
+        // The gateway refreshes the snapshot independently of the committed write.
+        state.mode = 'confirmed';
+        setFeedback(root, 'Lançamento gravado no servidor. Atualizando os dados da tela…', 'ok');
         setButton(root);
         return;
       }
@@ -517,6 +539,11 @@ async function submit(root: HTMLElement) {
       }, 150);
     }
   } catch (error) {
+    if (isolatedAndroidConfirmationQa && drawer() !== root) {
+      state.mode = 'review';
+      syncDrawer();
+      return;
+    }
     state.mode = 'error';
     setFeedback(root, domainErrorMessage(error), 'warn');
     setButton(root);
@@ -563,7 +590,7 @@ function onClick(event: MouseEvent) {
     event.stopImmediatePropagation();
     return;
   }
-  if (state.mode === 'save' || state.mode === 'error' || reviewed(root)) {
+  if (state.mode === 'save' || state.mode === 'error' || state.mode === 'pending' || reviewed(root)) {
     event.preventDefault();
     event.stopImmediatePropagation();
     void submit(root);

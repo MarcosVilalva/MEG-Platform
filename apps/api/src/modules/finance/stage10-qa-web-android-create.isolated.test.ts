@@ -6,6 +6,7 @@ import { registerAuth } from '../../plugins/auth';
 import { authRoutes } from '../auth/routes';
 import { LicenseStatus, Prisma, prisma, UserRole, UserStatus } from '@meg/database';
 import { appStateRoutes } from '../app-state/routes';
+import { financeBenefitEventRoutes } from './benefit-event-routes';
 import { financeRoutes } from './routes';
 import { normalizationPreview } from '../app-state/normalization-migration';
 
@@ -62,6 +63,7 @@ async function main(){
   await app.register(authRoutes,{prefix:'/auth'});
   await app.register(appStateRoutes,{prefix:'/app-state'});
   await app.register(financeRoutes,{prefix:'/finance'});
+  await app.register(financeBenefitEventRoutes,{prefix:'/finance'});
   await app.ready();
 
 
@@ -261,6 +263,38 @@ async function main(){
   process.env.MEG_STAGE10_WEB_WRITE_QA='0';
   const disabled=await withAuth({method:'GET',url:'/app-state/stage10-qa-write-gate'});
   assert.equal(disabled.statusCode,403);
+
+  const benefitAccount = await prisma.account.create({
+   data: { userId: user.id, name: 'Conta Benefício QA', type: 'benefit', openingBalance: 0 },
+  });
+  const verocard = await prisma.paymentMethod.create({
+   data: { userId: user.id, name: 'Verocard', type: 'other' },
+  });
+  const creditPayload = {
+   operationId: `phoenix-benefit-${randomUUID()}`,
+   type: 'income', date: payload.date, amount: 25, description: 'Crédito fictício de benefício',
+   accountId: benefitAccount.id, paymentMethodId: verocard.id,
+  };
+  const writeBenefit = (input: typeof creditPayload) =>
+   withAuth({ method: 'POST', url: '/finance/benefit-events', payload: input });
+  const firstCredit = await writeBenefit(creditPayload);
+  assert.equal(firstCredit.statusCode, 201, firstCredit.body);
+  // The transport discards firstCredit.body. Reconcile using only the original request.
+  const benefitReplay = await writeBenefit(creditPayload);
+  assert.equal(benefitReplay.statusCode, 201, benefitReplay.body);
+  const benefitEvent = JSON.parse(benefitReplay.body);
+  assert.equal(benefitEvent.idempotentReplay, true);
+  assert.equal(benefitEvent.status, 'paid');
+  assert.equal(await prisma.financialEvent.count({ where: { workspaceId, accountId: benefitAccount.id } }), 1);
+  const benefitLedger = await prisma.ledgerEntry.findMany({ where: { eventId: benefitEvent.id } });
+  assert.equal(benefitLedger.length, 1);
+  assert.equal(benefitLedger[0].accountId, benefitAccount.id);
+  assert.equal(Number(benefitLedger[0].debit), 25);
+  const changedCredit = await writeBenefit({ ...creditPayload, amount: 30 });
+  assert.equal(changedCredit.statusCode, 409, changedCredit.body);
+  assert.equal(JSON.parse(changedCredit.body).error, 'OPERATION_ID_REUSED');
+  console.log('MEG_STAGE10_BENEFIT_RESPONSE_LOST_SAME_ID_REPLAY_PASS');
+
   console.log('MEG_STAGE10_WEB_CREATE_CANONICAL_AND_ANDROID_MIRROR_QA_PASS');
   console.log('MEG_STAGE10_WEB_CREATE_EDIT_REAL_JWT_QA_PASS');
  } finally {

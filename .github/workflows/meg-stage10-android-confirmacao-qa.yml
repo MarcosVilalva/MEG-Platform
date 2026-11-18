@@ -1,0 +1,74 @@
+name: MEG Stage10 Android confirmation APK QA
+on:
+  push:
+    branches: [stage10/android-confirmacao-qa-20261118]
+    paths:
+      - '.github/workflows/meg-stage10-android-confirmacao-qa.yml'
+      - 'android/**'
+      - 'apps/web/src/mobile/MegMobileLaunchSheet.tsx'
+      - 'apps/api/src/modules/finance/stage10-qa-web-android-create.isolated.test.ts'
+      - 'apps/web/src/phoenix/simple-event-form-bridge.ts'
+      - 'apps/web/src/phoenix/data/phoenix-write-gateway.ts'
+      - 'scripts/meg-stage10-*.sh'
+      - 'scripts/meg-stage10-apk708-runtime.contract.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  build-qa-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Execute historical and corrected confirmation contracts
+        run: |
+          git fetch --depth=1 --no-tags origin 36c886b9597be95a28eb2add00f073e5f43f6fe0
+          timeout 30 node --experimental-vm-modules scripts/meg-stage10-apk708-runtime.contract.mjs
+      - run: npm ci --audit=false --fund=false
+      - run: bash scripts/meg-stage10-build-android-qa.sh
+      - run: node scripts/npm-security-audit.mjs --audit-level=high
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meg-stage10-android-confirmacao-qa
+          path: android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
+          if-no-files-found: error
+          retention-days: 7
+  verify-pg17-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --audit=false --fund=false
+      - run: npm run db:generate
+      - run: npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - run: node --import tsx apps/api/src/modules/finance/stage10-qa-web-android-create.isolated.test.ts
