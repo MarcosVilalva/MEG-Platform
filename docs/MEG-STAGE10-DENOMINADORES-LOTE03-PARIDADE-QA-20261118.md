@@ -75,3 +75,38 @@ Novo teste: [`apps/api/src/modules/finance/stage10-qa-legacy-web-android-parity.
 **Gate de dependências atualizado no mesmo dia:** o GitHub retirou formalmente `GHSA-fc5q-39xc-vjpf` em 18/11/2026 (https://github.com/advisories/GHSA-fc5q-39xc-vjpf). Sem exceções, downgrade de severidade, override ou modificação do lockfile, foi reexecutado **somente o job `validate` anteriormente falho** no PR #702. [CI monorepo #44303935997, tentativa 2](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44303935997) **SUCCESS**; `Enforce dependency security gate` **SUCCESS**; jobs `financial-e2e` e `android-rc1` **SKIPPED**, não homologados por essa tentativa. A retirada do advisory não comprova correção do código upstream.
 
 **Continuidade:** o candidato de proteção de identidades PR #702 permanece Draft, não publicado; o código de produção continua no commit `28703a9`. Antes de autorizar qualquer lote real, faltam réplica QA fiel e privada, backup atual com prova de restauração, invariantes financeiros pós-escrita em QA, reversão transacional demonstrada com a réplica e proteção de sincronização implantada sob aprovação própria. Homologação de reenvio no aparelho físico e aprovação visual são gates específicos de liberação do cliente, não provas de integridade do lote SQL. Sem merge, deploy, Android modificado, custo ou escrita produtiva.
+
+## 7. Gates financeiros e Android QA executados em CI (sem réplica real)
+
+**Data:** 18/11/2026. PR #701 permanece Draft; PR #702 permanece Draft. Nenhum merge, deploy, DML no Supabase real, alteração no APK estável, alteração de schema produtivo ou envio de dados pessoais ao repositório.
+
+### Motivo dos dois SKIPPED no CI geral
+
+Em `.github/workflows/ci.yml`, o job `financial-e2e` só roda em branches legadas `phoenix/v15-clean-room`, `feature/phoenix-launch-dynamic-status` e prefixo `rc1/`. O job `android-rc1` também é condicionado a essas referências e compila APK assinado pelo canal **estável**, com versão e URL da API pública. É incorreto forçar esse job de release para uma branch Stage10. Os `SKIPPED` na tentativa 2 do CI #44303935997 decorrem dessas condições; não são prova de aprovação.
+
+### Gate financeiro adicional efetivamente aprovado
+
+Criado `.github/workflows/meg-stage10-financial-e2e-pg17.yml` (commit `b4a20c0038ae9e7766ffdfa4b61668aa9894c9c5`). Job de CI sem credenciais externas, PostgreSQL 17 descartável com host `127.0.0.1`, porta `5432`, DB `meg_stage10_sandbox`, role `meg_stage10_ci` e validação fail-closed antes de qualquer operação. Usa o teste existente `apps/api/src/modules/finance/rc1-financial-e2e.test.ts`, sem alteração financeira, após esquema Prisma e auditoria integral inalterada.
+
+**[Run #44377398244](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44377398244): SUCCESS**. Evidências do log: `STAGE10_FINANCIAL_E2E_DB_ISOLATION=PASS`, `RC1 financial E2E: APROVADO.`, `STAGE10_RC1_FINANCIAL_E2E_PG17=PASS`, auditoria high PASS. O teste usa dados sintéticos, **não** restauração do lote original.
+
+### Gate Android isolado efetivamente aprovado
+
+Em `.github/workflows/meg-stage10-android-confirmacao-qa.yml`, o gate integral de dependências foi movido para **antes** do build APK, sem exceções, commit `39f66f8fd6aa016d48ff1cf030b72835f39f69e2`.
+
+**[Run #44377486060](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44377486060): SUCCESS**, jobs `build-qa-apk` e `verify-pg17-replay` ambos SUCCESS. Passos: auditoria high, build `br.com.megfinancas.app.stage10qa` com assinatura debug e API `http://127.0.0.1:3333`, instalação no Android 35 emulador, WebView, login sintético rejeitado em servidor loopback e testes de replay PG17 com dados fictícios. Marcador no log `MEG_STAGE10_APK_EMULATOR_WEBVIEW_LOOPBACK_SMOKE_PASS`. Hash SHA-256 do **APK QA**: `95968bb2ed18aafe35cff7598981f17423f236cfd599c9a50593cc4934b6bf90`. Artefato no GitHub Actions ID `14462157424`, prazo informado até 25/11/2026, sem payload produtivo. **Não foi instalado nem testado no aparelho físico do usuário; o smoke do emulador não exercitou o fluxo completo de reenvio pela UI.**
+
+### Ambiente QA privado com as três linhas reais: NÃO PROVISIONADO
+
+- Supabase: projeto produtivo `meg-financas` ativo; sandbox de recuperação Stage09 ativo porém sem tabelas financeiras; `meg-evolution` inativo e não autorizado para recriação/reescrita; nenhuma branch Supabase disponível, branching indisponível no Free.
+- Render: serviço de API ativo, **nenhuma instância PostgreSQL** no workspace consultado.
+- Ambiente local desta execução: sem servidor `postgres`, `psql` ou Docker; fontes apt sem acesso de rede confirmado. CI GitHub provê PG17 efêmero, mas somente schema e fixtures sintéticas. Não existe mecanismo conectado e autorizado para enviar os dados financeiros reais a esse runner sem criar nova superfície de vazamento para repositório público, logs ou artefatos.
+- Consequência: não houve restauração fiel dos três registros e FKs auxiliares, comparação completa com a réplica de valores reais, nem ensaio de reversão **pós-lote real**. Os testes fictícios já registrados mantêm validade apenas no seu escopo.
+
+### Proteção API e Android legado
+
+- PR #702 mantém preservação de IDs, bloqueio de rebuild e retorno fail-closed, mas **continua Draft e não publicado**, com produção ainda em `28703a9`, autoDeploy Render off. CI de segurança não equivale a implantação.
+- Persistência Android legado `apps/web/src/instant-persistence.js` segue tratando qualquer 409 de `/app-state/transactions` como conflito transitório e agenda reenvio, mesmo nos conflitos de integridade permanentes da API candidata. Issue P0 #699 permanece bloqueio real de compatibilidade. Não ignorar conflito e não retornar sucesso artificial para descartar gravação.
+- A homologação física com o pacote `.stage10qa`, QA fictícia e ciclo de vida real, além do gate funcional de cliente legado, permanece necessária para qualquer decisão de publicação da API.
+
+**Gates indispensáveis antes de escrita produtiva:** réplica privada fiel com os três IDs e dependências, backup/restauração atual, invariantes financeiras após mutação em QA, reversão pós-lote, proteção API publicada com aprovação separada, compatibilidade de sincronização e autorização por IDs. Nenhuma aprovação de UPDATE foi solicitada ou presumida.
