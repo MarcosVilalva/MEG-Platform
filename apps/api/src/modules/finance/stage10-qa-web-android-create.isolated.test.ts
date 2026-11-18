@@ -271,6 +271,21 @@ async function main(){
   const disabled=await withAuth({method:'GET',url:'/app-state/stage10-qa-write-gate'});
   assert.equal(disabled.statusCode,403);
 
+  const partialEdit = await withAuth({
+   method: 'PATCH', url: '/finance/events/' + row.id,
+   payload: { description: 'Descrição alterada sem status' },
+  });
+  assert.equal(partialEdit.statusCode, 200, partialEdit.body);
+  assert.equal(JSON.parse(partialEdit.body).status, 'paid');
+  const paidAfterPartialEdit = await prisma.financialEvent.findUniqueOrThrow({
+   where: { id: row.id }, include: { ledgerEntries: true },
+  });
+  assert.equal(paidAfterPartialEdit.status, 'paid');
+  assert.equal(paidAfterPartialEdit.description, 'Descrição alterada sem status');
+  assert.equal(paidAfterPartialEdit.ledgerEntries.length, 1);
+  assert.equal(Number(paidAfterPartialEdit.ledgerEntries[0].credit), 10.35);
+  console.log('MEG_STAGE10_PARTIAL_EDIT_PRESERVES_PAID_STATUS_PASS');
+
   const benefitAccount = await prisma.account.create({
    data: { userId: user.id, name: 'Conta Benefício QA', type: 'benefit', openingBalance: 0 },
   });
