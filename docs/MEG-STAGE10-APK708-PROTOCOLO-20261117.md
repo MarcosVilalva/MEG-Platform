@@ -27,3 +27,9 @@ Parser do script e respostas ADB ficticias, com hashes iguais/diferentes, aprova
 ## 4. Gate atual
 
 Sem producao, Android alterado, merge, novos custos, etapa 11 nem saneamento DML. Aguardar fingerprint instalado, caracterizacao offline/409, plano de seguranca da issue #691 e classificacao historica da #700. Indicador de saneamento **50% tecnico (5/10), 0% produtivo**.
+
+## 18/11/2026 | Igualdade binaria da APK instalada confirmada por relatorio do operador
+
+O operador executou no aparelho conectado por ADB o script READ_ONLY previamente ensaiado com respostas ficticias em CI, retornando `STATUS=HASH_IGUAL_A_RELEASE`, `MESMO_BINARIO_DA_RELEASE=SIM`, pacote `br.com.megfinancas.app`, `DADOS_FINANCEIROS_EXTRAIDOS=NAO`, `APK_INSTALADA_OU_ALTERADA=NAO`. O SHA-256 de ambos (instalado e release) foi `1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6`.
+
+**Status corrigido:** a equivalencia de binario nao esta mais pendente. A conclusao se refere ao arquivo APK de instalacao unica, nao a execucao dos fluxos. Os resultados estaticos dos literais presentes/ausentes no release auditado agora se referem ao mesmo binario que o operador informou como instalado. Ainda nao foi verificado o comportamento do cliente quando offline, o protocolo HTTP efetivamente chamado, nem como reage a 409, tombstones ou restauracao. Issue #699 continua aberta.

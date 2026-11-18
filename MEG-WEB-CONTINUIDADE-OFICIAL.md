@@ -3509,3 +3509,25 @@ Retomada pronta: "Continuar somente Etapa 10 MEG Web, repo MarcosVilalva/MEG-Pla
 10. **Proximo passo exato:** obter resultado `MESMO_BINARIO_DA_RELEASE` do script hash ADB somente leitura no celular do operador. Se SIM, usar o fingerprint da release para orientar ensaio de protocolo QA com trafego sem dados reais; se NAO ou INDETERMINADO, nao atribuir protocolo a APK instalada e estudar via evidencias adicionais. Em paralelo, manter #699 P0 e saneamento #700 bloqueado de escrita ate os gates de recuperacao e homologacao.
 **Indicador oficial inalterado:** 5 de 10 marcos = 50% tecnico, saneamento produtivo 0%. **Saude do chat:** NORMAL.
 **Retomada:** Etapa10 PR697 Draft. APK instalada declarada por ADB como 2.0.708 code 708; release auditada SHA1718...; CI push #44210176996 SUCCESS: literal rota /app-state/transactions e outbox transacional NAO encontrado no APK publico, app-state/PUT/revision presente como literais, nao prova execucao. CI #44210739918 SUCCESS: PUT legado reintroducao arquivada rejeitada em PG17 QA; CI #44211331939 SUCCESS: script de hash por ADB testado com dispositivo ficticio. Falta executar hash em dispositivo real, #699 permanece P0. Sem prod/Android/merge/deploy.
+
+## ETAPA 10 | 18/11/2026 | APK INSTALADA: HASH IDENTICO A RELEASE PUBLICA
+
+1. **Tema/etapa/objetivo:** Etapa 10, confirmar a identidade binaria do aplicativo Android congelado antes de selecionar o protocolo de compatibilidade do escritor financeiro.
+2. **Decisoes confirmadas:** manter Android instalado sem alteracoes, evitar gravacoes financeiras em banco real, nao inferir comportamento offline do hash. Nao confundir versao/identidade de binario com homologacao funcional. CI e teste ficticio nao sao homologacao de aparelho.
+3. **Trabalho executado:** operador executou script `scripts/meg-stage10-android-apk-hash-readonly.ps1` previamente testado em QA ficticio com ADB, sem fazer `adb pull`, extrair dados ou reinstalar APK. Recebido relatorio:
+   - `MEG_STAGE10_ANDROID_APK_HASH=READ_ONLY`
+   - `STATUS=HASH_IGUAL_A_RELEASE`
+   - `PACOTE=br.com.megfinancas.app`
+   - `HASH_APK_INSTALADO=1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6`
+   - `HASH_APK_RELEASE=1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6`
+   - `MESMO_BINARIO_DA_RELEASE=SIM`
+   - `DADOS_FINANCEIROS_EXTRAIDOS=NAO`
+   - `APK_INSTALADA_OU_ALTERADA=NAO`.
+4. **Testes/resultados comprovados:** relatorio ADB fornecido pelo operador demonstra igualdade do SHA-256 do **arquivo APK unico** instalado e da release publica `MEG-Financas-708.apk`, SHA previamente auditado em CI push #44210176996. Teste de extracao de hash sintético do script em CI #44211331939 SUCCESS; CI #44211938628 SUCCESS. Codigo binario instalado fica associado ao fingerprint estatico da release; **nao** prova que o app tenha chamado as rotas PUT/PATCH nem mostra status HTTP/fluxos offline da operacao real.
+5. **Aprovações e nao homologados:** hash confirmado por resultado do operador; sem acesso remoto independente ao aparelho nesta integracao; nenhuma operacao offline/outbox/409 executada, nem UI ou dados reais homologados.
+6. **Riscos/pendencias:** P0 #699 depende de caracterizacao do protocolo efetivo da APK e de prova funcional com backend/dados QA isolados. Fonte `instant-persistence.js` da branch nao tem rota literal no APK auditado. Rejeitar atribuir replay do fonte a release sem evidencia. #691 e #700 continuam bloqueios.
+7. **Arquivos/fontes:** script `scripts/meg-stage10-android-apk-hash-readonly.ps1`; `docs/MEG-STAGE10-APK708-PROTOCOLO-20261117.md`; `docs/MEG-STAGE10-PAINEL-SANEAMENTO-20261117.md`; `MEG-WEB-CONTINUIDADE-OFICIAL.md`, issue #699.
+8. **Repo/branch/PR:** `MarcosVilalva/MEG-Platform`, `stage10/saneamento-qa-descartavel-20261117`, PR #697 Draft, ultimo HEAD anterior `e5d3b24861b8d04c0155c521627b7d25ebbb06a8`.
+9. **Restrições:** nao alterar Android, APK, producao Render/Supabase, contas reais, escritores produtivos, merge, custo ou Etapa 11. Nenhuma mudanca ao protocolo por intuicao.
+10. **Proximo passo exato:** aprofundar analise somente leitura dos JavaScript assets da release verificada, identificar o protocolo de sincronizacao mais provavel e comparar semantica do cliente com HTTP QA isolado. Se necessario para funcional, usar conta e dados QA completamente isolados, nunca login da conta real ou sync propositadamente divergente com prod. Saneamento #700 somente plano/dry-run ficticio.
+**Percentual:** 5/10 = 50% tecnico, 0% saneamento produtivo. **Saude do chat:** NORMAL. **Retomada:** Etapa 10 PR697 Draft: hash APK instalada pelo operador == release 2.0.708 `1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6`, sem extração e sem alteração. Fingerprint da release não achou rota transacional literal; investigar protocolo do binario e QA 409/offline. #699 P0 aberta, #691/#700 pendentes. Nao prod/Android/merge/Etapa11.

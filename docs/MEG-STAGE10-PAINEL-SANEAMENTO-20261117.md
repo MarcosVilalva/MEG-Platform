@@ -140,3 +140,9 @@ CI #44153114515 SUCCESS no codigo SHA ca77ac26c5299c62a3ce9150d79be15b80b0db6e. 
 - Regressoes HTTP PostgreSQL 17 ficticias: [Actions #44210739918](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44210739918) SUCCESS, tanto PATCH quanto PUT rejeitam reinsercao implicita de tombstone e preservam identidade.
 - Script de comparacao hash somente leitura preparado, ensaiado com ADB sintetico em [Actions #44211331939](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44211331939) SUCCESS; execucao no aparelho ainda pendente.
 - Marcos comprovados continuam **5/10 = 50%**. Saneamento produtivo **0%**. Issue #699 ainda **P0 aberta**.
+
+## Atualização 18/11/2026 | SHA da APK instalada confirmado
+
+- O operador trouxe o relatório `STATUS=HASH_IGUAL_A_RELEASE`, `MESMO_BINARIO_DA_RELEASE=SIM`, mesmo SHA-256 `1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6` da APK pública auditada, pacote `br.com.megfinancas.app`. Nenhuma APK alterada nem dado financeiro extraído.
+- Identidade binária da versão instalada e da release **confirmada pelo diagnóstico ADB do operador**. O diagnóstico funcional offline/outbox/status 409 permanece pendente e é gate obrigatório da issue #699.
+- **Indicador inalterado: 50% (5 de 10 marcos técnicos), saneamento produtivo 0%.**
