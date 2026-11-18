@@ -6,6 +6,7 @@ on:
       - '.github/workflows/meg-stage10-reconciliation-map-pg17.yml'
       - 'scripts/meg-stage10-reconciliation-map.readonly.sql'
       - 'apps/api/src/modules/finance/stage10-reconciliation-map.pg17.isolated.test.ts'
+      - 'apps/api/src/modules/finance/stage10-qa-legacy-web-android-parity.pg17.isolated.test.ts'
       - 'apps/api/src/modules/finance/stage10-historical-review-report.ts'
       - 'apps/api/src/modules/finance/stage10-historical-mapping-review.ts'
   pull_request:
@@ -39,6 +40,8 @@ jobs:
       MEG_STAGE10_ISOLATED_PG: '1'
       MEG_STAGE10_QA_LOCAL_ONLY: '1'
       NODE_ENV: test
+      JWT_SECRET: stage10-fictitious-parity-jwt-for-disposable-runner-only
+      ADMIN_EMAIL: stage10-ci@example.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,5 +56,7 @@ jobs:
         run: npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
       - name: Verify mapping, financial integrity, duplicates and rollback
         run: node --import tsx apps/api/src/modules/finance/stage10-reconciliation-map.pg17.isolated.test.ts
+      - name: Verify three anonymized historical patterns through Web and Android read API contracts
+        run: node --import tsx apps/api/src/modules/finance/stage10-qa-legacy-web-android-parity.pg17.isolated.test.ts
       # No production credentials, no production SQL writes, no APK, no artifact with IDs.
       # Gate isolated/diagnostic only; not a substitute for the monorepo audit.
