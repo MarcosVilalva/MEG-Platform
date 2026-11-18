@@ -53,3 +53,7 @@ O arquivo `instant-persistence.js` existe no repositorio desse periodo, mas **na
 `phoenix-write-gateway.ts` guarda IDs de algumas edicoes e arquivamentos em `Map` de memoria. Isto nao comprova um outbox duravel no aplicativo nem sua ausencia no restante do bundle; a garantia de recuperacao de falhas de rede ainda requer ensaio, inclusive respostas perdidas apos commit.
 
 Prova automatizada versionada em `scripts/meg-stage10-apk708-historical-entry.contract.mjs`, [CI #44276137446](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44276137446) SUCCESS, 37 etapas, quatro marcadores PASS para bootstrap/rotas/legado/limite de durabilidade. Somente leitura da fonte GitHub imutavel, sem modificar o Android ou banco. Marco 5 continua aberto.
+
+## 18/11/2026 | STATUS accepted/confirmed detectado no build da APK708
+
+Detalhes em `docs/MEG-STAGE10-APK708-STATUS-ACCEPTED-CONFIRMED-20261118.md`. Teste historico #44277074937 PASS identifica que o gateway de Novo Lancamento/Beneficio retorna `accepted` apos HTTP, mas o bridge exige `confirmed` sem fornecer o callback de confirmacao. Fingerprint de release em CI push #44277262354 SUCCESS comprovou literal `PHOENIX_WRITE_NOT_CONFIRMED` e rotas financeiras no APK, SHA ja confirmado pelo ADB do operador. Possivel falso erro apos gravacao aceita; sem execucao fisica ou duplicidade comprovada. Sem alterar Android.

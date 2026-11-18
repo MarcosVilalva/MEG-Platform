@@ -153,3 +153,10 @@ CI #44153114515 SUCCESS no codigo SHA ca77ac26c5299c62a3ce9150d79be15b80b0db6e. 
 - [CI #44276137446](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44276137446) SUCCESS com assercoes da fonte historica, sem alteracao Android/API produtiva. Escritores: `/finance/events`, `/finance/benefit-events`, `/cards/purchases`, `/finance/events/bulk/update`, `/finance/events/bulk/archive` e transferencias `/finance/transfers`.
 - O bug do `instant-persistence.js` fonte legado nao deve ser tratado como confirmado no APK. Foco #699 transferido para comportamento de falha/retry dos escritores Phoenix efetivamente distribuidos. Sao necessarios testes QA isolados e homologacao do comportamento offline/409 no aplicativo.
 - **5/10 = 50%** de marcos tecnicos e **0%** saneamento produtivo.
+
+## 18/11/2026 | Divergencia accepted/confirmed na APK708 investigada
+
+- [CI #44277074937](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44277074937) SUCCESS: teste historico do commit de build #708 detectou `MEG_STAGE10_APK708_BRIDGE_ACCEPTED_CONFIRMED_MISMATCH=DETECTED` para Novo Lancamento/Beneficio. Writer Phoenix retorna `accepted` apos POST; bridge exige `confirmed` imediatamente e nao recebe callback posterior. Risco de falso erro apos gravacao aceita, **sem duplicidade fisica comprovada**.
+- [CI push #44277262354](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44277262354) SUCCESS: `PHOENIX_WRITE_NOT_CONFIRMED`, `/finance/events`, `/finance/benefit-events` e `/cards/purchases` encontrados no binario original do APK708, SHA ja validado pelo operador. Presenca de literal nao comprova execucao no aparelho.
+- Proximo gate da issue #699: testar retorno accepted/releitura, timeout apos commit, repeticao idempotente e 409 em QA isolado; Android congelado. Documento `docs/MEG-STAGE10-APK708-STATUS-ACCEPTED-CONFIRMED-20261118.md`.
+- **50% (5/10) tecnico, 0% saneamento produtivo**, sem homologacao funcional da APK.
