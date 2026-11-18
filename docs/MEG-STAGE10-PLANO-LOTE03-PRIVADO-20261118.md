@@ -53,3 +53,15 @@ A compatibilidade do cliente antigo ainda é P0: correções implementadas na br
 Backup cifrado restaurado de 11/11/2026 comprova RECUPERAÇÃO HISTÓRICA, não disponibilidade de snapshot recuperável imediatamente anterior ao piloto produtivo. Os ensaios PG17 sintéticos já verdes permanecem válidos somente para fixture. Sem transferência autorizada, não exportar novo dump, nem usar o sandbox de recuperação como QA. Nenhum merge, deploy, DML na produção, mudança no Android estável, custos ou Etapa 11 foram autorizados.
 
 Próxima ação do usuário, única: conectar e autorizar o Android por USB/ADB no computador Windows, executar apenas o diagnóstico PowerShell read-only e devolver a saída sanitizada. Isso permite simultaneamente confirmar cluster WSL e APK instalada sem pedir arquivos financeiros ou credenciais.
+
+## 6. Diagnóstico recebido em 18/11/2026 e correção do inventário
+
+O primeiro diagnóstico local retornou `QA_CLUSTER=QUERY_ERROR`, `ADB=NOT_AVAILABLE`, `PRODUCAO_ACESSADA=NAO`, `BANCO_MODIFICADO=NAO`, `ANDROID_MODIFICADO=NAO` e `CLIPBOARD=OK`.
+
+**Interpretação:** `QUERY_ERROR` era uma exceção capturada sem código nem causa; não comprova banco ausente ou parado. `ADB=NOT_AVAILABLE` significava apenas ausência de `adb.exe` no PATH, não ausência do Android SDK.
+
+**Correção de código:** `scripts/meg-stage10-local-qa-android-inventory.readonly.ps1` SHA de commit `e4bb30aa3d36bffac62296ead810cdfcc6a5166f`. Agora captura código de saída de comandos externos sem expor stderr, consulta primeiro o registro Windows para confirmar a distribuição Ubuntu-24.04 sem abrir WSL interativamente, diferencia falha de listagem da falha psql e busca ADB também em locais usuais do Android SDK. Não altera PostgreSQL, APK ou produção.
+
+**CI real:** [GitHub Actions Windows #44389043326](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44389043326) `SUCCESS` no commit `6f90e4732cbb036e993e9aeadd5b3db9ec3413ba`. `MEG_STAGE10_INVENTORY_PS_PARSE=PASS`, `MEG_STAGE10_INVENTORY_NON_DESTRUCTIVE_STATIC=PASS`, `MEG_STAGE10_INVENTORY_WINDOWS_SYNTAX=PASS`. Limite expresso: `MEG_STAGE10_INVENTORY_WSL_RUNTIME=NOT_TESTED` e `MEG_STAGE10_INVENTORY_ANDROID_PHYSICAL=NOT_TESTED`. Não usar runners hospedados para afirmar a saúde do notebook.
+
+**Única ação externa:** executar uma vez o script corrigido por URL imutável no Windows e retornar somente o relatório sanitizado. Se `QA_GUARD=PASS`, avançar para comparação privada de três fingerprints em READ ONLY; se o cluster estiver down, não iniciá-lo automaticamente. Se ADB não for encontrado também no Android SDK, investigar instalação oficial de platform-tools sem mexer no app estável.
