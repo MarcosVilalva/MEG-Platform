@@ -1,0 +1,66 @@
+name: MEG Stage10 local inventory PowerShell validation
+on:
+  push:
+    branches: [stage10/android-confirmacao-qa-20261118]
+    paths:
+      - '.github/workflows/meg-stage10-local-inventory-windows.yml'
+      - 'scripts/meg-stage10-local-qa-android-inventory.readonly.ps1'
+  pull_request:
+    paths:
+      - '.github/workflows/meg-stage10-local-inventory-windows.yml'
+      - 'scripts/meg-stage10-local-qa-android-inventory.readonly.ps1'
+
+permissions:
+  contents: read
+
+jobs:
+  inventory-diagnostics-windows:
+    runs-on: windows-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate syntax and non-destructive command contract in Windows PowerShell
+        shell: powershell
+        run: |
+          $p = 'scripts/meg-stage10-local-qa-android-inventory.readonly.ps1'
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $p).Path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) {
+            throw ('MEG_STAGE10_INVENTORY_PS_PARSE_FAILED=' + $errors.Count)
+          }
+          $source = Get-Content -Path $p -Raw -Encoding UTF8
+          $active = ($source -split [char]10 | Where-Object { $_ -notmatch '^\s*#' }) -join [Environment]::NewLine
+          foreach ($pattern in @(
+            '(?i)\bpg_ctlcluster\b', '(?i)\bpg_restore\b', '(?i)\bpg_dump\b',
+            '(?i)\bdb\s+push\b', '(?i)\bInvoke-WebRequest\b',
+            '(?i)\badb(?:\.exe)?\s+(install|uninstall|reverse|pull|push)\b',
+            '(?i)\bSet-ItemProperty\b', '(?i)\bRemove-Item\b'
+          )) {
+            if ($active -match $pattern) { throw 'MEG_STAGE10_INVENTORY_MUTATION_GUARD_FAILED' }
+          }
+          Write-Output 'MEG_STAGE10_INVENTORY_PS_PARSE=PASS'
+          Write-Output 'MEG_STAGE10_INVENTORY_NON_DESTRUCTIVE_STATIC=PASS'
+      - name: Exercise the local inventory with no QA cluster or attached phone
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $report = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'scripts/meg-stage10-local-qa-android-inventory.readonly.ps1')
+          if ($LASTEXITCODE -ne 0) { throw 'MEG_STAGE10_INVENTORY_EXECUTION_FAILED' }
+          foreach ($required in @(
+            'MEG_STAGE10_READONLY_INVENTORY=START',
+            'PRODUCAO_ACESSADA=NAO',
+            'BANCO_MODIFICADO=NAO',
+            'ANDROID_MODIFICADO=NAO',
+            'MEG_STAGE10_READONLY_INVENTORY=END'
+          )) {
+            if (-not ($report -contains $required)) {
+              throw ('MEG_STAGE10_INVENTORY_MISSING_MARKER=' + $required)
+            }
+          }
+          if (-not ($report -match '^QA_CLUSTER=')) { throw 'MEG_STAGE10_INVENTORY_MISSING_QA_DIAGNOSTIC' }
+          if (-not ($report -match '^ADB=')) { throw 'MEG_STAGE10_INVENTORY_MISSING_ADB_DIAGNOSTIC' }
+          if (-not ($report -match '^CLIPBOARD=(OK|FALHA)$')) { throw 'MEG_STAGE10_INVENTORY_MISSING_CLIPBOARD_STATUS' }
+          if ($report -contains 'QA_CLUSTER=QUERY_ERROR') { throw 'MEG_STAGE10_INVENTORY_GENERIC_ERROR_NOT_ALLOWED' }
+          Write-Output 'MEG_STAGE10_INVENTORY_WINDOWS_EXECUTION=PASS'
+          Write-Output 'MEG_STAGE10_INVENTORY_PUBLIC_REPORT_SANITIZED=PASS'
