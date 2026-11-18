@@ -1,0 +1,57 @@
+name: MEG Stage10 reconciliation map and rollback PG17
+on:
+  push:
+    branches: [stage10/android-confirmacao-qa-20261118]
+    paths:
+      - '.github/workflows/meg-stage10-reconciliation-map-pg17.yml'
+      - 'scripts/meg-stage10-reconciliation-map.readonly.sql'
+      - 'apps/api/src/modules/finance/stage10-reconciliation-map.pg17.isolated.test.ts'
+      - 'apps/api/src/modules/finance/stage10-historical-review-report.ts'
+      - 'apps/api/src/modules/finance/stage10-historical-mapping-review.ts'
+  pull_request:
+    paths:
+      - '.github/workflows/meg-stage10-reconciliation-map-pg17.yml'
+      - 'scripts/meg-stage10-reconciliation-map.readonly.sql'
+      - 'apps/api/src/modules/finance/stage10-reconciliation-map.pg17.isolated.test.ts'
+
+permissions:
+  contents: read
+
+jobs:
+  qa-reconciliation-disposable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install for isolated test only; NOT a release security gate
+        run: npm ci --ignore-scripts --audit=false --fund=false
+      - name: Generate Prisma client locally
+        run: npm run db:generate
+      - name: Create schema only in ephemeral PG17 runner
+        run: npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Verify mapping, financial integrity, duplicates and rollback
+        run: node --import tsx apps/api/src/modules/finance/stage10-reconciliation-map.pg17.isolated.test.ts
+      # No production credentials, no production SQL writes, no APK, no artifact with IDs.
+      # Gate isolated/diagnostic only; not a substitute for the monorepo audit.
