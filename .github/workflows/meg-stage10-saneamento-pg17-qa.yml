@@ -64,6 +64,9 @@ jobs:
             exit 1
           }
           Write-Output 'STAGE10_ANDROID_POWERSHELL_PARSE=PASS'
+      - name: Validar execucao do diagnostico com ADB sintetico sem Android fisico
+        shell: pwsh
+        run: ./scripts/meg-stage10-android-installed-readonly.synthetic.test.ps1
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
