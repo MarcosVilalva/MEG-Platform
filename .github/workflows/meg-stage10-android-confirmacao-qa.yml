@@ -39,6 +39,8 @@ jobs:
           git fetch --depth=1 --no-tags origin 36c886b9597be95a28eb2add00f073e5f43f6fe0
           timeout 30 node --experimental-vm-modules scripts/meg-stage10-apk708-runtime.contract.mjs
       - run: npm ci --audit=false --fund=false
+      - name: Enforce unchanged full security gate before Android QA build
+        run: node scripts/npm-security-audit.mjs --audit-level=high
       - run: bash scripts/meg-stage10-build-android-qa.sh
       - name: Exercise the isolated APK in an Android emulator
         shell: bash
@@ -67,8 +69,6 @@ jobs:
           adb shell input keyevent 82
           adb install android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
           node scripts/meg-stage10-android-emulator-smoke.mjs
-      - if: ${{ !cancelled() }}
-        run: node scripts/npm-security-audit.mjs --audit-level=high
       - uses: actions/upload-artifact@v4
         with:
           name: meg-stage10-android-confirmacao-qa
