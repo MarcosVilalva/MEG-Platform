@@ -9,6 +9,7 @@ import { appStateRoutes } from '../app-state/routes';
 import { financeBenefitEventRoutes } from './benefit-event-routes';
 import { financeRoutes } from './routes';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
+import { readStage10HistoricalReview } from './stage10-historical-review-report';
 import { normalizationPreview } from '../app-state/normalization-migration';
 
 /**
@@ -316,6 +317,40 @@ async function main(){
   assert.equal(changedCredit.statusCode, 409, changedCredit.body);
   assert.equal(JSON.parse(changedCredit.body).error, 'OPERATION_ID_REUSED');
   console.log('MEG_STAGE10_BENEFIT_RESPONSE_LOST_SAME_ID_REPLAY_PASS');
+
+  await prisma.paymentMethod.update({ where: { id: verocard.id }, data: { type: 'credit' } });
+  await prisma.paymentMethod.create({ data: { userId: user.id, name: 'Método histórico QA', type: 'other' } });
+  const historical = {
+   workspaceId, userId: user.id, accountId: account.id,
+   description: 'Descrição privada da fixture', date: new Date(payload.date),
+   competence: payload.date.slice(0, 7), amount: 20, signedAmount: -20, type: 'expense', status: 'paid',
+  };
+  const line = { category: category.name, expenseClass: category.group, paymentMethod: method.name,
+   financialScope: 'monetary', modality: 'à vista' };
+  await prisma.financialEvent.createMany({ data: [
+   { ...historical, id: stamp + '-eligible', legacyTransactionId: 'ordinary', sourcePayload: line },
+   { ...historical, id: stamp + '-credit', legacyTransactionId: 'credit',
+    sourcePayload: { ...line, modality: 'CREDITO', paymentMethod: 'Método histórico QA' } },
+   { ...historical, id: stamp + '-benefit', legacyTransactionId: 'benefit', accountId: benefitAccount.id,
+    sourcePayload: { ...line, financialScope: 'benefit', paymentMethod: 'Verocard' } },
+   { ...historical, id: stamp + '-archived', legacyTransactionId: 'archived', sourcePayload: line,
+    archivedAt: new Date(payload.date) },
+  ] });
+  const readFixtures = () => prisma.financialEvent.findMany({
+   where: { id: { startsWith: stamp } }, orderBy: { id: 'asc' },
+  });
+  const beforeReview = await readFixtures();
+  const review = await readStage10HistoricalReview(workspace.id);
+  assert.deepEqual(review.map(({ eventId }) => eventId), ['benefit', 'credit', 'eligible'].map((key) => `${stamp}-${key}`));
+  assert.deepEqual(review.map(({ classification }) => classification), ['blocked', 'blocked', 'eligible_for_explicit_review']);
+  assert.ok(review[0].reasons.includes('CREDIT_METHOD_REQUIRES_CARD_AUTHORITY'));
+  assert.ok(review[1].reasons.includes('FINANCIAL_DOMAIN_SPECIALIST_REQUIRED'));
+  assert.equal(review[2].categoryId, category.id);
+  assert.equal(review[2].paymentMethodId, method.id);
+  assert.ok(review.every(({ writeAuthorized }) => writeAuthorized === false));
+  assert.ok(!JSON.stringify(review).includes(historical.description));
+  assert.deepEqual(await readFixtures(), beforeReview);
+  console.log('MEG_STAGE10_HISTORICAL_REVIEW_PER_ID_READ_ONLY_PASS');
 
   console.log('MEG_STAGE10_WEB_CREATE_CANONICAL_AND_ANDROID_MIRROR_QA_PASS');
   console.log('MEG_STAGE10_WEB_CREATE_EDIT_REAL_JWT_QA_PASS');
