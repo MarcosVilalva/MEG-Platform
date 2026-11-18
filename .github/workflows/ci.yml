@@ -34,11 +34,12 @@ jobs:
       - name: Validate Render API build filter
         shell: bash
         run: |
+          node scripts/meg-stage09-render-api-build.contract.test.mjs
           node <<'NODE'
           const fs = require('node:fs');
           const yaml = fs.readFileSync('render.yaml', 'utf8');
           const required = [
-            'autoDeployTrigger: commit',
+            "autoDeployTrigger: 'off'",
             'buildFilter:',
             '- apps/api/**',
             '- packages/database/**',
@@ -56,7 +57,7 @@ jobs:
             console.error('apps/web não pode acionar deploy automático da API.');
             process.exit(1);
           }
-          console.log('Render protegido: mudanças Web não reiniciam a API.');
+          console.log('Render protegido: deploy manual e filtro de arquivos conferidos.');
           NODE
 
       - name: Validate API dependency manifest
