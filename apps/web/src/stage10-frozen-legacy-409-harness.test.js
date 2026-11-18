@@ -287,12 +287,13 @@ function repeatedSameIntentKeepsOperationId() {
     },
     enqueueDurableWrite: () => { durableWrites++; },
     protectOutbox: () => undefined,
+    OUTBOX_KEY: 'meg-cloud-transaction-outbox-v1',
   };
   // A função original acessa 'globalThis.localStorage' e 'localStorage' por nomes distintos.
   h.globalThis.localStorage = h.localStorage;
   const persist = new Function('h', [
     '"use strict";',
-    'const {readOutbox,hasTransactionOperations,mergeTransactionOutbox,sameValue,createOperationId,globalThis,localStorage,enqueueDurableWrite,protectOutbox}=h;',
+    'const {readOutbox,hasTransactionOperations,mergeTransactionOutbox,sameValue,createOperationId,globalThis,localStorage,enqueueDurableWrite,protectOutbox,OUTBOX_KEY}=h;',
     source.slice(start,stop),
     'return persistOutbox;'
   ].join('\n'))(h);
@@ -308,7 +309,7 @@ function repeatedSameIntentKeepsOperationId() {
   // Reinício do JS lê o mesmo storage, mantendo a chave de operação.
   const afterReload = new Function('h',[
     '"use strict";',
-    'const {readOutbox,hasTransactionOperations,mergeTransactionOutbox,sameValue,createOperationId,globalThis,localStorage,enqueueDurableWrite,protectOutbox}=h;',
+    'const {readOutbox,hasTransactionOperations,mergeTransactionOutbox,sameValue,createOperationId,globalThis,localStorage,enqueueDurableWrite,protectOutbox,OUTBOX_KEY}=h;',
     source.slice(start,stop),
     'return persistOutbox;'
   ].join('\n'))(h)(structuredClone(intent));
