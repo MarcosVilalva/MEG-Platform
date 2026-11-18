@@ -107,10 +107,23 @@ async function main(){
   const write=async(input:typeof payload)=>withAuth({
    method:'POST',url:'/finance/events',payload:input,
   });
+  const responseLost = new Error('QA_RESPONSE_LOST_AFTER_COMMIT');
+  await assert.rejects(async () => {
+   const response = await write(payload);
+   assert.equal(response.statusCode,201,response.body);
+   // The server has handled the request, but the caller loses the response.
+   throw responseLost;
+  }, error => error === responseLost);
+  const committed = await prisma.financialEvent.findMany({where:{workspaceId:workspace.id}});
+  assert.equal(committed.length,1);
+  assert.equal(await prisma.ledgerEntry.count({where:{eventId:committed[0].id}}),1);
+
   const created=await write(payload);
   assert.equal(created.statusCode,201,created.body);
   const response=JSON.parse(created.body);
-  assert.ok(response.id);
+  assert.equal(response.id,committed[0].id);
+  assert.equal(response.idempotentReplay,true);
+  console.log('MEG_STAGE10_RESPONSE_LOST_AFTER_COMMIT_SAME_ID_REPLAY_PASS');
   assert.equal(response.legacyTransactionId,response.id);
   assert.equal(response.appStateRevision,2);
   const row=await prisma.financialEvent.findUniqueOrThrow({

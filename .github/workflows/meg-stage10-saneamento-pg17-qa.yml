@@ -90,6 +90,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Executar bridge e gateway historicos da APK708 com transporte simulado
+        run: node --experimental-vm-modules scripts/meg-stage10-apk708-runtime.contract.mjs
       - name: Validar endereco e escopo descartavel
         run: |
           node -e "const u=new URL(process.env.DATABASE_URL); if(u.hostname!=='127.0.0.1'||u.pathname!=='/meg_stage10_sandbox'||u.username!=='meg_stage10_ci'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(1)"
