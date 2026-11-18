@@ -16,6 +16,10 @@ SIGNATURES = {
     "HTTP_PATCH_LITERAL": b"PATCH",
     "HTTP_PUT_LITERAL": b"PUT",
     "HTTP_409_LITERAL": b"409",
+    "PHOENIX_WRITE_NOT_CONFIRMED": b"PHOENIX_WRITE_NOT_CONFIRMED",
+    "PHOENIX_EVENT_CREATE_ROUTE": b"/finance/events",
+    "PHOENIX_BENEFIT_ROUTE": b"/finance/benefit-events",
+    "PHOENIX_CARD_PURCHASE_ROUTE": b"/cards/purchases",
 }
 
 def fingerprint(apk: zipfile.ZipFile) -> tuple[dict[str, bool], int]:

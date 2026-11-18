@@ -31,5 +31,11 @@ with archive(b'const x="app-state/transactions"; const o="meg-cloud-transaction-
     assert found["TRANSACTION_OUTBOX_KEY"]
     assert found["CLOUD_CONFIRMATION_QUERY"]
 
-assert len(SIGNATURES) == 11
+with archive(b'const x="PHOENIX_WRITE_NOT_CONFIRMED";const a="/finance/events";const b="/finance/benefit-events";const c="/cards/purchases";') as apk:
+    found, scanned = fingerprint(apk)
+    assert scanned == 1
+    for key in ("PHOENIX_WRITE_NOT_CONFIRMED", "PHOENIX_EVENT_CREATE_ROUTE", "PHOENIX_BENEFIT_ROUTE", "PHOENIX_CARD_PURCHASE_ROUTE"):
+        assert found[key], key
+
+assert len(SIGNATURES) == 15
 print("MEG_STAGE10_APK_PROTOCOL_FINGERPRINT_SYNTHETIC_PASS")
