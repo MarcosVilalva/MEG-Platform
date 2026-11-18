@@ -63,10 +63,10 @@ async function main() {
       userId: user.id, name: 'PIX', type: 'instant',
     } });
     const benefitAccount = await prisma.account.create({ data: {
-      userId: user.id, name: 'Benefício QA', type: 'benefit', openingBalance: 0,
+      userId: user.id, name: 'Conta Benefício QA', type: 'benefit', openingBalance: 0,
     } });
     const verocard = await prisma.paymentMethod.create({ data: {
-      userId: user.id, name: 'Verocard QA', type: 'other',
+      userId: user.id, name: 'Verocard', type: 'other',
     } });
 
     await registerAuth(app);
@@ -108,7 +108,16 @@ async function main() {
       });
       try {
         const before = await prisma.financialEvent.count({ where: { workspaceId: workspace.id, accountId } });
-        await assert.rejects(post(), /fetch failed|terminated|aborted|socket/i);
+        let unexpectedlyReturned = false;
+        try {
+          const initialResponse = await post();
+          unexpectedlyReturned = true;
+          const initialError = await initialResponse.json().catch(() => ({})) as { error?: string };
+          throw new Error(`QA_PROXY_EXPECTED_CONNECTION_DROP_BUT_RECEIVED_STATUS_${initialResponse.status}_${initialError.error || 'NO_ERROR_CODE'}`);
+        } catch (error) {
+          if (unexpectedlyReturned) throw error;
+          assert.match(String(error), /fetch failed|terminated|aborted|socket/i);
+        }
         assert.equal(proxy.wasDropped(), true, 'Proxy descartou resposta 2xx do writer');
         const afterCommit = await prisma.financialEvent.findMany({
           where: { workspaceId: workspace.id, accountId }, include: { ledgerEntries: true },
