@@ -33,3 +33,23 @@ Sem producao, Android alterado, merge, novos custos, etapa 11 nem saneamento DML
 O operador executou no aparelho conectado por ADB o script READ_ONLY previamente ensaiado com respostas ficticias em CI, retornando `STATUS=HASH_IGUAL_A_RELEASE`, `MESMO_BINARIO_DA_RELEASE=SIM`, pacote `br.com.megfinancas.app`, `DADOS_FINANCEIROS_EXTRAIDOS=NAO`, `APK_INSTALADA_OU_ALTERADA=NAO`. O SHA-256 de ambos (instalado e release) foi `1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6`.
 
 **Status corrigido:** a equivalencia de binario nao esta mais pendente. A conclusao se refere ao arquivo APK de instalacao unica, nao a execucao dos fluxos. Os resultados estaticos dos literais presentes/ausentes no release auditado agora se referem ao mesmo binario que o operador informou como instalado. Ainda nao foi verificado o comportamento do cliente quando offline, o protocolo HTTP efetivamente chamado, nem como reage a 409, tombstones ou restauracao. Issue #699 continua aberta.
+
+## 18/11/2026 | Origem exata da APK 708 e cadeia de writers
+
+A auditoria do workflow de publicacao identificou a execucao **[Android build #36936495221](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/36936495221)**, `run_number=708`, no commit `36c886b9597be95a28eb2add00f073e5f43f6fe0`. O SHA-256 do binario instalado igual ao release foi confirmado pelo usuario. Logo, esse commit e a entrada apropriada para caracterizar o build, nao o estado atual de `main`.
+
+Cadeia de bootstrap no fonte do commit original: `apps/web/index.html` -> `apps/web/src/app/main.tsx` -> import dinamico `apps/web/src/phoenix/preview-main.tsx` -> `PhoenixApp`.
+
+Escritores no gateway Phoenix do mesmo commit:
+- `financeClient.createEvent` -> `POST /finance/events` (novo evento);
+- `POST /finance/benefit-events` (beneficio);
+- `cardsClient.createPurchase` -> `POST /cards/purchases` (cartao);
+- `financeClient.bulkUpdateEvents` -> `POST /finance/events/bulk/update` (editar);
+- `financeClient.bulkArchiveEvents` -> `POST /finance/events/bulk/archive` (arquivar);
+- `POST /finance/transfers` via gateway separado para transferencias.
+
+O arquivo `instant-persistence.js` existe no repositorio desse periodo, mas **nao e importado diretamente pela entrada principal Phoenix**. Os identificadores literais de seu outbox tambem nao aparecem no APK inspecionado. Portanto, issue #699 nao pode presumir o replay da funcao `ensureOutboxConfirmed` no binario 708.
+
+`phoenix-write-gateway.ts` guarda IDs de algumas edicoes e arquivamentos em `Map` de memoria. Isto nao comprova um outbox duravel no aplicativo nem sua ausencia no restante do bundle; a garantia de recuperacao de falhas de rede ainda requer ensaio, inclusive respostas perdidas apos commit.
+
+Prova automatizada versionada em `scripts/meg-stage10-apk708-historical-entry.contract.mjs`, [CI #44276137446](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44276137446) SUCCESS, 37 etapas, quatro marcadores PASS para bootstrap/rotas/legado/limite de durabilidade. Somente leitura da fonte GitHub imutavel, sem modificar o Android ou banco. Marco 5 continua aberto.

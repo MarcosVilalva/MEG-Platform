@@ -146,3 +146,10 @@ CI #44153114515 SUCCESS no codigo SHA ca77ac26c5299c62a3ce9150d79be15b80b0db6e. 
 - O operador trouxe o relatório `STATUS=HASH_IGUAL_A_RELEASE`, `MESMO_BINARIO_DA_RELEASE=SIM`, mesmo SHA-256 `1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6` da APK pública auditada, pacote `br.com.megfinancas.app`. Nenhuma APK alterada nem dado financeiro extraído.
 - Identidade binária da versão instalada e da release **confirmada pelo diagnóstico ADB do operador**. O diagnóstico funcional offline/outbox/status 409 permanece pendente e é gate obrigatório da issue #699.
 - **Indicador inalterado: 50% (5 de 10 marcos técnicos), saneamento produtivo 0%.**
+
+## 18/11/2026 | Identificada cadeia financeira do APK708
+
+- [Build original Android #36936495221](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/36936495221), commit `36c886b...`, entrada Phoenix V15.
+- [CI #44276137446](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44276137446) SUCCESS com assercoes da fonte historica, sem alteracao Android/API produtiva. Escritores: `/finance/events`, `/finance/benefit-events`, `/cards/purchases`, `/finance/events/bulk/update`, `/finance/events/bulk/archive` e transferencias `/finance/transfers`.
+- O bug do `instant-persistence.js` fonte legado nao deve ser tratado como confirmado no APK. Foco #699 transferido para comportamento de falha/retry dos escritores Phoenix efetivamente distribuidos. Sao necessarios testes QA isolados e homologacao do comportamento offline/409 no aplicativo.
+- **5/10 = 50%** de marcos tecnicos e **0%** saneamento produtivo.
