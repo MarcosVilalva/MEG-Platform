@@ -172,6 +172,19 @@ async function main() {
     assert.equal(attemptedRestore.statusCode, 409, attemptedRestore.body);
     assert.equal(JSON.parse(attemptedRestore.body).error, 'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE');
     assert.equal(JSON.parse(attemptedRestore.body).retryable, false);
+
+    // A release APK 2.0.708 NAO contem o literal /app-state/transactions.
+    // Exercitar tambem o PUT de estado completo para preservar a protecao
+    // contra reintroducao de ID arquivado em clientes com outro protocolo.
+    const attemptedRestoreViaFullState = await put(5, [updatePayload, additionalPayload]);
+    assert.equal(attemptedRestoreViaFullState.statusCode, 409, attemptedRestoreViaFullState.body);
+    assert.equal(JSON.parse(attemptedRestoreViaFullState.body).error,
+      'NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE');
+    assert.equal(JSON.parse(attemptedRestoreViaFullState.body).retryable, false);
+    assert.equal((await prisma.financialEvent.findUniqueOrThrow({
+      where: { id: createdLegacy.id },
+    })).archivedAt?.toISOString(), archivedLegacy.archivedAt?.toISOString(),
+      'PUT legado nao pode restaurar silenciosamente o evento arquivado');
     const afterBlockedRestore = await prisma.appState.findUniqueOrThrow({
       where: { workspaceId: workspace.id },
     });
