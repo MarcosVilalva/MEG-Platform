@@ -81,14 +81,8 @@ async function main() {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: user.email, password }),
     });
-    assert.equal(login.status, 200, await login.text().catch(() => ''));
-    // fetch Response body was consumed above only on assertion failure.
-    const loginAgain = await fetch(`http://127.0.0.1:${address.port}/auth/login`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: user.email, password }),
-    });
-    assert.equal(loginAgain.status, 200);
-    const token = (await loginAgain.json()).accessToken as string;
+    assert.equal(login.status, 200);
+    const token = (await login.json()).accessToken as string;
     assert.ok(token && token.split('.').length === 3);
 
     async function verifyLostResponse(
@@ -124,10 +118,8 @@ async function main() {
         assert.ok(row, 'O evento foi persistido antes da resposta sumir');
         assert.equal(row.ledgerEntries.length, 1, 'Uma e somente uma entrada contábil');
         const replay = await post();
-        assert.equal(replay.status, 201, await replay.text().catch(() => ''));
-        const replayAgain = await post();
-        assert.equal(replayAgain.status, 201);
-        const answer = await replayAgain.json();
+        assert.equal(replay.status, 201);
+        const answer = await replay.json();
         assert.equal(answer.id, row.id);
         assert.equal(answer.idempotentReplay, true);
         assert.equal(await prisma.financialEvent.count({ where: { workspaceId: workspace.id, accountId } }), before + 1);
