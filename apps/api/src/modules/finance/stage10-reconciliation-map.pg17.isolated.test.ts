@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { Prisma, prisma } from '@meg/database';
 import { readStage10HistoricalReview } from './stage10-historical-review-report';
+import { monetaryAccountBalanceAt, monetaryBalanceAt } from './monetary-protection';
 
 /** Etapa 10: QA PG17 descartavel, SEM acesso a Supabase real e sem dados pessoais. */
 const url = new URL(process.env.DATABASE_URL || 'http://invalid');
@@ -112,6 +113,10 @@ async function main() {
   assert.equal(classifier?.paymentMethodId,boleto.id);
   console.log('MEG_STAGE10_MAP_QA_CANONICAL_REVIEW_PARITY=PASS');
 
+  const canonicalBefore = await prisma.$transaction(async tx => ({
+    account: await monetaryAccountBalanceAt(tx, user.id, account, '2026-06-30'),
+    total: await monetaryBalanceAt(tx, user.id, '2026-06-30'),
+  }));
   const beforeRows = await prisma.financialEvent.findMany({ where: { workspaceId: workspace.id }, orderBy: { id: 'asc' } });
   const beforeLedgers = await prisma.ledgerEntry.findMany({ where: { event: { workspaceId: workspace.id } }, orderBy: { id: 'asc' } });
   const baseline = {
@@ -174,6 +179,12 @@ async function main() {
   assert.equal(afterRows.find(x=>x.id===simple.id)?.paymentMethodId,boleto.id);
   assert.equal(afterRows.find(x=>x.id===linked.id)?.categoryId,null);
   assert.equal(afterRows.find(x=>x.id===income.id)?.categoryId,null);
+  const canonicalAfter = await prisma.$transaction(async tx => ({
+    account: await monetaryAccountBalanceAt(tx, user.id, account, '2026-06-30'),
+    total: await monetaryBalanceAt(tx, user.id, '2026-06-30'),
+  }));
+  assert.deepEqual(canonicalAfter,canonicalBefore,'Saldo da camada financeira central deve ser invariavel');
+  console.log('MEG_STAGE10_MAP_QA_CANONICAL_MONETARY_BALANCES=PASS');
   console.log('MEG_STAGE10_MAP_QA_IDEMPOTENCE_IDS_BALANCE_LEDGER=PASS');
 
   await assert.rejects(prisma.financialEvent.create({ data: {
