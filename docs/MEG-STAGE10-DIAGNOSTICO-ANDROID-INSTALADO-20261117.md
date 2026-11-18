@@ -19,3 +19,7 @@ O resultado e exibido e copiado para a area de transferencia (quando disponivel)
 Uma versao confirmada nao prova que o binario seja identico ao APK publicado nem que trate 409, tombstones, exclusao/reinclusao ou outbox offline. Para o marco 5, testes funcionais posteriores devem usar usuario e lancamentos de QA, sem tocar nos dados pessoais, sem alterar a APK nem reintroduzir migracao de identidade. Nao executar 409/replay em producao ou no banco financeiro real.
 
 **Estado:** documento de diagnostico preparado, sem acesso fisico ao dispositivo neste chat e sem resultados apresentados. Marco 5 permanece P0, percentual oficial nao muda.
+
+## Correcao 17/11/2026 | erro de parser do script anterior
+
+O arquivo publicado no commit c3145dc estava corrompido: o padrao Regex na linha 55 foi truncado e uma secao duplicada no meio da expressao. Isso explica os erros UnexpectedToken, bracket e string sem terminador relatados pelo operador no PowerShell 5.1. O defeito esta no codigo publicado, **nao no Windows ou na APK**. Refeito o script completo do zero e adicionada uma etapa **real de parser PowerShell** no workflow PG17 da Etapa 10; a verificacao de sintaxe e gate, nao apenas TypeScript. O operador deve baixar sempre o SHA corrigido e nao reutilizar a copia em %TEMP% (sem download atualizado).

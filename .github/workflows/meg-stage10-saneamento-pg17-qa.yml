@@ -52,6 +52,18 @@ jobs:
         env:
           MEG_STAGE10_APK_STATIC_QA: '1'
         run: python3 scripts/meg-stage10-apk-release-readonly-audit.py
+      - name: Validar sintaxe PowerShell do diagnostico Android somente leitura
+        shell: pwsh
+        run: |
+          $file = 'scripts/meg-stage10-android-installed-readonly.ps1'
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -ne 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          Write-Output 'STAGE10_ANDROID_POWERSHELL_PARSE=PASS'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
