@@ -17,11 +17,24 @@
 
 1. CI completo da variante QA aprovado, com relatório de segurança sem alto/crítico e artefato disponível para download; registrar run, commit, SHA-256, nome do pacote, `versionCode` e certificado de **debug**.
 2. Banco QA e API local preparados com usuário fictício e endpoints reais do contrato Phoenix. Verificar `/ready` e JWT no **servidor local**, nunca usar dados produtivos.
-3. Definir e testar uma injeção controlada de falha capaz de **encaminhar o POST à API, permitir o commit e descartar somente a resposta ao cliente**. Sem essa ferramenta, o cenário de perda pós-commit fica NÃO EXECUTÁVEL e não pode ser declarado homologado.
+3. A ferramenta de injeção local `scripts/meg-stage10-qa-fault-proxy.mjs` encaminha o POST a uma API em `127.0.0.1:3334`, aguarda o HTTP 2xx e descarta **uma única resposta** antes de entregá-la ao Android. O contrato sintético `scripts/meg-stage10-qa-fault-proxy.test.mjs` passou (3/3) com backend HTTP fictício; **a integração com a API PostgreSQL 17 e o aparelho físico ainda não ocorreu**. A ferramenta só inicia com `MEG_STAGE10_ISOLATED_PG=1` e `MEG_STAGE10_QA_LOCAL_ONLY=1`.
 4. Preparar consulta somente leitura de `FinancialEvent`, `LedgerEntry`, identificador da tentativa (`operationId`) e saldo derivado do writer canônico, escopada ao titular fictício. Gerar baseline antes de cada cenário.
 5. Confirmar que o telefone selecionado por ADB é o esperado. Não executar comandos de limpeza, desinstalação ou reinicialização de dados de aplicativos.
 
-## 3. Conexão no Windows PowerShell (somente após os gates)
+## 3. Simulação local de perda de resposta (somente após os gates)
+
+A API com banco QA exclusivamente fictício deve escutar em `127.0.0.1:3334`, e o proxy em `127.0.0.1:3333`. Inicie o proxy em PowerShell separado:
+
+```powershell
+$env:MEG_STAGE10_ISOLATED_PG = '1'
+$env:MEG_STAGE10_QA_LOCAL_ONLY = '1'
+$env:MEG_STAGE10_QA_DROP_PATH = '/finance/events'
+node scripts/meg-stage10-qa-fault-proxy.mjs
+```
+
+Para o caso de benefício, interrompa o proxy e inicie novamente com `MEG_STAGE10_QA_DROP_PATH='/finance/benefit-events'`. A falha é consumida apenas após a primeira resposta 2xx no endpoint escolhido; rejeições 4xx são encaminhadas ao cliente. Guarde o marcador `QA_FAULT_DROP_AFTER_COMMIT` sem registrar corpo ou JWT. O script nunca deve encaminhar para endereço não local. Executar `node --test scripts/meg-stage10-qa-fault-proxy.test.mjs` verifica apenas o contrato do proxy, não o cenário fim a fim financeiro.
+
+## 4. Conexão no Windows PowerShell (somente após os gates)
 
 ```powershell
 $ErrorActionPreference = 'Stop'
@@ -33,7 +46,7 @@ adb shell pm list packages | Select-String 'br.com.megfinancas.app'
 
 Guardar a saída dos comandos como evidência. Ela deve mostrar a regra `tcp:3333` e os pacotes distintos. A instalação da variante `stage10qa` só é permitida após SHA e assinatura conferidos com o artefato aprovado, em caminho local explicitamente selecionado pelo operador. Não instalar artefatos obtidos de jobs cuja auditoria falhou.
 
-## 4. Matriz de homologação (não executada)
+## 5. Matriz de homologação (não executada)
 
 | Caso | Ação no aplicativo de QA | Evidência obrigatória no servidor fictício | Resultado exigido |
 | --- | --- | --- | --- |
@@ -47,7 +60,7 @@ Guardar a saída dos comandos como evidência. Ela deve mostrar a regra `tcp:333
 
 **Atenção:** uma tentativa aprovada não comprova todas as demais. Cada caso exige registro separado de resultados e artefatos. Para cada cenário, registrar payload sintético sem credenciais, hash/ID de operação, status HTTP, contagens de eventos e ledger, IDs persistidos, saldos antes/depois e comportamento visual. Valores reais, JWTs, senhas e cookies nunca entram no relatório.
 
-## 5. Gates de saída
+## 6. Gates de saída
 
 - Segurança de dependências geral verde, sem exceção, e CI técnico aplicável verde.
 - APK QA aprovada, hash e assinatura conferidos; Android estável ainda instalado e inalterado.
@@ -56,8 +69,8 @@ Guardar a saída dos comandos como evidência. Ela deve mostrar a regra `tcp:333
 - Validação funcional e visual explícitas do operador. Um run em emulador não substitui homologação física.
 - Separadamente, compatibilidade da API de release, reversão operacional no Render, gates de merge e autorização do piloto por ID. **Nenhuma mutação produtiva é autorizada por este documento.**
 
-## 6. Estado e próximo passo
+## 7. Estado e próximo passo
 
 No momento do preparo, o npm publica `picomatch@4.0.7` como versão mais recente, ainda atingida por GHSA-fc5q-39xc-vjpf. A versão travada no monorepo é `4.0.4`, exigida por `vite@6.4.4` e `tinyglobby@0.2.17`. Não existe correção publicada e verificada para aplicar com segurança. O PR upstream micromatch/picomatch#238 é proposta **aberta**, não release, e não pode ser usado como prova de remediação.
 
-**Próximo passo real:** quando existir versão oficial corrigida ou substituição comprovada e compatível, atualizar lock e testar o gate integral; publicar somente o artefato QA aprovado e então executar este roteiro em aparelho com API/banco fictícios. Preparar o mecanismo controlado de perda de resposta antes de classificar o caso B como executável. Manter PR #701 e PR #702 Draft, sem produção e sem Etapa 11.
+**Próximo passo real:** quando existir versão oficial corrigida ou substituição comprovada e compatível, atualizar lock e testar o gate integral; publicar somente o artefato QA aprovado e então executar este roteiro em aparelho com API/banco fictícios. O proxy de falha controlada já está caracterizado por teste sintético, mas a montagem da API fictícia e a prova de reenvio no aparelho ainda são gates reais. Manter PR #701 e PR #702 Draft, sem produção e sem Etapa 11.
