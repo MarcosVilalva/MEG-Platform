@@ -1,0 +1,44 @@
+name: MEG Stage10 API identity release candidate
+on:
+  push:
+    branches: [stage10/api-identidades-release-20261118]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build the release candidate without database access
+        run: bash scripts/meg-stage09-render-api-build.sh
+      - name: Preserve the published read-only preview contract
+        run: node --import tsx apps/api/src/cors.test.ts
+      - name: Verify identity, conflict responses and rollback in disposable PostgreSQL
+        run: |
+          npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+          for test in stage10-saneamento-routes stage10-saneamento-sync-characterization stage10-shadow-id-preservation; do
+            node --import tsx "apps/api/src/modules/finance/$test.isolated.test.ts"
+          done
+      - name: Check dependency advisories
+        run: node scripts/npm-security-audit.mjs --audit-level=high
