@@ -40,15 +40,21 @@ if (-not $wsl) {
   Put 'WSL=NOT_AVAILABLE'
 } else {
   Put 'WSL=FOUND'
-  $distros = Invoke-ExternalReadOnly -Binary $wsl.Source -Arguments @('--list','--quiet')
-  if ($distros.ExitCode -ne 0) {
-    Put 'WSL_DISTRIBUTIONS=QUERY_FAILED'
-    Put ('WSL_LIST_EXIT=' + $distros.ExitCode)
+  # Consultar o registro da conta Windows antes de iniciar qualquer distro WSL.
+  # Em runner sem Ubuntu, wsl --list pode solicitar instalacao e bloquear.
+  $distroRegistry = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss'
+  $registered = @()
+  try {
+    if (Test-Path -LiteralPath $distroRegistry) {
+      $registered = @(Get-ChildItem -LiteralPath $distroRegistry -ErrorAction Stop |
+        ForEach-Object { (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction Stop).DistributionName })
+    }
+  } catch {
+    Put 'WSL_REGISTRY=QUERY_FAILED'
+  }
+  if (-not ($registered | Where-Object { [string]$_ -ieq 'Ubuntu-24.04' })) {
+    Put 'QA_CLUSTER=WSL_DISTRO_NOT_REGISTERED'
   } else {
-    $names = @($distros.Lines | ForEach-Object { $_ -replace [string][char]0, '' })
-    if (-not ($names | Where-Object { $_.Trim() -ieq 'Ubuntu-24.04' })) {
-      Put 'QA_CLUSTER=WSL_DISTRO_NOT_FOUND'
-    } else {
       Put 'WSL_DISTRO=Ubuntu-24.04'
       $cluster = Invoke-ExternalReadOnly -Binary $wsl.Source -Arguments @(
         '-d','Ubuntu-24.04','-u','m_vil','--','pg_lsclusters','--no-header'
