@@ -23,3 +23,9 @@ Uma versao confirmada nao prova que o binario seja identico ao APK publicado nem
 ## Correcao 17/11/2026 | erro de parser do script anterior
 
 O arquivo publicado no commit c3145dc estava corrompido: o padrao Regex na linha 55 foi truncado e uma secao duplicada no meio da expressao. Isso explica os erros UnexpectedToken, bracket e string sem terminador relatados pelo operador no PowerShell 5.1. O defeito esta no codigo publicado, **nao no Windows ou na APK**. Refeito o script completo do zero e adicionada uma etapa **real de parser PowerShell** no workflow PG17 da Etapa 10; a verificacao de sintaxe e gate, nao apenas TypeScript. O operador deve baixar sempre o SHA corrigido e nao reutilizar a copia em %TEMP% (sem download atualizado).
+
+## Resultado comunicado pelo operador, 17/11/2026
+
+Após corrigir a sintaxe do script e estabelecer autorização ADB USB, o operador comunicou o retorno exato do diagnóstico somente leitura: `STATUS=METADADOS_INSTALADOS_CONFIRMADOS`, pacote `br.com.megfinancas.app`, `VERSAO_INSTALADA=2.0.708`, `VERSION_CODE=708`, `PACOTE_PRESENTE=SIM`, `TESTE_OFFLINE_OUTBOX=NAO_EXECUTADO`, `DADOS_FINANCEIROS_EXTRAIDOS=NAO`.
+
+**Conclusão restrita:** versão e código de versão do aplicativo instalado foram identificados pelo relatório do operador. Isso NÃO comprova SHA do APK instalado, sincronização offline, tratamento 409, tombstones, ou integridade financeira do cliente. O marco 5 continua aberto, não executar teste de escrita sobre dados reais.

@@ -3471,3 +3471,26 @@ Retomada pronta: "Continuar somente Etapa 10 MEG Web, repo MarcosVilalva/MEG-Pla
 - **Resultado verificado:** [CI #44207907247](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44207907247) **SUCCESS**; gate de parser, ensaio ADB sintetico e todos os controles financeiros PG17/TypeScript passaram. Não houve execucao no celular real nem comprovação offline/outbox da APK. O operador deve baixar URL imutavel SHA `904baf3` ou posterior que contenha a mesma versao corrigida em nova pasta TEMP, nunca reutilizar o arquivo corrompido antigo.
 - **Status e limites:** Marco 5 de compatibilidade Android permanece pendente, 5/10 marcos = 50% tecnico, 0% saneamento produtivo. PR #697 Draft, issues #691/#699/#700 ainda abertas. Sem merge, deploy, alteracao da APK, dados reais ou Render.
 - **Proxima acao exata:** executar o diagnostico instalado em PowerShell 5.1 com USB autorizado, colar o relatorio apenas com STATUS/VERSAO_INSTALADA/VERSION_CODE/PACOTE_PRESENTE. Se nenhum dispositivo autorizado, corrigir USB/depuracao. Somente apos essa evidencia planejar ensaio de protocolo offline/outbox em QA isolado, sem gravacao em producao.
+
+## ETAPA 10 | CHECKPOINT 17/11/2026 | ANDROID INSTALADO CONFIRMADO POR RELATORIO DO OPERADOR
+
+1. **Tema/objetivo/etapa:** consolidacao da compatibilidade da APK Android congelada na Etapa 10, PR #697 Draft.
+2. **Regras/decisoes:** codigo Android e dados financeiros permanecem intactos. A integridade do outbox e a politica de retorno HTTP 409 ainda nao estao homologadas. Nenhum teste financeiro deve atingir a producao.
+3. **Trabalho realizado:** operador executou no seu Windows PowerShell o script de diagnostico ADB READ_ONLY previamente corrigido, apos problemas documentados de ADB nao localizado, daemon stderr, parser e dispositivos autorizados zero. O ultimo relatorio enviado pelo operador foi:
+   - `MEG_STAGE10_ANDROID_DIAGNOSTICO=READ_ONLY`
+   - `STATUS=METADADOS_INSTALADOS_CONFIRMADOS`
+   - `PACOTE=br.com.megfinancas.app`
+   - `VERSAO_INSTALADA=2.0.708`
+   - `VERSION_CODE=708`
+   - `PACOTE_PRESENTE=SIM`
+   - `TESTE_OFFLINE_OUTBOX=NAO_EXECUTADO`
+   - `DADOS_FINANCEIROS_EXTRAIDOS=NAO`.
+4. **Testes/resultados:** evidencia direta **reportada pelo operador** de consulta somente leitura dos metadados do pacote instalado e versao 2.0.708 (708); nao houve acesso ADB ao aparelho por esta integracao, nem extracao da APK/hash, teste funcional de offline, 409, outbox, exclusao/reinclusao ou multiplos dispositivos. O CI anterior [#44207907247](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44207907247) SUCCESS cobre script em ADB sintetico, NAO a funcionalidade da APK real.
+5. **Aprovacoes e nao homologados:** usuario autorizou continuidade geral, nao aprovou tela visualmente e nao apresentou teste offline. Nao fechar issue #699 nem elevar marco 5.
+6. **Riscos/pendencias:** P0 #699: cliente legado trata 409 permanente como retentativa; para testes funcionais com APK real sera preciso API e conta/lançamentos QA isolados, sem alterar a configuracao da APK congelada ou os dados produtivos. #691 build seguro em branch mas nao release. #700 mapeamentos financeiros historicos especiais.
+7. **Arquivos/fontes:** `MEG-WEB-CONTINUIDADE-OFICIAL.md`, `docs/MEG-STAGE10-DIAGNOSTICO-ANDROID-INSTALADO-20261117.md`, `docs/MEG-STAGE10-PAINEL-SANEAMENTO-20261117.md`, `docs/MEG-STAGE10-COMPATIBILIDADE-OUTBOX-20261117.md`, issue #699, script `scripts/meg-stage10-android-installed-readonly.ps1`.
+8. **Repo/branch:** MarcosVilalva/MEG-Platform, `stage10/saneamento-qa-descartavel-20261117`, PR #697 Draft, HEAD anterior `1511c073130d05e168f508b25b552dbf401f6d2c`.
+9. **Restricoes:** nao merge/deploy produtivo, nao alteracoes de banco real/Android, nao custos, nao Etapa 11 sem todos gates correspondentes e homologacao.
+10. **Proximo passo exato:** caracterizar o protocolo do outbox/409 com o fluxo congelado da versao 2.0.708 em QA sintético e planejar ensaio funcional isolado sem operacoes com conta ou lancamentos reais; tratar os mapeamentos #700 independentemente. **Indicador: 5/10 = 50% tecnico, 0% saneamento produtivo.**
+
+**Saude do chat:** NORMAL. **Retomada:** Continuar exclusivamente Etapa 10 PR #697 Draft. Usuario confirmou por saida de script PowerShell ADB no aparelho `br.com.megfinancas.app` versao 2.0.708 code 708, `METADADOS_INSTALADOS_CONFIRMADOS`. Nao testou offline/outbox. CI do ensaio sintetico #44207907247 SUCCESS. Proximo: compatibilidade offline/409 em QA isolado, sem alterar Android/producao/merge.

@@ -126,3 +126,9 @@ CI #44153114515 SUCCESS no codigo SHA ca77ac26c5299c62a3ce9150d79be15b80b0db6e. 
 - [Actions #44194162073](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44194162073) SUCCESS no commit e554270a. Isso comprova estritamente o marco 6 de sessao integrada QA, sem representar homologacao em navegador e Android fisicos.
 - Banco real consultado somente com SELECT: 278 Verocard ativos sao todos Account.type=benefit, status paid, sem paymentMethodId; o candidato textual unico por owner se chama Verocard, porem PaymentMethod.type=credit. Sao 3 valores com signedAmount positivo. Nao vincular automaticamente nem alterar writer de beneficio.
 - 50% = cinco marcos efetivamente comprovados (1,2,3,4,6). O marco 5 Android e os marcos 7-10 permanecem abertos. Migracao produtiva = 0%. Sem deploy/merge/producao/Android.
+
+## Atualização documental 17/11/2026 | Metadados da APK instalada
+
+- O operador executou o diagnóstico READ_ONLY com dispositivo USB autorizado e relatou `STATUS=METADADOS_INSTALADOS_CONFIRMADOS`, pacote `br.com.megfinancas.app`, versão `2.0.708`, versionCode `708` e `PACOTE_PRESENTE=SIM`. Os campos do próprio diagnóstico informam `TESTE_OFFLINE_OUTBOX=NAO_EXECUTADO` e `DADOS_FINANCEIROS_EXTRAIDOS=NAO`.
+- Essa evidência encerra **somente a incerteza da versão instalada**, não o marco 5. O protocolo offline/retry/409, recuperação de arquivados e a equivalência binária da APK ainda exigem provas. Nenhuma alteração no Android ou banco real ocorreu.
+- **Indicador preservado:** 50% (5/10 marcos) e 0% de saneamento produtivo.
