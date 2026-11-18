@@ -3662,3 +3662,14 @@ Retomada pronta: "Continuar somente Etapa 10 MEG Web, repo MarcosVilalva/MEG-Pla
 10. **Próximo passo exato:** acompanhar publicação oficial corrigida ou substituição validada de picomatch e testar full security gate; integrar o proxy de perda de resposta com a API/PG17 exclusivamente fictícios; gerar e conferir o artefato debug quando o gate verde permitir; homologar com dados fictícios no aparelho. Obter confirmação operacional de rollback antes de qualquer deploy produtivo e autorização separada antes do piloto por ID.
 
 **Indicador oficial mantido:** 5/10 técnicos e 0% saneamento produtivo. **Saúde do chat:** normal.
+
+## ETAPA 10 | 18/11/2026 | Gate automatizado do proxy de reenvio QA
+
+- **Escopo:** sem repetição de build da API, replay HTTP financeiro de quatro cenários, auditoria de 647 IDs ou ensaio de rollback.
+- **Código:** adicionado workflow isolado `.github/workflows/meg-stage10-qa-fault-proxy.yml` na branch do PR #701, commit `c1f46aad25e0d0b5cf56feda5d6c3441dbc18f6d`, que executa somente `node --test scripts/meg-stage10-qa-fault-proxy.test.mjs` com Node.js 22; sem banco, sem Android, sem deploy e sem artefato publicado.
+- **Prova remota:** [GitHub Actions #44311248931](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44311248931) **SUCCESS**. Job `test` e passo de caracterização do proxy concluídos com sucesso. Reexecução local da cópia dos scripts: 3 testes, 3 passaram, 0 falhas.
+- **Limite:** caracteriza exclusivamente o mecanismo HTTP local de perda da resposta após retorno 2xx e o replay da mesma chave contra servidor sintético. Não comprova que o Android instalado conserva a chave ou que a API real executou o writer em PostgreSQL 17.
+- **Dependências:** GHSA-fc5q-39xc-vjpf permanece no pacote `picomatch` até a versão 4.0.7, sem release de correção confirmada na verificação de 18/11. Security gate geral e entrega da APK QA continuam bloqueados. Sem relaxar auditoria.
+- **Render:** `dep-dbm92b17lnhs738s0jr0` foi confirmado `live`, mas a retenção de seu build para rollback após uma próxima publicação ainda não está comprovada.
+- **PRs/estado:** #701 Draft atualizado para preparar QA; #702 Draft `19aaa96b508f3d4db2a38ef0866ca5622b377200` não modificado. Sem merge, deploy, dados reais, OTA, build de Android ou início da Etapa 11.
+- **Próximo passo:** confirmar disponibilidade de versão oficialmente corrigida do picomatch ou substituto seguro; concluir a compatibilidade de homologação em aparelho **físico** com API/PG17 fictícios somente após entrega do artefato aprovada; demonstrar operacionalmente reversão no Render antes de qualquer publicação.
