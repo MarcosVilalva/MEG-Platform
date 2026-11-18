@@ -8,6 +8,7 @@ import { LicenseStatus, Prisma, prisma, UserRole, UserStatus } from '@meg/databa
 import { appStateRoutes } from '../app-state/routes';
 import { financeBenefitEventRoutes } from './benefit-event-routes';
 import { financeRoutes } from './routes';
+import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { normalizationPreview } from '../app-state/normalization-migration';
 
 /**
@@ -27,6 +28,12 @@ const fixturePassword='Stage10QAOnly-Password-NotProduction-2026';
 
 async function main(){
  try {
+  const eventWithoutStatus = { description: 'Evento QA', type: 'expense', date: '2026-11-11', amount: 12.35 };
+  assert.equal(createFinancialEventSchema.parse(eventWithoutStatus).status, 'planned');
+  assert.deepEqual(updateFinancialEventSchema.parse({ description: 'Descrição alterada' }), {
+   description: 'Descrição alterada',
+  });
+  assert.equal(updateFinancialEventSchema.parse({ status: 'paid' }).status, 'paid');
   process.env.MEG_STAGE10_WEB_WRITE_QA='1';
   const user=await prisma.user.create({data:{
    email:stamp+'@meg.test',name:'Operador QA Web/Android',

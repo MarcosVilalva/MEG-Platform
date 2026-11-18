@@ -4,6 +4,9 @@ on:
     branches: [stage10/android-confirmacao-qa-20261118]
     paths:
       - '.github/workflows/meg-stage10-android-confirmacao-qa.yml'
+      - 'package-lock.json'
+      - 'apps/api/package.json'
+      - 'apps/web/package.json'
       - 'android/**'
       - 'apps/web/src/mobile/MegMobileLaunchSheet.tsx'
       - 'apps/api/src/modules/finance/stage10-qa-web-android-create.isolated.test.ts'
