@@ -18,6 +18,8 @@ import {
 } from './normalization-migration';
 import { reconcilePrimaryAppStateFromNormalized } from './normalized-primary-writeback';
 
+import { normalizationWriteConflictCode, normalizationWriteConflictPayload } from './normalization-conflict-policy';
+
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
 const NORMALIZATION_METADATA_KEY = '__megNormalization';
@@ -154,7 +156,9 @@ export async function appStateRoutes(app: FastifyInstance) {
     } catch (error) {
       const code = error instanceof Error ? error.message : 'NORMALIZATION_FAILED';
       if (code === 'NORMALIZATION_REVISION_CONFLICT') return reply.status(409).send({ error: code });
-      if (code === 'NORMALIZATION_INVALID_SOURCE') return reply.status(422).send({ error: code, preview });
+      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_SHADOW_REBUILD_REQUIRES_CANONICAL_MIGRATION') {
+        return reply.status(422).send({ error: code, preview });
+      }
       throw error;
     }
   });
@@ -177,7 +181,8 @@ export async function appStateRoutes(app: FastifyInstance) {
     } catch (error) {
       const code = error instanceof Error ? error.message : 'NORMALIZATION_CUTOVER_FAILED';
       if (code === 'NORMALIZATION_REVISION_CONFLICT') return reply.status(409).send({ error: code });
-      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_RECONCILIATION_FAILED') {
+      if (code === 'NORMALIZATION_INVALID_SOURCE' || code === 'NORMALIZATION_RECONCILIATION_FAILED'
+        || code === 'NORMALIZATION_SHADOW_REBUILD_REQUIRES_CANONICAL_MIGRATION') {
         return reply.status(422).send({ error: code, preview: await normalizationPreview(context.workspaceId, context.workspace.ownerId) });
       }
       throw error;
@@ -306,20 +311,27 @@ export async function appStateRoutes(app: FastifyInstance) {
 
     const changedIds = [...new Set([...parsed.data.upserts.map((item) => item.id), ...parsed.data.deletes])];
     let normalization = { active: false, reconciled: false } as Awaited<ReturnType<typeof synchronizeNormalizedRows>>;
-    const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.appState.updateMany({
-        where: { id: current.id, revision: parsed.data.expectedRevision },
-        data: { state: nextState.data as Prisma.InputJsonValue, revision: { increment: 1 } }
-      });
-      if (result.count === 1 && changedIds.length) {
-        normalization = await synchronizeNormalizedRows(tx, nextState.data, {
-          workspaceId: context.workspaceId,
-          userId: context.workspace.ownerId,
-          revision: current.revision + 1,
-        }, changedIds);
-      }
-      return result;
-    }, { maxWait: 10_000, timeout: 120_000 });
+    let updated: { count: number };
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        const result = await tx.appState.updateMany({
+          where: { id: current.id, revision: parsed.data.expectedRevision },
+          data: { state: nextState.data as Prisma.InputJsonValue, revision: { increment: 1 } }
+        });
+        if (result.count === 1 && changedIds.length) {
+          normalization = await synchronizeNormalizedRows(tx, nextState.data, {
+            workspaceId: context.workspaceId,
+            userId: context.workspace.ownerId,
+            revision: current.revision + 1,
+          }, changedIds);
+        }
+        return result;
+      }, { maxWait: 10_000, timeout: 120_000 });
+    } catch (error) {
+      const code = normalizationWriteConflictCode(error);
+      if (code) return reply.status(409).send(normalizationWriteConflictPayload(code, current.revision));
+      throw error;
+    }
     if (updated.count !== 1) {
       const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: latest?.revision || current.revision, updatedAt: latest?.updatedAt || current.updatedAt });
@@ -473,24 +485,34 @@ export async function appStateRoutes(app: FastifyInstance) {
       : parsed.data.state;
     const jsonState = nextState as Prisma.InputJsonValue;
     let normalization = { active: false, reconciled: false } as Awaited<ReturnType<typeof synchronizeNormalizedRows>>;
-    const saved = current
-      ? await prisma.$transaction(async (tx) => {
-          const updated = await tx.appState.update({
-            where: { id: current.id },
-            data: { state: jsonState, revision: { increment: 1 } },
+    let saved: { revision: number; updatedAt: Date };
+    try {
+      saved = current
+        ? await prisma.$transaction(async (tx) => {
+            const updated = await tx.appState.update({
+              where: { id: current.id, revision: current.revision },
+              data: { state: jsonState, revision: { increment: 1 } },
+              select: { revision: true, updatedAt: true }
+            });
+            normalization = await synchronizeNormalizedRows(tx, nextState, {
+              workspaceId: context.workspaceId,
+              userId: context.workspace.ownerId,
+              revision: updated.revision,
+            });
+            return updated;
+          }, { maxWait: 10_000, timeout: 120_000 })
+        : await prisma.appState.create({
+            data: { userId: context.workspace.ownerId, workspaceId: context.workspaceId, state: jsonState, revision: 1 },
             select: { revision: true, updatedAt: true }
           });
-          normalization = await synchronizeNormalizedRows(tx, nextState, {
-            workspaceId: context.workspaceId,
-            userId: context.workspace.ownerId,
-            revision: updated.revision,
-          });
-          return updated;
-        }, { maxWait: 10_000, timeout: 120_000 })
-      : await prisma.appState.create({
-          data: { userId: context.workspace.ownerId, workspaceId: context.workspaceId, state: jsonState, revision: 1 },
-          select: { revision: true, updatedAt: true }
-        });
+    } catch (error) {
+      const code = normalizationWriteConflictCode(error);
+      if (code) return reply.status(409).send(normalizationWriteConflictPayload(code, current?.revision || 0));
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current?.revision || 0 });
+      }
+      throw error;
+    }
     return { revision: saved.revision, updatedAt: saved.updatedAt, normalization, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 }
