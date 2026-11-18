@@ -69,6 +69,18 @@ jobs:
       - name: Validar execucao do diagnostico com ADB sintetico sem Android fisico
         shell: pwsh
         run: ./scripts/meg-stage10-android-installed-readonly.synthetic.test.ps1
+      - name: Validar sintaxe e hash APK instalado com ADB simulado somente leitura
+        shell: pwsh
+        run: |
+          $file = 'scripts/meg-stage10-android-apk-hash-readonly.ps1'
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          ./scripts/meg-stage10-android-apk-hash-readonly.synthetic.test.ps1
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
