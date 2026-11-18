@@ -47,6 +47,8 @@ jobs:
             apps/web/src/durable-outbox-core.js \
             apps/web/src/durable-outbox-store.js \
             apps/web/src/legacy-finance.js
+      - name: Fingerprint sintetico de protocolo empacotado, sem Android real
+        run: python3 scripts/meg_stage10_apk_protocol_signatures_test.py
       - name: Auditar APK publicado em modo estritamente somente leitura (one-shot)
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[audit-apk]')
         env:

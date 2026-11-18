@@ -53,6 +53,13 @@ with tempfile.TemporaryDirectory(prefix="meg-stage10-apk-readonly-") as tmp:
     embedded = {"app-state/transactions": False, "megCloudConfirmation": False}
     with zipfile.ZipFile(filename) as apk:
         entries = apk.infolist()
+        # Diferenciar a rota REAL empacotada no APK do arquivo-fonte Web legado.
+        # Saida somente booleana e contagem, sem despejar JavaScript ou tokens.
+        from meg_stage10_apk_protocol_signatures import fingerprint
+        static_protocol, protocol_assets = fingerprint(apk)
+        print("MEG_STAGE10_APK_PROTOCOL_WEB_ASSETS_SCANNED", protocol_assets)
+        for label, present in static_protocol.items():
+            print("MEG_STAGE10_APK_PROTOCOL_LITERAL", label, "FOUND" if present else "NOT_FOUND")
         # Apenas NOMES e TAMANHOS de assets; nunca imprimimos o texto bruto.
         for entry in sorted(entries, key=lambda x: x.filename):
             if entry.filename.startswith("assets/") and not entry.is_dir():
