@@ -51,6 +51,7 @@ jobs:
         run: |
           git fetch --no-tags --depth=1 origin 36c886b9597be95a28eb2add00f073e5f43f6fe0
           node scripts/meg-stage10-apk708-historical-entry.contract.mjs
+          node scripts/meg-stage10-apk708-bridge-status.contract.mjs
       - name: Fingerprint sintetico de protocolo empacotado, sem Android real
         run: python3 scripts/meg_stage10_apk_protocol_signatures_test.py
       - name: Auditar APK publicado em modo estritamente somente leitura (one-shot)
