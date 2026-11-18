@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
+import { installedApiLockEntries } from './installed-api-audit-inventory.mjs';
 
 const NPM_AUDIT_URL = 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk';
 const OSV_BATCH_URL = 'https://api.osv.dev/v1/querybatch';
@@ -8,6 +10,7 @@ const severityWeight = { info: 1, low: 2, moderate: 3, high: 4, critical: 5 };
 const auditLevelArg = process.argv.find((arg) => arg.startsWith('--audit-level='));
 const auditLevel = auditLevelArg?.split('=')[1] || 'low';
 const jsonOutput = process.argv.includes('--json');
+const installedApi = process.argv.includes('--installed-api');
 
 if (!(auditLevel in severityWeight)) {
   console.error(`Nível de auditoria inválido: ${auditLevel}`);
@@ -15,7 +18,9 @@ if (!(auditLevel in severityWeight)) {
 }
 
 const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
-const packages = lock.packages || {};
+const packages = installedApi
+  ? installedApiLockEntries(process.cwd(), lock.packages || {})
+  : (lock.packages || {});
 
 function packageNameFromPath(path) {
   const marker = 'node_modules/';
@@ -332,6 +337,12 @@ try {
   }
 
   const report = buildReport(advisories, source);
+  if (installedApi) {
+    report.scope = 'installed-api';
+    report.inventory = payload;
+    report.inventorySha256 = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+    if (!jsonOutput) console.log(`API audit: ${packageVersionPairs.length} installed package/version pairs, SHA-256 ${report.inventorySha256}.`);
+  }
   if (npmFailure) report.primarySourceFailure = npmFailure instanceof Error ? npmFailure.message : String(npmFailure);
 
   const blockers = Object.values(report.vulnerabilities)

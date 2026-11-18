@@ -40,5 +40,28 @@ jobs:
           for test in stage10-saneamento-routes stage10-saneamento-sync-characterization stage10-shadow-id-preservation; do
             node --import tsx "apps/api/src/modules/finance/$test.isolated.test.ts"
           done
-      - name: Check dependency advisories
-        run: node scripts/npm-security-audit.mjs --audit-level=high
+      - name: Verify the security boundaries of the build
+        run: node scripts/meg-stage09-render-api-build.regression.test.mjs
+      - name: Start the audited API against the disposable database
+        shell: bash
+        env:
+          NODE_ENV: production
+          JWT_SECRET: stage10-ci-synthetic-jwt-secret-not-for-deployment
+          HOST: 127.0.0.1
+          PORT: '3333'
+          ADMIN_EMAIL: stage10-ci@example.invalid
+        run: |
+          set -euo pipefail
+          timeout 35s npm run start:api > api-start.log 2>&1 &
+          api=$!
+          trap 'kill "$api" 2>/dev/null || true' EXIT
+          for attempt in {1..20}; do
+            if curl -fsS --max-time 2 http://127.0.0.1:3333/ready > ready.json; then
+              node -e "const ready=require('./ready.json'); if(ready.status!=='ready') process.exit(1)"
+              exit 0
+            fi
+            if ! kill -0 "$api" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          tail -60 api-start.log
+          exit 1
