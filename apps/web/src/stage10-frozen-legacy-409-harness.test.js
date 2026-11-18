@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { decideLegacyOutboxRejection, protectedOutboxConflict } from './cloud-outbox-conflict-policy.js';
+import { mergeTransactionOutbox } from './cloud-write-ahead-core.js';
 
 const source = readFileSync(new URL('./instant-persistence.js', import.meta.url), 'utf8');
 const begin = source.indexOf('async function ensureOutboxConfirmed() {');
@@ -261,6 +262,66 @@ async function lostResponseAfterCommitDoesNotDuplicate() {
 await lostResponseAfterCommitDoesNotDuplicate();
 console.log('MEG_STAGE10_UNKNOWN_409_FAIL_CLOSED_AND_OPERATION_ID=PASS');
 console.log('MEG_STAGE10_POST_COMMIT_LOST_RESPONSE_NO_DUPLICATE=PASS');
+
+
+function repeatedSameIntentKeepsOperationId() {
+  const start = source.indexOf('function persistOutbox(operations) {');
+  const stop = source.indexOf('\n\n// Somente o marcador', start);
+  assert.ok(start > 0 && stop > start, 'Extrair função de persistência da fonte versionada.');
+  let record = {
+    generation: 0, operationId: '', upserts: [], deletes: [], activities: [], updatedAt: null,
+  };
+  let generated = 0;
+  let durableWrites = 0;
+  let storageWrites = 0;
+  const idFactory = () => 'qa-idempotency-' + (++generated);
+  const h = {
+    readOutbox: () => structuredClone(record),
+    hasTransactionOperations: x => x.upserts?.length > 0,
+    mergeTransactionOutbox,
+    sameValue: (a,b) => JSON.stringify(a) === JSON.stringify(b),
+    createOperationId: idFactory,
+    globalThis: { localStorage: { setItem() {} } },
+    localStorage: {
+      setItem(_key, raw) { storageWrites++; record = JSON.parse(raw); },
+    },
+    enqueueDurableWrite: () => { durableWrites++; },
+    protectOutbox: () => undefined,
+  };
+  // A função original acessa 'globalThis.localStorage' e 'localStorage' por nomes distintos.
+  h.globalThis.localStorage = h.localStorage;
+  const persist = new Function('h', [
+    '"use strict";',
+    'const {readOutbox,hasTransactionOperations,mergeTransactionOutbox,sameValue,createOperationId,globalThis,localStorage,enqueueDurableWrite,protectOutbox}=h;',
+    source.slice(start,stop),
+    'return persistOutbox;'
+  ].join('\n'))(h);
+  const intent = { upserts: [{ id:'legacy-qa-same', amount:11.19 }], deletes:[], activities:[] };
+  const first = persist(intent);
+  const second = persist(structuredClone(intent));
+  assert.equal(first.operationId,'qa-idempotency-1');
+  assert.equal(second.operationId,first.operationId,'Mesmo payload preserva operationId.');
+  assert.equal(second.generation,first.generation,'Reentrada identica não incrementa geração.');
+  assert.equal(generated,1);
+  assert.equal(storageWrites,1);
+  assert.equal(durableWrites,1);
+  // Reinício do JS lê o mesmo storage, mantendo a chave de operação.
+  const afterReload = new Function('h',[
+    '"use strict";',
+    'const {readOutbox,hasTransactionOperations,mergeTransactionOutbox,sameValue,createOperationId,globalThis,localStorage,enqueueDurableWrite,protectOutbox}=h;',
+    source.slice(start,stop),
+    'return persistOutbox;'
+  ].join('\n'))(h)(structuredClone(intent));
+  assert.equal(afterReload.operationId,first.operationId,'Reabertura com a mesma intenção não duplica operação.');
+  const changed = persist({upserts:[{id:'legacy-qa-same',amount:12.19}],deletes:[],activities:[]});
+  assert.notEqual(changed.operationId,first.operationId,'Payload diferente exige novo operationId.');
+  assert.equal(generated,2);
+  assert.equal(storageWrites,2);
+  return { generated, storageWrites, durableWrites };
+}
+const stableOperation = repeatedSameIntentKeepsOperationId();
+assert.deepEqual(stableOperation, {generated:2,storageWrites:2,durableWrites:2});
+console.log('MEG_STAGE10_SAME_INTENT_STABLE_OPERATION_ID=PASS');
 
 // Fonte corrigida em QA; nao equivale a homologacao da APK instalada.
 console.log('MEG_STAGE10_FROZEN_LEGACY_409_REPLAY_CONTRACT_CHARACTERIZED PASS');
