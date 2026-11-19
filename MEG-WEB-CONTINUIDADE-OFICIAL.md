@@ -3978,3 +3978,10 @@ Retomada pronta: "Continuar somente Etapa 10 MEG Web, repo MarcosVilalva/MEG-Pla
 4. **EXECUCAO NAO AUTORIZADA NESTA RODADA:** workflow EXCLUSIVAMENTE `workflow_dispatch` com parametro manual de autorizacao. Schema DDL, CREATE ROLE/GRANTS e INSERTs de fixtures estao separados; nao executados aqui. Nenhum deploy, merge, alteracao do Windows 5448, Android, SQL de producao ou Supabase.
 5. **Proximo passo:** obter autorizacao especifica para executar APENAS o workflow descartavel; guardar logs e SHA, investigar e resolver a negativa sem contexto de modo compativel com legado; antes de qualquer uso do QA Windows, projetar conta runtime e grants sem reutilizar migrator. Replicar fielmente tres eventos, testar restauracao, saldos e rollback em fase posterior autorizada.
 6. **Saude do chat:** prevencao obrigatoria; sinalizar Atenção/Troca recomendada no momento oportuno e registrar checkpoint integral antes da troca.
+
+
+## ETAPA 10 | 19/11/2026 | Gatilho de aprovacao por commit sem merge
+
+1. Correcao identificada na revisao documental: workflow_dispatch exige workflow na branch padrao do GitHub, incompativel com PR #701 Draft e ausencia de autorizacao de merge. O workflow experimental da Etapa 10 foi ajustado para `push` limitado ao caminho `docs/MEG-STAGE10-RUNTIME-QA-APROVACAO.txt` na branch isolada, mais guarda de repo/ref e conteudo literal do marcador.
+2. **Marcador nao criado, workflow de DDL/ROLE/GRANT/fixtures nao executado**. Outros workflows de CI de PR podem disparar automaticamente no push documental, mas nao sao autorizacoes para rodar este novo teste. Nenhum DDL de QA Windows ou banco real; producao, Android, merge/deploy proibidos.
+3. Proximo passo apos autorizacao expressa: commit separado criando marcador literal `AUTORIZO_SOMENTE_QA_DESCARTAVEL_ETAPA10_20261119`, inspecionar run e falhas do contexto sem workspace; nao liberar API runtime com RLS=0 nem migrator owner.
