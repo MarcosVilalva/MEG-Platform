@@ -178,6 +178,7 @@ assert.ok(dataGridSource.includes('name="meg-datagrid-select-all-table"'), 'Chec
 assert.ok(dataGridSource.includes('renderPaginationFooter'), 'Rodapé de paginação deve ser reutilizado também no vazio filtrado.');
 assert.ok(dataGridSource.includes('{renderPaginationFooter()}'), 'Estado vazio filtrado deve renderizar o rodapé.');
 assert.ok(css.includes('.meg-datagrid-footer {\n  flex: 0 0 auto;'), 'Rodapé deve permanecer fora da área flexível do corpo.');
-assert.ok(dataGridSource.includes('Filtros ({activeFilterKeys.length})'), 'Botão Filtros (N) deve exibir contagem inclusive zero.');
+assert.match(dataGridSource, /filterButtonLabel\s*=\s*'Filtros'/, 'O rótulo padrão deve ser Filtros.');
+assert.ok(dataGridSource.includes('{filterButtonLabel} ({activeFilterKeys.length})'), 'Botão Filtros (N) deve exibir contagem inclusive zero.');
 assert.ok(css.includes('.meg-datagrid-filtered-empty .meg-datagrid-table'), 'Tabela do estado vazio filtrado deve permanecer visível.');
 assert.ok(css.includes('@media (max-height: 640px)') && css.includes('.meg-datagrid-footer'), 'Baixa altura deve compactar o rodapé.');

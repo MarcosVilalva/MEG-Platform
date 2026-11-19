@@ -1,4 +1,4 @@
-import { authenticatedRequest } from '../../app/auth-client';
+import { authenticatedRequest, readSession } from '../../app/auth-client';
 import { cardsClient, type CardPurchase } from '../../app/cards-client';
 import { financeClient, type FinancialEvent, type FinancialEventInput } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
@@ -120,6 +120,17 @@ export class PhoenixWriteError extends Error {
     super(code);
   }
 }
+
+export const isolatedAndroidConfirmationQa = import.meta.env.VITE_STAGE10_ANDROID_CONFIRMATION_QA === 'true'
+  && import.meta.env.VITE_API_URL === 'http://127.0.0.1:3333';
+
+const definitiveCreateRejections = new Set([
+  'VALIDATION_ERROR', 'INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD',
+  'BENEFIT_CONTRACT_REQUIRED', 'INVALID_BENEFIT_ACCOUNT', 'INVALID_BENEFIT_PAYMENT_METHOD',
+  'BENEFIT_CATEGORY_TYPE_MISMATCH', 'BENEFIT_EXPENSE_CATEGORY_REQUIRED',
+  'INSUFFICIENT_MONETARY_BALANCE', 'INSUFFICIENT_BENEFIT_BALANCE', 'POSSIBLE_DUPLICATE',
+]);
+const createsInFlight = new Set<string>();
 
 const RUNTIME_CAPABILITY_TTL = 15_000;
 let runtimeCapabilitiesCache: PhoenixRuntimeWriteCapabilities | null = null;
@@ -423,6 +434,8 @@ export function phoenixWriteMessage(code: string) {
     INVALID_CATEGORY: 'A classificação ou grupo selecionado não está mais disponível.',
     INVALID_PAYMENT_METHOD: 'A forma de pagamento ou recebimento não está mais disponível.',
     OPERATION_ID_REUSED: 'A tentativa de reenvio não corresponde ao lançamento original. Revise os dados antes de tentar novamente.',
+    PHOENIX_CREATE_UNCONFIRMED: 'Gravação ainda sem confirmação. Confira os lançamentos ou tente novamente com os mesmos dados para verificar a operação.',
+    PHOENIX_CREATE_STORAGE_UNAVAILABLE: 'O armazenamento local está indisponível. A gravação foi bloqueada para evitar duplicidade.',
     POSSIBLE_DUPLICATE: 'Encontramos um lançamento praticamente idêntico salvo há poucos minutos. Confirme antes de gravar outro.',
     TRANSFER_CONTRACT_NOT_READY: 'Transferências ainda não estão liberadas neste fluxo.',
   };
@@ -576,27 +589,81 @@ function refreshSnapshotInBackground(
   });
 }
 
-async function createPhoenixSimpleEvent(prepared: PreparedPhoenixSimpleEvent) {
+async function createPhoenixSimpleEvent(prepared: PreparedPhoenixSimpleEvent, expectedUserId?: string) {
   if (!PHOENIX_WRITE_CAPABILITIES.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
   assertSimpleEvent(prepared.payload);
+  if (expectedUserId && readSession()?.user.id !== expectedUserId) throw new PhoenixWriteError('UNAUTHORIZED');
   return financeClient.createEvent({
     ...prepared.payload,
     operationId: prepared.operationId,
   });
 }
 
-async function createPhoenixBenefitEvent(prepared: PreparedPhoenixBenefitEvent) {
+async function createPhoenixBenefitEvent(prepared: PreparedPhoenixBenefitEvent, expectedUserId?: string) {
   if (!PHOENIX_WRITE_CAPABILITIES.benefitEvent) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.benefitWrite) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
   assertBenefitEvent(prepared.payload);
+  if (expectedUserId && readSession()?.user.id !== expectedUserId) throw new PhoenixWriteError('UNAUTHORIZED');
   const { status: _status, ...payload } = prepared.payload;
   return authenticatedRequest<FinancialEvent>('/finance/benefit-events', {
     method: 'POST',
     body: JSON.stringify({ ...payload, operationId: prepared.operationId }),
   });
+}
+
+async function createWithDurableAttempt<T extends PreparedPhoenixSimpleEvent>(
+  prepared: T,
+  kind: 'monetary' | 'benefit',
+  create: (prepared: T, expectedUserId?: string) => Promise<FinancialEvent>,
+  canAcknowledge?: () => boolean,
+) {
+  if (!isolatedAndroidConfirmationQa) return create(prepared);
+
+  const userId = readSession()?.user.id;
+  if (!userId) throw new PhoenixWriteError('UNAUTHORIZED');
+  const { allowDuplicate: _allowDuplicate, ...payload } = prepared.payload;
+  let key: string;
+  try {
+    const identity = JSON.stringify([import.meta.env.VITE_API_URL, userId, kind, payload]);
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity));
+    const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+    key = `meg.phoenix.create-qa.v1.${hex}`;
+  } catch {
+    throw new PhoenixWriteError('PHOENIX_CREATE_STORAGE_UNAVAILABLE');
+  }
+  if (readSession()?.user.id !== userId) throw new PhoenixWriteError('UNAUTHORIZED');
+  if (createsInFlight.has(key)) throw new PhoenixWriteError('PHOENIX_CREATE_UNCONFIRMED');
+
+  let attemptId: string;
+  try {
+    attemptId = localStorage.getItem(key) || prepared.operationId;
+    localStorage.setItem(key, attemptId);
+  } catch {
+    throw new PhoenixWriteError('PHOENIX_CREATE_STORAGE_UNAVAILABLE');
+  }
+  prepared.operationId = attemptId;
+  createsInFlight.add(key);
+  try {
+    const event = await create(prepared, userId);
+    if (!event?.id || readSession()?.user.id !== userId) throw new PhoenixWriteError('PHOENIX_CREATE_UNCONFIRMED');
+    if (canAcknowledge?.() !== false) {
+      try { localStorage.removeItem(key); } catch { /* Retaining the key enables safe replay. */ }
+    }
+    return event;
+  } catch (error) {
+    const code = writeErrorCode(error);
+    if (definitiveCreateRejections.has(code)) {
+      try { localStorage.removeItem(key); } catch { /* Retaining the key preserves safe replay. */ }
+      throw error;
+    }
+    if (code === 'OPERATION_ID_REUSED') throw error;
+    throw new PhoenixWriteError('PHOENIX_CREATE_UNCONFIRMED');
+  } finally {
+    createsInFlight.delete(key);
+  }
 }
 
 export async function submitPhoenixSimpleEvent(
@@ -787,11 +854,12 @@ export async function runPhoenixSimpleEventWrite(
   prepared: PreparedPhoenixSimpleEvent,
   refreshMonth: string,
   onState?: (state: PhoenixWriteState) => void,
+  canAcknowledge?: () => boolean,
 ): Promise<PhoenixWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
   let event: FinancialEvent;
   try {
-    event = await createPhoenixSimpleEvent(prepared);
+    event = await createWithDurableAttempt(prepared, 'monetary', createPhoenixSimpleEvent, canAcknowledge);
   } catch (error) {
     const code = writeErrorCode(error);
     const failed: PhoenixWriteState = {
@@ -818,11 +886,12 @@ export async function runPhoenixBenefitEventWrite(
   prepared: PreparedPhoenixBenefitEvent,
   refreshMonth: string,
   onState?: (state: PhoenixWriteState) => void,
+  canAcknowledge?: () => boolean,
 ): Promise<PhoenixWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
   let event: FinancialEvent;
   try {
-    event = await createPhoenixBenefitEvent(prepared);
+    event = await createWithDurableAttempt(prepared, 'benefit', createPhoenixBenefitEvent, canAcknowledge);
   } catch (error) {
     const code = writeErrorCode(error);
     const failed: PhoenixWriteState = {

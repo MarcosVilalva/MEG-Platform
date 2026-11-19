@@ -1,0 +1,112 @@
+# MEG Web Evolution | Etapa 10 | Denominadores, três padrões, QA e paridade de leitura
+
+Data: **18/11/2026**. Branch: `stage10/android-confirmacao-qa-20261118`. PR #701 DRAFT. **Apenas SELECT na produção. Sem merge, deploy, APK ou piloto produtivo.**
+
+## 1. Reconciliar explicitamente 571 versus 587 (COMPROVADO)
+
+Consulta reproduzível no projeto `meg-financas`: [`scripts/meg-stage10-571-587-denominators.readonly.sql`](../scripts/meg-stage10-571-587-denominators.readonly.sql), executada via Supabase SQL somente leitura; não contém dados pessoais.
+
+**Denominadores:**
+- Todos `FinancialEvent` ativos (`archivedAt IS NULL`): **3.731**. Deles, **646** são `type='income'`.
+- Universo do mapa: ativos com `categoryId IS NULL OR paymentMethodId IS NULL`: **3.626**; nele **589** são `type='income'`. A segmentação prioriza `BENEFICIO_VEROCARD` pela conta, escopo, pagamento Verocard ou modalidade alimentação. Consequentemente **571** são RECEITA comum e **18** são receitas no grupo BENEFICIO_VEROCARD.
+- Universo restrito `SEM CLASSIFICAÇÃO`: ativos com `categoryId IS NULL` e `lower(trim(sourcePayload.expenseClass))='sem classificação'`: **589** eventos, incluindo **587 `income`** e **2 `expense`**. Recorte não condicionado ao `paymentMethodId`.
+- **Interseção das 587 com o mapa:** **570** classificadas em RECEITA comum e **17** classificadas em BENEFICIO_VEROCARD. Das 17, **14** têm conta benefit/escopo benefit com meio de pagamento histórico `Não informado`, e **3** com Verocard/ALIMENTAÇÃO. Esses 14 não devem ser convertidos em renda monetária ordinária sem regra própria.
+- **Fora do recorte:** exatamente **1** `income` no grupo RECEITA comum, com classe `CONTAS GERAIS`, grupo `Receitas` e método PIX, e **1** no grupo BENEFICIO_VEROCARD, com classe `CONTAS GERAIS`, grupo `Receitas`, método `Não informado` e conta benefit.
+- Equações do resultado: `570 + 1 = 571`; `570 + 17 = 587`; `571 + 18 = 589` receitas do mapa; `587 + 2 = 589` no recorte estrito. São **dois 589 diferentes**: um de eventos income no mapa, outro de todos os tipos no recorte de classificação.
+- Regra original da planilha: receitas podem legitimamente deixar vazia a classificação de **despesa**. Um `categoryId NULL` de receita não autoriza atribuir uma categoria inventada. Não extrapolar estas contagens para outros filtros.
+
+## 2. As 107 propostas, verificadas individualmente em SELECT real
+
+Com o [mapa SQL por ID](../scripts/meg-stage10-reconciliation-map.readonly.sql), foram contadas **107** propostas estritas de duas FKs em `DESPESA_COMUM`, das quais **106 `paid`** e **1 `planned`**.
+
+**Checagens da base corrente:**
+- **107/107** possuem precisamente uma transação no `AppState.state.transactions` com o mesmo `legacyTransactionId`.
+- **107/107** possuem `sourcePayload` **integralmente idêntico** ao objeto correspondente no espelho legado.
+- **107/107** possuem propostas não nulas de `categoryId` e `paymentMethodId`, com catálogos ativos e correspondência única por titular + nome/grupo/tipo ou nome do pagamento.
+- Zero registros com `LedgerEntry` vinculado; zero com a descrição contendo Verocard; zero com forma de pagamento tipo credit entre as propostas, conforme regras do mapa.
+- Esses testes são evidência de **elegibilidade para revisão**, não de permissão para execução. O classificador financeiro canônico e a política de status ainda precisam ser aplicados em QA com amostra fiel à produção antes de piloto.
+
+**Lote mínimo selecionado em conversa privada, sem inserir IDs produtivos neste repositório público:** três `expense` `ONE_OFF` de `CONTAS GERAIS`, combinando (1) TITULOS/PREVIDÊNCIA e DÉBITO AUTOMÁTICO / paid; (2) LAZER e PIX / paid; (3) MOTO e BOLETO / planned. Todos os três têm duas FKs ausentes, candidatos únicos, conta monetária válida, sem ledger/recibo/baixa/importação, espelho legado único e `normalized-primary`. IDs concretos e valores são fornecidos apenas ao titular na conversa para revisão, não nesta documentação pública.
+
+## 3. A réplica QA integral ainda NÃO existe
+
+**Impedimentos técnicos confirmados:**
+- A organização Supabase `MEG Vilalva` está no plano **Free**, confirmado por consulta de leitura da organização. Branching gerenciado para réplica isolada é recurso de plano **Pro**. Não autorizar custos sem consentimento específico; não promover upgrade.
+- O projeto de recuperação `meg-stage09-restore-sandbox-20261112` existe, mas uma consulta SELECT já confirmou que **não contém a tabela `FinancialEvent`**. Não criar tabelas ali nem confundir sandbox de restauração com réplica fiel da Etapa 10.
+- O runner PG17 descartável recebe o schema Prisma do código, **não contém dados financeiros produtivos**, e não tem acesso à base real. Sem canal privado de importação das linhas correntes nesse runner, uma cópia fiel dos 3.626 eventos não foi montada. Transferir IDs, valores ou dados sensíveis ao repositório público/artefatos de CI seria inadequado.
+
+**Alternativa segura EXECUTADA, não apenas proposta:** cruzar diretamente **todos os 107 IDs na base real por SELECT** e reproduzir em PG17 de CI três padrões de origem (nome de grupo, classificação, método, estado, conta, modalidade, frequência) com **IDs, descrições, datas e valores fictícios**, além dos sete casos QA de domínio/ambiguidade já validados. Esta é uma reprodução **estrutural**, não uma restauração fiel da base corrente.
+
+## 4. Ensaio QA efetivamente executado com duas interfaces da API
+
+Novo teste: [`apps/api/src/modules/finance/stage10-qa-legacy-web-android-parity.pg17.isolated.test.ts`](../apps/api/src/modules/finance/stage10-qa-legacy-web-android-parity.pg17.isolated.test.ts). Workflow reutilizado: [`meg-stage10-reconciliation-map-pg17.yml`](../.github/workflows/meg-stage10-reconciliation-map-pg17.yml).
+
+- Primeiro run [#44370459595](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44370459595): **FAIL da fixture**, porque eventos de QA foram semeados sem os metadados calculados pela rotina canônica `buildNormalizationPreview`. Corrigida **somente a montagem da fixture** para usar a rotina real, sem mudança financeira ou produtiva.
+- Run final [**#44370905954 SUCCESS**](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44370905954), com banco PostgreSQL 17 descartável, servidor Fastify real injetado, JWT real de titular fictício e guardas exigindo host `127.0.0.1`, porta `5432`, database `meg_stage10_sandbox`, role `meg_stage10_ci`, `MEG_STAGE10_QA_LOCAL_ONLY=1`, `MEG_STAGE10_ISOLATED_PG=1`.
+- O mesmo run preservou os seis PASS pré-existentes: separação dos sete domínios/ambiguidade, revisão canônica, rollback, saldo monetário canônico, idempotência com IDs/ledger, e constraint de duplicidade.
+- **Novos PASS reais no log:**
+  1. `MEG_STAGE10_PARITY_QA_THREE_SOURCE_PATTERNS=PASS` (três representações artificiais coerentes com o legado original, com comparação do classificador).
+  2. `MEG_STAGE10_PARITY_QA_BATCH_ROLLBACK=PASS` (três alterações tentadas e transação revertida integralmente).
+  3. `MEG_STAGE10_PARITY_QA_IDS_AMOUNTS_BALANCES_LEDGER=PASS` (lote de 3 aplicado apenas em PG17, reenvio sem efeito, mesmos IDs, legados, valor em centavos, status, data, ledger e saldos `monetaryAccountBalanceAt`/`monetaryBalanceAt`).
+  4. `MEG_STAGE10_PARITY_QA_WEB_HISTORY_ANDROID_APPSTATE_CONTRACT=PASS` (repostas REST autenticadas `/finance/events/history-snapshot` e `/app-state`; valores, ID legado, data, status, conta, grupo, classe e forma preservados; Web retorna novos vínculos canônicos, espelho Android continua sem perda nem divergência).
+  5. `MEG_STAGE10_PARITY_QA_NO_ANDROID_BINARY_EXECUTION=NOT_TESTED` (limite registrado de forma deliberada).
+
+**Fronteira da prova:** ambas as rotas foram executadas na **API QA**, não na Web Render LIVE ou na APK física. A análise do código histórico do commit do APK 2.0.708 (`36c886b9...`) mostrou que `apps/web/src/phoenix/data/load-phoenix-read-model.ts` chama `/app-state`, mas **não prova o que a APK instalada efetivamente exibirá**. Sem dispositivo conectado ao ambiente e com artefato QA bloqueado pelo gate de dependências, não houve homologação Android física. A Web operacional também permanece sem aprovação visual explícita.
+
+## 5. Proibições e saída
+
+- **Produção:** SQL SELECT apenas. Nenhum UPDATE/INSERT/DELETE/DDL, alteração de conta/identidade/valores, merge, deploy ou Android congelado.
+- **Gates abertos:** cópia QA fiel e privada, teste integral do lote real, backup restaurável atual, reversão operacional pós-piloto, gate monorepo de dependências (picomatch), integração e compatibilidade real do Android, aprovação visual e autorização explícita de cada lote produtivo.
+- PR #702 proteção de IDs permanece Draft e não publicada. PR #701 continua Draft. Etapa 11 proibida.
+- **Próxima ação executável sem custo nem dados reais:** desenvolver mecanismo protegido para inserir um subconjunto anonimizado e representativo em PG17 efêmero por canal privado, mantendo a prova atual como gate básico. Em paralelo, revisar por ID as três propostas na conversa e só pedir autorização de produção após os gates de segurança e recuperação.
+
+**Saúde do chat:** normal nesta atualização. Continuar exclusivamente Etapa 10.
+
+## 6. Preflight privado dos três IDs exatos e correção de referência
+
+**Consulta em 18/11/2026 no Supabase `meg-financas`: somente SELECT, sem leitura de descrição ou divulgação de IDs, valores e titulares no repositório.** Usou as CTEs do mapa canônico `scripts/meg-stage10-reconciliation-map.readonly.sql`, filtradas por três IDs mantidos exclusivamente no contexto privado da revisão.
+
+- O primeiro confronto mostrou que o identificador previamente anotado na conversa para **Lazer/PIX** não correspondia a nenhum `FinancialEvent.id` nem `legacyTransactionId` atual. Não era adequado prosseguir com aquele identificador.
+- A localização pelo registro legado da planilha original confirmou outro ID real para o mesmo padrão e valor. A substituição **não** constitui autorização de escrita; exige que o manifesto privado final use o ID efetivamente existente, preservando a cadeia de evidências.
+- Preflight SQL dos três IDs reais efetivamente encontrados: **3/3 PASS** para existência, classificabilidade simples, correspondência única de categoria e pagamento, conta monetária ativa pertencente ao titular, espelho AppState de `sourcePayload` integralmente igual e único, duas FKs ainda ausentes, ausência de `LedgerEntry`, `Receipt`, `PayablePayment` e `ImportedRow`, identidade, data, valor, status e caso de origem consistentes.
+- Uma tentativa preliminar de consulta produziu falso negativo na modalidade porque comparou literalmente `À VISTA` com `à vista`. A consulta foi corrigida para `lower(...)= 'à vista'`, como faz o mapa existente, e repetida. **Nenhuma regra do sistema foi alterada.**
+- Os três PASS comprovam apenas a **elegibilidade atual para revisão dos registros**. Não houve cópia QA real, `UPDATE` simulado em PostgreSQL a partir das três linhas originais, conferência pós-escrita, backup restaurável ou reversão pós-lote.
+
+**Gate de dependências atualizado no mesmo dia:** o GitHub retirou formalmente `GHSA-fc5q-39xc-vjpf` em 18/11/2026 (https://github.com/advisories/GHSA-fc5q-39xc-vjpf). Sem exceções, downgrade de severidade, override ou modificação do lockfile, foi reexecutado **somente o job `validate` anteriormente falho** no PR #702. [CI monorepo #44303935997, tentativa 2](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44303935997) **SUCCESS**; `Enforce dependency security gate` **SUCCESS**; jobs `financial-e2e` e `android-rc1` **SKIPPED**, não homologados por essa tentativa. A retirada do advisory não comprova correção do código upstream.
+
+**Continuidade:** o candidato de proteção de identidades PR #702 permanece Draft, não publicado; o código de produção continua no commit `28703a9`. Antes de autorizar qualquer lote real, faltam réplica QA fiel e privada, backup atual com prova de restauração, invariantes financeiros pós-escrita em QA, reversão transacional demonstrada com a réplica e proteção de sincronização implantada sob aprovação própria. Homologação de reenvio no aparelho físico e aprovação visual são gates específicos de liberação do cliente, não provas de integridade do lote SQL. Sem merge, deploy, Android modificado, custo ou escrita produtiva.
+
+## 7. Gates financeiros e Android QA executados em CI (sem réplica real)
+
+**Data:** 18/11/2026. PR #701 permanece Draft; PR #702 permanece Draft. Nenhum merge, deploy, DML no Supabase real, alteração no APK estável, alteração de schema produtivo ou envio de dados pessoais ao repositório.
+
+### Motivo dos dois SKIPPED no CI geral
+
+Em `.github/workflows/ci.yml`, o job `financial-e2e` só roda em branches legadas `phoenix/v15-clean-room`, `feature/phoenix-launch-dynamic-status` e prefixo `rc1/`. O job `android-rc1` também é condicionado a essas referências e compila APK assinado pelo canal **estável**, com versão e URL da API pública. É incorreto forçar esse job de release para uma branch Stage10. Os `SKIPPED` na tentativa 2 do CI #44303935997 decorrem dessas condições; não são prova de aprovação.
+
+### Gate financeiro adicional efetivamente aprovado
+
+Criado `.github/workflows/meg-stage10-financial-e2e-pg17.yml` (commit `b4a20c0038ae9e7766ffdfa4b61668aa9894c9c5`). Job de CI sem credenciais externas, PostgreSQL 17 descartável com host `127.0.0.1`, porta `5432`, DB `meg_stage10_sandbox`, role `meg_stage10_ci` e validação fail-closed antes de qualquer operação. Usa o teste existente `apps/api/src/modules/finance/rc1-financial-e2e.test.ts`, sem alteração financeira, após esquema Prisma e auditoria integral inalterada.
+
+**[Run #44377398244](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44377398244): SUCCESS**. Evidências do log: `STAGE10_FINANCIAL_E2E_DB_ISOLATION=PASS`, `RC1 financial E2E: APROVADO.`, `STAGE10_RC1_FINANCIAL_E2E_PG17=PASS`, auditoria high PASS. O teste usa dados sintéticos, **não** restauração do lote original.
+
+### Gate Android isolado efetivamente aprovado
+
+Em `.github/workflows/meg-stage10-android-confirmacao-qa.yml`, o gate integral de dependências foi movido para **antes** do build APK, sem exceções, commit `39f66f8fd6aa016d48ff1cf030b72835f39f69e2`.
+
+**[Run #44377486060](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/44377486060): SUCCESS**, jobs `build-qa-apk` e `verify-pg17-replay` ambos SUCCESS. Passos: auditoria high, build `br.com.megfinancas.app.stage10qa` com assinatura debug e API `http://127.0.0.1:3333`, instalação no Android 35 emulador, WebView, login sintético rejeitado em servidor loopback e testes de replay PG17 com dados fictícios. Marcador no log `MEG_STAGE10_APK_EMULATOR_WEBVIEW_LOOPBACK_SMOKE_PASS`. Hash SHA-256 do **APK QA**: `95968bb2ed18aafe35cff7598981f17423f236cfd599c9a50593cc4934b6bf90`. Artefato no GitHub Actions ID `14462157424`, prazo informado até 25/11/2026, sem payload produtivo. **Não foi instalado nem testado no aparelho físico do usuário; o smoke do emulador não exercitou o fluxo completo de reenvio pela UI.**
+
+### Ambiente QA privado com as três linhas reais: NÃO PROVISIONADO
+
+- Supabase: projeto produtivo `meg-financas` ativo; sandbox de recuperação Stage09 ativo porém sem tabelas financeiras; `meg-evolution` inativo e não autorizado para recriação/reescrita; nenhuma branch Supabase disponível, branching indisponível no Free.
+- Render: serviço de API ativo, **nenhuma instância PostgreSQL** no workspace consultado.
+- Ambiente local desta execução: sem servidor `postgres`, `psql` ou Docker; fontes apt sem acesso de rede confirmado. CI GitHub provê PG17 efêmero, mas somente schema e fixtures sintéticas. Não existe mecanismo conectado e autorizado para enviar os dados financeiros reais a esse runner sem criar nova superfície de vazamento para repositório público, logs ou artefatos.
+- Consequência: não houve restauração fiel dos três registros e FKs auxiliares, comparação completa com a réplica de valores reais, nem ensaio de reversão **pós-lote real**. Os testes fictícios já registrados mantêm validade apenas no seu escopo.
+
+### Proteção API e Android legado
+
+- PR #702 mantém preservação de IDs, bloqueio de rebuild e retorno fail-closed, mas **continua Draft e não publicado**, com produção ainda em `28703a9`, autoDeploy Render off. CI de segurança não equivale a implantação.
+- Persistência Android legado `apps/web/src/instant-persistence.js` segue tratando qualquer 409 de `/app-state/transactions` como conflito transitório e agenda reenvio, mesmo nos conflitos de integridade permanentes da API candidata. Issue P0 #699 permanece bloqueio real de compatibilidade. Não ignorar conflito e não retornar sucesso artificial para descartar gravação.
+- A homologação física com o pacote `.stage10qa`, QA fictícia e ciclo de vida real, além do gate funcional de cliente legado, permanece necessária para qualquer decisão de publicação da API.
+
+**Gates indispensáveis antes de escrita produtiva:** réplica privada fiel com os três IDs e dependências, backup/restauração atual, invariantes financeiras após mutação em QA, reversão pós-lote, proteção API publicada com aprovação separada, compatibilidade de sincronização e autorização por IDs. Nenhuma aprovação de UPDATE foi solicitada ou presumida.

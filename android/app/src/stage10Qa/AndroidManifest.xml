@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:node="remove" />
+    <application android:allowBackup="false"
+        android:label="MEG Etapa 10 QA"
+        android:networkSecurityConfig="@xml/stage10_qa_network"
+        tools:replace="android:allowBackup,android:label">
+        <activity android:name="br.com.megfinancas.app.MainActivity"
+            android:label="MEG Etapa 10 QA"
+            tools:replace="android:label" />
+    </application>
+</manifest>

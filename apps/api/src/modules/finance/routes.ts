@@ -166,7 +166,7 @@ export async function financeRoutes(app: FastifyInstance) {
     app.patch('/events/:id/stage10-qa-edit', {preHandler:app.authorize(['ADMIN'])},async(request,reply)=>{
       if(!stage10QaWebWriteEnabled())return reply.code(403).send({error:'STAGE10_QA_WRITE_DISABLED'});
       const parsed=z.object({
-        operationId:z.string().uuid(),
+        operationId:z.guid(),
         expectedUpdatedAt:z.string().datetime({offset:true}),
         expectedRevision:z.number().int().nonnegative(),
         description:z.string().trim().min(1).max(160),

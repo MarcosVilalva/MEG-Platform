@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
@@ -22,7 +22,7 @@ import { LegacyRestoreError, previewLegacyRestore, restoreLegacyFinancialEventQa
 import { stage10QaWebWriteEnabled, MEG_STAGE10_QA_WRITE_PROTOCOL } from './stage10-qa-write-gate';
 
 const legacyRestoreSchema = z.object({
-  operationId: z.string().uuid(),
+  operationId: z.guid(),
   eventId: z.string().trim().min(1),
   expectedRevision: z.number().int().nonnegative(),
   expectedArchivedAt: z.string().datetime({offset:true}),
@@ -44,7 +44,7 @@ const stateSchema = z.object({
 }).passthrough();
 const putSchema = z.object({ state: stateSchema, expectedRevision: z.number().int().nonnegative().optional() });
 const transactionPatchSchema = z.object({
-  operationId: z.string().uuid().optional(),
+  operationId: z.guid().optional(),
   expectedRevision: z.number().int().nonnegative(),
   upserts: z.array(transactionSchema).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
   deletes: z.array(z.string().min(1)).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
@@ -73,7 +73,7 @@ const transactionPatchSchema = z.object({
   });
 });
 const statePropertiesPatchSchema = z.object({
-  operationId: z.string().uuid(),
+  operationId: z.guid(),
   expectedRevision: z.number().int().nonnegative(),
   properties: z.record(z.string(), z.unknown()),
 }).superRefine((value, context) => {
@@ -110,6 +110,18 @@ async function assertWriteAccess(workspaceId: string, reply: { status(code: numb
     const code = error instanceof Error ? error.message : 'LICENSE_REQUIRED';
     reply.status(402).send({ error: code, readOnly: true });
     return false;
+  }
+}
+
+async function readWorkspaceOrDeny(userId: string, reply: FastifyReply) {
+  try {
+    return await resolveWorkspaceContext(userId, { allowLegacyBootstrap: false });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'WORKSPACE_ACCESS_REQUIRED') {
+      reply.status(403).send({ error: 'WORKSPACE_ACCESS_REQUIRED' });
+      return null;
+    }
+    throw error;
   }
 }
 
@@ -157,8 +169,9 @@ export async function appStateRoutes(app: FastifyInstance) {
     });
   }
 
-  app.get('/normalization-preview', { preHandler: app.authenticate }, async (request) => {
-    const context = await resolveWorkspaceContext(request.user.sub);
+  app.get('/normalization-preview', { preHandler: app.authenticate }, async (request, reply) => {
+    const context = await readWorkspaceOrDeny(request.user.sub, reply);
+    if (!context) return;
     return normalizationPreview(context.workspaceId, context.workspace.ownerId);
   });
 
@@ -242,16 +255,18 @@ export async function appStateRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/revision', { preHandler: app.authenticate }, async (request) => {
-    const context = await resolveWorkspaceContext(request.user.sub);
+  app.get('/revision', { preHandler: app.authenticate }, async (request, reply) => {
+    const context = await readWorkspaceOrDeny(request.user.sub, reply);
+    if (!context) return;
     const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
     return saved
       ? { revision: saved.revision, updatedAt: saved.updatedAt, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } }
       : { revision: 0, updatedAt: null, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 
-  app.get('/', { preHandler: app.authenticate }, async (request) => {
-    const context = await resolveWorkspaceContext(request.user.sub);
+  app.get('/', { preHandler: app.authenticate }, async (request, reply) => {
+    const context = await readWorkspaceOrDeny(request.user.sub, reply);
+    if (!context) return;
     const saved = await normalizedStateForRead(context.workspaceId, context.workspace.ownerId);
     return saved
       ? { ...saved, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } }
