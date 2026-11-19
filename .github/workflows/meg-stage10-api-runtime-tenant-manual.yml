@@ -1,0 +1,75 @@
+name: MEG Stage10 API runtime tenant isolation PG17 (MANUAL ONLY)
+
+on:
+  workflow_dispatch:
+    inputs:
+      authorization:
+        description: 'Run ONLY on GitHub disposable PostgreSQL, after explicit approval'
+        required: true
+        type: choice
+        options:
+          - NAO_AUTORIZADO
+          - AUTORIZO_QA_DESCARTAVEL
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-runtime:
+    if: >-
+      github.repository == 'MarcosVilalva/MEG-Platform' &&
+      github.ref == 'refs/heads/stage10/android-confirmacao-qa-20261118' &&
+      inputs.authorization == 'AUTORIZO_QA_DESCARTAVEL'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_runtime_sandbox
+          POSTGRES_USER: meg_stage10_ci_admin
+          POSTGRES_PASSWORD: stage10_ci_admin_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci_admin -d meg_stage10_runtime_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      MEG_STAGE10_RUNTIME_QA_MANUAL: '1'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      NODE_ENV: test
+      JWT_SECRET: 'stage10-local-disposable-only-not-a-production-jwt-secret'
+      DATABASE_URL: postgresql://meg_stage10_ci_admin:stage10_ci_admin_disposable_only@127.0.0.1:5432/meg_stage10_runtime_sandbox?schema=public
+      MEG_STAGE10_ADMIN_DATABASE_URL: postgresql://meg_stage10_ci_admin:stage10_ci_admin_disposable_only@127.0.0.1:5432/meg_stage10_runtime_sandbox?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-fund
+      - name: Fail-closed guard before ANY DDL
+        run: node scripts/meg-stage10-runtime-disposable-guard.mjs admin
+      - name: Generate Prisma client (no database writes)
+        run: npx prisma generate --schema packages/database/prisma/schema.prisma
+      - name: Create schema ONLY in disposable GitHub PG17
+        run: npx prisma db push --schema packages/database/prisma/schema.prisma
+      - name: Create separate read-only runtime role ONLY in disposable PG17
+        env:
+          PGPASSWORD: stage10_ci_admin_disposable_only
+        run: >-
+          psql -X -v ON_ERROR_STOP=1 --single-transaction
+          -h 127.0.0.1 -p 5432
+          -U meg_stage10_ci_admin -d meg_stage10_runtime_sandbox
+          -f scripts/meg-stage10-runtime-disposable-role.sql
+      - name: Assert runtime URL is disposable and not migrator
+        env:
+          DATABASE_URL: postgresql://meg_stage10_ci_runtime:stage10_ci_runtime_disposable_only@127.0.0.1:5432/meg_stage10_runtime_sandbox?schema=public
+        run: node scripts/meg-stage10-runtime-disposable-guard.mjs runtime
+      - name: Real Fastify inject with fake tenants and least-privilege role
+        env:
+          DATABASE_URL: postgresql://meg_stage10_ci_runtime:stage10_ci_runtime_disposable_only@127.0.0.1:5432/meg_stage10_runtime_sandbox?schema=public
+        run: npx tsx apps/api/src/modules/app-state/stage10-runtime-tenant-pg17.isolated.test.ts
