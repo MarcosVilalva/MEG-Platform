@@ -22,6 +22,22 @@ export type NormalizedLegacyMirrorEvent = {
   paymentMethod?: { name?: string | null } | null;
 };
 
+// Projeção mínima do espelho legado. Preserva payload, sinais, status e vínculo com pagamento.
+export const NORMALIZED_LEGACY_MIRROR_SELECT = {
+  id: true,
+  legacyTransactionId: true,
+  date: true,
+  description: true,
+  type: true,
+  status: true,
+  amount: true,
+  signedAmount: true,
+  notes: true,
+  sourcePayload: true,
+  accountId: true,
+  paymentMethod: { select: { name: true } },
+} as const satisfies Prisma.FinancialEventSelect;
+
 function record(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
 }
@@ -192,7 +208,7 @@ export async function reconcilePrimaryAppStateFromNormalized(
     const [events, archived] = await Promise.all([
       tx.financialEvent.findMany({
         where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: null },
-        include: { paymentMethod: { select: { name: true } } },
+        select: NORMALIZED_LEGACY_MIRROR_SELECT,
       }),
       tx.financialEvent.findMany({
         where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: { not: null } },
