@@ -4,7 +4,17 @@ DO $stage10$
 BEGIN
   IF current_database() <> 'meg_stage10_runtime_sandbox'
     OR current_user <> 'meg_stage10_ci_admin'
-    OR inet_server_addr() IS DISTINCT FROM '127.0.0.1'::inet
+    OR (
+      inet_server_addr() = '127.0.0.1'::inet
+      OR (
+        -- GitHub Actions maps host loopback to a private Docker bridge.
+        -- Require both endpoints in the same /24, not any private client.
+        inet_server_addr() <<= '172.16.0.0/12'::cidr
+        AND inet_client_addr() <<= '172.16.0.0/12'::cidr
+        AND network(set_masklen(inet_server_addr(), 24)) =
+            network(set_masklen(inet_client_addr(), 24))
+      )
+    ) IS NOT TRUE
     OR current_setting('port') <> '5432'
   THEN
     RAISE EXCEPTION 'STAGE10_DISPOSABLE_ROLE_GUARD_REJECTED';
