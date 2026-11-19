@@ -2,7 +2,7 @@ name: MEG Stage10 API runtime tenant isolation PG17 (APPROVAL COMMIT ONLY)
 
 on:
   push:
-    branches: [stage10/android-confirmacao-qa-20261118]
+    branches: [stage10/runtime-readonly-403-isolated-20261119]
     paths:
       - 'docs/MEG-STAGE10-RUNTIME-QA-APROVACAO.txt'
 
@@ -13,8 +13,9 @@ jobs:
   isolated-runtime:
     if: >-
       github.repository == 'MarcosVilalva/MEG-Platform' &&
-      github.ref == 'refs/heads/stage10/android-confirmacao-qa-20261118' &&
-      github.event_name == 'push'
+      github.ref == 'refs/heads/stage10/runtime-readonly-403-isolated-20261119' &&
+      github.event_name == 'push' &&
+      github.event.head_commit.message == 'ci(stage10): authorize isolated runtime 403 gate'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
