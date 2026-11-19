@@ -2,7 +2,7 @@ name: MEG Stage10 API runtime tenant isolation PG17 (APPROVAL COMMIT ONLY)
 
 on:
   push:
-    branches: [stage10/android-confirmacao-qa-20261118]
+    branches: [stage10/runtime-pr701-final-1b3b256a-20261119]
     paths:
       - 'docs/MEG-STAGE10-RUNTIME-QA-APROVACAO.txt'
 
@@ -13,8 +13,9 @@ jobs:
   isolated-runtime:
     if: >-
       github.repository == 'MarcosVilalva/MEG-Platform' &&
-      github.ref == 'refs/heads/stage10/android-confirmacao-qa-20261118' &&
-      github.event_name == 'push'
+      github.ref == 'refs/heads/stage10/runtime-pr701-final-1b3b256a-20261119' &&
+      github.event_name == 'push' &&
+      github.event.head_commit.message == 'ci(stage10): authorized final PR701 runtime gate'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -45,6 +46,15 @@ jobs:
         run: |
           test -f docs/MEG-STAGE10-RUNTIME-QA-APROVACAO.txt
           test "$(cat docs/MEG-STAGE10-RUNTIME-QA-APROVACAO.txt)" = "AUTORIZO_SOMENTE_QA_DESCARTAVEL_ETAPA10_20261119"
+      - name: Verify exact functional blobs of PR701 final head 1b3b256a
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:apps/api/src/modules/workspaces/service.ts)" = "1e6a7820d86daae8ca3a323b23a114b1a1e81e00"
+          test "$(git rev-parse HEAD:apps/api/src/modules/app-state/routes.ts)" = "9eda493811dba79dc54f6fd34addd71d66867439"
+          test "$(git rev-parse HEAD:apps/api/src/modules/app-state/stage10-runtime-tenant-pg17.isolated.test.ts)" = "197d2cc9664cbda7aef5d2b369fdbef518be8adc"
+          test "$(git rev-parse HEAD:scripts/meg-stage10-runtime-disposable-role.sql)" = "3d8a14617299856126f7063929f0a938a1f0388a"
+          echo "MEG_STAGE10_PR701_FINAL_FUNCTIONAL_BLOBS=PASS"
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
