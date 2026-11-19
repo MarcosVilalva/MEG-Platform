@@ -5,7 +5,7 @@ export const STAGE10_CI_DB = 'meg_stage10_runtime_sandbox';
 export function assertStage10ManualRunner() {
   assert.equal(process.env.GITHUB_ACTIONS, 'true', 'STAGE10_GITHUB_ACTIONS_REQUIRED');
   assert.equal(process.env.GITHUB_REPOSITORY, 'MarcosVilalva/MEG-Platform', 'STAGE10_WRONG_REPOSITORY');
-  assert.equal(process.env.GITHUB_REF, 'refs/heads/stage10/android-confirmacao-qa-20261118', 'STAGE10_WRONG_BRANCH');
+  assert.equal(process.env.GITHUB_REF, 'refs/heads/stage10/runtime-readonly-403-isolated-20261119', 'STAGE10_WRONG_BRANCH');
   assert.equal(process.env.MEG_STAGE10_RUNTIME_QA_MANUAL, '1', 'STAGE10_MANUAL_GATE_REQUIRED');
   assert.equal(process.env.MEG_STAGE10_QA_LOCAL_ONLY, '1', 'STAGE10_QA_FLAG_REQUIRED');
 }
