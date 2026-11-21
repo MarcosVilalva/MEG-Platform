@@ -76,8 +76,9 @@ async function main() {
     await app.listen({ host: '127.0.0.1', port: 0 });
     const address = app.server.address();
     if (!address || typeof address === 'string') throw new Error('API_QA_INVALID_LOOPBACK_ADDRESS');
+    const apiPort = address.port;
     assert.equal(address.address, '127.0.0.1');
-    const login = await fetch(`http://127.0.0.1:${address.port}/auth/login`, {
+    const login = await fetch(`http://127.0.0.1:${apiPort}/auth/login`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: user.email, password }),
     });
@@ -92,7 +93,7 @@ async function main() {
     ) {
       const messages: string[] = [];
       const proxy = createQaFaultProxy({
-        upstreamPort: address.port, listenPort: 0, dropPath: path,
+        upstreamPort: apiPort, listenPort: 0, dropPath: path,
         log: (message: string) => messages.push(message),
       });
       proxy.server.listen(0, '127.0.0.1');
