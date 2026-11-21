@@ -4022,3 +4022,12 @@ Retomada pronta: "Continuar somente Etapa 10 MEG Web, repo MarcosVilalva/MEG-Pla
 6. **Gate API:** `tsc -p apps/api/tsconfig.json --noEmit` terminou com exit code 0. PASS.
 7. **Restrições:** produção, Android, WebQA persistente, QA 5448 e bancos históricos não acessados; sem merge, deploy ou serviço persistente. V17R4, V18R5R1, RC1, Fastify inject e HTTP PT32 R9 não repetidos.
 8. **Checkpoint verificável:** `MEG-ETAPA10B-CHECKPOINT-PT37-20261121.md`. Não resta gate técnico obrigatório da Etapa 10B na branch isolada; revisão/merge e deploy permanecem fora do escopo e exigem autorização separada.
+
+## ETAPA 10B | 21/11/2026 | Encerramento técnico definitivo e integração preparada
+
+1. **Estado do PR:** [#704](https://github.com/MarcosVilalva/MEG-Platform/pull/704) aberto, Draft, não mesclado e `mergeable=true`; branch `stage10b/pt36-incorporacao-20261121` integrada à base `stage10/android-confirmacao-qa-20261118` pelo commit documental `4a978a9410458df02a40fd5dfb7f0e98e3bd06d2`, sem reescrever o commit técnico homologado `96d4c39b7210541ec5b1ea806c477ba6782481b8`.
+2. **Gates técnicos:** 9/9 preservados e aprovados: V17R4, V18R5R1, RC1, Fastify inject, HTTP PT32 R9, RLS de funções futuras, cold start, persistência da normalização e compilação focada da API. Nenhum teste foi repetido nesta verificação final.
+3. **CI aplicável da branch-base:** seis checks existentes no HEAD `1b3b256a38712a40600d39f22aada139b95b6b46`, todos `completed/success`: runs `44510468161`, `44510468162`, `44510468208`, `44510468259`, `44510468284` e `44510468424`. Os commits documentais usam `[skip ci]`; nenhuma nova execução foi disparada.
+4. **Integridade:** exatamente seis arquivos no diff do PR, `git diff --check` PASS, nenhum marcador de conflito, árvore limpa e hashes PT38 dos quatro arquivos técnicos preservados. O conflito em `MEG-WEB-CONTINUIDADE-OFICIAL.md` foi resolvido mantendo os registros posteriores da base e o bloco PT37.
+5. **Revisão e proteção:** nenhuma revisão solicitada ou submetida e nenhum ruleset de repositório identificado; o GitHub confirma a aptidão técnica por `mergeable=true`. Revisão, merge e deploy são ações externas posteriores, não pendências técnicas internas da Etapa 10B.
+6. **Conclusão:** **ETAPA 10B TECNICAMENTE ENCERRADA. INTEGRAÇÃO PREPARADA. NENHUMA PENDÊNCIA TÉCNICA INTERNA.** Sem merge, deploy, produção, Android, WebQA persistente, QA 5448, bancos históricos ou Etapa 11.
