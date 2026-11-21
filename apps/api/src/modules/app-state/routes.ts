@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
@@ -113,6 +113,18 @@ async function assertWriteAccess(workspaceId: string, reply: { status(code: numb
   }
 }
 
+async function readWorkspaceOrDeny(userId: string, reply: FastifyReply) {
+  try {
+    return await resolveWorkspaceContext(userId, { allowLegacyBootstrap: false });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'WORKSPACE_ACCESS_REQUIRED') {
+      reply.status(403).send({ error: 'WORKSPACE_ACCESS_REQUIRED' });
+      return null;
+    }
+    throw error;
+  }
+}
+
 export async function appStateRoutes(app: FastifyInstance) {
   if (stage10QaWebWriteEnabled()) {
     app.get('/stage10-qa-write-gate', {preHandler:app.authorize(['ADMIN'])}, async (request,reply) => {
@@ -157,8 +169,9 @@ export async function appStateRoutes(app: FastifyInstance) {
     });
   }
 
-  app.get('/normalization-preview', { preHandler: app.authenticate }, async (request) => {
-    const context = await resolveWorkspaceContext(request.user.sub);
+  app.get('/normalization-preview', { preHandler: app.authenticate }, async (request, reply) => {
+    const context = await readWorkspaceOrDeny(request.user.sub, reply);
+    if (!context) return;
     return normalizationPreview(context.workspaceId, context.workspace.ownerId);
   });
 
@@ -242,16 +255,18 @@ export async function appStateRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/revision', { preHandler: app.authenticate }, async (request) => {
-    const context = await resolveWorkspaceContext(request.user.sub);
+  app.get('/revision', { preHandler: app.authenticate }, async (request, reply) => {
+    const context = await readWorkspaceOrDeny(request.user.sub, reply);
+    if (!context) return;
     const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
     return saved
       ? { revision: saved.revision, updatedAt: saved.updatedAt, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } }
       : { revision: 0, updatedAt: null, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 
-  app.get('/', { preHandler: app.authenticate }, async (request) => {
-    const context = await resolveWorkspaceContext(request.user.sub);
+  app.get('/', { preHandler: app.authenticate }, async (request, reply) => {
+    const context = await readWorkspaceOrDeny(request.user.sub, reply);
+    if (!context) return;
     const saved = await normalizedStateForRead(context.workspaceId, context.workspace.ownerId);
     return saved
       ? { ...saved, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } }
