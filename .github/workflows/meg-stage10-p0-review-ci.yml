@@ -100,11 +100,12 @@ jobs:
         run: |
           npm --workspace apps/api run test:rc1-financial-e2e
           echo 'STAGE10_P0_REMOTE_FINANCE_PG17=PASS'
-      - name: PT204 PT205 PT213 | HTTP JWT PG17 e protecao dos quatro vinculos
+      - name: PT204 PT205 PT213 PT215 | HTTP JWT PG17, vinculos e recibos atomicos
         env:
           MEG_STAGE10_PT204_SYNTHETIC: '1'
           MEG_STAGE10_PT205_SYNTHETIC: '1'
           MEG_STAGE10_PT213_SYNTHETIC: '1'
+          MEG_STAGE10_PT215_SYNTHETIC: '1'
         run: |
           set -euo pipefail
           test "$GITHUB_ACTIONS" = true
@@ -115,3 +116,5 @@ jobs:
           node --import tsx apps/api/src/modules/finance/stage10-pt213-four-linked-domains-real-jwt.pg17.disposable.test.ts
           echo 'PT205_REMOTE_HTTP_JWT_PG17_COMBINED=PASS'
           echo 'PT213_REMOTE_FOUR_FK_INTEGRITY_HTTP_JWT_PG17=PASS'
+          node --import tsx apps/api/src/modules/finance/stage10-pt215-atomic-receipts-real-http.pg17.disposable.test.ts
+          echo 'PT215_REMOTE_LEGACY_ATOMIC_RECEIPT_HTTP_JWT_PG17=PASS'

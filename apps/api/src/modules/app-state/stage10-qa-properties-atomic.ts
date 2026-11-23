@@ -1,7 +1,8 @@
 /**
- * Etapa 10 QA only: atomic PATCH /app-state/properties candidate.
- * Both AppState and CloudMutationReceipt MUST commit in the same transaction.
- * The shared legacy route retains its original behavior outside isolated QA.
+ * Etapa 10: candidato de PATCH /app-state/properties atomico para todos os clientes.
+ * AppState e CloudMutationReceipt devem confirmar na mesma transacao.
+ * A inclusao no codigo candidato nao autoriza merge, deploy ou rollout Android;
+ * compatibilidade das versoes legadas e CI precisam permanecer aprovadas.
  */
 import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from './mutation-receipt';
