@@ -1,12 +1,15 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 import {cardPurchaseStatementMonth} from './purchase-cycle-canonical';
+import {cardInstallmentRemaining} from '../finance/card-statement-canonical';
 import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';
 import { resolveWorkspaceContext } from '../workspaces/service';
-import { CardDomainError, createCardPurchaseProtected, listCards, payCardStatementProtected } from './service';
+import { CardDomainError, createCardPurchaseProtected, enforceCardCreditLimitIncrease, listCards, payCardStatementProtected } from './service';
+import { cardLimitPolicyRows, effectiveCardLimitMode, putCardLimitMode } from './card-limit-policy';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -38,12 +41,16 @@ const purchaseSchema = z.object({
   installments: z.coerce.number().int().min(1).max(48).default(1)
 });
 const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional(), allowDuplicate: z.boolean().optional() });
+const purchaseLimitSchema = purchaseCreateSchema.extend({ allowOverLimit: z.boolean().optional() });
+const limitPolicyBodySchema = z.object({ mode: z.enum(['BLOCK', 'CONFIRM']), operationId: operationSchema }).strict();
+const cardPolicyBodySchema = z.object({ mode: z.enum(['BLOCK', 'CONFIRM']).nullable(), operationId: operationSchema }).strict();
 const purchaseUpdateSchema = z.object({
   cardId: z.string().min(1).optional(),
   categoryId: z.string().optional().nullable(),
   description: z.string().trim().min(2).max(160).optional(),
   purchaseDate: isoDateSchema.optional(),
   operationId: operationSchema,
+  allowOverLimit: z.boolean().optional(),
 }).refine((value) => value.cardId !== undefined
   || value.categoryId !== undefined
   || value.description !== undefined
@@ -54,6 +61,7 @@ const installmentUpdateSchema = z.object({
   amount: z.coerce.number().positive().finite().optional(),
   statementMonth: monthSchema.optional(),
   operationId: operationSchema,
+  allowOverLimit: z.boolean().optional(),
 }).refine((value) => value.amount !== undefined || value.statementMonth !== undefined, {
   message: 'Informe valor e/ou competência da parcela.',
 });
@@ -92,6 +100,7 @@ function validationError(reply: FastifyReply, details: unknown) {
 }
 
 function mutationError(reply: FastifyReply, error: unknown) {
+  if (error instanceof CardDomainError) return domainError(reply, error);
   if (error instanceof CardMutationError) {
     return reply.code(error.statusCode).send({ error: error.code, details: error.details });
   }
@@ -101,7 +110,7 @@ function mutationError(reply: FastifyReply, error: unknown) {
 function domainError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof CardDomainError)) throw error;
   const status = error.code === 'CARD_NOT_FOUND' ? 404
-    : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'STATEMENT_CHANGED_RETRY', 'INSUFFICIENT_MONETARY_BALANCE'].includes(error.code) ? 409
+    : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'STATEMENT_CHANGED_RETRY', 'INSUFFICIENT_MONETARY_BALANCE', 'ACCOUNT_BALANCE_WINDOW_TOO_LARGE', 'CARD_LIMIT_EXCEEDED', 'CARD_LIMIT_CONFIRMATION_REQUIRED'].includes(error.code) ? 409
       : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
@@ -282,6 +291,91 @@ export async function cardRoutes(app: FastifyInstance) {
     return reply.code(201).send(await prisma.creditCard.create({ data: { userId: ownerId, ...parsed.data } }));
   });
 
+  // Preferencia global do workspace; ausencia de registro significa BLOCK.
+  app.get('/limit-control', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const context = await resolveWorkspaceContext(request.user.sub, { allowLegacyBootstrap: false });
+    const [rows, cards] = await Promise.all([
+      cardLimitPolicyRows(prisma, context.workspaceId),
+      prisma.creditCard.findMany({ where: { userId: context.workspace.ownerId, isActive: true }, select: { id: true } }),
+    ]);
+    const globalMode = effectiveCardLimitMode(rows, '');
+    return {
+      globalMode,
+      cards: cards.map((card) => ({
+        id: card.id,
+        overrideMode: rows.find((row) => row.scopeKey === 'CARD:' + card.id)?.mode ?? null,
+        effectiveMode: effectiveCardLimitMode(rows, card.id),
+      })),
+    };
+  });
+
+  app.patch('/limit-control', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const body = limitPolicyBodySchema.safeParse(request.body);
+    if (!body.success) return validationError(reply, body.error.flatten());
+    const context = await resolveWorkspaceContext(request.user.sub, { allowLegacyBootstrap: false });
+    if (!['ADMIN', 'MANAGER'].includes(context.membership.role)) return reply.code(403).send({ error: 'WORKSPACE_WRITE_ROLE_REQUIRED' });
+    try {
+      const result = await protectedCardMutation({
+        context: { workspaceId: context.workspaceId, ownerId: context.workspace.ownerId, legacy: legacyState(null) },
+        operationId: body.data.operationId,
+        requestHash: mutationRequestHash({ action: 'card-limit-global', mode: body.data.mode }),
+        mutationType: 'CARD_LIMIT_POLICY_UPDATE',
+        work: async (tx) => {
+          const before = await cardLimitPolicyRows(tx, context.workspaceId);
+          await putCardLimitMode(tx, context.workspaceId, 'GLOBAL', body.data.mode, randomUUID());
+          await recordFinancialAudit(tx, {
+            actorId: request.user.sub, entity: 'Workspace', entityId: context.workspaceId,
+            action: 'CARD_LIMIT_POLICY_UPDATED', before: { mode: effectiveCardLimitMode(before, '') },
+            after: { mode: body.data.mode },
+            context: { scope: 'GLOBAL', workspaceId: context.workspaceId, operationId: body.data.operationId },
+          });
+          return { globalMode: body.data.mode };
+        },
+      });
+      return reply.send(result);
+    } catch (error) {
+      return mutationError(reply, error);
+    }
+  });
+
+  app.patch('/:id/limit-control', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
+    const body = cardPolicyBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return validationError(reply, {
+      params: params.success ? null : params.error.flatten(), body: body.success ? null : body.error.flatten(),
+    });
+    const context = await resolveWorkspaceContext(request.user.sub, { allowLegacyBootstrap: false });
+    if (!['ADMIN', 'MANAGER'].includes(context.membership.role)) return reply.code(403).send({ error: 'WORKSPACE_WRITE_ROLE_REQUIRED' });
+    const card = await prisma.creditCard.findFirst({
+      where: { id: params.data.id, userId: context.workspace.ownerId, isActive: true }, select: { id: true },
+    });
+    if (!card) return reply.code(404).send({ error: 'CARD_NOT_FOUND' });
+    try {
+      const result = await protectedCardMutation({
+        context: { workspaceId: context.workspaceId, ownerId: context.workspace.ownerId, legacy: legacyState(null) },
+        operationId: body.data.operationId,
+        requestHash: mutationRequestHash({ action: 'card-limit-card', cardId: card.id, mode: body.data.mode }),
+        mutationType: 'CARD_LIMIT_POLICY_UPDATE',
+        work: async (tx) => {
+          const before = await cardLimitPolicyRows(tx, context.workspaceId, card.id);
+          await putCardLimitMode(tx, context.workspaceId, 'CARD:' + card.id, body.data.mode, randomUUID());
+          const after = await cardLimitPolicyRows(tx, context.workspaceId, card.id);
+          await recordFinancialAudit(tx, {
+            actorId: request.user.sub, entity: 'CreditCard', entityId: card.id,
+            action: 'CARD_LIMIT_POLICY_UPDATED',
+            before: { effectiveMode: effectiveCardLimitMode(before, card.id) },
+            after: { effectiveMode: effectiveCardLimitMode(after, card.id), overrideMode: body.data.mode },
+            context: { scope: 'CARD', workspaceId: context.workspaceId, operationId: body.data.operationId },
+          });
+          return { cardId: card.id, overrideMode: body.data.mode, effectiveMode: effectiveCardLimitMode(after, card.id) };
+        },
+      });
+      return reply.send(result);
+    } catch (error) {
+      return mutationError(reply, error);
+    }
+  });
+
   app.patch('/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = cardSchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
@@ -301,7 +395,7 @@ export async function cardRoutes(app: FastifyInstance) {
   });
 
   app.post('/purchases', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = purchaseCreateSchema.safeParse(request.body);
+    const parsed = purchaseLimitSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     try {
       const purchase = await createCardPurchaseProtected(request.user.sub, parsed.data);
@@ -316,8 +410,8 @@ export async function cardRoutes(app: FastifyInstance) {
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
     const context = await sharedCardContext(request.user.sub);
-    const { operationId, ...purchaseInput } = parsed.data;
-    const requestHash = mutationRequestHash({ id, purchase: purchaseInput });
+    const { operationId, allowOverLimit, ...purchaseInput } = parsed.data;
+    const requestHash = mutationRequestHash({ id, purchase: purchaseInput, allowOverLimit });
 
     try {
       const response = await protectedCardMutation({
@@ -333,6 +427,18 @@ export async function cardRoutes(app: FastifyInstance) {
           const nextPurchaseDate = purchaseInput.purchaseDate ?? before.purchaseDate.toISOString().slice(0, 10);
           const shouldRecalculateStatementMonths = targetCardId !== before.cardId
             || nextPurchaseDate !== before.purchaseDate.toISOString().slice(0, 10);
+          let overLimitException: Record<string, unknown> | null = null;
+          if (targetCardId !== before.cardId) {
+            const movedCents = before.entries.reduce(
+              (sum, entry) => sum + Math.round(cardInstallmentRemaining(entry) * 100), 0,
+            );
+            const guard = await enforceCardCreditLimitIncrease(
+              tx, context, card, movedCents, allowOverLimit === true,
+            );
+            if (guard.decision.confirmedException) {
+              overLimitException = { excessCents: guard.decision.excessCents, mode: guard.mode };
+            }
+          }
 
           await tx.cardPurchase.update({
             where: { id },
@@ -374,6 +480,7 @@ export async function cardRoutes(app: FastifyInstance) {
               preservedInstallmentIds: before.entries.map((entry) => entry.id),
               previousCardId: before.cardId,
               cardId: after.cardId,
+              overLimitException,
             },
           });
           return { purchase: after };
@@ -390,8 +497,8 @@ export async function cardRoutes(app: FastifyInstance) {
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
     const context = await sharedCardContext(request.user.sub);
-    const { operationId, ...changes } = parsed.data;
-    const requestHash = mutationRequestHash({ id, installment: changes });
+    const { operationId, allowOverLimit, ...changes } = parsed.data;
+    const requestHash = mutationRequestHash({ id, installment: changes, allowOverLimit });
 
     try {
       const response = await protectedCardMutation({
@@ -416,6 +523,20 @@ export async function cardRoutes(app: FastifyInstance) {
               installmentId: id,
               partialPaidAmount: Number(before.partialPaidAmount),
             });
+          }
+
+          let overLimitException: Record<string, unknown> | null = null;
+          if (changes.amount !== undefined) {
+            const increaseCents = Math.round(Number(changes.amount) * 100)
+              - Math.round(cardInstallmentRemaining(before) * 100);
+            if (increaseCents > 0) {
+              const guard = await enforceCardCreditLimitIncrease(
+                tx, context, before.purchase.card, increaseCents, allowOverLimit === true,
+              );
+              if (guard.decision.confirmedException) {
+                overLimitException = { excessCents: guard.decision.excessCents, mode: guard.mode };
+              }
+            }
           }
 
           const after = await tx.cardInstallment.update({
@@ -451,6 +572,7 @@ export async function cardRoutes(app: FastifyInstance) {
               installmentId: id,
               preservedInstallmentIds: entries.filter((entry) => entry.id !== id).map((entry) => entry.id),
               reconciledPurchaseTotal: totalAmount,
+              overLimitException,
             },
           });
 

@@ -1,4 +1,4 @@
-import { prisma } from '@meg/database';
+import { Prisma, prisma } from '@meg/database';
 import {cardPurchaseInstallmentRows} from './purchase-cycle-canonical';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
@@ -9,10 +9,12 @@ import {
   isFutureFinancialDay,
   isMonetaryAccountType,
   monetaryAccountBalanceAt,
+  monetaryAccountDebitWindow,
   paymentBalanceDecision,
   serializableFinancialTransaction,
 } from '../finance/monetary-protection';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { cardLimitDecision, cardLimitPolicyRows, effectiveCardLimitMode } from './card-limit-policy';
 
 type LegacyCard = {
   paymentMethod?: unknown;
@@ -32,6 +34,15 @@ export class CardDomainError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
     super(code);
   }
+}
+
+// A persisted receipt describes the original commit. A replay must report
+// that the operation was reused without modifying the stored receipt or ledger.
+function replayCardMutationResponse(response: unknown) {
+  if (!response || typeof response !== 'object' || Array.isArray(response)) {
+    throw new Error('INVALID_CARD_MUTATION_RECEIPT');
+  }
+  return { ...response, idempotentReplay: true };
 }
 
 function text(value: unknown) { return typeof value === 'string' ? value.trim() : ''; }
@@ -255,6 +266,61 @@ export async function listCards(userId: string, month: string) {
   });
 }
 
+
+export async function enforceCardCreditLimitIncrease(
+  tx: Prisma.TransactionClient,
+  shared: {ownerId: string; workspaceId: string; legacy: ReturnType<typeof legacyState>},
+  card: {id: string; name: string; creditLimit: Prisma.Decimal | number | string},
+  increaseCents: number,
+  allowOverLimit: boolean,
+) {
+  if (!Number.isSafeInteger(increaseCents) || increaseCents <= 0) throw new Error('INVALID_CARD_LIMIT_AMOUNT');
+    // PT104: a mesma transacao serializavel protege a leitura de todo limite
+    // comprometido por parcelas futuras e compras legadas em aberto.
+    const [openEntries, controlRows] = await Promise.all([
+      tx.cardInstallment.findMany({
+        where: { purchase: { cardId: card.id, userId: shared.ownerId, status: 'active' }, status: 'open' },
+      }),
+      cardLimitPolicyRows(tx, shared.workspaceId, card.id),
+    ]);
+    const officialCents = openEntries.reduce(
+      (sum, entry) => sum + Math.round(cardInstallmentRemaining(entry) * 100), 0,
+    );
+    const legacyCents = legacyPurchasesForCard(card, shared.legacy)
+      .filter((purchase) => purchase.legacyOpen)
+      .reduce((sum, purchase) => sum + Math.round(Number(purchase.totalAmount || 0) * 100), 0);
+    const committedCents = Math.max(0, officialCents + legacyCents);
+    const purchaseCents = increaseCents;
+    const mode = effectiveCardLimitMode(controlRows, card.id);
+    const decision = cardLimitDecision({
+      creditLimitCents: Math.round(Number(card.creditLimit) * 100),
+      committedCents,
+      purchaseCents,
+      mode,
+      confirmedOverLimit: allowOverLimit === true,
+    });
+    if (!decision.allowed) {
+      throw new CardDomainError(
+        decision.requiresConfirmation ? 'CARD_LIMIT_CONFIRMATION_REQUIRED' : 'CARD_LIMIT_EXCEEDED',
+        {
+          cardId: card.id, mode,
+          creditLimitCents: Math.round(Number(card.creditLimit) * 100),
+          committedCents, availableCents: decision.availableCents,
+          purchaseCents, excessCents: decision.excessCents,
+          action: decision.requiresConfirmation
+            ? 'CONFIRM_OVER_LIMIT_PURCHASE'
+            : 'PAY_STATEMENT_OR_CORRECT_REGISTERED_LIMIT',
+          message: decision.requiresConfirmation
+            ? 'A compra excede o limite. Confirme explicitamente para registrar uma compra ja autorizada pelo emissor.'
+            : 'O limite disponivel e insuficiente. Libere limite com pagamento confirmado da fatura ou corrija o limite cadastrado.',
+        },
+      );
+    }
+
+
+  return { decision, mode };
+}
+
 export async function createCardPurchaseProtected(userId: string, input: {
   cardId: string;
   categoryId?: string | null;
@@ -264,6 +330,7 @@ export async function createCardPurchaseProtected(userId: string, input: {
   installments: number;
   operationId?: string;
   allowDuplicate?: boolean;
+  allowOverLimit?: boolean;
 }) {
   const shared = await sharedCardContext(userId);
   const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined }) : null;
@@ -275,7 +342,7 @@ export async function createCardPurchaseProtected(userId: string, input: {
       });
       if (previous) {
         if (previous.requestHash !== requestHash) throw new CardDomainError('OPERATION_ID_REUSED');
-        return previous.response as unknown;
+        return replayCardMutationResponse(previous.response);
       }
     }
 
@@ -308,6 +375,10 @@ export async function createCardPurchaseProtected(userId: string, input: {
         });
       }
     }
+
+    const { decision, mode } = await enforceCardCreditLimitIncrease(
+      tx, shared, card, Math.round(Number(input.totalAmount) * 100), input.allowOverLimit === true,
+    );
 
     const projectedInstallments = cardPurchaseInstallmentRows({
       purchaseDate: input.purchaseDate,
@@ -345,6 +416,9 @@ export async function createCardPurchaseProtected(userId: string, input: {
         workspaceId: shared.workspaceId,
         firstStatementMonth: projectedInstallments[0]?.statementMonth,
         duplicateOverride: Boolean(input.allowDuplicate),
+        overLimitException: decision.confirmedException
+          ? { mode, excessCents: decision.excessCents, availableCentsBefore: decision.availableCents }
+          : null,
       },
     });
 
@@ -382,7 +456,7 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
       });
       if (previous) {
         if (previous.requestHash !== requestHash) throw new CardDomainError('OPERATION_ID_REUSED');
-        return previous.response as unknown;
+        return replayCardMutationResponse(previous.response);
       }
     }
 
@@ -443,6 +517,28 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     const available = await monetaryAccountBalanceAt(tx, shared.ownerId, account, input.paidAt);
     const protection = paymentBalanceDecision(available, amount);
     if (!protection.allowed) throw new CardDomainError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, accountId: account.id, accountName: account.name, at: input.paidAt.slice(0, 10) });
+
+    // PT98: a backdated statement payment must also preserve every later
+    // posted-day balance. Use the same central monetary rule as settlement.
+    const paymentCents = Math.round(amount * 100);
+    if (!Number.isSafeInteger(paymentCents) || paymentCents <= 0) {
+      throw new CardDomainError('CARD_STATEMENT_NOT_PAYABLE');
+    }
+    let timeline: Awaited<ReturnType<typeof monetaryAccountDebitWindow>>;
+    try {
+      timeline = await monetaryAccountDebitWindow(tx, shared.ownerId, account, input.paidAt, paymentCents);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ACCOUNT_BALANCE_WINDOW_TOO_LARGE') {
+        throw new CardDomainError('ACCOUNT_BALANCE_WINDOW_TOO_LARGE');
+      }
+      throw error;
+    }
+    if (!timeline.allowed) {
+      throw new CardDomainError('INSUFFICIENT_MONETARY_BALANCE', {
+        ...protection, accountId: account.id, accountName: account.name,
+        at: input.paidAt.slice(0, 10), insufficientDay: timeline.insufficientDay,
+      });
+    }
 
     const paidAt = new Date(`${input.paidAt.slice(0, 10)}T12:00:00.000Z`);
     let remainingPaymentCents = Math.round(amount * 100);

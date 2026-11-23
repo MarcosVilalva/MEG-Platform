@@ -9,6 +9,7 @@ const FINANCIAL_ENTITIES = [
   'Payable',
   'RecurringExpense',
   'CreditCard',
+  'Workspace',
   'CardPurchase',
   'Receivable',
   'Receipt',
@@ -36,6 +37,7 @@ export type FinancialAuditAction =
   | 'CARD_DEACTIVATED'
   | 'CARD_REACTIVATED'
   | 'CARD_PURCHASE_CREATED'
+  | 'CARD_LIMIT_POLICY_UPDATED'
   | 'CARD_PURCHASE_UPDATED'
   | 'CARD_PURCHASE_CANCELLED'
   | 'CARD_STATEMENT_PAID'

@@ -1,13 +1,13 @@
 import { prisma } from '@meg/database';
-import { stage10QaWebWriteEnabled } from '../app-state/stage10-qa-write-gate';
+import { stage10QaWebWriteEnabled, stage10UnificationSyntheticMirrorEnabled } from '../app-state/stage10-qa-write-gate';
 import { mirrorNewMonetaryExpenseToLegacyQa } from '../app-state/stage10-qa-web-mirror';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
-import { isBenefitPaymentMethod, isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
-import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, serializableFinancialTransaction } from './monetary-protection';
+import { isBenefitPaymentMethod, isMonetaryAccountType, isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
+import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, monetaryAccountDebitWindow, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventMutationError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
@@ -42,11 +42,19 @@ function isUniqueConflict(error: unknown) {
   return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2002');
 }
 
-export async function createFinancialEventProtected(userId: string, input: CreateFinancialEventMutationInput) {
+export async function createFinancialEventProtected(userId: string, input: CreateFinancialEventMutationInput, expectedWorkspaceId?: string) {
   if (input.type === 'transfer') {
     throw new FinancialEventMutationError('TRANSFER_CONTRACT_NOT_READY');
   }
-  const workspace = await resolveWorkspaceContext(userId);
+  // Cliente com contexto fixo nao pode disparar bootstrap legado.
+  const workspace = await resolveWorkspaceContext(userId,
+    expectedWorkspaceId ? {allowLegacyBootstrap:false} : {});
+  // PT114: o recibo de idempotencia e unico POR workspace, nao por usuario.
+  // O header e opcional para preservar a APK708 anterior; clientes novos
+  // devem fixar o workspace antes de POST/replay.
+  if (expectedWorkspaceId && workspace.workspaceId !== expectedWorkspaceId) {
+    throw new FinancialEventMutationError('WORKSPACE_CONTEXT_CHANGED');
+  }
   const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined })
@@ -106,7 +114,31 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         }
       }
 
-      const qaMirror = stage10QaWebWriteEnabled();
+      // Both clients use the same financial authority. A new posted monetary
+      // debit cannot overdraw this account on the transaction day or any
+      // subsequent posted-event day. Retroactive creation is protected too.
+      if (input.type === 'expense' && account && isMonetaryAccountType(account.type)
+          && isPostedFinancialStatus(resolvedStatus) && Number(values.signedAmount) < 0) {
+        let timeline: Awaited<ReturnType<typeof monetaryAccountDebitWindow>>;
+        try {
+          timeline = await monetaryAccountDebitWindow(
+            tx, dataOwnerId, account, input.date, Math.round(-Number(values.signedAmount) * 100));
+        } catch (error) {
+          if (error instanceof Error && error.message === 'ACCOUNT_BALANCE_WINDOW_TOO_LARGE') {
+            throw new FinancialEventMutationError('ACCOUNT_BALANCE_WINDOW_TOO_LARGE');
+          }
+          throw error;
+        }
+        if (!timeline.allowed) {
+          throw new FinancialEventMutationError('INSUFFICIENT_ACCOUNT_BALANCE', {
+            insufficientDay: timeline.insufficientDay,
+          });
+        }
+      }
+
+      // The second path is only for a freshly initialized synthetic database.
+      // This does not enable a mirror on production or a persisted QA database.
+      const qaMirror = stage10QaWebWriteEnabled() || stage10UnificationSyntheticMirrorEnabled();
       if (qaMirror && input.type !== 'expense') {
         throw new FinancialEventMutationError('STAGE10_QA_ONLY_MONETARY_EXPENSE_SUPPORTED');
       }

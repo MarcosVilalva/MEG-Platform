@@ -30,6 +30,12 @@ android {
         }
     }
     buildTypes {
+        stage10Qa {
+            initWith debug
+            matchingFallbacks = ['debug']
+            applicationIdSuffix ".stage10qa"
+            versionNameSuffix "-stage10-qa"
+        }
         release {
             minifyEnabled false
             signingConfig signingConfigs.release

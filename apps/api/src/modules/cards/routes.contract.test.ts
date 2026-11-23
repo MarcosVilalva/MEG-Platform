@@ -22,12 +22,26 @@ assert.match(routes, /operationId/,
   'Compras e pagamento de fatura devem aceitar chave de idempotência.');
 assert.match(service, /CARD_PURCHASE_CREATE/,
   'Compra no cartão deve registrar recibo de idempotência próprio.');
+// PT96: replay informa o reenvio sem modificar o recibo do commit original.
+assert.equal((service.match(/return replayCardMutationResponse\(previous\.response\);/g) || []).length, 2,
+  'Compra e pagamento de fatura devem identificar o replay no retorno.');
+assert.match(service, /function replayCardMutationResponse\(response: unknown\)[\s\S]*?idempotentReplay: true/,
+  'O recibo original deve permanecer íntegro; somente a resposta do replay muda.');
 assert.match(service, /CARD_PURCHASE_CREATED/,
   'Compra no cartão deve gerar auditoria financeira estrutural.');
 assert.match(service, /workspaceId: shared\.workspaceId/,
   'Evento financeiro gerado pelo pagamento da fatura deve persistir o workspace compartilhado.');
 assert.match(service, /monetaryAccountBalanceAt/,
   'Fatura deve validar o saldo da conta monetária selecionada na data do pagamento.');
+// PT98: proteger também saldos posteriores quando o pagamento é retroativo.
+const statementWriter = service.split('export async function payCardStatementProtected')[1] || '';
+assert.match(statementWriter, /monetaryAccountDebitWindow\(tx, shared\.ownerId, account, input\.paidAt, paymentCents\)/,
+  'Pagamento de fatura deve consultar a janela de saldo monetário canônica.');
+assert.ok(
+  statementWriter.indexOf('monetaryAccountDebitWindow(tx') < statementWriter.indexOf('await tx.cardInstallment.updateMany'),
+  'Proteção de saldos futuros deve ocorrer antes de qualquer mutação de parcela.');
+assert.match(routes, /ACCOUNT_BALANCE_WINDOW_TOO_LARGE/,
+  'Janela de saldo muito extensa deve falhar de modo controlado.');
 assert.match(service, /serializableFinancialTransaction/,
   'Compras críticas e fatura devem executar em transação serializável.');
 assert.match(service, /INSUFFICIENT_MONETARY_BALANCE/,

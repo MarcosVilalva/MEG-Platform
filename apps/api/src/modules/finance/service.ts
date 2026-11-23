@@ -236,6 +236,16 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
     if (current.receipt && !current.receipt.reversedAt) throw new Error('FINANCIAL_EVENT_LINKED_DOMAIN');
+    // A direct paid -> planned/draft/archived PATCH would silently erase the
+    // posted ledger. The existing client explicitly requires an original-
+    // linked reversal flow; never manufacture one in the generic writer.
+    if (current.type === 'expense'
+      && current.ledgerEntries.length > 0
+      && isPosted(current.status)
+      && input.status !== undefined
+      && !isPosted(input.status)) {
+      throw new Error('FINANCIAL_EVENT_REVERSAL_REQUIRES_CANONICAL_WRITER');
+    }
     await validateActiveReferences(tx, dataOwnerId, input);
 
     const nextType = input.type ?? current.type;

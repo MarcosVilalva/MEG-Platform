@@ -90,6 +90,47 @@ export async function monetaryAccountBalanceAt(
   return Math.round(balance * 100) / 100;
 }
 
+/**
+ * Calculates the incremental impact of a newly posted debit on the selected
+ * monetary account. All future posted dates are checked, not only the debit
+ * date, because retroactive expenses can overdraw a later daily balance.
+ * Run inside serializableFinancialTransaction; no mutation is performed here.
+ */
+export async function monetaryAccountDebitWindow(
+  tx: Tx,
+  userId: string,
+  account: { id: string; openingBalance: Prisma.Decimal | number | string },
+  effectiveAt: string,
+  debitCents: number,
+): Promise<{ allowed: boolean; checkedDays: number; insufficientDay?: string }> {
+  const firstDay = effectiveAt.slice(0, 10);
+  if (!parseIsoDay(firstDay) || !Number.isSafeInteger(debitCents) || debitCents <= 0) {
+    throw new Error('INVALID_ACCOUNT_DEBIT_WINDOW_INPUT');
+  }
+  const events = await tx.financialEvent.findMany({
+    where: {
+      userId,
+      accountId: account.id,
+      archivedAt: null,
+      status: { in: ['paid', 'reconciled', 'confirmed'] },
+      date: { gte: new Date(firstDay + 'T00:00:00.000Z') },
+    },
+    select: { date: true },
+    orderBy: { date: 'asc' },
+  });
+  const days = [...new Set([firstDay, ...events.map(x => x.date.toISOString().slice(0, 10))])];
+  if (days.length > 250) throw new Error('ACCOUNT_BALANCE_WINDOW_TOO_LARGE');
+  for (const day of days) {
+    const available = await monetaryAccountBalanceAt(tx, userId, account, day);
+    const availableCents = Math.round(available * 100);
+    if (!Number.isSafeInteger(availableCents)) throw new Error('INVALID_ACCOUNT_BALANCE');
+    if (availableCents < debitCents) {
+      return { allowed: false, checkedDays: days.length, insufficientDay: day };
+    }
+  }
+  return { allowed: true, checkedDays: days.length };
+}
+
 export async function monetaryBalanceAt(tx: Tx, userId: string, effectiveAt: string) {
   const cutoff = nextDayExclusive(effectiveAt.slice(0, 10));
   const [openingBalance, events] = await Promise.all([

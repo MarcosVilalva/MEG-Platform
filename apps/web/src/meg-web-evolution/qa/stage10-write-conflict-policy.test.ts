@@ -6,6 +6,9 @@ import { normalizationWriteConflictPayload } from '../../../../api/src/modules/a
 // de integridade até o infinito.
 const expectations: Array<[number, unknown, string]> = [
   [409, { error: 'STATE_CONFLICT' }, 'refresh-and-retry-bounded'],
+  [409, { error: 'STATE_CONFLICT', retryable: false }, 'keep-protected-requires-resolution'],
+  [409, { error: 'NORMALIZATION_CONCURRENT_EVENT_CHANGE', retryable: false }, 'keep-protected-requires-resolution'],
+  [409, { error: 'NORMALIZATION_CONCURRENT_EVENT_CHANGE', retryable: true }, 'refresh-and-retry-bounded'],
   [409, { error: 'NORMALIZATION_REVISION_CONFLICT' }, 'refresh-and-retry-bounded'],
   [409, normalizationWriteConflictPayload('NORMALIZATION_CONCURRENT_EVENT_CHANGE', 12), 'refresh-and-retry-bounded'],
   [409, normalizationWriteConflictPayload('NORMALIZATION_ARCHIVED_EVENT_REQUIRES_RESTORE', 12), 'keep-protected-requires-resolution'],

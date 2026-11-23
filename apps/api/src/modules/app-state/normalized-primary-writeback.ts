@@ -20,6 +20,7 @@ export type NormalizedLegacyMirrorEvent = {
   sourcePayload: unknown;
   accountId?: string | null;
   paymentMethod?: { name?: string | null } | null;
+  category?: { name?: string | null; group?: string | null } | null;
 };
 
 function record(value: unknown): JsonRecord {
@@ -47,7 +48,10 @@ function legacyStatus(status: string, type: string) {
   }
 }
 
-export function mirrorFinancialEventToLegacyTransaction(event: NormalizedLegacyMirrorEvent): JsonRecord {
+export function mirrorFinancialEventToLegacyTransaction(
+  event: NormalizedLegacyMirrorEvent,
+  options: { syncClassification?: boolean } = {},
+): JsonRecord {
   const payload = { ...record(event.sourcePayload) };
   if (!event.legacyTransactionId) return payload;
 
@@ -71,6 +75,16 @@ export function mirrorFinancialEventToLegacyTransaction(event: NormalizedLegacyM
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'notes') || event.notes) payload.notes = event.notes || '';
+  // Opt-in exclusivo para futuros writers canônicos de reclassificação.
+  // Não altera a classificação histórica em operações normais de writeback.
+  if (options.syncClassification && event.category) {
+    if (Object.prototype.hasOwnProperty.call(payload, 'category')) {
+      payload.category = event.category.name ?? '';
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'group')) {
+      payload.group = event.category.group ?? '';
+    }
+  }
   if (event.accountId && Object.prototype.hasOwnProperty.call(payload, 'financialAccountId')) {
     payload.financialAccountId = event.accountId;
   }
@@ -94,6 +108,7 @@ export async function writeBackNormalizedEventsToAppState(
   workspaceId: string,
   events: NormalizedLegacyMirrorEvent[],
   removedLegacyIds: string[] = [],
+  options: { syncClassification?: boolean } = {},
 ) {
   const current = await tx.appState.findUnique({
     where: { workspaceId },
@@ -104,7 +119,7 @@ export async function writeBackNormalizedEventsToAppState(
   const mirrored = new Map(
     events
       .filter((event) => Boolean(event.legacyTransactionId))
-      .map((event) => [String(event.legacyTransactionId), { event, payload: mirrorFinancialEventToLegacyTransaction(event) }]),
+      .map((event) => [String(event.legacyTransactionId), { event, payload: mirrorFinancialEventToLegacyTransaction(event, options) }]),
   );
   const removed = new Set(removedLegacyIds.filter(Boolean));
   if (!mirrored.size && !removed.size) return { active: true, changed: false, revision: current.revision };

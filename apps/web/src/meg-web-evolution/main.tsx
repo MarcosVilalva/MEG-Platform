@@ -220,6 +220,7 @@ function AuthGateway() {
         periodMonth={prismLayoutEnabled?activePeriod.month:undefined}
         onPeriodMonthChange={prismLayoutEnabled?month=>{resetGlobalSearch();setActivePeriod(periodForMonth(month));}:undefined}
         onGlobalSearch={prismLayoutEnabled?submitGlobalSearch:undefined}
+        onNewLaunch={prismLayoutEnabled?()=>{resetGlobalSearch();setOpenPrismNew(true);setSection('launches');}:undefined}
         activeSection={section}
         onNavigate={next => {setOpenPrismNew(false);if(next==='launches')resetGlobalSearch();setSection(next);}}
         onLogout={() => {void handleLogout();}}

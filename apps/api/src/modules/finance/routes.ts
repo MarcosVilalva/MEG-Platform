@@ -20,7 +20,9 @@ import { listCanonicalHomeCommitments } from './home-commitments-read';
 import { decodeCommitmentCursor } from './home-commitments-core';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
-import { stage10QaWebWriteEnabled } from '../app-state/stage10-qa-write-gate';
+import {readStage10QaCreateByOperation} from './stage10-qa-operation-recovery';
+import { stage10QaWebWriteEnabled,stage10UnificationSyntheticMirrorEnabled } from '../app-state/stage10-qa-write-gate';
+import { archiveMonetaryExpenseInSyntheticQa, Stage10SyntheticArchiveError } from './stage10-synthetic-archive';
 import { updateStage10QaMonetaryExpense,Stage10QaEditError } from './stage10-qa-financial-edit';
 import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
@@ -41,6 +43,7 @@ const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
+const expectedWorkspaceHeaderSchema = z.string().min(1).max(128).regex(/^[a-zA-Z0-9_-]+$/).optional();
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema, allowDuplicate: z.boolean().optional() });
 const settleLegacyEventRequestSchema = z.object({
@@ -118,12 +121,15 @@ function validationError(reply: FastifyReply, details: unknown) {
 
 function eventError(reply: FastifyReply, error: unknown) {
   if (error instanceof FinancialEventMutationError) {
-    const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE'].includes(error.code) ? 409 : 400;
+    const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'WORKSPACE_CONTEXT_CHANGED'].includes(error.code) ? 409 : 400;
     return reply.code(status).send({ error: error.code, ...(error.details || {}) });
   }
   if (!(error instanceof Error)) throw error;
+  if (error.message === 'WORKSPACE_ACCESS_REQUIRED') return reply.code(403).send({error:'WORKSPACE_ACCESS_REQUIRED'});
   if (error.message === 'FINANCIAL_EVENT_NOT_FOUND') return reply.code(404).send({ error: error.message });
-  if (error.message === 'FINANCIAL_EVENT_LINKED_DOMAIN') return reply.code(409).send({ error: error.message });
+  if (['FINANCIAL_EVENT_LINKED_DOMAIN', 'FINANCIAL_EVENT_REVERSAL_REQUIRES_CANONICAL_WRITER'].includes(error.message)) {
+    return reply.code(409).send({ error: error.message, retryable: false });
+  }
   if (['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
     return reply.code(400).send({ error: error.message });
   }
@@ -138,8 +144,10 @@ function settlementError(reply: FastifyReply, error: unknown) {
 
 function transferError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof FinancialTransferError)) throw error;
-  const status = ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE'].includes(error.code) ? 409 : 400;
-  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+  const denied = error.code === 'TRANSFER_WORKSPACE_WRITE_REQUIRED';
+  const conflict = ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE'].includes(error.code);
+  const status = denied ? 403 : conflict ? 409 : 400;
+  return reply.code(status).send({ error: error.code, ...(denied ? { retryable: false } : {}), ...(error.details || {}) });
 }
 
 function catalogError(reply: FastifyReply, error: unknown) {
@@ -162,11 +170,64 @@ async function financialDataOwnerId(userId: string) {
 
 export async function financeRoutes(app: FastifyInstance) {
   registerPhoenixPreviewReads(app);
+  // Experimental endpoint. Registered only against an ephemeral, local PG17
+  // identity. No production access or Android rollout is authorized.
+  if(stage10UnificationSyntheticMirrorEnabled()){
+    app.post('/events/:id/stage10-synthetic-archive-v2',
+      {preHandler:app.authorize([...adminRoles])},async(request,reply)=>{
+      if(!stage10UnificationSyntheticMirrorEnabled()){
+        return reply.code(403).send({error:'SYNTHETIC_ARCHIVE_DB_REQUIRED'});
+      }
+      const parsed=z.object({
+        operationId:z.guid(),
+        expectedUpdatedAt:z.string().datetime({offset:true}),
+        expectedRevision:z.number().int().nonnegative(),
+      }).strict().safeParse(request.body);
+      if(!parsed.success)return validationError(reply,parsed.error.flatten());
+      const {id}=request.params as {id:string};
+      try {
+        return await archiveMonetaryExpenseInSyntheticQa(request.user.sub,id,parsed.data);
+      }catch(error){
+        if(!(error instanceof Stage10SyntheticArchiveError))throw error;
+        const status=error.code==='ARCHIVE_EVENT_NOT_FOUND_OR_ARCHIVED'?404:
+          error.code==='ARCHIVE_WORKSPACE_ROLE_REQUIRED'?403:
+          error.code==='INVALID_ARCHIVE_REQUEST'?400:409;
+        return reply.code(status).send({error:error.code,retryable:false});
+      }
+    });
+  }
   if(stage10QaWebWriteEnabled()){
+    // PT90: readback estritamente QA por identidade; nunca reexecuta o POST.
+    app.get('/events/stage10-qa-operation/:operationId',
+      {preHandler:app.authorize(['ADMIN'])},async(request,reply)=>{
+      if(!stage10QaWebWriteEnabled())return reply.code(403).send({error:'STAGE10_QA_WRITE_DISABLED'});
+      // Role global ADMIN nao substitui permissao ADMIN no workspace ativo.
+      // Esta rota de diagnostico nao pode inicializar workspace legado.
+      let workspace;
+      try{
+        workspace=await resolveWorkspaceContext(request.user.sub,{allowLegacyBootstrap:false});
+      }catch(error){
+        if(error instanceof Error && error.message==='WORKSPACE_ACCESS_REQUIRED'){
+          return reply.code(403).send({error:'WORKSPACE_ACCESS_REQUIRED'});
+        }
+        throw error;
+      }
+      if(workspace.membership.role!=='ADMIN'){
+        return reply.code(403).send({error:'STAGE10_QA_WORKSPACE_ADMIN_REQUIRED'});
+      }
+      reply.header('Cache-Control','private, no-store');
+      const params=z.object({operationId:z.guid()}).safeParse(request.params);
+      const query=z.object({month:monthSchema}).safeParse(request.query);
+      if(!params.success||!query.success)return validationError(reply,{
+        params:params.success?null:params.error.flatten(),
+        query:query.success?null:query.error.flatten(),
+      });
+      return readStage10QaCreateByOperation(request.user.sub,params.data.operationId,query.data.month);
+    });
     app.patch('/events/:id/stage10-qa-edit', {preHandler:app.authorize(['ADMIN'])},async(request,reply)=>{
       if(!stage10QaWebWriteEnabled())return reply.code(403).send({error:'STAGE10_QA_WRITE_DISABLED'});
       const parsed=z.object({
-        operationId:z.string().uuid(),
+        operationId:z.guid(),
         expectedUpdatedAt:z.string().datetime({offset:true}),
         expectedRevision:z.number().int().nonnegative(),
         description:z.string().trim().min(1).max(160),
@@ -414,9 +475,13 @@ export async function financeRoutes(app: FastifyInstance) {
 
   app.post('/events', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = createEventRequestSchema.safeParse(request.body);
-    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const expected = expectedWorkspaceHeaderSchema.safeParse(request.headers['x-meg-expected-workspace-id']);
+    if (!parsed.success || !expected.success) return validationError(reply, {
+      body: parsed.success ? undefined : parsed.error.flatten(),
+      workspaceHeader: expected.success ? undefined : expected.error.flatten(),
+    });
     try {
-      return reply.code(201).send(await createFinancialEventProtected(request.user.sub, parsed.data));
+      return reply.code(201).send(await createFinancialEventProtected(request.user.sub, parsed.data, expected.data));
     } catch (error) {
       return eventError(reply, error);
     }

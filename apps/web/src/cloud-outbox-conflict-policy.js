@@ -24,12 +24,17 @@ export function decideLegacyOutboxRejection(status, payload) {
   const code = payload && typeof payload === 'object' && !Array.isArray(payload)
     && typeof payload.error === 'string' ? payload.error : '';
   if (status === 409) {
-    // Codigo de revisao reconhecido prevalece mesmo diante de flags ausentes.
-    if (REVISION.has(code)) return { action: 'retry-after-refresh', code };
-    if (PERMANENT.has(code) || (code && payload?.retryable === false)) {
-      return { action: 'manual-resolution-required', code };
+    // A API pode adicionar novos conflitos financeiros antes que um Android
+    // instalado seja atualizado. Somente codigos conhecidos de revisao podem
+    // repetir automaticamente; qualquer outro 409 deve falhar fechado.
+    // Uma recusa explicita retryable:false nunca vira retry, mesmo se o nome
+    // da falha pertencer ao conjunto de concorrencia.
+    if (payload?.retryable === false) {
+      return { action: 'manual-resolution-required', code: code || 'HTTP_409_NON_RETRYABLE' };
     }
-    return { action: 'retry-after-refresh', code };
+    if (PERMANENT.has(code)) return { action: 'manual-resolution-required', code };
+    if (REVISION.has(code)) return { action: 'retry-after-refresh', code };
+    return { action: 'manual-resolution-required', code: code || 'HTTP_409_UNKNOWN_CONFLICT' };
   }
   // Mutacoes invalidas ou recusadas nao devem sofrer retry automatico.
   if ([400, 403, 404, 422].includes(status)) {

@@ -26,7 +26,7 @@ function readSidebarPreference() {
 }
 
 export type ShellSection = 'home'|'launches';
-type ShellProps={children:ReactNode;periodLabel?:string;periodMonth?:string;onPeriodMonthChange?:(month:string)=>void;onGlobalSearch?:(query:string)=>void;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
+type ShellProps={children:ReactNode;periodLabel?:string;periodMonth?:string;onPeriodMonthChange?:(month:string)=>void;onGlobalSearch?:(query:string)=>void;onNewLaunch?:()=>void;activeSection?:ShellSection;onNavigate?:(section:ShellSection)=>void;profileName?:string;onLogout?:()=>void;logoutPending?:boolean};
 
 function shiftMonth(month:string,delta:number):string {
  const date=new Date(month+'-01T12:00:00Z');
@@ -80,7 +80,7 @@ function HeaderMonthPicker({label,month,onChange}:{label:string;month?:string;on
 export function AppShell(props:ShellProps){
  return <HomeDueAlertsProvider><AppShellView {...props}/></HomeDueAlertsProvider>;
 }
-function AppShellView({children,periodLabel,periodMonth,onPeriodMonthChange,onGlobalSearch,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
+function AppShellView({children,periodLabel,periodMonth,onPeriodMonthChange,onGlobalSearch,onNewLaunch,activeSection='home',onNavigate,profileName,onLogout,logoutPending=false}:ShellProps){
   const initials=profileName?.trim().split(/\s+/).filter(Boolean).map(s=>s[0]).filter(Boolean);
   const avatarInitials=initials?.length?(initials.length>1?initials[0]+initials[initials.length-1]:initials[0]):'MV';
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -316,6 +316,8 @@ function AppShellView({children,periodLabel,periodMonth,onPeriodMonthChange,onGl
               type="button"
               className="meg-topbar-launcher meg-topbar-new"
               aria-label="Novo lançamento"
+              onClick={onNewLaunch}
+              disabled={!onNewLaunch}
               data-tooltip="Novo lançamento"
               onMouseEnter={(event) => showTooltip(event, 'Novo lançamento', 'bottom')}
               onMouseLeave={hideTooltip}

@@ -3,12 +3,14 @@ import type {LaunchPeriod} from '../launches/period-scope';
 import {OperationalLaunches,type PrismReadData,type PrismReadOnlyCallbacks} from '../launches/OperationalLaunches';
 import type {QaLaunchTarget} from '../stage10/LaunchActionsQa';
 import {ExpenseForm,EMPTY_EXPENSE_DRAFT,type ExpenseCatalogs,type ExpenseDraft} from '../stage10/ExpenseForm';
+import type {HistoricalExpenseEditPayload} from './HistoricalExpenseWorkbenchEditor';
 import {PrismLaunchChoice,PrismCloseGlyph} from './PrismLaunchChoice';
 import {suggestionsFromCanonicalHistory} from '../stage10/autocomplete-history';
 import {readAuthorizedHistory} from '../launches/authorized-history';
 import {financeClient} from '../../app/finance-client';
 import {authenticatedRequest} from '../../app/auth-client';
 import {stage10LocalQaWriteOptIn,approvedQaCatalogs,toQaMonetaryExpense} from './stage10-qa-monetary-create';
+import {createStage10QaExpenseWithDurableReadback,pendingQaCreateForUser,recoverStage10QaCreateWithoutPayload} from './stage10-qa-durable-create';
 import {brlFromPasted,brlSignedDecimal} from '../stage10/brl-money-mask';
 import prismCssText from '../stage08-qa/prism-type-pilot.css?inline';
 import '../launches/new-launch.css';
@@ -92,10 +94,15 @@ export default function PrismOperationalLaunches({
  const [editId,setEditId]=useState<string|null>(null);
  const [notice,setNotice]=useState('');
  const [qaWriteReady,setQaWriteReady]=useState(false);
+ // Estabiliza onNew entre mudanças do gate. O efeito de leitura não pode
+ // reiniciar e desmontar o modal por mudança de identidade do callback.
+ const qaWriteReadyRef=useRef(false);
+ qaWriteReadyRef.current=qaWriteReady;
+ const [historicalWorkbenchReady,setHistoricalWorkbenchReady]=useState(false);
  const [qaSaving,setQaSaving]=useState(false);
  const [writeRefreshRevision,setWriteRefreshRevision]=useState(0);
  const qaSavingRef=useRef(false);
- const lastWriteRef=useRef<{fingerprint:string;operationId:string}|null>(null);
+ const recoveryForUserRef=useRef<string|null>(null);
  const lastEditRef=useRef<{fingerprint:string;operationId:string}|null>(null);
 
  useEffect(()=>{
@@ -131,6 +138,45 @@ export default function PrismOperationalLaunches({
    .catch(()=>{if(!cancelled)setQaWriteReady(false);});
   return()=>{cancelled=true;};
  },[readData,userId]);
+ useEffect(()=>{
+  setHistoricalWorkbenchReady(false);
+  if(!readData||import.meta.env.VITE_STAGE10_EDIT_WORKBENCH!=='true')return;
+  let cancelled=false;
+  void authenticatedRequest<{allowed:boolean;protocol:string}>(
+   '/finance/stage10-historical-write-gate',{cache:'no-store'}
+  ).then(gate=>{
+   if(!cancelled)setHistoricalWorkbenchReady(gate.allowed===true&&
+    gate.protocol==='stage10-historical-monetary-edit-v1');
+  }).catch(()=>{if(!cancelled)setHistoricalWorkbenchReady(false);});
+  return()=>{cancelled=true;};
+ },[readData,userId]);
+ // PT90: após reload, reconciliar somente por identidade/recibo canônico.
+ // Nenhum payload fica em localStorage e nenhuma tentativa POST é iniciada.
+ useEffect(()=>{
+  if(!qaWriteReady||!readData||recoveryForUserRef.current===userId)return;
+  recoveryForUserRef.current=userId;
+  if(!pendingQaCreateForUser(userId))return;
+  let cancelled=false;
+  qaSavingRef.current=true;setQaSaving(true);
+  setNotice('Verificando lançamento pendente na API QA, sem reenviar dados...');
+  void recoverStage10QaCreateWithoutPayload(userId).then(state=>{
+    if(cancelled)return;
+    if(state.phase==='confirmed'){
+      setOverlay(null);setWriteRefreshRevision(v=>v+1);
+      setNotice('Operação anterior confirmada por recibo e histórico canônico, sem novo POST ou reentrada dos campos.');
+    }else if(state.phase==='pending'){
+      setNotice('Operação anterior ainda pendente ('+state.reason+'). Identidade preservada. Só é permitido reenviar os dados originais, com a mesma chave.');
+    }else if(state.phase==='blocked'){
+      setNotice('Recuperação segura bloqueada ('+state.reason+'). Não criar outra operação até conciliação.');
+    }
+  }).catch(()=>{
+    if(!cancelled)setNotice('Não foi possível verificar a operação pendente. Não gere outra identidade.');
+  }).finally(()=>{
+    qaSavingRef.current=false;
+    if(!cancelled)setQaSaving(false);
+  });
+  return()=>{cancelled=true;};
+ },[qaWriteReady,readData,userId]);
  const editQaExpense=useCallback(async(draft:ExpenseDraft)=>{
   if(!qaWriteReady||!catalogs||!editId||qaSavingRef.current)return;
   const current=readDataRef.current?.events.find(item=>item.id===editId);
@@ -169,31 +215,71 @@ export default function PrismOperationalLaunches({
   }finally{qaSavingRef.current=false;setQaSaving(false);}
  },[qaWriteReady,catalogs,editId]);
 
+ const saveHistoricalWorkbenchExpense=useCallback(async(next:HistoricalExpenseEditPayload)=>{
+  if(!historicalWorkbenchReady||!editId||qaSavingRef.current){
+   throw new Error('Edição histórica ainda não autorizada pela API local.');
+  }
+  const current=readDataRef.current?.events.find(item=>item.id===editId);
+  if(!current||!current.legacyTransactionId||!current.updatedAt||
+   current.type!=='expense'||!['paid','planned'].includes(current.status)||
+   !current.accountId||!current.account||
+   !['checking','savings','cash'].includes(current.account.type)){
+   throw new Error('Este lançamento exige um editor financeiro específico.');
+  }
+  const fingerprint=JSON.stringify({id:editId,updatedAt:current.updatedAt,...next});
+  if(!lastEditRef.current||lastEditRef.current.fingerprint!==fingerprint){
+   if(!globalThis.crypto?.randomUUID)throw new Error('Identificador seguro indisponível.');
+   lastEditRef.current={fingerprint,operationId:globalThis.crypto.randomUUID()};
+  }
+  qaSavingRef.current=true;setQaSaving(true);
+  try{
+   const gate=await authenticatedRequest<{
+    allowed:boolean;protocol:string;revision:number;
+   }>('/finance/stage10-historical-write-gate',{cache:'no-store'});
+   if(!gate.allowed||gate.protocol!=='stage10-historical-monetary-edit-v1'||
+    !Number.isSafeInteger(gate.revision))throw new Error('Gate financeiro não autorizado.');
+   const saved=await authenticatedRequest<{
+    id:string;legacyTransactionId:string;revision:number;updatedAt:string;
+   }>('/finance/events/'+encodeURIComponent(editId)+'/stage10-historical-edit',{
+    method:'PATCH',
+    body:JSON.stringify({
+     ...next,operationId:lastEditRef.current!.operationId,
+     expectedUpdatedAt:current.updatedAt,expectedRevision:gate.revision,
+    }),
+   });
+   if(saved.id!==editId||saved.legacyTransactionId!==current.legacyTransactionId||
+    saved.revision!==gate.revision+1)throw new Error('A API não confirmou a edição.');
+   lastEditRef.current=null;
+   setOverlay(null);setEditId(null);setWriteRefreshRevision(v=>v+1);
+   setNotice('Alteração financeira salva e confirmada no banco local de homologação.');
+  }finally{qaSavingRef.current=false;setQaSaving(false);}
+ },[historicalWorkbenchReady,editId]);
  const createQaExpense=useCallback(async(draft:ExpenseDraft)=>{
   if(!qaWriteReady||!catalogs||qaSavingRef.current)return;
   try {
    const payload=toQaMonetaryExpense(draft,catalogs);
-   const fingerprint=JSON.stringify(payload);
-   const previous=lastWriteRef.current;
-   if(!previous||previous.fingerprint!==fingerprint){
-    if(!globalThis.crypto?.randomUUID)throw new Error('STAGE10_QA_UUID_INDISPONIVEL');
-    lastWriteRef.current={fingerprint,operationId:globalThis.crypto.randomUUID()};
-   }
-   qaSavingRef.current=true;setQaSaving(true);setNotice('');
+   qaSavingRef.current=true;setQaSaving(true);
+   setNotice('Registrando operação QA com identidade durável e conferência canônica…');
    const gate=await authenticatedRequest<{protocol:string;allowed:boolean}>('/app-state/stage10-qa-write-gate',{cache:'no-store'});
    if(!gate.allowed||gate.protocol!=='meg-stage10-qa-transactional-mirror-v1'){
     throw new Error('STAGE10_QA_GATE_NAO_AUTORIZADO');
    }
-   const saved=await financeClient.createEvent({...payload,operationId:lastWriteRef.current!.operationId});
-   if(!saved?.id||saved.legacyTransactionId!==saved.id){
-    throw new Error('STAGE10_QA_ESPELHO_NAO_CONFIRMADO');
+   const result=await createStage10QaExpenseWithDurableReadback(payload,userId);
+   if(result.phase==='confirmed'){
+    setOverlay(null);setWriteRefreshRevision(v=>v+1);
+    setNotice('Lançamento confirmado na API QA e relido pelo identificador exato no histórico canônico. Identidade de operação liberada.');
+   }else if(result.phase==='pending'){
+    setNotice('Gravação QA ainda não reconciliada ('+result.reason+'). A operação original foi preservada neste navegador. Não crie outro lançamento: confira o mesmo formulário para retomar com a mesma chave.');
+   }else if(result.phase==='blocked'){
+    setNotice('Gravação QA bloqueada ('+result.reason+'). Nenhuma nova tentativa foi iniciada sem reconciliação segura.');
+   }else{
+    setNotice('Gravação QA sem estado final. Não gerar nova operação até revisão.');
    }
-   lastWriteRef.current=null;
-   setOverlay(null);setWriteRefreshRevision(v=>v+1);setNotice('Lançamento confirmado na base QA e no espelho financeiro.');
   }catch(error){
-   setNotice(error instanceof Error?error.message:'Falha ao confirmar gravação. Os dados do formulário foram preservados.');
+   setNotice('Confirmação QA não comprovada. Não repita com novos dados até reconciliar a operação pendente. Detalhe: '+
+     (error instanceof Error?error.message:'erro desconhecido'));
   }finally{qaSavingRef.current=false;setQaSaving(false);}
- },[qaWriteReady,catalogs]);
+ },[qaWriteReady,catalogs,userId]);
  // Full historical suggestions are fetched only after the user types a query.
  // Never label the selected month's records as a complete lifetime snapshot.
  const searchHistorySuggestions=useCallback(async(query:string,signal:AbortSignal)=>{
@@ -210,10 +296,14 @@ export default function PrismOperationalLaunches({
  },[]);
  const editDraft=useMemo(()=>readData&&catalogs&&editId?
   existingExpenseDraft(readData,catalogs,editId):null,[readData,catalogs,editId]);
+ const editedEvent=useMemo(()=>readData?.events.find(e=>e.id===editId),[readData,editId]);
 
  const startNew=useCallback(()=>{
-  setNotice('');setEditId(null);lastWriteRef.current=null;setOverlay('choice');
- },[]);
+  setNotice(qaWriteReadyRef.current&&pendingQaCreateForUser(userId)
+    ? 'Há uma gravação anterior pendente neste navegador QA. Refaça exatamente os mesmos dados para reconciliar com o mesmo identificador, sem gerar duplicidade.'
+    : '');
+  setEditId(null);setOverlay('choice');
+ },[userId]);
  const startEdit=useCallback((row:QaLaunchTarget)=>{
   lastEditRef.current=null;
   const current=readDataRef.current;
@@ -242,7 +332,7 @@ export default function PrismOperationalLaunches({
   }
  },[initialNew,readData,startNew,onInitialNewConsumed]);
 
- return <div data-meg-operational-prism={qaWriteReady?'isolated-qa-financial-write':'read-only'}>
+ return <div data-meg-operational-prism={historicalWorkbenchReady?'isolated-historical-expense-edit':qaWriteReady?'isolated-qa-financial-write':'read-only'}>
   <OperationalLaunches key={'stage10-qa-write-'+writeRefreshRevision} userId={userId} userName={userName} onHome={onHome}
    periodMonth={periodMonth} onPeriodChange={onPeriodChange}
     periodSelection={periodSelection} onPeriodSelectionChange={onPeriodSelectionChange} globalSearch={globalSearch} prismReadOnlyCallbacks={callbacks}/>
@@ -266,14 +356,32 @@ export default function PrismOperationalLaunches({
    catalogs={catalogs} searchHistorySuggestions={searchHistorySuggestions}
    readOnlyRealData={!qaWriteReady} saveEnabled={qaWriteReady&&!qaSaving}
    onRequestSave={createQaExpense} onBack={()=>setOverlay('choice')}/>}
-  {overlay==='edit'&&catalogs&&editDraft&&<ExpenseForm
+  {overlay==='edit'&&historicalWorkbenchReady&&editedEvent&&catalogs&&editDraft&&<ExpenseForm
+   key={'historical-canonical-'+editedEvent.id} mode="edit" catalogs={catalogs}
+   initialDraft={editDraft} historicalRestricted readOnlyRealData={false}
+   saveEnabled={!qaSaving}
+   onRequestSave={draft=>{
+    const current=existingExpenseDraft(readData!,catalogs,editedEvent.id);
+    if(!current||draft.categoryId!==current.categoryId||draft.accountId!==current.accountId||
+     draft.paymentMethodId!==current.paymentMethodId||draft.modality!==current.modality||
+     draft.date!==current.date||draft.requestedStatus!==current.requestedStatus||
+     draft.creditCardId!==current.creditCardId||draft.installmentsInput!==current.installmentsInput){
+     setNotice('Campo financeiro protegido: alteração não homologada. Nenhum dado foi salvo.');return;
+    }
+    const amount=Number(draft.amountInput);
+    if(!Number.isFinite(amount)||amount<=0){setNotice('Valor inválido para a edição histórica.');return;}
+    void saveHistoricalWorkbenchExpense({description:draft.description,notes:draft.notes,amount})
+     .catch(error=>setNotice(error instanceof Error?error.message:'Falha na edição histórica.'));
+   }}
+   onBack={()=>{setOverlay(null);setEditId(null);}}/>}
+  {overlay==='edit'&&!historicalWorkbenchReady&&catalogs&&editDraft&&<ExpenseForm
    key={'prism-read-'+editId} mode="edit" catalogs={catalogs}
    initialDraft={editDraft} searchHistorySuggestions={searchHistorySuggestions}
    readOnlyRealData={!qaWriteReady} saveEnabled={qaWriteReady&&!qaSaving
      &&readData?.events.find(event=>event.id===editId)?.sourcePayload?.__megStage10QaSource==='web-monetary-create-v1'}
    onRequestSave={editQaExpense}
    onBack={()=>{setOverlay(null);setEditId(null);}}/>}
-  {overlay==='edit'&&!editDraft&&<div role="alert">
+  {overlay==='edit'&&((historicalWorkbenchReady&&(!editedEvent||!editDraft))||(!historicalWorkbenchReady&&!editDraft))&&<div role="alert">
    O lançamento não pode ser representado com segurança no editor. Nenhum valor foi estimado.
    <button type="button" onClick={()=>{setOverlay(null);setEditId(null);}}>Fechar</button>
   </div>}

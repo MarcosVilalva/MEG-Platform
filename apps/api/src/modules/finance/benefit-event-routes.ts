@@ -27,10 +27,15 @@ function validationError(reply: FastifyReply, details: unknown) {
 
 function benefitError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof BenefitEventMutationError)) throw error;
-  const status = ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'INSUFFICIENT_BENEFIT_BALANCE', 'FINANCIAL_EVENT_STALE_VERSION'].includes(error.code) ? 409
+  const status = error.code === 'BENEFIT_WORKSPACE_WRITE_REQUIRED' ? 403
+    : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'INSUFFICIENT_BENEFIT_BALANCE', 'FINANCIAL_EVENT_STALE_VERSION'].includes(error.code) ? 409
     : error.code === 'BENEFIT_EVENT_NOT_FOUND' ? 404
       : 400;
-  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+  return reply.code(status).send({
+    error: error.code,
+    ...(status === 403 ? { retryable: false } : {}),
+    ...(error.details || {}),
+  });
 }
 
 export async function financeBenefitEventRoutes(app: FastifyInstance) {

@@ -99,8 +99,9 @@ REVOKE USAGE, SELECT ON SEQUENCES
 FROM anon, authenticated, service_role;
 
 -- PostgreSQL concede EXECUTE de funções a PUBLIC por padrão; removemos esse default
--- para evitar uma futura RPC pública por acidente.
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+-- globalmente para evitar uma futura RPC pública por acidente. Uma revogação
+-- por esquema não retira um privilégio concedido no nível global dos defaults.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres
 REVOKE EXECUTE ON FUNCTIONS
 FROM PUBLIC;
 

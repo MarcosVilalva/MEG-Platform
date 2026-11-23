@@ -41,8 +41,15 @@ export function decideStage10WriteConflict(
     return { action: 'verify-server-receipt', code, preserveOutbox: true };
   }
 
-  if (status === 409 && REVISION_RETRYABLE.has(code) && attemptsAfterRefresh < 3) {
-    // Somente após releitura de revisão, até 3 tentativas no fluxo atual.
+  const serverForbidsRetry = Boolean(payload && typeof payload === 'object'
+    && !Array.isArray(payload)
+    && (payload as { retryable?: unknown }).retryable === false);
+
+  if (status === 409 && !serverForbidsRetry
+    && REVISION_RETRYABLE.has(code) && attemptsAfterRefresh < 3) {
+    // Mesmo um conflito de revisao conhecido nao pode contrariar
+    // a recusa explicita do servidor (retryable: false).
+    // Somente apos releitura de revisao, ate 3 tentativas no fluxo atual.
     return { action: 'refresh-and-retry-bounded', code, preserveOutbox: true };
   }
 

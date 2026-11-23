@@ -258,6 +258,12 @@ function persistOutbox(operations) {
   if (!hasTransactionOperations(operations) || !globalThis.localStorage?.setItem) return readOutbox();
   const current = readOutbox();
   const merged = mergeTransactionOutbox(current, operations);
+  // Uma segunda captura da MESMA intencao nao pode criar nova chave de
+  // idempotencia. So um payload efetivamente diferente inicia operacao nova.
+  if (current.operationId
+    && sameValue(current.upserts, merged.upserts)
+    && sameValue(current.deletes, merged.deletes)
+    && sameValue(current.activities, merged.activities)) return current;
   const next = {
     generation: current.generation + 1,
     operationId: createOperationId(),

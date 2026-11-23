@@ -73,8 +73,8 @@ assert.match(source, /aria-expanded=\{!sidebarCollapsed\}/);
 assert.match(source, /className="meg-topbar-launcher meg-topbar-new"/);
 assert.match(source, /aria-label="Novo lançamento"/);
 assert.match(source, /className="meg-nav-item meg-logout-button"/);
-assert.match(source, /aria-label="Sair"/);
-assert.match(source, /<span>Sair<\/span>/);
+assert.match(source, /aria-label=\{logoutPending\s*\?\s*'Encerrando sessão'\s*:\s*'Sair'\}/);
+assert.match(source, /<span>\{logoutPending\s*\?\s*'Saindo\.\.\.'\s*:\s*'Sair'\}<\/span>/);
 assert.match(source, /\.meg-topbar-launchers\s*\{[\s\S]*display:\s*inline-flex[\s\S]*gap:\s*8px/);
 assert.match(source, /\.meg-topbar-launcher\s*\{[\s\S]*width:\s*46px;[\s\S]*height:\s*46px[\s\S]*border-radius:\s*12px/);
 assert.match(source, /\.meg-topbar-new\s*\{[\s\S]*border-color:\s*rgba\(20, 227, 200, \.62\)/);
@@ -89,7 +89,7 @@ assert.equal(source.includes('.meg-sidebar-control'), false, 'old sidebar footer
 assert.equal(source.includes('.meg-sidebar-toggle {'), false, 'floating sidebar toggle must not exist');
 
 assert.match(source, /aria-label="Navegação principal"/);
-assert.match(source, /Buscar movimentações, contas, cartões, relatórios\.\.\./);
+assert.match(source, /placeholder="Buscar no histórico de lançamentos ativos\.\.\."/);
 assert.match(source, /Marcos de Andrade Vilalva/);
 assert.equal(source.includes('meg-sidebar-lockup.svg'), false);
 assert.equal(source.includes('meg-finance-symbol-transparent.svg'), false);
@@ -118,7 +118,7 @@ assert.match(source, /\.meg-topbar-actions\s*\{[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period\s*\{[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*white-space:\s*nowrap/);
 
-assert.match(source, /Outubro&nbsp;de&nbsp;2026/);
+assert.match(source, /<HeaderMonthPicker label=\{periodLabel\s*\|\|\s*'Mês atual'\}/);
 assert.match(source, /\.meg-period\s*\{[\s\S]*width:\s*max-content;[\s\S]*min-width:\s*11\.75rem;[\s\S]*white-space:\s*nowrap/);
 assert.match(source, /\.meg-period span\s*\{[\s\S]*display:\s*inline-block;[\s\S]*min-width:\s*max-content;[\s\S]*white-space:\s*nowrap/);
 
@@ -126,7 +126,7 @@ assert.match(source, /data-tooltip=\{label\}/);
 assert.match(source, /data-tooltip="Sair"/);
 assert.match(source, /data-tooltip=\{sidebarCollapsed \? 'Expandir menu' : 'Recolher menu'\}/);
 assert.match(source, /data-tooltip="Novo lançamento"/);
-assert.match(source, /data-tooltip="Notificações"/);
+assert.match(source, /<HomeDueAlertsBell\s*\/>/);
 assert.match(source, /createPortal/);
 assert.match(source, /className=\{`meg-global-tooltip is-\$\{tooltip\.placement\}`\}/);
 assert.match(source, /role="tooltip"/);
@@ -150,7 +150,7 @@ assert.match(source, /container-name:\s*meg-shell-body/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search\s*\{[\s\S]*width:\s*46px;[\s\S]*max-width:\s*46px/);
 assert.match(source, /@container meg-shell-body \(max-width:\s*40rem\)[\s\S]*\.meg-search input\s*\{[\s\S]*width:\s*0;[\s\S]*opacity:\s*0/);
-assert.match(source, /aria-label="Buscar"/);
+assert.match(source, /aria-label="Buscar lançamentos"/);
 
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav,[\s\S]*flex:\s*1\s+1\s+auto;[\s\S]*min-height:\s*0;[\s\S]*justify-content:\s*space-evenly;[\s\S]*gap:\s*clamp\(2px, \.8vh, 6px\)/);
 assert.match(source, /@media \(max-height:\s*767px\)[\s\S]*\.meg-nav-item,[\s\S]*height:\s*clamp\(34px, 6\.2vh, 42px\)/);
