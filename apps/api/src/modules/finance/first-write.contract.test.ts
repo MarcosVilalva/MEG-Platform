@@ -32,8 +32,8 @@ assert.match(mutation, /isUniqueConflict\(error\)/,
   'Conflito concorrente deve reler o recibo vencedor após rollback.');
 assert.match(mutation, /prisma\.cloudMutationReceipt\.findUnique/,
   'Replay concorrente deve consultar o recibo já confirmado fora da transação revertida.');
-assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId\)/,
-  'Todo novo evento deve resolver o workspace financeiro.');
+assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId,\s*expectedWorkspaceId \? \{allowLegacyBootstrap:false\} : \{\}\)/,
+  'Novo evento com workspace fixo deve impedir bootstrap legado e preservar isolamento.');
 assert.match(mutation, /workspaceId: workspace\.workspaceId/,
   'Todo novo evento deve persistir o workspace resolvido.');
 assert.match(mutation, /FINANCIAL_EVENT_CREATED/,
