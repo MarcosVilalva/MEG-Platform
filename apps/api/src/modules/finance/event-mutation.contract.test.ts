@@ -23,8 +23,8 @@ assert.match(mutation, /FINANCIAL_EVENT_CREATE/,
   'Criação de evento deve registrar recibo de idempotência próprio.');
 assert.match(mutation, /FINANCIAL_EVENT_CREATED/,
   'Criação de evento deve registrar auditoria financeira estrutural.');
-assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId\)/,
-  'Todo novo evento deve resolver o workspace mesmo sem operationId.');
+assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId,\s*expectedWorkspaceId \? \{allowLegacyBootstrap:false\} : \{\}\)/,
+  'Novo evento sem workspace fixo preserva o bootstrap legado; com workspace fixo exige escopo explícito.');
 assert.match(mutation, /workspaceId: workspace\.workspaceId/,
   'Todo novo evento deve persistir o workspace financeiro resolvido.');
 assert.match(mutation, /TRANSFER_CONTRACT_NOT_READY/,
