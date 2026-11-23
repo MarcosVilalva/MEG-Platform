@@ -100,3 +100,15 @@ jobs:
         run: |
           npm --workspace apps/api run test:rc1-financial-e2e
           echo 'STAGE10_P0_REMOTE_FINANCE_PG17=PASS'
+      - name: PT204 PT205 | HTTP real, JWT e PG17 isolado com dois workspaces
+        env:
+          MEG_STAGE10_PT204_SYNTHETIC: '1'
+          MEG_STAGE10_PT205_SYNTHETIC: '1'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = MarcosVilalva/MEG-Platform
+          export JWT_SECRET="$(openssl rand -hex 40)"
+          node --import tsx apps/api/src/modules/finance/stage10-pt204-properties-real-http.pg17.disposable.test.ts
+          node --import tsx apps/api/src/modules/finance/stage10-pt205-normalized-ids-real-jwt.pg17.disposable.test.ts
+          echo 'PT205_REMOTE_HTTP_JWT_PG17_COMBINED=PASS'
