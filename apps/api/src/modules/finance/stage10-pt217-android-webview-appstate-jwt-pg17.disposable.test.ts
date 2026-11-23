@@ -146,7 +146,7 @@ try {
   })()`), 'JWT_SESSION_IN_REAL_WEBVIEW');
   console.log('PT217_ANDROID_WEBVIEW_REAL_LOGIN_JWT=PASS');
 
-  const op = 'pt217-' + randomUUID();
+  const op = randomUUID();
   const transaction = {
     id: 'pt217-legacy-' + stamp, type: 'expense', status: 'paid', situation: 'PAGO',
     description: 'PT217 fictitious expense', date: '2026-11-23',
