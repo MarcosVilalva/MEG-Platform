@@ -141,6 +141,16 @@ async function setup(benefit, {
   definitions['../app/finance-client'] = definitions['../../app/finance-client'];
   definitions['./load-phoenix-read-model'] = readModel;
   definitions['./data/load-phoenix-read-model'] = readModel;
+  // Historico APK708 nao possui guarda IndexedDB Phoenix. A nova dependencia
+  // deve permanecer inacessivel nesse contrato. PT211/PT212 validam Android QA.
+  const noHistoricalIndexedDb = async () => {
+    throw new Error('UNEXPECTED_ANDROID_INDEXEDDB_IN_APK708_CHARACTERIZATION');
+  };
+  definitions['../../durable-outbox-store.js'] = {
+    readDurableOutboxStrict: noHistoricalIndexedDb,
+    protectDurableOutbox: noHistoricalIndexedDb,
+    deleteDurableOutboxIfOperationId: noHistoricalIndexedDb,
+  };
   const activeGatewaySource = fixed
     ? readFileSync('apps/web/src/phoenix/data/phoenix-write-gateway.ts', 'utf8')
     : gatewaySource;
@@ -153,7 +163,9 @@ async function setup(benefit, {
     ),
     './data/phoenix-create-attempt-journal': new SourceTextModule(
       stripTypeScriptTypes(readFileSync('apps/web/src/phoenix/data/phoenix-create-attempt-journal.ts','utf8'), {mode:'transform'}),
-      { context },
+      { context, initializeImportMeta(meta) {
+        meta.env = { VITE_STAGE10_ANDROID_CONFIRMATION_QA: 'false' };
+      } },
     ),
   };
   const gateway = new SourceTextModule(stripTypeScriptTypes(activeGatewaySource, { mode: 'transform' }), {
