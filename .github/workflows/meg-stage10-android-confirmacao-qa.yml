@@ -13,6 +13,7 @@ on:
       - 'apps/api/src/modules/app-state/routes.ts'
       - 'apps/api/src/modules/app-state/stage10-qa-properties-atomic.ts'
       - 'apps/api/src/modules/finance/stage10-pt215-atomic-receipts-real-http.pg17.disposable.test.ts'
+      - 'apps/api/src/modules/finance/stage10-pt217-android-webview-appstate-jwt-pg17.disposable.test.ts'
       - 'apps/api/src/modules/finance/stage10-historical-review-report.ts'
       - 'apps/web/src/phoenix/simple-event-form-bridge.ts'
       - 'apps/web/src/phoenix/data/phoenix-write-gateway.ts'
