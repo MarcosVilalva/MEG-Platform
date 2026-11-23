@@ -17,6 +17,7 @@ on:
       - 'scripts/meg-stage10-*.sh'
       - 'scripts/meg-stage10-apk708-runtime.contract.mjs'
       - 'scripts/meg-stage10-android-emulator-smoke.mjs'
+      - 'scripts/meg-stage10-android-webview-indexeddb-recovery.mjs'
 
 permissions:
   contents: read
@@ -70,6 +71,8 @@ jobs:
           adb shell input keyevent 82
           adb install android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
           node scripts/meg-stage10-android-emulator-smoke.mjs
+          node scripts/meg-stage10-android-webview-indexeddb-recovery.mjs
+          echo 'PT210_ANDROID_QA_REAL_WEBVIEW_INDEXEDDB=PASS'
       - uses: actions/upload-artifact@v4
         with:
           name: meg-stage10-android-confirmacao-qa
