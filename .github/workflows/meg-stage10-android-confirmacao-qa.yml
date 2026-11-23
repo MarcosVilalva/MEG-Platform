@@ -29,7 +29,21 @@ permissions:
 jobs:
   build-qa-apk:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,6 +61,14 @@ jobs:
       - run: npm ci --audit=false --fund=false
       - name: Enforce unchanged full security gate before Android QA build
         run: node scripts/npm-security-audit.mjs --audit-level=high
+      - name: Prepare PG17 only in same temporary Android QA runner
+        env:
+          DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+          MEG_STAGE10_ISOLATED_PG: '1'
+        run: |
+          node -e "let u=new URL(process.env.DATABASE_URL); if(u.hostname!=='127.0.0.1'||u.username!=='meg_stage10_ci'||u.pathname!=='/meg_stage10_sandbox'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(1)"
+          npm run db:generate
+          npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
       - run: bash scripts/meg-stage10-build-android-qa.sh
       - name: Exercise the isolated APK in an Android emulator
         shell: bash
@@ -79,6 +101,8 @@ jobs:
           echo 'PT210_ANDROID_QA_REAL_WEBVIEW_INDEXEDDB=PASS'
           node scripts/meg-stage10-android-webview-phoenix-financial-qa.mjs
           echo 'PT211_ANDROID_QA_PHOENIX_FINANCIAL_SYNTHETIC=PASS'
+          DATABASE_URL='postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public' MEG_STAGE10_ISOLATED_PG=1 MEG_STAGE10_PT217_SYNTHETIC=1 MEG_STAGE10_WEB_WRITE_QA=0 NODE_ENV=test node --import tsx apps/api/src/modules/finance/stage10-pt217-android-webview-appstate-jwt-pg17.disposable.test.ts
+          echo 'PT217_SAME_JOB_ANDROID_WEBVIEW_FASTIFY_JWT_PG17=PASS'
       - uses: actions/upload-artifact@v4
         with:
           name: meg-stage10-android-confirmacao-qa
