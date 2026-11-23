@@ -184,20 +184,38 @@ try{
       };
     });
   })()`);
-  // ADB reverse faz loopback continuar acessivel quando CDP simula offline.
-  // Desligar o transporte QA de verdade, sem alterar Android ou API produtivos.
-  adb('reverse','--remove','tcp:3333');
-  reverse=false;
-  const offline=await evaluate(`(async()=>{
-    try{await fetch('http://127.0.0.1:3333/app-state',{cache:'no-store'});
-      return false;
-    }catch{return true;}
-  })()`);
-  assert.equal(offline,true,'ISSUE699_WEBVIEW_NETWORK_OFFLINE_NOT_ENFORCED');
-  assert.equal((await prisma.appState.findUniqueOrThrow({where:{workspaceId:work.id}})).revision,1);
-  console.log('ISSUE699_ANDROID_REAL_WEBVIEW_OFFLINE_PENDING_NOT_SENT=PASS');
-  adb('reverse','tcp:3333','tcp:3333');
-  reverse=true;
+  // Mesmo sem adb reverse, conexoes keep-alive do Android podem sobreviver.
+  // Intercepte a requisicao real no CDP WebView e force falha de rede antes
+  // de ela chegar ao backend. Nao se trata de response HTTP 409/5xx simulada.
+  let pausedRequests=0;
+  const failNetwork=({data}:MessageEvent)=>{
+    const event=JSON.parse(String(data));
+    if(event.method!=='Fetch.requestPaused'||!event.params?.requestId)return;
+    pausedRequests++;
+    ws!.send(JSON.stringify({
+      id:++nextId,method:'Fetch.failRequest',
+      params:{requestId:event.params.requestId,errorReason:'InternetDisconnected'},
+    }));
+  };
+  await cdp('Fetch.enable',{patterns:[{
+    urlPattern:'*127.0.0.1:3333/app-state*',requestStage:'Request',
+  }]});
+  ws!.addEventListener('message',failNetwork);
+  try{
+    const offline=await evaluate(`(async()=>{
+      try{await fetch('http://127.0.0.1:3333/app-state',
+        {cache:'no-store',signal:AbortSignal.timeout(5000)});
+        return false;
+      }catch{return true;}
+    })()`);
+    assert.equal(offline,true,'ISSUE699_WEBVIEW_NETWORK_OFFLINE_NOT_ENFORCED');
+    assert.ok(pausedRequests>0,'ISSUE699_OFFLINE_REQUEST_NOT_INTERCEPTED');
+    assert.equal((await prisma.appState.findUniqueOrThrow({where:{workspaceId:work.id}})).revision,1);
+    console.log('ISSUE699_ANDROID_REAL_WEBVIEW_OFFLINE_PENDING_NOT_SENT=PASS');
+  }finally{
+    await cdp('Fetch.disable');
+    ws?.removeEventListener('message',failNetwork);
+  }
 
   // Force-stop and relaunch REAL installed QA package, never Android stable.
   detach();
