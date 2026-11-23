@@ -84,6 +84,12 @@ jobs:
         run: npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
       - name: AppState financial authority contracts
         run: npm --workspace apps/api run test:app-state
+      - name: PT201 PT202 | Estado protegido após 409 e recuperação durável
+        run: |
+          node scripts/meg-stage10-state-outbox-409.contract.mjs
+          node scripts/meg-stage10-state-outbox-durable-recovery.contract.mjs
+          node apps/web/src/stage10-frozen-legacy-409-harness.test.js
+          echo 'PT202_P0_REMOTE_STATE_OUTBOX_CONTRACTS=PASS'
       - name: Canonical financial characterization contracts
         run: npm --workspace apps/api run test:finance
       - name: Credit and Verocard review remains fail closed

@@ -157,13 +157,14 @@ const retryScheduler = new Function('h', `
     readOutbox, hasTransactionOperations, hasStateOutbox, readStateOutbox,
     globalThis, flushImmediateSave, setSyncStatus,
     isCloudSessionReady, notifyPendingFailure, OUTBOX_RETRY_MS,
-    readOutboxConflict
+    readOutboxConflict, readStateOutboxConflict
   } = h;
   ${schedulerCode}
   return scheduleOutboxRetry;
 `)({
   readOutbox: () => ({ upserts: [{ id: 'qa-protected' }], deletes: [], activities: [] }),
   readOutboxConflict: () => schedulerParked,
+  readStateOutboxConflict: () => null,
   hasTransactionOperations: x => x.upserts.length > 0,
   hasStateOutbox: () => false,
   readStateOutbox: () => ({}),
