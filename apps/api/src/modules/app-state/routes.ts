@@ -478,9 +478,16 @@ export async function appStateRoutes(app: FastifyInstance) {
       ? current.state as Record<string, unknown>
       : null;
     const managedNormalization = currentState?.[NORMALIZATION_METADATA_KEY];
+    // PUT nao expressa exclusao: a ausencia de uma ID preserva o espelho atual.
+    // Arquivar exige PATCH /transactions com deletes explicitos e as guardas
+    // financeiras de synchronizeNormalizedRows, nunca omissao em PUT.
+    const transactions = currentState
+      ? applyTransactionPatch(currentState, parsed.data.state.transactions, []).transactions as typeof parsed.data.state.transactions
+      : parsed.data.state.transactions;
+    const partialPutState = { ...parsed.data.state, transactions };
     const nextState = managedNormalization
-      ? { ...parsed.data.state, [NORMALIZATION_METADATA_KEY]: managedNormalization }
-      : parsed.data.state;
+      ? { ...partialPutState, [NORMALIZATION_METADATA_KEY]: managedNormalization }
+      : partialPutState;
     const jsonState = nextState as Prisma.InputJsonValue;
     let normalization = { active: false, reconciled: false } as Awaited<ReturnType<typeof synchronizeNormalizedRows>>;
     let saved: { revision: number; updatedAt: Date };

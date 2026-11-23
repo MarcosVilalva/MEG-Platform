@@ -178,23 +178,52 @@ try {
     await snapshot(1,5);
     console.log('PT213_JWT_'+label.toUpperCase()+'_EDIT_DELETE_ROLLBACK=PASS');
   }
+  let currentRevision = 1;
   for (const label of protectedKinds) {
+    // Um PUT que omite evento vinculado NÃO pode arquivar ou apagar a ID.
     const omitted=[...original.entries()].filter(([name])=>name!==label).map(([,value])=>value);
-    await expectedDomainError(await put(1,omitted),'PUT archive '+label);
-    await snapshot(1,5);
+    const untouched=await put(currentRevision,omitted);
+    assert.equal(untouched.status,200, 'PUT omission '+label+' '+(await untouched.clone().text()));
+    const response=await untouched.json() as {normalization:{archived:number;updated:number;created:number}};
+    assert.equal(response.normalization.archived,0);
+    assert.equal(response.normalization.created,0);
+    currentRevision += 1;
+    await snapshot(currentRevision,5);
+    console.log('PT213_JWT_PUT_OMISSION_PRESERVES_'+label.toUpperCase()+'_FK=PASS');
   }
-  console.log('PT213_REAL_JWT_PUT_LINKED_DOMAIN_ROLLBACK=PASS');
+  console.log('PT213_REAL_JWT_PUT_OMISSION_ALL_FOUR_LINKED_DOMAINS=PASS');
 
   const unlinked = original.get('unlinked')!;
-  const accepted=await patch(1,[{...unlinked,description:'PT213 safe unlinked edit'}]);
+  const omitUnlinked=[...original.entries()].filter(([name])=>name!=='unlinked').map(([,value])=>value);
+  const untouchedUnlinked=await put(currentRevision,omitUnlinked);
+  assert.equal(untouchedUnlinked.status,200,'PUT omission unlinked '+(await untouchedUnlinked.clone().text()));
+  currentRevision += 1;
+  await snapshot(currentRevision,5);
+  console.log('PT213_REAL_JWT_PUT_OMISSION_UNLINKED_NOT_ARCHIVED=PASS');
+
+  const accepted=await patch(currentRevision,[{...unlinked,description:'PT213 safe unlinked edit'}]);
   assert.equal(accepted.status,200,
     accepted.status===200?'':await accepted.clone().text());
   assert.equal((await prisma.financialEvent.findUniqueOrThrow({
     where:{id:eventIds.get('unlinked')!},
   })).description,'PT213 safe unlinked edit');
-  await snapshot(2,5);
+  currentRevision += 1;
+  await snapshot(currentRevision,5);
   console.log('PT213_REAL_JWT_UNLINKED_UPDATE_NOT_OVERBLOCKED=PASS');
 
+  // Contraste: exclusão explícita por PATCH ainda arquiva APENAS o evento livre.
+  const explicit=await patch(currentRevision,[],[unlinked.id]);
+  assert.equal(explicit.status,200,'Explicit PATCH delete '+(await explicit.clone().text()));
+  const afterExplicit=await prisma.financialEvent.findUniqueOrThrow({where:{id:eventIds.get('unlinked')!}});
+  assert.ok(afterExplicit.archivedAt instanceof Date);
+  assert.equal(afterExplicit.id,eventIds.get('unlinked'));
+  assert.equal((await get()).state.transactions.length,4);
+  for (const label of protectedKinds) {
+    const e=await prisma.financialEvent.findUniqueOrThrow({where:{id:eventIds.get(label)!}});
+    assert.equal(e.archivedAt,null);
+    assert.equal(e.id,eventIds.get(label));
+  }
+  console.log('PT213_EXPLICIT_PATCH_ONLY_ARCHIVES_UNLINKED=PASS');
   console.log('PT213_ALL_FOUR_FK_DOMAINS_HTTP_JWT_PG17_GATE=PASS');
 } finally {
   if (started) await app.close();

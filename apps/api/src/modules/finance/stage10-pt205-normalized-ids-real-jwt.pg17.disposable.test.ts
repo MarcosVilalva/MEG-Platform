@@ -140,15 +140,50 @@ try {
   assert.equal((await getState(ownerHeader)).revision,3);
   console.log('PT205_REAL_JWT_PUT_PRESERVES_EVENT_ID=PASS');
 
+  // #698: sincronizações PUT concorrentes com a MESMA revisão devem gravar
+  // uma única alteração, sem recriar FinancialEvent nem perder FKs.
+  const intentA={...edited,description:'PT205 concorrente A'};
+  const intentB={...edited,description:'PT205 concorrente B'};
+  const concurrent=await Promise.all([
+    put(ownerHeader,3,[intentA]),
+    put(ownerHeader,3,[intentB]),
+  ]);
+  assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,409],
+    'PUT concorrente deve aceitar apenas uma revisão e retornar 409 na outra');
+  const winner=concurrent[0].status===200?intentA:intentB;
+  const afterRace=await prisma.financialEvent.findUniqueOrThrow({where:{id:event.id}});
+  assert.equal(afterRace.description,winner.description);
+  assert.equal(afterRace.id,event.id);
+  assert.equal(afterRace.categoryId,category.id);
+  assert.equal(afterRace.paymentMethodId,method.id);
+  assert.equal(await prisma.financialEvent.count({where:{workspaceId:ws.id,legacyTransactionId:legacyId}}),1);
+  assert.equal((await getState(ownerHeader)).revision,4);
+  console.log('PT205_REAL_JWT_CONCURRENT_PUT_ONE_WINNER_NO_DUPLICATES=PASS');
+
+  // #698: reexecutar a sincronização já aceita não pode tocar no evento.
+  const repeat=await put(ownerHeader,4,[winner]);
+  assert.equal(repeat.status,200,repeat.status===200?'':await repeat.clone().text());
+  const repeatBody=await repeat.json() as {normalization:{updated:number;created:number;archived:number}};
+  assert.equal(repeatBody.normalization.updated,0);
+  assert.equal(repeatBody.normalization.created,0);
+  assert.equal(repeatBody.normalization.archived,0);
+  const afterRepeat=await prisma.financialEvent.findUniqueOrThrow({where:{id:event.id}});
+  assert.equal(afterRepeat.updatedAt.getTime(),afterRace.updatedAt.getTime());
+  assert.equal(afterRepeat.id,event.id);
+  assert.equal(afterRepeat.categoryId,category.id);
+  assert.equal(afterRepeat.paymentMethodId,method.id);
+  assert.equal((await getState(ownerHeader)).revision,5);
+  console.log('PT205_REAL_JWT_REEXECUTION_NO_FINANCIAL_EVENT_CHANGE=PASS');
+
   await prisma.ledgerEntry.create({data:{
     eventId:event.id,accountId:account.id,date:event.date,debit:0,credit:12.35,
     memo:'PT205 ledger ficcional',
   }});
-  const linked=await patch(ownerHeader,3,[{...edited,description:'Nao alterar ledger'}]);
+  const linked=await patch(ownerHeader,5,[{...winner,description:'Nao alterar ledger'}]);
   assert.equal(linked.status,409);
   assert.equal((await linked.json() as {error:string}).error,
     'NORMALIZATION_LINKED_EVENT_REQUIRES_CANONICAL_WRITER');
-  assert.equal((await getState(ownerHeader)).revision,3);
+  assert.equal((await getState(ownerHeader)).revision,5);
   assert.equal(await prisma.ledgerEntry.count({where:{eventId:event.id}}),1);
   const final=await prisma.financialEvent.findUniqueOrThrow({where:{id:event.id}});
   assert.equal(final.id,event.id);
