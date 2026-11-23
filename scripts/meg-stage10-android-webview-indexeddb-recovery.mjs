@@ -142,6 +142,7 @@ let firstSuccess=false,restartSuccess=false,clean=false;
 try{
   adb('shell','am','start','-n',activity);
   await connect();
+  await until(()=>evaluate("(()=>{try{return location.origin==='https://localhost' && document.readyState==='complete' && typeof localStorage.getItem==='function'}catch{return false}})()"),'STABLE_QA_WEBVIEW_ORIGIN_AND_STORAGE');
   const first=await evaluate(code(1));
   assert.deepEqual(first,{
     protected:true,markerCode:'OPERATION_ID_REUSED',
@@ -154,6 +155,7 @@ try{
   await delay(900);
   adb('shell','am','start','-n',activity);
   await connect();
+  await until(()=>evaluate("(()=>{try{return location.origin==='https://localhost' && document.readyState==='complete' && typeof localStorage.getItem==='function'}catch{return false}})()"),'STABLE_QA_WEBVIEW_ORIGIN_AND_STORAGE');
   const second=await evaluate(code(2));
   assert.equal(second.stateBefore,first.operationId);
   assert.equal(second.markerBefore,'OPERATION_ID_REUSED');

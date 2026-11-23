@@ -166,6 +166,7 @@ let firstPassed=false,lastPassed=false;
 try{
  adb('shell','am','start','-n',activity);
  await connect();
+  await until(()=>evaluate("(()=>{try{return location.origin==='https://localhost' && document.readyState==='complete' && typeof localStorage.getItem==='function'}catch{return false}})()"),'STABLE_QA_WEBVIEW_ORIGIN_AND_STORAGE');
  const first=await evaluate(phase(1));
  assert.equal(first.loss,true);assert.equal(first.guard,true);assert.equal(first.requests,1);
  firstPassed=true;
@@ -176,6 +177,7 @@ try{
  await delay(1000);
  adb('shell','am','start','-n',activity);
  await connect();
+  await until(()=>evaluate("(()=>{try{return location.origin==='https://localhost' && document.readyState==='complete' && typeof localStorage.getItem==='function'}catch{return false}})()"),'STABLE_QA_WEBVIEW_ORIGIN_AND_STORAGE');
  const second=await evaluate(phase(2,first.operationId));
  assert.equal(second.replayed,true);assert.equal(second.readback,true);
  assert.equal(second.clean,true);assert.equal(second.requests,1);
