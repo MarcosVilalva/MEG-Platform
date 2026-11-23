@@ -100,10 +100,11 @@ jobs:
         run: |
           npm --workspace apps/api run test:rc1-financial-e2e
           echo 'STAGE10_P0_REMOTE_FINANCE_PG17=PASS'
-      - name: PT204 PT205 | HTTP real, JWT e PG17 isolado com dois workspaces
+      - name: PT204 PT205 PT213 | HTTP JWT PG17 e protecao dos quatro vinculos
         env:
           MEG_STAGE10_PT204_SYNTHETIC: '1'
           MEG_STAGE10_PT205_SYNTHETIC: '1'
+          MEG_STAGE10_PT213_SYNTHETIC: '1'
         run: |
           set -euo pipefail
           test "$GITHUB_ACTIONS" = true
@@ -111,4 +112,6 @@ jobs:
           export JWT_SECRET="$(openssl rand -hex 40)"
           node --import tsx apps/api/src/modules/finance/stage10-pt204-properties-real-http.pg17.disposable.test.ts
           node --import tsx apps/api/src/modules/finance/stage10-pt205-normalized-ids-real-jwt.pg17.disposable.test.ts
+          node --import tsx apps/api/src/modules/finance/stage10-pt213-four-linked-domains-real-jwt.pg17.disposable.test.ts
           echo 'PT205_REMOTE_HTTP_JWT_PG17_COMBINED=PASS'
+          echo 'PT213_REMOTE_FOUR_FK_INTEGRITY_HTTP_JWT_PG17=PASS'
