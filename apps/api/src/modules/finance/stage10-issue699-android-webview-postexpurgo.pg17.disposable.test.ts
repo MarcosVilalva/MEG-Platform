@@ -88,7 +88,8 @@ async function attach(){
   },'WEBVIEW_ORIGIN');
   ws=new WebSocket(page.webSocketDebuggerUrl);
   await once(ws,'open');
-  assert.equal(await evaluate('location.origin'),'https://localhost');
+  await until(async()=>await evaluate('location.origin')==='https://localhost',
+    'WEBVIEW_REAL_ORIGIN_AFTER_NAVIGATION');
 }
 async function loginUI(email:string,password:string,ownerId:string){
   const hasSession=async()=>Boolean(await evaluate(`(()=>{
