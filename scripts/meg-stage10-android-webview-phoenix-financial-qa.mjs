@@ -121,8 +121,10 @@ const one=[
 ].join('\n');
 const two=[
  inputCode,ctxCode,
- "const original=localStorage.getItem("+JSON.stringify(testKey)+");",
- "if(!original)throw Error('PT211_ORIGINAL_OPERATION_NOT_FOUND');",
+ "const original=c.expectedOriginalOperationId;",
+ "const persisted=JSON.parse(localStorage.getItem("+JSON.stringify(journalKey)+")||'null');",
+ "if(!persisted)throw Error('PT211_FINANCIAL_JOURNAL_MISSING_AFTER_RESTART');",
+ "if(persisted.operationId!==original)throw Error('PT211_FINANCIAL_JOURNAL_OPERATION_CHANGED');",
  "const prepared=r.preparePhoenixSimpleEvent(input,'pt211-different-operation-id');",
  "const reused=await r.withPhoenixCreateJournalLock(()=>r.reservePhoenixCreate(context,'monetary',prepared.payload,prepared.operationId));",
  "if(reused.status!=='same'||reused.record.operationId!==original)throw Error('PT211_RESTART_JOURNAL_CHANGED');",
@@ -155,8 +157,8 @@ const fake=[
  "throw Error('PT211_UNEXPECTED_REMOTE_ACCESS');",
  "}};"
 ].join('\n');
-function phase(n){
- return ['(async()=>{','const c='+JSON.stringify(data)+';',fake,bundle,
+function phase(n,expectedOriginalOperationId=''){
+ return ['(async()=>{','const c='+JSON.stringify({...data,expectedOriginalOperationId})+';',fake,bundle,
   'const r=globalThis.__pt211Real,f=globalThis.__pt211Fake;',
   n===1?one:two,'})()'].join('\n');
 }
@@ -174,7 +176,7 @@ try{
  await delay(1000);
  adb('shell','am','start','-n',activity);
  await connect();
- const second=await evaluate(phase(2));
+ const second=await evaluate(phase(2,first.operationId));
  assert.equal(second.replayed,true);assert.equal(second.readback,true);
  assert.equal(second.clean,true);assert.equal(second.requests,1);
  assert.equal(second.operationId,first.operationId);
