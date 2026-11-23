@@ -14,6 +14,8 @@ on:
       - 'apps/api/src/modules/app-state/stage10-qa-properties-atomic.ts'
       - 'apps/api/src/modules/finance/stage10-pt215-atomic-receipts-real-http.pg17.disposable.test.ts'
       - 'apps/api/src/modules/finance/stage10-pt217-android-webview-appstate-jwt-pg17.disposable.test.ts'
+      - 'apps/api/src/modules/finance/stage10-issue699-android-webview-postexpurgo.pg17.disposable.test.ts'
+      - 'packages/database/prisma/stage10-issue699-receipt-purge-guard.disposable.sql'
       - 'apps/api/src/modules/finance/stage10-historical-review-report.ts'
       - 'apps/web/src/phoenix/simple-event-form-bridge.ts'
       - 'apps/web/src/phoenix/data/phoenix-write-gateway.ts'
@@ -70,6 +72,7 @@ jobs:
           node -e "let u=new URL(process.env.DATABASE_URL); if(u.hostname!=='127.0.0.1'||u.username!=='meg_stage10_ci'||u.pathname!=='/meg_stage10_sandbox'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(1)"
           npm run db:generate
           npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+          npx --no-install prisma db execute --file packages/database/prisma/stage10-issue699-receipt-purge-guard.disposable.sql --schema packages/database/prisma/schema.prisma
       - run: bash scripts/meg-stage10-build-android-qa.sh
       - name: Exercise the isolated APK in an Android emulator
         shell: bash
@@ -104,6 +107,9 @@ jobs:
           echo 'PT211_ANDROID_QA_PHOENIX_FINANCIAL_SYNTHETIC=PASS'
           DATABASE_URL='postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public' MEG_STAGE10_ISOLATED_PG=1 MEG_STAGE10_PT217_SYNTHETIC=1 MEG_STAGE10_WEB_WRITE_QA=0 NODE_ENV=test node --import tsx apps/api/src/modules/finance/stage10-pt217-android-webview-appstate-jwt-pg17.disposable.test.ts
           echo 'PT217_SAME_JOB_ANDROID_WEBVIEW_FASTIFY_JWT_PG17=PASS'
+          export JWT_SECRET="$(openssl rand -hex 40)"
+          DATABASE_URL='postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public' MEG_STAGE10_ISOLATED_PG=1 MEG_STAGE10_QA_LOCAL_ONLY=1 MEG_STAGE10_LEGACY_RESTORE_QA=1 MEG_STAGE10_ISSUE699_SYNTHETIC=1 MEG_STAGE10_WEB_WRITE_QA=0 NODE_ENV=test node --import tsx apps/api/src/modules/finance/stage10-issue699-android-webview-postexpurgo.pg17.disposable.test.ts
+          echo 'ISSUE699_ANDROID_REAL_WEBVIEW_HTTP_JWT_PG17_ACCEPTANCE=PASS'
       - uses: actions/upload-artifact@v4
         with:
           name: meg-stage10-android-confirmacao-qa

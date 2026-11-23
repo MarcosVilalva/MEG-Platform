@@ -80,8 +80,10 @@ jobs:
           npm --workspace apps/api run build
           npm --workspace apps/web run build
           echo 'STAGE10_P0_REMOTE_API_WEB_BUILD=PASS'
-      - name: Create schema in disposable PostgreSQL 17
-        run: npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Create schema in disposable PostgreSQL 17 and #699 purge guard
+        run: |
+          npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+          npx --no-install prisma db execute --file packages/database/prisma/stage10-issue699-receipt-purge-guard.disposable.sql --schema packages/database/prisma/schema.prisma
       - name: AppState financial authority contracts
         run: npm --workspace apps/api run test:app-state
       - name: PT201 PT202 | Estado protegido após 409 e recuperação durável
@@ -118,3 +120,14 @@ jobs:
           echo 'PT213_REMOTE_FOUR_FK_INTEGRITY_HTTP_JWT_PG17=PASS'
           node --import tsx apps/api/src/modules/finance/stage10-pt215-atomic-receipts-real-http.pg17.disposable.test.ts
           echo 'PT215_REMOTE_LEGACY_ATOMIC_RECEIPT_HTTP_JWT_PG17=PASS'
+      - name: 'Issue 699 | cinco cenarios HTTP JWT PG17 e operationId pos-expurgo'
+        env:
+          MEG_STAGE10_ISSUE699_SYNTHETIC: '1'
+          MEG_STAGE10_LEGACY_RESTORE_QA: '1'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = MarcosVilalva/MEG-Platform
+          export JWT_SECRET="$(openssl rand -hex 40)"
+          node --import tsx apps/api/src/modules/finance/stage10-issue699-five-scenarios-http.pg17.disposable.test.ts
+          echo 'ISSUE699_HTTP_JWT_PG17_DISPOSABLE_ACCEPTANCE=PASS'
