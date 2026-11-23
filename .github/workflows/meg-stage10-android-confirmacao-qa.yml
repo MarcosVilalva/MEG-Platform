@@ -18,6 +18,7 @@ on:
       - 'scripts/meg-stage10-apk708-runtime.contract.mjs'
       - 'scripts/meg-stage10-android-emulator-smoke.mjs'
       - 'scripts/meg-stage10-android-webview-indexeddb-recovery.mjs'
+      - 'scripts/meg-stage10-android-webview-phoenix-financial-qa.mjs'
 
 permissions:
   contents: read
@@ -73,6 +74,8 @@ jobs:
           node scripts/meg-stage10-android-emulator-smoke.mjs
           node scripts/meg-stage10-android-webview-indexeddb-recovery.mjs
           echo 'PT210_ANDROID_QA_REAL_WEBVIEW_INDEXEDDB=PASS'
+          node scripts/meg-stage10-android-webview-phoenix-financial-qa.mjs
+          echo 'PT211_ANDROID_QA_PHOENIX_FINANCIAL_SYNTHETIC=PASS'
       - uses: actions/upload-artifact@v4
         with:
           name: meg-stage10-android-confirmacao-qa
