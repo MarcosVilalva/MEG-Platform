@@ -5,6 +5,7 @@ import { Prisma, prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { assertWorkspaceWriteAccess } from '../platform-admin/service';
 import { applyTransactionPatch } from './transaction-patch';
+import { canonical } from './normalization-migration-core';
 import { buildMutationConfirmation } from './mutation-confirmation';
 import { findMutationReceipt, mutationRequestHash, receiptCreateData } from './mutation-receipt';
 import {
@@ -481,6 +482,15 @@ export async function appStateRoutes(app: FastifyInstance) {
     // PUT nao expressa exclusao: a ausencia de uma ID preserva o espelho atual.
     // Arquivar exige PATCH /transactions com deletes explicitos e as guardas
     // financeiras de synchronizeNormalizedRows, nunca omissao em PUT.
+    const currentTransactions = Array.isArray(currentState?.transactions)
+      ? currentState.transactions as Array<Record<string, unknown>>
+      : [];
+    const currentById = new Map(currentTransactions.map(item => [String(item?.id || ''), item]));
+    // O PUT sincroniza somente IDs realmente alteradas no payload. Eventos
+    // omitidos ou reenviados sem mudanca nao podem sofrer side effects.
+    const putChangedIds = [...new Set(parsed.data.state.transactions
+      .filter(item => JSON.stringify(canonical(currentById.get(item.id))) !== JSON.stringify(canonical(item)))
+      .map(item => item.id))];
     const transactions = currentState
       ? applyTransactionPatch(currentState, parsed.data.state.transactions, []).transactions as typeof parsed.data.state.transactions
       : parsed.data.state.transactions;
@@ -503,7 +513,7 @@ export async function appStateRoutes(app: FastifyInstance) {
             workspaceId: context.workspaceId,
             userId: context.workspace.ownerId,
             revision: updated.revision,
-          });
+          }, putChangedIds);
           return updated;
         }, { maxWait: 10_000, timeout: 120_000 })
       : await prisma.appState.create({

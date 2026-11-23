@@ -253,7 +253,10 @@ export async function synchronizeNormalizedRows(
   // undefined = PUT integral. Array preenchido = PATCH somente das IDs alteradas.
   const changed = changedIds === undefined ? null : new Set(changedIds);
   if (changed && changed.size === 0) {
-    return { active: true, reconciled: true, fingerprint: preview.summary.fingerprint, count: preview.summary.validCount };
+    return {
+      active: true, reconciled: true, fingerprint: preview.summary.fingerprint,
+      count: preview.summary.validCount, updated: 0, created: 0, archived: 0,
+    };
   }
   const existingRows = await tx.financialEvent.findMany({
     where: {
