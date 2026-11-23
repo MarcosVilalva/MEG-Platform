@@ -1,4 +1,5 @@
 import type { FinancialEvent } from '../../app/finance-client';
+import { readDurableOutboxStrict, protectDurableOutbox, deleteDurableOutboxIfOperationId } from '../../durable-outbox-store.js';
 
 /**
  * PT113: comprovante de tentativa financeira durável, sem dados financeiros abertos.
@@ -103,7 +104,7 @@ export type JournalContext = {
   workspaceId: string;
 };
 
-function readRecord(storage: JournalContext['storage']): PhoenixCreateJournalRecord | null {
+function readRecord(storage: Pick<Storage, 'getItem'>): PhoenixCreateJournalRecord | null {
   let raw: string | null;
   try { raw = storage.getItem(PHOENIX_CREATE_JOURNAL_KEY); }
   catch { throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_STORAGE_UNAVAILABLE'); }
@@ -136,6 +137,80 @@ function writeRecord(storage: JournalContext['storage'], record: PhoenixCreateJo
     throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_WRITE_NOT_DURABLE');
   }
 }
+const PHOENIX_CREATE_DURABLE_KIND = 'phoenix-create-journal';
+
+/**
+ * A APK Android pode perder localStorage ao reiniciar o WebView.
+ * Nenhuma criacao financeira pode atravessar essa fronteira sem reconciliar
+ * o comprovante com IndexedDB. Desktop legado preserva o contrato existente.
+ */
+function needsAndroidDurableJournal(): boolean {
+  if (typeof window === 'undefined') return false;
+  const platform = (window as Window & {
+    Capacitor?: { getPlatform?: () => string };
+  }).Capacitor?.getPlatform?.();
+  return platform === 'android'
+    || import.meta.env.VITE_STAGE10_ANDROID_CONFIRMATION_QA === 'true';
+}
+
+function validatedDurableRecord(value: unknown): PhoenixCreateJournalRecord {
+  // Aplicar exatamente as mesmas validacoes do armazenamento primario.
+  const storage = { getItem: () => JSON.stringify(value) };
+  const record = readRecord(storage);
+  if (!record) throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_DURABLE_INVALID');
+  return record;
+}
+
+async function protectAndroidJournal(record: PhoenixCreateJournalRecord): Promise<void> {
+  if (!needsAndroidDurableJournal()) return;
+  try {
+    const result = await protectDurableOutbox(PHOENIX_CREATE_DURABLE_KIND, record);
+    if (!result.protected || result.unavailable) {
+      throw new Error('DURABLE_OUTBOX_STORAGE_UNAVAILABLE');
+    }
+    const persisted = await readDurableOutboxStrict(PHOENIX_CREATE_DURABLE_KIND);
+    if (JSON.stringify(persisted) !== JSON.stringify(record)) {
+      throw new Error('DURABLE_OUTBOX_JOURNAL_READBACK_MISMATCH');
+    }
+  } catch {
+    // O local continua pendente. Bloquear qualquer POST sem comprovante duplo.
+    throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_DURABLE_NOT_CONFIRMED');
+  }
+}
+
+async function reconcileAndroidJournal(storage: JournalContext['storage']): Promise<void> {
+  if (!needsAndroidDurableJournal()) return;
+  let durable: unknown;
+  try { durable = await readDurableOutboxStrict(PHOENIX_CREATE_DURABLE_KIND); }
+  catch { throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_DURABLE_STORAGE_UNAVAILABLE'); }
+
+  const local = readRecord(storage);
+  if (durable === null) {
+    if (local) await protectAndroidJournal(local);
+    return;
+  }
+  const recovered = validatedDurableRecord(durable);
+  if (local) {
+    if (JSON.stringify(local) !== JSON.stringify(recovered)) {
+      // Divergencias entre duas copias exigem reconciliacao manual.
+      throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_STORES_DIVERGED');
+    }
+    return;
+  }
+  writeRecord(storage, recovered);
+}
+
+async function deleteAndroidJournal(operationId: string): Promise<void> {
+  if (!needsAndroidDurableJournal()) return;
+  try {
+    if (!await deleteDurableOutboxIfOperationId(PHOENIX_CREATE_DURABLE_KIND, operationId)) {
+      throw new Error('DURABLE_OUTBOX_OPERATION_NOT_FOUND');
+    }
+  } catch {
+    throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_DURABLE_CLEAR_NOT_CONFIRMED');
+  }
+}
+
 function randomNonce(): string {
   if (!globalThis.crypto?.getRandomValues) throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_CRYPTO_UNAVAILABLE');
   const bytes = new Uint8Array(16);
@@ -180,6 +255,7 @@ export async function reservePhoenixCreate(
   payload: unknown,
   candidateOperationId: string,
 ): Promise<PhoenixCreateJournalResult> {
+  await reconcileAndroidJournal(context.storage);
   const existing = readRecord(context.storage);
   if (existing) {
     if (await scopeHash(context, existing.nonce) !== existing.scopeHash) {
@@ -210,6 +286,7 @@ export async function reservePhoenixCreate(
       ? { explicitDuplicate: true as const } : {}),
   };
   writeRecord(context.storage, record);
+  await protectAndroidJournal(record);
   return { status: 'new', record };
 }
 export function findPhoenixCreatePending(storage: JournalContext['storage']): boolean {
@@ -223,6 +300,7 @@ export async function notePhoenixCreateReceipt(
   record: PhoenixCreateJournalRecord,
   event: FinancialEvent,
 ): Promise<PhoenixCreateJournalRecord> {
+  await reconcileAndroidJournal(context.storage);
   const existing = readRecord(context.storage);
   if (!existing || existing.operationId !== record.operationId || existing.nonce !== record.nonce
     || await scopeHash(context, record.nonce) !== record.scopeHash) {
@@ -239,6 +317,7 @@ export async function notePhoenixCreateReceipt(
     ...existing, eventId: event.id, receiptHash,
   };
   writeRecord(context.storage, next);
+  await protectAndroidJournal(next);
   return next;
 }
 export async function matchesPhoenixCreateReceipt(
@@ -265,6 +344,7 @@ export async function rejectDefinitivePhoenixDuplicate(
   context: JournalContext,
   record: PhoenixCreateJournalRecord,
 ): Promise<void> {
+  await reconcileAndroidJournal(context.storage);
   const existing = readRecord(context.storage);
   if (!existing || JSON.stringify(existing) !== JSON.stringify(record)
     || await scopeHash(context, record.nonce) !== record.scopeHash) {
@@ -273,6 +353,7 @@ export async function rejectDefinitivePhoenixDuplicate(
   if (existing.eventId || existing.receiptHash) {
     throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_ALREADY_ACKNOWLEDGED');
   }
+  await deleteAndroidJournal(existing.operationId);
   try { context.storage.removeItem(PHOENIX_CREATE_JOURNAL_KEY); }
   catch { throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_STORAGE_UNAVAILABLE'); }
   if (readRecord(context.storage) !== null) {
@@ -284,6 +365,7 @@ export async function finishPhoenixCreate(
   context: JournalContext, record: PhoenixCreateJournalRecord,
   verifiedEvent: FinancialEvent,
 ): Promise<void> {
+  await reconcileAndroidJournal(context.storage);
   const existing = readRecord(context.storage);
   if (!existing || existing.operationId !== record.operationId || existing.nonce !== record.nonce
     || await scopeHash(context, record.nonce) !== record.scopeHash
@@ -293,6 +375,7 @@ export async function finishPhoenixCreate(
   // Primeiro publica o marco de confirmacao, depois limpa o recibo.
   // Uma falha entre os dois nao deixa uma janela sem barreira entre abas.
   const nextGeneration = noteConfirmedGeneration(context.storage);
+  await deleteAndroidJournal(existing.operationId);
   try { context.storage.removeItem(PHOENIX_CREATE_JOURNAL_KEY); }
   catch { throw new PhoenixCreateJournalError('PHOENIX_JOURNAL_STORAGE_UNAVAILABLE'); }
   if (readRecord(context.storage) !== null) {
