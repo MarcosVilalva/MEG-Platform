@@ -184,10 +184,10 @@ try{
       };
     });
   })()`);
-  await cdp('Network.enable');
-  await cdp('Network.emulateNetworkConditions',{
-    offline:true,latency:0,downloadThroughput:0,uploadThroughput:0,
-  });
+  // ADB reverse faz loopback continuar acessivel quando CDP simula offline.
+  // Desligar o transporte QA de verdade, sem alterar Android ou API produtivos.
+  adb('reverse','--remove','tcp:3333');
+  reverse=false;
   const offline=await evaluate(`(async()=>{
     try{await fetch('http://127.0.0.1:3333/app-state',{cache:'no-store'});
       return false;
@@ -196,9 +196,8 @@ try{
   assert.equal(offline,true,'ISSUE699_WEBVIEW_NETWORK_OFFLINE_NOT_ENFORCED');
   assert.equal((await prisma.appState.findUniqueOrThrow({where:{workspaceId:work.id}})).revision,1);
   console.log('ISSUE699_ANDROID_REAL_WEBVIEW_OFFLINE_PENDING_NOT_SENT=PASS');
-  await cdp('Network.emulateNetworkConditions',{
-    offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1,
-  });
+  adb('reverse','tcp:3333','tcp:3333');
+  reverse=true;
 
   // Force-stop and relaunch REAL installed QA package, never Android stable.
   detach();
