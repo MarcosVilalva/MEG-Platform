@@ -186,9 +186,9 @@ try{
  // Generic PATCH/DELETE cannot bypass protected source/correction.
  const patch=await send('/finance/events/'+dup.two,{description:'BYPASS ATTEMPT'},jwt,'PATCH');
  assert.equal(patch.status,409,JSON.stringify(patch));
- const archive=await json(await fetch(base+'/finance/events/'+dup.two,{method:'DELETE',headers:headers()}));
+ const archive=await json(await fetch(base+'/finance/events/'+dup.two,{method:'DELETE',headers:{Authorization:'Bearer '+jwt}}));
  assert.equal(archive.status,409,JSON.stringify(archive));
- const archiveComp=await json(await fetch(base+'/finance/events/'+compensationId,{method:'DELETE',headers:headers()}));
+ const archiveComp=await json(await fetch(base+'/finance/events/'+compensationId,{method:'DELETE',headers:{Authorization:'Bearer '+jwt}}));
  assert.equal(archiveComp.status,409,JSON.stringify(archiveComp));
  const unauthorized=await postResolve(dup,{decision:'RESOLVED_LEGITIMATE',operationId:randomUUID()},jwtViewer);
  assert.equal(unauthorized.status,403);
