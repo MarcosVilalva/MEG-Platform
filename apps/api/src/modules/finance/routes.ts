@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { listFinancialAudit } from './audit';
+import { listSuspectedDuplicateFinancialEvents } from './suspected-duplicates-read';
 import {
   deleteFinancialEvent,
   listBudgetOverview,
@@ -449,6 +450,18 @@ export async function financeRoutes(app: FastifyInstance) {
     catch {return reply.code(400).send({code:'INVALID_HISTORY_FILTER',message:'Filtros financeiros inválidos.'});}
     const dataOwnerId = await financialDataOwnerId(request.user.sub);
     return getCanonicalFilteredHistorySummary(dataOwnerId, filters);
+  });
+
+  // #699 Phase A: durable, authorized, non-blocking support visibility.
+  // Read-only; no APK update, new success status, or implicit financial merge.
+  app.get('/events/suspected-duplicates', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      page: z.coerce.number().int().positive().default(1),
+      pageSize: z.coerce.number().int().min(1).max(100).default(50),
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    reply.header('Cache-Control', 'no-store');
+    return listSuspectedDuplicateFinancialEvents(request.user.sub, parsed.data);
   });
 
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
