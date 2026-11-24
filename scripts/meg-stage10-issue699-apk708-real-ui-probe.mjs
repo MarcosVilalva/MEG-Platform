@@ -350,6 +350,42 @@ try{
      bodyText:document.body.innerText.slice(-1850),
      buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,95),disabled:x.disabled})).filter(x=>x.text).slice(-26),
     }))()`)));
+    const localAfterTimeout=await evalUI(`(async()=>{
+     const ls=[...Array(localStorage.length)].map((_,i)=>localStorage.key(i)).filter(Boolean).sort();
+     const ss=[...Array(sessionStorage.length)].map((_,i)=>sessionStorage.key(i)).filter(Boolean).sort();
+     let dbs=[];try{dbs=typeof indexedDB.databases==='function'?await indexedDB.databases():[]}catch{}
+     const stores=[];
+     for(const d of dbs){
+      if(!d.name)continue;
+      const info=await new Promise(resolve=>{
+       let done=false;
+       const req=indexedDB.open(d.name);
+       const timer=setTimeout(()=>{if(!done){done=true;resolve({name:d.name,status:'TIMEOUT'})}},2500);
+       req.onsuccess=()=>{
+        if(done){req.result.close();return;}
+        done=true;clearTimeout(timer);
+        const names=[...req.result.objectStoreNames];
+        req.result.close();resolve({name:d.name,stores:names});
+       };
+       req.onerror=()=>{if(!done){done=true;clearTimeout(timer);resolve({name:d.name,status:'ERROR'})}};
+      });
+      stores.push(info);
+     }
+     const j=localStorage.getItem('meg.phoenix.create.attempt.v1');
+     let journal=null;
+     if(j){try{const x=JSON.parse(j);journal={operationId:x.operationId||null,kind:x.kind||null,hasIntentHash:Boolean(x.intentHash),hasNonce:Boolean(x.nonce)}}catch{journal={invalid:true}}}
+     return {localStorageKeys:ls,sessionStorageKeys:ss,indexedDbStores:stores,phoenixCreateJournal:journal};
+    })()`,13000);
+    console.log('ISSUE699_APK708_LOCAL_STATE_AFTER_TIMEOUT='+JSON.stringify(localAfterTimeout));
+    let actualOfflineTransition='NOT_SUPPORTED';
+    try{
+     await cdp('Network.enable');
+     await cdp('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+     await sleep(1250);
+     await cdp('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+     actualOfflineTransition='CDP_OFFLINE_ONLINE_APPLIED';
+    }catch(e){actualOfflineTransition='CDP_OFFLINE_EMULATION_FAILED:'+String(e.message||e).slice(0,100);}
+    console.log('ISSUE699_APK708_NETWORK_OFFLINE_ONLINE='+actualOfflineTransition);
     const beforeReconnect=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').length;
     await evalUI(`(()=>{window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('focus'));return true})()`);
     await sleep(6500);
