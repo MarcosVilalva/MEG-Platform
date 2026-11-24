@@ -11,5 +11,12 @@
         <activity android:name="br.com.megfinancas.app.MainActivity"
             android:label="MEG Etapa 10 QA"
             tools:replace="android:label" />
+        <!-- Explicit, disposable activity for #699 with native HTTP guard.
+             Default QA MainActivity remains unchanged for PT210/PT211/PT217. -->
+        <activity android:name="br.com.megfinancas.app.Stage10QaMainActivity"
+            android:exported="true"
+            android:label="MEG Etapa 10 QA Native"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask" />
     </application>
 </manifest>
