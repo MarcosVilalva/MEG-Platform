@@ -66,8 +66,10 @@ jobs:
           git fetch --no-tags --depth=1 origin 3612bb5c7ba9d691e2c842574214a3e2f5ec08f4
           git show FETCH_HEAD:packages/database/prisma/supabase-rls-hardening.sql > "$RUNNER_TEMP/issue707-hardening.sql"
           test -s "$RUNNER_TEMP/issue707-hardening.sql"
-          cmp -s "$RUNNER_TEMP/issue707-hardening.sql" packages/database/prisma/supabase-rls-hardening.sql && exit 12 || true
-          cp "$RUNNER_TEMP/issue707-hardening.sql" packages/database/prisma/supabase-rls-hardening.sql
+          # Reconciled PR706: require exact SQL bytes from PR708, do not mutate code at runtime.
+          cmp "$RUNNER_TEMP/issue707-hardening.sql" packages/database/prisma/supabase-rls-hardening.sql
+          test "$(git hash-object packages/database/prisma/supabase-rls-hardening.sql)" = '12d16bc4c7b6991add4f4e38c8263953952824a4'
+          echo 'ISSUE699_RECONCILED_SQL_BLOB_MATCH=PASS'
           npm --workspace packages/database run test:supabase-rls
           echo 'ISSUE699_A17_ISSUE707_COMBINED_RLS_33_MODELS=PASS'
       - name: Apply real hardening and check effective rights in disposable PostgreSQL17

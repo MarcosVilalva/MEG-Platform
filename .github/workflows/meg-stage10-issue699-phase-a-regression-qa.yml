@@ -5,6 +5,7 @@ on:
       - stage10/issue699-phase-a-qa-20261124
     paths:
       - '.github/workflows/meg-stage10-issue699-phase-a-regression-qa.yml'
+      - 'packages/database/prisma/supabase-rls-hardening.sql'
       - 'apps/api/src/modules/finance/**'
       - 'apps/api/src/modules/cards/**'
       - 'apps/api/src/modules/payables/**'
