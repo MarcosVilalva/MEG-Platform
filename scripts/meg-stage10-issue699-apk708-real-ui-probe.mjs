@@ -220,6 +220,26 @@ try{
    buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,100),disabled:x.disabled})).filter(x=>x.text).slice(-70),
   }))()`);
   console.log('ISSUE699_APK708_ORIGINAL_LAUNCH_FORM_PROBE='+JSON.stringify(form));
+  const expenseOpened=await evalUI(`(()=>{
+   const b=[...document.querySelectorAll('button')].find(x=>/^Despesa\\s*Saídas e gastos/i.test(x.innerText.trim()));
+   if(!b)return false;b.click();return true;
+  })()`);
+  console.log('ISSUE699_APK708_ORIGINAL_EXPENSE_FLOW_OPENED='+expenseOpened);
+  if(expenseOpened){
+   await sleep(1250);
+   const expenseFields=await evalUI(`(()=>({
+    bodyText:document.body.innerText.slice(-2600),
+    fields:[...document.querySelectorAll('input,textarea,select,[role=combobox]')].map(x=>({
+     tag:x.tagName,type:x.type||'',name:x.name||'',placeholder:x.placeholder||'',
+     ariaLabel:x.getAttribute('aria-label')||'',id:x.id||'',
+     value:x.type==='password'?'[REDACTED]':(x.value||''),
+     options:x.tagName==='SELECT'?[...x.options].map(o=>({value:o.value,text:o.text})).slice(0,15):undefined,
+    })).slice(-80),
+    labels:[...document.querySelectorAll('label')].map(x=>x.innerText.trim().slice(0,100)).filter(Boolean).slice(-70),
+    buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,90),disabled:x.disabled})).filter(x=>x.text).slice(-70),
+   }))()`);
+   console.log('ISSUE699_APK708_ORIGINAL_EXPENSE_FIELDS='+JSON.stringify(expenseFields));
+  }
  }
  console.log('ISSUE699_APK708_ORIGINAL_API_PATHS='+JSON.stringify([...interceptedUrls]));
  console.log('ISSUE699_APK708_ORIGINAL_LOCAL_API_REQUESTS='+JSON.stringify(apiRequests.map(r=>({method:r.method,path:r.path,query:r.query})).slice(0,120)));
