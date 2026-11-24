@@ -1,5 +1,6 @@
 import { prisma, Prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { reviewStatusForSuspicions } from './suspected-duplicates-review';
 
 /**
  * Issue #699 Phase A, read-only support channel.
@@ -78,6 +79,12 @@ export async function listSuspectedDuplicateFinancialEvents(
       })
     : [];
   const byId = new Map(peers.map((peer) => [peer.id, peer]));
+  const reviewStates = await reviewStatusForSuspicions(actorId, rows.map((row, index) => ({
+    eventId: row.eventId,
+    peerId: typeof contexts[index].peerEventId === 'string' ? contexts[index].peerEventId as string : '',
+    groupId: typeof contexts[index].suspicionGroupId === 'string' ? contexts[index].suspicionGroupId as string : null,
+  })));
+
   return {
     items: rows.map((row, index) => {
       const context = contexts[index];
@@ -94,7 +101,9 @@ export async function listSuspectedDuplicateFinancialEvents(
         fingerprint: typeof context.fingerprint === 'string'
           ? context.fingerprint : null,
         evidence: 'CONTENT_AND_TIME_ONLY',
-        reviewStatus: 'SUSPECTED',
+        reviewStatus: reviewStates.get(String(context.suspicionGroupId || ''))?.reviewStatus || 'SUSPECTED',
+        resolutionAuditId: reviewStates.get(String(context.suspicionGroupId || ''))?.resolutionAuditId || null,
+        reviewedAt: reviewStates.get(String(context.suspicionGroupId || ''))?.reviewedAt || null,
         relation: typeof context.relation === 'string' ? context.relation : null,
         event: {
           id: row.eventId, description: row.description, type: row.type,
