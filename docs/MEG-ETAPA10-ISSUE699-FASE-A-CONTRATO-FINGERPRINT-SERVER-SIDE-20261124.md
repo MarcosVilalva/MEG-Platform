@@ -2,7 +2,7 @@
 ## Contrato de compatibilidade server-side por fingerprint temporal: parecer de viabilidade e proposta condicionada
 
 **Data:** 24/11/2026  
-**Estado:** PROPOSTA DOCUMENTAL, NÃO IMPLEMENTADA E NÃO HOMOLOGADA.  
+**Estado:** POLÍTICA DE RISCO EXPRESSAMENTE DECIDIDA; CONTRATO DOCUMENTAL, NÃO IMPLEMENTADO E NÃO HOMOLOGADO.  
 **Repositório:** MarcosVilalva/MEG-Platform  
 **Branch:** stage10/p0-public-review-20261123, PR #705 Draft.  
 **Issue:** #699 OPEN/P0.  
@@ -26,10 +26,12 @@ Referências: docs/MEG-ETAPA10-ISSUE699-CAPACITORHTTP-NATIVO-COLDSTART-20261124.
 - I2. Preservar a semântica de sucesso/falha já suportada. O POST atual responde 201 em criação confirmada, recebido pela APK como sucesso; não inventar um novo HTTP ou um 200 pendente.
 - I3. **Toda resposta 2xx de sucesso financeiro precisa corresponder a um FinancialEvent já persistido, efetivo e autorizado, corretamente relacionado à intenção daquela requisição.** Um registro semelhante prévio não basta para afirmar essa identidade.
 - I4. Uma nova despesa legítima, ainda que totalmente idêntica à anterior, não pode ser descartada, suprimida ou bloqueada automaticamente por mera semelhança temporal.
-- I5. Uma tentativa identificada como replay **da mesma intenção** não pode criar segundo FinancialEvent, LedgerEntry ou efeito financeiro; a tentativa suprimida precisa de trilha auditável.
+- I5. Replay comprovado pelo **mesmo operationId e mesmo requestHash** não pode criar segundo FinancialEvent, LedgerEntry ou efeito financeiro. Novo operationId nunca autoriza supressão automática por mera equivalência de fingerprint/tempo.
 - I6. O estado autoritativo é o servidor: ID real do evento, sua situação vigente, recibo de mutação, transação e vínculos. Resposta perdida não desfaz commit, e o servidor não deve presumir que ACK de rede foi consumido.
 - I7. Isolamento estrito por workspace, usuário autorizado e domínio monetário. Não mover benefício, cartão, transferência ou PUT/PATCH do AppState para o writer de despesas.
-- I8. Nunca reintroduzir lançamento arquivado, exceder saldo, criar ledger a mais, violar vínculos, nem esconder uma rejeição financeira verdadeira.
+- I8. Nunca reintroduzir lançamento arquivado, exceder saldo, criar ledger sem lançamento legítimo, violar vínculos, nem esconder uma rejeição financeira verdadeira.
+- I9. A suspeita deve ficar registrada para **ambos os eventos** e estar acessível por caminho de revisão humana autenticado e autorizado, sem bloquear lançamentos válidos nem exigir nova UI na APK congelada.
+- I10. Toda correção da duplicata é ato humano explícito, auditável, com reversão contábil/arquivamento seguro conforme regras vigentes. O presente contrato não autoriza exclusão física, fusão automática nem criação de funcionalidade visual fora da etapa.
 
 ### 3. Limite formal: por que fingerprint + tempo NÃO demonstram identidade
 
@@ -40,7 +42,7 @@ Considere duas histórias, com o mesmo estado de banco antes da segunda chamada 
 
 O servidor pode saber que A foi gravada; isso **não revela** se B é R ou N. Até um sinal de socket fechado antes do ACK apenas demonstra entrega incerta, não a intenção do segundo POST. Um fingerprint completo e uma janela de poucos segundos não alteram esta indistinguibilidade.
 
-**Conclusão lógica:** as invariantes I3, I4 e I5 não podem ser garantidas simultaneamente para B com novo operationId e sem outra evidência causal. A supressão automática indiscriminada por fingerprint + janela viola I3/I4; criar sempre B viola I5 na história R; reter B e responder falha genérica bloqueia temporariamente N, violando I4. Registrar B em uma fila pendente evita descarte silencioso, mas ainda NÃO cumpre a proibição de bloqueio automático.
+**Conclusão lógica preservada, com política de risco agora decidida:** sem prova causal, não se garante simultaneamente zero duplicação e zero perda. Na história R, a nova política aceita **duplicata possível e visível** ao criar B; na história N, preserva a despesa legítima. A invariável I5 aplica-se apenas a replay **comprovado pelo mesmo operationId e hash**, não a coincidência semântica de operações distintas. Não apresentar o risco residual aceito como garantia de ausência total de duplicatas.
 
 Este limite já está reconhecido no documento de Fase A existente; ele não deve ser sobrescrito por uma confiança probabilística apresentada como garantia.
 
@@ -62,88 +64,100 @@ Excluir apenas a identidade aleatória operationId do fingerprint de conteúdo. 
 
 O prazo atual de 10 minutos da API pode ser adotado inicialmente **apenas para pesquisar candidatos**. Calcular em tempo do banco/servidor a partir do commit/criação de A, nunca da data financeira informada pelo cliente. A escolha/ajuste do prazo exige ensaio; não deve virar restrição UNIQUE por (fingerprint, intervalo), pois isso impediria despesas legítimas idênticas.
 
-**4.3. Registro auditável (esquema ainda NÃO autorizado)**
+**4.3. Registro auditável e sinalização (esquema ainda NÃO autorizado)**
 
-Desenho conceitual de um log append-only de tentativas, a ser detalhado antes de migration aditiva: attemptId interno, workspaceId, actorId, incomingOperationId, fingerprintVersion, fingerprintHash, serverReceivedAt, predecessorEventId e predecessorOperationId opcionais, evidenceType, outcome, eventId efetivo quando aplicável, requestHash e correlação de recibo. Não persistir JWT, senhas ou corpo integral sem política LGPD.
+Desenho conceitual de registro append-only de tentativas: attemptId, workspaceId, actorId, incomingOperationId, fingerprintVersion, fingerprintHash, serverReceivedAt, predecessorEventId/predecessorOperationId candidatos, outcome, createdEventId, requestHash, referência de receipt e identificador de agrupamento de suspeita. O hash não substitui o corpo financeiro canônico nem o controle por operationId. Não persistir JWT, senhas ou credenciais; observar LGPD, retenção e autorização de leitura.
 
-Outcomes conceituais: NEW_CREATED, VERIFIED_ID_REPLAY, FINGERPRINT_SUSPECTED, VERIFIED_SUPPRESSED, DISTINCT_INTENT_CREATED, REJECTED_INVALID. A auditoria da tentativa suprimida deve ser atômica com a decisão de não criar novo evento; a auditoria de uma tentativa ambígua não pode ser confundida com segunda mutação efetivamente suprimida. Persistir o vínculo com A sem alterar A.
+Outcomes conceituais: NEW_CREATED, VERIFIED_ID_REPLAY, SUSPECTED_DISTINCT_ID_CREATED, DISTINCT_INTENT_CREATED, REJECTED_INVALID, HUMAN_REVIEW_CONFIRMED_DUPLICATE, HUMAN_REVIEW_CONFIRMED_DISTINCT, CORRECTION_APPLIED, CORRECTION_REVERSED. São nomes de **contrato proposto**, não valores de enum já existentes.
 
-**4.4. Máquina de decisão e HTTP compatível**
+- **Primeiro evento A:** criação válida como de costume. Quando chegar B com mesmo fingerprint e outro ID, **acrescentar** registro de suspeita referente a A e B, relacionando as duas entidades por IDs persistidos. O lançamento A continua financeiramente autoritativo e inalterado.
+- **Segundo evento B:** se passar por todas as validações financeiras normais, gravar B, LedgerEntry aplicável, receipt de B e auditorias da criação/suspeita, em transação serializável. Não suprimir, arquivar, reclassificar ou modificar valores por fingerprint.
+- **Revisão:** disponibilizar consulta read-only autenticada para usuário autorizado ou suporte, com IDs de ambos os eventos, vínculo de suspeita, hora, motivo e estado de revisão. A disponibilidade **precisa ser implementada e comprovada**; não presumir que APK706/707/708 ou a UI atual exibam uma mensagem nova. O caminho mínimo de compatibilidade pode ser de suporte, sem mudanças no cliente legado. Nenhum aviso deve bloquear o POST.
+- **Correção humana:** exigir identificação e autorização explícita da ação, confirmação de qual operação é indevida, vínculo de correção e possibilidade comprovada de reversão. Não inventar endpoint de exclusão/mesclagem: usar ou especificar separadamente operação financeira canônica auditável que preserve LedgerEntry, saldos e referências.
+- **Incerteza:** marcar **suspeita**, não duplicata confirmada. Uma revisão que conclua serem duas despesas distintas registra a decisão e preserva ambas.
 
-| Estado após checagem de escopo, recibo e fingerprint | Ação permitida | Resposta à APK |
+**4.4. Máquina de decisão e contrato HTTP para clientes congelados**
+
+| Condição | Decisão obrigatória | Resposta HTTP/efeito |
 | --- | --- | --- |
-| Novo pedido, sem predecessor confirmado | Validar regras, gravar FinancialEvent + LedgerEntry aplicável + receipt + auditoria em transação serializável | 201 com objeto canônico **após commit** |
-| Mesmo operationId + mesmo requestHash e recibo íntegro | NÃO gravar outro FinancialEvent; auditar replay, reutilizar resposta efetiva correspondente à MESMA intenção | Mesmo sucesso 2xx compatível, sem pending |
-| Mesmo operationId + payload divergente | Recusar; nenhuma escrita financeira | Erro existente compatível, ex. 409, e auditoria |
-| Novo operationId + mesmo fingerprint dentro da janela, sem prova causal adicional | Marcar **FINGERPRINT_SUSPECTED** e conservar referência A; NÃO tratar B automaticamente como replay confirmado | **Indeterminado:** nenhuma resposta única cumpre I3/I4/I5 sem escolha de política |
-| Novo operationId + vínculo causal independente e verificável com a mesma intenção, se existir | Suprimir B em transação atômica, registrar VERIFIED_SUPPRESSED e ligar B ao evento autoritativo A | Sucesso 2xx com objeto REAL de A, somente após verificar identidade e estado efetivo |
-| Nova intenção explicitamente distinguida e autorizada | Gravar B apesar da coincidência e auditar a decisão | 201 com evento B real, sem supressão |
+| Novo pedido sem predecessor coincidente, válido pelas regras financeiras | Criar FinancialEvent, ledger quando cabível, receipt e auditoria | **201** existente, corpo canônico do evento efetivamente gravado |
+| Mesmo operationId + mesmo requestHash, recibo íntegro | Replay realmente comprovado: 0 novas gravações financeiras; registrar consulta/replay conforme política de auditoria | Sucesso já compreendido pelo cliente, evento do recibo; sem pending |
+| Mesmo operationId + payload divergente | Rejeição de reutilização da identidade, sem novo FinancialEvent | 409 de contrato existente, sem falso sucesso |
+| **Novo operationId B + mesmo fingerprint de A dentro da janela, sem prova causal** | **Criar B se financeiramente válido**, preservando A; registrar suspeita vinculada em auditoria de **ambos** | **201 existente** com o **ID novo de B**, não devolver A como se fosse B; aviso separado de suporte/revisão |
+| Novo operationId B + fingerprint distinto | Criar B normalmente quando válido, sem falsa associação | 201 e evento B |
+| Nova requisição inválida por saldo insuficiente, escopo, categoria, status ou outra regra real | Recusar pelo motivo financeiro próprio, mesmo quando o fingerprint coincidir | Erro já existente da API, sem 201 e sem escrita financeira |
+| Revisão humana da suspeita | Preservar ambos até decisão explícita; corrigir apenas pelo escritor canônico/fluxo de reversão previamente aprovado | Nenhuma exclusão ou mesclagem automática |
 
-**Nota sobre vínculo causal:** por exemplo, mesmo identificador de intenção durável ou referência transacional imutável assinada por fonte confiável. **Não está identificado tal vínculo nas APKs 706/707/708 para retries com novos IDs.** Cabeçalho, mesmo fingerprint, mesmo ator, ACK incerto e janela curta são indícios, não prova.
+**Compatibilidade:** a API candidata responde HTTP 201 no POST de criação. O cliente legado aceita essa confirmação; não trocar para um novo código, não usar 200 com pending:true nem exigir novo header. A sinalização pode ocorrer em auditoria/suporte independente da resposta original, desde que seja realmente acessível a operadores autorizados. Não incluir campos novos obrigatórios para o cliente.
 
-O contrato NUNCA retorna 200 { pending: true }; 201 somente após criar ou retornar evento já confirmado e vinculado à mesma intenção. O frontend legado foi caracterizado aceitando 201 de sucesso no fluxo original; testar a resposta exata em emulador, sem inventar protocolo.
+**Limite de supressão:** **somente o par (workspaceId, operationId) com hash idêntico comprovado pelo receipt** permite replay sem segunda escrita. Um novo ID jamais recebe automaticamente o recibo de A como resultado de B, mesmo que tempo, payload, IP, sessão e estado da conexão coincidam.
 
-### 5. Três políticas possíveis para a situação indeterminada
+### 5. DECISÃO OFICIAL DE POLÍTICA DE RISCO RESIDUAL DA FASE A
 
-Não há política que satisfaça todos os requisitos em simultâneo; a escolha exige decisão explícita de produto/risco.
+**Aprovada por decisão explícita do usuário em 24/11/2026: P1 (criar e auditar) é a política definitiva para ambiguidade por fingerprint.**
 
-| Política | Comportamento em B ambíguo | O que preserva | O que NÃO garante |
-| --- | --- | --- | --- |
-| P1: criar e marcar suspeita | Cria B com receipt e auditoria de possível duplicata | Não perde nem bloqueia segunda despesa legítima | Pode duplicar FinancialEvent na história R |
-| P2: reter B para reconciliação externa | Não cria B imediatamente; conserva tentativa auditável sem 2xx e exige resolução confiável | Evita segunda gravação até resolver | Bloqueia temporariamente intenção legítima; UI legada mostra erro genérico |
-| P3: suprimir automaticamente por fingerprint temporal | Retorna o evento A com sucesso e audita B | Evita segundo evento na história R | **Falso sucesso e perda de despesa legítima** na história N: proibido |
+- **Erro priorizado para evitar:** supressão silenciosa de uma segunda despesa legítima, que pode impedir registro de obrigação verdadeira e mascarar o ocorrido.
+- **Risco residual aceito:** duas despesas visíveis podem permanecer quando a segunda for retry após perda de resposta, até revisão humana. Este risco deve ser sinalizado e tratado, não afirmado como inexistente.
+- **Proibição:** não aplicar P3 (supressão automática por fingerprint/tempo) nem P2 (reter despesa válida para revisão) aos casos ambíguos. Nenhum retorno de sucesso com ID de outra intenção; nenhum 409 unicamente por similaridade semântica no fluxo abrangido pela política.
+- **Exceção de idempotência verdadeira:** somente mesmo operationId e mesmo conteúdo/recibo persistido autoriza não criar segundo evento, independentemente de janela. Mesmo ID com conteúdo diferente continua rejeitado.
+- **Validações financeiras não são dispensadas:** sempre criar uma **despesa válida** no cenário ambíguo, respeitando saldo real, status, escopo, permissões, atomicidade e writer canônico. Falta de saldo verdadeira não se converte em duplicidade suprimida, nem em criação forçada.
+- **Sinalização humana não bloqueante:** registrar ambos na auditoria, correlacionar com candidato anterior e disponibilizar visão autenticada para usuário/suporte. A UI legado congelada não ganha aviso por decreto; a entrega exige demonstrar efetivamente um caminho de suporte, e a futura UI própria só será implementada na etapa/autorização apropriada.
+- **Resolução manual:** confirmar duplicata ou duas despesas distintas, sem exclusão física silenciosa. Toda correção deve ser explícita, auditável, com salvaguarda de reversibilidade compatível com o estado financeiro.
+- **Sem afirmação de perfeição:** o contrato resolve a decisão de política, não o limite matemático. O sistema preserva dados e torna provável duplicação verificável, aceitando risco residual de duplicata financeira até intervenção.
 
-**Decisão técnica recomendada:** não habilitar P3 como contrato definitivo. P1 e P2 são alternativas de contenção de risco, não uma implementação que satisfaz integralmente as cinco restrições. Manter a guarda existente sob observação até decisão de risco e prova de UX compatível; não alterar sua semântica de forma silenciosa.
+**Conflito relevante com o código atual:** a guarda existente \`findRecentFinancialEventDuplicate\` com janela \`SEMANTIC_DUPLICATE_WINDOW_MS = 10 * 60_000\` devolve \`POSSIBLE_DUPLICATE\`/HTTP 409 quando \`allowDuplicate\` é falso. Um cliente legado sem confirmação nova pode ficar bloqueado, contrariando esta política. A implementação FUTURA precisará alterar **controladamente** o comportamento dessa guarda no escopo de criação legada autorizado, de bloqueio para detecção e auditoria, mantendo idempotência por ID e proteções de saldo. **Não fazer essa alteração nesta entrega documental**; o gate A18 deve demonstrá-la no banco descartável antes de qualquer merge/deploy.
 
-### 6. Transação, concorrência, recibos e auditoria
+### 6. Autoridade transacional, concorrência e revisão segura
 
-O desenho futuro do caminho VERIFIED_SUPPRESSED (caso alguma identidade causal seja comprovada) exigirá:
+1. Validar JWT, papel e workspace antes de consultar fingerprints ou receipts, impedindo vazamentos entre tenants. Fingerprint contextual é indexável apenas para busca de suspeita, sem UNIQUE que barre duas despesas.
+2. Checar primeiro recibo por workspaceId+operationId e requestHash: mesmo conteúdo é replay; payload divergente é rejeição. Proibir mudança de identidade por expurgo desprotegido de recibos/tombstones.
+3. Para ID novo, usar fingerprint versionado de conteúdo financeiro completo e janela de 10 minutos **somente para detectar candidatos**; a data informada no lançamento não controla a janela. Diferenciar descrição, valor em centavos/Decimal, competência, status e IDs de entidades.
+4. Para duas intenções com IDs diferentes e sem invalidade real, **inserir B mesmo que A exista**. Eventos, LedgerEntry aplicáveis, receipts e registros de suspeita devem obedecer transação serializável e invariantes de saldo; retry de conflito transacional não pode gravar uma terceira cópia.
+5. Associar A e B por registros de auditoria/versionamento, sem editar automaticamente o histórico financeiro de A. A auditoria do segundo evento e o alerta auditável de A devem ser consistentes e recuperáveis. Falha em auditoria obrigatória deve fazer rollback da operação inteira, nunca deixar evento sem trilha.
+6. A UI/APK existente só vê sucesso quando B realmente foi gravado. A indicação de suspeita é **observável em canal autorizado separado** e não bloqueia o POST. Provar visibilidade e permissões como gate, sem inventar tela aprovada.
+7. Após decisão humana, preservar o evento original e aplicar apenas a correção financeira explicitamente autorizada, com reversão e trilha de auditoria. Não usar DELETE físico de event/ledger nem chamar de reversível uma operação sem reversão comprovada.
+8. Marcar recibos, auditoria e suspeitas para retenção protegida, respeitando RLS, LGPD, trilhas de restauração e controles de expurgo; não considerar \`expiresAt\` automaticamente cumprido como retenção real.
+9. Não estender esta decisão automaticamente a benefícios, cartões, transferência, fatura, pendentes, PATCH/PUT de AppState ou ao histórico da #700. Esses domínios têm escritores e riscos separados.
 
-1. Autenticar JWT e resolver workspace/owner/role antes de buscar candidato; rejeitar contexto divergente.
-2. Verificar recibo por (workspaceId, operationId) antes de qualquer fingerprint. Se o recibo pertence a outra requisição, não interpretar como replay.
-3. Validar fingerprint contextual versionado; recuperar evento/receipt autoritativo A e **sua situação atual**, incluindo arquivamento/estorno, antes de qualquer resposta de sucesso. Não prometer evento ativo com referência já arquivada.
-4. Serializar decisões concorrentes para o mesmo contexto sem criar UNIQUE no fingerprint (pode usar bloqueio transacional por chave de fingerprint para consulta, mas nunca como prova de duplicidade).
-5. Gravar recibo/alias para B e audit log de supressão na mesma transação em que se comprova que NÃO há novo evento/ledger. Crash ou rollback não podem deixar sucesso sem recibo nem receipt sem evento.
-6. Em caso de resposta perdida depois do commit, replay da **identidade comprovada** deve retornar o mesmo evento, com estado consistente; a ausência futura do recibo após expurgo não deve liberar reutilização silenciosa de operação.
-7. Retenção, RLS, índice de busca, LGPD, política de tombstones e limpeza de recibos são decisões explícitas separadas. O prazo expiresAt existente não é prova de expurgo automático.
+### 7. MATRIZ OFICIAL DE ACEITE A01–A18 (DEFINIDA, AINDA NÃO EXECUTADA)
 
-O fluxo atual de CloudMutationReceipt por operationId e a função serializableFinancialTransaction devem ser preservados, não substituídos por uma deduplicação probabilística.
+**Ambiente exigido:** HTTP Fastify REAL + JWT válido de teste + PostgreSQL 17 descartável, contas e saldos sintéticos, aplicação de schemas só no banco fictício, API e rede isoladas. Executar os gates novos sem repetir PT63–PT217 já aprovados. Todos os testes devem comparar IDs, valores, receipts, LedgerEntry, AuditLog, saldos e vínculo de suspeita antes/depois, e registrar rollback e limpeza.
 
-### 7. Matriz de testes obrigatórios antes de qualquer alteração em writer
+**Critério global:** o resultado esperado é **preservação integral de todas as intenções distintas**, risco de duplicatas de retry **explicitamente aceito e sinalizado**, e idempotência verdadeira por ID com escrita única. Não apresentar esse conjunto como garantia de zero duplicação para IDs diferentes. Uma coincidência semântica não pode causar 409 de possível duplicata nem ausência de escrita de despesa válida.
 
-Ambiente de ponta a ponta exclusivamente **Fastify HTTP real + JWT autenticado + PostgreSQL 17 descartável**. Preparar usuário, workspace, contas, categorias, métodos e saldos fictícios. Aplicar migrations somente no banco descartável, nunca em Supabase/Render/QA persistente. Limpar recursos no fim e registrar hashes/contagens sem segredos.
-
-| Gate | Ensaio | Assert e evidência exigida |
+| Gate | Cenário a executar | Assert obrigatório para PASS |
 | --- | --- | --- |
-| A01 | POST original normal com operationId X | 201; 1 FinancialEvent, 1 LedgerEntry se pago e monetário, 1 receipt, auditoria de criação |
-| A02 | Commit PG17 de X, simular perda de ACK e reenviar **mesmo X** | Resposta do evento A, 1 FinancialEvent e 1 ledger, 0 efeito adicional, recibo estável |
-| A03 | Mesmo X com payload divergente | 409 existente, nenhuma mudança financeira, auditoria de rejeição |
-| A04 | Commit PG17 de X, perda de ACK, retry legado com Y diferente e **payload idêntico** | Registrar que Y é fingerprint-candidato. Demonstrar que NÃO existe prova causal suficiente para suprimir sem risco de perda; gate de garantia dupla deve ficar BLOQUEADO |
-| A05 | Duas despesas legítimas intencionalmente idênticas, X/Y na janela | Duas operações reais permitidas, duas trilhas, saldos/ledger adequados; nunca suprimir, retornar A falsamente ou bloquear só pelo fingerprint |
-| A06 | Caso comparativo A04 versus A05 com observações de servidor equivalentes | Prova de indistinguibilidade; qualquer política que entregue contagens distintas sem sinal independente é inválida |
-| A07 | Candidato com data igual, valor igual, mas conta/categoria/método/status/competência/nota diferentes | Fingerprints distintos; nenhum vínculo falso; precisão monetária exata |
-| A08 | Mesmo hash/fingerprint entre workspaces/usuários distintos | 0 vazamento; tokens e visibilidade isolados; nenhuma supressão cruzada |
-| A09 | Alta concorrência, 2–20 POSTs de mesmo X, resposta perdida e retry | Exatamente um evento e recibo para X; retries serializáveis; nenhum ledger duplicado |
-| A10 | Alta concorrência, IDs diferentes e mesmo conteúdo (intenções distintas comprovadas no harness) | Sem UNIQUE no fingerprint; preservação de todas as intenções legítimas |
-| A11 | Se existir vínculo causal VERIFICADO, retry Y com A previamente confirmado | 1 evento/ledger no total, alias/receipt de Y e auditoria SUPPRESSED, resposta 2xx com ID real de A |
-| A12 | Forçar falha em cada ponto: evento, ledger, auditoria, recibo e alias | Rollback atômico; jamais receipt sem efeito válido ou 2xx antes do commit |
-| A13 | Evento predecessor arquivado/estornado/modificado, retry com mesmo ou novo ID | Não ressuscitar, não devolver confirmação semanticamente falsa; preservar identidade/FKs |
-| A14 | Expiração ou exclusão simulada de recibo em PG17 fictício | Não permitir reaproveitar ID antigo como nova escrita sem marcador/tombstone; registrar risco de retenção |
-| A15 | 409, 422, timeout após commit, reconexão, falha genérica, 201 de evento confirmado | APK708 original, proxy nativo com egress bloqueado; sem novo código/status/payload; observar UI e ID; no máximo os gates novos estritamente necessários |
-| A16 | APKs 706/707 originais, quando viável | Exercitar runtime de 409/422, retry, cold start e confirmações; inventário estático NÃO substitui esses gates |
-| A17 | Benefício Verocard, cartão, parcelamento, transferência, pendentes, PATCH/PUT, RLS, LGPD, histórico e rollback | Gates de não regressão isolados por domínio, sem alterar escritores fora do escopo |
-| A18 | Detecção por fingerprint com duas despesas legítimas e 409 POSSIBLE_DUPLICATE atual | Demonstrar o bloqueio já existente e provar que uma mudança de política não o agrava nem cria falso sucesso |
+| **A01** | POST /finance/events inicial com ID X, despesa paga monetária válida | HTTP 201, FinancialEvent X gravado, LedgerEntry aplicável único, recibo e auditoria válidos; saldo correto |
+| **A02** | Commit no PG17, perder ACK e reenviar **o mesmo X** com mesmo payload | Mesmo FinancialEvent, mesmo recibo e nenhum novo efeito monetário; replay 2xx compatível; 1 evento/1 ledger |
+| **A03** | Reutilizar X com conteúdo diferente | HTTP 409 já conhecido; nenhuma mutação financeira, operação original preservada |
+| **A04** | Commit de X, perder ACK, reenviar Y diferente com payload idêntico na janela | **Dois FinancialEvent diferentes**, dois receipts/ledgers aplicáveis, saldo refletindo duas escritas; suspeita vinculando X↔Y na auditoria; Y recebe 201 com seu ID, nunca ID de X. **Duplicação residual esperada e aceita**, não classificar como bug de gate |
+| **A05** | Duas despesas realmente distintas e idênticas, X e Y, na mesma janela | Exatamente dois eventos persistidos, nunca falso replay, exclusão, 409 semântico ou bloqueio; vincular suspeita e preservar decisão humana possível |
+| **A06** | Reproduzir A04 e A05 com HTTP/estado indistinguíveis | **Mesma decisão conservadora nos dois casos** (criar dois + auditar), sem inferência causal; aceitar possível duplicata em A04 |
+| **A07** | Alterar individualmente conta, categoria, pagamento, tipo, status, competência, notas, descrição, data, valor (inclusive R$0,01), owner ou workspace | Fingerprint distinto quando a semântica muda, sem associação indevida; dinheiro exato em centavos/Decimal |
+| **A08** | Mesma despesa em dois workspaces/usuários com JWTs distintos, incluindo papel sem permissão | Nenhum cruzamento de busca, suspeita, receipt, dados ou auditoria; acesso negado à leitura não autorizada |
+| **A09** | 2–20 requisições concorrentes com **mesmo X e payload** | Exatamente 1 evento/ledger/receipt, todos os replays coerentes e transação serializável; nenhum saldo duplicado |
+| **A10** | 2–20 operações concorrentes com **IDs diferentes e mesmo fingerprint**, todas financeiramente válidas | Todos os IDs autorizados geram eventos próprios, sem índice UNIQUE/filtro que descarte; grupos de suspeita auditáveis e integridade de saldos |
+| **A11** | Verificar trilha de suspeita para **ambos A e B**, consulta read-only do usuário/suporte autorizado e revisão humana | Logs vinculam IDs, horários, motivo e estado; alerta é observável sem alterar APK; sem aviso bloqueante; não autorizado não visualiza; revisão confirmando "distintas" preserva ambos |
+| **A12** | Injetar falhas entre criação, ledger, receipt, auditoria de A/B e vínculo da suspeita | Rollback integral do grupo necessário; nunca 2xx antes do commit, nem evento sem recibo/auditoria exigida, nem perda silenciosa |
+| **A13** | Predecessor arquivado, estornado ou editado; tentativa nova com ID distinto | Nunca ressuscitar nem usar ID de predecessor em sucesso; nova operação só se válida, histórico/vínculos preservados; revisão/correção auditáveis e reversíveis |
+| **A14** | Recibo vencido, excluído deliberadamente no banco descartável e reuso de ID antigo | Não permitir escrita como nova sem controle confiável de tombstone/retention; testar recuperação/fail-closed sem apagar histórico financeiro |
+| **A15** | APK708 original via CapacitorHttp nativo: 409, 422, timeout, retry, resposta 201 de criação distinta e sem novos headers | Compatibilidade comprovada em emulador isolado; UI aceita 201 real, novo ID e nenhuma exigência de protocolo novo; não repetir caracterizações já aprovadas além do necessário |
+| **A16** | APKs originais 706 e 707, em emulador isolado, com novos casos de sinalização server-side | Confirmar tolerância ao comportamento de API sem modificação do APK. Se não testadas dinamicamente, gate permanece **PENDENTE**, mesmo com hash semelhante |
+| **A17** | Regressão financeira: Verocard benefício, cartões, faturas, transferências, pendentes, PATCH/PUT, importações, RLS, LGPD e referências financeiras | Nenhum desvio de writer, saldo, atomicidade, FK, reversão, autorização ou funcionalidade fora do escopo; sem aprovar tela visualmente |
+| **A18** | **Regressão P0 específica:** duas despesas idênticas válidas em menos de 10 min com \`allowDuplicate\` ausente/falso na API candidata | A guarda \`POSSIBLE_DUPLICATE\` **não bloqueia** a segunda apenas por semelhança; HTTP 201 real para X e Y, **2 FinancialEvent + recibos + ledger aplicável**, auditoria e sinalização em ambos. Com mesmo X repetido: **1 evento**. Nenhuma exclusão/mesclagem automática |
 
-**Critério de aprovação da proteção perfeita:** A04 e A05 teriam de passar simultaneamente sem sinal causal adicional. Como o mesmo par de chamadas pode representar R ou N, esse gate é **INATINGÍVEL** com os dados de 706/707/708 conhecidos. Não declarar PASS por escolher apenas cenários que favoreçam a heurística.
+**GATE NÃO NEGOCIÁVEL:** A04 + A05 + A06 + A11 + A18 precisam ser PASS simultaneamente: dupla criação válida e sinalização, nunca descarte silencioso. A01–A18 só podem ser declarados aprovados quando as respectivas evidências existirem; A16 não se converte em PASS pelo inventário estático. A14 exige tratar política de tombstones/retention antes de aceitar expurgo. Não confundir CI/build verde com aprovação funcional ou visual.
 
-Para ensaios que vierem a ser implementados, registrar no mesmo checkpoint: commit, comando, runId, banco/namespace fictício, JWT sem valor exposto, contagem before/after de FinancialEvent/LedgerEntry/Receipt/AuditLog, saldos, chaves de operação e limpeza. Preservar gates PT63–PT217; não repetir homologações aprovadas sem motivo.
+**Sem implementação nesta decisão:** a API existente ainda pode retornar POSSIBLE_DUPLICATE/409 e não cumpre A04/A05/A18. A matriz é critério de aceite FUTURO, não resultado executado.
 
-### 8. Critérios de decisão e limites da Fase A
+### 8. Estado e autorização
 
-**Aprovável agora:** contrato documental, fingerprint como detector de candidato, auditoria de ambiguidade, uso autoritativo de recibos/FinancialEvent e plano de testes. Nenhuma migração ou alteração de writer está autorizada nesta entrega.
+**Decisão de risco: APROVADA como política documental de Fase A.** O contrato substitui a parte indecisa de alternativas P1/P2/P3 da versão anterior: **P1 é obrigatória; P2 e P3 estão proibidas para ambiguidade financeira válida**.
 
-**Não aprovável como definitivo:** suprimir B apenas porque A tem mesmo fingerprint dentro de uma janela, ainda que o commit de A esteja confirmado. Isso confundiria retries com despesas legítimas coincidentes e retornaria um sucesso indevido.
+**Não implementado:** fingerprint versionado/consultável, auditoria de suspeita bilateral, caminho autorizado de revisão, reversão manual e mudança da guarda \`POSSIBLE_DUPLICATE\`. Nenhuma dessas funcionalidades deve ser descrita como já existente. A camada financeira, migrations e qualquer interface dependem de testes isolados, autorização de implementação e dos gates correspondentes.
 
-**Bloqueio de design:** para satisfazer todas as cinco restrições será preciso um sinal causal novo e confiável ou uma revisão explícita de pelo menos uma restrição (por exemplo, aceitar revisão humana temporária ou risco residual de duplicação). Nenhuma das opções pode ser ativada silenciosamente nem ser apresentada como garantia zero-perda/zero-duplicação.
+**Risco residual formalmente aceito:** possibilidade de duplicação visível e reconciliável em caso de resposta perdida seguida de nova intenção/ID no cliente legado. Inexistência de perda silenciosa por **supressão heurística** é prioridade maior. Isso não elimina riscos por falhas externas, indisponibilidade ou saldo insuficiente.
 
-**Próximo passo seguro:** decidir formalmente a política para B ambíguo e, se houver evidência adicional de identidade que não exija atualização das APKs, caracterizá-la primeiro em HTTP/JWT/PG17 descartável. Só depois especificar migrations aditivas, alterações em escritores e gates de rollout/rollback. Issue #699 permanece OPEN/P0. PR #705 Draft; sem merge, deploy ou alteração de Android estável.
+**Bloqueios preservados:** Issue #699 OPEN/P0, PR #705 Draft; nenhuma alteração em Android estável, produção, writers, bancos protegidos, merge ou deploy. A Fase A de política está definida, **a implementação e homologação A01–A18 permanecem pendentes**.
+
+**Próximo passo exato:** com autorização específica em momento posterior, preparar e executar em branch QA isolada um primeiro gate de caracterização A04/A05/A18 da guarda atual, sem escrever produção, e definir formalmente schema aditivo de auditoria/sinalização; só depois implementar em writer e rodar toda A01–A18.
