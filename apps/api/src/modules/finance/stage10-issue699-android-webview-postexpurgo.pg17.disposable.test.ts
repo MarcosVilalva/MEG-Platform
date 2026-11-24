@@ -193,6 +193,21 @@ try{
   const startupLog=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
   assert.match(startupLog,/ISSUE699_QA_WEBVIEW_CLIENT_INSTALLED/,
     'ISSUE699_QA_WEBVIEW_CLIENT_NOT_INSTALLED');
+  // Preflight only: ensure a trivial resource invokes the QA WebViewClient.
+  // Do not attempt a financial mutation until any callback is proven.
+  const callbackProbe=await evaluate(`(async()=>{
+    try{const response=await fetch('https://localhost/__issue699_client_probe__?t='+Date.now(),
+      {cache:'no-store',signal:AbortSignal.timeout(5000)});
+      await response.text();
+      return {settled:true,status:response.status};
+    }catch(error){return {settled:true,reason:String(error)};}
+  })()`);
+  const callbackTrace=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
+  const callbackLines=(callbackTrace.match(/ISSUE699_CLIENT_ATTACHED[^\r\n]*/g)||[]);
+  console.log('ISSUE699_CLIENT_PROBE='+JSON.stringify(callbackProbe));
+  console.log('ISSUE699_CLIENT_ATTACHED_LOGS='+JSON.stringify(callbackLines.slice(-12)));
+  assert.ok(callbackLines.length>0,'ISSUE699_NO_ANY_WEBVIEWCLIENT_CALLBACK');
+  console.log('ISSUE699_CLIENT_ATTACHED_PREFLIGHT=PASS');
   const offlineMarker='files/meg_issue699_webview_offline';
   adb('shell','run-as',pkg,'mkdir','-p','files');
   try{
