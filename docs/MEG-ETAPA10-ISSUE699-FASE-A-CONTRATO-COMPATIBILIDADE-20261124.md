@@ -1,5 +1,8 @@
 # Issue #699 | Fase A | Contrato de idempotência e compatibilidade, antes da correção
 
+> **ATUALIZAÇÃO DE POLÍTICA, 24/11/2026.** Este arquivo preserva a caracterização histórica e as alternativas que estavam em discussão. Para **POST /finance/events** com `operationId` novo e mesmo fingerprint, a decisão posterior e expressamente aprovada está no contrato [MEG-ETAPA10-ISSUE699-FASE-A-CONTRATO-FINGERPRINT-SERVER-SIDE-20261124.md](./MEG-ETAPA10-ISSUE699-FASE-A-CONTRATO-FINGERPRINT-SERVER-SIDE-20261124.md): **criar toda despesa financeiramente válida, auditar a suspeita em ambos os eventos, oferecer revisão humana não bloqueante, sem supressão por hash/tempo.** Somente replay com **mesmo operationId e mesmo requestHash** autoriza não escrever novamente. Os caminhos de triagem por 409/422, retenção para revisão e supressão heurística descritos abaixo são **hipóteses históricas, NÃO política operacional aprovada para esse POST**. PATCH/PUT legado seguem com gates próprios e NÃO são dados como resolvidos. **A API e os writers ainda não foram alterados**; a guarda existente POSSIBLE_DUPLICATE/409 continua pendente de adequação segura em QA. A01–A18 do contrato posterior são critérios de aceite ainda não executados.
+
+
 **Data:** 24/11/2026. **Status:** Fase A autorizada; diagnóstico de contrato, NÃO é implementação concluída. **Branch:** PR #705 Draft. Não houve deploy, merge, alteração de APK estável, banco protegido ou produção.
 
 ## Causa reproduzida (não confundir com duplicidade contábil no ledger)
