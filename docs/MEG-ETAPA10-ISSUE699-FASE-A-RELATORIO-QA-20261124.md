@@ -1,6 +1,27 @@
 # MEG Finanças | Etapa 10 | Issue #699 | Relatório da Fase A (QA isolada)
 **Data:** 24/11/2026. **Status:** EM HOMOLOGAÇÃO, NÃO CONCLUÍDA. **PR:** [#706 Draft](https://github.com/MarcosVilalva/MEG-Platform/pull/706), baseada na PR #705, branch `stage10/issue699-phase-a-qa-20261124`. **Issue:** #699 OPEN/P0.
 
+## RESULTADO ATUALIZADO COM EVIDÊNCIA VERIFICADA, 24/11/2026
+
+**Último gate integrado completo:** [GitHub Actions #45468800946](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45468800946), job `138710800004`, **COMPLETED/SUCCESS**, commit do código `f5f7e0f583b15b9a31ab9c9072b34d4b4349d1b9`. Os marcadores individuais no log são **A01–A14 e A18 = PASS (15/18)**, com HTTP Fastify real, JWT de login fictício e PostgreSQL17 descartável. O run anterior #45467858050, onde A10 tinha falhado, fica como histórico de diagnóstico, **superado** pela revisão testada.
+
+**Evidências críticas do log #45468800946:**
+- `A04=PASS`: `events=2, ledger=2, audits=2`, secondEvent distinto depois de ACK perdido e novo ID.
+- `A05=PASS`: duas despesas legítimas idênticas criadas, `deltaEvents=2, deltaSuspicions=2`.
+- `A06=PASS`: ambos os cenários indistinguíveis resultaram em `CREATED_AND_AUDITED`.
+- `A10=PASS`: `requests=4, events=4, ledgers=4, bilateralAuditRows=6`; retries serializáveis controlados.
+- `A11=PASS`: GET autenticado `/finance/events/suspected-duplicates`, `total=10`, ambos os `pairLinks` presentes, sem exposição entre workspaces (A08).
+- `A12=PASS`: `syntheticFailureStatus=500, financialCountsPreserved=true`, rollback atômico.
+- `A14=PASS`: `tombstone=true, status=409` após expurgo simulado em banco descartável.
+- `A18=PASS`: `twoDifferentIDsCreate=true, ledgerDelta=2, auditDelta=2, possibleDuplicate409=false`.
+- A01–A03, A07–A09 e A13 também têm marcadores individuais PASS no mesmo job.
+
+**Critérios ainda pendentes:** A15 integração APK708 nativa com novo writer; A16 APK706 e APK707 originais dinamicamente testadas contra compatibilidade da nova API; A17 regressão completa incluindo revisão humana reversível e RLS. Não confundir **15/18 PASS (83,3% dos gates)** com conclusão da Fase A ou percentual do MEG inteiro. Não declarar 18/18.
+
+**A17, regressão complementar separada:** [run #45469115424](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45469115424), job `138711915864`: **finance domain full static/unit contracts PASS**, **Phoenix/mobile compatibility contracts PASS**, **RLS offline test FAIL**, por exigência **preexistente de RLS explícito em CardLimitControl**. Não alterar schema/política de cartões fora da Etapa 10 nem maquiar o erro. A17 segue **PENDENTE**; revisão humana de suspeitas ainda é consulta sem conclusão manual persistida ou reversão testada.
+
+**Workflow de A16 em preparação:** `.github/workflows/meg-stage10-issue699-phase-a-legacy-apks-native-qa.yml`, com matriz de APK706/707 originais, SHA fixos, CA/proxy HTTPS de QA, egress bloqueado, usando o harness nativo já caracterizado para APK708. O resultado de execução **ainda não foi confirmado**; a intenção de executar não equivale a PASS.
+
 ## Escopo e verificação do canal
 A revisão do código confirmou que, previamente à Fase A, `GET /finance/audit` listava auditorias gerais e `GET /finance/events` listava eventos, porém **não existia auditoria bilateral persistente de suspeitas nem endpoint específico para consultá-las**. Alertas `POSSIBLE_DUPLICATE` da UI eram transitórios e bloqueantes.
 
