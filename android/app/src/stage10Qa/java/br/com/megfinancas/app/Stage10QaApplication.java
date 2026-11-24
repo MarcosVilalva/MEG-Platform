@@ -41,6 +41,9 @@ public final class Stage10QaApplication extends Application implements Applicati
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
+                // QA-only diagnostic. No query parameters or credentials logged.
+                Log.i(TAG, "ISSUE699_CLIENT_ATTACHED " + request.getMethod()
+                    + " " + uri.getScheme() + "://" + uri.getHost());
                 boolean protectedQaRequest = "http".equals(uri.getScheme())
                     && "127.0.0.1".equals(uri.getHost())
                     && uri.getPort() == 3333
