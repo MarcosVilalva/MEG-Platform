@@ -62,6 +62,8 @@ jobs:
           git fetch --depth=1 --no-tags origin 36c886b9597be95a28eb2add00f073e5f43f6fe0
           timeout 30 node --experimental-vm-modules scripts/meg-stage10-apk708-runtime.contract.mjs
       - run: npm ci --audit=false --fund=false
+      - name: Exercise real application outbox guard without Android
+        run: node apps/web/src/stage10-issue699-real-outbox-flow.test.mjs
       - name: Enforce unchanged full security gate before Android QA build
         run: node scripts/npm-security-audit.mjs --audit-level=high
       - name: Prepare PG17 only in same temporary Android QA runner
