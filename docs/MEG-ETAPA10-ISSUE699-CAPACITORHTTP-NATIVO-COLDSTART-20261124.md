@@ -84,3 +84,47 @@ O `syntheticCommitted=1` representa apenas o marcador do servidor fictício; nã
 [Workflow cold start #45445624430](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45445624430): repetir 409/422 e manter um terceiro POST sintético sem resposta por mais de 115 segundos, observando a UI antes e depois do limite; forçar parada completa da Activity sem limpar os dados, relançar APK original, observar 8,5 segundos de POSTs espontâneos e armazenamento local. **Resultado PENDENTE nesta revisão**, não autoriza conclusão sobre recuperação ao reiniciar.
 
 **#699 continua OPEN/P0, PR #705 Draft, sem correção de escritores financeiros ou protocolo definitivo aprovado.**
+
+
+## 7. GATES COMPLEMENTARES APROVADOS: TIMEOUT, RETRY MANUAL E COLD START (24/11/2026)
+
+**Escopo e proveniência:** APK 708 original e hash fixado, Android 13 API 33 em GitHub Actions, `CapacitorHttpAndroidInterface.isEnabled()=true` sem restaurar `window.CapacitorWebFetch`, proxy HTTPS fictício e egress público bloqueado. Apenas os scripts de QA foram modificados. Resultados abaixo não são mutações em PG17 ou produção.
+
+### 7.1. Correção do harness de cold start
+
+- [Run #45445624430](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45445624430): FAILURE do harness por `SyntaxError: Unexpected token 'finally'` na linha 443. Nenhum cenário funcional foi concluído nesse run.
+- Commit `cef7f665a66a0ff19c70503156f324a5c2805d6b`: acrescentada uma chave de fechamento em `scripts/meg-stage10-issue699-apk708-native-coldstart.mjs`; parser JS validado antes do commit.
+- [Run #45450373014](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45450373014), job `138645498710`: SUCCESS. Na terceira requisição com resposta retida, a UI ainda mostrava `Salvando lançamento… / Processando…` aos 47 s e já exibia erro com `Salvar lançamento` habilitado quando inspecionada após cerca de 126 s. Não inferir o instante exato do timeout a partir de duas observações.
+
+**Cold start sem limpeza de dados:** `adb shell am force-stop br.com.megfinancas.app`, nova `MainActivity`, PID confirmado diferente (`2384` -> `5040` no run #45450373014), depois 8,5 s de observação. Nenhum novo `POST /finance/events`: contagem 3 -> 3. Na volta, o aplicativo mostrou login, e a sessão anterior não existia mais em `sessionStorage`. Nenhum journal de operação identificado no `localStorage` (vazio) ou no IndexedDB observado (`meg-phoenix-runtime/monthly-snapshots`, cache de leitura).
+
+**Reautenticação pós cold start:** commit `b171b6211445af6a8a5ee5fdf4a2543e5c8c0988` acrescentou login fictício pelo formulário da APK original depois do reinício, sem trocar transporte, e assert de ausência de reenvio financeiro. [Run #45451835980](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45451835980), job `138650725003`: **SUCCESS**. Processo original `2452` -> processo novo `4925`; após 8,5 s no login e 8,5 s na Home já autenticada, continuaram exatamente 3 POSTs, sem operação espontaneamente recuperada. `localStorage` vazio, `sessionStorage` reabriu somente `meg.auth.session`, `journalPresent=false`. Marcadores:
+- `ISSUE699_NATIVE_COLDSTART_NO_SPONTANEOUS_POST_8S=PASS`
+- `ISSUE699_NATIVE_COLDSTART_REAUTH_HOME` com `homeVisible=true`
+- `ISSUE699_NATIVE_COLDSTART_NO_SPONTANEOUS_POST_AFTER_REAUTH=PASS`
+- `ISSUE699_NATIVE_FINANCIAL_POST_PROXY=PASS`
+- `ISSUE699_APK708_ORIGINAL_PROBE_ERRORS=[]`
+
+**Limite:** a conclusão é restrita às janelas efetivamente observadas. Não prova inexistência de recuperação manual, por outras ações ou em prazos posteriores.
+
+### 7.2. Retry manual **depois** de timeout no CapacitorHttp original
+
+Commit `a6118db1d48551a275f24030b63646a453cdbd4e` estendeu o atraso de resposta no mock do harness nativo e passou a exigir erro da UI, botão habilitado, clique manual e comparação dos quatro `operationId` efetivamente capturados no `POST /finance/events`.
+
+[Run #45452026542](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45452026542), job `138651391697`, **COMPLETED/SUCCESS**:
+- `ISSUE699_APK708_NATIVE_TIMEOUT_AFTER_126S={"errorVisible":true,"saveEnabled":true,"processing":false}`.
+- `ISSUE699_APK708_RECONNECT_AUTO_RETRY_WINDOW={"before":3,"after":3,"seconds":6.5}`.
+- `ISSUE699_APK708_TIMEOUT_MANUAL_RETRY_CLICK=true`.
+- Terceira tentativa com timeout: `phoenix-event-119950db-d6e9-4066-a6d9-13421568075b`.
+- Quarta tentativa manual com campos financeiros iguais: `phoenix-event-f93949ed-db22-4532-b855-e09ad894c1eb`.
+- `ISSUE699_NATIVE_LONG_TIMEOUT_MANUAL_RETRY_ID_CHANGED=PASS`.
+- `ISSUE699_APK708_SYNTHETIC_COMMITTED=1` é exclusivamente contador do servidor fictício, **não** commit contábil em banco.
+- `ISSUE699_NATIVE_FINANCIAL_POST_PROXY=PASS`, `ISSUE699_APK708_ORIGINAL_PROBE_ERRORS=[]`.
+
+**Conclusão:** no transporte nativo real da APK 708, o timeout do `AbortSignal.timeout(45e3)` do JS **não interrompe** a requisição aos 45 s (resposta anterior aos ~51 s chegou como sucesso). O cliente mostrou erro em observação posterior, antes do segundo minuto e meio, e permitiu retry manual usando um **novo** `operationId` para a mesma intenção. O comportamento de risco verificado no fallback **também se reproduz nativamente**. A diferença de headers permanece: o POST nativo traz `Content-Type: application/json`, esquema `Authorization: Bearer` e não traz `Origin`; o fallback observado traz `Origin: https://localhost`.
+
+### 7.3. Inventário conservador 706/707 e restrições
+
+A inspeção binária anterior permanece a evidência disponível para 706/707: `CapacitorHttp.enabled=true`, `native-bridge.js` igual ao da 708, JS com deadline de 45 s e rota `/finance/events`. **Risco análogo plausível, não homologação dinâmica dessas versões**. Número de aparelhos ativos por versão desconhecido. A opção pública de atualização `mandatory:false` não garante substituição das APKs legadas.
+
+**Status de encerramento:** as três lacunas solicitadas receberam evidência compatível com seus limites (transporte nativo, cold start incluindo reautenticação, inventário estático 706/707). **Não há autorização implícita para protocolo ou deploy**. Issue #699 segue OPEN/P0 e PR #705 Draft até que a política de compatibilidade e seus gates próprios sejam definidos e aprovados. API financeira, escritores, Android estável, produção e bancos protegidos intactos; nenhum merge/deploy.
