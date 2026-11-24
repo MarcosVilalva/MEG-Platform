@@ -22,6 +22,7 @@ public final class Stage10QaApplication extends Application implements Applicati
     private static final String QA_PACKAGE = "br.com.megfinancas.app.stage10qa";
     private static final String OFFLINE_FLAG = "meg_issue699_webview_offline";
     private static final String TAG = "MEG_STAGE10_QA";
+    private Bridge qaHttpRegisteredBridge;
 
     @Override
     public void onCreate() {
@@ -37,6 +38,13 @@ public final class Stage10QaApplication extends Application implements Applicati
         if (!(activity instanceof MainActivity)) return;
         final Bridge bridge = ((MainActivity) activity).getBridge();
         if (bridge == null || bridge.getWebView() == null) return;
+        // Core plugin is registered during Bridge creation. Replace only in
+        // disposable stage10Qa after Bridge exists, retaining normal transport.
+        if (qaHttpRegisteredBridge != bridge) {
+            bridge.registerPlugin(Stage10QaHttpPlugin.class);
+            qaHttpRegisteredBridge = bridge;
+            Log.i(TAG, "ISSUE699_QA_NATIVE_HTTP_PLUGIN_ATTACHED");
+        }
         bridge.getWebView().setWebViewClient(new BridgeWebViewClient(bridge) {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
