@@ -2,7 +2,7 @@ import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
-import { isMonetaryAccountType, isPostedFinancialStatus } from './financial-policy';
+import { isMonetaryAccountType, isMonetaryFinancialEvent, isPostedFinancialStatus } from './financial-policy';
 import { monetaryAccountDebitWindow, serializableFinancialTransaction, isFutureFinancialDay } from './monetary-protection';
 
 type Tx = Prisma.TransactionClient;
@@ -10,7 +10,7 @@ type Decision = 'RESOLVED_DUPLICATE'|'RESOLVED_LEGITIMATE';
 type Command = {peerEventId:string;suspicionGroupId:string;operationId:string;reason:string};
 export type ResolveCommand = Command & {decision:Decision;correctionTargetEventId?:string;effectiveDate?:string};
 export type UndoCommand = Command & {resolutionAuditId:string};
-type EventRow = Prisma.FinancialEventGetPayload<{include:{account:true,receipt:true,payablePayment:true,importedRow:true}}>;
+type EventRow = Prisma.FinancialEventGetPayload<{include:{account:true,paymentMethod:true,receipt:true,payablePayment:true,importedRow:true}}>;
 type History = {id:string;action:string;createdAt:Date;metadata:string|null};
 export class A17ReviewError extends Error {constructor(public code:string){super(code);}}
 const fail=(code:string):never=>{throw new A17ReviewError(code);};
@@ -55,7 +55,7 @@ async function pair(tx:Tx,actor:string,id:string,peerId:string,group:string){
   }
   const events=await tx.financialEvent.findMany({where:{
     id:{in:ids},workspaceId:workspace.workspaceId,userId:workspace.workspace.ownerId,
-  },include:{account:true,receipt:true,payablePayment:true,importedRow:true}});
+  },include:{account:true,paymentMethod:true,receipt:true,payablePayment:true,importedRow:true}});
   if(events.length!==2)fail('A17_PAIR_NOT_FOUND');
   const markers=await tx.auditLog.findMany({where:{entity:'FinancialEvent',
     action:'FINANCIAL_EVENT_DUPLICATE_SUSPECTED',entityId:{in:ids}},
@@ -70,7 +70,7 @@ async function pair(tx:Tx,actor:string,id:string,peerId:string,group:string){
   return {workspace,events,anchor:ids[0],other:ids[1]};
 }
 function eligible(event:EventRow){
-  if(event.type!=='expense'||!isPostedFinancialStatus(event.status)||event.archivedAt
+  if(event.type!=='expense'||!isMonetaryFinancialEvent(event)||!isPostedFinancialStatus(event.status)||event.archivedAt
     ||!event.account||!isMonetaryAccountType(event.account.type)
     ||event.receipt||event.payablePayment||event.importedRow||tagged(event.sourcePayload)
     ||!event.signedAmount.isNegative()||!event.amount.isPositive())
