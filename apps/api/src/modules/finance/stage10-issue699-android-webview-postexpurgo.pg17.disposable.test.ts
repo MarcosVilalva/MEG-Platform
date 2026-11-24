@@ -278,6 +278,15 @@ try{
       .map(x=>x.slice(0,220));
     console.log('ISSUE699_WEBVIEWCLIENT_INTERCEPTIONS='+JSON.stringify(intercepted));
     console.log('ISSUE699_WEBVIEWCLIENT_PATCH_OFFLINE_PROBE='+JSON.stringify(attempted));
+    if(process.env.MEG_STAGE10_QA_EXPECT_NATIVE_HTTP==='1'){
+      const nativeBlocked=(trace.match(/ISSUE699_QA_NATIVE_HTTP_OFFLINE[^\r\n]*/g)||[]);
+      console.log('ISSUE699_NATIVE_HTTP_OFFLINE_INTERCEPTIONS='+
+        JSON.stringify(nativeBlocked));
+      assert.ok(nativeBlocked.some(x=>x.includes('PATCH /app-state/transactions')),
+        'ISSUE699_NATIVE_HTTP_PATCH_NOT_INTERCEPTED');
+      // A PATCH nativa deve falhar independentemente de OPTIONS/CORS.
+      console.log('ISSUE699_NATIVE_HTTP_PATCH_OFFLINE=PASS');
+    }
     assert.ok(intercepted.length>0,'ISSUE699_WEBVIEWCLIENT_NO_INTERCEPTION');
     assert.equal(probe?.offline,true,'ISSUE699_WEBVIEWCLIENT_GET_NOT_OFFLINE');
     assert.equal(attempted?.offline,true,'ISSUE699_WEBVIEWCLIENT_PATCH_NOT_OFFLINE');
