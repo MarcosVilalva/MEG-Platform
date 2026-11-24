@@ -83,3 +83,51 @@ Valores, conta, categoria, método, data, descrição e status iguais nos quatro
 **Provas de retry automático nesta observação limitada:** após 409, contagem de POSTs 1→1 durante 3,3s; após 422, 2→2 durante 3,3s; após evento sintético `online`/`focus` após timeout, 3→3 durante 6,5s. Não prova ausência de retries em outros eventos, maior janela, reinício ou filas locais. O teste **não** validou native CapacitorHttp nem outras APKs.
 
 **Consequência:** este achado não autoriza HTTP200 `pending:true`, deduplicação por hash ou mudança de API. A caracterização da tela está avançada, mas persistência offline/reinício, modo nativo e versões efetivamente ativas permanecem pendentes. O protocolo definitivo continua NÃO aprovado, escritores financeiros intocados.
+
+
+## 8. ADENDO FINAL: inspeção de armazenamento e reconexão após timeout real do JS
+
+**Evidência:** [GitHub Actions #45433890828](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45433890828), job `138586334195`, COMPLETED/SUCCESS. HEAD testado `d638b4a08bd90d3e22a24ef5757eabc5711bc811`. APK708 original, hash fixado, WebView no Android Emulator isolado, navegador com `window.CapacitorWebFetch` restaurado somente no teste para interceptação CDP, API fictícia local, egress bloqueado. Não houve writer financeiro nem banco PostgreSQL nesse ensaio.
+
+Após o POST #3 de despesa fictícia, cujo servidor **sintético** contabilizou como commit e reteve resposta por 51 segundos, o JS embarcado expirou seu timeout padrão de 45 segundos. A UI exibiu o erro de confirmação, mantendo os dados e permitindo reenvio manual.
+
+Inspeção do estado da WebView, sem despejar valores de autenticação:
+
+```json
+{
+  "localStorageKeys": [],
+  "sessionStorageKeys": ["meg.auth.session"],
+  "indexedDbStores": [
+    {"name": "meg-phoenix-runtime", "stores": ["monthly-snapshots"]}
+  ],
+  "phoenixCreateJournal": null
+}
+```
+
+O banco IndexedDB inspecionado contém uma store de **snapshot de leitura**, não uma store de operações financeiras pendentes. Esta inspeção não prova a inexistência de qualquer persistência em outros meios nativos ou versões, mas não encontrou journal da intenção financeira no armazenamento Web observado após o timeout.
+
+A rede da WebView foi alternada via Chrome DevTools Protocol: `Network.emulateNetworkConditions(offline:true)` seguido de `offline:false`, sem alterar o firewall externo do emulador. Marcadores verificados:
+
+```text
+ISSUE699_APK708_NETWORK_OFFLINE_ONLINE=CDP_OFFLINE_ONLINE_APPLIED
+ISSUE699_APK708_RECONNECT_AUTO_RETRY_WINDOW={"before":3,"after":3,"seconds":6.5}
+ISSUE699_APK708_TIMEOUT_MANUAL_RETRY_CLICK=true
+ISSUE699_APK708_SYNTHETIC_COMMITTED=1
+```
+
+A quarta tentativa manual foi aceita pelo servidor fictício e a UI apresentou `LANÇAMENTO SALVO`; todos os campos financeiros foram mantidos, **mas o operationId mudou**. IDs observados na execução:
+
+1. HTTP409: `phoenix-event-179ef492-ea78-4695-8834-2542ef4f0f92`.
+2. HTTP422: `phoenix-event-af45766c-b02a-44ea-a91e-aa6a9168c6ba`.
+3. Timeout após marcação de commit sintético: `phoenix-event-d52013e7-1cbb-40d4-8d8f-423a599b2401`.
+4. Retry manual com sucesso fictício: `phoenix-event-5f075df8-aa87-4467-8cb6-a24600f8efa6`.
+
+Os quatro POSTs tiveram `description='ISSUE699 QA DESPESA FICTÍCIA'`, `type='expense'`, `status='paid'`, `date='2026-11-24'`, `amount=12.35`, `accountId='issue699-account'`, `categoryId='issue699-category'`, `paymentMethodId='issue699-payment'`. Os IDs acima são de operação, **não IDs persistidos de eventos PG17**.
+
+### Veredito e limites da caracterização
+
+**CONFIRMADO NA WEBVIEW 708 TESTADA:** mesmo formulário pode reenviar uma única intenção com operationId novo após erro/timeout; 409/422 não travam a tela; campo permanece; botão `Salvar lançamento` permite retry; mensagens de falha preservam dados; evento offline/online por CDP não disparou outro POST no intervalo observado; armazenamentos Web inspecionados não revelaram outbox durável da criação.
+
+**AINDA NÃO COMPROVADO:** fidelidade do fluxo do **transporte nativo CapacitorHttp** (a WebView usa browser-fetch shim exclusivamente no QA); comportamento após morte/reinício completo da Activity; ausência absoluta de retry em prazo maior ou outras camadas; UI real das APKs 706 e 707; **distribuição de versões instaladas/ativas em produção**; duplicação efetiva em ledger/PG17 pelo writer `POST /finance/events` nesta sequência. GitHub Releases disponibiliza 200 APKs numeradas e o manifesto de atualização 708 tem `mandatory:false`, mas esses indicadores não são telemetria de instalações.
+
+**Decisão:** NÃO propor protocolo definitivo de compatibilidade nem modificar escritores financeiros enquanto esses gates de segurança permanecerem sem evidência. HTTP 200 com `pending:true` é interpretado como sucesso pelo transporte JS, logo não é uma confirmação segura de operação pendente. O P0 #699 continua ABERTO.
