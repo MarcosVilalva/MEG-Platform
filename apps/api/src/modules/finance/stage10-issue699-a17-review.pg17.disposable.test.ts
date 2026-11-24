@@ -208,7 +208,7 @@ try{
  assert.equal(inverse.signedAmount.toString(),'-12.35');
  assert.equal(inverse.ledgerEntries.length,1);
  assert.equal(inverse.ledgerEntries[0].credit.toString(),'12.35');
- assert.equal((await sameBalance([dup.one,dup.two,compensationId,inverseId])).toString(),'-24.70');
+ assert.equal((await sameBalance([dup.one,dup.two,compensationId,inverseId])).toFixed(2),'-24.70');
  assert.equal((await status(dup)).reviewStatus,'SUSPECTED');
  const retryUndo=await postUndo(dup,resolved.data.resolutionAuditId,undoOp);
  assert.equal(retryUndo.status,201);
