@@ -56,6 +56,13 @@ const httpServer=createServer(async(req,res)=>{
  else if(url.pathname==='/finance/accounts'){out=[account];}
  else if(url.pathname==='/finance/categories'){out=[category];}
  else if(url.pathname==='/finance/payment-methods'){out=[paymentMethod];}
+ else if(url.pathname==='/finance/phoenix-preview/events'){out={items:[],total:0,page:1,pageSize:0};}
+ else if(url.pathname==='/finance/phoenix-preview'){const month=url.searchParams.get('month')||'2026-11';out={
+  month,summary:{month,availableBalance:500,income:0,expense:0,projectedResult:0,realizedIncome:0,realizedExpense:0,realizedResult:0,eventCount:0,pendingCount:0,pendingAmount:0,nextDue:null,topCategories:[]},
+  analytics:{month,summary:{availableBalance:500,income:0,expense:0,projectedResult:0},previous:{month:'2026-10',income:0,expense:0,result:0},delta:{income:0,expense:0,result:0},dailyAverageExpense:0,concentrationTop3:0,categories:[],monthlyTrend:[],paymentMethods:[]},
+  cashflow:{month,openingBalance:500,projectedClosing:500,realizedClosing:500,totalIncome:0,totalExpense:0,days:[]},
+  accounts:[account],categories:[category],paymentMethods:[paymentMethod],cards:[],payables:[],events:{items:[],total:0,page:1,pageSize:0},financialAudit:{items:[],total:0,page:1,pageSize:50},
+ };}
  else if(url.pathname==='/finance/events/month'){out={month:url.searchParams.get('month'),items:[],total:0,page:1,pageSize:50};}
  else if(url.pathname==='/finance/events'){out={items:[],total:0,page:1,pageSize:50};}
  else if(url.pathname==='/finance/summary'){out={month:url.searchParams.get('month'),totalIncome:0,totalExpenses:0,balance:500,availableBalance:500,closingBalance:500,currentBalance:500,projectedBalance:500};}
@@ -192,6 +199,27 @@ try{
   buttons:[...document.querySelectorAll('button,a,[role=button]')].map(x=>({tag:x.tagName,text:x.innerText.trim().slice(0,75),title:x.title||''})).filter(x=>x.text||x.title).slice(0,90),
  }))()`);
  console.log('ISSUE699_APK708_ORIGINAL_AFTER_LOGIN='+JSON.stringify(postLogin));
+ const opened=await evalUI(`(()=>{
+  const controls=[...document.querySelectorAll('button,a,[role=button]')];
+  const target=controls.find(x=>/novo lançamento|novo lancamento/i.test(x.innerText||x.title||'')) ||
+   controls.find(x=>/novo lançamento|novo lancamento/i.test(x.getAttribute('aria-label')||''));
+  if(!target)return false;
+  target.click();return true;
+ })()`);
+ console.log('ISSUE699_APK708_ORIGINAL_NEW_LAUNCH_CONTROL_FOUND='+opened);
+ if(opened){
+  await sleep(1400);
+  const form=await evalUI(`(()=>({
+   bodyText:document.body.innerText.slice(-1900),
+   inputs:[...document.querySelectorAll('input,textarea,select')].map(x=>({
+    tag:x.tagName,type:x.type||'',placeholder:x.placeholder||'',
+    name:x.name||'',ariaLabel:x.getAttribute('aria-label')||'',
+    value:x.type==='password'?'[REDACTED]':x.value,
+   })).slice(-65),
+   buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,100),disabled:x.disabled})).filter(x=>x.text).slice(-70),
+  }))()`);
+  console.log('ISSUE699_APK708_ORIGINAL_LAUNCH_FORM_PROBE='+JSON.stringify(form));
+ }
  console.log('ISSUE699_APK708_ORIGINAL_API_PATHS='+JSON.stringify([...interceptedUrls]));
  console.log('ISSUE699_APK708_ORIGINAL_LOCAL_API_REQUESTS='+JSON.stringify(apiRequests.map(r=>({method:r.method,path:r.path,query:r.query})).slice(0,120)));
  console.log('ISSUE699_APK708_ORIGINAL_REMOTE_FETCH_INTERCEPTED='+intercepted);
