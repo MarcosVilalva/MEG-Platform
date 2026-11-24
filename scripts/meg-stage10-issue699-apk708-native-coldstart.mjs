@@ -436,6 +436,7 @@ try{
    console.log('ISSUE699_APK708_ACTUAL_FINANCIAL_POSTS='+JSON.stringify(apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events')));
   }
  }
+ }
  console.log('ISSUE699_APK708_ORIGINAL_API_PATHS='+JSON.stringify([...interceptedUrls]));
  console.log('ISSUE699_APK708_ORIGINAL_LOCAL_API_REQUESTS='+JSON.stringify(apiRequests.map(r=>({method:r.method,path:r.path,query:r.query})).slice(0,120)));
  console.log('ISSUE699_APK708_ORIGINAL_REMOTE_FETCH_INTERCEPTED='+intercepted);
