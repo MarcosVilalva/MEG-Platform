@@ -62,6 +62,7 @@ function a17Error(reply: FastifyReply, err: unknown) {
       :code==='A17_PAIR_NOT_FOUND'?404
       :code==='OPERATION_ID_REUSED'||code==='A17_ALREADY_RESOLVED'
         ||code==='A17_NO_ACTIVE_RESOLUTION'||code==='A17_ACTIVE_CORRECTION_PROTECTED'
+        ||code==='A17_COUNTERENTRY_IMMUTABLE'
         ||code==='A17_UNDO_INSUFFICIENT_BALANCE'?409:400;
     return reply.code(status).send({error:code,retryable:false});
   }
@@ -150,6 +151,7 @@ function validationError(reply: FastifyReply, details: unknown) {
 }
 
 function eventError(reply: FastifyReply, error: unknown) {
+  if (error instanceof A17ReviewError) return a17Error(reply, error);
   if (error instanceof FinancialEventMutationError) {
     const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'WORKSPACE_CONTEXT_CHANGED'].includes(error.code) ? 409 : 400;
     return reply.code(status).send({ error: error.code, ...(error.details || {}) });
