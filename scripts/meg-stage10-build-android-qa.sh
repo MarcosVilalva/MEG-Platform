@@ -8,7 +8,8 @@ cd "$(dirname "$0")/.."
 export CAPACITOR_BUILD=true
 # QA-only: force GET and PATCH through WebView to exercise the offline intercept.
 # This variable is NEVER exported in the stable Android build.
-export MEG_STAGE10_QA_DISABLE_NATIVE_HTTP=1
+export MEG_STAGE10_QA_DISABLE_NATIVE_HTTP="${MEG_STAGE10_QA_DISABLE_NATIVE_HTTP:-1}"
+case "$MEG_STAGE10_QA_DISABLE_NATIVE_HTTP" in 0|1) ;; *) echo 'ISSUE699_INVALID_QA_HTTP_MODE'; exit 2;; esac
 export VITE_API_URL=http://127.0.0.1:3333
 export VITE_MOBILE_APP=true
 export VITE_STAGE10_ANDROID_CONFIRMATION_QA=true
@@ -27,7 +28,7 @@ grep -q 'data-meg-shell="phoenix-v15"' apps/web/dist/index.html
 grep -rlF 'http://127.0.0.1:3333' apps/web/dist/assets >/dev/null
 grep -rlF 'meg.phoenix.create-qa.v1.' apps/web/dist/assets >/dev/null
 npx --no-install cap sync android
-node -e "const c=require('./android/app/src/main/assets/capacitor.config.json'); if(c.plugins?.CapacitorHttp?.enabled!==false) throw Error('ISSUE699_QA_CAPACITOR_HTTP_STILL_ENABLED'); console.log('ISSUE699_QA_CAPACITOR_HTTP_DISABLED=PASS')"
+node -e "const c=require('./android/app/src/main/assets/capacitor.config.json'); const desired=process.env.MEG_STAGE10_QA_DISABLE_NATIVE_HTTP==='0'; if(c.plugins?.CapacitorHttp?.enabled!==desired) throw Error('ISSUE699_QA_CAPACITOR_HTTP_CONFIG_MISMATCH'); console.log('ISSUE699_QA_CAPACITOR_HTTP_'+(desired?'ENABLED':'DISABLED')+'=PASS')"
 (cd android && bash ./gradlew --no-daemon assembleStage10Qa)
 
 apk=android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
