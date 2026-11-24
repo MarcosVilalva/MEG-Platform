@@ -193,10 +193,10 @@ try{
   const startupLog=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
   assert.match(startupLog,/ISSUE699_QA_WEBVIEW_CLIENT_INSTALLED/,
     'ISSUE699_QA_WEBVIEW_CLIENT_NOT_INSTALLED');
-  const marker='files/meg_issue699_webview_offline';
+  const offlineMarker='files/meg_issue699_webview_offline';
   adb('shell','run-as',pkg,'mkdir','-p','files');
   try{
-    adb('shell','run-as',pkg,'touch',marker);
+    adb('shell','run-as',pkg,'touch',offlineMarker);
     // Teste de leitura: deve ser bloqueado antes do servidor HTTP.
     const probe=await evaluate(`(async()=>{
       try{
@@ -237,7 +237,7 @@ try{
     assert.equal((await prisma.appState.findUniqueOrThrow({where:{workspaceId:work.id}})).revision,1);
     console.log('ISSUE699_ANDROID_REAL_WEBVIEW_OFFLINE_PENDING_NOT_SENT=PASS');
   }finally{
-    adb('shell','run-as',pkg,'rm','-f',marker);
+    adb('shell','run-as',pkg,'rm','-f',offlineMarker);
     console.log('ISSUE699_QA_OFFLINE_MARKER_REMOVED=PASS');
   }
   const recovered=await webCall('/app-state','GET');
