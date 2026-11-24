@@ -1,0 +1,79 @@
+name: MEG Stage10 #699 Phase A isolated HTTP JWT PG17
+on:
+  push:
+    branches:
+      - stage10/issue699-phase-a-qa-20261124
+    paths:
+      - '.github/workflows/meg-stage10-issue699-phase-a-http-pg17-qa.yml'
+      - 'apps/api/src/modules/finance/**'
+      - 'packages/database/prisma/stage10-issue699-receipt-purge-guard.disposable.sql'
+      - 'packages/database/prisma/schema.prisma'
+permissions:
+  contents: read
+concurrency:
+  group: stage10-issue699-phase-a-qa
+  cancel-in-progress: true
+jobs:
+  phase-a-pg17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: meg_stage10_disposable_only
+          POSTGRES_DB: meg_stage10_phase_a_sandbox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_phase_a_sandbox"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:meg_stage10_disposable_only@127.0.0.1:5432/meg_stage10_phase_a_sandbox?schema=public
+      JWT_SECRET: stage10-phase-a-disposable-jwt-secret-0123456789
+      NODE_ENV: test
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_ISSUE699_PHASE_A_SYNTHETIC: '1'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      MEG_STAGE10_WEB_WRITE_QA: '0'
+      MEG_STAGE10_LEGACY_RESTORE_QA: '0'
+      STAGE10_QA_WEB_WRITE_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify disposable PostgreSQL target and guard environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'MarcosVilalva/MEG-Platform'
+          test "$MEG_STAGE10_ISOLATED_PG" = 1
+          test "$MEG_STAGE10_ISSUE699_PHASE_A_SYNTHETIC" = 1
+          test "$NODE_ENV" = test
+          node -e "const d = new URL(process.env.DATABASE_URL); if(d.protocol!=='postgresql:'||d.hostname!=='127.0.0.1'||d.port!=='5432'||d.username!=='meg_stage10_ci'||d.pathname!=='/meg_stage10_phase_a_sandbox') process.exit(2)"
+          echo 'ISSUE699_PHASE_A_TARGET_IS_DISPOSABLE=PASS'
+      - name: Install pinned dependencies in ephemeral runner
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client and create only disposable schema
+        run: |
+          set -euo pipefail
+          npm run db:generate
+          npm run db:push
+          PGPASSWORD=meg_stage10_disposable_only psql -h 127.0.0.1 -p 5432 -U meg_stage10_ci -d meg_stage10_phase_a_sandbox -v ON_ERROR_STOP=1 -f packages/database/prisma/stage10-issue699-receipt-purge-guard.disposable.sql
+          echo 'ISSUE699_PHASE_A_SCHEMA_TOMBSTONE_DISPOSABLE=PASS'
+      - name: Check API TypeScript
+        run: npm --workspace apps/api run build
+      - name: Check focused financial mutation contract
+        run: npx tsx apps/api/src/modules/finance/event-mutation.contract.test.ts
+      - name: Run A01-A14 and A18 over real Fastify HTTP signed JWT PostgreSQL 17
+        run: npx tsx apps/api/src/modules/finance/stage10-issue699-phase-a-http-pg17.disposable.test.ts
+      - name: Confirm ephemeral-service scope
+        if: always()
+        run: |
+          echo 'ISSUE699_PHASE_A_NO_PRODUCTION_NO_ANDROID_NO_MERGE=PASS'
+          echo 'ISSUE699_PHASE_A_APK_A15_A16_AND_FULL_A17_REQUIRE_SEPARATE_GATES'
