@@ -45,3 +45,41 @@ Não introduzir erro HTTP novo que cause loop na APK velha. **Não usar HTTP 200
 - `.github/workflows/meg-stage10-issue699-apk708-webview-original.yml`, runner GitHub isolado, APK hash pinada, firewall antes do start.
 - `scripts/meg-stage10-issue699-apk708-real-ui-probe.mjs`: harness WebView CDP e API local sintética; não constitui teste de produção.
 - Arquivos TEMP locais para auditoria estática 706/707/708 foram baixados no NITROMEG e não instalados.
+
+
+## 7. ADENDO VERIFICADO: payload completo real e retry com ID diferente na APK708
+
+**Rota de teste:** [GitHub Actions #45432322635](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45432322635) com browser-fetch shim apenas no emulador, origem WebView `https://localhost`, APK708 original com hash verificado, API HTTP local fictícia. **Payload gerado pela UI**, não inventado pelo harness:
+
+```json
+{
+  "description":"ISSUE699 QA DESPESA FICTÍCIA",
+  "type":"expense",
+  "status":"paid",
+  "date":"2026-11-24",
+  "amount":12.35,
+  "accountId":"issue699-account",
+  "categoryId":"issue699-category",
+  "paymentMethodId":"issue699-payment",
+  "operationId":"phoenix-event-93d936dc-6681-4ae5-8eae-f88310fc8308"
+}
+```
+
+O primeiro mock continha bug **do harness**: `/finance/events` respondeu sucesso por GET fallback mesmo no POST. A tela exibiu `LANÇAMENTO SALVO` e essa execução **NÃO** foi usada para validar HTTP409. Foi corrigido o roteamento local para conferir método HTTP antes de escrever resposta; nenhum código de produto alterado.
+
+**Gate decisivo:** [GitHub Actions #45432925875](https://github.com/MarcosVilalva/MEG-Platform/actions/runs/45432925875) COMPLETED/SUCCESS. Formulário real preenchido pela UI, não payload manual. Quatro POSTs da MESMA despesa no mesmo formulário, com `operationId` distintos:
+
+| Tentativa | Resposta simulada | operationId |
+|---|---|---|
+| 1 | HTTP409 `STATE_CONFLICT` | `phoenix-event-41412ebb-9084-4223-8a53-5e0ca392327e` |
+| 2, retry manual | HTTP422 | `phoenix-event-b839bd16-930a-4c69-99fe-48e34929590c` |
+| 3, retry manual | Timeout da função de transporte após commit no **mock local** e resposta retida por 51s | `phoenix-event-00bd5271-8198-4738-8b35-685f43ca78b6` |
+| 4, retry manual | HTTP201 fictício | `phoenix-event-9d2f4b25-c795-453d-8fa9-4df8a532277b` |
+
+Valores, conta, categoria, método, data, descrição e status iguais nos quatro payloads. No terceiro POST, o servidor fictício marcou a intenção como committed antes de reter a resposta; isso **não equivale a commit PostgreSQL**, mas caracteriza o fluxo de rede/identidade do cliente. No quarto POST, a UI gerou novo operationId. **RISCO P0 CONCRETO:** cliente não preservou identidade da intenção entre tentativas manuais no percurso testado; API que garante idempotência apenas por operationId não reconheceria o quarto POST como replay da terceira intenção.
+
+**UI real após HTTP409 e HTTP422:** a tela preservou formulário/valores e exibiu `Não foi possível confirmar o lançamento no servidor. Os dados foram mantidos para nova tentativa.`; botão `Salvar lançamento` continuou habilitado. Após timeout, mesma mensagem, mesmo formulário, retry manual permitido; após resposta fictícia de sucesso, UI exibiu `LANÇAMENTO SALVO`.
+
+**Provas de retry automático nesta observação limitada:** após 409, contagem de POSTs 1→1 durante 3,3s; após 422, 2→2 durante 3,3s; após evento sintético `online`/`focus` após timeout, 3→3 durante 6,5s. Não prova ausência de retries em outros eventos, maior janela, reinício ou filas locais. O teste **não** validou native CapacitorHttp nem outras APKs.
+
+**Consequência:** este achado não autoriza HTTP200 `pending:true`, deduplicação por hash ou mudança de API. A caracterização da tela está avançada, mas persistência offline/reinício, modo nativo e versões efetivamente ativas permanecem pendentes. O protocolo definitivo continua NÃO aprovado, escritores financeiros intocados.
