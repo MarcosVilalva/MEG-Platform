@@ -83,7 +83,7 @@ const httpServer=createServer(async(req,res)=>{
   context.receivedWrites++;
   if(context.mode==='timeout' && url.pathname==='/finance/events'){
    context.syntheticCommitted=(context.syntheticCommitted||0)+1;
-   await delay(51000);
+   await delay(130000);
    status=201;out={id:'issue699-synthetic-committed',status:'paid',date:'2026-11-24',amount:12.35};
   }else if(context.mode==='409'){status=409;out={error:'STATE_CONFLICT',message:'QA_409_SYNTHETIC'};}
   else if(context.mode==='422'){status=422;out={error:'QA_SYNTHETIC_REJECTION',message:'QA_422_SYNTHETIC'};}
@@ -377,6 +377,17 @@ try{
      return {localStorageKeys:ls,sessionStorageKeys:ss,indexedDbStores:stores,phoenixCreateJournal:journal};
     })()`,13000);
     console.log('ISSUE699_APK708_LOCAL_STATE_AFTER_TIMEOUT='+JSON.stringify(localAfterTimeout));
+    // Nativo: o AbortSignal.timeout(45e3) do JS não foi repassado ao
+    // plugin. Observar a reação real quando a resposta continua retida.
+    await sleep(79000);
+    const nativeLongWaitUi=await evalUI(`(()=>({
+      errorVisible:(document.body.innerText||'').includes('Não foi possível confirmar o lançamento no servidor'),
+      saveEnabled:Boolean([...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Salvar lançamento'&&!x.disabled)),
+      processing:Boolean([...document.querySelectorAll('button')].find(x=>/Processando/.test(x.innerText))),
+    }))()`);
+    console.log('ISSUE699_APK708_NATIVE_TIMEOUT_AFTER_126S='+JSON.stringify(nativeLongWaitUi));
+    assert.equal(nativeLongWaitUi.errorVisible,true,'NATIVE_TIMEOUT_NOT_REPORTED_AFTER_126S');
+    assert.equal(nativeLongWaitUi.saveEnabled,true,'NATIVE_TIMEOUT_RETRY_BUTTON_NOT_ENABLED');
     let actualOfflineTransition='NOT_SUPPORTED';
     try{
      await cdp('Network.enable');
@@ -397,12 +408,19 @@ try{
      if(!b||b.disabled)return false;b.click();return true;
     })()`);
     console.log('ISSUE699_APK708_TIMEOUT_MANUAL_RETRY_CLICK='+retry);
+    assert.equal(retry,true,'NATIVE_TIMEOUT_MANUAL_RETRY_NOT_CLICKED');
     if(retry)await sleep(1800);
     console.log('ISSUE699_APK708_TIMEOUT_RETRY_UI='+JSON.stringify(await evalUI(`(()=>({
      bodyText:document.body.innerText.slice(-1600),
      buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,90),disabled:x.disabled})).filter(x=>x.text).slice(-26),
     }))()`)));
    }
+   const nativeRetryIds=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').map(r=>r.body?.operationId??null);
+   console.log('ISSUE699_APK708_NATIVE_LONG_TIMEOUT_RETRY_IDS='+JSON.stringify(nativeRetryIds));
+   assert.equal(nativeRetryIds.length,4,'NATIVE_TIMEOUT_RETRY_POST_COUNT_MISMATCH');
+   assert.ok(nativeRetryIds.every(Boolean),'NATIVE_TIMEOUT_MISSING_OPERATION_ID');
+   assert.notEqual(nativeRetryIds[2],nativeRetryIds[3],'NATIVE_TIMEOUT_OPERATION_ID_REUSED');
+   console.log('ISSUE699_NATIVE_LONG_TIMEOUT_MANUAL_RETRY_ID_CHANGED=PASS');
    console.log('ISSUE699_APK708_SYNTHETIC_COMMITTED='+Number(context.syntheticCommitted||0));
    console.log('ISSUE699_APK708_ACTUAL_FINANCIAL_POSTS='+JSON.stringify(apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events')));
   }
