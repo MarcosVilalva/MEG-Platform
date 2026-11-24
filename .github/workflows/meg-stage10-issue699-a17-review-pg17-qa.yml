@@ -1,0 +1,125 @@
+name: MEG Stage10 Issue699 A17 reversible human review JWT PG17 and Issue707 RLS QA
+on:
+  push:
+    branches: [stage10/issue699-phase-a-qa-20261124]
+    paths:
+      - '.github/workflows/meg-stage10-issue699-a17-review-pg17-qa.yml'
+      - 'apps/api/src/modules/finance/suspected-duplicates-review.ts'
+      - 'apps/api/src/modules/finance/stage10-issue699-a17-review.pg17.disposable.test.ts'
+      - 'apps/api/src/modules/finance/routes.ts'
+      - 'apps/api/src/modules/finance/service.ts'
+      - 'apps/api/src/modules/finance/suspected-duplicates-read.ts'
+      - 'apps/api/src/modules/finance/audit.ts'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  a17-human-reversal-and-rls-disposable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: meg_stage10_disposable_only
+          POSTGRES_DB: meg_stage10_a17_sandbox
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_a17_sandbox"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:meg_stage10_disposable_only@127.0.0.1:5432/meg_stage10_a17_sandbox?schema=public
+      NODE_ENV: test
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      MEG_STAGE10_ISSUE699_A17_REVIEW_ENABLED: '1'
+      MEG_STAGE10_ISOLATED_PG: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Guard disposable local PostgreSQL17
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'MarcosVilalva/MEG-Platform'
+          test "$MEG_STAGE10_ISOLATED_PG" = 1
+          node -e "const u=new URL(process.env.DATABASE_URL); if(u.protocol!=='postgresql:'||u.hostname!=='127.0.0.1'||u.port!=='5432'||u.pathname!=='/meg_stage10_a17_sandbox'||u.username!=='meg_stage10_ci') process.exit(7)"
+          echo 'ISSUE707_DISPOSABLE_PG17_GUARD=PASS'
+      - name: Schema, build and real Fastify JWT PG17 A17 acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run db:generate
+          npm run db:push
+          npm --workspace apps/api run build
+          npx tsx apps/api/src/modules/finance/stage10-issue699-a17-review.pg17.disposable.test.ts
+          echo 'ISSUE699_A17_HTTP_JWT_PG17_AND_TYPES=PASS'
+      - name: Financial domain, security and Phoenix compatibility regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --workspace apps/api run test:finance
+          npm --workspace apps/api run test:security
+          node apps/web/src/phoenix/phoenix-write-gateway.contract.test.js
+          node apps/web/src/phoenix/phoenix-transfer-direct.contract.test.js
+          node apps/web/src/mobile/meg-mobile-launch-fidelity.contract.test.js
+          echo 'ISSUE699_A17_FINANCE_SECURITY_PHOENIX_REGRESSION=PASS'
+      - name: Pin unmerged Issue707 RLS fix for disposable-only combined verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin 3612bb5c7ba9d691e2c842574214a3e2f5ec08f4
+          git show FETCH_HEAD:packages/database/prisma/supabase-rls-hardening.sql > "$RUNNER_TEMP/issue707-hardening.sql"
+          test -s "$RUNNER_TEMP/issue707-hardening.sql"
+          cmp -s "$RUNNER_TEMP/issue707-hardening.sql" packages/database/prisma/supabase-rls-hardening.sql && exit 12 || true
+          cp "$RUNNER_TEMP/issue707-hardening.sql" packages/database/prisma/supabase-rls-hardening.sql
+          npm --workspace packages/database run test:supabase-rls
+          echo 'ISSUE699_A17_ISSUE707_COMBINED_RLS_33_MODELS=PASS'
+      - name: Apply real hardening and check effective rights in disposable PostgreSQL17
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="${{ job.services.postgres.id }}"
+          test -n "$container_id"
+          psql_ci() {
+            docker exec "$container_id" psql -X -v ON_ERROR_STOP=1 -U meg_stage10_ci -d meg_stage10_a17_sandbox "$@"
+          }
+          for role in anon authenticated service_role; do
+            psql_ci -c "CREATE ROLE $role NOLOGIN;" >/dev/null
+          done
+          psql_ci -c 'CREATE ROLE postgres LOGIN BYPASSRLS;' >/dev/null
+          psql_ci -c 'GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public."CardLimitControl" TO anon, authenticated, service_role;' >/dev/null
+          psql_ci -c 'GRANT SELECT ON TABLE public."CardLimitControl" TO postgres;' >/dev/null
+          before="$(psql_ci -Atc "SELECT has_table_privilege('anon','public.\"CardLimitControl\"','SELECT');")"
+          test "$before" = t
+          echo 'ISSUE707_PREEXISTING_EXPOSED_GRANT_SIMULATED=PASS'
+          docker exec -i "$container_id" psql -X -v ON_ERROR_STOP=1 -U meg_stage10_ci -d meg_stage10_a17_sandbox < packages/database/prisma/supabase-rls-hardening.sql
+          rls="$(psql_ci -Atc "SELECT relrowsecurity FROM pg_class WHERE oid='public.\"CardLimitControl\"'::regclass;")"
+          test "$rls" = t
+          echo 'ISSUE707_CARDLIMIT_ENABLE_RLS=PASS'
+          rights="$(psql_ci -Atc "SELECT bool_and(NOT has_table_privilege(r.role_name,'public.\"CardLimitControl\"',p.privilege)) FROM (VALUES ('anon'),('authenticated'),('service_role')) AS r(role_name) CROSS JOIN (VALUES ('SELECT'),('INSERT'),('UPDATE'),('DELETE'),('TRUNCATE'),('REFERENCES'),('TRIGGER'),('MAINTAIN')) AS p(privilege);")"
+          test "$rights" = t
+          echo 'ISSUE707_CARDLIMIT_REVOKE_ALL_3_DATA_API_ROLES=PASS'
+          for role in anon authenticated service_role; do
+            if psql_ci -c "SET ROLE $role; SELECT COUNT(*) FROM public.\"CardLimitControl\";" > /tmp/issue707-denied.log 2>&1; then
+              echo "ISSUE707_DIRECT_READ_UNEXPECTEDLY_ALLOWED_ROLE=$role"; exit 16
+            fi
+            grep -q 'permission denied' /tmp/issue707-denied.log
+          done
+          echo 'ISSUE707_DIRECT_DATA_API_READ_DENIED=PASS'
+          psql_ci -c 'SET ROLE postgres; SELECT COUNT(*) FROM public."CardLimitControl";' >/dev/null
+          echo 'ISSUE707_POSTGRES_BACKEND_ROLE_READ_PRESERVED=PASS'
+          echo 'ISSUE707_CARDLIMIT_LIVE_RLS_AND_MIGRATION_PG17=PASS'
+          echo 'ISSUE699_A17_LIVE_RLS_AND_MIGRATION=PASS'
+
+      - name: A17 acceptance summary, only after all mandatory steps
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'ISSUE699_A17_FULL_GATE=PASS'
