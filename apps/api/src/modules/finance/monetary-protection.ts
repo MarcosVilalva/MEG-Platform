@@ -23,6 +23,8 @@ type Tx = Prisma.TransactionClient;
 type SerializableFinancialTransactionOptions = {
   maxWaitMs?: number;
   timeoutMs?: number;
+  maxAttempts?: number;
+  retryDelayMs?: number;
 };
 
 function normalizeText(value: unknown) {
@@ -339,7 +341,12 @@ export async function serializableFinancialTransaction<T>(
   work: (tx: Tx) => Promise<T>,
   options: SerializableFinancialTransactionOptions = {},
 ) {
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  // Preserve the three-attempt default for every existing financial writer.
+  // A caller may explicitly request bounded backoff for a higher-contention
+  // serializable path. Never retry non-serialization errors.
+  const maxAttempts = Math.max(1, Math.min(options.maxAttempts ?? 3, 12));
+  const retryDelayMs = Math.max(0, Math.min(options.retryDelayMs ?? 0, 250));
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       return await prisma.$transaction(work, {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -347,7 +354,10 @@ export async function serializableFinancialTransaction<T>(
         timeout: options.timeoutMs ?? 30_000,
       });
     } catch (error) {
-      if (!retryableTransaction(error) || attempt === 3) throw error;
+      if (!retryableTransaction(error) || attempt === maxAttempts) throw error;
+      if (retryDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs * attempt));
+      }
     }
   }
   throw new Error('SERIALIZABLE_TRANSACTION_RETRY_EXHAUSTED');
