@@ -2,6 +2,7 @@ import { Prisma, prisma } from '@meg/database';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { enteredAmountFromStored, financialAmountValues } from './amount-sign';
 import { recordFinancialAudit } from './audit';
+import { assertA17GenericMutationAllowed } from './suspected-duplicates-review';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import type { z } from 'zod';
@@ -235,6 +236,7 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true, receipt: { select: { id: true, receivableId: true, reversedAt: true } } }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
+    await assertA17GenericMutationAllowed(tx, current);
     if (current.receipt && !current.receipt.reversedAt) throw new Error('FINANCIAL_EVENT_LINKED_DOMAIN');
     // A direct paid -> planned/draft/archived PATCH would silently erase the
     // posted ledger. The existing client explicitly requires an original-
@@ -301,6 +303,7 @@ export async function deleteFinancialEvent(userId: string, id: string) {
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true, receipt: { select: { id: true, receivableId: true, reversedAt: true } } }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
+    await assertA17GenericMutationAllowed(tx, current);
     if (current.receipt && !current.receipt.reversedAt) throw new Error('FINANCIAL_EVENT_LINKED_DOMAIN');
 
     const archived = await tx.financialEvent.update({

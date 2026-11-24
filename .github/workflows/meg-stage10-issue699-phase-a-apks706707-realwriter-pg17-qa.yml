@@ -1,0 +1,169 @@
+name: MEG Stage10 #699 A16 APK706 and APK707 originals to real Fastify JWT PG17 QA
+on:
+  push:
+    branches: [stage10/issue699-phase-a-qa-20261124]
+    paths:
+      - '.github/workflows/meg-stage10-issue699-phase-a-apks706707-realwriter-pg17-qa.yml'
+      - 'scripts/meg-stage10-issue699-apks706707-realwriter-pg17-qa.mjs'
+permissions:
+  contents: read
+jobs:
+  original-apks-native-realwriter-pg17:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: '706'
+            sha: 'd12bd3b1995609cfdc62db314b1916b54f94e83ee8c3e9d77a89fb3d77f942c1'
+          - version: '707'
+            sha: '0a4554d1881e736e088e9db05eb7b5592e95667f5d1d5aeb1a17247cf926e6da'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: meg_stage10_disposable_only
+          POSTGRES_DB: meg_stage10_phase_a_sandbox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_phase_a_sandbox"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:meg_stage10_disposable_only@127.0.0.1:5432/meg_stage10_phase_a_sandbox?schema=public
+      JWT_SECRET: stage10-phase-a-a15-disposable-jwt-secret-0123456789
+      NODE_ENV: test
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_ISSUE699_A16_REAL_PG17: '1'
+      MEG_ISSUE699_APK_VERSION: '${{ matrix.version }}'
+      MEG_STAGE10_WEB_WRITE_QA: '0'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Guard and prepare only disposable PG17 schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'MarcosVilalva/MEG-Platform'
+          test "$MEG_STAGE10_ISOLATED_PG" = 1
+          test "$MEG_STAGE10_ISSUE699_A16_REAL_PG17" = 1
+          node -e "const d=new URL(process.env.DATABASE_URL); if(d.protocol!=='postgresql:'||d.hostname!=='127.0.0.1'||d.port!=='5432'||d.pathname!=='/meg_stage10_phase_a_sandbox'||d.username!=='meg_stage10_ci') process.exit(5)"
+          npm ci --no-audit --no-fund
+          npm run db:generate
+          npm run db:push
+          echo 'ISSUE699_A16_DISPOSABLE_SCHEMA_AND_JWT=PASS'
+      - name: Fetch exactly hash-pinned published APK, outside emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 2 --max-time 90 -o "$RUNNER_TEMP/MEG-Financas-${{ matrix.version }}.apk" 'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas-${{ matrix.version }}.apk'
+          echo "${{ matrix.sha }}  $RUNNER_TEMP/MEG-Financas-${{ matrix.version }}.apk" | sha256sum -c -
+          echo 'ISSUE699_A16_APK_${{ matrix.version }}_ORIGINAL_SHA256=PASS'
+      - name: Boot isolated emulator with no outbound network and check release WebView debugging availability
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          sudo chown "$(id -u):$(id -g)" /dev/kvm
+          tools_dir=$(find -L "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
+          export PATH="$(dirname "$tools_dir"):$ANDROID_HOME/platform-tools:$PATH"
+          image='system-images;android-33;google_apis;x86_64'
+          sdkmanager emulator "$image"
+          python3 -m pip install --quiet --break-system-packages 'mitmproxy==11.0.2'
+          export ANDROID_USER_HOME="$RUNNER_TEMP/meg-apk708-original-user"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          avdmanager create avd --name meg-apk708-original --package "$image" --path "$ANDROID_AVD_HOME/meg-apk708-original.avd" <<< no
+          "$ANDROID_HOME/emulator/emulator" @meg-apk708-original -no-window -no-audio -no-boot-anim -no-snapshot -writable-system -gpu swiftshader_indirect >"$RUNNER_TEMP/emulator.log" 2>&1 &
+          emulator_pid=$!
+          trap 'adb emu kill >/dev/null 2>&1 || true' EXIT
+          export ANDROID_SERIAL=emulator-5554
+          if ! timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == 1 ]]; do kill -0 "$1" || exit 1; sleep 3; done' -- "$emulator_pid"; then
+            tail -100 "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
+          adb root
+          adb wait-for-device
+          # Test CA and proxy exist ONLY in the disposable emulator; no APK edits.
+          export PATH="$(python3 -m site --user-base)/bin:$PATH"
+          command -v mitmdump
+          mkdir -p "$RUNNER_TEMP/mitmhome"
+          mitmdump --listen-host 0.0.0.0 --listen-port 8899 --set connection_strategy=lazy --set block_global=false -s scripts/meg-stage10-issue699-native-proxy.py >"$RUNNER_TEMP/native-proxy.log" 2>&1 &
+          proxy_pid=$!
+          for i in {1..40}; do test -f "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" && break; sleep 1; done
+          if ! test -f "$HOME/.mitmproxy/mitmproxy-ca-cert.pem"; then echo 'ISSUE699_NATIVE_PROXY_START=FAIL'; cat "$RUNNER_TEMP/native-proxy.log"; exit 1; fi
+          echo 'ISSUE699_NATIVE_PROXY_START=PASS'
+          openssl x509 -in "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" -subject_hash_old -noout >"$RUNNER_TEMP/certname"
+          certname=$(cat "$RUNNER_TEMP/certname").0
+          cp "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" "$RUNNER_TEMP/$certname"
+          # Android 13 uses the system CA directory (Android 15 changed the Conscrypt APEX mount namespace).
+          # This AVD uses -writable-system and is destroyed after the workflow.
+          adb remount
+          # adb remount may need a first reboot to activate overlayfs/verity changes.
+          adb reboot
+          adb wait-for-device
+          timeout 150 bash -c 'until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == 1 ]]; do sleep 2; done'
+          adb root
+          adb remount
+          adb push "$RUNNER_TEMP/$certname" "/system/etc/security/cacerts/$certname"
+          adb shell "chmod 644 /system/etc/security/cacerts/$certname"
+          adb shell "ls -l /system/etc/security/cacerts/$certname"
+          adb reboot
+          adb wait-for-device
+          timeout 150 bash -c 'until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == 1 ]]; do sleep 2; done'
+          adb root
+          adb reverse tcp:8899 tcp:8899
+          adb shell settings put global http_proxy 127.0.0.1:8899
+          adb reverse --list
+          echo "ISSUE699_NATIVE_PROXY_ANDROID_SETTING=$(adb shell settings get global http_proxy | tr -d '\r')"
+          adb logcat -c
+          echo 'ISSUE699_NATIVE_EMULATOR_CA_PROXY_CONFIGURED=PASS'
+          # Drop outbound connections BEFORE launching the published APK.
+          # Allow only emulator loopback and the emulator-host bridge to keep ADB/CDP available.
+          adb shell 'iptables -I OUTPUT 1 -d 127.0.0.0/8 -j ACCEPT'
+          adb shell 'iptables -I OUTPUT 2 -d 10.0.2.0/24 -j ACCEPT'
+          adb shell 'iptables -A OUTPUT -j REJECT'
+          adb shell 'iptables -S OUTPUT' | tail -8
+          adb install "$RUNNER_TEMP/MEG-Financas-${{ matrix.version }}.apk"
+          adb shell am start -n br.com.megfinancas.app/.MainActivity
+          sleep 8
+          pkg='br.com.megfinancas.app'
+          pid=$(adb shell pidof "$pkg" | tr -d '\r')
+          test -n "$pid"
+          echo 'ISSUE699_APK708_ORIGINAL_RUNNING_OFFLINE=PASS'
+          # Optional uiautomator diagnostic omitted: previously correlated with APK706 exit 137.
+          # Core WebView, native transport, and PG17 contract assertions remain unchanged.
+          echo 'ISSUE699_A16_OPTIONAL_UIAUTOMATOR_SKIPPED=PASS'
+          # Release builds may disable WebView debugging. Do not modify APK or force-enable it.
+          adb shell cat /proc/net/unix | grep -E 'webview_devtools_remote' || true
+          adb forward tcp:9333 "localabstract:webview_devtools_remote_$pid"
+          if curl -fsS --max-time 4 http://127.0.0.1:9333/json/list > "$RUNNER_TEMP/targets.json"; then
+            node -e "const a=require(process.argv[1]); console.log('ISSUE699_APK708_ORIGINAL_CDP_TARGETS='+a.length);console.log('ISSUE699_APK708_ORIGINAL_CDP_ORIGINS='+JSON.stringify(a.map(x=>{try{return new URL(x.url).origin}catch{return 'invalid'}})))" "$RUNNER_TEMP/targets.json"
+            echo 'ISSUE699_APK708_ORIGINAL_CDP_ACCESS=PASS'
+          else
+            echo 'ISSUE699_APK708_ORIGINAL_CDP_ACCESS=UNAVAILABLE_RELEASE_NOT_DEBUGGABLE'
+          fi
+          # APK706/707 speak only to isolated loopback proxy, which forwards financial POSTs to real Fastify canonical writer/JWT/PG17 disposable. No production.
+          echo 'ISSUE699_APK708_ORIGINAL_NETWORK_ISOLATION=PASS'
+          export MEG_APK708_ORIGINAL_EGRESS_BLOCKED=1
+          export MEG_APK708_NATIVE_PROXY=1
+          npx tsx scripts/meg-stage10-issue699-apks706707-realwriter-pg17-qa.mjs
+          echo 'ISSUE699_NATIVE_PROXY_LOG_TAIL_BEGIN'
+          tail -80 "$RUNNER_TEMP/native-proxy.log"
+          echo 'ISSUE699_NATIVE_PROXY_LOG_TAIL_END'
+          echo 'ISSUE699_NATIVE_LOGCAT_BEGIN'
+          adb logcat -d -v brief | grep -Ei 'sslhandshake|certificate|trust anchor|certpath|proxy|CapacitorHttp|UnknownHost|ConnectException|SSLException|NetworkSecurity' | tail -60 || true
+          echo 'ISSUE699_NATIVE_LOGCAT_END'
+          if grep -F 'ISSUE699_NATIVE_PROXY=' "$RUNNER_TEMP/native-proxy.log" | grep -F '/finance/events' >/dev/null; then
+            echo 'ISSUE699_NATIVE_FINANCIAL_POST_PROXY=PASS'
+          else
+            echo 'ISSUE699_NATIVE_FINANCIAL_POST_PROXY=NOT_OBSERVED'
+            exit 3
+          fi

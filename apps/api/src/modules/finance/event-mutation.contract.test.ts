@@ -35,11 +35,15 @@ assert.match(mutation, /INVALID_PAYMENT_METHOD/);
 
 console.log('Contrato de criação idempotente de eventos financeiros validado.');
 assert.match(routes, /allowDuplicate:\s*z\.boolean\(\)\.optional\(\)/,
-  'Criação deve exigir override explícito para aceitar uma duplicidade suspeita.');
-assert.match(routes, /POSSIBLE_DUPLICATE/,
-  'Possível duplicidade deve responder como conflito, sem criar silenciosamente outro evento.');
+  'Campo legado opcional deve permanecer aceito sem alterar a identidade da operação.');
+assert.match(routes, /\/events\/suspected-duplicates/,
+  'Consulta autenticada de suspeitas deve existir sem exigir mudança na APK legada.');
 assert.match(mutation, /findRecentFinancialEventDuplicate/,
-  'Writer deve consultar duplicidade semântica dentro da mesma transação serializável.');
+  'Writer deve detectar semelhança dentro da mesma transação serializável.');
+assert.doesNotMatch(mutation, /throw new FinancialEventMutationError\('POSSIBLE_DUPLICATE'/,
+  'Semelhança temporal não pode bloquear despesa válida por HTTP409.');
+assert.match(mutation, /FINANCIAL_EVENT_DUPLICATE_SUSPECTED/,
+  'Eventos anterior e atual devem receber auditoria de suspeita vinculada.');
 assert.match(mutation, /allowDuplicate:\s*undefined/,
   'Override de duplicidade não pode alterar o hash idempotente da operação original.');
 assert.match(mutation, /duplicateOverride:\s*Boolean\(input\.allowDuplicate\)/,
