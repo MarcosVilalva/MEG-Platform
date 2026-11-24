@@ -58,18 +58,7 @@ jobs:
           npm run db:generate
           npm run db:push
           npm --workspace apps/api run build
-          npx tsx apps/api/src/modules/finance/stage10-issue699-a17-review.pg17.disposable.test.ts
-          echo 'ISSUE699_A17_HTTP_JWT_PG17_AND_TYPES=PASS'
-      - name: Financial domain, security and Phoenix compatibility regressions
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm --workspace apps/api run test:finance
-          npm --workspace apps/api run test:security
-          node apps/web/src/phoenix/phoenix-write-gateway.contract.test.js
-          node apps/web/src/phoenix/phoenix-transfer-direct.contract.test.js
-          node apps/web/src/mobile/meg-mobile-launch-fidelity.contract.test.js
-          echo 'ISSUE699_A17_FINANCE_SECURITY_PHOENIX_REGRESSION=PASS'
+          echo 'ISSUE699_A17_TYPES_AND_SCHEMA=PASS'
       - name: Pin unmerged Issue707 RLS fix for disposable-only combined verification
         shell: bash
         run: |
@@ -118,6 +107,22 @@ jobs:
           echo 'ISSUE707_CARDLIMIT_LIVE_RLS_AND_MIGRATION_PG17=PASS'
           echo 'ISSUE699_A17_LIVE_RLS_AND_MIGRATION=PASS'
 
+      - name: Real A17 human review and reversals AFTER applying Issue707 RLS
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx apps/api/src/modules/finance/stage10-issue699-a17-review.pg17.disposable.test.ts
+          echo 'ISSUE699_A17_HTTP_JWT_PG17_AND_RLS_COMBINED=PASS'
+      - name: Financial domain, security and Phoenix compatibility regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --workspace apps/api run test:finance
+          npm --workspace apps/api run test:security
+          node apps/web/src/phoenix/phoenix-write-gateway.contract.test.js
+          node apps/web/src/phoenix/phoenix-transfer-direct.contract.test.js
+          node apps/web/src/mobile/meg-mobile-launch-fidelity.contract.test.js
+          echo 'ISSUE699_A17_FINANCE_SECURITY_PHOENIX_REGRESSION=PASS'
       - name: A17 acceptance summary, only after all mandatory steps
         shell: bash
         run: |
