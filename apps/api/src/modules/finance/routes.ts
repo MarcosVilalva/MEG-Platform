@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { listFinancialAudit } from './audit';
 import { listSuspectedDuplicateFinancialEvents } from './suspected-duplicates-read';
+import { A17ReviewError, resolveSuspectedFinancialEvent, undoSuspectedFinancialEventResolution } from './suspected-duplicates-review';
 import {
   deleteFinancialEvent,
   listBudgetOverview,
@@ -40,6 +41,34 @@ import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { isMonetaryAccountType, monetaryAccountBalanceAt, monetaryBalanceAt } from './monetary-protection';
 
+const a17CommandBase = z.object({
+  peerEventId: z.string().trim().min(1).max(128),
+  suspicionGroupId: z.string().trim().min(12).max(300),
+  operationId: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/),
+  reason: z.string().trim().min(10).max(1000),
+});
+const a17ResolveSchema = a17CommandBase.extend({
+  decision: z.enum(['RESOLVED_DUPLICATE','RESOLVED_LEGITIMATE']),
+  correctionTargetEventId: z.string().min(1).max(128).optional(),
+  effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).strict();
+const a17UndoSchema = a17CommandBase.extend({
+  resolutionAuditId: z.string().min(1).max(128),
+}).strict();
+function a17Error(reply: FastifyReply, err: unknown) {
+  if (err instanceof A17ReviewError) {
+    const code=err.code;
+    const status=code==='A17_ROLE_DENIED'?403
+      :code==='A17_PAIR_NOT_FOUND'?404
+      :code==='OPERATION_ID_REUSED'||code==='A17_ALREADY_RESOLVED'
+        ||code==='A17_NO_ACTIVE_RESOLUTION'||code==='A17_ACTIVE_CORRECTION_PROTECTED'
+        ||code==='A17_UNDO_INSUFFICIENT_BALANCE'?409:400;
+    return reply.code(status).send({error:code,retryable:false});
+  }
+  if(err instanceof Error && err.message==='WORKSPACE_ACCESS_REQUIRED')
+    return reply.code(403).send({error:'WORKSPACE_ACCESS_REQUIRED'});
+  throw err;
+}
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
@@ -451,6 +480,32 @@ export async function financeRoutes(app: FastifyInstance) {
     const dataOwnerId = await financialDataOwnerId(request.user.sub);
     return getCanonicalFilteredHistorySummary(dataOwnerId, filters);
   });
+
+  // A17 intentionally defaults OFF. No production exposure before review gates.
+  if (process.env.MEG_STAGE10_ISSUE699_A17_REVIEW_ENABLED === '1') {
+    app.post('/events/:id/resolve', { preHandler: app.authorize([...adminRoles]) }, async(request,reply)=>{
+      const params=z.object({id:z.string().min(1).max(128)}).safeParse(request.params);
+      const parsed=a17ResolveSchema.safeParse(request.body);
+      if(!params.success||!parsed.success)return validationError(reply,{
+        params:params.success?undefined:params.error.flatten(),
+        body:parsed.success?undefined:parsed.error.flatten(),
+      });
+      try {return reply.code(201).send(await resolveSuspectedFinancialEvent(
+        request.user.sub,params.data.id,parsed.data));}
+      catch(error){return a17Error(reply,error);}
+    });
+    app.post('/events/:id/resolve/undo', { preHandler: app.authorize([...adminRoles]) }, async(request,reply)=>{
+      const params=z.object({id:z.string().min(1).max(128)}).safeParse(request.params);
+      const parsed=a17UndoSchema.safeParse(request.body);
+      if(!params.success||!parsed.success)return validationError(reply,{
+        params:params.success?undefined:params.error.flatten(),
+        body:parsed.success?undefined:parsed.error.flatten(),
+      });
+      try {return reply.code(201).send(await undoSuspectedFinancialEventResolution(
+        request.user.sub,params.data.id,parsed.data));}
+      catch(error){return a17Error(reply,error);}
+    });
+  }
 
   // #699 Phase A: durable, authorized, non-blocking support visibility.
   // Read-only; no APK update, new success status, or implicit financial merge.
