@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - stage10/issue699-phase-a-qa-20261124
+  pull_request:
+    branches:
+      - stage10/p0-public-review-20261123
     paths:
       - '.github/workflows/meg-stage10-issue699-phase-a-http-pg17-qa.yml'
       - 'apps/api/src/modules/finance/**'
