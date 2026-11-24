@@ -53,3 +53,7 @@ Aprovada a **presença visual** do Verocard Alimentação no carrossel de Cartõ
 
 ## Escopo comercial genérico de Benefícios (04/11/2026)
 A interface apresenta **Benefício** sem operadora fixa. Verocard é uma instância de cartão alimentação pré-pago e continua sendo o método explicitamente suportado pela autoridade financeira atual. A futura projeção de cartões benefícios cadastrados no carrossel não converte benefícios em `CreditCard`, não concede fatura e não recalcula saldo na Web. **Não existe suporte multioperadora completo nesta revisão**. Registrar e auditar as regras técnicas antes de ampliar emissores. Referência: `docs/MEG-WEB-BENEFICIOS-MULTIOPERADORA-DECISAO-20261104.md`.
+
+## Autoridade do controle de limite de cartão (decisão de 22/11/2026)
+
+A regra de bloqueio padrão e a flexibilização mediante confirmação pertencem à API financeira canônica de cartões. A política se aplica por workspace e, se configurado, por cartão. O domínio responsável está em apps/api/src/modules/cards/card-limit-policy.ts, service.ts e routes.ts; não duplicar o cálculo na Web. A criação e as alterações que ampliem compromissos de cartão devem respeitar centavos, parcelas futuras/legadas, idempotência e concorrência serializável. O comportamento só poderá ser habilitado fora de ambientes sintéticos após migração aditiva da tabela CardLimitControl, hardening RLS, CI remota e aprovações cabíveis. A configuração visual definitiva pertence à etapa de Configurações, com validação visual explícita.

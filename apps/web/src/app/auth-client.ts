@@ -135,7 +135,7 @@ export async function authenticatedRequest<T>(path: string, init?: RequestInit):
       ...init,
       cache: 'no-store',
       signal: init?.signal || AbortSignal.timeout(45_000),
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...(init?.headers || {}) }
+      headers: { ...(init?.body == null ? {} : { 'Content-Type': 'application/json' }), Authorization: `Bearer ${accessToken}`, ...(init?.headers || {}) }
     });
     let response = await send(session.accessToken);
     if (response.status === 401) {

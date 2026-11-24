@@ -260,8 +260,14 @@ export const financeClient = {
     if (filters.entity) params.set('entity', filters.entity);
     return authorizedRequest<FinancialAuditPage>(`/finance/audit?${params.toString()}`);
   },
-  createEvent: (data: FinancialEventInput & { operationId?: string; allowDuplicate?: boolean }) => authorizedRequest<FinancialEvent>('/finance/events', {
+  getStage10QaCreateOperation: (operationId:string,month:string) => authorizedRequest<
+    | {status:'found';operationId:string;eventId:string;date:string}
+    | {status:'pending';reason:string}
+    | {status:'blocked';reason:string}
+  >(`/finance/events/stage10-qa-operation/${encodeURIComponent(operationId)}?month=${encodeURIComponent(month)}`,{cache:'no-store'}),
+  createEvent: (data: FinancialEventInput & { operationId?: string; allowDuplicate?: boolean }, expectedWorkspaceId?: string) => authorizedRequest<FinancialEvent>('/finance/events', {
     method: 'POST',
+    headers: expectedWorkspaceId ? { 'X-MEG-Expected-Workspace-Id': expectedWorkspaceId } : undefined,
     body: JSON.stringify(data)
   }),
   createTransfer: (data: { operationId: string; sourceAccountId: string; destinationAccountId: string; amount: number; date: string; description?: string; notes?: string; allowDuplicate?: boolean }) =>

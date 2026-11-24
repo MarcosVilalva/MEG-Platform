@@ -6,7 +6,10 @@ import { registerAuth } from '../../plugins/auth';
 import { authRoutes } from '../auth/routes';
 import { LicenseStatus, Prisma, prisma, UserRole, UserStatus } from '@meg/database';
 import { appStateRoutes } from '../app-state/routes';
+import { financeBenefitEventRoutes } from './benefit-event-routes';
 import { financeRoutes } from './routes';
+import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
+import { readStage10HistoricalReview } from './stage10-historical-review-report';
 import { normalizationPreview } from '../app-state/normalization-migration';
 
 /**
@@ -26,6 +29,12 @@ const fixturePassword='Stage10QAOnly-Password-NotProduction-2026';
 
 async function main(){
  try {
+  const eventWithoutStatus = { description: 'Evento QA', type: 'expense', date: '2026-11-11', amount: 12.35 };
+  assert.equal(createFinancialEventSchema.parse(eventWithoutStatus).status, 'planned');
+  assert.deepEqual(updateFinancialEventSchema.parse({ description: 'Descrição alterada' }), {
+   description: 'Descrição alterada',
+  });
+  assert.equal(updateFinancialEventSchema.parse({ status: 'paid' }).status, 'paid');
   process.env.MEG_STAGE10_WEB_WRITE_QA='1';
   const user=await prisma.user.create({data:{
    email:stamp+'@meg.test',name:'Operador QA Web/Android',
@@ -62,6 +71,7 @@ async function main(){
   await app.register(authRoutes,{prefix:'/auth'});
   await app.register(appStateRoutes,{prefix:'/app-state'});
   await app.register(financeRoutes,{prefix:'/finance'});
+  await app.register(financeBenefitEventRoutes,{prefix:'/finance'});
   await app.ready();
 
 
@@ -261,6 +271,87 @@ async function main(){
   process.env.MEG_STAGE10_WEB_WRITE_QA='0';
   const disabled=await withAuth({method:'GET',url:'/app-state/stage10-qa-write-gate'});
   assert.equal(disabled.statusCode,403);
+
+  const partialEdit = await withAuth({
+   method: 'PATCH', url: '/finance/events/' + row.id,
+   payload: { description: 'Descrição alterada sem status' },
+  });
+  assert.equal(partialEdit.statusCode, 200, partialEdit.body);
+  assert.equal(JSON.parse(partialEdit.body).status, 'paid');
+  const paidAfterPartialEdit = await prisma.financialEvent.findUniqueOrThrow({
+   where: { id: row.id }, include: { ledgerEntries: true },
+  });
+  assert.equal(paidAfterPartialEdit.status, 'paid');
+  assert.equal(paidAfterPartialEdit.description, 'Descrição alterada sem status');
+  assert.equal(paidAfterPartialEdit.ledgerEntries.length, 1);
+  assert.equal(Number(paidAfterPartialEdit.ledgerEntries[0].credit), 10.35);
+  console.log('MEG_STAGE10_PARTIAL_EDIT_PRESERVES_PAID_STATUS_PASS');
+
+  const benefitAccount = await prisma.account.create({
+   data: { userId: user.id, name: 'Conta Benefício QA', type: 'benefit', openingBalance: 0 },
+  });
+  const verocard = await prisma.paymentMethod.create({
+   data: { userId: user.id, name: 'Verocard', type: 'other' },
+  });
+  const creditPayload = {
+   operationId: `phoenix-benefit-${randomUUID()}`,
+   type: 'income', date: payload.date, amount: 25, description: 'Crédito fictício de benefício',
+   accountId: benefitAccount.id, paymentMethodId: verocard.id,
+  };
+  const writeBenefit = (input: typeof creditPayload) =>
+   withAuth({ method: 'POST', url: '/finance/benefit-events', payload: input });
+  const firstCredit = await writeBenefit(creditPayload);
+  assert.equal(firstCredit.statusCode, 201, firstCredit.body);
+  // The transport discards firstCredit.body. Reconcile using only the original request.
+  const benefitReplay = await writeBenefit(creditPayload);
+  assert.equal(benefitReplay.statusCode, 201, benefitReplay.body);
+  const benefitEvent = JSON.parse(benefitReplay.body);
+  assert.equal(benefitEvent.idempotentReplay, true);
+  assert.equal(benefitEvent.status, 'paid');
+  assert.equal(await prisma.financialEvent.count({ where: { workspaceId, accountId: benefitAccount.id } }), 1);
+  const benefitLedger = await prisma.ledgerEntry.findMany({ where: { eventId: benefitEvent.id } });
+  assert.equal(benefitLedger.length, 1);
+  assert.equal(benefitLedger[0].accountId, benefitAccount.id);
+  assert.equal(Number(benefitLedger[0].debit), 25);
+  const changedCredit = await writeBenefit({ ...creditPayload, amount: 30 });
+  assert.equal(changedCredit.statusCode, 409, changedCredit.body);
+  assert.equal(JSON.parse(changedCredit.body).error, 'OPERATION_ID_REUSED');
+  console.log('MEG_STAGE10_BENEFIT_RESPONSE_LOST_SAME_ID_REPLAY_PASS');
+
+  await prisma.paymentMethod.update({ where: { id: verocard.id }, data: { type: 'credit' } });
+  await prisma.paymentMethod.create({ data: { userId: user.id, name: 'Método histórico QA', type: 'other' } });
+  const historical = {
+   workspaceId, userId: user.id, accountId: account.id,
+   description: 'Descrição privada da fixture', date: new Date(payload.date),
+   competence: payload.date.slice(0, 7), amount: 20, signedAmount: -20, type: 'expense', status: 'paid',
+  };
+  const line = { category: category.name, expenseClass: category.group, paymentMethod: method.name,
+   financialScope: 'monetary', modality: 'à vista' };
+  await prisma.financialEvent.createMany({ data: [
+   { ...historical, id: stamp + '-eligible', legacyTransactionId: 'ordinary', sourcePayload: line },
+   { ...historical, id: stamp + '-credit', legacyTransactionId: 'credit',
+    sourcePayload: { ...line, modality: 'CREDITO', paymentMethod: 'Método histórico QA' } },
+   { ...historical, id: stamp + '-benefit', legacyTransactionId: 'benefit', accountId: benefitAccount.id,
+    sourcePayload: { ...line, financialScope: 'benefit', paymentMethod: 'Verocard' } },
+   { ...historical, id: stamp + '-archived', legacyTransactionId: 'archived', sourcePayload: line,
+    archivedAt: new Date(payload.date) },
+  ] });
+  const readFixtures = () => prisma.financialEvent.findMany({
+   where: { id: { startsWith: stamp } }, orderBy: { id: 'asc' },
+  });
+  const beforeReview = await readFixtures();
+  const review = await readStage10HistoricalReview(workspace.id);
+  assert.deepEqual(review.map(({ eventId }) => eventId), ['benefit', 'credit', 'eligible'].map((key) => `${stamp}-${key}`));
+  assert.deepEqual(review.map(({ classification }) => classification), ['blocked', 'blocked', 'eligible_for_explicit_review']);
+  assert.ok(review[0].reasons.includes('CREDIT_METHOD_REQUIRES_CARD_AUTHORITY'));
+  assert.ok(review[1].reasons.includes('FINANCIAL_DOMAIN_SPECIALIST_REQUIRED'));
+  assert.equal(review[2].categoryId, category.id);
+  assert.equal(review[2].paymentMethodId, method.id);
+  assert.ok(review.every(({ writeAuthorized }) => writeAuthorized === false));
+  assert.ok(!JSON.stringify(review).includes(historical.description));
+  assert.deepEqual(await readFixtures(), beforeReview);
+  console.log('MEG_STAGE10_HISTORICAL_REVIEW_PER_ID_READ_ONLY_PASS');
+
   console.log('MEG_STAGE10_WEB_CREATE_CANONICAL_AND_ANDROID_MIRROR_QA_PASS');
   console.log('MEG_STAGE10_WEB_CREATE_EDIT_REAL_JWT_QA_PASS');
  } finally {

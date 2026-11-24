@@ -1,0 +1,45 @@
+/* PT65 Workbench functional-only modal, isolated from official Home theme. */
+.meg-hist-edit-overlay{
+ position:fixed;inset:0;z-index:2200;display:grid;place-items:center;
+ background:rgba(0,10,14,.86);padding:16px;overflow-y:auto;
+}
+.meg-hist-edit-modal{
+ width:min(100%,620px);max-height:calc(100dvh - 32px);overflow:auto;
+ border:1px solid rgba(16,222,208,.55);border-radius:20px;
+ padding:clamp(16px,3vw,28px);background:#031f25;color:#ebfbfa;
+ box-shadow:0 20px 70px rgba(0,0,0,.55);
+}
+.meg-hist-edit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.meg-hist-edit-header small{color:#42e4cf;font-size:.75rem;letter-spacing:.09em;font-weight:700;}
+.meg-hist-edit-header h2{font-size:1.55rem;margin:8px 0;}
+.meg-hist-edit-header p{font-size:.88rem;color:#b3cccb;margin-bottom:12px;}
+.meg-hist-edit-header>button{background:transparent;color:#fff;border:0;font-size:1.5rem;min-width:44px;min-height:44px;cursor:pointer;}
+.meg-hist-edit-form{display:grid;gap:15px;}
+.meg-hist-edit-form label{display:grid;gap:7px;font-weight:600;font-size:.91rem;}
+.meg-hist-edit-form input,.meg-hist-edit-form textarea{
+ width:100%;max-width:100%;box-sizing:border-box;
+ background:#122f3b;border:1px solid #2a8d90;border-radius:10px;
+ padding:12px;color:#fff;font:inherit;min-height:44px;
+}
+.meg-hist-edit-form :is(input,textarea):focus-visible,
+.meg-hist-edit-buttons button:focus-visible,
+.meg-hist-edit-header button:focus-visible{outline:3px solid #52e2c5;outline-offset:2px;}
+.meg-hist-edit-form :is(input,textarea):disabled{opacity:.65;}
+.meg-hist-edit-note{font-size:.8rem;color:#a8c4c4;margin-top:-9px;}
+.meg-hist-edit-locked{border:1px solid rgba(181,215,215,.2);border-radius:10px;padding:12px;background:#10313a;}
+.meg-hist-edit-locked strong{font-size:.85rem;}
+.meg-hist-edit-locked p{font-size:.8rem;line-height:1.6;color:#c7dddb;margin:5px 0 0;}
+.meg-hist-edit-error{color:#ff9f9f;font-weight:600;font-size:.87rem;}
+.meg-hist-edit-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;}
+.meg-hist-edit-buttons button{
+ min-height:44px;padding:10px 18px;border-radius:12px;
+ border:1px solid rgba(100,224,214,.6);cursor:pointer;
+ background:#173b41;color:#fff;font-weight:700;
+}
+.meg-hist-edit-buttons button[type=submit]{background:#12cdb7;border-color:#12cdb7;color:#032025;}
+.meg-hist-edit-buttons button:disabled{opacity:.55;cursor:not-allowed;}
+@media(max-width:640px){
+ .meg-hist-edit-overlay{align-items:start;padding:8px;}
+ .meg-hist-edit-modal{max-height:calc(100dvh - 16px);border-radius:14px;}
+ .meg-hist-edit-buttons button{flex:1;min-width:130px;}
+}

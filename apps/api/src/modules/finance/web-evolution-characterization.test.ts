@@ -12,6 +12,7 @@ import {
 } from './monetary-protection';
 import { buildTransferLegs } from './transfer-core';
 import { addMonthsClamped, moveWeekendToMonday } from '../payables/core';
+import { cardPurchaseInstallmentRows, cardPurchaseStatementMonth } from '../cards/purchase-cycle-canonical';
 
 const cardsRoutes = readFileSync(new URL('../cards/routes.ts', import.meta.url), 'utf8');
 const cardsService = readFileSync(new URL('../cards/service.ts', import.meta.url), 'utf8');
@@ -57,14 +58,11 @@ assert.match(benefitMutation, /INSUFFICIENT_BENEFIT_BALANCE/);
 assert.match(benefitMutation, /status:\s*'paid'/);
 
 // 7) Parcelamento não exato distribui o resto de centavos nas primeiras parcelas.
-assert.match(cardsService, /const totalCents = Math\.round\(input\.totalAmount \* 100\)/);
-assert.match(cardsService, /const baseCents = Math\.floor\(totalCents \/ input\.installments\)/);
-assert.match(cardsService, /index < remainder \? 1 : 0/);
-const totalCents = Math.round(100 * 100);
-const baseCents = Math.floor(totalCents / 3);
-const remainder = totalCents - baseCents * 3;
+assert.match(cardsService, /cardPurchaseInstallmentRows\(\{/);
 assert.deepEqual(
-  Array.from({ length: 3 }, (_, index) => (baseCents + (index < remainder ? 1 : 0)) / 100),
+  cardPurchaseInstallmentRows({
+    purchaseDate: '2026-09-11', totalAmount: 100, installments: 3, closingDay: 15,
+  }).map(({ amount }) => amount),
   [33.34, 33.33, 33.33],
 );
 
@@ -75,8 +73,9 @@ assert.equal(moveWeekendToMonday('2026-10-03'), '2026-10-05');
 assert.equal(moveWeekendToMonday('2026-10-04'), '2026-10-05');
 
 // 9) Fechamento: compra após o closingDay migra para a próxima competência.
-assert.match(cardsService, /purchaseDate\.getUTCDate\(\) > card\.closingDay \? 1 : 0/);
-assert.match(cardsRoutes, /purchaseDate\.getUTCDate\(\) > input\.closingDay \? 1 : 0/);
+assert.equal(cardPurchaseStatementMonth('2026-09-15', 15), '2026-09');
+assert.equal(cardPurchaseStatementMonth('2026-09-16', 15), '2026-10');
+assert.match(cardsRoutes, /statementMonth:\s*cardPurchaseStatementMonth\(nextPurchaseDate, card\.closingDay, entry\.number\)/);
 
 // 10) Saldo credor de fatura não gera valor pagável negativo.
 const credit = canonicalCardStatementTotals([

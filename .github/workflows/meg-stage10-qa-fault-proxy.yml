@@ -1,0 +1,26 @@
+name: MEG Stage10 QA fault proxy contract
+on:
+  push:
+    branches: [stage10/android-confirmacao-qa-20261118]
+    paths:
+      - '.github/workflows/meg-stage10-qa-fault-proxy.yml'
+      - 'scripts/meg-stage10-qa-fault-proxy.mjs'
+      - 'scripts/meg-stage10-qa-fault-proxy.test.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/meg-stage10-qa-fault-proxy.yml'
+      - 'scripts/meg-stage10-qa-fault-proxy.mjs'
+      - 'scripts/meg-stage10-qa-fault-proxy.test.mjs'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify local-only fault injection for monetary and benefit writers
+        run: node --test scripts/meg-stage10-qa-fault-proxy.test.mjs

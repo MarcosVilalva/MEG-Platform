@@ -9,7 +9,9 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorHttp: {
-      enabled: true
+      // Only the disposable stage10Qa build bypasses the native PATCH transport.
+      // Stable Android keeps CapacitorHttp enabled by default.
+      enabled: process.env.MEG_STAGE10_QA_DISABLE_NATIVE_HTTP !== '1'
     },
     StatusBar: {
       overlaysWebView: false,

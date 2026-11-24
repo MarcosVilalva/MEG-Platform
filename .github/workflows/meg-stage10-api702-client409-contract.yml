@@ -1,0 +1,29 @@
+name: MEG Stage10 API 702 x legacy 409 client contract
+on:
+  push:
+    branches: [stage10/android-confirmacao-qa-20261118]
+    paths:
+      - '.github/workflows/meg-stage10-api702-client409-contract.yml'
+      - 'scripts/meg-stage10-api-client-409-contract.mjs'
+      - 'apps/web/src/cloud-outbox-conflict-policy.js'
+  pull_request:
+    paths:
+      - 'scripts/meg-stage10-api-client-409-contract.mjs'
+      - 'apps/web/src/cloud-outbox-conflict-policy.js'
+
+permissions:
+  contents: read
+
+jobs:
+  api-client-conflict-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Load immutable API candidate in a read-only checkout
+        run: git fetch --depth=1 --no-tags origin 19aaa96b508f3d4db2a38ef0866ca5622b377200
+      - name: Validate exact 409 contract between PR 702 and QA legacy client
+        run: node scripts/meg-stage10-api-client-409-contract.mjs

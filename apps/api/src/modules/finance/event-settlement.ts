@@ -4,7 +4,7 @@ import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-pri
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { assertActiveCatalogReferences } from './catalog-scope';
-import { isFutureFinancialDay, isMonetaryAccountType, monetaryAccountBalanceAt, paymentBalanceDecision, serializableFinancialTransaction } from './monetary-protection';
+import { isFutureFinancialDay, isMonetaryAccountType, monetaryAccountBalanceAt, monetaryAccountDebitWindow, paymentBalanceDecision, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventSettlementError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
@@ -108,12 +108,29 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
       const value = Math.abs(Number(current.amount));
       const accountBalanceBefore = await monetaryAccountBalanceAt(tx, dataOwnerId, settlementAccount, input.paidAt);
       const protection = paymentBalanceDecision(accountBalanceBefore, value);
-      if (!protection.allowed) {
+      const valueCents = Math.round(value * 100);
+      if (!Number.isSafeInteger(valueCents) || valueCents <= 0) {
+        throw new FinancialEventSettlementError('INVALID_SETTLEMENT_AMOUNT');
+      }
+      // A retroactive payment must not overdraw the account on any
+      // subsequent posted-event date, even when the payment day has funds.
+      let timeline: Awaited<ReturnType<typeof monetaryAccountDebitWindow>>;
+      try {
+        timeline = await monetaryAccountDebitWindow(
+          tx, dataOwnerId, settlementAccount, input.paidAt, valueCents);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'ACCOUNT_BALANCE_WINDOW_TOO_LARGE') {
+          throw new FinancialEventSettlementError('ACCOUNT_BALANCE_WINDOW_TOO_LARGE');
+        }
+        throw error;
+      }
+      if (!protection.allowed || !timeline.allowed) {
         throw new FinancialEventSettlementError('INSUFFICIENT_MONETARY_BALANCE', {
           ...protection,
           accountId: settlementAccount.id,
           accountName: settlementAccount.name,
           at: input.paidAt.slice(0, 10),
+          insufficientDay: timeline.insufficientDay,
         });
       }
 

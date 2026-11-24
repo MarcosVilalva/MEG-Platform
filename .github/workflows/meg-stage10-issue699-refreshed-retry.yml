@@ -1,0 +1,46 @@
+name: MEG Stage10 Issue699 refreshed retry characterization
+on:
+  push:
+    branches: [stage10/p0-public-review-20261123]
+    paths:
+      - '.github/workflows/meg-stage10-issue699-refreshed-retry.yml'
+      - 'apps/api/src/modules/finance/stage10-issue699-refreshed-retry.pg17.disposable.test.ts'
+permissions:
+  contents: read
+jobs:
+  refreshed-retry-pg17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      MEG_STAGE10_ISSUE699_SYNTHETIC: '1'
+      MEG_STAGE10_WEB_WRITE_QA: '0'
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --audit=false --fund=false
+      - run: npm run db:generate
+      - run: npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Characterize refreshed retry following dropped real HTTP response
+        run: |
+          export JWT_SECRET="$(openssl rand -hex 40)"
+          node --import tsx apps/api/src/modules/finance/stage10-issue699-refreshed-retry.pg17.disposable.test.ts

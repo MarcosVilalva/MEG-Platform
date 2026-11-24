@@ -185,3 +185,12 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 - O campo `financialScope` prevalece sobre heuristicas antigas. A identificacao por descricao, modalidade ou forma de pagamento existe somente para migrar dados sem classificacao explicita.
 - A migracao nao altera descricao, data, situacao, valor, quantidade de lancamentos nem totais historicos.
 - Contas vinculadas a lancamentos nao podem ser excluidas; devem ser editadas ou ter os lancamentos movidos.
+
+## Decisão aprovada em 22/11/2026: controle do limite dos cartões
+
+- Regra padrão: bloquear novas compras cujo valor total ultrapasse o limite disponível, considerando o total comprometido em parcelas abertas de qualquer competência, inclusive valores legados.
+- O titular pode escolher modo flexível com alerta e confirmação explícita, por workspace e com preferência específica de cartão que prevalece sobre a regra geral.
+- Compra acima do limite no modo flexível exige confirmação específica para cada operação, com auditoria. Isso não comprova autorização pelo emissor do cartão.
+- A verificação central da API deve ocorrer na mesma transação serializável que grava a compra, com centavos e idempotência, inclusive quando a edição aumenta parcela ou transfere compra entre cartões.
+- Mensagens de bloqueio devem mostrar saldo disponível, comprometimento, excesso e ações: confirmar pagamento de fatura para liberar limite ou corrigir um limite cadastrado incorretamente. Não alterar automaticamente o limite.
+- A persistência da preferência fica fora do AppState legado; o novo armazenamento requer RLS deny-by-default.

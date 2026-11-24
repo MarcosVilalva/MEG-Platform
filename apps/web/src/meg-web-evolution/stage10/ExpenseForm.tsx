@@ -30,6 +30,8 @@ export type ExpenseFormProps={
  schedule?:InstallmentSchedule;
  onBack:()=>void;onRequestSave?:(draft:ExpenseDraft)=>void;saveEnabled?:boolean;
  mode?:'create'|'edit';initialDraft?:ExpenseDraft;
+ /** PT65: manter campos financeiros sem writer específico bloqueados na edição histórica. */
+ historicalRestricted?:boolean;
  /** Rótulos neutros para o caminho real de consulta, mantendo QA original por padrão. */
  readOnlyRealData?:boolean;
 };
@@ -104,7 +106,7 @@ function EditCloseGlyph(){
   <path d="M5 5 19 19M19 5 5 19"/>
  </svg>;
 }
-export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft,readOnlyRealData=false}:ExpenseFormProps){
+export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,schedule,onBack,onRequestSave,saveEnabled=false,mode='create',initialDraft,historicalRestricted=false,readOnlyRealData=false}:ExpenseFormProps){
  const isEdit=mode==='edit';
  const [draft,setDraft]=useState<ExpenseDraft>(()=>initialDraft??EMPTY_EXPENSE_DRAFT);
  const [money,setMoney]=useState<BRLInput>(()=>initialDraft?.amountInput?brlFromPasted(initialDraft.amountInput):EMPTY_BRL_INPUT);
@@ -156,7 +158,11 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
  const isRefund=money.negative&&requestedAmount!==null;
  const isDirty=isEdit&&Boolean(initialDraft)&&(Object.keys(EMPTY_EXPENSE_DRAFT) as (keyof ExpenseDraft)[]).some(key=>draft[key]!==initialDraft![key]);
  const validPayment=isCredit?Boolean(selectedCard)&&/^[1-9]\d*$/.test(draft.installmentsInput):Boolean(method)&&(!showSettlementAccount||Boolean(selectedAccount));
- const canSave=Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&draft.date&&requestedAmount&&validPayment&&(!isCredit||isEdit)&&(!isEdit||isDirty));
+ // Histórico: ausência de catálogo atual não pode impedir editar apenas texto.
+ // A API valida o vínculo original e impede mutações dos demais campos.
+ const canSave=historicalRestricted
+  ? Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&requestedAmount&&(!isEdit||isDirty))
+  : Boolean(saveEnabled&&onRequestSave&&draft.description.trim()&&categories.some(x=>x.id===draft.categoryId)&&draft.date&&requestedAmount&&validPayment&&(!isCredit||isEdit)&&(!isEdit||isDirty));
  // A gravação continua desabilitada no QA. Para pendências, a API aceita accountId ausente,
  // mas qualquer writer real exigirá caracterização transacional antes de ser conectado.
  const currentSchedule=Boolean(schedule&&schedule.source==='canonical'&&schedule.cardId===draft.creditCardId&&schedule.purchaseDate===draft.date&&schedule.installments===Number(draft.installmentsInput)&&schedule.amountDecimal===requestedAmount&&schedule.rows.length===Number(draft.installmentsInput));
@@ -234,43 +240,44 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
    <nav className="meg-t10-expense-mobile-nav" aria-label="Etapas do formulário">
     {([['data','Dados'],['payment','Pagamento'],['summary','Resumo']] as const).map(([value,label])=><button type="button" key={value} aria-current={mobileStep===value?'step':undefined} onClick={()=>setMobileStep(value)}>{label}</button>)}
    </nav>
+   {historicalRestricted&&<p role="status" className="meg-t10-expense-checkline">Edição histórica: descrição, observações e valor de despesa paga são editáveis. Conta, categoria, data, status, forma de pagamento e parcelas permanecem protegidos até a homologação das respectivas regras.</p>}
    <div className="meg-t10-expense-grid">
     <section className={'meg-t10-expense-panel meg-t10-expense-primary'+(mobileStep==='data'?' is-step':'')} aria-label="Dados da despesa">
      <label htmlFor={formId+'description'}><Icon name="list"/> Descrição *</label>
-     <input id={formId+'description'} aria-label={isEdit?'Descrição da edição':undefined} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(true);}} placeholder="DESCREVA A DESPESA" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'}/>
+     <input id={formId+'description'} aria-label={isEdit?'Descrição da edição':undefined} maxLength={160} value={draft.description} onChange={e=>{patch('description',normalizeFinancialTextInput(e.target.value));setSuggestionsOpen(!historicalRestricted);}} placeholder="DESCREVA A DESPESA" autoComplete="off" aria-expanded={suggestionsOpen&&suggestions.length>0} aria-controls={formId+'suggestions'}/>
      {suggestionsOpen&&remoteError?.query===draft.description.trim()&&<p role="alert">{remoteError.message}</p>}
      {suggestionsOpen&&suggestions.length>0&&<div className="meg-t10-expense-suggestions" id={formId+'suggestions'} role="listbox" aria-label="Descrições do histórico">
       <strong className="meg-t10-expense-suggestions-title"><Icon name="list"/> Histórico relacionado</strong>
       {suggestions.slice(0,3).map(s=><button type="button" key={s.sourceEventId} role="option" aria-selected={false} onClick={()=>selectSuggestion(s)}>{s.description}<small>{s.categoryName??'Categoria indisponível'} · Sem copiar valor ou data</small></button>)}
      </div>}
      <fieldset className="meg-t10-expense-choice meg-t10-expense-modality"><legend>Modalidade de pagamento *</legend>
-      <button type="button" aria-pressed={!isCredit} onClick={()=>chooseModality('cash')}><Icon name="card"/> À vista</button>
-      <button type="button" aria-pressed={isCredit} onClick={()=>chooseModality('credit')}><Icon name="card"/> Crédito</button>
+      <button type="button" aria-pressed={!isCredit} disabled={historicalRestricted} onClick={()=>chooseModality('cash')}><Icon name="card"/> À vista</button>
+      <button type="button" aria-pressed={isCredit} disabled={historicalRestricted} onClick={()=>chooseModality('credit')}><Icon name="card"/> Crédito</button>
      </fieldset>
      {!isCredit&&<div className="meg-t10-expense-method-field">
       <label htmlFor={formId+'method'}><Icon name="card"/> Forma de pagamento *</label>
       <div className="meg-t10-expense-method-control">
        <Icon name="card"/>
-       <select id={formId+'method'} value={draft.paymentMethodId} onChange={e=>patch('paymentMethodId',e.target.value)}><option value="">SELECIONE A FORMA</option>{visibleMethods.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
+       <select id={formId+'method'} value={draft.paymentMethodId} disabled={historicalRestricted} onChange={e=>patch('paymentMethodId',e.target.value)}><option value="">SELECIONE A FORMA</option>{visibleMethods.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
       </div>
      </div>}
 
      <label htmlFor={formId+'date'}><Icon name="calendar"/> Data do lançamento *</label>
      <div className="meg-t10-expense-date-entry">
-      <input id={formId+'date'} type="text" inputMode="numeric" autoComplete="off" maxLength={10} placeholder="DD/MM/AAAA" value={dateText} aria-invalid={dateError} aria-describedby={formId+'datehint'} onChange={e=>{setDateText(formatEntryDateTyping(e.target.value));patch('date','');setDateError(false);}} onBlur={completeDate}/>
+      <input id={formId+'date'} type="text" inputMode="numeric" autoComplete="off" maxLength={10} placeholder="DD/MM/AAAA" value={dateText} disabled={historicalRestricted} aria-invalid={dateError} aria-describedby={formId+'datehint'} onChange={e=>{setDateText(formatEntryDateTyping(e.target.value));patch('date','');setDateError(false);}} onBlur={completeDate}/>
       <div className="meg-t10-expense-date-calendar" title="Selecionar data no calendário">
        <Icon name="calendar"/>
-       <input type="date" className="meg-t10-expense-date-picker" aria-label="Selecionar data no calendário" title="Selecionar data no calendário" value={draft.date} onChange={e=>{const value=e.target.value;patch('date',value);setDateText(dateBR(value)==='Não informada'?'':dateBR(value));setDateError(false);}}/>
+       <input type="date" className="meg-t10-expense-date-picker" aria-label="Selecionar data no calendário" title="Selecionar data no calendário" value={draft.date} disabled={historicalRestricted} onChange={e=>{const value=e.target.value;patch('date',value);setDateText(dateBR(value)==='Não informada'?'':dateBR(value));setDateError(false);}}/>
       </div>
      </div>
      <small className="meg-t10-expense-date-hint" id={formId+'datehint'}>{dateError?'Data inválida. Confira dia, mês e ano.':'Digite dia/mês e pressione Tab para completar o ano.'}</small>
      <label htmlFor={formId+'category'}><Icon name="list"/> Categoria *</label>
-     <select id={formId+'category'} value={draft.categoryId} onChange={e=>chooseCategory(e.target.value)}>
+     <select id={formId+'category'} value={draft.categoryId} disabled={historicalRestricted} onChange={e=>chooseCategory(e.target.value)}>
       <option value="">SELECIONE UMA CATEGORIA</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
      </select>
      <div className="meg-t10-expense-frequent" aria-label="Categorias usadas com maior frequência">
-      {frequent.map(c=><button key={c.id} type="button" className="meg-t10-expense-category" aria-pressed={draft.categoryId===c.id} onClick={()=>chooseCategory(c.id)}><CategoryGlyph name={c.name}/><span>{c.name}</span></button>)}
-      {categories.length>5&&<button type="button" className="meg-t10-expense-category" aria-label="Mais categorias" onClick={()=>setCategoryPicker(true)}><Icon name="menu"/><span>Mais</span></button>}
+      {frequent.map(c=><button key={c.id} type="button" className="meg-t10-expense-category" aria-pressed={draft.categoryId===c.id} disabled={historicalRestricted} onClick={()=>chooseCategory(c.id)}><CategoryGlyph name={c.name}/><span>{c.name}</span></button>)}
+      {categories.length>5&&<button type="button" className="meg-t10-expense-category" aria-label="Mais categorias" disabled={historicalRestricted} onClick={()=>setCategoryPicker(true)}><Icon name="menu"/><span>Mais</span></button>}
      </div>
      <div className="meg-t10-expense-notes">
       <button type="button" className="meg-t10-expense-expand" aria-expanded={notesOpen} onClick={()=>setNotesOpen(o=>!o)}><Icon name="list"/> Observações (opcional) <Icon name="chevronDown"/></button>
@@ -280,25 +287,25 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
     <section className={'meg-t10-expense-panel meg-t10-expense-secondary'+(mobileStep==='payment'?' is-step':'')} aria-label="Dados de pagamento">
      <div className="meg-t10-expense-dual">
       <div><label htmlFor={formId+'amount'}><Icon name="card"/> Valor (R$) *</label>
-       <div className="meg-t10-expense-money"><button type="button" aria-label="Alternar sinal para estorno" aria-pressed={money.negative} title="Estorno / valor negativo" onClick={()=>changeMoney(brlToggleSign(money))}>±</button>
-        <input id={formId+'amount'} type="text" inputMode="numeric" autoComplete="off" aria-label="Valor *" value={brlFormatted(money)} onKeyDown={moneyKeys} onPaste={moneyPaste} onChange={e=>changeMoney(brlFromPasted(e.target.value))}/></div>
+       <div className="meg-t10-expense-money"><button type="button" aria-label="Alternar sinal para estorno" disabled={historicalRestricted} aria-pressed={money.negative} title="Estorno / valor negativo" onClick={()=>changeMoney(brlToggleSign(money))}>±</button>
+        <input id={formId+'amount'} type="text" inputMode="numeric" autoComplete="off" aria-label="Valor *" disabled={historicalRestricted&&draft.requestedStatus!=="paid"} value={brlFormatted(money)} onKeyDown={moneyKeys} onPaste={moneyPaste} onChange={e=>changeMoney(brlFromPasted(e.target.value))}/></div>
       </div>
      </div>
      <div className="meg-t10-expense-money-note" role="status">{isRefund?'ESTORNO / VALOR NEGATIVO': 'DIGITE OS CENTAVOS, SEM VÍRGULA'}</div>
      <fieldset className="meg-t10-expense-choice meg-t10-expense-status"><legend>Status solicitado *</legend>
-      <button type="button" aria-pressed={draft.requestedStatus==='paid'} disabled={isCredit} onClick={()=>chooseStatus('paid')}><Icon name="card"/> Paga</button>
-      <button type="button" aria-pressed={draft.requestedStatus==='planned'} disabled={isCredit} onClick={()=>chooseStatus('planned')}><Icon name="clock"/> Pendente</button>
+      <button type="button" aria-pressed={draft.requestedStatus==='paid'} disabled={isCredit||historicalRestricted} onClick={()=>chooseStatus('paid')}><Icon name="card"/> Paga</button>
+      <button type="button" aria-pressed={draft.requestedStatus==='planned'} disabled={isCredit||historicalRestricted} onClick={()=>chooseStatus('planned')}><Icon name="clock"/> Pendente</button>
      </fieldset>
      {showSettlementAccount&&<div className="meg-t10-expense-settlement-account">
       <label htmlFor={formId+'account'}><Icon name="card"/> Conta de saída do recurso *</label>
-      <select id={formId+'account'} value={draft.accountId} onChange={e=>patch('accountId',e.target.value)}><option value="">SELECIONE A CONTA</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
+      <select id={formId+'account'} value={draft.accountId} disabled={historicalRestricted} onChange={e=>patch('accountId',e.target.value)}><option value="">SELECIONE A CONTA</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
       {accounts.length===1&&<small>Conta monetária única preenchida automaticamente.</small>}
       {accounts.length===0&&<small role="status">Nenhuma conta monetária ativa disponível.</small>}
      </div>}
      {isCredit&&<div className="meg-t10-expense-credit"><div className="meg-t10-expense-credit-title"><Icon name="card"/> Cartão de crédito</div>
       <div className="meg-t10-expense-credit-fields">
-       <div><label htmlFor={formId+'card'}>Cartão</label><select id={formId+'card'} value={draft.creditCardId} onChange={e=>patch('creditCardId',e.target.value)}><option value="">SELECIONE</option>{cards.map(c=><option key={c.id} value={c.id}>{c.name}{c.lastFour?' • '+c.lastFour:''}</option>)}</select></div>
-       <div><label htmlFor={formId+'installments'}>Número de parcelas</label><input id={formId+'installments'} type="number" min="1" step="1" value={draft.installmentsInput} onChange={e=>patch('installmentsInput',e.target.value)}/></div>
+       <div><label htmlFor={formId+'card'}>Cartão</label><select id={formId+'card'} value={draft.creditCardId} disabled={historicalRestricted} onChange={e=>patch('creditCardId',e.target.value)}><option value="">SELECIONE</option>{cards.map(c=><option key={c.id} value={c.id}>{c.name}{c.lastFour?' • '+c.lastFour:''}</option>)}</select></div>
+       <div><label htmlFor={formId+'installments'}>Número de parcelas</label><input id={formId+'installments'} type="number" min="1" step="1" value={draft.installmentsInput} disabled={historicalRestricted} onChange={e=>patch('installmentsInput',e.target.value)}/></div>
       </div>
       {selectedCard&&<div className="meg-t10-credit-preview" aria-label="Identificação do cartão selecionado" style={{'--meg-card-accent':selectedCard.color||'#14e5d4'} as CSSProperties}>
        <div className="meg-t10-credit-mini"><span className="meg-t10-credit-mini-brand">{selectedCard.issuer||selectedCard.name}</span><Icon name="card"/><strong>{selectedCard.brand||'CARTÃO DE CRÉDITO'}</strong><small>{selectedCard.lastFour?'•••• '+selectedCard.lastFour:'Final não informado'}</small></div>
@@ -315,7 +322,7 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
     </section>
     <aside className={'meg-t10-expense-panel meg-t10-expense-summary'+(mobileStep==='summary'?' is-step':'')} aria-label="Resumo do lançamento">
      <h3><Icon name="list"/> Resumo do lançamento</h3>
-     <p className="meg-t10-expense-checkline" aria-live="polite"><strong>Conferência:</strong> {missingRequired.length===0?'Campos obrigatórios preenchidos.':'Faltam: '+missingRequired.join(', ')+'.'}</p>
+     <p className="meg-t10-expense-checkline" aria-live="polite"><strong>Conferência:</strong> {historicalRestricted?'Edição restrita de histórico. Vínculos originais preservados; campos não disponíveis no catálogo atual não serão recriados.':missingRequired.length===0?'Campos obrigatórios preenchidos.':'Faltam: '+missingRequired.join(', ')+'.'}</p>
      <strong className={'meg-t10-expense-total'+(isRefund?' is-refund':'')}>{requestedAmount?fmt.format(Number(requestedAmount)):'VALOR NÃO INFORMADO'}</strong>
      {isRefund&&<span className="meg-t10-expense-refund-tag">ESTORNO</span>}
      <dl>
@@ -329,7 +336,7 @@ export function ExpenseForm({catalogs,historySnapshot,searchHistorySuggestions,s
       {isCredit&&<div><dt>Cartão / parcelas</dt><dd>{nameOf(cards,draft.creditCardId)} · {draft.installmentsInput||'1'}x</dd></div>}
       {isCredit&&selectedCard&&<div><dt>Fecha / vence</dt><dd>{selectedCard.closingDay||'?' } / {selectedCard.dueDay||'?'}</dd></div>}
      </dl>
-     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> {readOnlyRealData?'Dados reais consultados. Gravações financeiras indisponíveis.':'Prévia fictícia, sem operações financeiras.'}</div>
+     <div className="meg-t10-expense-summary-footer"><Icon name="gift"/> {historicalRestricted?'Homologação local isolada. Campos protegidos não serão alterados.':readOnlyRealData?'Dados reais consultados. Gravações financeiras indisponíveis.':'Prévia fictícia, sem operações financeiras.'}</div>
     </aside>
    </div>
    {categoryPicker&&<div className="meg-t10-expense-suboverlay"><section className="meg-t10-expense-subdialog" role="dialog" aria-modal="true" aria-label="Todas as categorias">

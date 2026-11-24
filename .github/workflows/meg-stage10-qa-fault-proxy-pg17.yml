@@ -1,0 +1,57 @@
+name: MEG Stage10 QA fault proxy real PG17
+on:
+  push:
+    branches: [stage10/android-confirmacao-qa-20261118]
+    paths:
+      - '.github/workflows/meg-stage10-qa-fault-proxy-pg17.yml'
+      - 'apps/api/src/modules/finance/stage10-qa-fault-proxy.pg17.isolated.test.ts'
+      - 'scripts/meg-stage10-qa-fault-proxy.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/meg-stage10-qa-fault-proxy-pg17.yml'
+      - 'apps/api/src/modules/finance/stage10-qa-fault-proxy.pg17.isolated.test.ts'
+      - 'scripts/meg-stage10-qa-fault-proxy.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-real-http-pg17-isolated:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      NODE_ENV: test
+      JWT_SECRET: stage10-fictitious-secret-only-for-disposable-pg17
+      ADMIN_EMAIL: stage10-ci@example.invalid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install solely for non-release isolated characterization
+        run: npm ci --ignore-scripts --audit=false --fund=false
+      - name: Generate Prisma client (no external database)
+        run: npm run db:generate
+      - name: Prepare disposable PostgreSQL 17 only
+        run: npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Prove lost HTTP response after real financial commit and one-id replay
+        run: node --import tsx apps/api/src/modules/finance/stage10-qa-fault-proxy.pg17.isolated.test.ts
+      # This non-release test does not replace or relax the monorepo security gate.
+      # No APK artifact, deployment, remote database, merge or production write.

@@ -1,0 +1,34 @@
+name: MEG Stage10 legacy outbox 409 QA
+on:
+  push:
+    branches: [stage10/android-confirmacao-qa-20261118]
+    paths:
+      - '.github/workflows/meg-stage10-legacy-outbox-409-qa.yml'
+      - 'apps/web/src/cloud-outbox-conflict-policy.js'
+      - 'apps/web/src/instant-persistence.js'
+      - 'apps/web/src/stage10-frozen-legacy-409-harness.test.js'
+  pull_request:
+    paths:
+      - 'apps/web/src/cloud-outbox-conflict-policy.js'
+      - 'apps/web/src/instant-persistence.js'
+      - 'apps/web/src/stage10-frozen-legacy-409-harness.test.js'
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-409-fail-closed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Characterize actual source of frozen legacy client against 409, lost response, retained operationId
+        run: node apps/web/src/stage10-frozen-legacy-409-harness.test.js
+      - name: Explicit proof boundary
+        run: |
+          echo 'MEG_STAGE10_LEGACY_409_NO_INFINITE_REPLAY=PASS'
+          echo 'MEG_STAGE10_FROZEN_ANDROID_BINARY_NOT_TESTED=NOT_TESTED'
+          echo 'MEG_STAGE10_PRODUCTION_NOT_TOUCHED=PASS'

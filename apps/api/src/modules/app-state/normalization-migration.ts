@@ -253,7 +253,10 @@ export async function synchronizeNormalizedRows(
   // undefined = PUT integral. Array preenchido = PATCH somente das IDs alteradas.
   const changed = changedIds === undefined ? null : new Set(changedIds);
   if (changed && changed.size === 0) {
-    return { active: true, reconciled: true, fingerprint: preview.summary.fingerprint, count: preview.summary.validCount };
+    return {
+      active: true, reconciled: true, fingerprint: preview.summary.fingerprint,
+      count: preview.summary.validCount, updated: 0, created: 0, archived: 0,
+    };
   }
   const existingRows = await tx.financialEvent.findMany({
     where: {
@@ -377,13 +380,13 @@ export async function synchronizeNormalizedRows(
     updated += 1;
   }
 
-  // Remocao do espelho deve manter o registro historico e nunca destruir suas
-  // referencias. A exclusao de dominio vinculado exige operacao canonica.
+  // PUT integral e parcial por identidade: omitir um evento NUNCA o arquiva.
+  // Somente IDs explicitamente enviados em PATCH /transactions (deletes)
+  // podem chegar aqui como ausentes do estado resultante.
+  // Eventos vinculados continuam exigindo escritor canonico para exclusao.
   const remaining = changed
     ? [...changed].filter(id => !desired.has(id))
-    : existingRows
-      .filter(row => !row.archivedAt && !desired.has(row.legacyTransactionId!))
-      .map(row => row.legacyTransactionId!);
+    : [];
   for (const legacyId of remaining) {
     const old = existingByLegacyId.get(legacyId);
     if (!old || old.archivedAt) continue;

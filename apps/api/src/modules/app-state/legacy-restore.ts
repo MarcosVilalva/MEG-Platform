@@ -5,7 +5,7 @@ import { writeBackNormalizedEventsToAppState } from './normalized-primary-writeb
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from '../finance/audit';
 import { isBenefitFinancialEvent, isMonetaryAccountType, isPostedFinancialStatus } from '../finance/financial-policy';
-import { monetaryAccountBalanceAt, serializableFinancialTransaction } from '../finance/monetary-protection';
+import { monetaryAccountDebitWindow, serializableFinancialTransaction } from '../finance/monetary-protection';
 import { syncLedger } from '../finance/service';
 
 /**
@@ -131,6 +131,37 @@ export async function previewLegacyRestore(actorId: string, legacyId: string) {
 }
 
 /**
+ * Protege tambem saldos futuros contra restauracao retroativa de despesa
+ * realizada. O evento arquivado ainda nao entra no calculo de saldo.
+ * A mesma autoridade financeira protege novos debitos e transferencias.
+ * Esta rotina somente consulta o banco, sem gravar.
+ */
+export async function assertLegacyRestoreDebitWindow(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  account: { id: string; openingBalance: Prisma.Decimal | number | string },
+  eventDate: string,
+  signedAmount: number,
+): Promise<void> {
+  const debitCents = Math.round(-signedAmount * 100);
+  if (!Number.isFinite(signedAmount) || signedAmount >= 0
+    || !Number.isSafeInteger(debitCents) || debitCents <= 0) {
+    throw new LegacyRestoreError('RESTORE_INVALID_DEBIT_AMOUNT');
+  }
+  try {
+    const timeline = await monetaryAccountDebitWindow(
+      tx, ownerId, account, eventDate, debitCents,
+    );
+    if (!timeline.allowed) throw new LegacyRestoreError('RESTORE_INSUFFICIENT_MONETARY_BALANCE');
+  } catch (error) {
+    if (error instanceof Error && error.message === 'ACCOUNT_BALANCE_WINDOW_TOO_LARGE') {
+      throw new LegacyRestoreError('RESTORE_BALANCE_WINDOW_TOO_LARGE');
+    }
+    throw error;
+  }
+}
+
+/**
  * Comando NOVO autenticado, nunca aceite por PATCH legado.
  * A intencao exige ID financeiro, tombstone e revisao lidos separadamente
  * e a palavra de confirmacao; clientes offline antigos nao conseguem inventa-la.
@@ -180,16 +211,15 @@ export async function restoreLegacyFinancialEventQa(actorId: string, input: Expl
         throw new LegacyRestoreError('RESTORE_STALE_TOMBSTONE');
       }
 
-      // Somente a autoridade canonica verifica saldo; sem regra financeira na Web.
+      // Reativar despesa antiga reduz o saldo tambem nas datas posteriores.
+      // O mesmo guard canonico usado pelos writers impede saldo insuficiente
+      // futuro, antes da primeira mutacao da transacao serializavel.
       if (isPostedFinancialStatus(event.status) && Number(event.signedAmount) < 0) {
         const account = event.account!;
-        const balance = await monetaryAccountBalanceAt(
+        await assertLegacyRestoreDebitWindow(
           tx, ownerId, { id: account.id, openingBalance: account.openingBalance },
-          event.date.toISOString().slice(0, 10),
+          event.date.toISOString().slice(0, 10), Number(event.signedAmount),
         );
-        if (Math.round((balance + Number(event.signedAmount)) * 100) < 0) {
-          throw new LegacyRestoreError('RESTORE_INSUFFICIENT_MONETARY_BALANCE');
-        }
       }
 
       const updated = await tx.financialEvent.updateMany({

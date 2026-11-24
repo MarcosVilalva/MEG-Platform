@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:node="remove" />
+    <application android:allowBackup="false"
+        android:name="br.com.megfinancas.app.Stage10QaApplication"
+        android:label="MEG Etapa 10 QA"
+        android:networkSecurityConfig="@xml/stage10_qa_network"
+        tools:replace="android:allowBackup,android:label,android:name">
+        <activity android:name="br.com.megfinancas.app.MainActivity"
+            android:label="MEG Etapa 10 QA"
+            tools:replace="android:label" />
+        <!-- Explicit, disposable activity for #699 with native HTTP guard.
+             Default QA MainActivity remains unchanged for PT210/PT211/PT217. -->
+        <activity android:name="br.com.megfinancas.app.Stage10QaMainActivity"
+            android:exported="true"
+            android:label="MEG Etapa 10 QA Native"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask" />
+    </application>
+</manifest>

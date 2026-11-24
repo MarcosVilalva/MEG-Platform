@@ -36,6 +36,8 @@ const OUTBOX_KEY = 'meg-cloud-transaction-outbox-v1';
 const OUTBOX_RECOVERY_KEY = 'meg-cloud-transaction-outbox-recovery-v1';
 const OUTBOX_CONFLICT_KEY = 'meg-cloud-transaction-outbox-conflict-v1';
 const STATE_OUTBOX_KEY = 'meg-cloud-state-properties-outbox-v1';
+const STATE_OUTBOX_CONFLICT_KEY = 'meg-cloud-state-properties-outbox-conflict-v1';
+const STATE_OUTBOX_CONFLICT_KIND = 'state-properties-conflict';
 const ACTIVITY_MIGRATION_KEY = 'meg-cloud-activity-outbox-migrated-v1';
 const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3333';
 const FAILURE_NOTICE_INTERVAL_MS = 30_000;
@@ -53,6 +55,7 @@ let durableStorageUnavailable = false;
 let durableWriteBarrier = Promise.resolve();
 let durableWriteFailure = null;
 let unpersistedOutboxConflict = null;
+let unpersistedStateOutboxConflict = null;
 
 function isFinancialState(value) {
   return Boolean(value && typeof value === 'object' && Array.isArray(value.transactions));
@@ -171,6 +174,51 @@ function readStateOutbox() {
   return normalizeStateOutbox(value);
 }
 
+// A recusa de propriedades permanece vinculada a generation/operationId.
+// Marcador inválido, armazenamento inacessível ou mudança inesperada falham fechados.
+function readStateOutboxConflict(pending = readStateOutbox()) {
+  if (unpersistedStateOutboxConflict?.code === 'STATE_OUTBOX_CONFLICT_STORES_DIVERGED') {
+    return unpersistedStateOutboxConflict;
+  }
+  let raw;
+  try { raw = globalThis.localStorage?.getItem?.(STATE_OUTBOX_CONFLICT_KEY) ?? null; }
+  catch { return { code: 'STATE_OUTBOX_CONFLICT_STORAGE_UNAVAILABLE' }; }
+  if (!hasStateOutbox(pending)) {
+    return raw !== null || unpersistedStateOutboxConflict
+      ? { code: 'STATE_OUTBOX_CONFLICT_PENDING_MISSING' } : null;
+  }
+  if (raw === null) return unpersistedStateOutboxConflict;
+  const marker = parseJson(raw);
+  if (!marker || typeof marker !== 'object' || Array.isArray(marker)
+    || typeof marker.code !== 'string' || !marker.code
+    || typeof marker.operationId !== 'string' || !Number.isSafeInteger(marker.generation)) {
+    return { code: 'STATE_OUTBOX_CONFLICT_MARKER_INVALID' };
+  }
+  if (marker.operationId !== pending.operationId || marker.generation !== pending.generation) {
+    return { code: 'STATE_OUTBOX_CONFLICT_GENERATION_CHANGED' };
+  }
+  return marker;
+}
+
+async function parkStateOutboxConflict(pending, code) {
+  const marker = {
+    operationId: pending.operationId, generation: pending.generation,
+    code, detectedAt: new Date().toISOString(),
+  };
+  unpersistedStateOutboxConflict = marker;
+  try { globalThis.localStorage?.setItem?.(STATE_OUTBOX_CONFLICT_KEY, JSON.stringify(marker)); } catch {}
+  setSyncStatus('Sincronizacao de cadastros bloqueada por conflito. Dados locais preservados.');
+  showPersistenceBlocker(parkedOutboxMessage(code));
+  window.MEG_APP?.showToast?.('Sincronizacao requer revisao',
+    'A alteracao foi preservada sem reenvio automatico.', 'warning');
+  try { window.dispatchEvent(new CustomEvent('meg:cloud-sync-needs-resolution', {
+    detail: { kind: 'state-properties', code, generation: pending.generation },
+  })); } catch {}
+  // A copia IndexedDB permite restaurar o bloqueio caso localStorage se perca.
+  // Se nao houver IndexedDB, o bloqueio local permanece e o risco sera reportado.
+  await protectOutbox(STATE_OUTBOX_CONFLICT_KIND, marker);
+}
+
 function enqueueDurableWrite(task) {
   durableWriteBarrier = durableWriteBarrier.catch(() => undefined).then(async () => {
     try {
@@ -194,9 +242,10 @@ async function protectOutbox(kind, value) {
 
 async function initializeDurableOutboxes() {
   try {
-    const [durableTransactions, durableState] = await Promise.all([
+    const [durableTransactions, durableState, durableStateConflict] = await Promise.all([
       readDurableOutbox('transactions'),
       readDurableOutbox('state-properties'),
+      readDurableOutbox(STATE_OUTBOX_CONFLICT_KIND),
     ]);
     const transactions = reconcileTransactionOutboxes(readOutbox(), durableTransactions);
     const state = reconcileStateOutboxes(readStateOutbox(), durableState);
@@ -207,6 +256,20 @@ async function initializeDurableOutboxes() {
     if (hasStateOutbox(state)) {
       localStorage.setItem(STATE_OUTBOX_KEY, JSON.stringify(state));
       await protectOutbox('state-properties', state);
+    }
+    // Nunca recuperar o outbox duravel sem recuperar tambem a recusa definitiva.
+    const localRaw = localStorage.getItem(STATE_OUTBOX_CONFLICT_KEY);
+    const localConflict = parseJson(localRaw);
+    if (durableStateConflict) {
+      if (localRaw === null) {
+        localStorage.setItem(STATE_OUTBOX_CONFLICT_KEY, JSON.stringify(durableStateConflict));
+      } else if (!sameValue(localConflict, durableStateConflict)) {
+        // Nao escolher silenciosamente uma das duas identidades conflitantes.
+        unpersistedStateOutboxConflict = { code: 'STATE_OUTBOX_CONFLICT_STORES_DIVERGED' };
+      }
+    } else if (localRaw !== null && localConflict
+      && typeof localConflict.code === 'string' && localConflict.code) {
+      await protectOutbox(STATE_OUTBOX_CONFLICT_KIND, localConflict);
     }
   } finally {
     durableHydrationRunning = false;
@@ -227,6 +290,9 @@ function hasStateOutbox(value = readStateOutbox()) {
 
 function persistStateOutbox(properties) {
   const current = readStateOutbox();
+  if (readStateOutboxConflict(current)) {
+    throw new Error('STATE_OUTBOX_REQUIRES_MANUAL_RESOLUTION');
+  }
   const next = {
     generation: current.generation + 1,
     operationId: createOperationId(),
@@ -258,6 +324,12 @@ function persistOutbox(operations) {
   if (!hasTransactionOperations(operations) || !globalThis.localStorage?.setItem) return readOutbox();
   const current = readOutbox();
   const merged = mergeTransactionOutbox(current, operations);
+  // Uma segunda captura da MESMA intencao nao pode criar nova chave de
+  // idempotencia. So um payload efetivamente diferente inicia operacao nova.
+  if (current.operationId
+    && sameValue(current.upserts, merged.upserts)
+    && sameValue(current.deletes, merged.deletes)
+    && sameValue(current.activities, merged.activities)) return current;
   const next = {
     generation: current.generation + 1,
     operationId: createOperationId(),
@@ -505,6 +577,12 @@ async function ensureOutboxConfirmed() {
 async function ensureStateOutboxConfirmed() {
   await awaitDurableProtection();
   const initial = readStateOutbox();
+  const blocked = readStateOutboxConflict(initial);
+  if (blocked) {
+    setSyncStatus('Sincronizacao de cadastros bloqueada por conflito.');
+    showPersistenceBlocker(parkedOutboxMessage(blocked.code));
+    return false;
+  }
   if (!hasStateOutbox(initial)) return true;
   if (!isCloudSessionReady() || navigator.onLine === false) return false;
 
@@ -528,6 +606,13 @@ async function ensureStateOutboxConfirmed() {
         properties: pending.properties,
       }),
     });
+    const rejected = [400, 403, 404, 409, 422].includes(response.status)
+      ? await response.json().catch(() => null) : null;
+    const decision = decideLegacyOutboxRejection(response.status, rejected);
+    if (decision.action === 'manual-resolution-required') {
+      await parkStateOutboxConflict(pending, decision.code);
+      return false;
+    }
     if (response.status === 409) continue;
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
@@ -548,10 +633,11 @@ async function ensureStateOutboxConfirmed() {
 }
 
 function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
-  if (readOutboxConflict() || outboxRetryTimer || (!hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
+  if (readOutboxConflict() || readStateOutboxConflict() || outboxRetryTimer
+    || (!hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
   outboxRetryTimer = globalThis.setTimeout?.(() => {
     outboxRetryTimer = null;
-    if (readOutboxConflict()) return;
+    if (readOutboxConflict() || readStateOutboxConflict()) return;
     flushImmediateSave()
       .then(() => {
         if (hasTransactionOperations(readOutbox()) || hasStateOutbox() || pendingImmediateState) {
@@ -568,7 +654,7 @@ function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
 
 async function flushImmediateSave() {
   await durableReadyPromise;
-  const blocked = readOutboxConflict();
+  const blocked = readOutboxConflict() || readStateOutboxConflict();
   if (blocked) {
     setSyncStatus('Sincronizacao bloqueada por conflito financeiro.');
     showPersistenceBlocker(parkedOutboxMessage(blocked.code));

@@ -73,3 +73,51 @@ export async function deleteDurableOutboxIfGeneration(kind, generation) {
     transaction.onabort = transaction.onerror;
   });
 }
+
+
+/**
+ * Leitura estrita para comprovantes financeiros: nunca confundir falha de
+ * IndexedDB com ausencia de um registro. O leitor legado permissivo acima
+ * permanece inalterado para compatibilidade.
+ */
+export async function readDurableOutboxStrict(kind) {
+  const database = await openDatabase();
+  if (!database) throw new Error('DURABLE_OUTBOX_STORAGE_UNAVAILABLE');
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(STORE_NAME, 'readonly');
+    const request = transaction.objectStore(STORE_NAME).get(kind);
+    request.onsuccess = () => {
+      if (!request.result) return resolve(null);
+      if (request.result.payload === null || request.result.payload === undefined) {
+        return reject(new Error('DURABLE_OUTBOX_RECORD_CORRUPT'));
+      }
+      resolve(request.result.payload);
+    };
+    request.onerror = () => reject(request.error || new Error('DURABLE_OUTBOX_READ_FAILED'));
+    transaction.oncomplete = () => database.close();
+    transaction.onerror = () => database.close();
+    transaction.onabort = () => database.close();
+  });
+}
+
+/** Remocao atomica SOMENTE da mesma operacao, nunca de outro comprovante. */
+export async function deleteDurableOutboxIfOperationId(kind, operationId) {
+  if (typeof operationId !== 'string' || !operationId) return false;
+  const database = await openDatabase();
+  if (!database) throw new Error('DURABLE_OUTBOX_STORAGE_UNAVAILABLE');
+  return new Promise((resolve, reject) => {
+    let removed = false;
+    const transaction = database.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(kind);
+    request.onsuccess = () => {
+      if (request.result?.payload?.operationId !== operationId) return;
+      store.delete(kind);
+      removed = true;
+    };
+    request.onerror = () => transaction.abort();
+    transaction.oncomplete = () => { database.close(); resolve(removed); };
+    transaction.onerror = () => { database.close(); reject(transaction.error || new Error('DURABLE_OUTBOX_DELETE_FAILED')); };
+    transaction.onabort = () => { database.close(); reject(transaction.error || new Error('DURABLE_OUTBOX_DELETE_ABORTED')); };
+  });
+}

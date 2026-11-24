@@ -1,8 +1,8 @@
-import { Prisma, prisma } from '@meg/database';
+import { Prisma, prisma, UserRole, UserStatus } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
-import { SEMANTIC_DUPLICATE_WINDOW_MS, isFutureFinancialDay, isMonetaryAccountType, monetaryAccountBalanceAt, serializableFinancialTransaction } from './monetary-protection';
+import { SEMANTIC_DUPLICATE_WINDOW_MS, isFutureFinancialDay, isMonetaryAccountType, monetaryAccountBalanceAt, monetaryAccountDebitWindow, serializableFinancialTransaction } from './monetary-protection';
 import { buildTransferLegs } from './transfer-core';
 
 export class FinancialTransferError extends Error {
@@ -70,6 +70,19 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
   const requestHash = mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined });
 
   return serializableFinancialTransaction(async (tx) => {
+    // Global JWT role does not grant write privileges in another workspace.
+    // Check the active membership INSIDE the financial transaction, before
+    // returning an old receipt or touching either transfer leg.
+    const member = await tx.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: workspace.workspaceId, userId } },
+      select: { role: true, status: true, isActive: true },
+    });
+    if (!member?.isActive || member.status !== UserStatus.ACTIVE ||
+        (member.role !== UserRole.ADMIN && member.role !== UserRole.MANAGER &&
+         member.role !== UserRole.OPERATOR)) {
+      throw new FinancialTransferError('TRANSFER_WORKSPACE_WRITE_REQUIRED');
+    }
+
     const previous = await tx.cloudMutationReceipt.findUnique({
       where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId } },
     });
@@ -140,11 +153,29 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
     }
 
     const sourceBalanceBefore = await monetaryAccountBalanceAt(tx, dataOwnerId, source, input.date);
-    if (requested > sourceBalanceBefore) {
+    const requestedCents = Math.round(requested * 100);
+    if (!Number.isSafeInteger(requestedCents) || requestedCents <= 0) {
+      throw new FinancialTransferError('INVALID_TRANSFER_AMOUNT');
+    }
+    // A retroactive transfer reduces the source account from this date
+    // onward. Check every later posted date using the SAME balance authority
+    // as monetary creation, historical edits and settlement.
+    let timeline: Awaited<ReturnType<typeof monetaryAccountDebitWindow>>;
+    try {
+      timeline = await monetaryAccountDebitWindow(
+        tx, dataOwnerId, source, input.date, requestedCents);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ACCOUNT_BALANCE_WINDOW_TOO_LARGE') {
+        throw new FinancialTransferError('ACCOUNT_BALANCE_WINDOW_TOO_LARGE');
+      }
+      throw error;
+    }
+    if (requested > sourceBalanceBefore || !timeline.allowed) {
       throw new FinancialTransferError('INSUFFICIENT_SOURCE_ACCOUNT_BALANCE', {
         available: sourceBalanceBefore,
         requested,
-        missing: Math.round((requested - sourceBalanceBefore) * 100) / 100,
+        missing: Math.max(0, Math.round((requested - sourceBalanceBefore) * 100) / 100),
+        ...(timeline.insufficientDay ? { insufficientDay: timeline.insufficientDay } : {}),
       });
     }
 

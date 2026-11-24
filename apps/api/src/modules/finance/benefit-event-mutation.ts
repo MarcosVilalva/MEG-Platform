@@ -1,4 +1,4 @@
-import { Prisma, prisma } from '@meg/database';
+import { Prisma, prisma, UserRole, UserStatus } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
@@ -103,6 +103,118 @@ function assertBaseInput(input: BenefitEventMutationInput) {
   if (input.type === 'expense' && !input.categoryId) throw new BenefitEventMutationError('BENEFIT_EXPENSE_CATEGORY_REQUIRED');
 }
 
+/**
+ * The benefit balance is aggregated by the existing benefit authority, NOT
+ * by monetaryAccountDebitWindow. A retroactive benefit expense must remain
+ * affordable on every later posted benefit-event day.
+ */
+async function benefitExpenseDebitWindow(
+  tx: Tx,
+  ownerId: string,
+  date: string,
+  amount: number,
+  excludeEventId?: string,
+): Promise<{ allowed: boolean; insufficientDay?: string; availableCents?: number }> {
+  const requestedCents = Math.round(amount * 100);
+  if (!Number.isSafeInteger(requestedCents) || requestedCents <= 0) {
+    throw new BenefitEventMutationError('BENEFIT_POSITIVE_AMOUNT_REQUIRED');
+  }
+  const future = await tx.financialEvent.findMany({
+    where: {
+      userId: ownerId, archivedAt: null,
+      status: { in: ['paid', 'confirmed', 'reconciled'] },
+      date: { gte: new Date(date + 'T00:00:00.000Z') },
+    },
+    select: {
+      date: true, description: true, status: true,
+      account: { select: { type: true } },
+      paymentMethod: { select: { name: true } },
+    },
+    orderBy: { date: 'asc' },
+  });
+  const relevantDays = [...new Set([
+    date,
+    ...future.filter((item) => isBenefitFinancialEvent(item)
+      && isPostedFinancialStatus(item.status))
+      .map((item) => item.date.toISOString().slice(0, 10)),
+  ])];
+  if (relevantDays.length > 250) {
+    throw new BenefitEventMutationError('BENEFIT_BALANCE_WINDOW_TOO_LARGE');
+  }
+  for (const day of relevantDays) {
+    const available = await benefitBalanceAt(tx, ownerId, day, excludeEventId);
+    const availableCents = Math.round(available * 100);
+    if (!Number.isSafeInteger(availableCents)) {
+      throw new BenefitEventMutationError('INVALID_BENEFIT_BALANCE');
+    }
+    if (requestedCents > availableCents) {
+      return { allowed: false, insufficientDay: day, availableCents };
+    }
+  }
+  return { allowed: true };
+}
+
+/**
+ * PT81: check the complete posted benefit timeline AFTER an edited credit
+ * has been replaced, inside the same serializable transaction. Reducing,
+ * moving or changing the type of an old top-up must not leave a later
+ * Verocard purchase with a negative available benefit balance.
+ * Any failure rolls back event, ledger, AppState, audit and receipt together.
+ */
+async function assertBenefitCreditEditTimeline(
+  tx: Tx, ownerId: string, earliestAffectedDay: string,
+) {
+  const events = await tx.financialEvent.findMany({
+    where: {
+      userId: ownerId, archivedAt: null,
+      status: { in: ['paid', 'confirmed', 'reconciled'] },
+      date: { gte: new Date(earliestAffectedDay + 'T00:00:00.000Z') },
+    },
+    select: {
+      date: true, description: true, status: true,
+      account: { select: { type: true } },
+      paymentMethod: { select: { name: true } },
+    },
+    orderBy: { date: 'asc' },
+  });
+  const affectedDays = [...new Set([
+    earliestAffectedDay,
+    ...events.filter((event) => isPostedFinancialStatus(event.status)
+      && isBenefitFinancialEvent(event))
+      .map((event) => event.date.toISOString().slice(0, 10)),
+  ])];
+  if (affectedDays.length > 250) {
+    throw new BenefitEventMutationError('BENEFIT_BALANCE_WINDOW_TOO_LARGE');
+  }
+  for (const day of affectedDays) {
+    const currentCents = Math.round(
+      (await benefitBalanceAt(tx, ownerId, day)) * 100);
+    if (!Number.isSafeInteger(currentCents)) {
+      throw new BenefitEventMutationError('INVALID_BENEFIT_BALANCE');
+    }
+    if (currentCents < 0) {
+      throw new BenefitEventMutationError('INSUFFICIENT_BENEFIT_BALANCE', {
+        insufficientDay: day,
+        available: currentCents / 100,
+        missing: -currentCents / 100,
+        contract: 'benefit-credit-edit',
+      });
+    }
+  }
+}
+
+async function assertBenefitWorkspaceWriteRole(tx: Tx, workspaceId: string, userId: string) {
+  const member = await tx.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId } },
+    select: { role: true, status: true, isActive: true },
+  });
+  if (!member?.isActive || member.status !== UserStatus.ACTIVE ||
+      (member.role !== UserRole.ADMIN && member.role !== UserRole.MANAGER &&
+       member.role !== UserRole.OPERATOR)) {
+    throw new BenefitEventMutationError('BENEFIT_WORKSPACE_WRITE_REQUIRED');
+  }
+}
+
 export async function updateBenefitEventProtected(
   userId: string,
   eventId: string,
@@ -121,6 +233,7 @@ export async function updateBenefitEventProtected(
 
   try {
     return await serializableFinancialTransaction(async (tx) => {
+      await assertBenefitWorkspaceWriteRole(tx, workspace.workspaceId, userId);
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -156,13 +269,16 @@ export async function updateBenefitEventProtected(
       let balanceBefore: number | null = null;
       if (input.type === 'expense') {
         balanceBefore = await benefitBalanceAt(tx, dataOwnerId, input.date, eventId);
-        const availableCents = Math.round(balanceBefore * 100);
-        const requestedCents = Math.round(input.amount * 100);
-        if (requestedCents > availableCents) {
+        const timeline = await benefitExpenseDebitWindow(
+          tx, dataOwnerId, input.date, input.amount, eventId);
+        if (!timeline.allowed) {
+          const availableCents = timeline.availableCents ?? 0;
+          const requestedCents = Math.round(input.amount * 100);
           throw new BenefitEventMutationError('INSUFFICIENT_BENEFIT_BALANCE', {
             available: availableCents / 100,
             requested: requestedCents / 100,
-            missing: (requestedCents - availableCents) / 100,
+            missing: Math.max(0, requestedCents - availableCents) / 100,
+            ...(timeline.insufficientDay ? { insufficientDay: timeline.insufficientDay } : {}),
           });
         }
       }
@@ -197,6 +313,16 @@ export async function updateBenefitEventProtected(
           memo: updated.description,
         },
       });
+
+      // A credit edit may remove an old source of available benefit funds.
+      // Recalculate after the replacement so earlier expenses and future
+      // purchases are verified against the final, atomic event sequence.
+      if (before.type === 'income' || input.type === 'income') {
+        const beforeDay = before.date.toISOString().slice(0, 10);
+        const firstAffectedDay = beforeDay < input.date ? beforeDay : input.date;
+        await assertBenefitCreditEditTimeline(
+          tx, dataOwnerId, firstAffectedDay);
+      }
 
       const result = await tx.financialEvent.findUnique({
         where: { id: eventId },
@@ -252,14 +378,20 @@ export async function updateBenefitEventProtected(
 export async function createBenefitEventProtected(
   userId: string,
   input: BenefitEventMutationInput,
+  expectedWorkspaceId?: string,
 ): Promise<BenefitEventMutationResult> {
   assertBaseInput(input);
-  const workspace = await resolveWorkspaceContext(userId);
+  const workspace = await resolveWorkspaceContext(userId,
+    expectedWorkspaceId ? {allowLegacyBootstrap:false} : {});
+  if (expectedWorkspaceId && workspace.workspaceId !== expectedWorkspaceId) {
+    throw new BenefitEventMutationError('WORKSPACE_CONTEXT_CHANGED');
+  }
   const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({ contract: 'benefit', ...input, operationId: undefined, allowDuplicate: undefined });
 
   try {
     return await serializableFinancialTransaction(async (tx) => {
+      await assertBenefitWorkspaceWriteRole(tx, workspace.workspaceId, userId);
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -309,13 +441,16 @@ export async function createBenefitEventProtected(
       let balanceBefore: number | null = null;
       if (input.type === 'expense') {
         balanceBefore = await benefitBalanceAt(tx, dataOwnerId, input.date);
-        const availableCents = Math.round(balanceBefore * 100);
-        const requestedCents = Math.round(input.amount * 100);
-        if (requestedCents > availableCents) {
+        const timeline = await benefitExpenseDebitWindow(
+          tx, dataOwnerId, input.date, input.amount);
+        if (!timeline.allowed) {
+          const availableCents = timeline.availableCents ?? 0;
+          const requestedCents = Math.round(input.amount * 100);
           throw new BenefitEventMutationError('INSUFFICIENT_BENEFIT_BALANCE', {
             available: availableCents / 100,
             requested: requestedCents / 100,
-            missing: (requestedCents - availableCents) / 100,
+            missing: Math.max(0, requestedCents - availableCents) / 100,
+            ...(timeline.insufficientDay ? { insufficientDay: timeline.insufficientDay } : {}),
           });
         }
       }

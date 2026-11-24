@@ -1,0 +1,133 @@
+name: MEG Stage10 P0 Draft | CI isolada sem deploy
+on:
+  push:
+    branches:
+      - stage10/p0-public-review-20261123
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: Dependency audit (must remain green)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install without postinstall/network publishing
+        run: npm ci --ignore-scripts --audit=false --fund=false
+      - name: Security policy, no exceptions or bypass
+        run: node scripts/npm-security-audit.mjs --audit-level=high
+      - name: Report security status
+        run: echo STAGE10_P0_REMOTE_SECURITY_AUDIT=PASS
+
+  financial-qa:
+    name: API Web and PG17 synthetic tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      MEG_STAGE10_WEB_WRITE_QA: '0'
+      VITE_STAGE10_QA_WEB_WRITE: 'false'
+      VITE_STAGE10_ANDROID_CONFIRMATION_QA: 'false'
+      VITE_API_URL: http://127.0.0.1:33355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Fail closed unless database is fictitious localhost
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const uri = new URL(process.env.DATABASE_URL);
+          if (uri.protocol !== 'postgresql:' || uri.hostname !== '127.0.0.1' ||
+              uri.port !== '5432' || uri.pathname !== '/meg_stage10_sandbox' ||
+              uri.username !== 'meg_stage10_ci' ||
+              process.env.MEG_STAGE10_ISOLATED_PG !== '1' ||
+              process.env.MEG_STAGE10_QA_LOCAL_ONLY !== '1') {
+            throw new Error('STAGE10_P0_PROTECTED_DB_ACCESS_REFUSED');
+          }
+          console.log('STAGE10_P0_PG17_LOCALHOST_GUARD=PASS');
+          NODE
+      - name: Install without lifecycle scripts
+        run: npm ci --ignore-scripts --audit=false --fund=false
+      - name: Generate Prisma client against fictitious schema only
+        run: npm run db:generate
+      - name: Build API and Web from current PR sources
+        run: |
+          npm --workspace apps/api run build
+          npm --workspace apps/web run build
+          echo 'STAGE10_P0_REMOTE_API_WEB_BUILD=PASS'
+      - name: Create schema in disposable PostgreSQL 17 and #699 purge guard
+        run: |
+          npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+          npx --no-install prisma db execute --file packages/database/prisma/stage10-issue699-receipt-purge-guard.disposable.sql --schema packages/database/prisma/schema.prisma
+      - name: AppState financial authority contracts
+        run: npm --workspace apps/api run test:app-state
+      - name: PT201 PT202 | Estado protegido após 409 e recuperação durável
+        run: |
+          node scripts/meg-stage10-state-outbox-409.contract.mjs
+          node scripts/meg-stage10-state-outbox-durable-recovery.contract.mjs
+          node apps/web/src/stage10-frozen-legacy-409-harness.test.js
+          echo 'PT202_P0_REMOTE_STATE_OUTBOX_CONTRACTS=PASS'
+      - name: Canonical financial characterization contracts
+        run: npm --workspace apps/api run test:finance
+      - name: Credit and Verocard review remains fail closed
+        run: |
+          node --import tsx apps/api/src/modules/finance/stage10-historical-mapping-review.test.ts
+          echo 'STAGE10_P0_CREDIT_VEROCARD_NO_AUTOLINK=PASS'
+      - name: Run original RC1 financial E2E on fake DB
+        run: |
+          npm --workspace apps/api run test:rc1-financial-e2e
+          echo 'STAGE10_P0_REMOTE_FINANCE_PG17=PASS'
+      - name: PT204 PT205 PT213 PT215 | HTTP JWT PG17, vinculos e recibos atomicos
+        env:
+          MEG_STAGE10_PT204_SYNTHETIC: '1'
+          MEG_STAGE10_PT205_SYNTHETIC: '1'
+          MEG_STAGE10_PT213_SYNTHETIC: '1'
+          MEG_STAGE10_PT215_SYNTHETIC: '1'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = MarcosVilalva/MEG-Platform
+          export JWT_SECRET="$(openssl rand -hex 40)"
+          node --import tsx apps/api/src/modules/finance/stage10-pt204-properties-real-http.pg17.disposable.test.ts
+          node --import tsx apps/api/src/modules/finance/stage10-pt205-normalized-ids-real-jwt.pg17.disposable.test.ts
+          node --import tsx apps/api/src/modules/finance/stage10-pt213-four-linked-domains-real-jwt.pg17.disposable.test.ts
+          echo 'PT205_REMOTE_HTTP_JWT_PG17_COMBINED=PASS'
+          echo 'PT213_REMOTE_FOUR_FK_INTEGRITY_HTTP_JWT_PG17=PASS'
+          node --import tsx apps/api/src/modules/finance/stage10-pt215-atomic-receipts-real-http.pg17.disposable.test.ts
+          echo 'PT215_REMOTE_LEGACY_ATOMIC_RECEIPT_HTTP_JWT_PG17=PASS'
+      - name: 'Issue 699 | cinco cenarios HTTP JWT PG17 e operationId pos-expurgo'
+        env:
+          MEG_STAGE10_ISSUE699_SYNTHETIC: '1'
+          MEG_STAGE10_LEGACY_RESTORE_QA: '1'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = MarcosVilalva/MEG-Platform
+          export JWT_SECRET="$(openssl rand -hex 40)"
+          node --import tsx apps/api/src/modules/finance/stage10-issue699-five-scenarios-http.pg17.disposable.test.ts
+          echo 'ISSUE699_HTTP_JWT_PG17_DISPOSABLE_ACCEPTANCE=PASS'
