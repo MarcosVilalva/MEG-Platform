@@ -64,7 +64,7 @@ const httpServer=createServer(async(req,res)=>{
   accounts:[account],categories:[category],paymentMethods:[paymentMethod],cards:[],payables:[],events:{items:[],total:0,page:1,pageSize:0},financialAudit:{items:[],total:0,page:1,pageSize:50},
  };}
  else if(url.pathname==='/finance/events/month'){out={month:url.searchParams.get('month'),items:[],total:0,page:1,pageSize:50};}
- else if(url.pathname==='/finance/events'){out={items:[],total:0,page:1,pageSize:50};}
+ else if(url.pathname==='/finance/events' && method==='GET'){out={items:[],total:0,page:1,pageSize:50};}
  else if(url.pathname==='/finance/summary'){out={month:url.searchParams.get('month'),totalIncome:0,totalExpenses:0,balance:500,availableBalance:500,closingBalance:500,currentBalance:500,projectedBalance:500};}
  else if(url.pathname==='/finance/analytics'){out={month:url.searchParams.get('month'),categories:[],groups:[],income:0,expenses:0,items:[],incomeByCategory:[],expenseByCategory:[]};}
  else if(url.pathname==='/finance/cashflow'){out={month:url.searchParams.get('month'),items:[],daily:[],totalIncome:0,totalExpenses:0,openingBalance:500,closingBalance:500};}
@@ -80,7 +80,11 @@ const httpServer=createServer(async(req,res)=>{
  else if(url.pathname==='/finance/events/history-snapshot'){out={items:[],total:0};}
  else if(method!=='GET'){
   context.receivedWrites++;
-  if(context.mode==='409'){status=409;out={error:'STATE_CONFLICT',message:'QA_409_SYNTHETIC'};}
+  if(context.mode==='timeout' && url.pathname==='/finance/events'){
+   context.syntheticCommitted=(context.syntheticCommitted||0)+1;
+   await delay(51000);
+   status=201;out={id:'issue699-synthetic-committed',status:'paid',date:'2026-11-24',amount:12.35};
+  }else if(context.mode==='409'){status=409;out={error:'STATE_CONFLICT',message:'QA_409_SYNTHETIC'};}
   else if(context.mode==='422'){status=422;out={error:'QA_SYNTHETIC_REJECTION',message:'QA_422_SYNTHETIC'};}
   else {out={id:'issue699-remote-created',status:'planned',date:'2026-11-24',amount:12.35};status=201;}
  } else {out={items:[],total:0,active:true,ready:true};}
@@ -124,7 +128,7 @@ async function handlePaused(event){
   const response=await fetch('http://127.0.0.1:3333'+url.pathname+url.search,{
    method,headers:{...headers,'x-issue699-local-probe':'1'},
    ...(method==='GET'||method==='HEAD'||reqBody==null?{}:{body:reqBody}),
-   signal:AbortSignal.timeout(4000),
+   signal:AbortSignal.timeout(method==='POST' && url.pathname==='/finance/events' && context.mode==='timeout'?60000:4000),
   });
   const bytes=Buffer.from(await response.arrayBuffer());
   await cdp('Fetch.fulfillRequest',{
@@ -313,6 +317,57 @@ try{
     bodyText:document.body.innerText.slice(-2100),
     buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,100),disabled:x.disabled})).filter(x=>x.text).slice(-40),
    }))()`)));
+   const postCount409=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').length;
+   await sleep(3300);
+   const postCount409Delayed=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').length;
+   console.log('ISSUE699_APK708_409_AUTO_RETRY_WINDOW='+JSON.stringify({before:postCount409,after:postCount409Delayed,seconds:3.3}));
+   context.mode='422';
+   const manual422=await evalUI(`(()=>{
+    const b=[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Salvar lançamento'||x.innerText.trim()==='Confirmar lançamento');
+    if(!b||b.disabled)return false;b.click();return true;
+   })()`);
+   console.log('ISSUE699_APK708_422_MANUAL_CLICK='+manual422);
+   if(manual422){
+    await sleep(1550);
+    console.log('ISSUE699_APK708_422_UI='+JSON.stringify(await evalUI(`(()=>({
+     bodyText:document.body.innerText.slice(-1600),
+     buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,90),disabled:x.disabled})).filter(x=>x.text).slice(-24),
+    }))()`)));
+    const count422=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').length;
+    await sleep(3300);
+    const after422=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').length;
+    console.log('ISSUE699_APK708_422_AUTO_RETRY_WINDOW='+JSON.stringify({before:count422,after:after422,seconds:3.3}));
+   }
+   context.mode='timeout';
+   const manualTimeout=await evalUI(`(()=>{
+    const b=[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Salvar lançamento'||x.innerText.trim()==='Confirmar lançamento');
+    if(!b||b.disabled)return false;b.click();return true;
+   })()`);
+   console.log('ISSUE699_APK708_TIMEOUT_CLICK='+manualTimeout);
+   if(manualTimeout){
+    await sleep(47000);
+    console.log('ISSUE699_APK708_TIMEOUT_UI='+JSON.stringify(await evalUI(`(()=>({
+     bodyText:document.body.innerText.slice(-1850),
+     buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,95),disabled:x.disabled})).filter(x=>x.text).slice(-26),
+    }))()`)));
+    const beforeReconnect=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').length;
+    await evalUI(`(()=>{window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('focus'));return true})()`);
+    await sleep(6500);
+    const afterReconnect=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events').length;
+    console.log('ISSUE699_APK708_RECONNECT_AUTO_RETRY_WINDOW='+JSON.stringify({before:beforeReconnect,after:afterReconnect,seconds:6.5}));
+    context.mode='success';
+    const retry=await evalUI(`(()=>{
+     const b=[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Salvar lançamento'||x.innerText.trim()==='Confirmar lançamento');
+     if(!b||b.disabled)return false;b.click();return true;
+    })()`);
+    console.log('ISSUE699_APK708_TIMEOUT_MANUAL_RETRY_CLICK='+retry);
+    if(retry)await sleep(1800);
+    console.log('ISSUE699_APK708_TIMEOUT_RETRY_UI='+JSON.stringify(await evalUI(`(()=>({
+     bodyText:document.body.innerText.slice(-1600),
+     buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,90),disabled:x.disabled})).filter(x=>x.text).slice(-26),
+    }))()`)));
+   }
+   console.log('ISSUE699_APK708_SYNTHETIC_COMMITTED='+Number(context.syntheticCommitted||0));
    console.log('ISSUE699_APK708_ACTUAL_FINANCIAL_POSTS='+JSON.stringify(apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events')));
   }
  }
