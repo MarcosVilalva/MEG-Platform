@@ -65,6 +65,12 @@ jobs:
           # Android 13 uses the system CA directory (Android 15 changed the Conscrypt APEX mount namespace).
           # This AVD uses -writable-system and is destroyed after the workflow.
           adb remount
+          # adb remount may need a first reboot to activate overlayfs/verity changes.
+          adb reboot
+          adb wait-for-device
+          timeout 150 bash -c 'until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == 1 ]]; do sleep 2; done'
+          adb root
+          adb remount
           adb push "$RUNNER_TEMP/$certname" "/system/etc/security/cacerts/$certname"
           adb shell "chmod 644 /system/etc/security/cacerts/$certname"
           adb shell "ls -l /system/etc/security/cacerts/$certname"
