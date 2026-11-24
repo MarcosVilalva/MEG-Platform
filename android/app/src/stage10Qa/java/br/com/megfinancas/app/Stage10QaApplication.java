@@ -48,14 +48,26 @@ public final class Stage10QaApplication extends Application implements Applicati
                 Log.i(TAG, "ISSUE699_CLIENT_ATTACHED " + request.getMethod()
                     + " " + (diagnosticLocal ? uri.toString()
                         : uri.getScheme() + "://" + uri.getHost()));
-                boolean protectedQaRequest = "http".equals(uri.getScheme())
-                    && "127.0.0.1".equals(uri.getHost())
-                    && uri.getPort() == 3333
-                    && uri.getPath() != null
-                    && uri.getPath().startsWith("/app-state");
+                // CapacitorHttp 7 wraps native fetch as:
+                // https://localhost/_capacitor_http_interceptor_?u=<original URL>
+                // Match ONLY the decoded API URL, never generic localhost assets.
+                Uri original = uri;
+                if ("https".equals(uri.getScheme())
+                    && "localhost".equals(uri.getHost())
+                    && "/_capacitor_http_interceptor_".equals(uri.getPath())) {
+                    String target = uri.getQueryParameter("u");
+                    if (target != null) original = Uri.parse(target);
+                }
+                boolean protectedQaRequest = "http".equals(original.getScheme())
+                    && "127.0.0.1".equals(original.getHost())
+                    && original.getPort() == 3333
+                    && original.getPath() != null
+                    && ("/app-state".equals(original.getPath())
+                        || original.getPath().startsWith("/app-state/"));
                 if (protectedQaRequest && new File(getFilesDir(), OFFLINE_FLAG).isFile()) {
                     Log.i(TAG, "ISSUE699_QA_WEBVIEW_OFFLINE_INTERCEPTED " + request.getMethod()
-                        + " " + uri.getPath());
+                        + " " + original.getScheme() + "://" + original.getHost()
+                        + ":" + original.getPort() + original.getPath());
                     // O fluxo de leitura falha com IOException, nao gera 409/5xx falso.
                     // O teste deve verificar que fetch/body rejeitou e nenhum commit ocorreu.
                     return new WebResourceResponse("application/octet-stream", "UTF-8",
