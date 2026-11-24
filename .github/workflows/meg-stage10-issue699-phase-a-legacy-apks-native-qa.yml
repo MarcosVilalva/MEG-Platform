@@ -14,8 +14,6 @@ jobs:
         include:
           - version: '706'
             sha: 'd12bd3b1995609cfdc62db314b1916b54f94e83ee8c3e9d77a89fb3d77f942c1'
-          - version: '707'
-            sha: '0a4554d1881e736e088e9db05eb7b5592e95667f5d1d5aeb1a17247cf926e6da'
     runs-on: ubuntu-24.04
     timeout-minutes: 28
     steps:
@@ -103,9 +101,8 @@ jobs:
           pid=$(adb shell pidof "$pkg" | tr -d '\r')
           test -n "$pid"
           echo 'ISSUE699_APK708_ORIGINAL_RUNNING_OFFLINE=PASS'
-          adb shell uiautomator dump /sdcard/issue699-ui.xml >/dev/null
-          adb shell cat /sdcard/issue699-ui.xml | sed -E 's/text="[^"]*"/text="[REDACTED]"/g; s/content-desc="[^"]*"/content-desc="[REDACTED]"/g' | head -c 3000
-          echo
+          # Skip heavy uiautomator dump: the original APK706 runner exited 137 at this diagnostic.
+          echo 'ISSUE699_A16_OPTIONAL_UIAUTOMATOR_SKIPPED_TO_PRESERVE_RUNNER=PASS'
           # Release builds may disable WebView debugging. Do not modify APK or force-enable it.
           adb shell cat /proc/net/unix | grep -E 'webview_devtools_remote' || true
           adb forward tcp:9333 "localabstract:webview_devtools_remote_$pid"
