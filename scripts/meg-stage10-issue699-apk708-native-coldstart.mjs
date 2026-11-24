@@ -392,7 +392,7 @@ try{
     socket?.close();
     adb('shell','am','force-stop','br.com.megfinancas.app');
     await sleep(900);
-    const stoppedPid=adb('shell','pidof','br.com.megfinancas.app');
+    let stoppedPid='';try{stoppedPid=adb('shell','pidof','br.com.megfinancas.app')}catch{}
     console.log('ISSUE699_NATIVE_COLDSTART_FORCESTOP_PID='+JSON.stringify(stoppedPid));
     adb('shell','am','start','-n','br.com.megfinancas.app/.MainActivity');
     const freshPid=await until(()=>adb('shell','pidof','br.com.megfinancas.app'),'COLD_PID',25000);
