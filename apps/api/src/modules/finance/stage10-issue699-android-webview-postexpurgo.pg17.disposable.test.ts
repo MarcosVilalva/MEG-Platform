@@ -245,6 +245,17 @@ try{
       }catch(error){return {offline:true,reason:String(error)};}
     })()`);
     console.log('ISSUE699_WEBVIEWCLIENT_GET_OFFLINE_PROBE='+JSON.stringify(probe));
+    const nativeProbeTrace=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
+    const nativeApiCallbacks=(nativeProbeTrace.match(
+      /ISSUE699_CLIENT_ATTACHED[^\r\n]*\/app-state[^\r\n]*/g)||[]);
+    console.log('ISSUE699_WEBVIEWCLIENT_API_URL_CALLBACKS='+
+      JSON.stringify(nativeApiCallbacks.slice(-12)));
+    console.log('ISSUE699_WEBVIEWCLIENT_FETCH_TARGET=http://127.0.0.1:3333/app-state');
+    // Falhar fechado ANTES de PATCH: nao permitir escrita sintética se
+    // o GET da API nem passou pelo WebViewClient instrumentado.
+    assert.ok(nativeApiCallbacks.some(line=>line.includes('127.0.0.1:3333/app-state')),
+      'ISSUE699_API_FETCH_NOT_SEEN_BY_WEBVIEWCLIENT');
+    assert.equal(probe?.offline,true,'ISSUE699_WEBVIEWCLIENT_GET_NOT_OFFLINE');
 
     // Teste da ACAO FINANCEIRA realmente pendente. Se um PATCH chegar a
     // Fastify, o teste FALHA sem afirmar que o Android ficou offline.
