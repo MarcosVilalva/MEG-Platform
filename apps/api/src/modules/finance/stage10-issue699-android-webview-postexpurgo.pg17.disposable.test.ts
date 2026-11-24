@@ -246,15 +246,13 @@ try{
     })()`);
     console.log('ISSUE699_WEBVIEWCLIENT_GET_OFFLINE_PROBE='+JSON.stringify(probe));
     const nativeProbeTrace=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
-    const nativeApiCallbacks=(nativeProbeTrace.match(
-      /ISSUE699_CLIENT_ATTACHED[^\r\n]*\/app-state[^\r\n]*/g)||[]);
-    console.log('ISSUE699_WEBVIEWCLIENT_API_URL_CALLBACKS='+
-      JSON.stringify(nativeApiCallbacks.slice(-12)));
-    console.log('ISSUE699_WEBVIEWCLIENT_FETCH_TARGET=http://127.0.0.1:3333/app-state');
-    // Falhar fechado ANTES de PATCH: nao permitir escrita sintética se
-    // o GET da API nem passou pelo WebViewClient instrumentado.
-    assert.ok(nativeApiCallbacks.some(line=>line.includes('127.0.0.1:3333/app-state')),
-      'ISSUE699_API_FETCH_NOT_SEEN_BY_WEBVIEWCLIENT');
+    const interceptedGets=(nativeProbeTrace.match(
+      /ISSUE699_QA_WEBVIEW_OFFLINE_INTERCEPTED[^\r\n]*/g)||[]);
+    console.log('ISSUE699_WEBVIEWCLIENT_API_GET_INTERCEPTIONS='+
+      JSON.stringify(interceptedGets.slice(-12)));
+    // Aguardamos evidencia do endpoint original decodificado, nao a URL do proxy.
+    assert.ok(interceptedGets.some(line=>line.includes('127.0.0.1:3333/app-state')),
+      'ISSUE699_API_GET_NOT_INTERCEPTED');
     assert.equal(probe?.offline,true,'ISSUE699_WEBVIEWCLIENT_GET_NOT_OFFLINE');
 
     // Teste da ACAO FINANCEIRA realmente pendente. Se um PATCH chegar a
