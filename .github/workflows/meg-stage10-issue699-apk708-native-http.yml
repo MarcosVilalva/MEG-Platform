@@ -54,7 +54,6 @@ jobs:
           export PATH="$(python3 -m site --user-base)/bin:$PATH"
           command -v mitmdump
           mkdir -p "$RUNNER_TEMP/mitmhome"
-          export HOME="$RUNNER_TEMP/mitmhome"
           mitmdump --listen-host 0.0.0.0 --listen-port 8899 --set connection_strategy=lazy --set block_global=false -s scripts/meg-stage10-issue699-native-proxy.py >"$RUNNER_TEMP/native-proxy.log" 2>&1 &
           proxy_pid=$!
           for i in {1..40}; do test -f "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" && break; sleep 1; done
