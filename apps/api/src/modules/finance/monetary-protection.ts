@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Prisma, prisma } from '@meg/database';
 import { legacyOpeningBalanceFallbackTotal, openingBalanceFallbackForAccount } from './opening-balance';
 import {
@@ -193,6 +194,40 @@ function duplicateWindowStart(now = new Date()) {
   return new Date(now.getTime() - SEMANTIC_DUPLICATE_WINDOW_MS);
 }
 
+/**
+ * Phase A #699: content similarity is ONLY an audit signal, never an
+ * idempotency key or permission to suppress a legitimate financial write.
+ * All fields are resolved with the same semantics as the canonical writer.
+ */
+export function financialEventSuspicionFingerprint(input: {
+  workspaceId: string;
+  userId: string;
+  description: string;
+  type: string;
+  status: string;
+  date: string;
+  competence?: string;
+  amount: number;
+  signedAmount: number;
+  accountId?: string | null;
+  categoryId?: string | null;
+  paymentMethodId?: string | null;
+  notes?: string | null;
+}) {
+  const payload = [
+    'finance-event-create-v1',
+    input.workspaceId, input.userId,
+    duplicateDescription(input.description),
+    input.type, input.status, input.date.slice(0, 10),
+    input.competence || input.date.slice(0, 7),
+    new Prisma.Decimal(String(input.amount)).abs().toString(),
+    new Prisma.Decimal(String(input.signedAmount)).toString(),
+    input.accountId || null, input.categoryId || null,
+    input.paymentMethodId || null, input.notes?.trim() || null,
+  ];
+  return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
 export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
   workspaceId: string;
   userId: string;
@@ -200,6 +235,8 @@ export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
   type: string;
   status: string;
   date: string;
+  competence?: string;
+  notes?: string;
   amount: number;
   signedAmount: number;
   accountId?: string | null;
@@ -214,6 +251,8 @@ export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
       archivedAt: null,
       type: input.type,
       status: input.status,
+      competence: input.competence || input.date.slice(0, 7),
+      notes: input.notes?.trim() || null,
       date: { gte: start, lt: end },
       amount: Math.abs(input.amount),
       signedAmount: input.signedAmount,
