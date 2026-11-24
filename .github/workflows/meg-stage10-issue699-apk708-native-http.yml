@@ -1,0 +1,99 @@
+name: MEG Stage10 APK708 NATIVE CapacitorHttp offline TLS proxy
+on:
+  push:
+    branches: [stage10/p0-public-review-20261123]
+    paths:
+      - '.github/workflows/meg-stage10-issue699-apk708-native-http.yml'
+      - 'scripts/meg-stage10-issue699-apk708-native-http-probe.mjs'
+      - 'scripts/meg-stage10-issue699-native-proxy.py'
+permissions:
+  contents: read
+jobs:
+  apk708-isolated-webview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch exactly hash-pinned published APK, outside emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 2 --max-time 90 -o "$RUNNER_TEMP/MEG-Financas-708.apk" 'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas-708.apk'
+          echo '1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6  ' "$RUNNER_TEMP/MEG-Financas-708.apk" | sed 's/  /  /' > "$RUNNER_TEMP/apk.sha"
+          echo "1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6  $RUNNER_TEMP/MEG-Financas-708.apk" | sha256sum -c -
+          echo 'ISSUE699_APK708_ORIGINAL_SHA256=PASS'
+      - name: Boot isolated emulator with no outbound network and check release WebView debugging availability
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          sudo chown "$(id -u):$(id -g)" /dev/kvm
+          tools_dir=$(find -L "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
+          export PATH="$(dirname "$tools_dir"):$ANDROID_HOME/platform-tools:$PATH"
+          image='system-images;android-35;google_apis;x86_64'
+          sdkmanager emulator "$image"
+          python3 -m pip install --quiet --break-system-packages 'mitmproxy==11.0.2'
+          export ANDROID_USER_HOME="$RUNNER_TEMP/meg-apk708-original-user"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          avdmanager create avd --name meg-apk708-original --package "$image" --path "$ANDROID_AVD_HOME/meg-apk708-original.avd" <<< no
+          "$ANDROID_HOME/emulator/emulator" @meg-apk708-original -no-window -no-audio -no-boot-anim -no-snapshot -writable-system -gpu swiftshader_indirect >"$RUNNER_TEMP/emulator.log" 2>&1 &
+          emulator_pid=$!
+          trap 'adb emu kill >/dev/null 2>&1 || true' EXIT
+          export ANDROID_SERIAL=emulator-5554
+          if ! timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == 1 ]]; do kill -0 "$1" || exit 1; sleep 3; done' -- "$emulator_pid"; then
+            tail -100 "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
+          adb root
+          adb wait-for-device
+          # Test CA and proxy exist ONLY in the disposable emulator; no APK edits.
+          mkdir -p "$RUNNER_TEMP/mitmhome"
+          export HOME="$RUNNER_TEMP/mitmhome"
+          mitmdump --listen-host 0.0.0.0 --listen-port 8899 --set connection_strategy=lazy --set block_global=false -s scripts/meg-stage10-issue699-native-proxy.py >"$RUNNER_TEMP/native-proxy.log" 2>&1 &
+          proxy_pid=$!
+          for i in {1..40}; do test -f "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" && break; sleep 1; done
+          test -f "$HOME/.mitmproxy/mitmproxy-ca-cert.pem"
+          openssl x509 -in "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" -subject_hash_old -noout >"$RUNNER_TEMP/certname"
+          certname=$(cat "$RUNNER_TEMP/certname").0
+          cp "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" "$RUNNER_TEMP/$certname"
+          adb push "$RUNNER_TEMP/$certname" /data/local/tmp/meg-issue699-ca.0
+          adb shell 'mkdir -p /data/local/tmp/issue699-cacerts && cp /apex/com.android.conscrypt/cacerts/* /data/local/tmp/issue699-cacerts/ && cp /data/local/tmp/meg-issue699-ca.0 /data/local/tmp/issue699-cacerts/'
+          adb shell 'chmod 755 /data/local/tmp/issue699-cacerts && chmod 644 /data/local/tmp/issue699-cacerts/* && mount --bind /data/local/tmp/issue699-cacerts /apex/com.android.conscrypt/cacerts'
+          adb shell settings put global http_proxy 10.0.2.2:8899
+          echo 'ISSUE699_NATIVE_EMULATOR_CA_PROXY_CONFIGURED=PASS'
+          # Drop outbound connections BEFORE launching the published APK.
+          # Allow only emulator loopback and the emulator-host bridge to keep ADB/CDP available.
+          adb shell 'iptables -I OUTPUT 1 -d 127.0.0.0/8 -j ACCEPT'
+          adb shell 'iptables -I OUTPUT 2 -d 10.0.2.0/24 -j ACCEPT'
+          adb shell 'iptables -A OUTPUT -j REJECT'
+          adb shell 'iptables -S OUTPUT' | tail -8
+          adb install "$RUNNER_TEMP/MEG-Financas-708.apk"
+          adb shell am start -n br.com.megfinancas.app/.MainActivity
+          sleep 8
+          pkg='br.com.megfinancas.app'
+          pid=$(adb shell pidof "$pkg" | tr -d '\r')
+          test -n "$pid"
+          echo 'ISSUE699_APK708_ORIGINAL_RUNNING_OFFLINE=PASS'
+          adb shell uiautomator dump /sdcard/issue699-ui.xml >/dev/null
+          adb shell cat /sdcard/issue699-ui.xml | sed -E 's/text="[^"]*"/text="[REDACTED]"/g; s/content-desc="[^"]*"/content-desc="[REDACTED]"/g' | head -c 3000
+          echo
+          # Release builds may disable WebView debugging. Do not modify APK or force-enable it.
+          adb shell cat /proc/net/unix | grep -E 'webview_devtools_remote' || true
+          adb forward tcp:9333 "localabstract:webview_devtools_remote_$pid"
+          if curl -fsS --max-time 4 http://127.0.0.1:9333/json/list > "$RUNNER_TEMP/targets.json"; then
+            node -e "const a=require(process.argv[1]); console.log('ISSUE699_APK708_ORIGINAL_CDP_TARGETS='+a.length);console.log('ISSUE699_APK708_ORIGINAL_CDP_ORIGINS='+JSON.stringify(a.map(x=>{try{return new URL(x.url).origin}catch{return 'invalid'}})))" "$RUNNER_TEMP/targets.json"
+            echo 'ISSUE699_APK708_ORIGINAL_CDP_ACCESS=PASS'
+          else
+            echo 'ISSUE699_APK708_ORIGINAL_CDP_ACCESS=UNAVAILABLE_RELEASE_NOT_DEBUGGABLE'
+          fi
+          # Never contact remote production; no financial writers or real user sessions.
+          echo 'ISSUE699_APK708_ORIGINAL_NETWORK_ISOLATION=PASS'
+          export MEG_APK708_ORIGINAL_EGRESS_BLOCKED=1
+          export MEG_APK708_NATIVE_PROXY=1
+          node scripts/meg-stage10-issue699-apk708-native-http-probe.mjs
+          grep 'ISSUE699_NATIVE_PROXY=' "$RUNNER_TEMP/native-proxy.log" | tail -18
+          grep 'ISSUE699_NATIVE_PROXY=.*\"path\": \"/finance/events\"' "$RUNNER_TEMP/native-proxy.log" >/dev/null && echo 'ISSUE699_NATIVE_FINANCIAL_POST_PROXY=PASS'
