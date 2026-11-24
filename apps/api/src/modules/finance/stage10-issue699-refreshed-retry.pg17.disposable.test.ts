@@ -110,8 +110,7 @@ try {
    members:{create:[{userId:user.id,role:UserRole.ADMIN,status:UserStatus.ACTIVE,isActive:true}]},
    subscription:{create:{planId:plan.id,status:LicenseStatus.ACTIVE}},
    appState:{create:{userId:user.id,revision:1,
-    state:({transactions:[],budgets:{},__megNormalization:{mode:'normalized-primary'}}
-      as Prisma.InputJsonValue)}},
+    state:{transactions:[],budgets:{},__megNormalization:{mode:'normalized-primary'}}}},
   }});
   const id='same-financial-id-'+kind+'-'+stamp;
   const event={
