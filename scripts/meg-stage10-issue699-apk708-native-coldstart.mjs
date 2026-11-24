@@ -432,6 +432,45 @@ try{
       previousProcessPid:pid,seconds:8.5}));
     assert.equal(postCold.length,requestsBefore.length,'SPONTANEOUS_POST_ON_COLD_START');
     console.log('ISSUE699_NATIVE_COLDSTART_NO_SPONTANEOUS_POST_8S=PASS');
+    // Cold start invalidates sessionStorage. Reauthenticate ONLY against the
+    // in-runner fictitious API, then observe whether a financial write replays.
+    const reauthClicked=await evalUI(`(()=>{
+      const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+      const email=document.querySelector('input[autocomplete=username],input[type=email]');
+      const pass=document.querySelector('input[autocomplete=current-password],input[type=password]');
+      if(!email||!pass)return false;
+      for(const [el,val] of [[email,'issue699@example.invalid'],[pass,'QA_SYNTHETIC_PASSWORD']]){
+       setter.call(el,val);el.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+      const b=document.querySelector('.px-preview-submit') ||
+        [...document.querySelectorAll('button')].find(x=>/entrar|acessar/i.test(x.innerText));
+      if(!b||b.disabled)return false;b.click();return true;
+    })()`);
+    console.log('ISSUE699_NATIVE_COLDSTART_REAUTH_CLICK='+reauthClicked);
+    assert.equal(reauthClicked,true,'COLD_REAUTH_LOGIN_FORM_NOT_AVAILABLE');
+    const reauthUi=await until(async()=>{
+      const v=await evalUI(`(()=>({
+       loginVisible:Boolean(document.querySelector('.px-preview-submit')),
+       homeVisible:/Situação atual|Saldo disponível/.test(document.body?.innerText||''),
+       bodyText:(document.body?.innerText||'').slice(0,600),
+      }))()`);
+      return v?.homeVisible && !v?.loginVisible?v:null;
+    },'COLD_REAUTH_HOME',30000);
+    console.log('ISSUE699_NATIVE_COLDSTART_REAUTH_HOME='+JSON.stringify(reauthUi));
+    await sleep(8500);
+    const postAfterReauth=apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events');
+    const afterReauthState=await evalUI(`(()=>({
+     localKeys:[...Array(localStorage.length)].map((_,i)=>localStorage.key(i)).sort(),
+     sessionKeys:[...Array(sessionStorage.length)].map((_,i)=>sessionStorage.key(i)).sort(),
+     journalPresent:Boolean(localStorage.getItem('meg.phoenix.create.attempt.v1')),
+    }))()`);
+    console.log('ISSUE699_NATIVE_COLDSTART_AFTER_REAUTH='+JSON.stringify({
+     posts:postAfterReauth.length,
+     operationIds:postAfterReauth.map(r=>r.body?.operationId??null),
+     seconds:8.5,storage:afterReauthState,
+    }));
+    assert.equal(postAfterReauth.length,requestsBefore.length,'SPONTANEOUS_POST_AFTER_REAUTH');
+    console.log('ISSUE699_NATIVE_COLDSTART_NO_SPONTANEOUS_POST_AFTER_REAUTH=PASS');
    console.log('ISSUE699_APK708_SYNTHETIC_COMMITTED='+Number(context.syntheticCommitted||0));
    console.log('ISSUE699_APK708_ACTUAL_FINANCIAL_POSTS='+JSON.stringify(apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events')));
   }
