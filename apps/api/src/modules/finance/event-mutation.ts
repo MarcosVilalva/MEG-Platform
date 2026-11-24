@@ -264,7 +264,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         }) });
       }
       return response;
-    });
+    }, { maxAttempts: 12, retryDelayMs: 35 });
   } catch (error) {
     // Duas requisições iguais podem atravessar simultaneamente a consulta inicial do recibo.
     // A unicidade workspaceId+operationId faz uma delas reverter inteira; após o rollback,
