@@ -133,15 +133,18 @@ async function execute(actor:string,eventId:string,request:ResolveCommand|UndoCo
       if(state.current)fail('A17_ALREADY_RESOLVED');
       let compensationEventId:string|null=null;
       if(input.decision==='RESOLVED_DUPLICATE'){
-        if(!input.correctionTargetEventId||!input.effectiveDate)fail('A17_CORRECTION_DETAILS_REQUIRED');
-        if(![eventId,request.peerEventId].includes(input.correctionTargetEventId))
-          fail('A17_TARGET_OUTSIDE_PAIR');
-        checkDay(input.effectiveDate);
-        const source=p.events.find(x=>x.id===input.correctionTargetEventId)!;
+        const targetId=input.correctionTargetEventId;
+        const day=input.effectiveDate;
+        if(typeof targetId!=='string'||typeof day!=='string')
+          throw new A17ReviewError('A17_CORRECTION_DETAILS_REQUIRED');
+        if(![eventId,request.peerEventId].includes(targetId))
+          throw new A17ReviewError('A17_TARGET_OUTSIDE_PAIR');
+        checkDay(day);
+        const source=p.events.find(x=>x.id===targetId)!;
         eligible(source);
         await guardSource(tx,source.id);
         compensationEventId=(await counterentry(tx,source,source.signedAmount.negated(),
-          input.effectiveDate,{groupId:request.suspicionGroupId,operationId:request.operationId,
+          day,{groupId:request.suspicionGroupId,operationId:request.operationId,
             phase:'CORRECTION'})).id;
       }else if(input.correctionTargetEventId||input.effectiveDate)fail('A17_UNEXPECTED_CORRECTION');
       const audit=await recordFinancialAudit(tx,{actorId:actor,entity:'FinancialEvent',
@@ -165,17 +168,21 @@ async function execute(actor:string,eventId:string,request:ResolveCommand|UndoCo
       let inverseEventId:string|null=null;
       const ctx=state.current.context;
       if(ctx.decision==='RESOLVED_DUPLICATE'){
-        const source=p.events.find(x=>x.id===ctx.correctionTargetEventId);
-        if(!source||typeof ctx.compensationEventId!=='string')fail('A17_SOURCE_REFERENCE_INVALID');
+        const sourceId=ctx.correctionTargetEventId;
+        const correctionId=ctx.compensationEventId;
+        if(typeof sourceId!=='string'||typeof correctionId!=='string')
+          throw new A17ReviewError('A17_SOURCE_REFERENCE_INVALID');
+        const source=p.events.find(x=>x.id===sourceId);
+        if(!source)throw new A17ReviewError('A17_SOURCE_REFERENCE_INVALID');
         eligible(source);
         const correction=await tx.financialEvent.findFirst({where:{
-          id:ctx.compensationEventId,workspaceId:ws.workspaceId,userId:ws.workspace.ownerId,
+          id:correctionId,workspaceId:ws.workspaceId,userId:ws.workspace.ownerId,
           archivedAt:null}});
         const payload=correction?.sourcePayload as Record<string,unknown>|undefined;
         if(!correction||!tagged(payload)||payload?.sourceEventId!==source.id
           ||payload?.groupId!==request.suspicionGroupId
           ||!correction.signedAmount.equals(source.signedAmount.negated()))
-          fail('A17_COUNTERENTRY_STALE');
+          throw new A17ReviewError('A17_COUNTERENTRY_STALE');
         const day=correction.date.toISOString().slice(0,10);
         checkDay(day);
         const window=await monetaryAccountDebitWindow(tx,ws.workspace.ownerId,source.account!,day,
