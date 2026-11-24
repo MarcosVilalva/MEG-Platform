@@ -246,13 +246,15 @@ try {
   const before10=await stats();
   const responses10=await Promise.all(Array.from({length:4},()=>
     create(expense(randomUUID(),'PHASE A10 concurrent four actual expenses'))));
-  assert.ok(responses10.every(x=>x.status===201),JSON.stringify(responses10.map(x=>x.status)));
+  assert.ok(responses10.every(x=>x.status===201),JSON.stringify(responses10.map(x=>({status:x.status,error:x.body.error,id:x.body.id}))));
   assert.equal(new Set(responses10.map(x=>x.body.id)).size,4);
   const after10=await stats();
   assert.equal(after10.events-before10.events,4);
   assert.equal(after10.ledger-before10.ledger,4);
   assert.equal(after10.receipts-before10.receipts,4);
-  gate('A10',{requests:4,events:4,ledgers:4});
+  assert.equal(after10.suspects-before10.suspects,6,
+    'A10 must link every concurrent distinct event by bilateral suspicion');
+  gate('A10',{requests:4,events:4,ledgers:4,bilateralAuditRows:6});
 
   // A11: the authenticated support channel returns BOTH sides of a suspicion.
   const view=await getSuspects();
