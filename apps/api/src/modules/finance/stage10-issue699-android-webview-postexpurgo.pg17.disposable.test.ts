@@ -185,59 +185,64 @@ try{
       };
     });
   })()`);
-  // #699: o corte de rede e controlado pelo ADB SOMENTE no emulador QA.
-  // Os dois comandos svc sao sequenciais: falha no primeiro impede o segundo.
+  // #699 QA: interceptacao SOMENTE no BridgeWebViewClient da variante stage10Qa.
+  // A flag privada e removida sempre; nenhum codigo vai para o APK estavel.
   assert.equal(adb('get-serialno'),'emulator-5554','ISSUE699_ADB_NOT_EMULATOR_QA');
   assert.match(adb('shell','pm','path',pkg),/package:/,
     'ISSUE699_QA_PACKAGE_NOT_INSTALLED');
-  let radioSnapshot={wifi:'unknown',data:'unknown',activeDefault:'not-found'};
-  let networkStatusOffline=false;
+  const startupLog=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
+  assert.match(startupLog,/ISSUE699_QA_WEBVIEW_CLIENT_INSTALLED/,
+    'ISSUE699_QA_WEBVIEW_CLIENT_NOT_INSTALLED');
+  const marker='files/meg_issue699_webview_offline';
+  adb('shell','run-as',pkg,'mkdir','-p','files');
   try{
-    adb('shell','svc','wifi','disable');
-    adb('shell','svc','data','disable');
-    // Poll do estado real do dispositivo. Nao inferir offline por sleep ou
-    // somente por flags: conexao Ethernet/default do emulador pode sobreviver.
-    for(let n=0;n<20;n++){
-      const wifi=adb('shell','settings','get','global','wifi_on');
-      const data=adb('shell','settings','get','global','mobile_data');
-      const dump=adb('shell','dumpsys','connectivity');
-      const line=dump.split(/\r?\n/).find(x=>/Active default network:/i.test(x));
-      const activeDefault=line?.split(/Active default network:/i)[1]?.trim()??'not-found';
-      radioSnapshot={wifi,data,activeDefault};
-      const noDefault=/^(?:none|null|<none>|-1)$/i.test(activeDefault);
-      if(wifi==='0' && data==='0' && noDefault){
-        networkStatusOffline=true;
-        break;
-      }
-      await delay(650);
-    }
-    console.log('ISSUE699_ADB_OFFLINE_NETWORK_STATUS='+JSON.stringify(radioSnapshot));
-    // A prova definitiva deve ser o FETCH real no WebView, nunca o toggle.
+    adb('shell','run-as',pkg,'touch',marker);
+    // Teste de leitura: deve ser bloqueado antes do servidor HTTP.
     const probe=await evaluate(`(async()=>{
       try{
-        const r=await fetch('http://127.0.0.1:3333/app-state',
+        const response=await fetch('http://127.0.0.1:3333/app-state',
           {cache:'no-store',signal:AbortSignal.timeout(5000)});
-        return {offline:false,status:r.status};
+        await response.text();
+        return {offline:false,status:response.status};
       }catch(error){return {offline:true,reason:String(error)};}
     })()`);
-    console.log('ISSUE699_ADB_OFFLINE_WEBVIEW_PROBE='+JSON.stringify(probe));
-    assert.equal(networkStatusOffline,true,
-      'ISSUE699_ADB_DEVICE_CONNECTIVITY_NOT_OFFLINE');
-    assert.equal(probe?.offline,true,
-      'ISSUE699_WEBVIEW_NETWORK_OFFLINE_NOT_ENFORCED');
+    console.log('ISSUE699_WEBVIEWCLIENT_GET_OFFLINE_PROBE='+JSON.stringify(probe));
+
+    // Teste da ACAO FINANCEIRA realmente pendente. Se um PATCH chegar a
+    // Fastify, o teste FALHA sem afirmar que o Android ficou offline.
+    const attempted=await evaluate(`(async()=>{
+      let token;for(let i=0;i<sessionStorage.length;i++){
+        try{const session=JSON.parse(sessionStorage.getItem(sessionStorage.key(i)));
+          if(session?.accessToken)token=session.accessToken;}catch{}
+      }
+      if(!token)return {offline:false,error:'QA_JWT_MISSING'};
+      try{
+        const response=await fetch('http://127.0.0.1:3333/app-state/transactions',{
+          method:'PATCH',cache:'no-store',signal:AbortSignal.timeout(5000),
+          headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+          body:JSON.stringify(${JSON.stringify(original)}),
+        });
+        const body=await response.text();
+        return {offline:false,status:response.status,body:body.slice(0,120)};
+      }catch(error){return {offline:true,reason:String(error)};}
+    })()`);
+    const trace=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
+    const intercepted=(trace.match(/ISSUE699_QA_WEBVIEW_OFFLINE_INTERCEPTED[^\r\n]*/g)||[])
+      .map(x=>x.slice(0,220));
+    console.log('ISSUE699_WEBVIEWCLIENT_INTERCEPTIONS='+JSON.stringify(intercepted));
+    console.log('ISSUE699_WEBVIEWCLIENT_PATCH_OFFLINE_PROBE='+JSON.stringify(attempted));
+    assert.ok(intercepted.length>0,'ISSUE699_WEBVIEWCLIENT_NO_INTERCEPTION');
+    assert.equal(probe?.offline,true,'ISSUE699_WEBVIEWCLIENT_GET_NOT_OFFLINE');
+    assert.equal(attempted?.offline,true,'ISSUE699_WEBVIEWCLIENT_PATCH_NOT_OFFLINE');
     assert.equal((await prisma.appState.findUniqueOrThrow({where:{workspaceId:work.id}})).revision,1);
     console.log('ISSUE699_ANDROID_REAL_WEBVIEW_OFFLINE_PENDING_NOT_SENT=PASS');
   }finally{
-    // Restauracao obrigatoria mesmo com assercao falhando, somente QA.
-    try{adb('shell','svc','wifi','enable');}
-    finally{adb('shell','svc','data','enable');}
-    await until(async()=>{
-      const wifi=adb('shell','settings','get','global','wifi_on');
-      const data=adb('shell','settings','get','global','mobile_data');
-      return wifi==='1'&&data==='1';
-    },'NETWORK_RADIOS_RESTORED');
-    console.log('ISSUE699_ADB_QA_NETWORK_RESTORED=PASS');
+    adb('shell','run-as',pkg,'rm','-f',marker);
+    console.log('ISSUE699_QA_OFFLINE_MARKER_REMOVED=PASS');
   }
+  const recovered=await webCall('/app-state','GET');
+  assert.equal(recovered.status,200,'ISSUE699_NETWORK_RESTORED_AFTER_QA_FLAG');
+  console.log('ISSUE699_WEBVIEWCLIENT_NORMAL_NETWORK_RESTORED=PASS');
 
   // Force-stop and relaunch REAL installed QA package, never Android stable.
   detach();

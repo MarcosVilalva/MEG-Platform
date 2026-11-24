@@ -1,0 +1,78 @@
+package br.com.megfinancas.app;
+
+import android.app.Activity;
+import android.app.Application;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Log;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebView;
+import com.getcapacitor.Bridge;
+import com.getcapacitor.BridgeWebViewClient;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * Instrumentacao exclusiva da variante stage10Qa. NUNCA carregada no APK estavel.
+ * Preserva todas as rotas normais do BridgeWebViewClient do Capacitor.
+ */
+public final class Stage10QaApplication extends Application implements Application.ActivityLifecycleCallbacks {
+    private static final String QA_PACKAGE = "br.com.megfinancas.app.stage10qa";
+    private static final String OFFLINE_FLAG = "meg_issue699_webview_offline";
+    private static final String TAG = "MEG_STAGE10_QA";
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        if (!QA_PACKAGE.equals(getPackageName())) {
+            throw new IllegalStateException("ISSUE699_QA_INSTRUMENTATION_REQUIRES_QA_PACKAGE");
+        }
+        registerActivityLifecycleCallbacks(this);
+    }
+
+    @Override
+    public void onActivityResumed(Activity activity) {
+        if (!(activity instanceof MainActivity)) return;
+        final Bridge bridge = ((MainActivity) activity).getBridge();
+        if (bridge == null || bridge.getWebView() == null) return;
+        bridge.getWebView().setWebViewClient(new BridgeWebViewClient(bridge) {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                boolean protectedQaRequest = "http".equals(uri.getScheme())
+                    && "127.0.0.1".equals(uri.getHost())
+                    && uri.getPort() == 3333
+                    && uri.getPath() != null
+                    && uri.getPath().startsWith("/app-state");
+                if (protectedQaRequest && new File(getFilesDir(), OFFLINE_FLAG).isFile()) {
+                    Log.i(TAG, "ISSUE699_QA_WEBVIEW_OFFLINE_INTERCEPTED " + request.getMethod()
+                        + " " + uri.getPath());
+                    // O fluxo de leitura falha com IOException, nao gera 409/5xx falso.
+                    // O teste deve verificar que fetch/body rejeitou e nenhum commit ocorreu.
+                    return new WebResourceResponse("application/octet-stream", "UTF-8",
+                        new InputStream() {
+                            @Override
+                            public int read() throws IOException {
+                                throw new IOException("ISSUE699_QA_NETWORK_UNREACHABLE");
+                            }
+                            @Override
+                            public int read(byte[] data, int offset, int length) throws IOException {
+                                throw new IOException("ISSUE699_QA_NETWORK_UNREACHABLE");
+                            }
+                        });
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+        });
+        Log.i(TAG, "ISSUE699_QA_WEBVIEW_CLIENT_INSTALLED");
+    }
+
+    @Override public void onActivityCreated(Activity activity, Bundle state) {}
+    @Override public void onActivityStarted(Activity activity) {}
+    @Override public void onActivityPaused(Activity activity) {}
+    @Override public void onActivityStopped(Activity activity) {}
+    @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) {}
+    @Override public void onActivityDestroyed(Activity activity) {}
+}
