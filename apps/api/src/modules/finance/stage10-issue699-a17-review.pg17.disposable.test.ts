@@ -133,7 +133,7 @@ try{
  const legitAudit=(await logs([legit.one,legit.two].sort()[0])).find(x=>x.id===decision.data.resolutionAuditId);
  assert.ok(legitAudit);
  assert.ok(legitAudit.createdAt);
- assert.equal(legitAudit.userId,undefined);
+ assert.equal(legitAudit.userId,a.user.id);
  const metadata=JSON.parse(legitAudit.metadata||'{}');
  assert.equal(metadata.context.reason,'Decisao humana ficticia e justificada para QA');
  assert.equal(metadata.context.decision,'RESOLVED_LEGITIMATE');
