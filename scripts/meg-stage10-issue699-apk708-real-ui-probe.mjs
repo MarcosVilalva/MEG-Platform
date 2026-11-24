@@ -261,7 +261,7 @@ try{
     controls:[...document.querySelectorAll('button,[role=option]')].map(x=>x.innerText.trim().slice(0,85)).filter(Boolean).slice(-35)
    }))()`)));
    const categorySelected=await evalUI(`(()=>{
-    const x=[...document.querySelectorAll('button,[role=option]')].find(b=>b.innerText.trim()==='Alimentação QA');
+    const x=[...document.querySelectorAll('button,[role=option]')].find(b=>b.innerText.trim().startsWith('Alimentação QA'));
     if(!x)return false;x.click();return true;
    })()`);
    console.log('ISSUE699_APK708_CATEGORY_SELECTED='+categorySelected);
@@ -275,7 +275,7 @@ try{
     controls:[...document.querySelectorAll('button,[role=option]')].map(x=>x.innerText.trim().slice(0,85)).filter(Boolean).slice(-35)
    }))()`)));
    const accountSelected=await evalUI(`(()=>{
-    const x=[...document.querySelectorAll('button,[role=option]')].find(b=>b.innerText.trim()==='Conta QA');
+    const x=[...document.querySelectorAll('button,[role=option]')].find(b=>b.innerText.trim().startsWith('Conta QA'));
     if(!x)return false;x.click();return true;
    })()`);
    console.log('ISSUE699_APK708_ACCOUNT_SELECTED='+accountSelected);
