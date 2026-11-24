@@ -27,7 +27,7 @@ export async function listSuspectedDuplicateFinancialEvents(
     archivedAt: Date | null;
   };
   const [rows, counts] = await prisma.$transaction([
-    prisma.$queryRaw`
+    prisma.$queryRaw<AuditRow[]>`
       SELECT a.id AS "auditId", a."entityId" AS "eventId",
              a."createdAt" AS "flaggedAt", a.metadata,
              e.description, e.type, e.status, e.amount, e.date, e."archivedAt"
