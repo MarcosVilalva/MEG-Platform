@@ -78,7 +78,7 @@ function detach(){
   if(forward){try{adb('forward','--remove','tcp:'+forward);}catch{}forward='';}
 }
 async function attach(){
-  adb('shell','am','start','-n',pkg+'/br.com.megfinancas.app.MainActivity');
+  adb('shell','am','start','-n',pkg+'/br.com.megfinancas.app.Stage10QaMainActivity');
   const pid=await until(()=>adb('shell','pidof',pkg),'APP_PID');
   forward=adb('forward','tcp:0','localabstract:webview_devtools_remote_'+pid);
   const page=await until(async()=>{
@@ -193,6 +193,10 @@ try{
   const startupLog=adb('logcat','-d','-s','MEG_STAGE10_QA:I','*:S');
   assert.match(startupLog,/ISSUE699_QA_WEBVIEW_CLIENT_INSTALLED/,
     'ISSUE699_QA_WEBVIEW_CLIENT_NOT_INSTALLED');
+  assert.match(startupLog,
+    /ISSUE699_QA_NATIVE_HTTP_PLUGIN_CLASS=br.com.megfinancas.app.Stage10QaHttpPlugin/,
+    'ISSUE699_QA_NATIVE_HTTP_PLUGIN_NOT_REGISTERED');
+  console.log('ISSUE699_QA_NATIVE_HTTP_PLUGIN_CLASS_VERIFIED=PASS');
   // Preflight only: ensure a trivial resource invokes the QA WebViewClient.
   // Do not attempt a financial mutation until any callback is proven.
   const callbackProbe=await evaluate(`(async()=>{
