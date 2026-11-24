@@ -66,6 +66,8 @@ jobs:
           adb shell 'mkdir -p /data/local/tmp/issue699-cacerts && cp /apex/com.android.conscrypt/cacerts/* /data/local/tmp/issue699-cacerts/ && cp /data/local/tmp/meg-issue699-ca.0 /data/local/tmp/issue699-cacerts/'
           adb shell 'chmod 755 /data/local/tmp/issue699-cacerts && chmod 644 /data/local/tmp/issue699-cacerts/* && mount --bind /data/local/tmp/issue699-cacerts /apex/com.android.conscrypt/cacerts'
           adb shell settings put global http_proxy 10.0.2.2:8899
+          echo "ISSUE699_NATIVE_PROXY_ANDROID_SETTING=$(adb shell settings get global http_proxy | tr -d '\r')"
+          adb logcat -c
           echo 'ISSUE699_NATIVE_EMULATOR_CA_PROXY_CONFIGURED=PASS'
           # Drop outbound connections BEFORE launching the published APK.
           # Allow only emulator loopback and the emulator-host bridge to keep ADB/CDP available.
@@ -97,5 +99,15 @@ jobs:
           export MEG_APK708_ORIGINAL_EGRESS_BLOCKED=1
           export MEG_APK708_NATIVE_PROXY=1
           node scripts/meg-stage10-issue699-apk708-native-http-probe.mjs
-          grep 'ISSUE699_NATIVE_PROXY=' "$RUNNER_TEMP/native-proxy.log" | tail -18
-          grep 'ISSUE699_NATIVE_PROXY=.*\"path\": \"/finance/events\"' "$RUNNER_TEMP/native-proxy.log" >/dev/null && echo 'ISSUE699_NATIVE_FINANCIAL_POST_PROXY=PASS'
+          echo 'ISSUE699_NATIVE_PROXY_LOG_TAIL_BEGIN'
+          tail -80 "$RUNNER_TEMP/native-proxy.log"
+          echo 'ISSUE699_NATIVE_PROXY_LOG_TAIL_END'
+          echo 'ISSUE699_NATIVE_LOGCAT_BEGIN'
+          adb logcat -d -v brief | grep -Ei 'sslhandshake|certificate|trust anchor|certpath|proxy|CapacitorHttp|UnknownHost|ConnectException|SSLException|NetworkSecurity' | tail -60 || true
+          echo 'ISSUE699_NATIVE_LOGCAT_END'
+          if grep -F 'ISSUE699_NATIVE_PROXY=' "$RUNNER_TEMP/native-proxy.log" | grep -F '/finance/events' >/dev/null; then
+            echo 'ISSUE699_NATIVE_FINANCIAL_POST_PROXY=PASS'
+          else
+            echo 'ISSUE699_NATIVE_FINANCIAL_POST_PROXY=NOT_OBSERVED'
+            exit 3
+          fi
