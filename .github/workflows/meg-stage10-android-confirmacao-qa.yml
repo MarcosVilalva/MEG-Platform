@@ -115,7 +115,11 @@ jobs:
           # transport, but with Java guard compiled only in stage10Qa source set.
           adb shell am force-stop br.com.megfinancas.app.stage10qa
           MEG_STAGE10_QA_DISABLE_NATIVE_HTTP=0 bash scripts/meg-stage10-build-android-qa.sh
-          adb install -r android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
+          # Gradle debug keystore can differ across builds. Remove ONLY the
+          # disposable QA package in the temporary emulator, never stable APK.
+          adb uninstall br.com.megfinancas.app.stage10qa
+          echo 'ISSUE699_QA_DISPOSABLE_PACKAGE_REPLACED=PASS'
+          adb install android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
           adb logcat -c
           MEG_STAGE10_QA_EXPECT_NATIVE_HTTP=1 DATABASE_URL='postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public' MEG_STAGE10_ISOLATED_PG=1 MEG_STAGE10_QA_LOCAL_ONLY=1 MEG_STAGE10_LEGACY_RESTORE_QA=1 MEG_STAGE10_ISSUE699_SYNTHETIC=1 MEG_STAGE10_WEB_WRITE_QA=0 NODE_ENV=test node --import tsx apps/api/src/modules/finance/stage10-issue699-android-webview-postexpurgo.pg17.disposable.test.ts
           echo 'ISSUE699_ANDROID_QA_NATIVE_HTTP_ENABLED_SIX_SCENARIOS=PASS'
