@@ -7,7 +7,7 @@ import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
 import { isBenefitPaymentMethod, isMonetaryAccountType, isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
-import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, monetaryAccountDebitWindow, serializableFinancialTransaction } from './monetary-protection';
+import { findRecentFinancialEventDuplicate, financialEventSuspicionFingerprint, monetaryAccountDebitWindow, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventMutationError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
@@ -92,27 +92,26 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         paymentMethod,
       });
       const values = financialAmountValues(input.type, input.amount);
-      if (!input.allowDuplicate) {
-        const duplicate = await findRecentFinancialEventDuplicate(tx, {
-          workspaceId: workspace.workspaceId,
-          userId: dataOwnerId,
-          description: input.description,
-          type: input.type,
-          status: resolvedStatus,
-          date: input.date,
-          amount: values.amount,
-          signedAmount: values.signedAmount,
-          accountId: input.accountId,
-          categoryId: input.categoryId,
-          paymentMethodId: input.paymentMethodId,
-        });
-        if (duplicate) {
-          throw new FinancialEventMutationError('POSSIBLE_DUPLICATE', {
-            duplicate,
-            duplicateWindowSeconds: Math.round(SEMANTIC_DUPLICATE_WINDOW_MS / 1000),
-          });
-        }
-      }
+      // #699 Phase A: similarity is NON-BLOCKING. Every new operationId
+      // represents a potentially distinct, legitimate expense. Never return
+      // predecessor success or POSSIBLE_DUPLICATE/409 based on content/time.
+      const duplicate = input.type === 'expense'
+        ? await findRecentFinancialEventDuplicate(tx, {
+            workspaceId: workspace.workspaceId,
+            userId: dataOwnerId,
+            description: input.description,
+            type: input.type,
+            status: resolvedStatus,
+            date: input.date,
+            competence: input.competence,
+            notes: input.notes,
+            amount: values.amount,
+            signedAmount: values.signedAmount,
+            accountId: input.accountId,
+            categoryId: input.categoryId,
+            paymentMethodId: input.paymentMethodId,
+          })
+        : null;
 
       // Both clients use the same financial authority. A new posted monetary
       // debit cannot overdraw this account on the transaction day or any
@@ -202,6 +201,51 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           resolvedStatus,
         },
       });
+
+      if (duplicate) {
+        const fingerprint = financialEventSuspicionFingerprint({
+          workspaceId: workspace.workspaceId,
+          userId: dataOwnerId,
+          description: input.description,
+          type: input.type,
+          status: resolvedStatus,
+          date: input.date,
+          competence: input.competence,
+          notes: input.notes,
+          amount: values.amount,
+          signedAmount: values.signedAmount,
+          accountId: input.accountId,
+          categoryId: input.categoryId,
+          paymentMethodId: input.paymentMethodId,
+        });
+        const suspicionGroupId = 'financial-event-suspected-v1:' + duplicate.id + ':' + result.id;
+        const context = {
+          workspaceId: workspace.workspaceId,
+          fingerprintVersion: 'finance-event-create-v1',
+          fingerprint,
+          suspicionGroupId,
+          evidence: 'CONTENT_AND_TIME_ONLY',
+          reviewStatus: 'SUSPECTED',
+          createdEventId: result.id,
+          incomingOperationId: input.operationId ?? null,
+        };
+        // Bilateral append-only markers in the SAME serializable transaction
+        // as the new FinancialEvent, ledger, creation audit and receipt.
+        await recordFinancialAudit(tx, {
+          actorId: userId,
+          entity: 'FinancialEvent',
+          entityId: duplicate.id,
+          action: 'FINANCIAL_EVENT_DUPLICATE_SUSPECTED',
+          context: { ...context, peerEventId: result.id, relation: 'PREVIOUS_CANDIDATE' },
+        });
+        await recordFinancialAudit(tx, {
+          actorId: userId,
+          entity: 'FinancialEvent',
+          entityId: result.id,
+          action: 'FINANCIAL_EVENT_DUPLICATE_SUSPECTED',
+          context: { ...context, peerEventId: duplicate.id, relation: 'NEW_DISTINCT_ID' },
+        });
+      }
 
       const response = {
         ...result,
