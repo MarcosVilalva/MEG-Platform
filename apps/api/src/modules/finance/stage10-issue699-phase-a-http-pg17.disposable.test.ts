@@ -32,7 +32,7 @@ const tag = randomUUID();
 const password = 'phase-a-fictitious-' + tag;
 async function makeWorkspace(name: string) {
   const user = await prisma.user.create({data:{
-    email: 'phase-a-' + name + '-' + tag + '@example.invalid',
+    email: ('phase-a-' + name + '-' + tag + '@example.invalid').toLowerCase(),
     name: 'PHASE_A_FAKE_' + name,
     passwordHash: await bcrypt.hash(password, 8),
     role: UserRole.ADMIN, status: UserStatus.ACTIVE, isActive: true,
