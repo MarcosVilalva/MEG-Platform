@@ -202,7 +202,8 @@ try{
  const opened=await evalUI(`(()=>{
   const controls=[...document.querySelectorAll('button,a,[role=button]')];
   const target=controls.find(x=>/novo lançamento|novo lancamento/i.test(x.innerText||x.title||'')) ||
-   controls.find(x=>/novo lançamento|novo lancamento/i.test(x.getAttribute('aria-label')||''));
+   controls.find(x=>/novo lançamento|novo lancamento/i.test(x.getAttribute('aria-label')||'')) ||
+   controls.find(x=>x.tagName==='BUTTON' && x.innerText.trim()==='Novo');
   if(!target)return false;
   target.click();return true;
  })()`);
