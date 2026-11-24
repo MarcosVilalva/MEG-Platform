@@ -1,0 +1,83 @@
+name: MEG Stage10 #699 Phase A Financial regression QA
+on:
+  push:
+    branches:
+      - stage10/issue699-phase-a-qa-20261124
+    paths:
+      - '.github/workflows/meg-stage10-issue699-phase-a-regression-qa.yml'
+      - 'apps/api/src/modules/finance/**'
+      - 'apps/api/src/modules/cards/**'
+      - 'apps/api/src/modules/payables/**'
+      - 'apps/api/src/modules/receivables/**'
+permissions:
+  contents: read
+jobs:
+  regression-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 23
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: meg_stage10_disposable_only
+          POSTGRES_DB: meg_stage10_phase_a_sandbox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_phase_a_sandbox"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:meg_stage10_disposable_only@127.0.0.1:5432/meg_stage10_phase_a_sandbox?schema=public
+      JWT_SECRET: stage10-phase-a-disposable-jwt-secret-0123456789
+      NODE_ENV: test
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_QA_LOCAL_ONLY: '1'
+      MEG_STAGE10_WEB_WRITE_QA: '0'
+      MEG_STAGE10_ISSUE699_PHASE_A_SYNTHETIC: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Guard disposable localhost PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'MarcosVilalva/MEG-Platform'
+          test "$MEG_STAGE10_ISOLATED_PG" = 1
+          node -e "const d=new URL(process.env.DATABASE_URL); if(d.hostname!=='127.0.0.1'||d.port!=='5432'||d.pathname!=='/meg_stage10_phase_a_sandbox'||d.username!=='meg_stage10_ci') process.exit(1)"
+          echo 'ISSUE699_A17_DISPOSABLE_GUARD=PASS'
+      - name: Install dependencies and disposable schema
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run db:generate
+          npm run db:push
+          echo 'ISSUE699_A17_DISPOSABLE_SCHEMA=PASS'
+      - name: Finance domain full static and unit contract suite
+        run: |
+          set -euo pipefail
+          npm --workspace apps/api run test:finance
+          echo 'ISSUE699_A17_FINANCE_DOMAIN_CONTRACTS=PASS'
+      - name: Phoenix and mobile contract compatibility (no APK changes)
+        run: |
+          set -euo pipefail
+          node apps/web/src/phoenix/phoenix-write-gateway.contract.test.js
+          node apps/web/src/phoenix/phoenix-transfer-direct.contract.test.js
+          node apps/web/src/mobile/meg-mobile-launch-fidelity.contract.test.js
+          echo 'ISSUE699_A17_WEB_COMPATIBILITY_CONTRACTS=PASS'
+      - name: Supabase RLS contract checks offline against repository files
+        run: |
+          set -euo pipefail
+          npm --workspace packages/database run test:supabase-rls
+          echo 'ISSUE699_A17_RLS_STATIC_CONTRACTS=PASS'
+      - name: Report remaining A17 gaps
+        if: always()
+        run: |
+          echo 'ISSUE699_A17_MANUAL_REVERSIBLE_REVIEW=NOT_TESTED'
+          echo 'ISSUE699_A17_LIVE_RLS_AND_MIGRATION=NOT_TESTED'
+          echo 'ISSUE699_A15_A16_APK_RUNTIME=NOT_TESTED'
