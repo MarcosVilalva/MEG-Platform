@@ -48,7 +48,8 @@ ON TABLE
   public."CardInstallment",
   public."Payable",
   public."PayablePayment",
-  public."RecurringExpense"
+  public."RecurringExpense",
+  public."CardLimitControl"
 FROM anon, authenticated, service_role;
 
 ALTER TABLE public."User" ENABLE ROW LEVEL SECURITY;
@@ -83,6 +84,7 @@ ALTER TABLE public."CardInstallment" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."Payable" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."PayablePayment" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."RecurringExpense" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."CardLimitControl" ENABLE ROW LEVEL SECURITY;
 
 -- Guarda para futuras tabelas, funções e sequências criadas pelo mesmo owner usado pelo Prisma.
 -- Como o MEG não usa o Data API do Supabase, nenhuma role de API recebe acesso implícito.
