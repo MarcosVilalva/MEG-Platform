@@ -160,6 +160,17 @@ try{
   buttons:[...document.querySelectorAll('button')].map(x=>x.innerText.trim()).filter(Boolean).slice(0,20)
  }))()`);
  console.log('ISSUE699_APK708_ORIGINAL_LOGIN_FORM='+JSON.stringify(loginForm));
+ // The published APK enables CapacitorHttp: it replaces window.fetch with
+ // Android-native network transport, which CDP Fetch cannot intercept.
+ // In THIS disposable WebView only, restore the original browser fetch
+ // saved by Capacitor. CDN/prod egress remains blocked by emulator iptables.
+ const browserFetchRestored=await evalUI(`(()=>{
+  if(typeof window.CapacitorWebFetch!=='function')return false;
+  window.fetch=window.CapacitorWebFetch.bind(window);
+  return true;
+ })()`);
+ console.log('ISSUE699_APK708_ORIGINAL_BROWSER_FETCH_QA_SHIM='+browserFetchRestored);
+ assert.equal(browserFetchRestored,true,'ORIGINAL_CAPACITOR_BROWSER_FETCH_MISSING');
  await evalUI(`(()=>{
   const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
   const email=document.querySelector('input[autocomplete=username],input[type=email]');
