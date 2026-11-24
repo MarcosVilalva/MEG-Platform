@@ -208,6 +208,29 @@ try{
   console.log('ISSUE699_CLIENT_ATTACHED_LOGS='+JSON.stringify(callbackLines.slice(-12)));
   assert.ok(callbackLines.length>0,'ISSUE699_NO_ANY_WEBVIEWCLIENT_CALLBACK');
   console.log('ISSUE699_CLIENT_ATTACHED_PREFLIGHT=PASS');
+  // Diagnostico runtime SOMENTE no WebView QA, antes de acionar o modo offline.
+  const swRuntime=await evaluate(`(async()=>{
+    if(!('serviceWorker' in navigator))return {supported:false,controlled:false,registrations:[]};
+    try{
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      return {
+        supported:true,
+        controlled:Boolean(navigator.serviceWorker.controller),
+        controllerScript:navigator.serviceWorker.controller?.scriptURL??null,
+        registrations:registrations.map(r=>({
+          scope:r.scope,
+          active:r.active?.scriptURL??null,
+          waiting:r.waiting?.scriptURL??null,
+          installing:r.installing?.scriptURL??null,
+        })),
+      };
+    }catch(error){return {supported:true,error:String(error)};}
+  })()`);
+  console.log('ISSUE699_WEBVIEW_SERVICE_WORKER_RUNTIME='+JSON.stringify(swRuntime));
+  assert.equal(swRuntime?.error,undefined,'ISSUE699_SERVICE_WORKER_RUNTIME_QUERY_FAILED');
+  // Se houver SW ativo, nao enviar PATCH ate decidir bypass isolado no QA.
+  assert.equal(swRuntime?.controlled,false,'ISSUE699_SERVICE_WORKER_CONTROLS_QA_PAGE');
+  assert.equal(swRuntime?.registrations?.length,0,'ISSUE699_SERVICE_WORKER_REGISTRATIONS_PRESENT');
   const offlineMarker='files/meg_issue699_webview_offline';
   adb('shell','run-as',pkg,'mkdir','-p','files');
   try{
