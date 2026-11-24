@@ -239,6 +239,81 @@ try{
     buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,90),disabled:x.disabled})).filter(x=>x.text).slice(-70),
    }))()`);
    console.log('ISSUE699_APK708_ORIGINAL_EXPENSE_FIELDS='+JSON.stringify(expenseFields));
+   const inputFilled=await evalUI(`(()=>{
+    const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+    const desc=document.querySelector('input[placeholder="Digite para pesquisar no seu histórico"]');
+    const amount=document.querySelector('input[placeholder="0,00"]');
+    if(!desc||!amount)return false;
+    for(const [el,val] of [[desc,'ISSUE699 QA despesa fictícia'],[amount,'12,35']]){
+      setter.call(el,val);el.dispatchEvent(new Event('input',{bubbles:true}));
+      el.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    return true;
+   })()`);
+   console.log('ISSUE699_APK708_EXPENSE_INPUT_FILL='+inputFilled);
+   const categoryOpened=await evalUI(`(()=>{
+    const b=[...document.querySelectorAll('button')].find(x=>x.innerText.includes('Categoria *'));
+    if(!b)return false;b.click();return true;
+   })()`);
+   await sleep(450);
+   console.log('ISSUE699_APK708_CATEGORY_PICKER='+JSON.stringify(await evalUI(`(()=>({
+    bodyText:document.body.innerText.slice(-1200),
+    controls:[...document.querySelectorAll('button,[role=option]')].map(x=>x.innerText.trim().slice(0,85)).filter(Boolean).slice(-35)
+   }))()`)));
+   const categorySelected=await evalUI(`(()=>{
+    const x=[...document.querySelectorAll('button,[role=option]')].find(b=>b.innerText.trim()==='Alimentação QA');
+    if(!x)return false;x.click();return true;
+   })()`);
+   console.log('ISSUE699_APK708_CATEGORY_SELECTED='+categorySelected);
+   const accountOpened=await evalUI(`(()=>{
+    const b=[...document.querySelectorAll('button')].find(x=>x.innerText.includes('Conta *'));
+    if(!b)return false;b.click();return true;
+   })()`);
+   await sleep(450);
+   console.log('ISSUE699_APK708_ACCOUNT_PICKER='+JSON.stringify(await evalUI(`(()=>({
+    bodyText:document.body.innerText.slice(-1000),
+    controls:[...document.querySelectorAll('button,[role=option]')].map(x=>x.innerText.trim().slice(0,85)).filter(Boolean).slice(-35)
+   }))()`)));
+   const accountSelected=await evalUI(`(()=>{
+    const x=[...document.querySelectorAll('button,[role=option]')].find(b=>b.innerText.trim()==='Conta QA');
+    if(!x)return false;x.click();return true;
+   })()`);
+   console.log('ISSUE699_APK708_ACCOUNT_SELECTED='+accountSelected);
+   const filled=await evalUI(`(()=>({
+    bodyText:document.body.innerText.slice(-1700),
+    inputValues:[...document.querySelectorAll('input')].map(x=>({placeholder:x.placeholder,value:x.value})),
+    buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,90),disabled:x.disabled})).filter(x=>x.text).slice(-30),
+   }))()`);
+   console.log('ISSUE699_APK708_EXPENSE_FILLED_FORM='+JSON.stringify(filled));
+   context.mode='409';
+   const pressSave=await evalUI(`(()=>{
+    const b=[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Salvar lançamento');
+    if(!b)return false;b.click();return true;
+   })()`);
+   console.log('ISSUE699_APK708_SAVE_CLICKED='+pressSave);
+   await sleep(850);
+   const afterSave=await evalUI(`(()=>({
+    bodyText:document.body.innerText.slice(-1800),
+    buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,100),disabled:x.disabled})).filter(x=>x.text).slice(-35),
+   }))()`);
+   console.log('ISSUE699_APK708_AFTER_SAVE='+JSON.stringify(afterSave));
+   const continueReview=await evalUI(`(()=>{
+    const b=[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Continuar');
+    if(!b)return false;b.click();return true;
+   })()`);
+   console.log('ISSUE699_APK708_REVIEW_CONTINUE='+continueReview);
+   if(continueReview)await sleep(750);
+   const confirm=await evalUI(`(()=>{
+    const b=[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='Confirmar lançamento');
+    if(!b)return false;b.click();return true;
+   })()`);
+   console.log('ISSUE699_APK708_CONFIRM_CLICKED='+confirm);
+   if(confirm)await sleep(1450);
+   console.log('ISSUE699_APK708_AFTER_REJECTION='+JSON.stringify(await evalUI(`(()=>({
+    bodyText:document.body.innerText.slice(-2100),
+    buttons:[...document.querySelectorAll('button')].map(x=>({text:x.innerText.trim().slice(0,100),disabled:x.disabled})).filter(x=>x.text).slice(-40),
+   }))()`)));
+   console.log('ISSUE699_APK708_ACTUAL_FINANCIAL_POSTS='+JSON.stringify(apiRequests.filter(r=>r.method==='POST'&&r.path==='/finance/events')));
   }
  }
  console.log('ISSUE699_APK708_ORIGINAL_API_PATHS='+JSON.stringify([...interceptedUrls]));
