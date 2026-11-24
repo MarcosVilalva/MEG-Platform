@@ -25,7 +25,7 @@ const suffix=randomUUID().slice(0,12);
 const password='fake-a17-'+suffix;
 const make=async(name:string)=>{
  const user=await prisma.user.create({data:{
-  email:'a17-'+name+'-'+suffix+'@example.invalid',name:'Fictitious '+name,
+  email:('a17-'+name+'-'+suffix+'@example.invalid').toLowerCase(),name:'Fictitious '+name,
   passwordHash:await bcrypt.hash(password,8),role:UserRole.ADMIN,status:UserStatus.ACTIVE,
   isActive:true,approvedAt:new Date(),
  }});
