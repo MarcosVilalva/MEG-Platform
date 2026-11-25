@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { prisma, UserStatus } from '@meg/database';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const mutation = readFileSync(new URL('./event-mutation.ts', import.meta.url), 'utf8');
@@ -32,8 +34,59 @@ assert.match(mutation, /isUniqueConflict\(error\)/,
   'Conflito concorrente deve reler o recibo vencedor após rollback.');
 assert.match(mutation, /prisma\.cloudMutationReceipt\.findUnique/,
   'Replay concorrente deve consultar o recibo já confirmado fora da transação revertida.');
-assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId\)/,
-  'Todo novo evento deve resolver o workspace financeiro.');
+// This is a runtime assertion of the real workspace resolver, not a source-text
+// assertion on the exact spelling of its call in event-mutation.ts.
+// Mock only the Prisma SELECT boundary: no DB is opened during the legacy suite.
+// Real HTTP/JWT/PG17 writer + audit behavior is covered by the disposable gate.
+const workspaceDelegate = prisma.workspaceMember;
+const actor = 'fake-first-write-actor';
+const member = {
+  workspaceId: 'first-write-owned',
+  userId: actor,
+  role: 'ADMIN',
+  workspace: { id: 'first-write-owned', ownerId: actor, isActive: true },
+};
+let fixture: 'owned' | 'shared' | 'missing' = 'owned';
+const calls: any[] = [];
+Object.defineProperty(workspaceDelegate, 'findFirst', {
+  configurable: true,
+  value: async (args: any) => {
+    calls.push(args);
+    if (fixture === 'missing') return null;
+    if (fixture === 'shared' && args.where?.workspace?.ownerId === actor) return null;
+    return fixture === 'owned' ? member : {
+      ...member, workspaceId: 'first-write-shared',
+      workspace: { id: 'first-write-shared', ownerId: 'another-owner', isActive: true },
+    };
+  },
+});
+try {
+  const owned = await resolveWorkspaceContext(actor, { allowLegacyBootstrap: false });
+  assert.equal(owned.workspaceId, 'first-write-owned');
+  assert.equal(owned.workspace.ownerId, actor);
+  assert.equal(calls.length, 1, 'Owner workspace must take priority');
+  assert.equal(calls[0].where.userId, actor);
+  assert.equal(calls[0].where.status, UserStatus.ACTIVE);
+  assert.equal(calls[0].where.workspace.ownerId, actor);
+
+  calls.length = 0;
+  fixture = 'shared';
+  const shared = await resolveWorkspaceContext(actor, { allowLegacyBootstrap: false });
+  assert.equal(shared.workspaceId, 'first-write-shared');
+  assert.equal(calls.length, 2, 'Shared workspace requires owner-first lookup');
+
+  calls.length = 0;
+  fixture = 'missing';
+  await assert.rejects(
+    () => resolveWorkspaceContext(actor, { allowLegacyBootstrap: false }),
+    /WORKSPACE_ACCESS_REQUIRED/,
+  );
+  assert.equal(calls.length, 2,
+    'No legacy bootstrap or implicit workspace insertion when disabled');
+} finally {
+  Reflect.deleteProperty(workspaceDelegate, 'findFirst');
+}
+console.log('FIRST_WRITE_WORKSPACE_RESOLUTION_BEHAVIOR=PASS');
 assert.match(mutation, /workspaceId: workspace\.workspaceId/,
   'Todo novo evento deve persistir o workspace resolvido.');
 assert.match(mutation, /FINANCIAL_EVENT_CREATED/,
