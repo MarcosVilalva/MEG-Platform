@@ -4,8 +4,8 @@ import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
-import { isBenefitPaymentMethod, isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
-import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, serializableFinancialTransaction } from './monetary-protection';
+import { isBenefitPaymentMethod, isMonetaryAccountType, isPostedFinancialStatus, resolveCanonicalFinancialStatus } from './financial-policy';
+import { findRecentFinancialEventDuplicate, financialEventSuspicionFingerprint, monetaryAccountDebitWindow, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventMutationError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
@@ -40,11 +40,15 @@ function isUniqueConflict(error: unknown) {
   return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2002');
 }
 
-export async function createFinancialEventProtected(userId: string, input: CreateFinancialEventMutationInput) {
+export async function createFinancialEventProtected(userId: string, input: CreateFinancialEventMutationInput, expectedWorkspaceId?: string) {
   if (input.type === 'transfer') {
     throw new FinancialEventMutationError('TRANSFER_CONTRACT_NOT_READY');
   }
-  const workspace = await resolveWorkspaceContext(userId);
+  const workspace = await resolveWorkspaceContext(userId,
+    expectedWorkspaceId ? { allowLegacyBootstrap: false } : {});
+  if (expectedWorkspaceId && workspace.workspaceId !== expectedWorkspaceId) {
+    throw new FinancialEventMutationError('WORKSPACE_CONTEXT_CHANGED');
+  }
   const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined })
@@ -82,24 +86,45 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         paymentMethod,
       });
       const values = financialAmountValues(input.type, input.amount);
-      if (!input.allowDuplicate) {
-        const duplicate = await findRecentFinancialEventDuplicate(tx, {
-          workspaceId: workspace.workspaceId,
-          userId: dataOwnerId,
-          description: input.description,
-          type: input.type,
-          status: resolvedStatus,
-          date: input.date,
-          amount: values.amount,
-          signedAmount: values.signedAmount,
-          accountId: input.accountId,
-          categoryId: input.categoryId,
-          paymentMethodId: input.paymentMethodId,
-        });
-        if (duplicate) {
-          throw new FinancialEventMutationError('POSSIBLE_DUPLICATE', {
-            duplicate,
-            duplicateWindowSeconds: Math.round(SEMANTIC_DUPLICATE_WINDOW_MS / 1000),
+      // #699 Phase A: similarity is NON-BLOCKING. Every new operationId
+      // represents a potentially distinct, legitimate expense. Never return
+      // predecessor success or POSSIBLE_DUPLICATE/409 based on content/time.
+      const duplicate = input.type === 'expense'
+        ? await findRecentFinancialEventDuplicate(tx, {
+            workspaceId: workspace.workspaceId,
+            userId: dataOwnerId,
+            description: input.description,
+            type: input.type,
+            status: resolvedStatus,
+            date: input.date,
+            competence: input.competence,
+            notes: input.notes,
+            amount: values.amount,
+            signedAmount: values.signedAmount,
+            accountId: input.accountId,
+            categoryId: input.categoryId,
+            paymentMethodId: input.paymentMethodId,
+          })
+        : null;
+
+      // Both clients use the same financial authority. A new posted monetary
+      // debit cannot overdraw this account on the transaction day or any
+      // subsequent posted-event day. Retroactive creation is protected too.
+      if (input.type === 'expense' && account && isMonetaryAccountType(account.type)
+          && isPostedFinancialStatus(resolvedStatus) && Number(values.signedAmount) < 0) {
+        let timeline: Awaited<ReturnType<typeof monetaryAccountDebitWindow>>;
+        try {
+          timeline = await monetaryAccountDebitWindow(
+            tx, dataOwnerId, account, input.date, Math.round(-Number(values.signedAmount) * 100));
+        } catch (error) {
+          if (error instanceof Error && error.message === 'ACCOUNT_BALANCE_WINDOW_TOO_LARGE') {
+            throw new FinancialEventMutationError('ACCOUNT_BALANCE_WINDOW_TOO_LARGE');
+          }
+          throw error;
+        }
+        if (!timeline.allowed) {
+          throw new FinancialEventMutationError('INSUFFICIENT_ACCOUNT_BALANCE', {
+            insufficientDay: timeline.insufficientDay,
           });
         }
       }
@@ -159,6 +184,51 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         },
       });
 
+      if (duplicate) {
+        const fingerprint = financialEventSuspicionFingerprint({
+          workspaceId: workspace.workspaceId,
+          userId: dataOwnerId,
+          description: input.description,
+          type: input.type,
+          status: resolvedStatus,
+          date: input.date,
+          competence: input.competence,
+          notes: input.notes,
+          amount: values.amount,
+          signedAmount: values.signedAmount,
+          accountId: input.accountId,
+          categoryId: input.categoryId,
+          paymentMethodId: input.paymentMethodId,
+        });
+        const suspicionGroupId = 'financial-event-suspected-v1:' + duplicate.id + ':' + result.id;
+        const context = {
+          workspaceId: workspace.workspaceId,
+          fingerprintVersion: 'finance-event-create-v1',
+          fingerprint,
+          suspicionGroupId,
+          evidence: 'CONTENT_AND_TIME_ONLY',
+          reviewStatus: 'SUSPECTED',
+          createdEventId: result.id,
+          incomingOperationId: input.operationId ?? null,
+        };
+        // Bilateral append-only markers in the SAME serializable transaction
+        // as the new FinancialEvent, ledger, creation audit and receipt.
+        await recordFinancialAudit(tx, {
+          actorId: userId,
+          entity: 'FinancialEvent',
+          entityId: duplicate.id,
+          action: 'FINANCIAL_EVENT_DUPLICATE_SUSPECTED',
+          context: { ...context, peerEventId: result.id, relation: 'PREVIOUS_CANDIDATE' },
+        });
+        await recordFinancialAudit(tx, {
+          actorId: userId,
+          entity: 'FinancialEvent',
+          entityId: result.id,
+          action: 'FINANCIAL_EVENT_DUPLICATE_SUSPECTED',
+          context: { ...context, peerEventId: duplicate.id, relation: 'NEW_DISTINCT_ID' },
+        });
+      }
+
       const response = { ...result, idempotentReplay: false };
       if (input.operationId && requestHash) {
         const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
@@ -172,7 +242,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         }) });
       }
       return response;
-    });
+    }, { maxAttempts: 12, retryDelayMs: 35 });
   } catch (error) {
     // Duas requisições iguais podem atravessar simultaneamente a consulta inicial do recibo.
     // A unicidade workspaceId+operationId faz uma delas reverter inteira; após o rollback,

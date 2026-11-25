@@ -100,7 +100,7 @@ export async function addUserToPrimaryWorkspace(userId: string, role: UserRole, 
   return addUserToWorkspace(workspace.id, userId, role, status, isActive);
 }
 
-export async function resolveWorkspaceContext(userId: string) {
+export async function resolveWorkspaceContext(userId: string, options: { allowLegacyBootstrap?: boolean } = {}) {
   // Um proprietário pode também ter sido incluído em outros espaços de
   // trabalho (por exemplo, durante uma migração ou teste comercial). A base
   // financeira principal dele sempre deve abrir primeiro, nunca o primeiro
@@ -120,7 +120,7 @@ export async function resolveWorkspaceContext(userId: string) {
       orderBy: { createdAt: 'asc' }, include: { workspace: true }
     });
   }
-  if (!membership) {
+  if (!membership && options.allowLegacyBootstrap !== false) {
     await ensurePrimaryWorkspace();
     membership = await prisma.workspaceMember.findFirst({
       where: {

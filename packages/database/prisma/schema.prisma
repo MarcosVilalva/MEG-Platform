@@ -109,6 +109,7 @@ model Workspace {
   appState  AppState?
   subscription WorkspaceSubscription?
   notificationConfig WorkspaceNotificationConfig?
+  cardLimitControls CardLimitControl[]
   invoices WorkspaceInvoice[]
   mutationReceipts CloudMutationReceipt[]
   financialEvents FinancialEvent[]
@@ -684,4 +685,20 @@ model RecurringExpense {
   payables    Payable[]
 
   @@index([userId, isActive, nextDueDate])
+}
+
+// Controle do limite de credito configurado por workspace e, opcionalmente, por cartao.
+// Nao se mistura com o AppState/Android legado.
+model CardLimitControl {
+  id          String    @id
+  workspaceId String
+  scopeKey    String
+  mode        String    @default("BLOCK")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, scopeKey])
+  @@index([workspaceId])
 }

@@ -2,6 +2,8 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { listFinancialAudit } from './audit';
+import { listSuspectedDuplicateFinancialEvents } from './suspected-duplicates-read';
+import { A17ReviewError, resolveSuspectedFinancialEvent, undoSuspectedFinancialEventResolution } from './suspected-duplicates-review';
 import {
   deleteFinancialEvent,
   listBudgetOverview,
@@ -29,10 +31,40 @@ import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { isMonetaryAccountType, monetaryAccountBalanceAt } from './monetary-protection';
 
+const a17CommandBase = z.object({
+  peerEventId: z.string().trim().min(1).max(128),
+  suspicionGroupId: z.string().trim().min(12).max(300),
+  operationId: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/),
+  reason: z.string().trim().min(10).max(1000),
+});
+const a17ResolveSchema = a17CommandBase.extend({
+  decision: z.enum(['RESOLVED_DUPLICATE','RESOLVED_LEGITIMATE']),
+  correctionTargetEventId: z.string().min(1).max(128).optional(),
+  effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).strict();
+const a17UndoSchema = a17CommandBase.extend({
+  resolutionAuditId: z.string().min(1).max(128),
+}).strict();
+function a17Error(reply: FastifyReply, err: unknown) {
+  if (err instanceof A17ReviewError) {
+    const code=err.code;
+    const status=code==='A17_ROLE_DENIED'?403
+      :code==='A17_PAIR_NOT_FOUND'?404
+      :code==='OPERATION_ID_REUSED'||code==='A17_ALREADY_RESOLVED'
+        ||code==='A17_NO_ACTIVE_RESOLUTION'||code==='A17_ACTIVE_CORRECTION_PROTECTED'
+        ||code==='A17_COUNTERENTRY_IMMUTABLE'
+        ||code==='A17_UNDO_INSUFFICIENT_BALANCE'?409:400;
+    return reply.code(status).send({error:code,retryable:false});
+  }
+  if(err instanceof Error && err.message==='WORKSPACE_ACCESS_REQUIRED')
+    return reply.code(403).send({error:'WORKSPACE_ACCESS_REQUIRED'});
+  throw err;
+}
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
+const expectedWorkspaceHeaderSchema = z.string().min(1).max(128).regex(/^[a-zA-Z0-9_-]+$/).optional();
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema, allowDuplicate: z.boolean().optional() });
 const settleLegacyEventRequestSchema = z.object({
@@ -109,8 +141,9 @@ function validationError(reply: FastifyReply, details: unknown) {
 }
 
 function eventError(reply: FastifyReply, error: unknown) {
+  if (error instanceof A17ReviewError) return a17Error(reply, error);
   if (error instanceof FinancialEventMutationError) {
-    const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE'].includes(error.code) ? 409 : 400;
+    const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'WORKSPACE_CONTEXT_CHANGED'].includes(error.code) ? 409 : 400;
     return reply.code(status).send({ error: error.code, ...(error.details || {}) });
   }
   if (!(error instanceof Error)) throw error;
@@ -309,6 +342,44 @@ export async function financeRoutes(app: FastifyInstance) {
     return listPhoenixFinancialEventsForMonth(request.user.sub, parsed.data.month);
   });
 
+  // A17 intentionally defaults OFF. No production exposure before review gates.
+  if (process.env.MEG_STAGE10_ISSUE699_A17_REVIEW_ENABLED === '1') {
+    app.post('/events/:id/resolve', { preHandler: app.authorize([...adminRoles]) }, async(request,reply)=>{
+      const params=z.object({id:z.string().min(1).max(128)}).safeParse(request.params);
+      const parsed=a17ResolveSchema.safeParse(request.body);
+      if(!params.success||!parsed.success)return validationError(reply,{
+        params:params.success?undefined:params.error.flatten(),
+        body:parsed.success?undefined:parsed.error.flatten(),
+      });
+      try {return reply.code(201).send(await resolveSuspectedFinancialEvent(
+        request.user.sub,params.data.id,parsed.data));}
+      catch(error){return a17Error(reply,error);}
+    });
+    app.post('/events/:id/resolve/undo', { preHandler: app.authorize([...adminRoles]) }, async(request,reply)=>{
+      const params=z.object({id:z.string().min(1).max(128)}).safeParse(request.params);
+      const parsed=a17UndoSchema.safeParse(request.body);
+      if(!params.success||!parsed.success)return validationError(reply,{
+        params:params.success?undefined:params.error.flatten(),
+        body:parsed.success?undefined:parsed.error.flatten(),
+      });
+      try {return reply.code(201).send(await undoSuspectedFinancialEventResolution(
+        request.user.sub,params.data.id,parsed.data));}
+      catch(error){return a17Error(reply,error);}
+    });
+  }
+
+  // #699 Phase A: durable, authorized, non-blocking support visibility.
+  // Read-only; no APK update, new success status, or implicit financial merge.
+  app.get('/events/suspected-duplicates', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      page: z.coerce.number().int().positive().default(1),
+      pageSize: z.coerce.number().int().min(1).max(100).default(50),
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    reply.header('Cache-Control', 'no-store');
+    return listSuspectedDuplicateFinancialEvents(request.user.sub, parsed.data);
+  });
+
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({
       page: z.coerce.number().int().positive().default(1),
@@ -333,9 +404,13 @@ export async function financeRoutes(app: FastifyInstance) {
 
   app.post('/events', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = createEventRequestSchema.safeParse(request.body);
-    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const expected = expectedWorkspaceHeaderSchema.safeParse(request.headers['x-meg-expected-workspace-id']);
+    if (!parsed.success || !expected.success) return validationError(reply, {
+      body: parsed.success ? undefined : parsed.error.flatten(),
+      workspaceHeader: expected.success ? undefined : expected.error.flatten(),
+    });
     try {
-      return reply.code(201).send(await createFinancialEventProtected(request.user.sub, parsed.data));
+      return reply.code(201).send(await createFinancialEventProtected(request.user.sub, parsed.data, expected.data));
     } catch (error) {
       return eventError(reply, error);
     }

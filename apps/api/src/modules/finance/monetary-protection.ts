@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Prisma, prisma } from '@meg/database';
 import { legacyOpeningBalanceFallbackTotal, openingBalanceFallbackForAccount } from './opening-balance';
 import {
@@ -22,6 +23,8 @@ type Tx = Prisma.TransactionClient;
 type SerializableFinancialTransactionOptions = {
   maxWaitMs?: number;
   timeoutMs?: number;
+  maxAttempts?: number;
+  retryDelayMs?: number;
 };
 
 function normalizeText(value: unknown) {
@@ -90,6 +93,47 @@ export async function monetaryAccountBalanceAt(
   return Math.round(balance * 100) / 100;
 }
 
+/**
+ * Calculates the incremental impact of a newly posted debit on the selected
+ * monetary account. All future posted dates are checked, not only the debit
+ * date, because retroactive expenses can overdraw a later daily balance.
+ * Run inside serializableFinancialTransaction; no mutation is performed here.
+ */
+export async function monetaryAccountDebitWindow(
+  tx: Tx,
+  userId: string,
+  account: { id: string; openingBalance: Prisma.Decimal | number | string },
+  effectiveAt: string,
+  debitCents: number,
+): Promise<{ allowed: boolean; checkedDays: number; insufficientDay?: string }> {
+  const firstDay = effectiveAt.slice(0, 10);
+  if (!parseIsoDay(firstDay) || !Number.isSafeInteger(debitCents) || debitCents <= 0) {
+    throw new Error('INVALID_ACCOUNT_DEBIT_WINDOW_INPUT');
+  }
+  const events = await tx.financialEvent.findMany({
+    where: {
+      userId,
+      accountId: account.id,
+      archivedAt: null,
+      status: { in: ['paid', 'reconciled', 'confirmed'] },
+      date: { gte: new Date(firstDay + 'T00:00:00.000Z') },
+    },
+    select: { date: true },
+    orderBy: { date: 'asc' },
+  });
+  const days = [...new Set([firstDay, ...events.map(x => x.date.toISOString().slice(0, 10))])];
+  if (days.length > 250) throw new Error('ACCOUNT_BALANCE_WINDOW_TOO_LARGE');
+  for (const day of days) {
+    const available = await monetaryAccountBalanceAt(tx, userId, account, day);
+    const availableCents = Math.round(available * 100);
+    if (!Number.isSafeInteger(availableCents)) throw new Error('INVALID_ACCOUNT_BALANCE');
+    if (availableCents < debitCents) {
+      return { allowed: false, checkedDays: days.length, insufficientDay: day };
+    }
+  }
+  return { allowed: true, checkedDays: days.length };
+}
+
 export async function monetaryBalanceAt(tx: Tx, userId: string, effectiveAt: string) {
   const cutoff = nextDayExclusive(effectiveAt.slice(0, 10));
   const [openingBalance, events] = await Promise.all([
@@ -152,6 +196,40 @@ function duplicateWindowStart(now = new Date()) {
   return new Date(now.getTime() - SEMANTIC_DUPLICATE_WINDOW_MS);
 }
 
+/**
+ * Phase A #699: content similarity is ONLY an audit signal, never an
+ * idempotency key or permission to suppress a legitimate financial write.
+ * All fields are resolved with the same semantics as the canonical writer.
+ */
+export function financialEventSuspicionFingerprint(input: {
+  workspaceId: string;
+  userId: string;
+  description: string;
+  type: string;
+  status: string;
+  date: string;
+  competence?: string;
+  amount: number;
+  signedAmount: number;
+  accountId?: string | null;
+  categoryId?: string | null;
+  paymentMethodId?: string | null;
+  notes?: string | null;
+}) {
+  const payload = [
+    'finance-event-create-v1',
+    input.workspaceId, input.userId,
+    duplicateDescription(input.description),
+    input.type, input.status, input.date.slice(0, 10),
+    input.competence || input.date.slice(0, 7),
+    new Prisma.Decimal(String(input.amount)).abs().toString(),
+    new Prisma.Decimal(String(input.signedAmount)).toString(),
+    input.accountId || null, input.categoryId || null,
+    input.paymentMethodId || null, input.notes?.trim() || null,
+  ];
+  return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
 export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
   workspaceId: string;
   userId: string;
@@ -159,6 +237,8 @@ export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
   type: string;
   status: string;
   date: string;
+  competence?: string;
+  notes?: string;
   amount: number;
   signedAmount: number;
   accountId?: string | null;
@@ -173,6 +253,8 @@ export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
       archivedAt: null,
       type: input.type,
       status: input.status,
+      competence: input.competence || input.date.slice(0, 7),
+      notes: input.notes?.trim() || null,
       date: { gte: start, lt: end },
       amount: Math.abs(input.amount),
       signedAmount: input.signedAmount,
@@ -259,7 +341,12 @@ export async function serializableFinancialTransaction<T>(
   work: (tx: Tx) => Promise<T>,
   options: SerializableFinancialTransactionOptions = {},
 ) {
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  // Preserve the three-attempt default for every existing financial writer.
+  // A caller may explicitly request bounded backoff for a higher-contention
+  // serializable path. Never retry non-serialization errors.
+  const maxAttempts = Math.max(1, Math.min(options.maxAttempts ?? 3, 12));
+  const retryDelayMs = Math.max(0, Math.min(options.retryDelayMs ?? 0, 250));
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       return await prisma.$transaction(work, {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -267,7 +354,10 @@ export async function serializableFinancialTransaction<T>(
         timeout: options.timeoutMs ?? 30_000,
       });
     } catch (error) {
-      if (!retryableTransaction(error) || attempt === 3) throw error;
+      if (!retryableTransaction(error) || attempt === maxAttempts) throw error;
+      if (retryDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs * attempt));
+      }
     }
   }
   throw new Error('SERIALIZABLE_TRANSACTION_RETRY_EXHAUSTED');
