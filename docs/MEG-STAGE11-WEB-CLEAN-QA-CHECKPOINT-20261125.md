@@ -211,3 +211,27 @@ A primeira preparação deste teste parou antes da concorrência com `401 INVALI
 - **CI remota da branch candidata** e implantação da migração em ambiente persistente continuam pendentes. O deploy atual em `render.yaml` contém `db:push:production`: **PROIBIDO executar com o schema novo sem migração histórica prévia e plano explícito**, pois poderia apagar a distinção entre origem histórica e gravação nova.
 - A Camada 1 ainda requer controle de origem verificável, validação cruzada Web/Android, cobertura de outros escritores/mecanismos legados, e demais aprovações técnicas/funcionais/visuais quando aplicáveis.
 - Riscos residuais de concorrência documentados na Seção 8.4 continuam sem caracterização adicional; os testes desta rodada não autorizam afirmar ausência universal de corrida.
+
+## 11. Gate obrigatório pré-deploy: integridade da origem histórica (25/11/2026)
+
+**BLOQUEIO OBRIGATÓRIO DE IMPLANTAÇÃO, MESMO COM BUILD/TESTES/CI VERDES.** Decisão expressa do responsável, derivada da Seção 4.1 e da Camada 1 da Seção 5 de `MEG Finanças — Visão de Produto e Princípios Fundadores`. O documento fundador permanece inalterado: conforme a sua Seção 8, a visão registra o `porquê` e os checkpoints técnicos registram `como` e `quando`.
+
+> **A migração SQL histórica de classificação de origem de auditoria deve ser executada ANTES de qualquer `prisma db push` do novo schema em um banco já existente com dados. Executar na ordem inversa pode classificar registros antigos incorretamente como `canal-nao-atestado` em vez de `historico-desconhecido`, violando a integridade retroativa de auditoria.**
+
+### 11.1 Ordem obrigatória para eventual implantação, sujeita a autorização própria
+
+1. **Não autorizar merge, deploy ou execução de `db:prepare:production`, `db:push:production` ou equivalente** que possa aplicar o novo schema a banco existente, até existir plano formal, aprovação explícita de produção, backup recuperável e verificação do estado original de `AuditLog`.
+2. **Antes do novo Prisma schema**, executar, quando expressamente autorizado, a migração SQL controlada `packages/database/prisma/stage11-issue699-audit-source-migration.sql` sobre a tabela ainda não migrada. O roteiro histórico cria o campo sem default inicial, classifica **somente registros preexistentes** como `historico-desconhecido`, depois configura o default de novas gravações como `canal-nao-atestado` e impede atribuição de `web` sem mecanismo de atestação.
+3. Comprovar contagem e preservação de IDs, autoria, entidades, ação, metadados e timestamps históricos. Se a coluna já existir, estado do banco diferir do esperado ou houver divergência, **PARAR (FAIL CLOSED)**, sem tentar classificação retroativa por heurística.
+4. **Só após a migração histórica validada** pode-se planejar/aprovar a aplicação de `prisma db push` do novo schema ou equivalente. Validar integridade, auditoria de novas gravações, bloqueio de `web`, rollback/recuperação e compatibilidade financeira. Nenhuma destas operações foi autorizada nesta etapa.
+
+**Risco concreto de automação:** `render.yaml` contém `buildCommand` com `npm run db:prepare:production && npm run db:push:production` e `autoDeployTrigger: commit`. Uma futura alteração/merge que ative esse fluxo pode aplicar schema sem antes preservar a origem histórica. **Qualquer plano de deploy deverá neutralizar/controlar a automação e comprovar a sequência correta antes de publicar.** Não editar o pipeline aqui.
+
+### 11.2 Vínculos obrigatórios e critérios de bloqueio
+
+- **[Issue #709](https://github.com/MarcosVilalva/MEG-Platform/issues/709)**: recebe referência explícita a esta Seção 11. Contém dívida de **identidade confiável Web/Android**, cujo gatilho é **ANTES da integração Android**. O **gate de migração SQL antes de Prisma é independente** e vale para **qualquer implantação do schema novo em banco já existente**, mesmo se ocorrer antes da integração Android.
+- **[Issue #699](https://github.com/MarcosVilalva/MEG-Platform/issues/699)**: a Fase A não libera merge/deploy; o PASS da suíte financeira não é autorização produtiva.
+- **Qualquer issue futura de deploy, homologação persistente, migração ou produção** que envolva o campo `AuditLog.sourceChannel` deverá **linkar a Issue #709 e este checkpoint, Seção 11**, transcrever este bloqueio de sequência, demonstrar estado do banco de destino, definir rollback e anexar evidência da migração histórica antes de liberar `prisma db push`. Não existem vínculos automáticos com issues futuras que ainda não tenham sido criadas; a obrigação fica registrada neste documento e na #709.
+- **Situação comprovada até agora:** migração SQL histórica + Prisma db push **PASS somente em PostgreSQL 17 descartável**, sobre dados fictícios, como descrito na Seção 10; `npm run test:finance` integral **PASS** no candidato. CI remota, migração persistente, aprovação de deploy, integração Android e homologação integral da Camada 1 **pendentes**.
+
+**Escopo desta alteração:** documentação apenas. Nenhuma alteração de código/schema/configuração, SQL aplicado em banco, merge, deploy, Android ou banco protegido.
