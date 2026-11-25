@@ -99,6 +99,8 @@ export async function recordFinancialAudit(tx: Tx, input: {
       entity: input.entity,
       entityId: input.entityId,
       action: input.action,
+      // Origin is assigned by the server, never by the client.
+      sourceChannel: 'canal-nao-atestado',
       metadata: financialAuditMetadata({ before: input.before, after: input.after, context: input.context }),
     },
   });
@@ -157,6 +159,7 @@ export async function listFinancialAudit(actorId: string, input: {
       entity: item.entity,
       entityId: item.entityId,
       action: item.action,
+      sourceChannel: item.sourceChannel,
       ...parseMetadata(item.metadata),
     })),
     total,

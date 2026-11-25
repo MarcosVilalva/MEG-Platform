@@ -164,3 +164,50 @@ A primeira preparação deste teste parou antes da concorrência com `401 INVALI
 - **Gate de decisão do usuário:** leitura e aprovação/revisão da semântica “canal de ingresso credenciado” e da dependência BFF antes de autorizar **qualquer código ou migração**. Nenhum passo 2–6 autorizado a iniciar automaticamente nesta entrega.
 
 **Resultado da Etapa 1:** `DOCUMENTADO, AGUARDANDO APROVAÇÃO`. Sem execução técnica, sem alteração operacional e sem homologação da Camada 1.
+
+## 10. Decisão autorizada e QA de origem não atestada, 25/11/2026
+
+**Decisão do responsável:** nesta fase, `sourceChannel` será estruturado, mas uma gravação nova sem identificação de canal atestada recebe **`canal-nao-atestado`**. O valor `web` permanece **RESERVADO e PROIBIDO** até existir identidade de serviço verificada. Registros existentes recebem **`historico-desconhecido`**, sem inferir a origem. O gateway/BFF fica fora desta fase e foi registrado na **Issue #709**, com retomada obrigatória **antes de iniciar a integração Android** (Seção 7 do documento fundador). A Seção 9 anterior é uma proposta arquitetural histórica; esta Seção 10 registra a decisão posterior que a substitui no escopo imediato.
+
+**Base conferida:** branch `stage11/web-foundation-clean-20261125` em `d0724e11e05e8068f745882b7c55a5dfa74fbae9`; worktree WSL foi sincronizado por fast-forward, sem perdas. Android, produção, bancos protegidos, merge, A15/A16, BFF e autenticação **intocados**.
+
+### 10.1 Mudanças na candidata isolada
+
+1. `apps/api/src/modules/finance/event-mutation.contract.test.ts`: a exigência de grafia exata `resolveWorkspaceContext(userId)` foi substituída por execução real de `resolveWorkspaceContext`, com SELECT Prisma simulado e assertions de priorização do workspace do proprietário, fallback compartilhado, usuário ativo e ausência de bootstrap com `allowLegacyBootstrap:false`. Demais contratos do arquivo preservados. Resultado `EVENT_MUTATION_WORKSPACE_RESOLUTION_BEHAVIOR=PASS`.
+2. `packages/database/prisma/schema.prisma`: campo estruturado `AuditLog.sourceChannel String @default("canal-nao-atestado")`. O padrão da base alcança também os escritores diretos de `prisma.auditLog.create/createMany` que não passam por `recordFinancialAudit`; foi levantado inventário desses escritores, incluindo auth, platform-admin, billing, notifications, cards e app-state. Campo `web` não foi atestado nem habilitado.
+3. `packages/database/prisma/stage11-issue699-audit-source-migration.sql`: migração SQL **única e controlada**, para uso futuro somente após revisão/autorizações de rollout. Aplica lock na tabela `AuditLog`, cria coluna inicialmente sem default, marca linhas **já existentes** como `historico-desconhecido`, depois instala default `canal-nao-atestado`, `NOT NULL` e constraint que **não admite** `web`. Guard contra execução repetida. **ATENÇÃO: esta migração deve anteceder obrigatoriamente qualquer `prisma db push` em banco existente. Aplicar diretamente o schema novo via db push antes da migração classificaria retroativamente registros anteriores de modo errado.** Nenhum SQL foi aplicado a produção ou banco protegido.
+4. `apps/api/src/modules/finance/audit.ts`: `recordFinancialAudit` grava `sourceChannel=canal-nao-atestado` atribuído pelo servidor; o leitor da auditoria expõe o campo persistido. Nenhum canal é extraído de HTTP, User-Agent, Origin, token do usuário ou parâmetro do cliente.
+5. `apps/api/src/modules/finance/stage11-audit-source.pg17.disposable.test.ts`: teste real de migração/histórico, default, writer transacional e rejeição de `web` pela constraint SQL, com dados fictícios.
+6. `apps/api/src/modules/finance/stage11-first-write-behavior.pg17.disposable.test.ts`: mantidos os gates concorrência/idempotência/workspace; auditoria agora verifica o novo campo. Requisição HTTP maliciosa com `sourceChannel=web` é **aceita como lançamento financeiro válido (201), mas a tentativa de classificação é ignorada**, e a auditoria permanece `canal-nao-atestado`. Isto **não equivale a HTTP 400**; a atribuição do valor `web` é bloqueada e o banco rejeita escrita direta desse valor.
+
+### 10.2 Testes realmente executados
+
+**Ambiente:** NITROMEG WSL, `PostgreSQL 17` local e descartável, `127.0.0.1:5432/meg_stage11_first_write_sandbox`, usuário fake `meg_stage10_ci`, dados fictícios; `NODE_ENV=test`, `MEG_STAGE10_ISOLATED_PG=1`, `MEG_STAGE11_FIRST_WRITE_SYNTHETIC=1` e guard de URL/banco, A17 OFF. Runner reprodutível versionado `scripts/stage11-audit-origin-disposable.sh` (cópia executada inicialmente em `.qa/run-audit-origin-disposable.sh`, atualizada somente no guard de ancestralidade para permitir commits posteriores). Logs locais `.qa/logs/origin-*.log` (não publicados). Testes **não são** CI remota, homologação visual ou teste em Web/Android integrados.
+
+| Gate | Resultado |
+|---|---|
+| `npm run db:generate` (Prisma Client 6.12.0) | **PASS** |
+| `npm run build:api` (`tsc`) | **PASS** |
+| Migração SQL sobre duas linhas históricas fictícias, seguida de Prisma db push no mesmo banco descartável | **PASS** |
+| Auditoria histórica: ID, autor, entidade, ação, metadata e createdAt preservados; apenas canal recebe `historico-desconhecido` | **PASS** |
+| Nova escrita direta via Prisma e nova escrita via `recordFinancialAudit` recebem `canal-nao-atestado` | **PASS** |
+| Tentativa direta de INSERT/UPDATE com `sourceChannel=web` falha na constraint SQL | **PASS** |
+| Tentativa de autodeclaração HTTP com `sourceChannel=web` **não** atribui origem Web | **PASS**, HTTP 201 com `canal-nao-atestado`; rejeição da **atribuição**, não da requisição |
+| HTTP/JWT/PG17: mesma operação concorrente, replay, operação distinta concorrente, mismatch workspace e auditoria | **PASS** |
+| `npm run test:finance` **completo, em sequência normal, sem pular contratos** | **PASS**; marcador `FINANCE_LEGACY_FULL=PASS`, `.qa/logs/stage11-audit-finance-confirm.log` |
+| Encerramento e remoção do cluster descartável via trap | **PASS**, `STAGE11_AUDIT_ORIGIN_DISPOSABLE_CLUSTER_CLEANUP=COMPLETE` |
+
+### 10.3 Homologação formal e limites da Camada 1
+
+**Homologação técnica específica desta entrega:** APROVADA para *persistência de origem não atestada*, *preservação de origem histórica desconhecida*, *bloqueio de atribuição Web sem atestação*, *execução dos contratos legados* e *auditoria atômica dos cenários de criação já caracterizados*.
+
+**Camada 1 do documento fundador como um todo:** **NÃO HOMOLOGADA INTEGRALMENTE.** O documento exige identificação efetiva do canal Web/Android, histórico original auditável e unicidade entre canais. Neste estágio o campo atesta **justamente que a origem não pôde ser demonstrada**; testes de compatibilidade e integração Android estão proibidos. Não declarar que uma operação veio da Web só porque passou pelo endpoint HTTP.
+
+**Dívida técnica rastreável:** [Issue #709](https://github.com/MarcosVilalva/MEG-Platform/issues/709), `Camada 1 | Atestação confiável de canal Web/Android antes da integração Android`. **Gatilho de retomada obrigatório: antes de iniciar integração Android**, com planejamento de gateway mínimo/BFF, identificação autenticada do ingresso, antifraude/replay, migração de compatibilidade e testes independentes. Não implementar nesta etapa. #699 e #707 permanecem abertas; PRs #705/#706/#708 não foram fechadas.
+
+### 10.4 Gates ainda pendentes e proibições
+
+- **Sem merge, deploy, mudança em produção, banco protegido, A15/A16 ou Android.** Nenhuma nova regra financeira ou cálculo de saldo foi alterado.
+- **CI remota da branch candidata** e implantação da migração em ambiente persistente continuam pendentes. O deploy atual em `render.yaml` contém `db:push:production`: **PROIBIDO executar com o schema novo sem migração histórica prévia e plano explícito**, pois poderia apagar a distinção entre origem histórica e gravação nova.
+- A Camada 1 ainda requer controle de origem verificável, validação cruzada Web/Android, cobertura de outros escritores/mecanismos legados, e demais aprovações técnicas/funcionais/visuais quando aplicáveis.
+- Riscos residuais de concorrência documentados na Seção 8.4 continuam sem caracterização adicional; os testes desta rodada não autorizam afirmar ausência universal de corrida.

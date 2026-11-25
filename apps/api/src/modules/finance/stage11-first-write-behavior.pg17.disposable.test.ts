@@ -124,7 +124,8 @@ try {
     assert.equal(persisted.workspaceId, workspaceId);
     assert.equal(persisted.userId, actorId);
     assert.ok(Number.isFinite(persisted.createdAt.getTime()), 'Event creation timestamp');
-    return data;
+    assert.equal(audit.sourceChannel, 'canal-nao-atestado');
+    return audit;
   }
   function ok(name: string, value: Record<string, unknown>) {
     console.log('STAGE11_FIRST_WRITE_' + name + '=PASS ' + JSON.stringify(value));
@@ -196,10 +197,17 @@ try {
 
   // Founder §4.1: source/canal must be identifiable in every finance record.
   // This is an independent requirement. It does not prove a concurrency defect.
-  const channel = sourceAudit?.context?.sourceChannel ?? sourceAudit?.context?.origin ?? sourceAudit?.context?.channel;
-  assert.ok(typeof channel === 'string' && channel.length > 0,
-    'FOUNDER_SECTION_4_ORIGIN_CHANNEL_MISSING_IN_CREATE_AUDIT');
-  ok('ORIGIN_CHANNEL_TRACEABILITY', {channel});
+  assert.equal(sourceAudit.sourceChannel, 'canal-nao-atestado');
+  const forged = await create(jwtA, a.workspace.id,
+    payload(a, randomUUID(), 'forged-web-attribution', {sourceChannel: 'web'}));
+  assert.equal(forged.status, 201, JSON.stringify(forged));
+  const forgedAudit = await prisma.auditLog.findFirstOrThrow({
+    where: {entity: 'FinancialEvent', entityId: forged.body.id, action: 'FINANCIAL_EVENT_CREATED'},
+  });
+  assert.equal(forgedAudit.sourceChannel, 'canal-nao-atestado',
+    'The client cannot attribute web without verified service identity');
+  assert.equal(await prisma.auditLog.count({where: {sourceChannel: 'web'}}), 0);
+  ok('ORIGIN_CHANNEL_TRACEABILITY', {channel: sourceAudit.sourceChannel, spoofNotAttributed: true});
 
   console.log('STAGE11_FIRST_WRITE_ALL_BEHAVIOR_GATES=PASS');
 } finally {

@@ -512,6 +512,10 @@ model AuditLog {
   entity    String
   entityId  String
   action    String
+  // New audit rows are not attested until a trusted channel gateway exists.
+  // Historical rows must be backfilled by the SQL migration BEFORE prisma db push.
+  // The reserved "web" value is prohibited by a database guard in this phase.
+  sourceChannel String @default("canal-nao-atestado")
   metadata  String?
   ipAddress String?
   createdAt DateTime @default(now())
