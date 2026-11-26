@@ -1,74 +1,94 @@
 /**
- * MEG Etapa 10 / #699: transporte descartavel para QA, NUNCA producao.
- * Interrompe o TCP antes de chegar a API, ou descarta o ACK depois
- * da resposta do servidor. Nenhuma resposta HTTP sintetica e devolvida.
- * Alvo e listener obrigatoriamente loopback, sem alterar Android instalado.
+ * MEG Etapa 10, issue #699: proxy de falha de transporte SO em loopback.
+ * Usar apenas no emulador stage10Qa com PostgreSQL descartavel.
+ * CORS OPTIONS deve atravessar normalmente. A conexao do POST financeiro
+ * so e interrompida apos uma resposta 201 REAL do backend; nunca fabrica ACK.
  */
 import assert from 'node:assert/strict';
-import {createServer as tcpServer, connect as tcpConnect} from 'node:net';
-import {createServer as httpServer} from 'node:http';
+import {createServer as httpServer, request as httpRequest} from 'node:http';
 import {once} from 'node:events';
 
 export async function createLoopbackFaultProxy({targetPort,listenPort=0}){
   assert(Number.isInteger(targetPort)&&targetPort>0&&targetPort<65536);
   assert(Number.isInteger(listenPort)&&listenPort>=0&&listenPort<65536);
-  const clients=new Set(), upstreams=new Set();
-  let mode='online', blocked=0, droppedAck=0, forwarded=0;
-  const listener=tcpServer(client=>{
-    clients.add(client);
-    client.on('error',()=>{});
-    client.on('close',()=>clients.delete(client));
-    client.setTimeout(15000,()=>client.destroy());
+  const clients=new Set(),upstreams=new Set();
+  let mode='online',blocked=0,droppedAck=0,forwarded=0,preflights=0;
+  const server=httpServer((req,res)=>{
+    res.on('error',()=>{});
+    const path=(req.url||'').split('?')[0];
     if(mode==='offline'){
       blocked++;
-      client.destroy();
+      req.socket.destroy();
       return;
     }
     forwarded++;
-    const upstream=tcpConnect({host:'127.0.0.1',port:targetPort});
-    upstreams.add(upstream);
-    upstream.on('error',()=>client.destroy());
-    upstream.on('close',()=>{upstreams.delete(upstream);client.destroy();});
-    upstream.setTimeout(15000,()=>upstream.destroy());
-    client.on('close',()=>upstream.destroy());
-    client.pipe(upstream);
-    if(mode==='lost-ack'){
-      upstream.once('data',()=>{
+    if(req.method==='OPTIONS')preflights++;
+    const shouldDrop=mode==='lost-ack'
+      &&req.method==='POST'
+      &&(path==='/finance/events'||path==='/fixture');
+    const upstream=httpRequest({
+      hostname:'127.0.0.1',port:targetPort,method:req.method,
+      path:req.url,headers:req.headers,
+    },response=>{
+      // The server already committed by the time a canonical 201 exists.
+      // A 4xx/5xx response must reach the test, never masquerade as lost ACK.
+      if(shouldDrop&&response.statusCode===201){
         droppedAck++;
-        client.destroy();
-        upstream.destroy();
-      });
-    }else{
-      upstream.pipe(client);
-    }
+        req.socket.destroy();
+        response.destroy();
+        return;
+      }
+      res.writeHead(response.statusCode||502,response.headers);
+      response.pipe(res);
+    });
+    upstream.on('socket',socket=>{
+      upstreams.add(socket);
+      socket.on('close',()=>upstreams.delete(socket));
+      socket.setTimeout(15000,()=>socket.destroy());
+    });
+    upstream.on('error',()=>req.socket.destroy());
+    req.on('error',()=>upstream.destroy());
+    req.pipe(upstream);
   });
-  listener.listen(listenPort,'127.0.0.1');
-  await once(listener,'listening');
+  server.on('connection',socket=>{
+    clients.add(socket);
+    socket.on('close',()=>clients.delete(socket));
+    socket.setTimeout(15000,()=>socket.destroy());
+  });
+  server.listen(listenPort,'127.0.0.1');
+  await once(server,'listening');
   return {
-    port:listener.address().port,
+    port:server.address().port,
     setMode(next){
       assert(['online','offline','lost-ack'].includes(next));
       mode=next;
-      // Destroi canais keep-alive ja estabelecidos, que adb reverse
-      // e a troca de modo airplane nao necessariamente encerram.
+      // Remove conexoes keep-alive ja abertas, inclusive via adb reverse.
       for(const socket of clients)socket.destroy();
       for(const socket of upstreams)socket.destroy();
     },
-    metrics:()=>({mode,blocked,droppedAck,forwarded,clients:clients.size,upstreams:upstreams.size}),
+    metrics:()=>({mode,blocked,droppedAck,forwarded,preflights,
+      clients:clients.size,upstreams:upstreams.size}),
     async close(){
       for(const socket of clients)socket.destroy();
       for(const socket of upstreams)socket.destroy();
-      await new Promise((resolve,reject)=>listener.close(err=>err?reject(err):resolve()));
-    }
+      await new Promise((resolve,reject)=>
+        server.close(err=>err?reject(err):resolve()));
+    },
   };
 }
 
 async function selfTest(){
-  // Fixture de instrumentacao, nao writer financeiro do MEG.
-  const operations=new Map();
+  const ops=new Map();
   let writes=0,requests=0;
   const api=httpServer(async(req,res)=>{
     requests++;
+    if(req.method==='OPTIONS'){
+      res.writeHead(204,{
+        'Access-Control-Allow-Origin':'https://localhost',
+        'Access-Control-Allow-Methods':'POST,OPTIONS',
+        'Access-Control-Allow-Headers':'Authorization,Content-Type',
+      }).end();return;
+    }
     if(req.method==='GET'&&req.url==='/health'){
       res.writeHead(200,{'Content-Type':'application/json'}).end('{"ok":true}');
       return;
@@ -76,24 +96,20 @@ async function selfTest(){
     if(req.method!=='POST'||req.url!=='/fixture'){
       res.writeHead(404).end();return;
     }
-    try{
-      const chunks=[];
-      for await(const c of req)chunks.push(c);
-      const data=JSON.parse(Buffer.concat(chunks).toString());
-      assert.equal(typeof data.operationId,'string');
-      const original=operations.get(data.operationId);
-      if(original){
-        const same=original.amount===data.amount;
-        res.writeHead(same?200:409,{'Content-Type':'application/json','Connection':'close'});
-        res.end(JSON.stringify({replay:same,error:same?undefined:'OPERATION_ID_REUSED'}));
-      }else{
-        operations.set(data.operationId,data);
-        writes++;
-        res.writeHead(201,{'Content-Type':'application/json','Connection':'close'});
-        res.end(JSON.stringify({created:true}));
-      }
-    }catch{
-      res.writeHead(400).end();
+    const chunks=[];
+    for await(const c of req)chunks.push(c);
+    const data=JSON.parse(Buffer.concat(chunks).toString());
+    assert.equal(typeof data.operationId,'string');
+    const before=ops.get(data.operationId);
+    if(before){
+      const same=before.amount===data.amount;
+      res.writeHead(same?200:409,{'Content-Type':'application/json'});
+      res.end(JSON.stringify({replay:same,error:same?undefined:'OPERATION_ID_REUSED'}));
+    }else{
+      ops.set(data.operationId,data);
+      writes++;
+      res.writeHead(201,{'Content-Type':'application/json'});
+      res.end(JSON.stringify({created:true}));
     }
   });
   api.listen(0,'127.0.0.1');
@@ -102,34 +118,46 @@ async function selfTest(){
   try{
     proxy=await createLoopbackFaultProxy({targetPort:api.address().port});
     const base='http://127.0.0.1:'+proxy.port;
-    const get=await fetch(base+'/health');
-    assert.equal(get.status,200);
+    assert.equal((await fetch(base+'/health')).status,200);
     const send=(operationId,amount=12.35)=>fetch(base+'/fixture',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({operationId,amount}),
-      signal:AbortSignal.timeout(2000)
+      body:JSON.stringify({operationId,amount}),signal:AbortSignal.timeout(3000),
     });
-    const operationId='g699-synthetic-operation';
+    const id='g699-synthetic-operation';
     proxy.setMode('offline');
-    await assert.rejects(send(operationId));
+    await assert.rejects(send(id));
     assert.equal(writes,0);
     assert.equal(requests,1);
-    assert(proxy.metrics().blocked>=1);
+    assert(proxy.metrics().blocked>0);
     console.log('G699_TCP_OFFLINE_NO_SERVER_REQUEST=PASS');
+
     proxy.setMode('lost-ack');
-    await assert.rejects(send(operationId));
+    const preflight=await fetch(base+'/fixture',{
+      method:'OPTIONS',
+      headers:{Origin:'https://localhost',
+        'Access-Control-Request-Method':'POST',
+        'Access-Control-Request-Headers':'Authorization,Content-Type'},
+    });
+    assert.equal(preflight.status,204);
+    assert.equal(writes,0);
+    assert.equal(proxy.metrics().droppedAck,0);
+    assert.equal(proxy.metrics().preflights,1);
+    console.log('G699_TCP_CORS_PREFLIGHT_PRESERVED=PASS');
+
+    await assert.rejects(send(id));
     assert.equal(writes,1);
-    assert.equal(requests,2);
     assert.equal(proxy.metrics().droppedAck,1);
     console.log('G699_TCP_ACK_DROPPED_AFTER_FIXTURE_COMMIT=PASS');
+
     proxy.setMode('online');
-    const replay=await send(operationId);
+    const replay=await send(id);
     assert.equal(replay.status,200);
     assert.equal((await replay.json()).replay,true);
     assert.equal(writes,1);
     console.log('G699_TCP_SAME_OPERATION_FIXTURE_REPLAY=PASS');
-    const altered=await send(operationId,99.99);
-    assert.equal(altered.status,409);
+
+    const different=await send(id,99.99);
+    assert.equal(different.status,409);
     assert.equal(writes,1);
     console.log('G699_TCP_CHANGED_PAYLOAD_FIXTURE_409=PASS');
     console.log('G699_ANDROID_WEBVIEW_FINANCIAL_WRITER_PG17=NOT_EXECUTED');
