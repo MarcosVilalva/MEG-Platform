@@ -1,0 +1,92 @@
+name: MEG Stage10 G699 real offline isolated QA
+on:
+  push:
+    branches:
+      - stage10/g699-offline-real-qa-20261126
+    paths:
+      - '.github/workflows/meg-stage10-g699-offline-real-qa.yml'
+      - 'scripts/meg-stage10-g699-canonical-webview.qa.mjs'
+      - 'scripts/meg-stage10-issue699-transport-fault-proxy.qa.mjs'
+permissions:
+  contents: read
+jobs:
+  g699-real-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: meg_stage10_sandbox
+          POSTGRES_USER: meg_stage10_ci
+          POSTGRES_PASSWORD: stage10_ci_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meg_stage10_ci -d meg_stage10_sandbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://meg_stage10_ci:stage10_ci_disposable_only@127.0.0.1:5432/meg_stage10_sandbox?schema=public
+      MEG_STAGE10_ISOLATED_PG: '1'
+      MEG_STAGE10_G699_REAL_OFFLINE: '1'
+      MEG_STAGE10_WEB_WRITE_QA: '0'
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify isolated workflow identity and source syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'MarcosVilalva/MEG-Platform'
+          test "$GITHUB_REF_NAME" = 'stage10/g699-offline-real-qa-20261126'
+          node --check scripts/meg-stage10-g699-canonical-webview.qa.mjs
+          node --check scripts/meg-stage10-issue699-transport-fault-proxy.qa.mjs
+      - name: Install locked dependencies without mutating the lockfile
+        run: npm ci --audit=false --fund=false
+      - name: Initialize exclusively disposable PG17
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const u=new URL(process.env.DATABASE_URL);if(u.hostname!=='127.0.0.1'||u.username!=='meg_stage10_ci'||u.pathname!=='/meg_stage10_sandbox'||u.port!=='5432'||process.env.MEG_STAGE10_ISOLATED_PG!=='1')process.exit(2)"
+          npm run db:generate
+          npx --no-install prisma db push --schema packages/database/prisma/schema.prisma --skip-generate
+      - name: Build exclusively disposable Android stage10Qa APK
+        run: bash scripts/meg-stage10-build-android-qa.sh
+      - name: Execute G699 WebView plus canonical writer in single disposable runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          sudo chown "$(id -u):$(id -g)" /dev/kvm
+          tools_dir=$(find -L "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
+          test -x "$tools_dir"
+          export PATH="$(dirname "$tools_dir"):$ANDROID_HOME/platform-tools:$PATH"
+          image='system-images;android-35;google_apis;x86_64'
+          sdkmanager "emulator" "$image"
+          export ANDROID_USER_HOME="$RUNNER_TEMP/g699-android-user"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          avdmanager create avd --name meg-g699 --package "$image" --path "$ANDROID_AVD_HOME/meg-g699.avd" <<< no
+          "$ANDROID_HOME/emulator/emulator" @meg-g699 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect >"$RUNNER_TEMP/g699-emulator.log" 2>&1 &
+          emulator_pid=$!
+          trap 'adb emu kill >/dev/null 2>&1 || true' EXIT
+          export ANDROID_SERIAL=emulator-5554
+          if ! timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == 1 ]]; do kill -0 "$1" || exit 1; sleep 3; done' -- "$emulator_pid"; then
+            tail -80 "$RUNNER_TEMP/g699-emulator.log"
+            exit 1
+          fi
+          adb shell input keyevent 82
+          adb install android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
+          export JWT_SECRET="$(openssl rand -hex 40)"
+          node --import tsx scripts/meg-stage10-g699-canonical-webview.qa.mjs
+          echo 'G699_REAL_OFFLINE_QA_SINGLE_RUN=PASS'
