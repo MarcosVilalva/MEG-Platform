@@ -21,6 +21,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
       - name: Reject any branch or product-release build
         shell: bash
         run: |
@@ -40,7 +43,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash scripts/meg-stage10-build-android-qa.sh
+          # One bounded retry, ONLY for transient upstream Maven Central HTTP 429.
+          for attempt in 1 2; do
+            log="$RUNNER_TEMP/g699-phoenix-qa-build-${attempt}.log"
+            if bash scripts/meg-stage10-build-android-qa.sh 2>&1 | tee "$log"; then
+              break
+            fi
+            if [[ "$attempt" == 2 ]] || ! grep -Eiq 'status code 429|Too Many Requests' "$log"; then
+              echo 'G699_PHOENIX_APK_STAGE10QA_BUILD=FAIL'
+              exit 1
+            fi
+            echo 'G699_GRADLE_MAVEN_429_BOUNDED_RETRY=ONE'
+            sleep 75
+          done
           sha256sum android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk > g699-phoenix-qa-artifact.sha256
           echo 'G699_PHOENIX_APK_STAGE10QA_BUILD=PASS'
       - name: Upload QA artifact only, not release
