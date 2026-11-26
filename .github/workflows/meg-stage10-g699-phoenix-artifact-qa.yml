@@ -1,0 +1,54 @@
+name: MEG Stage10 G699 Phoenix isolated QA artifact
+on:
+  push:
+    branches:
+      - stage10/g699-phoenix-artifact-qa-20261126
+    paths:
+      - '.github/workflows/meg-stage10-g699-phoenix-artifact-qa.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-qa-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Reject any branch or product-release build
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'MarcosVilalva/MEG-Platform'
+          test "$GITHUB_REF_NAME" = 'stage10/g699-phoenix-artifact-qa-20261126'
+          test -f scripts/meg-stage10-build-android-qa.sh
+          grep -Fq 'applicationIdSuffix ".stage10qa"' android/app/build.gradle
+          grep -Fq 'export VITE_API_URL=http://127.0.0.1:3333' scripts/meg-stage10-build-android-qa.sh
+          grep -Fq 'VITE_PHOENIX_SIMPLE_EVENT_WRITE=enabled' scripts/meg-stage10-build-android-qa.sh
+          grep -Fq 'findPhoenixCanonicalEvent' apps/web/src/phoenix/simple-event-form-bridge.ts
+          grep -Fq 'reservePhoenixCreate' apps/web/src/phoenix/simple-event-form-bridge.ts
+          echo 'G699_PHOENIX_QA_ISOLATED_SOURCE_AND_LOOPBACK=PASS'
+      - name: Install locked dependencies without modifying lockfile
+        run: npm ci --audit=false --fund=false
+      - name: Build separate QA-only APK without production backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/meg-stage10-build-android-qa.sh
+          sha256sum android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk > g699-phoenix-qa-artifact.sha256
+          echo 'G699_PHOENIX_APK_STAGE10QA_BUILD=PASS'
+      - name: Upload QA artifact only, not release
+        uses: actions/upload-artifact@v4
+        with:
+          name: MEG-G699-PHOENIX-STAGE10QA-NOT-RELEASE
+          path: |
+            android/app/build/outputs/apk/stage10Qa/app-stage10Qa.apk
+            g699-phoenix-qa-artifact.sha256
+          if-no-files-found: error
+          retention-days: 7
